@@ -828,11 +828,10 @@ describe('webContents module', () => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         const response = `<script>
-                            const {ipcRenderer, remote} = require('electron')
+                            const {ipcRenderer} = require('electron')
                             ipcRenderer.send('set-zoom', window.location.hostname)
                             ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                              const { zoomLevel } = remote.getCurrentWebContents()
-                              ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+                              ipcRenderer.send(window.location.hostname + '-zoom-level')
                             })
                           </script>`;
         callback({ data: response, mimeType: 'text/html' });
@@ -925,7 +924,8 @@ describe('webContents module', () => {
         if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
         e.sender.send(`${host}-zoom-set`);
       });
-      ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
+      ipcMain.on('host1-zoom-level', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         const expectedZoomLevel = hostZoomMap.host1;
         expect(zoomLevel).to.equal(expectedZoomLevel);
         if (finalNavigation) {
@@ -934,7 +934,8 @@ describe('webContents module', () => {
           w.loadURL(`${scheme}://host2`);
         }
       });
-      ipcMain.once('host2-zoom-level', (e, zoomLevel) => {
+      ipcMain.once('host2-zoom-level', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         const expectedZoomLevel = hostZoomMap.host2;
         expect(zoomLevel).to.equal(expectedZoomLevel);
         finalNavigation = true;
@@ -1044,7 +1045,8 @@ describe('webContents module', () => {
         w2.close();
         done();
       });
-      ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
+      ipcMain.once('temporary-zoom-set', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
         finalZoomLevel = zoomLevel;
       });

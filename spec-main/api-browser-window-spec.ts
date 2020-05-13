@@ -1918,7 +1918,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('"enableRemoteModule" option', () => {
+    ifdescribe(features.isRemoteModuleEnabled())('"enableRemoteModule" option', () => {
       const generateSpecs = (description: string, sandbox: boolean) => {
         describe(description, () => {
           const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js');
@@ -2261,7 +2261,7 @@ describe('BrowserWindow module', () => {
       });
 
       // see #9387
-      it('properly manages remote object references after page reload', (done) => {
+      ifit(features.isRemoteModuleEnabled())('properly manages remote object references after page reload', (done) => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2293,7 +2293,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('properly manages remote object references after page reload in child window', (done) => {
+      ifit(features.isRemoteModuleEnabled())('properly manages remote object references after page reload in child window', (done) => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
