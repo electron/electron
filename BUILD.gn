@@ -987,10 +987,10 @@ if (is_mac) {
     }
 
     extract_symbols("crashpad_handler_syms") {
-      binary = "$root_out_dir/crashpad_handler"
+      binary = "$root_out_dir/chrome_crashpad_handler"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
-      deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+      dsym_file = "$root_out_dir/chrome_crashpad_handler.dSYM/Contents/Resources/DWARF/chrome_crashpad_handler"
+      deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
     }
 
     group("electron_symbols") {
