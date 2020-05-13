@@ -741,11 +741,11 @@ void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(window_.get());
-      browser_views_[browser_view->weak_map_id()].Reset(isolate(), value);
+      browser_views_[browser_view->ID()].Reset(isolate(), value);
     }
   }
 }
@@ -754,7 +754,7 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(nullptr);

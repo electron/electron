@@ -26,24 +26,8 @@ describe('BrowserView module', () => {
     await closeWindow(w);
 
     if (view) {
-      view.destroy();
+      view = null as any;
     }
-  });
-
-  describe('BrowserView.destroy()', () => {
-    it('does not throw', () => {
-      view = new BrowserView();
-      view.destroy();
-    });
-  });
-
-  describe('BrowserView.isDestroyed()', () => {
-    it('returns correct value', () => {
-      view = new BrowserView();
-      expect(view.isDestroyed()).to.be.false('view is destroyed');
-      view.destroy();
-      expect(view.isDestroyed()).to.be.true('view is destroyed');
-    });
   });
 
   describe('BrowserView.setBackgroundColor()', () => {
@@ -119,7 +103,6 @@ describe('BrowserView module', () => {
     it('returns the set view', () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
 
       const view2 = w.getBrowserView();
       expect(view2!.webContents.id).to.equal(view.webContents.id);
@@ -137,8 +120,6 @@ describe('BrowserView module', () => {
       w.addBrowserView(view1);
       const view2 = new BrowserView();
       w.addBrowserView(view2);
-      view1.destroy();
-      view2.destroy();
     });
     it('does not throw if called multiple times with same view', () => {
       view = new BrowserView();
@@ -164,14 +145,10 @@ describe('BrowserView module', () => {
       const view2 = new BrowserView();
       w.addBrowserView(view2);
 
-      expect(view1.id).to.be.not.null('view id');
       const views = w.getBrowserViews();
       expect(views).to.have.lengthOf(2);
       expect(views[0].webContents.id).to.equal(view1.webContents.id);
       expect(views[1].webContents.id).to.equal(view2.webContents.id);
-
-      view1.destroy();
-      view2.destroy();
     });
   });
 
@@ -185,40 +162,6 @@ describe('BrowserView module', () => {
 
       w.setBrowserView(null);
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
-    });
-  });
-
-  describe('BrowserView.fromId()', () => {
-    it('returns the view with given id', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const view2 = BrowserView.fromId(view.id);
-      expect(view2.webContents.id).to.equal(view.webContents.id);
-    });
-  });
-
-  describe('BrowserView.fromWebContents()', () => {
-    it('returns the view with given id', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const view2 = BrowserView.fromWebContents(view.webContents);
-      expect(view2!.webContents.id).to.equal(view.webContents.id);
-    });
-  });
-
-  describe('BrowserView.getAllViews()', () => {
-    it('returns all views', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const views = BrowserView.getAllViews();
-      expect(views).to.be.an('array').that.has.lengthOf(1);
-      expect(views[0].webContents.id).to.equal(view.webContents.id);
     });
   });
 
