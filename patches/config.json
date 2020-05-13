@@ -15,5 +15,7 @@
 
   "src/electron/patches/node": "src/third_party/electron_node",
 
-  "src/electron/patches/webrtc": "src/third_party/webrtc"
+  "src/electron/patches/webrtc": "src/third_party/webrtc",
+
+  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
 }

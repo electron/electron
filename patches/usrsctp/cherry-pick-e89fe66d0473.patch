@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Tuexen <tuexen@fh-muenster.de>
+Date: Fri, 10 Apr 2020 00:43:45 +0000
+Subject: Improve input validation when processing AUTH chunks
+
+Cherry picked from:
+https://chromium.googlesource.com/external/github.com/sctplab/usrsctp/+/b218e8957d7af0b07ee3ca74caded05ada8d1df9
+https://chromium.googlesource.com/external/github.com/sctplab/usrsctp/+/e89fe66d04735dcfc6bfda1648fbe68008da6277
+
+Bug: 1073602
+
+diff --git a/usrsctplib/netinet/sctp_input.c b/usrsctplib/netinet/sctp_input.c
+index c62bb8506dc0fb86112f35e0b66d08c198e8f9bd..4e53dfb27ec597a8f6ac99c329bc80b9d7306836 100755
+--- a/usrsctplib/netinet/sctp_input.c
++++ b/usrsctplib/netinet/sctp_input.c
+@@ -2178,7 +2178,7 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 	int init_offset, initack_offset, initack_limit;
+ 	int retval;
+ 	int error = 0;
+-	uint8_t auth_chunk_buf[SCTP_PARAM_BUFFER_SIZE];
++	uint8_t auth_chunk_buf[SCTP_CHUNK_BUFFER_SIZE];
+ #if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
+ 	struct socket *so;
+ 
+@@ -2373,8 +2373,11 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 	if (auth_skipped) {
+ 		struct sctp_auth_chunk *auth;
+ 
+-		auth = (struct sctp_auth_chunk *)
+-		    sctp_m_getptr(m, auth_offset, auth_len, auth_chunk_buf);
++		if (auth_len <= SCTP_CHUNK_BUFFER_SIZE) {
++			auth = (struct sctp_auth_chunk *)sctp_m_getptr(m, auth_offset, auth_len, auth_chunk_buf);
++		} else {
++			auth = NULL;
++		}
+ 		if ((auth == NULL) || sctp_handle_auth(stcb, auth, m, auth_offset)) {
+ 			/* auth HMAC failed, dump the assoc and packet */
+ 			SCTPDBG(SCTP_DEBUG_AUTH1,
+@@ -4846,11 +4849,13 @@ sctp_process_control(struct mbuf *m, int iphlen, int *offset, int length,
+ 			if (auth_skipped && (stcb != NULL)) {
+ 				struct sctp_auth_chunk *auth;
+ 
+-				auth = (struct sctp_auth_chunk *)
+-					sctp_m_getptr(m, auth_offset,
+-						      auth_len, chunk_buf);
+-				got_auth = 1;
+-				auth_skipped = 0;
++				if (auth_len <= SCTP_CHUNK_BUFFER_SIZE) {
++					auth = (struct sctp_auth_chunk *)sctp_m_getptr(m, auth_offset, auth_len, chunk_buf);
++					got_auth = 1;
++					auth_skipped = 0;
++				} else {
++					auth = NULL;
++				}
+ 				if ((auth == NULL) || sctp_handle_auth(stcb, auth, m,
+ 								       auth_offset)) {
+ 					/* auth HMAC failed so dump it */
