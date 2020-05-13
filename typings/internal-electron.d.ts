@@ -123,9 +123,9 @@ declare namespace ElectronInternal {
   interface GetSourcesResult {
     id: string;
     name: string;
-    thumbnail: string;
+    thumbnail: Electron.NativeImage;
     display_id: string;
-    appIcon: string | null;
+    appIcon: Electron.NativeImage | null;
   }
 
   interface KeyWeakMap<K, V> {
