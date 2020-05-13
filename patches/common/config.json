@@ -11,5 +11,7 @@
 
   "src/electron/patches/common/webrtc": "src/third_party/webrtc",
 
+  "src/electron/patches/common/usrsctp": "src/third_party/usrsctp/usrsctplib",
+
   "src/electron/patches/node": "src/third_party/electron_node"
 }
