@@ -1653,6 +1653,7 @@ jobs:
       <<: *env-global
       <<: *env-testing-build
       <<: *env-ninja-status
+      CHECK_DIST_MANIFEST: '0'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
       GN_EXTRA_ARGS: 'is_asan = true'
     steps:
