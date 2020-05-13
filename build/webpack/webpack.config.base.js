@@ -21,7 +21,7 @@ class AccessDependenciesPlugin {
 }
 
 const defines = {
-  BUILDFLAG: ' '
+  BUILDFLAG: ''
 }
 
 const buildFlagsPrefix = '--buildflags='
