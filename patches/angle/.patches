@@ -1,1 +1,2 @@
 gles2_use_constant_initialization_for_g_mutex.patch
+update_the_active_texture_cache_before_changing_the_texture_binding.patch
