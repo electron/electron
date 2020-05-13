@@ -1291,7 +1291,7 @@ dist_zip("electron_chromedriver_zip") {
 
 mksnapshot_deps = [
   ":licenses",
-  "//tools/v8_context_snapshot:v8_context_snapshot_generator",
+  "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)",
   "//v8:mksnapshot($v8_snapshot_toolchain)",
 ]
 
