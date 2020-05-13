@@ -1435,8 +1435,14 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 #endif
 
 // static
+App* App::Get() {
+  static base::NoDestructor<App> app(v8::Isolate::GetCurrent());
+  return app.get();
+}
+
+// static
 gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new App(isolate));
+  return gin::CreateHandle(isolate, Get());
 }
 
 // static
