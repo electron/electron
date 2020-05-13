@@ -369,6 +369,30 @@ Returns:
 
 Emitted when the renderer process of `webContents` crashes or is killed.
 
+**Deprecated:** This event is superceded by the `render-process-gone` event
+which contains more information about why the render process dissapeared. It
+isn't always because it crashed.  The `killed` boolean can be replaced by
+checking `reason === 'killed'` when you switch to that event.
+
+#### Event: 'render-process-gone'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `details` Object
+  * `reason` String - The reason the render process is gone.  Possible values:
+    * `clean-exit` - Process exited with an exit code of zero
+    * `abnormal-exit` - Process exited with a non-zero exit code
+    * `killed` - Process was sent a SIGTERM or otherwise killed externally
+    * `crashed` - Process crashed
+    * `oom` - Process ran out of memory
+    * `launch-failure` - Process never successfully launched
+    * `integrity-failure` - Windows code integrity checks failed
+
+Emitted when the renderer process unexpectedly dissapears.  This is normally
+because it was crashed or killed.
+
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
 Returns:
