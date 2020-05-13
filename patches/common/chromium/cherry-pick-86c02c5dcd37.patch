@@ -1,0 +1,237 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matthias=20K=C3=B6rber?= <koerber@google.com>
+Date: Tue, 14 Apr 2020 16:55:14 +0000
+Subject: Fixed requesting invalid country codes from CountryData.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change-Id: Id0ce647400bdce2eb4cdd358432b7c647f880570
+Bug: 1062861
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2122057
+Reviewed-by: Matthias Körber <koerber@google.com>
+Reviewed-by: Dominic Battré <battre@chromium.org>
+Reviewed-by: Vadym Doroshenko  <dvadym@chromium.org>
+Commit-Queue: Matthias Körber <koerber@google.com>
+Cr-Commit-Position: refs/heads/master@{#758887}
+
+diff --git a/components/autofill/core/browser/geo/autofill_country.cc b/components/autofill/core/browser/geo/autofill_country.cc
+index 260fd019831675afb955ab1b5e279e47379adc29..091bab650b2cb35462e0dbeb1454c9027b0ea31c 100644
+--- a/components/autofill/core/browser/geo/autofill_country.cc
++++ b/components/autofill/core/browser/geo/autofill_country.cc
+@@ -25,13 +25,28 @@ const size_t kLocaleCapacity =
+ 
+ AutofillCountry::AutofillCountry(const std::string& country_code,
+                                  const std::string& locale) {
+-  auto result =
+-      CountryDataMap::GetInstance()->country_data().find(country_code);
+-  DCHECK(result != CountryDataMap::GetInstance()->country_data().end());
+-  const CountryData& data = result->second;
++  CountryDataMap* country_data_map = CountryDataMap::GetInstance();
+ 
+-  country_code_ = country_code;
+-  name_ = l10n_util::GetDisplayNameForCountry(country_code, locale);
++  // If the country code is an alias (e.g. "GB" for "UK") expand the country
++  // code.
++  country_code_ = country_data_map->HasCountryCodeAlias(country_code)
++                      ? country_data_map->GetCountryCodeForAlias(country_code)
++                      : country_code;
++
++  // If there is no entry in the |CountryDataMap| for the
++  // |country_code_for_country_data| use the country code  derived from the
++  // locale. This reverts to US.
++  country_data_map->HasCountryData(country_code_)
++      ? country_code_
++      : CountryCodeForLocale(locale);
++
++  // Acquire the country address data.
++  const CountryData& data = country_data_map->GetCountryData(country_code_);
++
++  // Translate the country name by the supplied local.
++  name_ = l10n_util::GetDisplayNameForCountry(country_code_, locale);
++
++  // Get the localized strings associate with the address fields.
+   postal_code_label_ = l10n_util::GetStringUTF16(data.postal_code_label_id);
+   state_label_ = l10n_util::GetStringUTF16(data.state_label_id);
+   address_required_fields_ = data.address_required_fields;
+diff --git a/components/autofill/core/browser/geo/autofill_country_unittest.cc b/components/autofill/core/browser/geo/autofill_country_unittest.cc
+index e9726a8da766b5463475f086637fe225dc60c13e..586564b4fecd5fa0c46bd8fba3beca7c521f1b59 100644
+--- a/components/autofill/core/browser/geo/autofill_country_unittest.cc
++++ b/components/autofill/core/browser/geo/autofill_country_unittest.cc
+@@ -14,6 +14,7 @@
+ #include "base/android/build_info.h"
+ #endif
+ 
++using autofill::CountryDataMap;
+ using base::ASCIIToUTF16;
+ 
+ namespace autofill {
+@@ -30,6 +31,11 @@ TEST(AutofillCountryTest, AutofillCountry) {
+   EXPECT_EQ("US", united_states_es.country_code());
+   EXPECT_EQ(ASCIIToUTF16("Estados Unidos"), united_states_es.name());
+ 
++  AutofillCountry great_britain_uk_alias("UK", "en_GB");
++  EXPECT_EQ("GB", great_britain_uk_alias.country_code());
++  EXPECT_EQ("GB", great_britain_uk_alias.country_code());
++  EXPECT_EQ(ASCIIToUTF16("United Kingdom"), great_britain_uk_alias.name());
++
+   AutofillCountry canada_en("CA", "en_US");
+   EXPECT_EQ("CA", canada_en.country_code());
+   EXPECT_EQ(ASCIIToUTF16("Canada"), canada_en.name());
+@@ -74,4 +80,27 @@ TEST(AutofillCountryTest, AllCountryCodesHaveCountryName) {
+   }
+ }
+ 
++// Test alias mappings for falsely existing country codes.
++TEST(AutofillCountryTest, AliasMappingsForCountryData) {
++  CountryDataMap* country_data_map = CountryDataMap::GetInstance();
++
++  // There should be country data for the "GB".
++  EXPECT_TRUE(country_data_map->HasCountryData("GB"));
++
++  // Check the correctness of the alias definitions.
++  EXPECT_TRUE(country_data_map->HasCountryCodeAlias("UK"));
++  EXPECT_FALSE(country_data_map->HasCountryCodeAlias("does_not_exist"));
++
++  // Query not existing mapping.
++  auto expected_country_code = std::string();
++  auto actual_country_code =
++      country_data_map->GetCountryCodeForAlias("does_not_exist");
++  EXPECT_EQ(expected_country_code, actual_country_code);
++
++  // GB should map the UK.
++  expected_country_code = "GB";
++  actual_country_code = country_data_map->GetCountryCodeForAlias("UK");
++  EXPECT_EQ(expected_country_code, actual_country_code);
++}
++
+ }  // namespace autofill
+diff --git a/components/autofill/core/browser/geo/country_data.cc b/components/autofill/core/browser/geo/country_data.cc
+index 1fe65ecf65323ce1917cb786b63d10ea4a7ac0b7..ec78e723ca71972d32ba00c2b46de9673fe91f46 100644
+--- a/components/autofill/core/browser/geo/country_data.cc
++++ b/components/autofill/core/browser/geo/country_data.cc
+@@ -19,6 +19,17 @@ struct StaticCountryData {
+   CountryData country_data;
+ };
+ 
++// Alias definitions record for CountryData requests.  A request for
++// |country_code_alias| is served with the |CountryData| for
++// |country_code_target|.
++struct StaticCountryCodeAliasData {
++  char country_code_alias[3];
++  char country_code_target[3];
++};
++
++// Alias definitions.
++const StaticCountryCodeAliasData kCountryCodeAliases[] = {{"UK", "GB"}};
++
+ // Maps country codes to localized label string identifiers. Keep this sorted
+ // by country code.
+ // This list is comprized of countries appearing in both
+@@ -790,7 +801,7 @@ std::vector<std::string> GetCountryCodes() {
+   return country_codes;
+ }
+ 
+-std::map<std::string, CountryData> GetCountryData() {
++std::map<std::string, CountryData> GetCountryDataMap() {
+   std::map<std::string, CountryData> country_data;
+   // Add all the countries we have explicit data for.
+   for (const auto& static_data : kCountryData) {
+@@ -813,6 +824,18 @@ std::map<std::string, CountryData> GetCountryData() {
+   return country_data;
+ }
+ 
++std::map<std::string, std::string> GetCountryCodeAliasMap() {
++  std::map<std::string, std::string> country_code_aliases;
++  // Create mappings for the aliases defined in |kCountryCodeAliases|.
++  for (const auto& static_alias_data : kCountryCodeAliases) {
++    // Insert the alias.
++    country_code_aliases.insert(
++        std::make_pair(std::string(static_alias_data.country_code_alias),
++                       std::string(static_alias_data.country_code_target)));
++  }
++  return country_code_aliases;
++}
++
+ }  // namespace
+ 
+ // static
+@@ -821,8 +844,38 @@ CountryDataMap* CountryDataMap::GetInstance() {
+ }
+ 
+ CountryDataMap::CountryDataMap()
+-    : country_data_(GetCountryData()), country_codes_(GetCountryCodes()) {}
++    : country_data_(GetCountryDataMap()),
++      country_code_aliases_(GetCountryCodeAliasMap()),
++      country_codes_(GetCountryCodes()) {}
+ 
+ CountryDataMap::~CountryDataMap() = default;
+ 
++bool CountryDataMap::HasCountryData(const std::string& country_code) const {
++  return country_data_.count(country_code) > 0;
++}
++
++const CountryData& CountryDataMap::GetCountryData(
++    const std::string& country_code) const {
++  auto lookup = country_data_.find(country_code);
++  if (lookup != country_data_.end())
++    return lookup->second;
++  // If there is no entry for country_code return the entry for the US.
++  return country_data_.find("US")->second;
++}
++
++bool CountryDataMap::HasCountryCodeAlias(
++    const std::string& country_code_alias) const {
++  return country_code_aliases_.count(country_code_alias) > 0;
++}
++
++const std::string CountryDataMap::GetCountryCodeForAlias(
++    const std::string& country_code_alias) const {
++  auto lookup = country_code_aliases_.find(country_code_alias);
++  if (lookup != country_code_aliases_.end()) {
++    DCHECK(HasCountryData(lookup->second));
++    return lookup->second;
++  }
++  return std::string();
++}
++
+ }  // namespace autofill
+diff --git a/components/autofill/core/browser/geo/country_data.h b/components/autofill/core/browser/geo/country_data.h
+index b6a9497594b1c22a5521a9c40fab2decae449c3f..8266102deadd40e5f2b9b24703123f59034a9781 100644
+--- a/components/autofill/core/browser/geo/country_data.h
++++ b/components/autofill/core/browser/geo/country_data.h
+@@ -58,10 +58,23 @@ class CountryDataMap {
+  public:
+   static CountryDataMap* GetInstance();
+ 
+-  const std::map<std::string, CountryData>& country_data() {
+-    return country_data_;
+-  }
++  // Returns true if a |CountryData| entry for the supplied |country_code|
++  // exists.
++  bool HasCountryData(const std::string& country_code) const;
+ 
++  // Returns true if there is a country code alias for |country_code|.
++  bool HasCountryCodeAlias(const std::string& country_code_alias) const;
++
++  // Returns the country code for a country code alias. If no alias definition
++  // is present return an empty string.
++  const std::string GetCountryCodeForAlias(
++      const std::string& country_code_alias) const;
++
++  // Lookup the |CountryData| for the supplied |country_code|. If no entry
++  // exists, return the data for the US as a best guess.
++  const CountryData& GetCountryData(const std::string& country_code) const;
++
++  // Return a constant reference to a vector of all country codes.
+   const std::vector<std::string>& country_codes() { return country_codes_; }
+ 
+  private:
+@@ -70,6 +83,7 @@ class CountryDataMap {
+   friend struct base::DefaultSingletonTraits<CountryDataMap>;
+ 
+   const std::map<std::string, CountryData> country_data_;
++  const std::map<std::string, std::string> country_code_aliases_;
+   const std::vector<std::string> country_codes_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(CountryDataMap);
