@@ -117,4 +117,6 @@ worker_stop_passing_creator_s_origin_for_starting_a_dedicated_worker.patch
 cherry-pick-b69991a9b701.patch
 cherry-pick-826a4af58b3d.patch
 cherry-pick-686d1bfbcb8f.patch
+cherry-pick-38990b7d56e6.patch
+cherry-pick-67864c214770.patch
 cherry-pick-86c02c5dcd37.patch
