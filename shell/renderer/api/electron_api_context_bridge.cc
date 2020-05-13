@@ -180,8 +180,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       v8::Context::Scope destination_scope(destination_context);
       v8::Local<v8::Value> proxy_func = gin_helper::CallbackToV8Leaked(
           destination_context->GetIsolate(),
-          base::BindRepeating(&ProxyFunctionWrapper, store, func_id,
-                              support_dynamic_properties));
+          base::BindRepeating(&ProxyFunctionWrapper, store->GetWeakPtr(),
+                              func_id, support_dynamic_properties));
       FunctionLifeMonitor::BindTo(destination_context->GetIsolate(),
                                   v8::Local<v8::Object>::Cast(proxy_func),
                                   store->GetWeakPtr(), func_id);
@@ -214,22 +214,22 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                proxied_promise,
            v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
            v8::Global<v8::Context> global_destination_context,
-           context_bridge::RenderFrameFunctionStore* store,
+           base::WeakPtr<context_bridge::RenderFrameFunctionStore> store,
            v8::Local<v8::Value> result) {
           if (global_source_context.IsEmpty() ||
-              global_destination_context.IsEmpty())
+              global_destination_context.IsEmpty() || !store)
             return;
           context_bridge::ObjectCache object_cache;
-          auto val =
-              PassValueToOtherContext(global_source_context.Get(isolate),
-                                      global_destination_context.Get(isolate),
-                                      result, store, &object_cache, false, 0);
+          auto val = PassValueToOtherContext(
+              global_source_context.Get(isolate),
+              global_destination_context.Get(isolate), result, store.get(),
+              &object_cache, false, 0);
           if (!val.IsEmpty())
             proxied_promise->Resolve(val.ToLocalChecked());
         },
         proxied_promise, destination_context->GetIsolate(),
         std::move(global_then_source_context),
-        std::move(global_then_destination_context), store);
+        std::move(global_then_destination_context), store->GetWeakPtr());
 
     v8::Global<v8::Context> global_catch_source_context(
         source_context->GetIsolate(), source_context);
@@ -242,22 +242,22 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                proxied_promise,
            v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
            v8::Global<v8::Context> global_destination_context,
-           context_bridge::RenderFrameFunctionStore* store,
+           base::WeakPtr<context_bridge::RenderFrameFunctionStore> store,
            v8::Local<v8::Value> result) {
           if (global_source_context.IsEmpty() ||
-              global_destination_context.IsEmpty())
+              global_destination_context.IsEmpty() || !store)
             return;
           context_bridge::ObjectCache object_cache;
-          auto val =
-              PassValueToOtherContext(global_source_context.Get(isolate),
-                                      global_destination_context.Get(isolate),
-                                      result, store, &object_cache, false, 0);
+          auto val = PassValueToOtherContext(
+              global_source_context.Get(isolate),
+              global_destination_context.Get(isolate), result, store.get(),
+              &object_cache, false, 0);
           if (!val.IsEmpty())
             proxied_promise->Reject(val.ToLocalChecked());
         },
         proxied_promise, destination_context->GetIsolate(),
         std::move(global_catch_source_context),
-        std::move(global_catch_destination_context), store);
+        std::move(global_catch_destination_context), store->GetWeakPtr());
 
     ignore_result(source_promise->Then(
         source_context,
@@ -335,10 +335,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 }
 
 v8::Local<v8::Value> ProxyFunctionWrapper(
-    context_bridge::RenderFrameFunctionStore* store,
+    base::WeakPtr<context_bridge::RenderFrameFunctionStore> store,
     size_t func_id,
     bool support_dynamic_properties,
     gin_helper::Arguments* args) {
+  if (!store) {
+    args->ThrowError(
+        "Could not call a function over the contextBridge in a context that "
+        "has been released");
+    return v8::Undefined(args->isolate());
+  }
+
   TRACE_EVENT0("electron", "ContextBridge::ProxyFunctionWrapper");
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = args->isolate()->GetCurrentContext();
@@ -359,7 +366,7 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
 
     for (auto value : original_args) {
       auto arg = PassValueToOtherContext(calling_context, func_owning_context,
-                                         value, store, &object_cache,
+                                         value, store.get(), &object_cache,
                                          support_dynamic_properties, 0);
       if (arg.IsEmpty())
         return v8::Undefined(args->isolate());
@@ -396,10 +403,10 @@ v8::Local<v8::Value> ProxyFunctionWrapper(
     if (maybe_return_value.IsEmpty())
       return v8::Undefined(args->isolate());
 
-    auto ret =
-        PassValueToOtherContext(func_owning_context, calling_context,
-                                maybe_return_value.ToLocalChecked(), store,
-                                &object_cache, support_dynamic_properties, 0);
+    auto ret = PassValueToOtherContext(func_owning_context, calling_context,
+                                       maybe_return_value.ToLocalChecked(),
+                                       store.get(), &object_cache,
+                                       support_dynamic_properties, 0);
     if (ret.IsEmpty())
       return v8::Undefined(args->isolate());
     return ret.ToLocalChecked();

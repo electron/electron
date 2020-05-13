@@ -21,7 +21,7 @@ class RenderFrameFunctionStore;
 }
 
 v8::Local<v8::Value> ProxyFunctionWrapper(
-    context_bridge::RenderFrameFunctionStore* store,
+    base::WeakPtr<context_bridge::RenderFrameFunctionStore> store,
     size_t func_id,
     bool support_dynamic_properties,
     gin_helper::Arguments* args);
