@@ -1647,6 +1647,20 @@ jobs:
           checkout: true
           use-out-cache: false
 
+  linux-x64-testing-asan:
+    <<: *machine-linux-xlarge
+    environment:
+      <<: *env-global
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GN_EXTRA_ARGS: 'is_asan = true'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
     environment:
@@ -2100,6 +2114,15 @@ jobs:
     parallelism: 3
     <<: *steps-tests
 
+  linux-x64-testing-asan-tests:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    parallelism: 3
+    <<: *steps-tests
+
   linux-x64-testing-nan:
     <<: *machine-linux-medium
     environment:
@@ -2362,6 +2385,7 @@ workflows:
       - linux-checkout-and-save-cache
 
       - linux-x64-testing
+      - linux-x64-testing-asan
       - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
@@ -2369,6 +2393,9 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
+      - linux-x64-testing-asan-tests:
+          requires:
+            - linux-x64-testing-asan
       - linux-x64-testing-nan:
           requires:
             - linux-x64-testing
