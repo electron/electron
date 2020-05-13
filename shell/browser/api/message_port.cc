@@ -123,9 +123,11 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   DCHECK(port.IsValid());
   DCHECK(!connector_);
   port_ = std::move(port);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   connector_ = std::make_unique<mojo::Connector>(
-      port_.TakeHandleToEntangle(blink::ExecutionContext::From(
-          v8::Isolate::GetCurrent()->GetCurrentContext())),
+      port_.TakeHandleToEntangle(
+          blink::ExecutionContext::From(isolate->GetCurrentContext())),
       mojo::Connector::SINGLE_THREADED_SEND,
       base::ThreadTaskRunnerHandle::Get());
   connector_->PauseIncomingMethodCallProcessing();
