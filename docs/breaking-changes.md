@@ -79,6 +79,23 @@ All above methods remain non-deprecated when called from the main process.
 
 See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 
+### Default Changed: `crashReporter.start({ compress: true })`
+
+The default value of the `compress` option to `crashReporter.start` has changed
+from `false` to `true`. This means that crash dumps will be uploaded to the
+crash ingestion server with the `Content-Encoding: gzip` header, and the body
+will be compressed.
+
+If your crash ingestion server does not support compressed payloads, you can
+turn off compression by specifying `{ compress: false }` in the crash reporter
+options.
+
+### Deprecated: `crashReporter.start({ compress: false })`
+
+Setting `{ compress: false }` in `crashReporter.start` is deprecated. Nearly
+all crash ingestion servers support gzip compression. This option will be
+removed in a future version of Electron.
+
 ### Removed: Browser Window Affinity
 
 The `affinity` option when constructing a new `BrowserWindow` will be removed
