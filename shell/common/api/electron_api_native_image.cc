@@ -248,10 +248,9 @@ bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
 }
 
-gfx::Size NativeImage::GetSize(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
-  gfx::ImageSkiaRep image_rep =
-      image_.AsImageSkia().GetRepresentation(scale_factor);
+gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
+  float sf = scale_factor.value_or(1.0f);
+  gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
   return gfx::Size(image_rep.GetWidth(), image_rep.GetHeight());
 }
@@ -261,8 +260,8 @@ std::vector<float> NativeImage::GetScaleFactors() {
   return image_skia.GetSupportedScales();
 }
 
-float NativeImage::GetAspectRatio(gin::Arguments* args) {
-  gfx::Size size = GetSize(args);
+float NativeImage::GetAspectRatio(float scale_factor) {
+  gfx::Size size = GetSize(scale_factor);
   if (size.IsEmpty())
     return 1.f;
   else
@@ -271,7 +270,9 @@ float NativeImage::GetAspectRatio(gin::Arguments* args) {
 
 gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
                                              base::DictionaryValue options) {
-  gfx::Size size = GetSize(args);
+  float scale_factor = GetScaleFactorFromOptions(args);
+
+  gfx::Size size = GetSize(scale_factor);
   int width = size.width();
   int height = size.height();
   bool width_set = options.GetInteger("width", &width);
@@ -281,11 +282,12 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
   if (width_set && !height_set) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
-    size = gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio(args));
+    size =
+        gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio(scale_factor));
   } else if (height_set && !width_set) {
     // Scale width to preserve original aspect ratio
     size.set_width(height);
-    size = gfx::ScaleToRoundedSize(size, GetAspectRatio(args), 1.f);
+    size = gfx::ScaleToRoundedSize(size, GetAspectRatio(scale_factor), 1.f);
   }
 
   skia::ImageOperations::ResizeMethod method =
