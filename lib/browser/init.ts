@@ -186,6 +186,7 @@ function currentPlatformSupportsAppIndicator () {
 }
 
 // Workaround for electron/electron#5050 and electron/electron#9046
+process.env.ORIGINAL_XDG_CURRENT_DESKTOP = process.env.XDG_CURRENT_DESKTOP;
 if (currentPlatformSupportsAppIndicator()) {
   process.env.XDG_CURRENT_DESKTOP = 'Unity';
 }
