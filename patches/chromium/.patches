@@ -97,3 +97,6 @@ never_let_a_non-zero-size_pixel_snap_to_zero_size.patch
 cherry-pick-826a4af58b3d.patch
 cherry-pick-686d1bfbcb8f.patch
 cherry-pick-7101418f85a0.patch
+cherry-pick-38990b7d56e6.patch
+cherry-pick-67864c214770.patch
+cherry-pick-86c02c5dcd37.patch

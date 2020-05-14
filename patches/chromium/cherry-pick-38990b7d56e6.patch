@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 21 Apr 2020 23:51:25 +0000
+Subject: Fix bug when BytesProvider replies with invalid data.
+
+Bug: 1072983
+Change-Id: Ideaa0a67680375e770995880a4b8d2014b51d642
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2159583
+Reviewed-by: enne <enne@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#761203}
+
+diff --git a/storage/browser/blob/blob_registry_impl.cc b/storage/browser/blob/blob_registry_impl.cc
+index 1cc34f91e01530754635a27cd6481e367b0a4d4e..b6a12a5c43d0129f6c1dcfe93fbd684ba4f5dc2e 100644
+--- a/storage/browser/blob/blob_registry_impl.cc
++++ b/storage/browser/blob/blob_registry_impl.cc
+@@ -432,6 +432,10 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
+   // try to delete |this| again afterwards.
+   auto weak_this = weak_ptr_factory_.GetWeakPtr();
+ 
++  // Store the bad_message_callback_, so we can invoke it if needed, after
++  // notifying about the blob being finished.
++  auto bad_message_callback = std::move(bad_message_callback_);
++
+   // The blob might no longer have any references, in which case it may no
+   // longer exist. If that happens just skip calling Complete.
+   // TODO(mek): Stop building sooner if a blob is no longer referenced.
+@@ -445,7 +449,7 @@ void BlobRegistryImpl::BlobUnderConstruction::TransportComplete(
+     // BlobTransportStrategy might have already reported a BadMessage on the
+     // BytesProvider binding, but just to be safe, also report one on the
+     // BlobRegistry binding itself.
+-    std::move(bad_message_callback_)
++    std::move(bad_message_callback)
+         .Run("Received invalid data while transporting blob");
+   }
+   if (weak_this)
+diff --git a/storage/browser/blob/blob_registry_impl_unittest.cc b/storage/browser/blob/blob_registry_impl_unittest.cc
+index 8cbcc69ec6dc6bd368fdb59a3797e412b286e342..2060676987e267a0d55878a27f6a1b53fe6790b1 100644
+--- a/storage/browser/blob/blob_registry_impl_unittest.cc
++++ b/storage/browser/blob/blob_registry_impl_unittest.cc
+@@ -770,6 +770,36 @@ TEST_F(BlobRegistryImplTest, Register_ValidBytesAsReply) {
+   EXPECT_EQ(0u, BlobsUnderConstruction());
+ }
+ 
++TEST_F(BlobRegistryImplTest, Register_InvalidBytesAsReply) {
++  const std::string kId = "id";
++  const std::string kData = "hello";
++
++  std::vector<blink::mojom::DataElementPtr> elements;
++  elements.push_back(
++      blink::mojom::DataElement::NewBytes(blink::mojom::DataElementBytes::New(
++          kData.size(), base::nullopt, CreateBytesProvider(""))));
++
++  mojo::PendingRemote<blink::mojom::Blob> blob;
++  EXPECT_TRUE(registry_->Register(blob.InitWithNewPipeAndPassReceiver(), kId,
++                                  "", "", std::move(elements)));
++
++  std::unique_ptr<BlobDataHandle> handle = context_->GetBlobDataFromUUID(kId);
++  WaitForBlobCompletion(handle.get());
++
++  EXPECT_TRUE(handle->IsBroken());
++  ASSERT_EQ(BlobStatus::ERR_INVALID_CONSTRUCTION_ARGUMENTS,
++            handle->GetBlobStatus());
++
++  EXPECT_EQ(1u, reply_request_count_);
++  EXPECT_EQ(0u, stream_request_count_);
++  EXPECT_EQ(0u, file_request_count_);
++  EXPECT_EQ(0u, BlobsUnderConstruction());
++
++  // Expect 2 bad messages, one for the bad reply by the bytes provider, and one
++  // for the original register call.
++  EXPECT_EQ(2u, bad_messages_.size());
++}
++
+ TEST_F(BlobRegistryImplTest, Register_ValidBytesAsStream) {
+   const std::string kId = "id";
+   const std::string kData =
