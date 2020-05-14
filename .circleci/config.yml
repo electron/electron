@@ -1168,8 +1168,19 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
-          (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          if [ "$IS_ASAN" == "1" ]; then
+            ASAN_SYMBOLIZE="$PWD/src/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/src/out/Default/electron"
+            export ASAN_OPTIONS="symbolize=0 handle_abort=1"
+            export G_SLICE=always-malloc
+            export NSS_DISABLE_ARENA_FREE_LIST=1
+            export NSS_DISABLE_UNLOAD=1
+            export LLVM_SYMBOLIZER_PATH=$PWD/src/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+            (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split)) | $ASAN_SYMBOLIZE
+            (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split)) | $ASAN_SYMBOLIZE
+          else
+            (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+            (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          fi
     - run:
         name: Check test results existence
         command: |
@@ -2134,6 +2145,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
+      IS_ASAN: '1'
     parallelism: 3
     <<: *steps-tests
 
