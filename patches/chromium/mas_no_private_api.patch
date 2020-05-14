@@ -262,7 +262,7 @@ index d6e194da7dad5a7de6089c4eb132ac4b054b4eba..d9b2441321efca8a273e32361badb038
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 9a9f6dea91cecc081010f4fd6c166921b7115a6e..c049bca40fb3b428361567b8ce3613ab7f347d67 100644
+index 25401860a83c3e823a59c27095430d0073472eed..601677415e2051d7c698b77f25e9592c31cf0e40 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -526,6 +526,7 @@ NSDictionary* BrowserAccessibilityManagerMac::

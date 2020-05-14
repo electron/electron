@@ -10,11 +10,11 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 5aec055ee7139e209f0cca01dda3a3480fb19d38..755bcd14005e3ac728b36edf954e16d7ecdbebae 100644
+index 3f3d9f790cfe1c71ee94dbc75235795b50983215..ce010ade6f1c4df852d7b4a14dffaca2b3598a67 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -190,6 +190,25 @@ struct HttpAuthStaticNetworkContextParams {
-      = DefaultCredentials.ALLOW_DEFAULT_CREDENTIALS;
+@@ -198,6 +198,25 @@ struct CTPolicy {
+   array<string> excluded_legacy_spkis;
  };
  
 +interface TrustedAuthClient {
@@ -39,7 +39,7 @@ index 5aec055ee7139e209f0cca01dda3a3480fb19d38..755bcd14005e3ac728b36edf954e16d7
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -613,6 +632,8 @@ struct URLLoaderFactoryParams {
+@@ -634,6 +653,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
@@ -108,7 +108,7 @@ index 52ce1488044154ab940c36ac3f1ea2c3b3d5985b..0852f2a522dfb29cbbaf84464199fb1b
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 636192f4968ec7828e4c238ba87221651b19ee87..9817760b2db811c7280fc7c245743909e93713f5 100644
+index c6ef4718171593f6f678ff8855a097e81c5da136..995e5b199a86738183a5b1721c3200b8bba3cb08 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -113,6 +113,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

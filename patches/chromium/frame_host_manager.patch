@@ -26,7 +26,7 @@ index 8da8fc97f141159811e24b51ee9bdd6be045d726..e756441aa7a871934be72be67f353513
                                              bool allow_default_instance,
                                              GURL* site_url,
 diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_instance.h
-index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c24798e204 100644
+index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e316ca3f1e 100644
 --- a/content/browser/browsing_instance.h
 +++ b/content/browser/browsing_instance.h
 @@ -136,6 +136,11 @@ class CONTENT_EXPORT BrowsingInstance final
@@ -42,10 +42,10 @@ index 906a1ee4ac58b0744a32153bbaafeac4322a60e4..c90f4aead36cbf3767dc5094728963c2
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 8e11d6eede5983cd06c7eed938cde725e1b688a4..eab490d71ad8bdd9949018c48343a52c9d0d2b91 100644
+index 46b77347ba1d6a17e18594d978af0a9e133929de..5f7c6c0c79316ee8ac34acf773b59b268a6f223c 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1268,6 +1268,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1270,6 +1270,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -71,7 +71,7 @@ index 8e11d6eede5983cd06c7eed938cde725e1b688a4..eab490d71ad8bdd9949018c48343a52c
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 94e8f4d484c6f856615bfa3f8a9937f7d8e767eb..b2195d87c0d82b8db4496e7af623bb8ae0052464 100644
+index 73050ff98a79eaba01d322242745b36bb0198e80..b76bade719b4c1e853bfbf2bbd082d6843a21ba4 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2402,6 +2402,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -194,7 +194,7 @@ index 2fbcc699cc316e9c7fc8dda534cd1c0e5ac14c14..6f44f3a1dbb2368f56d3851a3e5b0b7c
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index db64b786a3ba7917d9dd3718c76e006362c1d261..b2f55d8075155992595d177e1af7e8e62bcc7895 100644
+index 840484b98d2b3d8eb8f92beefd886eded790fbff..72e6447a4177d95b88d7889a1c7168712eae3f9b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -220,10 +220,10 @@ index db64b786a3ba7917d9dd3718c76e006362c1d261..b2f55d8075155992595d177e1af7e8e6
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 80e0263be9fa831daa18b24a3fc169cb07fea48c..76aabccf7ba30457a3bf33877564083d422878a8 100644
+index 491d6e7260dd329f312916c2f4aaba0aa177cc6a..a9119a722935a8320e463e2e24cdd39b9e8b1773 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -235,8 +235,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  

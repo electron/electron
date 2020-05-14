@@ -204,10 +204,10 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 1aeb66f8ad5788a34c61c342026239812cfff5b9..3a49ca27819d71cebb8d39293c09536ace457ba2 100644
+index 4843ab089f05cba93a45cce33a22bb2f86e809dc..8fd088e886183d313f4f580b0e9ea0f6b33e70f0 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -216,7 +216,7 @@ index 1aeb66f8ad5788a34c61c342026239812cfff5b9..3a49ca27819d71cebb8d39293c09536a
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d05ad4336dfa7471150c1f46556b57bbf1be1cd4..3849880b43601aa028acd0c78d0dfd2d24a9dcf3 100644
+index 221f59c8b36ce4a28b15bcf3d3010970ed4ff820..f874b42bc0e73a0d00ad6decb003f3cc163da750 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -230,6 +230,7 @@
@@ -227,7 +227,7 @@ index d05ad4336dfa7471150c1f46556b57bbf1be1cd4..3849880b43601aa028acd0c78d0dfd2d
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3243,6 +3244,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -236,10 +236,10 @@ index d05ad4336dfa7471150c1f46556b57bbf1be1cd4..3849880b43601aa028acd0c78d0dfd2d
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 5d686b024b1e73223ab613d225c6d17582c08b71..b772169e70d07adda00e4072a9cd08403d1c8fd2 100644
+index 97b42c2a0743f93ea98d25ee05634ad537c01dd5..53f3b7131f094bdda263966e6c940e3361943894 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2553,6 +2553,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2542,6 +2542,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

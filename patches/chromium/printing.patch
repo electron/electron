@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb4af34301 100644
+index 9122bbf4f15c46eefd5269946659b5886156348a..211ca535d4572f11de7256c108aa84a160169557 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
@@ -401,10 +401,10 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index b1159d9be30638c82f072c1b116545c2f2b13bc3..38efdfd2f1e9cd7b9338538d89e5392e7d5eb5ce 100644
+index 408f5bc1e437cbedc340d62014947fe15b5319a6..6a87d5b8d1c34e2a18c63f193d5ca5bfbef51886 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -56,7 +56,7 @@ interface PrintPreviewUI {
+@@ -61,7 +61,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -414,7 +414,7 @@ index b1159d9be30638c82f072c1b116545c2f2b13bc3..38efdfd2f1e9cd7b9338538d89e5392e
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 690c3629621f62d842a7c3fc0c669258b11844cb..1e9d2367dd61af5c4ce919670d12ec74c6277db0 100644
+index 8c471289dc738aede0c7184c000b1be5131b794d..13710a7bd89080e8eac580c40536e8e42fd2a7e5 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -42,6 +42,7 @@

@@ -10,7 +10,7 @@ understanding, it seems like we slightly misuse the print preview API
 and this is fallout from using it in a way the code doesn't expect.
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1e9d2367dd61af5c4ce919670d12ec74c6277db0..031e783a1718f67abef28f58b023c78b88fff581 100644
+index 13710a7bd89080e8eac580c40536e8e42fd2a7e5..2a4c04357cdf48a078bfd1737f6a7532caae41ec 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -1476,6 +1476,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {

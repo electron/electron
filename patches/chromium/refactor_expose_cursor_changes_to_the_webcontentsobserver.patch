@@ -30,10 +30,10 @@ index 2edad62668474c690adb283224400dc4e7163fbf..1c7928e66955e188f70d4f1c475f2ad3
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 1aa79e7fa7241baa44492e26269f7f537c5960d0..cacc4639470f29eb487cf592d483aea1f1f2cc94 100644
+index 054de22f82fa2242438308b1c16f995cd309960b..8c6a9f8437f67e0cbfec204ef9897afcc78f021b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1597,6 +1597,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1594,6 +1594,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,10 +43,10 @@ index 1aa79e7fa7241baa44492e26269f7f537c5960d0..cacc4639470f29eb487cf592d483aea1
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 263f5f7229cc06356ce96c345e7f95414fcc8e2b..a9872443e34c23bf6453fd6017c1ca25bd090594 100644
+index 8eb0b87c8fa111a1c3ce522c0f85b9b6a4dc5a1f..d4f9404226e1b64bd8f0d5078f0a6ea532de2eb5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3457,6 +3457,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3453,6 +3453,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -59,10 +59,10 @@ index 263f5f7229cc06356ce96c345e7f95414fcc8e2b..a9872443e34c23bf6453fd6017c1ca25
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index b20acb32a6cf437b11c53f5c3c5dedcff39ae75f..0873fd56637d20abc90c7a54c04d5ac5aad74256 100644
+index 59510b1f874446adca167f92afdc20418d1908bf..07a051fb7da616ae452c5960a593e69d9731905b 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -935,6 +935,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -924,6 +924,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;
@@ -71,7 +71,7 @@ index b20acb32a6cf437b11c53f5c3c5dedcff39ae75f..0873fd56637d20abc90c7a54c04d5ac5
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 1cfb09f28f533a2c150292707ff1ce6447bfc504..b29ab1f253d5785aea48c047724274f738c90a57 100644
+index f80da27979a7ae37dc644279a913b8ce4d2fde3b..e3f9da7b12fbd53692ddda7032c7c54fc4594aa1 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index 1cfb09f28f533a2c150292707ff1ce6447bfc504..b29ab1f253d5785aea48c047724274f7
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -359,6 +360,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -354,6 +355,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  
