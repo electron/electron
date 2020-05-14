@@ -574,28 +574,34 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       cd src/out/Default
       # -o  overwrite files WITHOUT prompting
       # TODO(alexeykuzmin): Remove '-o' when it's no longer needed.
-      unzip -o dist.zip
+      # -: allows to extract archive members into  locations  outside
+      #    of the current ``extraction root folder''.
+      #    ASan builds have the llvm-symbolizer binaries listed as
+      #    runtime_deps, with their paths as `../../third_party/...`
+      #    unzip exits with non-zero code on such zip files unless -: is
+      #    passed.
+      unzip -:o dist.zip
 
 step-ffmpeg-unzip: &step-ffmpeg-unzip
   run:
     name: Unzip ffmpeg.zip
     command: |
       cd src/out/ffmpeg
-      unzip -o ffmpeg.zip
+      unzip -:o ffmpeg.zip
 
 step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
     command: |
       cd src/out/Default
-      unzip -o mksnapshot.zip
+      unzip -:o mksnapshot.zip
 
 step-chromedriver-unzip: &step-chromedriver-unzip
   run:
     name: Unzip chromedriver.zip
     command: |
       cd src/out/Default
-      unzip -o chromedriver.zip
+      unzip -:o chromedriver.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
   run:
