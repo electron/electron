@@ -384,6 +384,8 @@ filenames = {
     "shell/browser/ui/win/atom_desktop_native_widget_aura.h",
     "shell/browser/ui/win/atom_desktop_window_tree_host_win.cc",
     "shell/browser/ui/win/atom_desktop_window_tree_host_win.h",
+    "shell/browser/ui/win/dialog_thread.cc",
+    "shell/browser/ui/win/dialog_thread.h",
     "shell/browser/ui/win/jump_list.cc",
     "shell/browser/ui/win/jump_list.h",
     "shell/browser/ui/win/notify_icon_host.cc",
