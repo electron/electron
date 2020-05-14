@@ -82,6 +82,7 @@ extern const char kImages[];
 extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
+extern const char kEnableWebSQL[];
 
 }  // namespace options
 
@@ -119,6 +120,7 @@ extern const char kWebviewTag[];
 extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableElectronSiteInstanceOverrides[];
 extern const char kEnableNodeLeakageInRenderers[];
+extern const char kEnableWebSQL[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
