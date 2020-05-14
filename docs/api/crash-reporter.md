@@ -58,9 +58,8 @@ The `crashReporter` module has the following methods:
     Default is `false`.
   * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
     number of crashes uploaded to 1/hour. Default is `false`.
-  * `compress` Boolean (optional) _macOS_ _Windows_ - If true, crash reports
-    will be compressed and uploaded with `Content-Encoding: gzip`. Not all
-    collection servers support compressed payloads. Default is `false`.
+  * `compress` Boolean (optional) - If true, crash reports will be compressed
+    and uploaded with `Content-Encoding: gzip`. Default is `false`.
   * `extra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
