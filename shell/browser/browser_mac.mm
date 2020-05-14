@@ -35,7 +35,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 }
 
 void Browser::Focus(mate::Arguments* args) {
-  gin_helper::Dictionary opts;
+  mate::Dictionary opts;
   bool steal_focus = false;
 
   if (args->GetNext(&opts)) {
