@@ -20,7 +20,6 @@ declare namespace Electron {
   }
 
   interface ContextBridge {
-    debugGC(): { functionCount: number }
     internalContextBridge: {
       contextIsolationEnabled: boolean;
       overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;

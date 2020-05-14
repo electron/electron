@@ -16,21 +16,12 @@ namespace electron {
 
 namespace api {
 
-namespace context_bridge {
-class RenderFrameFunctionStore;
-}
-
-v8::Local<v8::Value> ProxyFunctionWrapper(
-    context_bridge::RenderFrameFunctionStore* store,
-    size_t func_id,
-    bool support_dynamic_properties,
-    gin_helper::Arguments* args);
+void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
     const v8::Local<v8::Context>& source_context,
     const v8::Local<v8::Context>& target_context,
-    context_bridge::RenderFrameFunctionStore* store,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth);

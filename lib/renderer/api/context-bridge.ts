@@ -11,11 +11,8 @@ const contextBridge: Electron.ContextBridge = {
   exposeInMainWorld: (key: string, api: Record<string, any>) => {
     checkContextIsolationEnabled();
     return binding.exposeAPIInMainWorld(key, api);
-  },
-  debugGC: () => binding._debugGCMaps({})
+  }
 } as any;
-
-if (!binding._debugGCMaps) delete contextBridge.debugGC;
 
 export default contextBridge;
 
@@ -33,6 +30,6 @@ export const internalContextBridge = {
   isInMainWorld: () => binding._isCalledFromMainWorld() as boolean
 };
 
-if (binding._debugGCMaps) {
+if (binding._isDebug) {
   contextBridge.internalContextBridge = internalContextBridge;
 }

@@ -78,7 +78,8 @@ describe('contextBridge', () => {
             contextIsolation: true,
             nodeIntegration: true,
             sandbox: useSandbox,
-            preload: path.resolve(tmpDir, 'preload.js')
+            preload: path.resolve(tmpDir, 'preload.js'),
+            additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
           }
         });
         await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
@@ -88,13 +89,18 @@ describe('contextBridge', () => {
         w.webContents.executeJavaScript(`(${fn.toString()})(window)`);
 
       const getGCInfo = async (): Promise<{
-        functionCount: number
-        objectCount: number
-        liveFromValues: number
-        liveProxyValues: number
+        trackedValues: number;
       }> => {
         const [, info] = await emittedOnce(ipcMain, 'gc-info', () => w.webContents.send('get-gc-info'));
         return info;
+      };
+
+      const forceGCOnWindow = async () => {
+        w.webContents.debugger.attach();
+        await w.webContents.debugger.sendCommand('HeapProfiler.enable');
+        await w.webContents.debugger.sendCommand('HeapProfiler.collectGarbage');
+        await w.webContents.debugger.sendCommand('HeapProfiler.disable');
+        w.webContents.debugger.detach();
       };
 
       it('should proxy numbers', async () => {
@@ -341,45 +347,56 @@ describe('contextBridge', () => {
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', contextBridge.debugGC()));
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process.electronBinding('v8_util');
             contextBridge.exposeInMainWorld('example', {
-              getFunction: () => () => 123
+              getFunction: () => () => 123,
+              track: weaklyTrackValue
             });
           });
           await callWithBindings(async (root: any) => {
             root.GCRunner.run();
           });
-          const baseValue = (await getGCInfo()).functionCount;
+          expect((await getGCInfo()).trackedValues).to.equal(0);
           await callWithBindings(async (root: any) => {
-            root.x = [root.example.getFunction()];
+            const fn = root.example.getFunction();
+            root.example.track(fn);
+            root.x = [fn];
           });
-          expect((await getGCInfo()).functionCount).to.equal(baseValue + 1);
+          expect((await getGCInfo()).trackedValues).to.equal(1);
           await callWithBindings(async (root: any) => {
             root.x = [];
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+          expect((await getGCInfo()).trackedValues).to.equal(0);
         });
       }
 
       if (useSandbox) {
         it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', contextBridge.debugGC()));
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process.electronBinding('v8_util');
             contextBridge.exposeInMainWorld('example', {
-              getFunction: () => () => 123
+              getFunction: () => () => 123,
+              track: weaklyTrackValue
             });
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
           const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
-          const baseValue = (await getGCInfo()).functionCount;
+          expect((await getGCInfo()).trackedValues).to.equal(0);
+          await callWithBindings((root: any) => {
+            root.example.track(root.example.getFunction());
+          });
+          expect((await getGCInfo()).trackedValues).to.equal(1);
           await callWithBindings((root: any) => {
             root.location.reload();
           });
           await loadPromise;
+          await forceGCOnWindow();
           // If this is ever "2" it means we leaked the exposed function and
           // therefore the entire context after a reload
-          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+          expect((await getGCInfo()).trackedValues).to.equal(0);
         });
       }
 

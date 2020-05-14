@@ -578,8 +578,6 @@ filenames = {
     "shell/common/world_ids.h",
     "shell/renderer/api/context_bridge/object_cache.cc",
     "shell/renderer/api/context_bridge/object_cache.h",
-    "shell/renderer/api/context_bridge/render_frame_function_store.cc",
-    "shell/renderer/api/context_bridge/render_frame_function_store.h",
     "shell/renderer/api/electron_api_context_bridge.cc",
     "shell/renderer/api/electron_api_context_bridge.h",
     "shell/renderer/api/electron_api_crash_reporter_renderer.cc",
