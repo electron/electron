@@ -646,8 +646,10 @@ step-verify-chromedriver: &step-verify-chromedriver
   run:
     name: Verify ChromeDriver
     command: |
-      cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      if [ "$IS_ASAN" != "1" ]; then
+        cd src
+        python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      fi
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
@@ -1133,18 +1135,6 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-setup-linux-for-headless-testing
 
     - *step-verify-ffmpeg
-    - *step-maybe-notify-slack-failure
-
-steps-verify-chromedriver: &steps-verify-chromedriver
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-chromedriver-unzip
-    - *step-setup-linux-for-headless-testing
-
-    - *step-verify-chromedriver
     - *step-maybe-notify-slack-failure
 
 steps-tests: &steps-tests
