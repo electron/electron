@@ -34,6 +34,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `fullscreenable`
   * `movable`
   * `closable`
+  * `backgroundThrottling`
 * `NativeImage`
   * `isMacTemplateImage`
 * `SystemPreferences` module

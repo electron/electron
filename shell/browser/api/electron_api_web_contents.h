@@ -187,6 +187,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // See https://github.com/electron/electron/issues/15133.
   void DestroyWebContents(bool async);
 
+  bool GetBackgroundThrottling() const;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
