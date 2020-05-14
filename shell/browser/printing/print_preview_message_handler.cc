@@ -74,7 +74,6 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 
   handled = true;
   IPC_BEGIN_MESSAGE_MAP(PrintPreviewMessageHandler, message)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed, OnPrintPreviewFailed)
     IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewCancelled,
                         OnPrintPreviewCancelled)
     IPC_MESSAGE_UNHANDLED(handled = false)
