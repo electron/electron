@@ -1049,14 +1049,16 @@ ElectronBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
-mojo::Remote<network::mojom::NetworkContext>
-ElectronBrowserClient::CreateNetworkContext(
+void ElectronBrowserClient::ConfigureNetworkContextParams(
     content::BrowserContext* browser_context,
-    bool /*in_memory*/,
-    const base::FilePath& /*relative_partition_path*/) {
+    bool in_memory,
+    const base::FilePath& relative_partition_path,
+    network::mojom::NetworkContextParams* network_context_params,
+    network::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
   DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
-      ->CreateNetworkContext();
+      ->ConfigureNetworkContextParams(network_context_params,
+                                      cert_verifier_creation_params);
 }
 
 network::mojom::NetworkContext*

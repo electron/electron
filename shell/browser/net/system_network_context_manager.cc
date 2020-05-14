@@ -22,6 +22,7 @@
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
@@ -155,9 +156,15 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
+  ConfigureDefaultNetworkContextParams(network_context_params.get());
+  return network_context_params;
+}
+
+void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
+    network::mojom::NetworkContextParams* network_context_params) {
   // This is required to avoid blocking X-Requested-With headers sent by PPAPI
   // plugins, more info crbug.com/940331
-  content::UpdateCorsExemptHeader(network_context_params.get());
+  content::UpdateCorsExemptHeader(network_context_params);
 
   network_context_params->enable_brotli = true;
 
@@ -169,8 +176,6 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif
-
-  return network_context_params;
 }
 
 // static
