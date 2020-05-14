@@ -5,7 +5,7 @@ import { ifdescribe } from './spec-helpers';
 
 import { ipcMain, BrowserWindow } from 'electron';
 import { emittedOnce } from './events-helpers';
-import { nativeImage } from 'electron/common';
+import { NativeImage } from 'electron/common';
 
 const features = process.electronBinding('features');
 
@@ -226,15 +226,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const remotely = makeRemotely(w);
 
     it('can serialize an empty nativeImage', async () => {
-      const getEmptyImage = (img: nativeImage) => {
-        return new Promise((resolve, reject) => {
-          if (img.isEmpty()) {
-            resolve('empty image');
-          } else {
-            reject(new Error('incorrectly serialized image'));
-          }
-        });
-      };
+      const getEmptyImage = (img: NativeImage) => img.isEmpty();
 
       w().webContents.once('remote-get-global', (event) => {
         event.returnValue = getEmptyImage;
@@ -243,22 +235,11 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       await expect(remotely(() => {
         const emptyImage = require('electron').nativeImage.createEmpty();
         return require('electron').remote.getGlobal('someFunction')(emptyImage);
-      })).to.eventually.equal('empty image');
+      })).to.eventually.be.true();
     });
 
     it('can serialize a non-empty nativeImage', async () => {
-      const getNonEmptyImage = (img: nativeImage) => {
-        return new Promise((resolve, reject) => {
-          if (img.isEmpty()) {
-            reject(new Error('incorrectly serialized image'));
-          } else {
-            const size = img.getSize();
-            if (size.height !== 0 && size.width !== 0) {
-              resolve('non-empty image');
-            }
-          }
-        });
-      };
+      const getNonEmptyImage = (img: NativeImage) => img.getSize();
 
       w().webContents.once('remote-get-global', (event) => {
         event.returnValue = getNonEmptyImage;
@@ -268,7 +249,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         const { nativeImage } = require('electron');
         const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
         return require('electron').remote.getGlobal('someFunction')(nonEmptyImage);
-      })).to.eventually.equal('non-empty image');
+      })).to.eventually.deep.equal({ width: 2, height: 2 });
     });
 
     it('can properly create a menu with an nativeImage icon in the renderer', (done) => {
