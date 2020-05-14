@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonfreed@chromium.org>
+Date: Mon, 20 Apr 2020 21:57:52 +0000
+Subject: Fix customized built-in element constructor behavior
+
+This CL implements two changes:
+ 1. It fixes the implementation to better match the spec for the
+    "create an element for the token" [1] algorithm. Prior to this CL,
+    step 7 of that algorithm was skipping directly to step 6 of the
+    "create an element" [2] algorithm, skipping over step 5 for
+    customized built-in elements. This is now fixed. This case is
+    illustrated by the issue and example at [3] and [4]. This becomes
+    the first test in customized-built-in-constructor-exceptions.html.
+
+ 2. It updates the comments to match the new behavior discussed in [3]
+    and the [5] spec PR, which changes the return value in the case
+    that a customized built-in element constructor throws an exception.
+    With the change above, that is actually already the behavior. So
+    this is just a comment change. Two new tests are added to
+    customized-built-in-constructor-exceptions.html.
+
+[1] https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token
+[2] https://dom.spec.whatwg.org/#concept-create-element
+[3] https://github.com/whatwg/html/issues/5084
+[4] https://crbug.com/1024866
+[5] https://github.com/whatwg/dom/pull/797
+
+Bug: 1071059, 1024866
+Change-Id: I814c81991eb5e83501304bcb3d2da476743aef52
+Cq-Do-Not-Cancel-Tryjobs: true
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2152986
+Commit-Queue: Mason Freed <masonfreed@chromium.org>
+Auto-Submit: Mason Freed <masonfreed@chromium.org>
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#760705}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc b/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
+index dfbfed1ca13e2182dfde470fb9a64bd0a0fd0cd9..89c54511faf05ee401900d4e33c2abaa2fa86405 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_custom_element_definition.cc
+@@ -146,6 +146,7 @@ HTMLElement* ScriptCustomElementDefinition::HandleCreateElementSyncException(
+ HTMLElement* ScriptCustomElementDefinition::CreateAutonomousCustomElementSync(
+     Document& document,
+     const QualifiedName& tag_name) {
++  DCHECK(CustomElement::ShouldCreateCustomElement(tag_name)) << tag_name;
+   if (!script_state_->ContextIsValid())
+     return CustomElement::CreateFailedElement(document, tag_name);
+   ScriptState::Scope scope(script_state_);
+diff --git a/third_party/blink/renderer/core/html/custom/custom_element.cc b/third_party/blink/renderer/core/html/custom/custom_element.cc
+index d21c582052cbf861b792ec6f44e418cc25f3a8cc..1edcd4e60009c9f994c0711a8d373d771b4e8965 100644
+--- a/third_party/blink/renderer/core/html/custom/custom_element.cc
++++ b/third_party/blink/renderer/core/html/custom/custom_element.cc
+@@ -205,7 +205,8 @@ Element* CustomElement::CreateUncustomizedOrUndefinedElement(
+ 
+ HTMLElement* CustomElement::CreateFailedElement(Document& document,
+                                                 const QualifiedName& tag_name) {
+-  DCHECK(ShouldCreateCustomElement(tag_name));
++  CHECK(ShouldCreateCustomElement(tag_name))
++      << "HTMLUnknownElement with built-in tag name: " << tag_name;
+ 
+   // "create an element for a token":
+   // https://html.spec.whatwg.org/C/#create-an-element-for-the-token
+diff --git a/third_party/blink/renderer/core/html/custom/custom_element_definition.cc b/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
+index 6126e0d04c48e8f7cebe8dbf39418599fcfcb84e..3341f49f48de367cbe4f736c4acac09c5d59ddbd 100644
+--- a/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
++++ b/third_party/blink/renderer/core/html/custom/custom_element_definition.cc
+@@ -142,14 +142,19 @@ HTMLElement* CustomElementDefinition::CreateElement(
+     result->SetCustomElementState(CustomElementState::kUndefined);
+     result->SetIsValue(Descriptor().GetName());
+ 
+-    // 5.3. If the synchronous custom elements flag is set, upgrade
+-    // element using definition.
+-    // 5.4. Otherwise, enqueue a custom element upgrade reaction given
+-    // result and definition.
+-    if (!flags.IsAsyncCustomElements())
++    if (!flags.IsAsyncCustomElements()) {
++      // 5.3 If the synchronous custom elements flag is set, then run this step
++      // while catching any exceptions:
++      //   1. Upgrade element using definition.
++      // If this step threw an exception, then:
++      //   1. Report the exception.
++      //   2. Set result's custom element state to "failed".
+       Upgrade(*result);
+-    else
++    } else {
++      // 5.4. Otherwise, enqueue a custom element upgrade reaction given
++      // result and definition.
+       EnqueueUpgradeReaction(*result);
++    }
+     return To<HTMLElement>(result);
+   }
+ 
+diff --git a/third_party/blink/renderer/core/html/parser/html_construction_site.cc b/third_party/blink/renderer/core/html/parser/html_construction_site.cc
+index 1435bcf39f86e3e6811385e61c803d8ca8eb97e4..33d3b37cb9e4f38dca4c66b3540b087db54d02fa 100644
+--- a/third_party/blink/renderer/core/html/parser/html_construction_site.cc
++++ b/third_party/blink/renderer/core/html/parser/html_construction_site.cc
+@@ -914,8 +914,11 @@ Element* HTMLConstructionSite::CreateElement(
+     // reactions stack."
+     CEReactionsScope reactions;
+ 
+-    // 7.
+-    element = definition->CreateAutonomousCustomElementSync(document, tag_name);
++    // 7. Let element be the result of creating an element given document,
++    // localName, given namespace, null, and is. If will execute script is true,
++    // set the synchronous custom elements flag; otherwise, leave it unset.
++    element =
++        definition->CreateElement(document, tag_name, GetCreateElementFlags());
+ 
+     // "8. Append each attribute in the given token to element." We don't use
+     // setAttributes here because the custom element constructor may have
+diff --git a/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html b/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..32729bdb6bb2c82f54c074c7609ff5c79883a37a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/custom-elements/customized-built-in-constructor-exceptions.html
+@@ -0,0 +1,75 @@
++<!DOCTYPE html>
++<title>Customized built-in element constructor behavior</title>
++<meta name='author' title='Mason Freed' href='mailto:masonfreed@chromium.org'>
++<link rel='help' href='https://dom.spec.whatwg.org/#concept-create-element'>
++<script src='/resources/testharness.js'></script>
++<script src='/resources/testharnessreport.js'></script>
++
++<script>
++setup({allow_uncaught_exception : true});
++
++class MyCustomParagraph extends HTMLParagraphElement {
++  constructor() {
++    super();
++    this.textContent = 'PASS';
++  }
++}
++customElements.define('custom-p', MyCustomParagraph, { extends: 'p' });
++</script>
++<p id=targetp is='custom-p'></p>
++<script>
++test(t => {
++  let target = document.getElementById('targetp');
++  assert_true(!!target);
++  assert_equals(target.localName, 'p');
++  assert_true(target instanceof MyCustomParagraph);
++  assert_true(target instanceof HTMLParagraphElement);
++  assert_equals(target.childNodes.length, 1);
++  assert_equals(target.textContent, 'PASS');
++}, 'Appending children in customized built-in constructor should work');
++</script>
++
++
++<script>
++class MyCustomVideo extends HTMLVideoElement {
++  constructor() {
++  super();
++  throw new Error();
++  }
++}
++customElements.define('custom-video', MyCustomVideo, { extends: 'video' });
++</script>
++<video id=targetvideo is='custom-video'> <source></source> </video>
++<script>
++test(t => {
++  let target = document.getElementById('targetvideo');
++  assert_true(!!target);
++  assert_equals(target.localName, 'video');
++  assert_true(target instanceof MyCustomVideo);
++  assert_true(target instanceof HTMLVideoElement);
++  assert_equals(target.children.length, 1);
++}, 'Throwing exception in customized built-in constructor should not crash and should return correct element type (video)');
++</script>
++
++
++<script>
++class MyCustomForm extends HTMLFormElement {
++  constructor() {
++  super();
++  throw new Error();
++  }
++}
++customElements.define('custom-form', MyCustomForm, { extends: 'form' });
++</script>
++<form id=targetform is='custom-form'> <label></label><input> </form>
++<script>
++test(t => {
++  let target = document.getElementById('targetform');
++  assert_true(!!target);
++  assert_equals(target.localName, 'form');
++  assert_true(target instanceof MyCustomForm);
++  assert_true(target instanceof HTMLFormElement);
++  assert_equals(target.children.length, 2);
++}, 'Throwing exception in customized built-in constructor should not crash and should return correct element type (form)');
++</script>
++
