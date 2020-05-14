@@ -90,8 +90,6 @@ void OffScreenWebContentsView::GetContainerBounds(gfx::Rect* out) const {
   *out = GetViewBounds();
 }
 
-void OffScreenWebContentsView::SizeContents(const gfx::Size& size) {}
-
 void OffScreenWebContentsView::Focus() {}
 
 void OffScreenWebContentsView::SetInitialFocus() {}
