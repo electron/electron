@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
-import { BrowserWindow, WebContents, session, ipcMain } from 'electron'
+import { BrowserWindow, webContents, WebContents, session, ipcMain } from 'electron'
 import { emittedOnce } from './events-helpers'
 import { closeAllWindows } from './window-helpers'
 import * as https from 'https'
@@ -387,7 +387,7 @@ describe('enableWebSQL webpreference', () => {
     });
     contents.loadURL(origin);
     const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
-    expect(error).to.be.null();
+    expect(error).to.be.null('error');
   });
 
   it('when set to false can disallow websql', async () => {
@@ -439,7 +439,7 @@ describe('enableWebSQL webpreference', () => {
     });
     w.webContents.loadURL(origin);
     const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
-    expect(error).to.be.null();
+    expect(error).to.be.null('error');
     const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
     await w.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
@@ -494,7 +494,7 @@ describe('enableWebSQL webpreference', () => {
     });
     w.webContents.loadURL(origin);
     const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
-    expect(error).to.be.null();
+    expect(error).to.be.null('error');
     const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
     await w.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
@@ -508,6 +508,6 @@ describe('enableWebSQL webpreference', () => {
       });
     `);
     const [, childError] = await webviewResult;
-    expect(childError).to.be.null();
+    expect(childError).to.be.null('error');
   });
 });
