@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 27 Mar 2020 12:24:52 -0400
+Subject: Update the active texture cache before changing the texture binding.
+
+When a new texture is bound, the texture binding state is updated before
+updating the active texture cache. With this ordering, it is possible to delete
+the currently bound texture when the binding changes and then use-after-free it
+when updating the active texture cache.
+
+BUG=angleproject:1065186
+
+Change-Id: Id6d56b6c6db423755b195cda1e5cf1bcb1ee7aee
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2124588
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index 3fab8404046846e5b8ed6253139537360e83c409..c6c6ee75ebf554ce47cfcef218dca6a22075a4aa 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -1138,14 +1138,14 @@ void State::setActiveSampler(unsigned int active)
+ 
+ void State::setSamplerTexture(const Context *context, TextureType type, Texture *texture)
+ {
+-    mSamplerTextures[type][mActiveSampler].set(context, texture);
+-
+     if (mProgram && mProgram->getActiveSamplersMask()[mActiveSampler] &&
+         mProgram->getActiveSamplerTypes()[mActiveSampler] == type)
+     {
+         updateActiveTexture(context, mActiveSampler, texture);
+     }
+ 
++    mSamplerTextures[type][mActiveSampler].set(context, texture);
++
+     mDirtyBits.set(DIRTY_BIT_TEXTURE_BINDINGS);
+ }
+ 
