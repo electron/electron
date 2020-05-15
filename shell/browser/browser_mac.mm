@@ -13,6 +13,7 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "native_mate/dictionary.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
@@ -20,6 +21,9 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/platform_util.h"
 #include "shell/common/promise_util.h"
 #include "ui/gfx/image/image.h"
@@ -31,8 +35,20 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
-void Browser::Focus() {
-  [[AtomApplication sharedApplication] activateIgnoringOtherApps:NO];
+void Browser::Focus(mate::Arguments* args) {
+  mate::Dictionary opts;
+  bool steal_focus = false;
+
+  if (args->GetNext(&opts)) {
+    gin_helper::ErrorThrower thrower(args->isolate());
+    if (!opts.Get("steal", &steal_focus)) {
+      thrower.ThrowError(
+          "Expected options object to contain a 'steal' boolean property");
+      return;
+    }
+  }
+
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
 }
 
 void Browser::Hide() {

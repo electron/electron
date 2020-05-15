@@ -54,7 +54,7 @@ class Browser : public WindowListObserver {
   void Shutdown();
 
   // Focus the application.
-  void Focus();
+  void Focus(mate::Arguments* args);
 
   // Returns the version of the executable (or bundle).
   std::string GetVersion() const;
