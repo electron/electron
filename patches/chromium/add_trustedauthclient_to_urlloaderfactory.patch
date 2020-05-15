@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3f3d9f790cfe1c71ee94dbc75235795b50983215..ce010ade6f1c4df852d7b4a14dffaca2b3598a67 100644
+index 6ec25efe5bb2819df27d0ba8fc0646f2b80668a8..06ec91de21cb51e0fba363fd54e7bb3a56b8e391 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -198,6 +198,25 @@ struct CTPolicy {
@@ -39,7 +39,7 @@ index 3f3d9f790cfe1c71ee94dbc75235795b50983215..ce010ade6f1c4df852d7b4a14dffaca2
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -634,6 +653,8 @@ struct URLLoaderFactoryParams {
+@@ -645,6 +664,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
@@ -49,7 +49,7 @@ index 3f3d9f790cfe1c71ee94dbc75235795b50983215..ce010ade6f1c4df852d7b4a14dffaca2
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 52ce1488044154ab940c36ac3f1ea2c3b3d5985b..0852f2a522dfb29cbbaf84464199fb1bb7f94bc8 100644
+index 16dfc0c3000e8e85255aad66cb31eb0cfd2b095b..031442b0642fae5bd85198a3f46a2a7f45e7e763 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -435,6 +435,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index 52ce1488044154ab940c36ac3f1ea2c3b3d5985b..0852f2a522dfb29cbbaf84464199fb1b
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -980,7 +986,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+@@ -988,7 +994,7 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
  
  void URLLoader::OnAuthRequired(net::URLRequest* url_request,
                                 const net::AuthChallengeInfo& auth_info) {
@@ -81,7 +81,7 @@ index 52ce1488044154ab940c36ac3f1ea2c3b3d5985b..0852f2a522dfb29cbbaf84464199fb1b
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -996,11 +1002,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1004,11 +1010,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -128,10 +128,10 @@ index c6ef4718171593f6f678ff8855a097e81c5da136..995e5b199a86738183a5b1721c3200b8
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index 929be06340bf33f3e8f2b853470faeff76677aa1..3c2d83ef1dfce4263888dcf4a0342d14622ffb07 100644
+index 66c08cdf719ec24bc85323b64616ee13e83e1b49..3d8cff3074caaadb503aef1594ffacf611dab766 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
-@@ -74,6 +74,7 @@ URLLoaderFactory::URLLoaderFactory(
+@@ -75,6 +75,7 @@ URLLoaderFactory::URLLoaderFactory(
        resource_scheduler_client_(std::move(resource_scheduler_client)),
        header_client_(std::move(params_->header_client)),
        coep_reporter_(std::move(params_->coep_reporter)),
@@ -139,7 +139,7 @@ index 929be06340bf33f3e8f2b853470faeff76677aa1..3c2d83ef1dfce4263888dcf4a0342d14
        cors_url_loader_factory_(cors_url_loader_factory),
        cookie_observer_(std::move(params_->cookie_observer)) {
    DCHECK(context);
-@@ -263,6 +264,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -266,6 +267,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        std::move(keepalive_statistics_recorder),
        std::move(network_usage_accumulator),
        header_client_.is_bound() ? header_client_.get() : nullptr,

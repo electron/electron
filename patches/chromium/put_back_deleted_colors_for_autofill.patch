@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 6fbebcd460a965578f56ce1cce1ed98a1d8b81eb..e7a7d0f282b5efdcebf829828bbc5ebae149de8b 100644
+index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd04a46fef 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -352,6 +352,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -353,6 +353,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -115,10 +115,10 @@ index 9b3d8039bc2dcded1fcf54327028e4335732026d..0bd3f08d3023f4cb219e9baae59823df
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index ee7cd7819dc7f9bd120867f857a8750dd3f3dd8f..6845392e91ef56f80bcb2127ea6d16c29f2d24b5 100644
+index 8cc9cdc5eab4ebab20fee78318d38b365e8408e9..54730260ccb2ca56fd3fa26db631821de0e7d796 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -645,6 +645,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -646,6 +646,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

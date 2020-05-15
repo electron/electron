@@ -42,10 +42,10 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 46b77347ba1d6a17e18594d978af0a9e133929de..5f7c6c0c79316ee8ac34acf773b59b268a6f223c 100644
+index b1e88a77f77581a9abae54e726ace059705333d2..2e9f8c628d541b80e192dcd110fb9f97f0b50f96 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1270,6 +1270,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1275,6 +1275,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -71,7 +71,7 @@ index 46b77347ba1d6a17e18594d978af0a9e133929de..5f7c6c0c79316ee8ac34acf773b59b26
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 73050ff98a79eaba01d322242745b36bb0198e80..b76bade719b4c1e853bfbf2bbd082d6843a21ba4 100644
+index 8895ec490f9d0931fdb51f965ca36e86cb08c4bd..8c071eb5af044abe76ad2636224ea024e20a268a 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2402,6 +2402,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -194,7 +194,7 @@ index 2fbcc699cc316e9c7fc8dda534cd1c0e5ac14c14..6f44f3a1dbb2368f56d3851a3e5b0b7c
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 840484b98d2b3d8eb8f92beefd886eded790fbff..72e6447a4177d95b88d7889a1c7168712eae3f9b 100644
+index 3c743a74321d54e36248d7b6201d9fdf5b749af6..13418cab6cce233a14110eca7a887eb549cf438b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -270,7 +270,7 @@ index 491d6e7260dd329f312916c2f4aaba0aa177cc6a..a9119a722935a8320e463e2e24cdd39b
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
 diff --git a/content/public/browser/site_instance.h b/content/public/browser/site_instance.h
-index 0a5aec6455a9337f806a9376d83935b60891109b..b57294b1e19ce7a96aae05c23ab42190f35ae780 100644
+index 82b5d4c25adc7071dfcfe56047520fa2fa7b72f2..8535ed4ab3ca5a90f3de7ab9e80159b2082e7dfa 100644
 --- a/content/public/browser/site_instance.h
 +++ b/content/public/browser/site_instance.h
 @@ -121,6 +121,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {

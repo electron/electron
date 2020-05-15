@@ -262,7 +262,7 @@ index d6e194da7dad5a7de6089c4eb132ac4b054b4eba..d9b2441321efca8a273e32361badb038
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 25401860a83c3e823a59c27095430d0073472eed..601677415e2051d7c698b77f25e9592c31cf0e40 100644
+index 07645b4165bedc04eb83f7e736ab1254e5b2901d..f69c39341af7ef87f2c6aab8954b748ff9d3ec0e 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -526,6 +526,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
@@ -282,7 +282,7 @@ index 25401860a83c3e823a59c27095430d0073472eed..601677415e2051d7c698b77f25e9592c
    }
  
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index e59ac93d0e1554a2df5d8c74db2beba25d090228..6657c48664bdec4964b382f80309d1bfd097a9e9 100644
+index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a5a492397 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@

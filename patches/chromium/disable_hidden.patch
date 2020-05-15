@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 9c266f70d428386ad9ac06cd64716ebe8c067d06..054de22f82fa2242438308b1c16f995cd309960b 100644
+index bb483be1fbfbb2513a9fdecbaf69934083af4fe5..48cf94317a8b6ee49db937d7ef5d97dfe9026d08 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -641,6 +641,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -640,6 +640,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -34,10 +34,10 @@ index 7200b0616892c1c0ef452aa6709673ddf3149c44..af5fde7549f6c081bf1433a100e1a17a
        const base::TimeDelta& delay) {
      new_content_rendering_delay_ = delay;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f22bf42552661593052ca66671782dc40c1d7abf..667ca7520bbd02460eb2f633f31599a49bfc448d 100644
+index 72549f10dd3dbeeb43c1eb032bfb8af1d720ec37..e4697f143d15a76411ded1fc8316398152a5e93d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -692,7 +692,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -700,7 +700,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  

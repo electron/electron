@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ba936e8d17cb20fbddcc42c5bc5772156cd75698..d1b1b49df29194e47e3f5aa4d513d1a44d80adc9 100644
+index 2c3f75ea4ad177a63d64081f5d8028b60771edb8..e62538f061cccddea14759ea5d92f14b539992fc 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -111,6 +111,11 @@
@@ -177,7 +177,7 @@ index ba936e8d17cb20fbddcc42c5bc5772156cd75698..d1b1b49df29194e47e3f5aa4d513d1a4
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 932ca19462ca8b246af57f877218e6d984d92e00..3fe6131f41c89a5d69e2670a64da457c95f5023e 100644
+index 5b26275cffb8155841498f22b994970e05997af2..0b35920f4dbaf8fbaf8245c9ae976459c6baa7b8 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -86,6 +86,7 @@ class DomainReliabilityMonitor;
@@ -197,7 +197,7 @@ index 932ca19462ca8b246af57f877218e6d984d92e00..3fe6131f41c89a5d69e2670a64da457c
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -647,6 +650,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -650,6 +653,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::unique_ptr<network::NSSTempCertsCacheChromeOS> nss_temp_certs_cache_;
  #endif
  
@@ -207,7 +207,7 @@ index 932ca19462ca8b246af57f877218e6d984d92e00..3fe6131f41c89a5d69e2670a64da457c
    // CertNetFetcher is not used by the current platform.
    scoped_refptr<net::CertNetFetcherURLRequest> cert_net_fetcher_;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 3dcca6a5b98501642cf576d7e17ff0a4a6699852..aebad2df14eef8e677563fc8b05c25ed82dd980c 100644
+index 4fc3dc0a66e975da82f8c5186378443569b01c13..2b2033797906f36fa829008c65e3b66b6e06eaa2 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -198,6 +198,17 @@ struct CTPolicy {
@@ -228,7 +228,7 @@ index 3dcca6a5b98501642cf576d7e17ff0a4a6699852..aebad2df14eef8e677563fc8b05c25ed
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -812,6 +823,9 @@ interface NetworkContext {
+@@ -855,6 +866,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
