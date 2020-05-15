@@ -94,7 +94,7 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
   gfx::Size GetSize(const base::Optional<float> scale_factor);
-  float GetAspectRatio(float scale_factor);
+  float GetAspectRatio(const base::Optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
   // Mark the image as template image.

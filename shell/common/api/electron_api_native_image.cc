@@ -260,8 +260,9 @@ std::vector<float> NativeImage::GetScaleFactors() {
   return image_skia.GetSupportedScales();
 }
 
-float NativeImage::GetAspectRatio(float scale_factor) {
-  gfx::Size size = GetSize(scale_factor);
+float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
+  float sf = scale_factor.value_or(1.0f);
+  gfx::Size size = GetSize(sf);
   if (size.IsEmpty())
     return 1.f;
   else
