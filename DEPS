@@ -5,6 +5,7 @@ gclient_gn_args = [
   'checkout_android_native_support',
   'checkout_libaom',
   'checkout_nacl',
+  'checkout_pgo_profiles',
   'checkout_oculus_sdk',
   'checkout_openxr',
   'checkout_google_benchmark'
@@ -42,6 +43,7 @@ vars = {
   'checkout_chromium': True,
   'checkout_node': True,
   'checkout_nan': True,
+  'checkout_pgo_profiles': True,
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
