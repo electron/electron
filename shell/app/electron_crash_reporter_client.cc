@@ -194,7 +194,7 @@ bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 }
 #endif  // OS_LINUX
 
-void ElectronCrashReporterClient::GetUploadUrl() {
+std::string ElectronCrashReporterClient::GetUploadUrl() {
   return upload_url_;
 }
 
