@@ -29,6 +29,7 @@ namespace electron {
 // Manages the print preview handling for a WebContents.
 class PrintPreviewMessageHandler
     : public content::WebContentsObserver,
+      public printing::mojom::PrintPreviewUI,
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
   ~PrintPreviewMessageHandler() override;
@@ -54,12 +55,16 @@ class PrintPreviewMessageHandler
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
-  void OnPrintPreviewFailed(int document_cookie,
-                            const PrintHostMsg_PreviewIds& ids);
   void OnPrintPreviewCancelled(int document_cookie,
                                const PrintHostMsg_PreviewIds& ids);
   void CheckForCancel(int32_t request_id,
                       CheckForCancelCallback callback) override;
+
+  // printing::mojo::PrintPreviewUI:
+  void SetOptionsFromDocument(
+      const printing::mojom::OptionsFromDocumentParamsPtr params,
+      int32_t request_id) override {}
+  void PrintPreviewFailed(int32_t document_cookie, int32_t request_id) override;
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 

@@ -134,12 +134,11 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
       base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(region));
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewFailed(
-    int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+void PrintPreviewMessageHandler::PrintPreviewFailed(int32_t document_cookie,
+                                                    int32_t request_id) {
   StopWorker(document_cookie);
 
-  RejectPromise(ids.request_id);
+  RejectPromise(request_id);
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
