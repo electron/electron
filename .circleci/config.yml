@@ -2139,6 +2139,7 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
       IS_ASAN: '1'
+      DISABLE_CRASH_REPORTER_TESTS: '1'
     parallelism: 3
     <<: *steps-tests
 
