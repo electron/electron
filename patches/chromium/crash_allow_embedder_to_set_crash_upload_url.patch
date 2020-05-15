@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Wed, 13 May 2020 19:06:23 +0000
-Subject: [crash] allow embedder to set crash upload url
+Subject: allow embedder to set crash upload url
 
 Currently //components/crash hard-codes the crash report URL to be a
 Google-specific target. This CL adds a hook which allows embedders to override

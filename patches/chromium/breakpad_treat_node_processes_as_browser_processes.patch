@@ -29,7 +29,7 @@ index bb0c6aebb4fdb9b24de8292a3f1c8dc77f21e051..4bd9bfebb4e5119a5cdc48bb322745cf
    info.distro = base::g_linux_distro;
    info.distro_length = my_strlen(base::g_linux_distro);
    info.upload = upload;
-@@ -2040,8 +2045,13 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2044,8 +2049,13 @@ void InitCrashReporter(const std::string& process_type) {
        process_type == kWebViewSingleProcessType ||
        process_type == kBrowserProcessType ||
  #endif

@@ -831,11 +831,10 @@ describe('webContents module', () => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         const response = `<script>
-                            const {ipcRenderer, remote} = require('electron')
+                            const {ipcRenderer} = require('electron')
                             ipcRenderer.send('set-zoom', window.location.hostname)
                             ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                              const { zoomLevel } = remote.getCurrentWebContents()
-                              ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+                              ipcRenderer.send(window.location.hostname + '-zoom-level')
                             })
                           </script>`;
         callback({ data: response, mimeType: 'text/html' });
@@ -921,14 +920,15 @@ describe('webContents module', () => {
     });
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       let finalNavigation = false;
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host];
         if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
         e.sender.send(`${host}-zoom-set`);
       });
-      ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
+      ipcMain.on('host1-zoom-level', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         const expectedZoomLevel = hostZoomMap.host1;
         expect(zoomLevel).to.equal(expectedZoomLevel);
         if (finalNavigation) {
@@ -937,7 +937,8 @@ describe('webContents module', () => {
           w.loadURL(`${scheme}://host2`);
         }
       });
-      ipcMain.once('host2-zoom-level', (e, zoomLevel) => {
+      ipcMain.once('host2-zoom-level', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         const expectedZoomLevel = hostZoomMap.host2;
         expect(zoomLevel).to.equal(expectedZoomLevel);
         finalNavigation = true;
@@ -947,7 +948,7 @@ describe('webContents module', () => {
     });
 
     it('can propagate zoom level across same session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({ show: false });
       w2.webContents.on('did-finish-load', () => {
         const zoomLevel1 = w.webContents.zoomLevel;
@@ -1047,7 +1048,8 @@ describe('webContents module', () => {
         w2.close();
         done();
       });
-      ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
+      ipcMain.once('temporary-zoom-set', (e) => {
+        const zoomLevel = e.sender.getZoomLevel();
         w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
         finalZoomLevel = zoomLevel;
       });
@@ -1536,6 +1538,39 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: true } });
 
       w.webContents.setBackgroundThrottling(false);
+    });
+  });
+
+  describe('getBackgroundThrottling()', () => {
+    afterEach(closeAllWindows);
+    it('works via getter', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.setBackgroundThrottling(false);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(false);
+
+      w.webContents.setBackgroundThrottling(true);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(true);
+    });
+
+    it('works via property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.backgroundThrottling = false;
+      expect(w.webContents.backgroundThrottling).to.equal(false);
+
+      w.webContents.backgroundThrottling = true;
+      expect(w.webContents.backgroundThrottling).to.equal(true);
+    });
+
+    it('works via BrowserWindow', () => {
+      const w = new BrowserWindow({ show: false });
+
+      (w as any).setBackgroundThrottling(false);
+      expect((w as any).getBackgroundThrottling()).to.equal(false);
+
+      (w as any).setBackgroundThrottling(true);
+      expect((w as any).getBackgroundThrottling()).to.equal(true);
     });
   });
 

@@ -26,6 +26,10 @@ enum {
   DIR_USER_CACHE,              // Directory where user cache can be written.
   DIR_APP_LOGS,                // Directory where app logs live
 
+#if defined(OS_WIN)
+  DIR_RECENT,  // Directory where recent files live
+#endif
+
 #if defined(OS_LINUX)
   DIR_APP_DATA,  // Application Data directory under the user profile.
 #endif
