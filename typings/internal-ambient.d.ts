@@ -32,6 +32,9 @@ declare namespace NodeJS {
     createIDWeakMap<V>(): ElectronInternal.KeyWeakMap<number, V>;
     createDoubleIDWeakMap<V>(): ElectronInternal.KeyWeakMap<[string, number], V>;
     setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
+    weaklyTrackValue(value: any): void;
+    clearWeaklyTrackedValues(): void;
+    getWeaklyTrackedValues(): any[];
   }
 
   interface Process {
