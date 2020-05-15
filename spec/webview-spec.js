@@ -5,6 +5,7 @@ const http = require('http');
 const url = require('url');
 const { ipcRenderer } = require('electron');
 const { emittedOnce, waitForEvent } = require('./events-helpers');
+const { ifdescribe } = require('./spec-helpers');
 
 const { expect } = chai;
 chai.use(dirtyChai);
@@ -1076,13 +1077,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('<webview>.printToPDF()', () => {
-    before(function () {
-      if (!features.isPrintingEnabled()) {
-        this.skip();
-      }
-    });
-
+  ifdescribe(features.isPrintingEnabled())('<webview>.printToPDF()', () => {
     // TODO(deepak1556): Fix and enable after upgrade.
     it.skip('can print to PDF', async () => {
       const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';

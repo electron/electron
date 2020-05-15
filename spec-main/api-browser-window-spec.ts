@@ -18,6 +18,7 @@ const { expect } = chai
 chai.use(chaiAsPromised)
 chai.use(dirtyChai)
 
+const features = process.electronBinding('features')
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures')
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
@@ -711,7 +712,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
+    ifdescribe(features.isDesktopCapturerEnabled())('BrowserWindow.moveAbove(mediaSourceId)', () => {
       it('should throw an exception if wrong formatting', async () => {
         const fakeSourceIds = [
           'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
@@ -4000,7 +4001,6 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  const features = process.electronBinding('features')
   const skip = features.isOffscreenRenderingEnabled() && 
     (process.platform !== 'linux' || process.arch !== 'ia32')
   ifdescribe(skip)('offscreen rendering', () => {
