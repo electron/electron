@@ -10,6 +10,24 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
+diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
+index d23770fb402a1989027db54397fba80ceff9a296..6dd26210845daf6cdc9f9c594b9dc383c1e7d648 100644
+--- a/chrome/browser/printing/print_job.cc
++++ b/chrome/browser/printing/print_job.cc
+@@ -350,10 +350,13 @@ void PrintJob::StartPdfToEmfConversion(
+       settings.print_text_with_gdi() && !settings.printer_is_xps() &&
+       base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
+ 
++  #if 0
+   Profile* profile = Profile::FromBrowserContext(
+       worker_->GetWebContents()->GetBrowserContext());
+   bool print_with_reduced_rasterization =
+       PrintWithReducedRasterization(profile->GetPrefs());
++  #endif
++  bool print_with_reduced_rasterization = base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
+ 
+   using RenderMode = PdfRenderSettings::Mode;
+   RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
 index 9122bbf4f15c46eefd5269946659b5886156348a..211ca535d4572f11de7256c108aa84a160169557 100644
 --- a/chrome/browser/printing/print_job_worker.cc
