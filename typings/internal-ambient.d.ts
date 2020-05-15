@@ -31,6 +31,9 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(): void;
     createDoubleIDWeakMap(): any;
     setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
+    weaklyTrackValue(value: any): void;
+    clearWeaklyTrackedValues(): void;
+    getWeaklyTrackedValues(): any[];
   }
 
   interface Process {

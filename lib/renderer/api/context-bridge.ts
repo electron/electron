@@ -11,11 +11,8 @@ const contextBridge = {
   exposeInMainWorld: (key: string, api: Record<string, any>) => {
     checkContextIsolationEnabled();
     return binding.exposeAPIInMainWorld(key, api);
-  },
-  debugGC: () => binding._debugGCMaps({})
+  }
 };
-
-if (!binding._debugGCMaps) delete contextBridge.debugGC;
 
 export default contextBridge;
 
