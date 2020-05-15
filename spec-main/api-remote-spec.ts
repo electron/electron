@@ -254,21 +254,16 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })).to.eventually.deep.equal({ width: 2, height: 2 });
     });
 
-    it('can properly create a menu with an nativeImage icon in the renderer', (done) => {
-      const win = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          enableRemoteModule: true
-        }
-      });
-
-      ipcMain.once('make-menu', (event, message) => {
-        expect(message).to.match(/^No error thrown/);
-        done();
-      });
-
-      win.loadFile(path.join(fixtures, 'api', 'nativeimage-serialization.html'));
+    it('can properly create a menu with an nativeImage icon in the renderer', async () => {
+      await expect(remotely(() => {
+        const { remote, nativeImage } = require('electron');
+        remote.Menu.buildFromTemplate([
+          {
+            label: 'hello',
+            icon: nativeImage.createEmpty()
+          }
+        ]);
+      })).to.be.fulfilled();
     });
   });
 
