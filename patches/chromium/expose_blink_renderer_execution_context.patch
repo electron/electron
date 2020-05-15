@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Fri, 15 May 2020 12:20:08 -0700
+Subject: expose blink/renderer/execution_context
+
+Refs: https://github.com/electron/electron/pull/23379/commits/b67334e781d2c8c01972f65e2d574e621ac79964#, https://chromium-review.googlesource.com/c/chromium/src/+/1952124
+
+diff --git a/third_party/blink/renderer/core/execution_context/BUILD.gn b/third_party/blink/renderer/core/execution_context/BUILD.gn
+index 88dfb8a31e1640f5add7a34f983bdd1b5ae6e345..d71ef2f3784d16b603f2dbaf64279db990efb314 100644
+--- a/third_party/blink/renderer/core/execution_context/BUILD.gn
++++ b/third_party/blink/renderer/core/execution_context/BUILD.gn
+@@ -5,6 +5,11 @@
+ import("//third_party/blink/renderer/core/core.gni")
+ 
+ blink_core_sources("execution_context") {
++  visibility = [
++    "//third_party/blink/renderer/core/*",
++    "//electron:*",
++  ]
++
+   sources = [
+     "agent.cc",
+     "agent.h",
