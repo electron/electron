@@ -1286,8 +1286,6 @@ Returns `Boolean` - whether `Secure Keyboard Entry` is enabled.
 
 By default this API will return `false`.
 
-On _Linux_ and _Windows_, this API will return `false`.
-
 ### `app.setSecureKeyboardEntryEnabled(enabled)` _macOS_
 
 * `enabled` Boolean - Enable or disable `Secure Keyboard Entry`
@@ -1299,9 +1297,7 @@ By using this API, important information such as password and other sensitive in
 See [Apple's documentation](https://developer.apple.com/library/archive/technotes/tn2150/_index.html) for more
 details.
 
-**Note:** Enable only when it is needed and disable it when it is no longer needed.
-
-On _Linux_ and _Windows_, this API will do nothing.
+**Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
 ## Properties
 

@@ -265,10 +265,11 @@ class Browser : public WindowListObserver {
 
   void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
+#if defined(OS_MACOSX)
   // Returns whether secure input is enabled
   bool IsSecureKeyboardEntryEnabled();
-
   void SetSecureKeyboardEntryEnabled(bool enabled);
+#endif
 
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
