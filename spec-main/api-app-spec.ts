@@ -432,6 +432,25 @@ describe('app module', () => {
       expect(webContents).to.equal(w.webContents);
     });
 
+    it('should emit render-process-gone event when renderer crashes', async function () {
+      // FIXME: re-enable this test on win32.
+      if (process.platform === 'win32') { return this.skip(); }
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const promise = emittedOnce(app, 'render-process-gone');
+      w.webContents.executeJavaScript('process.crash()');
+
+      const [, webContents, details] = await promise;
+      expect(webContents).to.equal(w.webContents);
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
       it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
         w = new BrowserWindow({
