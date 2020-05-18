@@ -1,6 +1,8 @@
 {
   "src/electron/patches/common/chromium": "src",
 
+  "src/electron/patches/common/angle": "src/third_party/angle",
+
   "src/electron/patches/common/boringssl": "src/third_party/boringssl/src",
 
   "src/electron/patches/common/ffmpeg": "src/third_party/ffmpeg",
