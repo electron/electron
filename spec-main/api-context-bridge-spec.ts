@@ -22,7 +22,7 @@ describe('contextBridge', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   });
 
   after(async () => {
