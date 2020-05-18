@@ -644,8 +644,8 @@ describe('protocol module', () => {
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
       let stdout = '';
       let stderr = '';
-      appProcess.stdout.on('data', data => { stdout += data; });
-      appProcess.stderr.on('data', data => { stderr += data; });
+      appProcess.stdout.on('data', data => { process.stdout.write(data); stdout += data; });
+      appProcess.stderr.on('data', data => { process.stderr.write(data); stderr += data; });
       const [code] = await emittedOnce(appProcess, 'exit');
       if (code !== 0) {
         console.log('Exit code : ', code);
