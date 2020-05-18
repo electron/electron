@@ -1417,12 +1417,12 @@ commands:
             - *step-electron-chromedriver-store
 
             - when:
-              condition: << parameters.build-nonproprietary-ffmpeg >>
-              steps:
-                # ffmpeg
-                - *step-ffmpeg-gn-gen
-                - *step-ffmpeg-build
-                - *step-ffmpeg-store
+                condition: << parameters.build-nonproprietary-ffmpeg >>
+                steps:
+                  # ffmpeg
+                  - *step-ffmpeg-gn-gen
+                  - *step-ffmpeg-build
+                  - *step-ffmpeg-store
 
             # hunspell
             - *step-hunspell-build
