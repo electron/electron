@@ -25,6 +25,9 @@ void NetworkContextService::ConfigureNetworkContextParams(
   bool in_memory = browser_context_->IsOffTheRecord();
   const base::FilePath& path = browser_context_->GetPath();
 
+  g_browser_process->system_network_context_manager()
+      ->ConfigureDefaultNetworkContextParams(network_context_params);
+
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
   network_context_params->accept_language =
