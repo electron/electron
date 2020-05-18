@@ -32,6 +32,8 @@ See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 
 ## Planned Breaking API Changes (11.0)
 
+There are no breaking changes planned for 11.0.
+
 ## Planned Breaking API Changes (10.0)
 
 ### Deprecated: `companyName` argument to `crashReporter.start()`
