@@ -44,6 +44,15 @@ and renderer processes, such as [`ipcRenderer`](../api/ipc-renderer.md) and
 [remote](../api/remote.md) module for RPC style communication. There is also
 an FAQ entry on [how to share data between web pages][share-data].
 
+## Main-Renderer threads and Client-Server architecture
+Since electron apps are developed using web technologies, therefore an understanding of
+client-server architecture will be helpful in understanding main and renderer threads. 
+Comparing with client-server architecture, main thread can be considered as server and 
+renderer threads as clients because all clients (renderer threads) are initiated by and
+communicate with server(main thread) and each client (renderer thread) executes in
+isolation and independent of other clients (renderer threads). However the server 
+(main thread) has access to all clients (renderer threads).
+
 ## Using Electron APIs
 
 Electron offers a number of APIs that support the development of a desktop
