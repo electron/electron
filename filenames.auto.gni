@@ -206,7 +206,7 @@ auto_filenames = {
     "lib/browser/api/module-list.ts",
     "lib/browser/api/native-theme.ts",
     "lib/browser/api/net-log.js",
-    "lib/browser/api/net.js",
+    "lib/browser/api/net.ts",
     "lib/browser/api/notification.js",
     "lib/browser/api/power-monitor.ts",
     "lib/browser/api/power-save-blocker.js",
