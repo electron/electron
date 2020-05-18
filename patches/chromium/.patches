@@ -95,3 +95,4 @@ breakpad_treat_node_processes_as_browser_processes.patch
 upload_list_add_loadsync_method.patch
 breakpad_allow_getting_string_values_for_crash_keys.patch
 crash_allow_disabling_compression_on_linux.patch
+fix_hunspell_crash.patch
