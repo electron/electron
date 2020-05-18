@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: Make sure hunspell file is not destroyed in UI thread
+
+Submitted to Chromium at:
+https://chromium-review.googlesource.com/c/chromium/src/+/2206199/1
+
+diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
+index 78432896094af972e913eb33ae4c59ca40dd1c09..917eda26b9e8bc54a6a696c485c3f3a869dfe293 100644
+--- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
++++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
+@@ -88,21 +88,28 @@ bool SaveDictionaryData(std::unique_ptr<std::string> data,
+ 
+ }  // namespace
+ 
+-SpellcheckHunspellDictionary::DictionaryFile::DictionaryFile() {
+-}
++SpellcheckHunspellDictionary::DictionaryFile::DictionaryFile(
++    base::TaskRunner* task_runner) : task_runner_(task_runner) {}
+ 
+ SpellcheckHunspellDictionary::DictionaryFile::~DictionaryFile() {
++  if (file.IsValid()) {
++    task_runner_->PostTask(FROM_HERE,
++                           base::BindOnce(&CloseDictionary, std::move(file)));
++  }
+ }
+ 
+ SpellcheckHunspellDictionary::DictionaryFile::DictionaryFile(
+     DictionaryFile&& other)
+-    : path(other.path), file(std::move(other.file)) {}
++    : path(other.path),
++      file(std::move(other.file)),
++      task_runner_(std::move(other.task_runner_)) {}
+ 
+ SpellcheckHunspellDictionary::DictionaryFile&
+ SpellcheckHunspellDictionary::DictionaryFile::operator=(
+     DictionaryFile&& other) {
+   path = other.path;
+   file = std::move(other.file);
++  task_runner_ = std::move(other.task_runner_);
+   return *this;
+ }
+ 
+@@ -118,16 +125,10 @@ SpellcheckHunspellDictionary::SpellcheckHunspellDictionary(
+ #if !defined(OS_ANDROID)
+       spellcheck_service_(spellcheck_service),
+ #endif
+-      download_status_(DOWNLOAD_NONE) {
+-}
++      download_status_(DOWNLOAD_NONE),
++      dictionary_file_(task_runner_.get()) {}
+ 
+ SpellcheckHunspellDictionary::~SpellcheckHunspellDictionary() {
+-  if (dictionary_file_.file.IsValid()) {
+-    task_runner_->PostTask(
+-        FROM_HERE,
+-        base::BindOnce(&CloseDictionary, std::move(dictionary_file_.file)));
+-  }
+-
+ #if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+   // Disable the language from platform spellchecker.
+   if (spellcheck::UseBrowserSpellChecker())
+@@ -155,7 +156,8 @@ void SpellcheckHunspellDictionary::Load() {
+ #if !defined(OS_ANDROID)
+   base::PostTaskAndReplyWithResult(
+       task_runner_.get(), FROM_HERE,
+-      base::BindOnce(&InitializeDictionaryLocation, language_),
++      base::BindOnce(&InitializeDictionaryLocation,
++                     base::RetainedRef(task_runner_.get()), language_),
+       base::BindOnce(
+           &SpellcheckHunspellDictionary::InitializeDictionaryLocationComplete,
+           weak_ptr_factory_.GetWeakPtr()));
+@@ -322,7 +324,8 @@ void SpellcheckHunspellDictionary::DownloadDictionary(GURL url) {
+ #if !defined(OS_ANDROID)
+ // static
+ SpellcheckHunspellDictionary::DictionaryFile
+-SpellcheckHunspellDictionary::OpenDictionaryFile(const base::FilePath& path) {
++SpellcheckHunspellDictionary::OpenDictionaryFile(base::TaskRunner* task_runner,
++                                                 const base::FilePath& path) {
+   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                 base::BlockingType::MAY_BLOCK);
+ 
+@@ -333,7 +336,7 @@ SpellcheckHunspellDictionary::OpenDictionaryFile(const base::FilePath& path) {
+   // For systemwide installations on Windows, the default directory may not
+   // have permissions for download. In that case, the alternate directory for
+   // download is chrome::DIR_USER_DATA.
+-  DictionaryFile dictionary;
++  DictionaryFile dictionary(task_runner);
+ 
+ #if defined(OS_WIN)
+   // Check if the dictionary exists in the fallback location. If so, use it
+@@ -375,7 +378,7 @@ SpellcheckHunspellDictionary::OpenDictionaryFile(const base::FilePath& path) {
+ // static
+ SpellcheckHunspellDictionary::DictionaryFile
+ SpellcheckHunspellDictionary::InitializeDictionaryLocation(
+-    const std::string& language) {
++    base::TaskRunner* task_runner, const std::string& language) {
+   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+                                                 base::BlockingType::MAY_BLOCK);
+ 
+@@ -390,7 +393,7 @@ SpellcheckHunspellDictionary::InitializeDictionaryLocation(
+   base::FilePath dict_path =
+       spellcheck::GetVersionedFileName(language, dict_dir);
+ 
+-  return OpenDictionaryFile(dict_path);
++  return OpenDictionaryFile(task_runner, dict_path);
+ }
+ 
+ void SpellcheckHunspellDictionary::InitializeDictionaryLocationComplete(
+diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
+index 9181170f6a83cb4e8f4e4685d7978488af1df2ab..639833521cb97ba6bb3c1faed2677cb47e6ea7fb 100644
+--- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
++++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
+@@ -97,7 +97,7 @@ class SpellcheckHunspellDictionary
+   // blocking sequence.
+   struct DictionaryFile {
+    public:
+-    DictionaryFile();
++    explicit DictionaryFile(base::TaskRunner* task_runner);
+     ~DictionaryFile();
+ 
+     DictionaryFile(DictionaryFile&& other);
+@@ -110,6 +110,9 @@ class SpellcheckHunspellDictionary
+     base::File file;
+ 
+    private:
++    // Task runner where the file is created.
++    scoped_refptr<base::TaskRunner> task_runner_;
++
+     DISALLOW_COPY_AND_ASSIGN(DictionaryFile);
+   };
+ 
+@@ -124,11 +127,12 @@ class SpellcheckHunspellDictionary
+ #if !defined(OS_ANDROID)
+   // Figures out the location for the dictionary, verifies its contents, and
+   // opens it.
+-  static DictionaryFile OpenDictionaryFile(const base::FilePath& path);
++  static DictionaryFile OpenDictionaryFile(base::TaskRunner* task_runner,
++                                           const base::FilePath& path);
+ 
+   // Gets the default location for the dictionary file.
+   static DictionaryFile InitializeDictionaryLocation(
+-      const std::string& language);
++      base::TaskRunner* task_runner, const std::string& language);
+ 
+   // The reply point for PostTaskAndReplyWithResult, called after the dictionary
+   // file has been initialized.
