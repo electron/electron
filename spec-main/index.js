@@ -62,7 +62,8 @@ app.whenReady().then(() => {
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter('tap');
   }
-  mocha.timeout(30000);
+  const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
+  mocha.timeout(mochaTimeout);
 
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();

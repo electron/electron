@@ -997,6 +997,11 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+  v8::HandleScope handle_scope(isolate());
+  gin_helper::Dictionary details =
+      gin_helper::Dictionary::CreateEmpty(isolate());
+  details.Set("reason", status);
+  Emit("render-process-gone", details);
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
@@ -1432,6 +1437,10 @@ void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
   Emit("navigation-entry-committed", details.entry->GetURL(),
        details.is_same_document, details.did_replace_entry);
+}
+
+bool WebContents::GetBackgroundThrottling() const {
+  return background_throttling_;
 }
 
 void WebContents::SetBackgroundThrottling(bool allowed) {
@@ -2714,6 +2723,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "WebContents"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("getBackgroundThrottling",
+                 &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)

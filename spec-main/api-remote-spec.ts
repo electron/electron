@@ -5,6 +5,7 @@ import { ifdescribe } from './spec-helpers';
 
 import { ipcMain, BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
+import { NativeImage } from 'electron/common';
 
 const features = process.electronBinding('features');
 
@@ -219,6 +220,50 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       });
 
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+    });
+  });
+
+  describe('nativeImage serialization', () => {
+    const w = makeWindow();
+    const remotely = makeRemotely(w);
+
+    it('can serialize an empty nativeImage', async () => {
+      const getEmptyImage = (img: NativeImage) => img.isEmpty();
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const emptyImage = require('electron').nativeImage.createEmpty();
+        return require('electron').remote.getGlobal('someFunction')(emptyImage);
+      })).to.eventually.be.true();
+    });
+
+    it('can serialize a non-empty nativeImage', async () => {
+      const getNonEmptyImage = (img: NativeImage) => img.getSize();
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getNonEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const { nativeImage } = require('electron');
+        const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+        return require('electron').remote.getGlobal('someFunction')(nonEmptyImage);
+      })).to.eventually.deep.equal({ width: 2, height: 2 });
+    });
+
+    it('can properly create a menu with an nativeImage icon in the renderer', async () => {
+      await expect(remotely(() => {
+        const { remote, nativeImage } = require('electron');
+        remote.Menu.buildFromTemplate([
+          {
+            label: 'hello',
+            icon: nativeImage.createEmpty()
+          }
+        ]);
+      })).to.be.fulfilled();
     });
   });
 

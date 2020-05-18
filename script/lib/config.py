@@ -29,7 +29,6 @@ PLATFORM = {
 LINUX_BINARIES = [
   'electron',
   'chrome-sandbox',
-  'crashpad_handler',
   'libffmpeg.so',
   'libGLESv2.so',
   'libEGL.so',
