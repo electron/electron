@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "base/values.h"
 #include "gin/handle.h"
@@ -85,15 +86,16 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   v8::Local<v8::Value> ToPNG(gin::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   v8::Local<v8::Value> ToBitmap(gin::Arguments* args);
+  std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
-  gin::Handle<NativeImage> Resize(v8::Isolate* isolate,
-                                  const base::DictionaryValue& options);
+  gin::Handle<NativeImage> Resize(gin::Arguments* args,
+                                  base::DictionaryValue options);
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
-  gfx::Size GetSize();
-  float GetAspectRatio();
+  gfx::Size GetSize(const base::Optional<float> scale_factor);
+  float GetAspectRatio(const base::Optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
   // Mark the image as template image.
