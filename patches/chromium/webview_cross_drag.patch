@@ -23,10 +23,10 @@ index 950dc1931b4018b666d5ebbfdd6ed9995aabc0c5..cf0131b6ef4d3bb455070ad21d5c3cbb
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..2c82d63d646c9201abd6a669b726dae0f8bec12b 100644
+index 5cb5db078b33ecda5ef445e2141a1de76de72ca1..c0f03eb153cb0839e268148f30d7bf43f67648fe 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -419,9 +419,7 @@ void DropCompletionCallback(
+@@ -383,9 +383,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

@@ -10,7 +10,7 @@ get this standardised, but in lieu of that, this makes MessagePort a
 whole bunch more useful!
 
 diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
-index 267fb73bf66db86ae19b0dca1dc3c9e28df5ef81..8644a0f4d222b6123a308d8e09c08640b5e012fe 100644
+index 9e9de51e37ee46266c647bd9c0c27e02a42bf5f1..d16727bed1a99b8171d0c7c5c5b7f38289ae9e55 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.cc
 +++ b/third_party/blink/renderer/core/messaging/message_port.cc
 @@ -158,6 +158,7 @@ void MessagePort::close() {
@@ -22,7 +22,7 @@ index 267fb73bf66db86ae19b0dca1dc3c9e28df5ef81..8644a0f4d222b6123a308d8e09c08640
  
  void MessagePort::Entangle(MessagePortDescriptor port) {
 diff --git a/third_party/blink/renderer/core/messaging/message_port.h b/third_party/blink/renderer/core/messaging/message_port.h
-index 0235fe07fb5dfafa6664b8c673dda91816c0487e..f34d6dcedc77eb69db08e5abd5dfac69fdee8b65 100644
+index d30195fc3cf96279426c7c23fa6f99f7cd193b26..95dc5b61a01452e64e5008e772367897445ca312 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.h
 +++ b/third_party/blink/renderer/core/messaging/message_port.h
 @@ -121,6 +121,13 @@ class CORE_EXPORT MessagePort : public EventTargetWithInlineData,

@@ -67,7 +67,7 @@ index 5ab90fc0fb34c9bc5920b7d7efcb8819fed358c0..0a86dc4fc70e6c16e4cb27d6512ae5f5
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index cd6850e3d615242096802ac229da0807c643c545..c7b660b2e7302fb7b7cafae159b47d0caa239d06 100644
+index 1841d4bea144e2fe0fb69839d52ff2ba4aa6b551..64c5eb7d0da7684531b044de9d6d114fc897786e 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -201,6 +201,7 @@ void LocalWindowProxy::Initialize() {
@@ -79,7 +79,7 @@ index cd6850e3d615242096802ac229da0807c643c545..c7b660b2e7302fb7b7cafae159b47d0c
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
-index e1a5ba4e6dc78a75a4961f158e87d089595af791..650e3d5d15504a03559d205f4d914a38f2db728a 100644
+index 8639eecc68c75c311af8ae00c8e028b63624a986..e66039442fbd4d3a456a724afe5eb28314459dc5 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 @@ -348,6 +348,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
@@ -97,7 +97,7 @@ index e1a5ba4e6dc78a75a4961f158e87d089595af791..650e3d5d15504a03559d205f4d914a38
      v8::Local<v8::Context> context,
      int32_t world_id) {
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.h b/third_party/blink/renderer/core/exported/local_frame_client_impl.h
-index d3daec6542dcc9b32c55ac219e3519636ca1b386..c560bf5c366ecb87467ac1fd55615d436c0028c6 100644
+index 2dd3d3d0d036cce2ad49be52915e00c6872eca43..b7c0f955a3388f2c7758d2058d3077e2ba4e8496 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.h
 @@ -78,6 +78,8 @@ class LocalFrameClientImpl final : public LocalFrameClient {

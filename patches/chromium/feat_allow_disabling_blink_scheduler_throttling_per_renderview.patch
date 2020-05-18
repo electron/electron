@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Fri, 29 Nov 2019 16:08:14 -0800
+Date: Mon, 18 May 2020 11:12:26 -0700
 Subject: feat: allow disabling blink scheduler throttling per RenderView
 
 This allows us to disable throttling for hidden windows.
@@ -61,7 +61,7 @@ index 893c45a5c71b4e55ea323ae60e11d12ddb099efd..db9a1ff0fe1a912db83692ab17c620cf
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index c257c137e5c2325b6a53db1d7cc8d35aaeb032ba..492a53e241984740507c7c652554322c492bee11 100644
+index fb9c2e2408924e32df16a67fb20796ff52dde847..9ca11e3d24a0545b1acb22ad315305648719dfc6 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1179,6 +1179,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -83,14 +83,14 @@ index c257c137e5c2325b6a53db1d7cc8d35aaeb032ba..492a53e241984740507c7c652554322c
 +  GetWebView()->SetSchedulerThrottling(allowed);
 +}
 +
- void RenderViewImpl::ApplyPageVisibilityState(
-     PageVisibilityState visibility_state,
-     bool initial_setting) {
+ void RenderViewImpl::OnUpdateWebPreferences(const WebPreferences& prefs) {
+   webkit_preferences_ = prefs;
+   ApplyWebPreferences(webkit_preferences_, GetWebView());
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index c91cfca2f65ba074e89c1b95ece7f60d6b939c8c..4c25ccb4a2c9584ba753a7d490f7bf6dd15ba6c0 100644
+index 3ee43ead214b826d158026feac0aeb21767b2543..253bd39e0c5f5e10d04b614ca4a4b4b141d4b2ca 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -398,6 +398,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -392,6 +392,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    void OnSetHistoryOffsetAndLength(int history_offset, int history_length);
    void OnSetRendererPrefs(
        const blink::mojom::RendererPreferences& renderer_prefs);
