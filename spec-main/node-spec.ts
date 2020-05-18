@@ -258,6 +258,7 @@ describe('node feature', () => {
       const success = false;
       function listener (data: Buffer) {
         output += data;
+        console.log(data); // NOTE: temporary debug logging to try to catch flake.
         const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
         if (match) {
           cleanup();
