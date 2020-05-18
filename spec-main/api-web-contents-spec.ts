@@ -41,7 +41,10 @@ describe('webContents module', () => {
     });
   });
 
-  describe('will-prevent-unload event', () => {
+  describe('will-prevent-unload event', function () {
+    // TODO(nornagon): de-flake this properly
+    this.retries(3);
+
     afterEach(closeAllWindows);
     it('does not emit if beforeunload returns undefined', (done) => {
       const w = new BrowserWindow({ show: false });
