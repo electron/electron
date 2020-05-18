@@ -141,12 +141,11 @@ void PrintPreviewMessageHandler::PrintPreviewFailed(int32_t document_cookie,
   RejectPromise(request_id);
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
-    int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+void PrintPreviewMessageHandler::PrintPreviewCancelled(int32_t document_cookie,
+                                                       int32_t request_id) {
   StopWorker(document_cookie);
 
-  RejectPromise(ids.request_id);
+  RejectPromise(request_id);
 }
 
 void PrintPreviewMessageHandler::CheckForCancel(
@@ -167,8 +166,13 @@ void PrintPreviewMessageHandler::PrintToPDF(
                   ? focused_frame
                   : web_contents()->GetMainFrame();
 
-  if (!print_render_frame_.is_bound())
+  if (!print_render_frame_.is_bound()) {
     rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);
+  }
+  if (!receiver_.is_bound()) {
+    print_render_frame_->SetPrintPreviewUI(
+        receiver_.BindNewEndpointAndPassRemote());
+  }
   print_render_frame_->PrintPreview(options.Clone());
 }
 

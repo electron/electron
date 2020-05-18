@@ -13,6 +13,7 @@
 #include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/promise.h"
 #include "v8/include/v8.h"
@@ -55,8 +56,6 @@ class PrintPreviewMessageHandler
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
-  void OnPrintPreviewCancelled(int document_cookie,
-                               const PrintHostMsg_PreviewIds& ids);
   void CheckForCancel(int32_t request_id,
                       CheckForCancelCallback callback) override;
 
@@ -65,6 +64,8 @@ class PrintPreviewMessageHandler
       const printing::mojom::OptionsFromDocumentParamsPtr params,
       int32_t request_id) override {}
   void PrintPreviewFailed(int32_t document_cookie, int32_t request_id) override;
+  void PrintPreviewCancelled(int32_t document_cookie,
+                             int32_t request_id) override;
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 
@@ -76,6 +77,8 @@ class PrintPreviewMessageHandler
   PromiseMap promise_map_;
 
   mojo::AssociatedRemote<printing::mojom::PrintRenderFrame> print_render_frame_;
+
+  mojo::AssociatedReceiver<printing::mojom::PrintPreviewUI> receiver_{this};
 
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
 
