@@ -66,6 +66,8 @@ class PrintPreviewMessageHandler
                              int32_t request_id) override;
   void PrinterSettingsInvalid(int32_t document_cookie,
                               int32_t request_id) override {}
+  void DidPrepareDocumentForPreview(int32_t document_cookie,
+                                    int32_t request_id) override {}
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 
