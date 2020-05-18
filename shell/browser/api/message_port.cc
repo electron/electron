@@ -21,7 +21,6 @@
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
-#include "third_party/blink/renderer/core/execution_context/execution_context.h"
 
 namespace electron {
 
@@ -126,8 +125,7 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope scope(isolate);
   connector_ = std::make_unique<mojo::Connector>(
-      port_.TakeHandleToEntangle(
-          blink::ExecutionContext::From(isolate->GetCurrentContext())),
+      port_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
       base::ThreadTaskRunnerHandle::Get());
   connector_->PauseIncomingMethodCallProcessing();
