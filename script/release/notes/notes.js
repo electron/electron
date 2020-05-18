@@ -292,7 +292,8 @@ async function runRetryable (fn, maxRetries) {
     }
   }
   // Silently eat 404s.
-  if (lastError.status !== 404) throw lastError;
+  // Silently eat 422s, which come from "No commit found for SHA"
+  if (lastError.status !== 404 && lastError.status !== 422) throw lastError;
 }
 
 const getPullCacheFilename = ghKey => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey.number}`;
