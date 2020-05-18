@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, deprecate } from 'electron';
 
 const binding = process.electronBinding('crash_reporter');
 
@@ -13,10 +13,14 @@ class CrashReporter {
       submitURL,
       uploadToServer = true,
       rateLimit = false,
-      compress = true
+      compress = false
     } = options || {};
 
     if (submitURL == null) throw new Error('submitURL is a required option to crashReporter.start');
+
+    if (!compress) {
+      deprecate.log('Sending uncompressed crash reports is deprecated and will be removed in a future version of Electron. Set { compress: true } to opt-in to the new behavior. Crash reports will be uploaded gzipped, which most crash reporting servers support.');
+    }
 
     const appVersion = app.getVersion();
 
