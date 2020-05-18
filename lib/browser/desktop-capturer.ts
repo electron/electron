@@ -34,15 +34,9 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
       reject(error);
     };
 
-    capturer._onfinished = (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => {
+    capturer._onfinished = (sources: Electron.DesktopCapturerSource[]) => {
       stopRunning();
-      resolve(sources.map(source => ({
-        id: source.id,
-        name: source.name,
-        thumbnail: source.thumbnail.toDataURL(),
-        display_id: source.display_id,
-        appIcon: (fetchWindowIcons && source.appIcon) ? source.appIcon.toDataURL() : null
-      })));
+      resolve(sources);
     };
 
     capturer.startHandling(options.captureWindow, options.captureScreen, options.thumbnailSize, options.fetchWindowIcons);

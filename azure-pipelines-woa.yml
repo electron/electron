@@ -71,6 +71,7 @@ steps:
     ELECTRON_TEST_RESULTS_DIR: junit
     MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
     MOCHA_REPORTER: mocha-multi-reporters
+    MOCHA_TIMEOUT: 120000
 
 - task: PublishTestResults@2
   displayName: 'Publish Test Results'

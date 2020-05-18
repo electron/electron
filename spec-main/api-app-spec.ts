@@ -432,6 +432,25 @@ describe('app module', () => {
       expect(webContents).to.equal(w.webContents);
     });
 
+    it('should emit render-process-gone event when renderer crashes', async function () {
+      // FIXME: re-enable this test on win32.
+      if (process.platform === 'win32') { return this.skip(); }
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const promise = emittedOnce(app, 'render-process-gone');
+      w.webContents.executeJavaScript('process.crash()');
+
+      const [, webContents, details] = await promise;
+      expect(webContents).to.equal(w.webContents);
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
       it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
         w = new BrowserWindow({
@@ -737,6 +756,22 @@ describe('app module', () => {
       app.setPath('music', __dirname);
       expect(app.getPath('music')).to.equal(__dirname);
     });
+
+    if (process.platform === 'win32') {
+      it('gets the folder for recent files', () => {
+        const recent = app.getPath('recent');
+
+        // We expect that one of our test machines have overriden this
+        // to be something crazy, it'll always include the word "Recent"
+        // unless people have been registry-hacking like crazy
+        expect(recent).to.include('Recent');
+      });
+
+      it('can override the recent files path', () => {
+        app.setPath('recent', 'C:\\fake-path');
+        expect(app.getPath('recent')).to.equal('C:\\fake-path');
+      });
+    }
   });
 
   describe('setPath(name, path)', () => {

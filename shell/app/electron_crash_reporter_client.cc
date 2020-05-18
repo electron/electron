@@ -194,9 +194,8 @@ bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 }
 #endif  // OS_LINUX
 
-bool ElectronCrashReporterClient::GetUploadUrl(std::string* url) {
-  *url = upload_url_;
-  return true;
+std::string ElectronCrashReporterClient::GetUploadUrl() {
+  return upload_url_;
 }
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(

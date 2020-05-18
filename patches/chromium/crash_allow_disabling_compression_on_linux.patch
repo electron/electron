@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Thu, 14 May 2020 16:52:09 -0700
+Subject: crash: allow disabling compression on linux
+
+This makes compression optional on breakpad_linux.
+
+Upstream attempted here
+https://chromium-review.googlesource.com/c/chromium/src/+/2198641, but
+was denied.
+
+Ultimately we should remove the option to disable compression, and
+subsequently remove this patch.
+
+diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
+index 4bd9bfebb4e5119a5cdc48bb322745cfd9f98c02..a897622de0ea7a9e79955d7b80dfeafe3ec6fc94 100644
+--- a/components/crash/core/app/breakpad_linux.cc
++++ b/components/crash/core/app/breakpad_linux.cc
+@@ -108,6 +108,8 @@ void SetUploadURL(const std::string& url) {
+   DCHECK(!g_upload_url);
+   g_upload_url = strdup(url.c_str());
+ }
++
++bool g_compress_uploads = true;
+ #endif
+ 
+ bool g_is_node = false;
+@@ -1335,56 +1337,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+ 
+ #else  // defined(OS_CHROMEOS)
+ 
+-  // Compress |dumpfile| with gzip.
+-  const pid_t gzip_child = sys_fork();
+-  if (gzip_child < 0) {
+-    static const char msg[] = "sys_fork() for gzip process failed.\n";
+-    WriteLog(msg, sizeof(msg) - 1);
+-    sys__exit(1);
+-  }
+-  if (!gzip_child) {
+-    // gzip process.
+-    const char* args[] = {
+-      "/bin/gzip",
+-      "-f",  // Do not prompt to verify before overwriting.
+-      dumpfile,
+-      nullptr,
+-    };
+-    execve(args[0], const_cast<char**>(args), environ);
+-    static const char msg[] = "Cannot exec gzip.\n";
+-    WriteLog(msg, sizeof(msg) - 1);
+-    sys__exit(1);
+-  }
+-  // Wait for gzip process.
+-  int status = 0;
+-  if (sys_waitpid(gzip_child, &status, 0) != gzip_child ||
+-      !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+-    static const char msg[] = "sys_waitpid() for gzip process failed.\n";
+-    WriteLog(msg, sizeof(msg) - 1);
+-    sys_kill(gzip_child, SIGKILL);
+-    sys__exit(1);
+-  }
++  if (g_compress_uploads) {
++    // Compress |dumpfile| with gzip.
++    const pid_t gzip_child = sys_fork();
++    if (gzip_child < 0) {
++      static const char msg[] = "sys_fork() for gzip process failed.\n";
++      WriteLog(msg, sizeof(msg) - 1);
++      sys__exit(1);
++    }
++    if (!gzip_child) {
++      // gzip process.
++      const char* args[] = {
++          "/bin/gzip",
++          "-f",  // Do not prompt to verify before overwriting.
++          dumpfile,
++          nullptr,
++      };
++      execve(args[0], const_cast<char**>(args), environ);
++      static const char msg[] = "Cannot exec gzip.\n";
++      WriteLog(msg, sizeof(msg) - 1);
++      sys__exit(1);
++    }
++    // Wait for gzip process.
++    int status = 0;
++    if (sys_waitpid(gzip_child, &status, 0) != gzip_child ||
++        !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
++      static const char msg[] = "sys_waitpid() for gzip process failed.\n";
++      WriteLog(msg, sizeof(msg) - 1);
++      sys_kill(gzip_child, SIGKILL);
++      sys__exit(1);
++    }
+ 
+-  static const char kGzipExtension[] = ".gz";
+-  const size_t gzip_file_size = my_strlen(dumpfile) + sizeof(kGzipExtension);
+-  char* const gzip_file = reinterpret_cast<char*>(allocator->Alloc(
+-      gzip_file_size));
+-  my_strlcpy(gzip_file, dumpfile, gzip_file_size);
+-  my_strlcat(gzip_file, kGzipExtension, gzip_file_size);
++    static const char kGzipExtension[] = ".gz";
++    const size_t gzip_file_size = my_strlen(dumpfile) + sizeof(kGzipExtension);
++    char* const gzip_file =
++        reinterpret_cast<char*>(allocator->Alloc(gzip_file_size));
++    my_strlcpy(gzip_file, dumpfile, gzip_file_size);
++    my_strlcat(gzip_file, kGzipExtension, gzip_file_size);
+ 
+-  // Rename |gzip_file| to |dumpfile| (the original file was deleted by gzip).
+-  if (rename(gzip_file, dumpfile)) {
+-    static const char msg[] = "Failed to rename gzipped file.\n";
+-    WriteLog(msg, sizeof(msg) - 1);
+-    sys__exit(1);
++    // Rename |gzip_file| to |dumpfile| (the original file was deleted by gzip).
++    if (rename(gzip_file, dumpfile)) {
++      static const char msg[] = "Failed to rename gzipped file.\n";
++      WriteLog(msg, sizeof(msg) - 1);
++      sys__exit(1);
++    }
+   }
+ 
+   // The --header argument to wget looks like:
+   //   --header=Content-Encoding: gzip
+   //   --header=Content-Type: multipart/form-data; boundary=XYZ
+   // where the boundary has two fewer leading '-' chars
+-  static const char header_content_encoding[] =
++  static const char header_content_encoding_gzip[] =
+       "--header=Content-Encoding: gzip";
++  static const char header_content_encoding_identity[] =
++      "--header=Content-Encoding: identity";
+   static const char header_msg[] =
+       "--header=Content-Type: multipart/form-data; boundary=";
+   const size_t header_content_type_size =
+@@ -1411,7 +1417,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+   static const char kWgetBinary[] = "/usr/bin/wget";
+   const char* args[] = {
+       kWgetBinary,
+-      header_content_encoding,
++      g_compress_uploads ? header_content_encoding_gzip
++                         : header_content_encoding_identity,
+       header_content_type,
+       post_file,
+       g_upload_url,
+@@ -2054,6 +2061,7 @@ void InitCrashReporter(const std::string& process_type) {
+ 
+ #if !defined(OS_CHROMEOS)
+   SetUploadURL(GetCrashReporterClient()->GetUploadUrl());
++  g_compress_uploads = GetCrashReporterClient()->GetShouldCompressUploads();
+ #endif
+ 
+   if (is_browser_process) {

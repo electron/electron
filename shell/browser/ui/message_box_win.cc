@@ -14,12 +14,10 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
-#include "base/threading/thread.h"
 #include "base/win/scoped_gdi_object.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/win/dialog_thread.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
@@ -203,17 +201,6 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
       checkbox_label_16, settings.checkbox_checked, settings.icon);
 }
 
-void RunMessageBoxInNewThread(base::Thread* thread,
-                              const MessageBoxSettings& settings,
-                              MessageBoxCallback callback) {
-  DialogResult result = ShowTaskDialogUTF8(settings);
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(std::move(callback), result.first, result.second));
-  content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                     thread);
-}
-
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
@@ -224,19 +211,12 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  auto thread =
-      std::make_unique<base::Thread>(ELECTRON_PRODUCT_NAME "MessageBoxThread");
-  thread->init_com_with_mta(false);
-  if (!thread->Start()) {
-    std::move(callback).Run(settings.cancel_id, settings.checkbox_checked);
-    return;
-  }
-
-  base::Thread* unretained = thread.release();
-  unretained->task_runner()->PostTask(
-      FROM_HERE,
-      base::BindOnce(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                     settings, std::move(callback)));
+  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings),
+                     base::BindOnce(
+                         [](MessageBoxCallback callback, DialogResult result) {
+                           std::move(callback).Run(result.first, result.second);
+                         },
+                         std::move(callback)));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {

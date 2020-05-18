@@ -49,6 +49,8 @@ struct Converter<electron::api::DesktopCapturer::Source> {
           "appIcon",
           electron::api::NativeImage::Create(
               isolate, gfx::Image(GetWindowIcon(source.media_list_source.id))));
+    } else {
+      dict.Set("appIcon", nullptr);
     }
     return ConvertToV8(isolate, dict);
   }
@@ -191,8 +193,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
-    gin_helper::CallMethod(this, "_onfinished", captured_sources_,
-                           fetch_window_icons_);
+    gin_helper::CallMethod(this, "_onfinished", captured_sources_);
   }
 }
 

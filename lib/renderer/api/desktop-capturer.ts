@@ -1,5 +1,5 @@
-import { nativeImage } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import { deserialize } from '@electron/internal/common/type-utils';
 
 const { hasSwitch } = process.electronBinding('command_line');
 
@@ -35,11 +35,5 @@ export async function getSources (options: Electron.SourcesOptions) {
     fetchWindowIcons
   } as ElectronInternal.GetSourcesOptions, getCurrentStack());
 
-  return sources.map(source => ({
-    id: source.id,
-    name: source.name,
-    thumbnail: nativeImage.createFromDataURL(source.thumbnail),
-    display_id: source.display_id,
-    appIcon: source.appIcon ? nativeImage.createFromDataURL(source.appIcon) : null
-  }));
+  return deserialize(sources);
 }
