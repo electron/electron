@@ -301,7 +301,7 @@ const getPullCacheFilename = ghKey => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey
 const getCommitPulls = async (owner, repo, hash) => {
   const name = `${owner}-${repo}-commit-${hash}`;
   const retryableFunc = () => octokit.repos.listPullRequestsAssociatedWithCommit({ owner, repo, commit_sha: hash });
-  const ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
+  let ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
 
   // only merged pulls belong in release notes
   if (ret && ret.data) {
@@ -315,6 +315,11 @@ const getCommitPulls = async (owner, repo, hash) => {
       const payload = { ...ret, data: pull };
       await checkCache(cachefile, () => payload);
     }
+  }
+
+  // ensure the return value has the expected structure, even on failure
+  if (!ret || !ret.data) {
+    ret = { data: [] };
   }
 
   return ret;
