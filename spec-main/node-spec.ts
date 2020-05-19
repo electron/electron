@@ -172,6 +172,8 @@ describe('node feature', () => {
       } else if (child) {
         child.kill();
       }
+      child = null as any;
+      exitPromise = null as any;
     });
 
     it('Supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
@@ -241,7 +243,7 @@ describe('node feature', () => {
     });
 
     // IPC Electron child process not supported on Windows
-    ifit(process.platform !== 'win32')('Does does not crash when quitting with the inspector connected', function (done) {
+    ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
@@ -253,29 +255,27 @@ describe('node feature', () => {
       };
 
       let output = '';
-      let success = false;
+      const success = false;
       function listener (data: Buffer) {
         output += data;
-        if (output.trim().indexOf('Debugger listening on ws://') > -1 && output.indexOf('\n') > -1) {
-          const socketMatch = output.trim().match(/(ws:\/\/.+:[0-9]+\/.+?)\n/gm);
-          if (socketMatch && socketMatch[0]) {
-            const w = (webContents as any).create({}) as WebContents;
-            w.loadURL('about:blank')
-              .then(() => w.executeJavaScript(`new Promise(resolve => {
-                const connection = new WebSocket(${JSON.stringify(socketMatch[0])})
-                connection.onopen = () => {
-                  resolve()
-                  connection.close()
-                }
-              })`))
-              .then(() => {
-                (w as any).destroy();
-                child.send('plz-quit');
-                success = true;
-                cleanup();
-                done();
-              });
-          }
+        console.log(data); // NOTE: temporary debug logging to try to catch flake.
+        const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
+        if (match) {
+          cleanup();
+          const w = (webContents as any).create({}) as WebContents;
+          w.loadURL('about:blank')
+            .then(() => w.executeJavaScript(`new Promise(resolve => {
+              const connection = new WebSocket(${JSON.stringify(match[1])})
+              connection.onopen = () => {
+                resolve()
+                connection.close()
+              }
+            })`))
+            .then(() => {
+              (w as any).destroy();
+              child.send('plz-quit');
+              done();
+            });
         }
       }
 
