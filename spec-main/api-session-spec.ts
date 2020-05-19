@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
+import { app, session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
@@ -27,29 +27,6 @@ describe('session module', () => {
   describe('session.fromPartition(partition, options)', () => {
     it('returns existing session with same partition', () => {
       expect(session.fromPartition('test')).to.equal(session.fromPartition('test'));
-    });
-
-    // TODO(codebytere): remove in Electron v8.0.0
-    it.skip('created session is ref-counted (functions)', () => {
-      const partition = 'test2';
-      const userAgent = 'test-agent';
-      const ses1 = session.fromPartition(partition);
-      ses1.setUserAgent(userAgent);
-      expect(ses1.getUserAgent()).to.equal(userAgent);
-      ses1.destroy();
-      const ses2 = session.fromPartition(partition);
-      expect(ses2.getUserAgent()).to.not.equal(userAgent);
-    });
-
-    it.skip('created session is ref-counted', () => {
-      const partition = 'test2';
-      const userAgent = 'test-agent';
-      const ses1 = session.fromPartition(partition);
-      ses1.setUserAgent(userAgent);
-      expect(ses1.getUserAgent()).to.equal(userAgent);
-      ses1.destroy();
-      const ses2 = session.fromPartition(partition);
-      expect(ses2.getUserAgent()).to.not.equal(userAgent);
     });
   });
 
@@ -370,9 +347,7 @@ describe('session module', () => {
       if (server) {
         server.close();
       }
-      if (customSession) {
-        customSession.destroy();
-      }
+      customSession = null as any;
     });
 
     it('allows configuring proxy settings', async () => {
@@ -964,6 +939,15 @@ describe('session module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
+    });
+  });
+
+  describe('session-created event', () => {
+    it('is emitted when a session is created', async () => {
+      const eventEmitted = new Promise<Session>(resolve => app.once('session-created', resolve));
+      session.fromPartition('' + Math.random());
+      const s = await eventEmitted;
+      expect(s.constructor.name).to.equal('Session');
     });
   });
 });

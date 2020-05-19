@@ -2,7 +2,6 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron';
 import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
-const { Session } = process.electronBinding('session');
 const { net, Net, isValidHeaderName, isValidHeaderValue, createURLLoader } = process.electronBinding('net');
 
 const kSupportedProtocols = new Set(['http:', 'https:']);
@@ -250,7 +249,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     }
   }
   if (options.session) {
-    if (options.session instanceof Session) {
+    // Weak check, but it should be enough to catch 99% of accidental misuses.
+    if (options.session.constructor && options.session.constructor.name === 'Session') {
       urlLoaderOptions.session = options.session;
     } else {
       throw new TypeError('`session` should be an instance of the Session class');
