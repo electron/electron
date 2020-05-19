@@ -58,9 +58,9 @@ threshold, we will attempt to support backwards compatibility beyond two version
 until the maintainers feel the maintenance burden is too high to continue doing so.
 
 ### Currently supported versions
-- 8.1.x
-- 7.1.x
-- 6.1.x
+- 9.x.y
+- 8.x.y
+- 7.x.y
 
 ### End-of-life
 
