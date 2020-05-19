@@ -154,24 +154,43 @@ More may be added as needed to expose more Electron APIs in the sandbox, but any
 module in the main process can already be used through
 `electron.remote.require`.
 
-## Status
+## Rendering untrusted content
 
-Please use the `sandbox` option with care, as it is still an experimental
-feature. We are still not aware of the security implications of exposing some
-Electron renderer APIs to the preload script, but here are some things to
-consider before rendering untrusted content:
+Rendering untrusted content in Electron is still somewhat uncharted territory,
+though some apps are finding success (e.g. Beaker Browser). Our goal is to get
+as close to Chrome as we can in terms of the security of sandboxed content, but
+ultimately we will always be behind due to a few fundamental issues:
+
+1. We do not have the dedicated resources or expertise that Chromium has to
+   apply to the security of its product. We do our best to make use of what we
+   have, to inherit everything we can from Chromium, and to respond quickly to
+   security issues, but Electron cannot be as secure as Chromium without the
+   resources that Chromium is able to dedicate.
+2. Some security features in Chrome (such as Safe Browsing and Certificate
+   Transparency) require a centralized authority and dedicated servers, both of
+   which run counter to the goals of the Electron project. As such, we disable
+   those features in Electron, at the cost of the associated security they
+   would otherwise bring.
+3. There is only one Chromium, whereas there are many thousands of apps built
+   on Electron, all of which behave slightly differently. Accounting for those
+   differences can yield a huge possibility space, and make it challenging to
+   ensure the security of the platform in unusual use cases.
+4. We can't push security updates to users directly, so we rely on app vendors
+   to upgrade the version of Electron underlying their app in order for
+   security updates to reach users.
+
+Here are some things to consider before rendering untrusted content:
 
 - A preload script can accidentally leak privileged APIs to untrusted code,
   unless [`contextIsolation`](../tutorial/security.md#3-enable-context-isolation-for-remote-content)
   is also enabled.
-- Some bug in V8 engine may allow malicious code to access the renderer preload
-  APIs, effectively granting full access to the system through the `remote`
-  module. Therefore, it is highly recommended to
-  [disable the `remote` module](../tutorial/security.md#15-disable-the-remote-module).
-  If disabling is not feasible, you should selectively
-  [filter the `remote` module](../tutorial/security.md#16-filter-the-remote-module).
-
-Since rendering untrusted content in Electron is still uncharted territory,
-the APIs exposed to the sandbox preload script should be considered more
-unstable than the rest of Electron APIs, and may have breaking changes to fix
-security issues.
+- Some bug in the V8 engine may allow malicious code to access the renderer
+  preload APIs, effectively granting full access to the system through the
+  `remote` module. Therefore, it is highly recommended to [disable the `remote`
+  module](../tutorial/security.md#15-disable-the-remote-module).
+  If disabling is not feasible, you should selectively [filter the `remote`
+  module](../tutorial/security.md#16-filter-the-remote-module).
+- While we make our best effort to backport Chromium security fixes to older
+  versions of Electron, we do not make a guarantee that every fix will be
+  backported. Your best chance at staying secure is to be on the latest stable
+  version of Electron.
