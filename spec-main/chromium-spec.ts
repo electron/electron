@@ -279,7 +279,7 @@ describe('command line switches', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
-        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       });
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
@@ -293,7 +293,7 @@ describe('command line switches', () => {
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
-        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       });
       let stderr = '';
       appProcess.stderr.on('data', (data: string) => { stderr += data; });
@@ -308,7 +308,7 @@ describe('command line switches', () => {
     it('should shut down Electron upon Browser.close CDP command', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
-        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       });
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
@@ -322,8 +322,12 @@ describe('command line switches', () => {
       const electronPath = process.execPath;
       let output = '';
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      appProcess.stdout.on('data', (data) => {
+        console.log(data);
+      });
 
       appProcess.stderr.on('data', (data) => {
+        console.log(data);
         output += data;
         const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output);
         if (m) {
