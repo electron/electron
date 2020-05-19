@@ -39,8 +39,8 @@ export function serialize (value: any): any {
     const representations = [];
     for (const scaleFactor of value.getScaleFactors()) {
       const size = value.getSize(scaleFactor);
-      const buffer = value.toBitmap({ scaleFactor });
-      representations.push({ buffer, scaleFactor, size });
+      const dataURL = value.toDataURL({ scaleFactor });
+      representations.push({ scaleFactor, size, dataURL });
     }
     return { __ELECTRON_SERIALIZED_NativeImage__: true, representations };
   } else if (value instanceof Buffer) {
@@ -60,13 +60,9 @@ export function deserialize (value: any): any {
   if (value && value.__ELECTRON_SERIALIZED_NativeImage__) {
     const image = nativeImage.createEmpty();
     for (const rep of value.representations) {
-      const { buffer, size, scaleFactor } = rep;
-      image.addRepresentation({
-        buffer,
-        width: size.width,
-        height: size.height,
-        scaleFactor
-      });
+      const { size, scaleFactor, dataURL } = rep;
+      const { width, height } = size;
+      image.addRepresentation({ dataURL, scaleFactor, width, height });
     }
     return image;
   } else if (value && value.__ELECTRON_SERIALIZED_Buffer__) {

@@ -245,7 +245,7 @@ type MetaTypeFromRenderer = {
   length: number
 } | {
   type: 'nativeimage',
-  value: { size: Size, buffer: Buffer, scaleFactor: number }[]
+  value: { size: Size, buffer: Buffer, scaleFactor: number, dataURL: string }[]
 }
 
 const fakeConstructor = (constructor: Function, name: string) =>
@@ -266,13 +266,9 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
       case 'nativeimage': {
         const image = electron.nativeImage.createEmpty();
         for (const rep of meta.value) {
-          const { buffer, size, scaleFactor } = rep;
-          image.addRepresentation({
-            buffer,
-            width: size.width,
-            height: size.height,
-            scaleFactor
-          });
+          const { size, scaleFactor, dataURL } = rep;
+          const { width, height } = size;
+          image.addRepresentation({ dataURL, scaleFactor, width, height });
         }
         return image;
       }
