@@ -11,9 +11,18 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index d23770fb402a1989027db54397fba80ceff9a296..6dd26210845daf6cdc9f9c594b9dc383c1e7d648 100644
+index d23770fb402a1989027db54397fba80ceff9a296..61de329e09a08a9253eff554f6759fbef8214520 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
+@@ -57,7 +57,7 @@ enum class PrintRasterizationMode {
+   kMaxValue = kFast,
+ };
+ 
+-bool PrintWithReducedRasterization(PrefService* prefs) {
++ALLOW_UNUSED_TYPE bool PrintWithReducedRasterization(PrefService* prefs) {
+   // Managed preference takes precedence over user preference and field trials.
+   if (prefs->IsManagedPreference(prefs::kPrintRasterizationMode)) {
+     int value = prefs->GetInteger(prefs::kPrintRasterizationMode);
 @@ -350,10 +350,13 @@ void PrintJob::StartPdfToEmfConversion(
        settings.print_text_with_gdi() && !settings.printer_is_xps() &&
        base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
