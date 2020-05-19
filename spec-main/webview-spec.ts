@@ -2,7 +2,10 @@ import * as path from 'path';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { ifdescribe } from './spec-helpers';
 import { expect } from 'chai';
+
+const features = process.electronBinding('features');
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`
@@ -570,7 +573,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('enableremotemodule attribute', () => {
+  ifdescribe(features.isRemoteModuleEnabled())('enableremotemodule attribute', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });

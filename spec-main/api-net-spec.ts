@@ -1208,7 +1208,7 @@ describe('net module', () => {
         response.end();
       });
       const netRequest = net.request({ url: serverUrl, method: 'POST' });
-      expect(netRequest.getUploadProgress()).to.deep.equal({ active: false });
+      expect(netRequest.getUploadProgress()).to.have.property('active', false);
       netRequest.end(Buffer.from('hello'));
       const [position, total] = await emittedOnce(netRequest, 'upload-progress');
       expect(netRequest.getUploadProgress()).to.deep.equal({ active: true, started: true, current: position, total });

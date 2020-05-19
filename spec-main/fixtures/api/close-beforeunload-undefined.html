@@ -3,7 +3,7 @@
 <script type="text/javascript" charset="utf-8">
   window.onbeforeunload = function() {
     setTimeout(function() {
-      require('electron').remote.getCurrentWindow().emit('onbeforeunload');
+      require('electron').ipcRenderer.sendSync('onbeforeunload');
     }, 0);
   }
   window.onload = () => window.close();

@@ -73,7 +73,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
     afterEach(async () => {
       if (ses) {
         await ses.clearStorageData();
-        ses.destroy();
+        ses = null as any;
       }
     });
 
