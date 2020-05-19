@@ -1,5 +1,12 @@
 declare var internalBinding: any;
 
+declare const BUILDFLAG: (flag: boolean) => boolean;
+
+declare const ENABLE_DESKTOP_CAPTURER: boolean;
+declare const ENABLE_ELECTRON_EXTENSIONS: boolean;
+declare const ENABLE_REMOTE_MODULE: boolean;
+declare const ENABLE_VIEW_API: boolean;
+
 declare namespace NodeJS {
   interface FeaturesBinding {
     isDesktopCapturerEnabled(): boolean;

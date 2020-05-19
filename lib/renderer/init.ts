@@ -100,7 +100,7 @@ switch (window.location.protocol) {
   }
   case 'chrome-extension:': {
     // Inject the chrome.* APIs that chrome extensions require
-    if (!process.electronBinding('features').isExtensionsEnabled()) {
+    if (!BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)) {
       require('@electron/internal/renderer/chrome-api').injectTo(window.location.hostname, window);
     }
     break;
@@ -113,7 +113,7 @@ switch (window.location.protocol) {
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
 
     // Inject content scripts.
-    if (!process.electronBinding('features').isExtensionsEnabled()) {
+    if (!BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)) {
       const contentScripts = ipcRendererUtils.invokeSync('ELECTRON_GET_CONTENT_SCRIPTS') as Electron.ContentScriptEntry[];
       require('@electron/internal/renderer/content-scripts-injector')(contentScripts);
     }
