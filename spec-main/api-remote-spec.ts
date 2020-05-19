@@ -98,34 +98,29 @@ describe('typeUtils serialization/deserialization', () => {
     expect(empty.toPNG({ scaleFactor: 2.0 })).to.be.empty();
   });
 
-  it('serializes and deserializes an non-empty NativeImage', () => {
-    const image = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+  it('serializes and deserializes a non-empty NativeImage', () => {
+    const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==';
+    const image = nativeImage.createFromDataURL(dataURL);
     const serializedImage = serialize(image);
     const nonEmpty = deserialize(serializedImage);
 
     expect(nonEmpty.isEmpty()).to.be.false();
     expect(nonEmpty.getAspectRatio()).to.equal(1);
-    expect(nonEmpty.toDataURL()).to.equal('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVQYlWP8////fwYGBgYmBigAAD34BABBrq9BAAAAAElFTkSuQmCC');
+    expect(nonEmpty.toDataURL()).to.not.be.empty();
+    expect(nonEmpty.toDataURL({ scaleFactor: 1.0 })).to.equal(dataURL);
     expect(nonEmpty.getSize()).to.deep.equal({ width: 2, height: 2 });
     expect(nonEmpty.getBitmap()).to.not.be.empty();
-    expect(nonEmpty.getBitmap({ scaleFactor: 2.0 })).to.not.be.empty();
-    expect(nonEmpty.toBitmap()).to.not.be.empty();
-    expect(nonEmpty.toBitmap({ scaleFactor: 2.0 })).to.not.be.empty();
     expect(nonEmpty.toPNG()).to.not.be.empty();
-    expect(nonEmpty.toPNG({ scaleFactor: 2.0 })).to.not.be.empty();
   });
 
-  it('serializes and deserializes an non-empty NativeImage with multiple representations', () => {
+  it('serializes and deserializes a non-empty NativeImage with multiple representations', () => {
     const image = nativeImage.createEmpty();
-    image.addRepresentation({
-      scaleFactor: 1.0,
-      dataURL: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII='
-    });
 
-    image.addRepresentation({
-      scaleFactor: 2.0,
-      dataURL: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg=='
-    });
+    const dataURL1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=';
+    image.addRepresentation({ scaleFactor: 1.0, dataURL: dataURL1 });
+
+    const dataURL2 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==';
+    image.addRepresentation({ scaleFactor: 2.0, dataURL: dataURL2 });
 
     const serializedImage = serialize(image);
     const nonEmpty = deserialize(serializedImage);
@@ -142,6 +137,9 @@ describe('typeUtils serialization/deserialization', () => {
     expect(nonEmpty.toPNG()).to.not.be.empty();
     expect(nonEmpty.toPNG({ scaleFactor: 1.0 })).to.not.be.empty();
     expect(nonEmpty.toPNG({ scaleFactor: 2.0 })).to.not.be.empty();
+    expect(nonEmpty.toDataURL()).to.not.be.empty();
+    expect(nonEmpty.toDataURL({ scaleFactor: 1.0 })).to.equal(dataURL1);
+    expect(nonEmpty.toDataURL({ scaleFactor: 2.0 })).to.equal(dataURL2);
   });
 
   it('serializes and deserializes an Array', () => {
