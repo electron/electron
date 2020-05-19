@@ -58,6 +58,7 @@ declare namespace NodeJS {
     body: Uint8Array | BodyFunc;
     session?: Electron.Session;
     partition?: string;
+    referrer?: string;
   }
   type ResponseHead = {
     statusCode: number;
