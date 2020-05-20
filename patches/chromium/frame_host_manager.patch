@@ -42,7 +42,7 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index b1e88a77f77581a9abae54e726ace059705333d2..2e9f8c628d541b80e192dcd110fb9f97f0b50f96 100644
+index b1ba002d7f6cabb631cb7ca86075178cbd0bd641..aeae819b11046e0ac70d1cb9c999cb461d097ee2 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1275,6 +1275,24 @@ void NavigationRequest::BeginNavigation() {
@@ -71,7 +71,7 @@ index b1e88a77f77581a9abae54e726ace059705333d2..2e9f8c628d541b80e192dcd110fb9f97
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 10c54391e19dc7016b577ac83902cdc1b16af4af..c375ec7067ca4b23278d37f91c4684d0882f0070 100644
+index 2a9479560ebf9172071b996f0e84d8e11d824097..a4d19af97f92ccd88aa00207b127f44d999f3df1 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2405,6 +2405,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -167,7 +167,7 @@ index 10c54391e19dc7016b577ac83902cdc1b16af4af..c375ec7067ca4b23278d37f91c4684d0
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 91ae83aaf6adbcbb19c3ddacf9c89e6f9bf9ffa8..110ac10fe9bfb4255585d0485615e94e4caa7fba 100644
+index 5b6fa895077debe65615683681d527d6aacfe1e5..25b5c7d054afa67f3c450bbb0a282d54d477f995 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -456,6 +456,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {
@@ -182,7 +182,7 @@ index 91ae83aaf6adbcbb19c3ddacf9c89e6f9bf9ffa8..110ac10fe9bfb4255585d0485615e94e
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index 2fbcc699cc316e9c7fc8dda534cd1c0e5ac14c14..6f44f3a1dbb2368f56d3851a3e5b0b7c87ec5993 100644
+index 10dd6f03af22bd7d0f7b65a58d4a58430c129b49..88504adb27e6461648f7dce48c93e2e1a7004fb8 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -98,6 +98,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
