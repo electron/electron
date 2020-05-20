@@ -322,6 +322,7 @@ source_set("electron_lib") {
     "shell/common/api:mojo",
     "//base:base_static",
     "//base/allocator:buildflags",
+    "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
@@ -523,6 +524,16 @@ source_set("electron_lib") {
 
     sources += filenames.lib_sources_nss
     sources += [
+      "shell/browser/ui/gtk/app_indicator_icon.cc",
+      "shell/browser/ui/gtk/app_indicator_icon.h",
+      "shell/browser/ui/gtk/app_indicator_icon_menu.cc",
+      "shell/browser/ui/gtk/app_indicator_icon_menu.h",
+      "shell/browser/ui/gtk/gtk_status_icon.cc",
+      "shell/browser/ui/gtk/gtk_status_icon.h",
+      "shell/browser/ui/gtk/menu_util.cc",
+      "shell/browser/ui/gtk/menu_util.h",
+      "shell/browser/ui/gtk/status_icon.cc",
+      "shell/browser/ui/gtk/status_icon.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]
