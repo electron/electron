@@ -158,8 +158,6 @@ int NodeMain(int argc, char* argv[]) {
     NodeDebugger node_debugger(env);
     node_debugger.Start();
 
-    node::BootstrapEnvironment(env);
-
     gin_helper::Dictionary process(isolate, env->process_object());
 
     isolate->SetAllowWasmCodeGenerationCallback(
