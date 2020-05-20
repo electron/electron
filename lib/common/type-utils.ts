@@ -20,29 +20,43 @@ const serializableTypes = [
   Date,
   Error,
   RegExp,
-  ArrayBuffer,
-  NativeImage
+  ArrayBuffer
 ];
 
+// https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#Supported_types
 export function isSerializableObject (value: any) {
   return value === null || ArrayBuffer.isView(value) || serializableTypes.some(type => value instanceof type);
 }
 
-const objectMap = function (source: Object, mapper: (value: any) => any) {
+function objectMap (source: Object, mapper: (value: any) => any) {
   const sourceEntries = Object.entries(source);
   const targetEntries = sourceEntries.map(([key, val]) => [key, mapper(val)]);
   return Object.fromEntries(targetEntries);
-};
+}
+
+export function serializeNativeImage (image: Electron.NativeImage) {
+  const representations = [];
+  for (const scaleFactor of image.getScaleFactors()) {
+    const size = image.getSize(scaleFactor);
+    const dataURL = image.toDataURL({ scaleFactor });
+    representations.push({ scaleFactor, size, dataURL });
+  }
+  return representations;
+}
+
+export function deserializeNativeImage (data: any) {
+  const image = nativeImage.createEmpty();
+  for (const rep of data) {
+    const { size, scaleFactor, dataURL } = rep;
+    const { width, height } = size;
+    image.addRepresentation({ dataURL, scaleFactor, width, height });
+  }
+  return image;
+}
 
 export function serialize (value: any): any {
   if (value instanceof NativeImage) {
-    const representations = [];
-    for (const scaleFactor of value.getScaleFactors()) {
-      const size = value.getSize(scaleFactor);
-      const dataURL = value.toDataURL({ scaleFactor });
-      representations.push({ scaleFactor, size, dataURL });
-    }
-    return { __ELECTRON_SERIALIZED_NativeImage__: true, representations };
+    return { __ELECTRON_SERIALIZED_NativeImage__: true, data: serializeNativeImage(value) };
   } else if (value instanceof Buffer) {
     return { __ELECTRON_SERIALIZED_Buffer__: true, data: value };
   } else if (Array.isArray(value)) {
@@ -58,13 +72,7 @@ export function serialize (value: any): any {
 
 export function deserialize (value: any): any {
   if (value && value.__ELECTRON_SERIALIZED_NativeImage__) {
-    const image = nativeImage.createEmpty();
-    for (const rep of value.representations) {
-      const { size, scaleFactor, dataURL } = rep;
-      const { width, height } = size;
-      image.addRepresentation({ dataURL, scaleFactor, width, height });
-    }
-    return image;
+    return deserializeNativeImage(value.data);
   } else if (value && value.__ELECTRON_SERIALIZED_Buffer__) {
     const { buffer, byteOffset, byteLength } = value.data;
     return Buffer.from(buffer, byteOffset, byteLength);
