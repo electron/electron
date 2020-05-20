@@ -128,7 +128,7 @@ A `String` representing Electron's version string.
 ### `process.windowsStore` _Readonly_
 
 A `Boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
-for otherwise it is `undefined`.
+for otherwise it is `undefined`. **NOTE**: This does not work on recent versions of Electron, don't rely on it yet. See [#18161](https://github.com/electron/electron/issues/18161).
 
 ## Methods
 
