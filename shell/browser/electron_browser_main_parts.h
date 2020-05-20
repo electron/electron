@@ -59,6 +59,10 @@ class ViewsDelegate;
 class ViewsDelegateMac;
 #endif
 
+#if defined(USE_X11)
+class DarkThemeObserver;
+#endif
+
 class ElectronBrowserMainParts : public content::BrowserMainParts {
  public:
   explicit ElectronBrowserMainParts(const content::MainFunctionParams& params);
@@ -129,6 +133,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_X11)
   std::unique_ptr<ui::GtkUiDelegate> gtk_ui_delegate_;
+  // Used to notify the native theme of changes to dark mode.
+  std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
