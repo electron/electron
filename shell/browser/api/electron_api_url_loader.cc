@@ -352,6 +352,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  opts.Get("referrer", &request->referrer);
   std::map<std::string, std::string> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
