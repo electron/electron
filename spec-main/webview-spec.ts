@@ -32,6 +32,20 @@ describe('<webview> tag', function () {
 
   afterEach(closeAllWindows);
 
+  function hideChildWindows (e: any, wc: WebContents) {
+    wc.on('new-window', (event, url, frameName, disposition, options) => {
+      options.show = false;
+    });
+  }
+
+  before(() => {
+    app.on('web-contents-created', hideChildWindows);
+  });
+
+  after(() => {
+    app.off('web-contents-created', hideChildWindows);
+  });
+
   it('works without script tag in page', async () => {
     const w = new BrowserWindow({
       show: false,
