@@ -280,7 +280,7 @@ describe('command line switches', () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
-      });
+      }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
       const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
@@ -293,8 +293,8 @@ describe('command line switches', () => {
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
-        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
-      });
+        stdio: ['inherit', 'inherit', 'pipe', 'pipe', 'pipe']
+      }) as ChildProcess.ChildProcessWithoutNullStreams;
       let stderr = '';
       appProcess.stderr.on('data', (data: string) => { stderr += data; });
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
@@ -309,7 +309,7 @@ describe('command line switches', () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
-      });
+      }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
       pipe.send({ id: 1, method: 'Browser.close', params: {} });
