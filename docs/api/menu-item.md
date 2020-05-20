@@ -69,6 +69,7 @@ a `type`.
 The `role` property can have following values:
 
 * `undo`
+* `about` - Trigger a native about panel (custom message box on Window, which does not provide its own).
 * `redo`
 * `cut`
 * `copy`
@@ -94,7 +95,6 @@ The `role` property can have following values:
 The following additional roles are available on _macOS_:
 
 * `appMenu` - Whole default "App" menu (About, Services, etc.)
-* `about` - Map to the `orderFrontStandardAboutPanel` action.
 * `hide` - Map to the `hide` action.
 * `hideOthers` - Map to the `hideOtherApplications` action.
 * `unhide` - Map to the `unhideAllApplications` action.
