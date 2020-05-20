@@ -150,9 +150,8 @@ int NodeMain(int argc, char* argv[]) {
     v8::Isolate::Scope isolate_scope(isolate);
     v8::HandleScope handle_scope(isolate);
 
-    node::Environment* env =
-        node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                exec_argc, exec_argv, false);
+    node::Environment* env = node::CreateEnvironment(
+        isolate_data, gin_env.context(), argc, argv, exec_argc, exec_argv);
     CHECK_NE(nullptr, env);
 
     // Enable support for v8 inspector.
