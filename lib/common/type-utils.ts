@@ -20,7 +20,8 @@ const serializableTypes = [
   Date,
   Error,
   RegExp,
-  ArrayBuffer
+  ArrayBuffer,
+  NativeImage
 ];
 
 export function isSerializableObject (value: any) {
@@ -35,11 +36,15 @@ const objectMap = function (source: Object, mapper: (value: any) => any) {
 
 export function serialize (value: any): any {
   if (value instanceof NativeImage) {
-    return {
-      buffer: value.toBitmap(),
-      size: value.getSize(),
-      __ELECTRON_SERIALIZED_NativeImage__: true
-    };
+    const representations = [];
+    for (const scaleFactor of value.getScaleFactors()) {
+      const size = value.getSize(scaleFactor);
+      const dataURL = value.toDataURL({ scaleFactor });
+      representations.push({ scaleFactor, size, dataURL });
+    }
+    return { __ELECTRON_SERIALIZED_NativeImage__: true, representations };
+  } else if (value instanceof Buffer) {
+    return { __ELECTRON_SERIALIZED_Buffer__: true, data: value };
   } else if (Array.isArray(value)) {
     return value.map(serialize);
   } else if (isSerializableObject(value)) {
@@ -53,7 +58,16 @@ export function serialize (value: any): any {
 
 export function deserialize (value: any): any {
   if (value && value.__ELECTRON_SERIALIZED_NativeImage__) {
-    return nativeImage.createFromBitmap(value.buffer, value.size);
+    const image = nativeImage.createEmpty();
+    for (const rep of value.representations) {
+      const { size, scaleFactor, dataURL } = rep;
+      const { width, height } = size;
+      image.addRepresentation({ dataURL, scaleFactor, width, height });
+    }
+    return image;
+  } else if (value && value.__ELECTRON_SERIALIZED_Buffer__) {
+    const { buffer, byteOffset, byteLength } = value.data;
+    return Buffer.from(buffer, byteOffset, byteLength);
   } else if (Array.isArray(value)) {
     return value.map(deserialize);
   } else if (isSerializableObject(value)) {
