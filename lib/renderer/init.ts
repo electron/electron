@@ -84,9 +84,6 @@ const appPath = parseOption('app-path', null);
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
 const openerId = parseOption('opener-id', null, value => parseInt(value));
 
-// The arguments to be passed to isolated world.
-const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen, rendererProcessReuseEnabled };
-
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
   preloadScripts.push(preloadScript);
@@ -114,11 +111,6 @@ switch (window.location.protocol) {
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
-}
-
-// Pass the arguments to isolatedWorld.
-if (contextIsolation) {
-  v8Util.setHiddenValue(global, 'isolated-world-args', isolatedWorldArgs);
 }
 
 if (nodeIntegration) {
