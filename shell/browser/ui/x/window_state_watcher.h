@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
 
 #include "ui/events/platform/x11/x11_event_source.h"
+#include "ui/gfx/x/x11.h"
 
 #include "shell/browser/native_window_views.h"
 
@@ -26,7 +27,7 @@ class WindowStateWatcher : public ui::XEventObserver {
 
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
-  const ::XAtom window_state_atom_;
+  const x11::Atom window_state_atom_;
 
   bool was_minimized_ = false;
   bool was_maximized_ = false;
