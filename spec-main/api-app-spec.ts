@@ -9,7 +9,7 @@ import * as path from 'path'
 import { homedir } from 'os'
 import split = require('split')
 import { app, BrowserWindow, Menu } from 'electron'
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './events-helpers'
 import { closeWindow, closeAllWindows } from './window-helpers'
 import { ifdescribe, ifit } from './spec-helpers'
 
@@ -379,7 +379,7 @@ describe('app module', () => {
       w.emit('focus')
       const [, window] = await emitted
       expect(window.id).to.equal(w.id)
-    });
+    })
 
     it('should emit browser-window-blur event when window is blured', async () => {
       const emitted = emittedOnce(app, 'browser-window-blur')
@@ -387,21 +387,21 @@ describe('app module', () => {
       w.emit('blur')
       const [, window] = await emitted
       expect(window.id).to.equal(w.id)
-    });
+    })
 
     it('should emit browser-window-created event when window is created', async () => {
       const emitted = emittedOnce(app, 'browser-window-created')
       w = new BrowserWindow({ show: false })
       const [, window] = await emitted
       expect(window.id).to.equal(w.id)
-    });
+    })
 
     it('should emit web-contents-created event when a webContents is created', async () => {
       const emitted = emittedOnce(app, 'web-contents-created')
       w = new BrowserWindow({ show: false })
       const [, webContents] = await emitted
       expect(webContents.id).to.equal(w.webContents.id)
-    });
+    })
 
     // FIXME: re-enable this test on win32.
     ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
