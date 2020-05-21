@@ -3,12 +3,6 @@ import { deserialize } from '@electron/internal/common/type-utils';
 
 const { hasSwitch } = process.electronBinding('command_line');
 
-// |options.types| can't be empty and must be an array
-function isValid (options: Electron.SourcesOptions) {
-  const types = options ? options.types : undefined;
-  return Array.isArray(types);
-}
-
 const enableStacks = hasSwitch('enable-api-filtering-logging');
 
 function getCurrentStack () {
@@ -20,20 +14,5 @@ function getCurrentStack () {
 }
 
 export async function getSources (options: Electron.SourcesOptions) {
-  if (!isValid(options)) throw new Error('Invalid options');
-
-  const captureWindow = options.types.includes('window');
-  const captureScreen = options.types.includes('screen');
-
-  const { thumbnailSize = { width: 150, height: 150 } } = options;
-  const { fetchWindowIcons = false } = options;
-
-  const sources = await ipcRendererInternal.invoke<ElectronInternal.GetSourcesResult[]>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', {
-    captureWindow,
-    captureScreen,
-    thumbnailSize,
-    fetchWindowIcons
-  } as ElectronInternal.GetSourcesOptions, getCurrentStack());
-
-  return deserialize(sources);
+  return deserialize(await ipcRendererInternal.invoke('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', options, getCurrentStack()));
 }

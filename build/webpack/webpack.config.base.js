@@ -46,6 +46,7 @@ const ignoredModules = []
 if (defines['ENABLE_DESKTOP_CAPTURER'] === 'false') {
   ignoredModules.push(
     '@electron/internal/browser/desktop-capturer',
+    '@electron/internal/browser/api/desktop-capturer',
     '@electron/internal/renderer/api/desktop-capturer'
   )
 }

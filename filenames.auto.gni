@@ -193,6 +193,7 @@ auto_filenames = {
     "lib/browser/api/browser-window.js",
     "lib/browser/api/content-tracing.js",
     "lib/browser/api/crash-reporter.ts",
+    "lib/browser/api/desktop-capturer.ts",
     "lib/browser/api/dialog.js",
     "lib/browser/api/exports/electron.ts",
     "lib/browser/api/global-shortcut.js",

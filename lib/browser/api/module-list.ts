@@ -33,6 +33,12 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'WebContentsView', loader: () => require('./web-contents-view') }
 ];
 
+if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
+  browserModuleList.push(
+    { name: 'desktopCapturer', loader: () => require('./desktop-capturer') }
+  );
+}
+
 if (BUILDFLAG(ENABLE_VIEWS_API)) {
   browserModuleList.push(
     { name: 'ImageView', loader: () => require('./views/image-view') }
