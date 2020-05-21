@@ -272,7 +272,7 @@ Returns `Boolean` - Whether the image is empty.
 
 Returns [`Size`](structures/size.md).
 
-If `scaleFactor` is passed, this will return the aspect ratio corresponding to the image representation most closely matching the passed value.
+If `scaleFactor` is passed, this will return the size corresponding to the image representation most closely matching the passed value.
 
 #### `image.setTemplateImage(option)`
 
