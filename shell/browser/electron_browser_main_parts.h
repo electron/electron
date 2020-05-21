@@ -53,6 +53,10 @@ class ViewsDelegate;
 class ViewsDelegateMac;
 #endif
 
+#if defined(USE_X11)
+class DarkThemeObserver;
+#endif
+
 class ElectronBrowserMainParts : public content::BrowserMainParts {
  public:
   explicit ElectronBrowserMainParts(const content::MainFunctionParams& params);
@@ -119,6 +123,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
+#endif
+
+#if defined(USE_X11)
+  std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
