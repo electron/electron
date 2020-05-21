@@ -31,6 +31,16 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   dict.Get("noLink", &out->no_link);
   dict.Get("checkboxChecked", &out->checkbox_checked);
   dict.Get("icon", &out->icon);
+
+  gin::Dictionary rich_text_dict = gin::Dictionary::CreateEmpty(isolate);
+  if (dict.Get("richText", &rich_text_dict)) {
+    rich_text_dict.Get("text", &out->rich_text);
+    rich_text_dict.Get("width", &out->width);
+    rich_text_dict.Get("height", &out->height);
+    rich_text_dict.Get("x", &out->x);
+    rich_text_dict.Get("y", &out->y);
+  }
+
   return true;
 }
 

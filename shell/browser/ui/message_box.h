@@ -41,6 +41,14 @@ struct MessageBoxSettings {
   bool checkbox_checked = false;
   gfx::ImageSkia icon;
 
+  std::string rich_text;
+  // We choose 300 here as a reasonable default to prevent wildly
+  // tall NSAlerts. If we don't do this they look very scary.
+  int width = 300;
+  int height = 15;
+  int x;
+  int y;
+
   MessageBoxSettings();
   MessageBoxSettings(const MessageBoxSettings&);
   ~MessageBoxSettings();

@@ -17,6 +17,27 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
 
+namespace {
+
+// Create an accessory view for richer dialogs.
+NSTextView* CreateAccessoryView(const std::string& content,
+                                int width,
+                                int height) {
+  NSTextView* accessory =
+      [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+
+  NSFont* font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+  NSDictionary* textAttributes =
+      [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
+  [accessory insertText:[[NSAttributedString alloc]
+                            initWithString:base::SysUTF8ToNSString(content)
+                                attributes:textAttributes]];
+
+  return accessory;
+}
+
+}  // namespace
+
 namespace electron {
 
 MessageBoxSettings::MessageBoxSettings() = default;
@@ -30,6 +51,12 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF8ToNSString(settings.message)];
   [alert setInformativeText:base::SysUTF8ToNSString(settings.detail)];
+
+  if (!settings.rich_text.empty()) {
+    NSTextView* accessory = CreateAccessoryView(
+        settings.rich_text, settings.width, settings.height);
+    alert.accessoryView = accessory;
+  }
 
   switch (settings.type) {
     case MessageBoxType::kInformation:
@@ -95,6 +122,12 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   NSAlert* alert = CreateNSAlert(settings);
+
+  if (!settings.rich_text.empty()) {
+    NSTextView* accessory = CreateAccessoryView(
+        settings.rich_text, settings.width, settings.height);
+    alert.accessoryView = accessory;
+  }
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for. Also use it when window is provided but it is not

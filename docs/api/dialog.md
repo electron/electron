@@ -240,6 +240,10 @@ expanding and collapsing the dialog.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
+  * `richText` Object (optional) _macOS_ - Text to display in a rich text area.
+    * `text` String - the text to display in the rich text view.
+    * `width` Number (optional) - the width of the rich text view (will default to minimum width for `text`)
+    * `height` Number (optional) - the width of the rich text view (will default to minimum height for `text`)
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
@@ -286,6 +290,10 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
+  * `richText` Object (optional) _macOS_ - Text to display in a rich text area. If you want to specify width or height you must specify both.
+    * `text` String - the text to display in the rich text view.
+    * `width` Number (optional) - the width of the rich text view. Will default to 300px for `text`, and must be declared if `height` is declared.
+    * `height` Number (optional) - the width of the rich text view. Will default to minimum height for `text`, and must be declared if `width` is declared.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
