@@ -143,9 +143,9 @@ which can detected by [`systemPreferences.getMediaAccessStatus`].
 * `webContentsId` number - Id of the WebContents to get stream of
 
 Returns `Promise<string>` - Resolves with the identifier of a WebContents stream, this identifier can be
-    used with [`navigator.mediaDevices.getUserMedia`].
-    The identifier is **only valid for 10 seconds**.
-    The identifier may be empty if not requested from a renderer process.
+used with [`navigator.mediaDevices.getUserMedia`].
+The identifier is **only valid for 10 seconds**.
+The identifier may be empty if not requested from a renderer process.
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-macos
