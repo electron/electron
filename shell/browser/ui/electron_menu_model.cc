@@ -41,12 +41,13 @@ base::string16 ElectronMenuModel::GetRoleAt(int index) {
   return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
-void ElectronMenuModel::SetSublabel(int index, const base::string16& sublabel) {
+void ElectronMenuModel::SetSecondaryLabel(int index,
+                                          const base::string16& sublabel) {
   int command_id = GetCommandIdAt(index);
   sublabels_[command_id] = sublabel;
 }
 
-base::string16 ElectronMenuModel::GetSublabelAt(int index) const {
+base::string16 ElectronMenuModel::GetSecondaryLabelAt(int index) const {
   int command_id = GetCommandIdAt(index);
   const auto iter = sublabels_.find(command_id);
   return iter == std::end(sublabels_) ? base::string16() : iter->second;
