@@ -4,6 +4,7 @@
 
 #include "shell/browser/browser.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -428,6 +429,19 @@ void Browser::ShowEmojiPanel() {
 
 bool Browser::IsEmojiPanelSupported() {
   return true;
+}
+
+bool Browser::IsSecureKeyboardEntryEnabled() {
+  return password_input_enabler_.get() != nullptr;
+}
+
+void Browser::SetSecureKeyboardEntryEnabled(bool enabled) {
+  if (enabled) {
+    password_input_enabler_ =
+        std::make_unique<ui::ScopedPasswordInputEnabler>();
+  } else {
+    password_input_enabler_.reset();
+  }
 }
 
 }  // namespace electron

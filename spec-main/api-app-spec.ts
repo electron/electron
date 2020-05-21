@@ -1439,6 +1439,15 @@ describe('app module', () => {
       expect(getSwitchValue).to.equal('');
     });
   });
+
+  ifdescribe(process.platform === 'darwin')('app.setSecureKeyboardEntryEnabled', () => {
+    it('changes Secure Keyboard Entry is enabled', () => {
+      app.setSecureKeyboardEntryEnabled(true);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(true);
+      app.setSecureKeyboardEntryEnabled(false);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(false);
+    });
+  });
 });
 
 describe('default behavior', () => {

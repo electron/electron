@@ -1525,6 +1525,14 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
                  base::BindRepeating(&Browser::ShowAboutPanel, browser))
+#if defined(OS_MACOSX)
+      .SetMethod(
+          "isSecureKeyboardEntryEnabled",
+          base::BindRepeating(&Browser::IsSecureKeyboardEntryEnabled, browser))
+      .SetMethod(
+          "setSecureKeyboardEntryEnabled",
+          base::BindRepeating(&Browser::SetSecureKeyboardEntryEnabled, browser))
+#endif
 #if defined(OS_MACOSX) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::BindRepeating(&Browser::ShowEmojiPanel, browser))
