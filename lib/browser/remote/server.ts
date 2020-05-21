@@ -4,7 +4,7 @@ import * as electron from 'electron';
 import { EventEmitter } from 'events';
 import objectsRegistry from './objects-registry';
 import { ipcMainInternal } from '../ipc-main-internal';
-import { isPromise, isSerializableObject } from '@electron/internal/common/type-utils';
+import { isPromise, isSerializableObject, deserialize } from '@electron/internal/common/type-utils';
 import { Size } from 'electron/main';
 
 const v8Util = process.electronBinding('v8_util');
@@ -234,7 +234,10 @@ type MetaTypeFromRenderer = {
 } | {
   type: 'object',
   name: string,
-  members: { name: string, value: MetaTypeFromRenderer }[]
+  members: {
+    name: string,
+    value: MetaTypeFromRenderer
+  }[]
 } | {
   type: 'function-with-return-value',
   value: MetaTypeFromRenderer
@@ -245,7 +248,12 @@ type MetaTypeFromRenderer = {
   length: number
 } | {
   type: 'nativeimage',
-  value: { size: Size, buffer: Buffer, scaleFactor: number, dataURL: string }[]
+  value: {
+    size: Size,
+    buffer: Buffer,
+    scaleFactor: number,
+    dataURL: string
+  }[]
 }
 
 const fakeConstructor = (constructor: Function, name: string) =>
@@ -263,15 +271,8 @@ const fakeConstructor = (constructor: Function, name: string) =>
 const unwrapArgs = function (sender: electron.WebContents, frameId: number, contextId: string, args: any[]) {
   const metaToValue = function (meta: MetaTypeFromRenderer): any {
     switch (meta.type) {
-      case 'nativeimage': {
-        const image = electron.nativeImage.createEmpty();
-        for (const rep of meta.value) {
-          const { size, scaleFactor, dataURL } = rep;
-          const { width, height } = size;
-          image.addRepresentation({ dataURL, scaleFactor, width, height });
-        }
-        return image;
-      }
+      case 'nativeimage':
+        return deserialize(meta.value);
       case 'value':
         return meta.value;
       case 'remote-object':
