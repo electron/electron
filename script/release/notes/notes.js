@@ -39,12 +39,6 @@ class GHKey {
     this.repo = repo;
     this.number = number;
   }
-  static NewFromPull (pull) {
-    const owner = pull.base.repo.owner.login;
-    const repo = pull.base.repo.name;
-    const number = pull.number;
-    return new GHKey(owner, repo, number);
-  }
 }
 
 class Commit {
@@ -295,33 +289,9 @@ async function runRetryable (fn, maxRetries) {
   if (lastError.status !== 404) throw lastError;
 }
 
-const getPullCacheFilename = ghKey => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey.number}`;
-
-const getCommitPulls = async (owner, repo, hash) => {
-  const name = `${owner}-${repo}-commit-${hash}`;
-  const retryableFunc = () => octokit.repos.listPullRequestsAssociatedWithCommit({ owner, repo, commit_sha: hash });
-  const ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
-
-  // only merged pulls belong in release notes
-  if (ret && ret.data) {
-    ret.data = ret.data.filter(pull => pull.merged_at);
-  }
-
-  // cache the pulls
-  if (ret && ret.data) {
-    for (const pull of ret.data) {
-      const cachefile = getPullCacheFilename(GHKey.NewFromPull(pull));
-      const payload = { ...ret, data: pull };
-      await checkCache(cachefile, () => payload);
-    }
-  }
-
-  return ret;
-};
-
 const getPullRequest = async (ghKey) => {
   const { number, owner, repo } = ghKey;
-  const name = getPullCacheFilename(ghKey);
+  const name = `${owner}-${repo}-pull-${number}`;
   const retryableFunc = () => octokit.pulls.get({ pull_number: number, owner, repo });
   return checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
 };
@@ -336,20 +306,10 @@ const getComments = async (ghKey) => {
 const addRepoToPool = async (pool, repo, from, to) => {
   const commonAncestor = await getCommonAncestor(repo.dir, from, to);
 
-  // mark the old branch's commits as old news
-  for (const oldHash of await getLocalCommitHashes(repo.dir, from)) {
-    pool.processedHashes.add(oldHash);
-  }
-
-  // get the new branch's commits and the pulls associated with them
+  // add the commits
+  const oldHashes = await getLocalCommitHashes(repo.dir, from);
+  oldHashes.forEach(hash => { pool.processedHashes.add(hash); });
   const commits = await getLocalCommits(repo, commonAncestor, to);
-  for (const commit of commits) {
-    const { owner, repo, hash } = commit;
-    for (const pull of (await getCommitPulls(owner, repo, hash)).data) {
-      commit.prKeys.add(GHKey.NewFromPull(pull));
-    }
-  }
-
   pool.commits.push(...commits);
 
   // add the pulls
@@ -357,7 +317,8 @@ const addRepoToPool = async (pool, repo, from, to) => {
     let prKey;
     for (prKey of commit.prKeys.values()) {
       const pull = await getPullRequest(prKey);
-      if (!pull || !pull.data) continue; // couldn't get it
+      if (!pull || !pull.data) break; // couldn't get it
+      if (pool.pulls[prKey.number]) break; // already have it
       pool.pulls[prKey.number] = pull;
       parsePullText(pull, commit);
     }
