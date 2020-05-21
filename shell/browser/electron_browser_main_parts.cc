@@ -67,6 +67,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
@@ -210,9 +211,35 @@ int X11EmptyErrorHandler(Display* d, XErrorEvent* error) {
 int X11EmptyIOErrorHandler(Display* d) {
   return 0;
 }
+
+// GTK does not provide a way to check if current theme is dark, so we compare
+// the text and background luminosity to get a result.
+// This trick comes from FireFox.
+void UpdateDarkThemeSetting() {
+  float bg = color_utils::GetRelativeLuminance(gtk::GetBgColor("GtkLabel"));
+  float fg = color_utils::GetRelativeLuminance(gtk::GetFgColor("GtkLabel"));
+  bool is_dark = fg > bg;
+  // Pass it to NativeUi theme, which is used by the nativeTheme module and most
+  // places in Electron.
+  ui::NativeTheme::GetInstanceForNativeUi()->set_use_dark_colors(is_dark);
+  // Pass it to Web Theme, to make "prefers-color-scheme" media query work.
+  ui::NativeTheme::GetInstanceForWeb()->set_use_dark_colors(is_dark);
+}
 #endif
 
 }  // namespace
+
+#if defined(USE_X11)
+class DarkThemeObserver : public ui::NativeThemeObserver {
+ public:
+  DarkThemeObserver() = default;
+
+  // ui::NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override {
+    UpdateDarkThemeSetting();
+  }
+};
+#endif
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
@@ -374,11 +401,19 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // In Aura/X11, Gtk-based LinuxUI implementation is used.
   gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
   ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
-  views::LinuxUI::SetInstance(BuildGtkUi(ui::GtkUiDelegate::instance()));
-#endif
+  views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
+  views::LinuxUI::SetInstance(linux_ui);
+  linux_ui->Initialize();
 
-#if defined(USE_AURA) && defined(USE_X11)
-  views::LinuxUI::instance()->Initialize();
+  // Chromium does not respect GTK dark theme setting, but they may change
+  // in future and this code might be no longer needed. Check the Chromium
+  // issue to keep updated:
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=998903
+  UpdateDarkThemeSetting();
+  // Update the naitve theme when GTK theme changes. The GetNativeTheme
+  // here returns a NativeThemeGtk, which monitors GTK settings.
+  dark_theme_observer_.reset(new DarkThemeObserver);
+  linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
 #endif
 
 #if defined(USE_AURA)
