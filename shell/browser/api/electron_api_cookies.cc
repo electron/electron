@@ -16,6 +16,7 @@
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "net/cookies/canonical_cookie.h"
+#include "net/cookies/cookie_inclusion_status.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
 #include "shell/browser/cookie_change_notifier.h"
@@ -168,25 +169,23 @@ base::Time ParseTimeProperty(const base::Optional<double>& value) {
   return base::Time::FromDoubleT(*value);
 }
 
-std::string InclusionStatusToString(
-    net::CanonicalCookie::CookieInclusionStatus status) {
-  if (status.HasExclusionReason(
-          net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
+std::string InclusionStatusToString(net::CookieInclusionStatus status) {
+  if (status.HasExclusionReason(net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
     return "Failed to create httponly cookie";
   if (status.HasExclusionReason(
-          net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_SECURE_ONLY))
+          net::CookieInclusionStatus::EXCLUDE_SECURE_ONLY))
     return "Cannot create a secure cookie from an insecure URL";
-  if (status.HasExclusionReason(net::CanonicalCookie::CookieInclusionStatus::
-                                    EXCLUDE_FAILURE_TO_STORE))
+  if (status.HasExclusionReason(
+          net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE))
     return "Failed to parse cookie";
   if (status.HasExclusionReason(
-          net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN))
+          net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN))
     return "Failed to get cookie domain";
   if (status.HasExclusionReason(
-          net::CanonicalCookie::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX))
+          net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX))
     return "Failed because the cookie violated prefix rules.";
-  if (status.HasExclusionReason(net::CanonicalCookie::CookieInclusionStatus::
-                                    EXCLUDE_NONCOOKIEABLE_SCHEME))
+  if (status.HasExclusionReason(
+          net::CookieInclusionStatus::EXCLUDE_NONCOOKIEABLE_SCHEME))
     return "Cannot set cookie for current scheme";
   return "Setting cookie failed";
 }
@@ -307,9 +306,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
-            net::CanonicalCookie::CookieInclusionStatus::
-                EXCLUDE_INVALID_DOMAIN)));
+        InclusionStatusToString(net::CookieInclusionStatus(
+            net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN)));
     return handle;
   }
 
@@ -322,9 +320,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       http_only, same_site, net::COOKIE_PRIORITY_DEFAULT);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CanonicalCookie::CookieInclusionStatus(
-            net::CanonicalCookie::CookieInclusionStatus::
-                EXCLUDE_FAILURE_TO_STORE)));
+        InclusionStatusToString(net::CookieInclusionStatus(
+            net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
     return handle;
   }
   net::CookieOptions options;
@@ -341,7 +338,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       *canonical_cookie, url, options,
       base::BindOnce(
           [](gin_helper::Promise<void> promise,
-             net::CanonicalCookie::CookieInclusionStatus status) {
+             net::CookieInclusionStatus status) {
             if (status.IsInclude()) {
               promise.Resolve();
             } else {
