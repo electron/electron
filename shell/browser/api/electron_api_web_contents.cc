@@ -756,6 +756,8 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
+  // Note that Chromium does not emit this for navigations.
+  Emit("before-unload-fired", proceed);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
@@ -1545,6 +1547,9 @@ void WebContents::LoadURL(const GURL& url,
 
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
+
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
@@ -2673,6 +2678,15 @@ void WebContents::GrantOriginAccess(const GURL& url) {
   content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
       web_contents()->GetMainFrame()->GetProcess()->GetID(),
       url::Origin::Create(url));
+}
+
+void WebContents::NotifyUserActivation() {
+  auto* frame = web_contents()->GetMainFrame();
+  if (!frame)
+    return;
+  mojo::AssociatedRemote<mojom::ElectronRenderer> renderer;
+  frame->GetRemoteAssociatedInterfaces()->GetInterface(&renderer);
+  renderer->NotifyUserActivation();
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
