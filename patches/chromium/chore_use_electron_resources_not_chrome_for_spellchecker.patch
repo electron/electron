@@ -7,10 +7,10 @@ spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 35bd502b71f31165cb41231364a619d80c500adb..3a39b67bae980c38fc908953bc4234597bb498fa 100644
+index 8290a3f5341da4426e4956c874933ee8878193ab..a6144b35c6d5a683cac7897ceb1ee191ba560c16 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -5370,6 +5370,7 @@ static_library("browser") {
+@@ -5383,6 +5383,7 @@ static_library("browser") {
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",

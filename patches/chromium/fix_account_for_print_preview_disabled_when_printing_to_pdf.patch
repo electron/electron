@@ -10,10 +10,10 @@ understanding, it seems like we slightly misuse the print preview API
 and this is fallout from using it in a way the code doesn't expect.
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index c329ab95e125ca2c1574f08155a2db1642a27ac3..c493713ab5c731e536d8e53fd882ce8fa8fb389b 100644
+index 541daadd48638b36afc5fc7cee79083cd1c30258..aee3b5489fa92eeace33bbc805679f688372eecb 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -1477,6 +1477,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {
+@@ -1479,6 +1479,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {
    const std::vector<int>& pages = print_pages_params_->pages;
  
    bool require_document_metafile =

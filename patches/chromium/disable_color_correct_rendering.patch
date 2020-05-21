@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 95a901678c215220b9e88db768444d48e32f6dbd..841c809b0b50c8c34a9d9c972c511bd4fd57a7b0 100644
+index c2684645484c7e1b6a555ba31f6634496a4fec76..9250d3b772fdeb6eb943f6cddeb96200e0f819f4 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -236,10 +236,10 @@ index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index ff95636bb9cc27038e3915bb3d171a39f62675c3..1c1177e651081113042ff16d17d574acc0083857 100644
+index 56397e6a28846508730dfcfe6f0009f944ffd18d..9e8b76407029b3b768c94a16622bcf7df8bd50e2 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2539,6 +2539,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index aaef0eb60a015522fdc6d2a1cc4fd794537461d2..107dba8c9b7d71611eca3cbb771fcb4b0f34e4a4 100644
+index dc7c58bb4ac78a11b87f0551fb72e9ba8b618e03..563845ccd565efd750808cce3dcb653acdb383cc 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4653,6 +4653,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4675,6 +4675,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index aaef0eb60a015522fdc6d2a1cc4fd794537461d2..107dba8c9b7d71611eca3cbb771fcb4b
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a3f4f7bac6606c1c22b61e9b4f70df4beb768268..ab21c5c2db9515a67d775da1a59ee644c604d233 100644
+index 69c4bbb90e0891257eac2ed1859eafdc297a2482..f7ae1612616f106a5cb562d6e4de6eb7805f17dc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2955,9 +2955,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -38,10 +38,10 @@ index a3f4f7bac6606c1c22b61e9b4f70df4beb768268..ab21c5c2db9515a67d775da1a59ee644
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index b6113c360f9e033440c3043a128531704778fe9c..9732b9ad4562b503041e19f2763d697e6c191e1c 100644
+index a28c8753f668314298db155cfe9053b9befb7461..0680be947fbebf749eb199b7fcb85432b7c28e73 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -302,6 +302,10 @@ struct CreateNewWindowParams {
+@@ -312,6 +312,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
