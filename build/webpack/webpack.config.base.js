@@ -66,7 +66,7 @@ if (defines['ENABLE_VIEWS_API'] === 'false') {
 
 const alias = {}
 for (const ignoredModule of ignoredModules) {
-  alias[ignoredModule] = path.resolve(electronRoot, 'lib/common/dummy.js')
+  alias[ignoredModule] = path.resolve(electronRoot, 'lib/common/dummy.ts')
 }
 
 module.exports = ({
