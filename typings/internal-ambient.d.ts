@@ -9,6 +9,7 @@ declare const ENABLE_VIEW_API: boolean;
 
 declare namespace NodeJS {
   interface FeaturesBinding {
+    isBuiltinSpellCheckerEnabled(): boolean;
     isDesktopCapturerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
     isRemoteModuleEnabled(): boolean;
