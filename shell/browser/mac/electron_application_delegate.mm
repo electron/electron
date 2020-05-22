@@ -41,7 +41,10 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 @end
 #endif  // BUILDFLAG(USE_ALLOCATOR_SHIM)
 
-@implementation ElectronApplicationDelegate
+@implementation ElectronApplicationDelegate {
+ @private
+  bool isFirstActivation_;
+}
 
 - (void)setApplicationDockMenu:(electron::ElectronMenuModel*)model {
   menu_controller_.reset([[ElectronMenuController alloc] initWithModel:model
@@ -77,6 +80,8 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
         @selector(_coreAttributesFromRange:whichAttributes:completionHandler:));
   }
 #endif
+
+  isFirstActivation_ = true;
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
@@ -91,11 +96,35 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   return electron::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
-- (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
-                    hasVisibleWindows:(BOOL)flag {
+- (void)applicationDidBecomeActive:(NSNotification*)notify {
+  // Originally `applicationShouldHandleReopen:hasVisibleWindows:` was used to
+  // emit Activate event. But the message is sent only when application is
+  // activated via Dock or Finder ignoring the App Switcher (cmd+tab).
+  //
+  // Using `applicationDidBecomeActive' is more reliable but to maintain
+  // compatibility with previous implementation we ignore activation
+  // immediately after the application launch, and compute the
+  // hasVisibleWindows on our own.
+  //
+  // Details in https://github.com/electron/electron/pull/23727.
+
+  if (isFirstActivation_) {
+    isFirstActivation_ = false;
+    return;
+  }
+
+  NSApplication* app = notify.object;
+  bool hasVisibleWindows = false;
+
+  for (NSWindow* win in app.windows) {
+    if (win.isVisible || win.miniaturized) {
+      hasVisibleWindows = true;
+      break;
+    }
+  }
+
   electron::Browser* browser = electron::Browser::Get();
-  browser->Activate(static_cast<bool>(flag));
-  return flag;
+  browser->Activate(hasVisibleWindows);
 }
 
 - (BOOL)application:(NSApplication*)sender
