@@ -1529,6 +1529,8 @@ bool WebContents::Equal(const WebContents* web_contents) const {
 }
 
 void WebContents::SetHistory(const NavigationList& navigations) {
+  // TODO: check that NavigationController is empty
+
   std::vector<std::unique_ptr<content::NavigationEntry>> navigaion_entries;
   for (size_t i = 0; i < navigations.urls.size(); i++) {
     content::Referrer temporary_referrer;
