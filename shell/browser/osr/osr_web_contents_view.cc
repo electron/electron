@@ -86,8 +86,8 @@ gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
 }
 #endif
 
-void OffScreenWebContentsView::GetContainerBounds(gfx::Rect* out) const {
-  *out = GetViewBounds();
+gfx::Rect OffScreenWebContentsView::GetContainerBounds() const {
+  return GetViewBounds();
 }
 
 void OffScreenWebContentsView::Focus() {}
