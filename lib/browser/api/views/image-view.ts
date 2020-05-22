@@ -1,8 +1,7 @@
-const electron = require('electron');
+import { View } from 'electron';
 
-const { View } = electron;
 const { ImageView } = process.electronBinding('image_view');
 
 Object.setPrototypeOf(ImageView.prototype, View.prototype);
 
-module.exports = ImageView;
+export default ImageView;

@@ -1,13 +1,11 @@
-'use strict';
-
 const clipboard = process.electronBinding('clipboard');
 
 if (process.type === 'renderer') {
   const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
   const typeUtils = require('@electron/internal/common/type-utils');
 
-  const makeRemoteMethod = function (method) {
-    return (...args) => {
+  const makeRemoteMethod = function (method: keyof Electron.Clipboard) {
+    return (...args: any[]) => {
       args = typeUtils.serialize(args);
       const result = ipcRendererUtils.invokeSync('ELECTRON_BROWSER_CLIPBOARD_SYNC', method, ...args);
       return typeUtils.deserialize(result);
@@ -16,7 +14,7 @@ if (process.type === 'renderer') {
 
   if (process.platform === 'linux') {
     // On Linux we could not access clipboard in renderer process.
-    for (const method of Object.keys(clipboard)) {
+    for (const method of Object.keys(clipboard) as (keyof Electron.Clipboard)[]) {
       clipboard[method] = makeRemoteMethod(method);
     }
   } else if (process.platform === 'darwin') {
@@ -26,4 +24,4 @@ if (process.type === 'renderer') {
   }
 }
 
-module.exports = clipboard;
+export default clipboard;

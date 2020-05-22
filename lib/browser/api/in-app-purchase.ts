@@ -1,22 +1,24 @@
-'use strict';
+import { EventEmitter } from 'events';
 
-const { deprecate } = require('electron');
+let _inAppPurchase;
 
 if (process.platform === 'darwin') {
-  const { EventEmitter } = require('events');
   const { inAppPurchase, InAppPurchase } = process.electronBinding('in_app_purchase');
 
   // inAppPurchase is an EventEmitter.
   Object.setPrototypeOf(InAppPurchase.prototype, EventEmitter.prototype);
   EventEmitter.call(inAppPurchase);
 
-  module.exports = inAppPurchase;
+  _inAppPurchase = inAppPurchase;
 } else {
-  module.exports = {
-    purchaseProduct: (productID, quantity, callback) => {
+  _inAppPurchase = new EventEmitter();
+  Object.assign(_inAppPurchase, {
+    purchaseProduct: () => {
       throw new Error('The inAppPurchase module can only be used on macOS');
     },
     canMakePayments: () => false,
     getReceiptURL: () => ''
-  };
+  });
 }
+
+export default _inAppPurchase;

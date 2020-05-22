@@ -1,11 +1,10 @@
-'use strict';
+import { EventEmitter } from 'events';
 
-const { EventEmitter } = require('events');
 const { BrowserView } = process.electronBinding('browser_view');
 
 Object.setPrototypeOf(BrowserView.prototype, EventEmitter.prototype);
 
-BrowserView.fromWebContents = (webContents) => {
+BrowserView.fromWebContents = (webContents: Electron.WebContents) => {
   for (const view of BrowserView.getAllViews()) {
     if (view.webContents.equal(webContents)) return view;
   }
@@ -13,4 +12,4 @@ BrowserView.fromWebContents = (webContents) => {
   return null;
 };
 
-module.exports = BrowserView;
+export default BrowserView;
