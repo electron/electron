@@ -1,10 +1,8 @@
 const { fromPartition } = process.electronBinding('session');
 
-const sessionAPI = {
+export default {
   fromPartition,
   get defaultSession () {
     return fromPartition('');
   }
 };
-
-export default sessionAPI;
