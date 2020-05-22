@@ -128,6 +128,15 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   ~ExtendedWebContentsObserver() override {}
 };
 
+struct NavigationList {
+  NavigationList();
+  NavigationList(const NavigationList& navigation_list);
+  ~NavigationList();
+
+  std::vector<std::string> urls;
+  int position;
+};
+
 // Wrapper around the content::WebContents.
 class WebContents : public gin_helper::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
@@ -204,6 +213,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();
+  void SetHistory(const NavigationList& navigations);
   void GoBack();
   void GoForward();
   void GoToOffset(int offset);

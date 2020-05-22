@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
+#include <windows.h>
+
 #include <limits>
 #include <memory>
 #include <set>
@@ -31,6 +33,7 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -40,6 +43,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/restore_type.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
@@ -202,6 +206,24 @@ struct Converter<printing::DuplexMode> {
 };
 
 #endif
+
+template <>
+struct Converter<electron::api::NavigationList> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::NavigationList* navigation_list) {
+    gin_helper::Dictionary params;
+    if (!ConvertFromV8(isolate, val, &params)) {
+      return false;
+    }
+
+    // error handling?
+    params.Get("entries", &(navigation_list->urls));
+    params.Get("position", &(navigation_list->position));
+
+    return true;
+  }
+};
 
 template <>
 struct Converter<WindowOpenDisposition> {
@@ -387,6 +409,15 @@ base::string16 GetDefaultPrinterAsync() {
 #endif
 
 }  // namespace
+
+NavigationList::NavigationList() {}
+
+NavigationList::NavigationList(const NavigationList& navigation_list) {
+  urls = navigation_list.urls;
+  position = navigation_list.position;
+}
+
+NavigationList::~NavigationList() {}
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
@@ -1497,6 +1528,39 @@ bool WebContents::Equal(const WebContents* web_contents) const {
   return ID() == web_contents->ID();
 }
 
+void WebContents::SetHistory(const NavigationList& navigations) {
+  std::vector<std::unique_ptr<content::NavigationEntry>> navigaion_entries;
+  for (size_t i = 0; i < navigations.urls.size(); i++) {
+    content::Referrer temporary_referrer;
+    base::Optional<url::Origin> temporary_initiator_origin;
+
+    GURL url(navigations.urls[i]);
+
+    std::unique_ptr<content::NavigationEntry> entry(
+        content::NavigationController::CreateNavigationEntry(
+            url, temporary_referrer, temporary_initiator_origin,
+            // Use a transition type of reload so that we don't incorrectly
+            // increase the typed count.
+            ui::PAGE_TRANSITION_RELOAD, false,
+            // The extra headers are not sync'ed across sessions.
+            std::string(), web_contents()->GetBrowserContext(),
+            nullptr /* blob_url_loader_factory */));
+
+    entry->SetPageState(content::PageState::CreateFromURL(url));
+
+    entry->SetOriginalRequestURL(url);
+
+    entry->InitRestoredEntry(web_contents()->GetBrowserContext());
+
+    navigaion_entries.push_back(std::move(entry));
+  }
+
+  web_contents()->GetController().Restore(
+      navigations.position, content::RestoreType::LAST_SESSION_EXITED_CLEANLY,
+      &navigaion_entries);
+  web_contents()->GetController().LoadIfNecessary();
+}
+
 void WebContents::LoadURL(const GURL& url,
                           const gin_helper::Dictionary& options) {
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
@@ -1614,21 +1678,25 @@ void WebContents::GoBack() {
   if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
     electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   }
-  web_contents()->GetController().GoBack();
+  if (web_contents()->GetController().CanGoBack())
+    web_contents()->GetController().GoBack();
+  web_contents()->GetController().LoadIfNecessary();
 }
 
 void WebContents::GoForward() {
   if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
     electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   }
-  web_contents()->GetController().GoForward();
+  if (web_contents()->GetController().CanGoForward())
+    web_contents()->GetController().GoForward();
+  web_contents()->GetController().LoadIfNecessary();
 }
 
 void WebContents::GoToOffset(int offset) {
   if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
     electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
   }
-  web_contents()->GetController().GoToOffset(offset);
+  // web_contents()->GetController().GoToOffset(offset);
 }
 
 const std::string WebContents::GetWebRTCIPHandlingPolicy() const {
@@ -2733,6 +2801,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
                  &WebContents::GetOSProcessIdForFrame)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("setHistory", &WebContents::SetHistory)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
       .SetMethod("_getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
@@ -2740,8 +2809,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("_stop", &WebContents::Stop)
-      .SetMethod("_goBack", &WebContents::GoBack)
-      .SetMethod("_goForward", &WebContents::GoForward)
+      .SetMethod("goBack", &WebContents::GoBack)
+      .SetMethod("goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
