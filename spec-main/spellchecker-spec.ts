@@ -1,9 +1,11 @@
-import { BrowserWindow, Session, session } from 'electron';
-
 import { expect } from 'chai';
+import { BrowserWindow, Session, session } from 'electron';
+import { ifdescribe } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
-describe('spellchecker', () => {
+const features = process.electronBinding('features');
+
+ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   let w: BrowserWindow;
 
   beforeEach(async () => {

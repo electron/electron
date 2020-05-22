@@ -35,5 +35,5 @@ declare_args() {
   enable_electron_extensions = true
 
   # Enable Spellchecker support
-  enable_builtin_spellchecker = true
+  enable_builtin_spellchecker = false  # FIXME
 }
