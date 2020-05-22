@@ -170,10 +170,10 @@ index c0a8c7b7c3e4e0d9038ab08f63a8a5aaefd96122..1cf61e86d97c5735836d7d0211b17930
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index cd7a2c1613e3052f107c0039f12ef53cfff839a5..82df4e2bff9bfd9b431c5b9efe2131399f3e31ea 100644
+index bc47a9182e1f8d0e9442e6f648144bb0550002ed..798f77824bd5ddd375c7c62038adbb6b672eb1ea 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -313,6 +313,13 @@ jumbo_component("base") {
+@@ -309,6 +309,13 @@ jumbo_component("base") {
      ]
    }
  
@@ -188,19 +188,19 @@ index cd7a2c1613e3052f107c0039f12ef53cfff839a5..82df4e2bff9bfd9b431c5b9efe213139
      sources += [ "l10n/l10n_util_posix.cc" ]
    }
 diff --git a/ui/base/cocoa/remote_accessibility_api.h b/ui/base/cocoa/remote_accessibility_api.h
-index 2a58aebabb23443a2c11364af4988c573f3909ba..3424b6011e80e9c995519b6a8d652abd843d926b 100644
+index e7adfee3210ec723c687adfcc4bee8827ef643e7..25a924a47eeb30d783ef83dbb4896c4bed139a27 100644
 --- a/ui/base/cocoa/remote_accessibility_api.h
 +++ b/ui/base/cocoa/remote_accessibility_api.h
 @@ -11,6 +11,8 @@
+ #include "base/component_export.h"
  #include "base/mac/scoped_nsobject.h"
- #include "ui/base/ui_base_export.h"
  
 +#ifndef MAS_BUILD
 +
  @interface NSAccessibilityRemoteUIElement : NSObject
  + (void)registerRemoteUIProcessIdentifier:(int)pid;
  + (NSData*)remoteTokenForLocalUIElement:(id)element;
-@@ -32,4 +34,6 @@ class UI_BASE_EXPORT RemoteAccessibility {
+@@ -32,4 +34,6 @@ class COMPONENT_EXPORT(UI_BASE) RemoteAccessibility {
  
  }  // namespace ui
  

@@ -50,7 +50,7 @@ index 5124b17f020849671a7f03d92bda052eff84d169..f9730f71c122965f7ce7815a1b9a7b32
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b2312673a 100644
+index 558839d8847479cb10e747576a2d0cd57701bda0..975054ba2605dae54800e6d087f9d1ce03e97c09 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -206,6 +206,7 @@ NSString* const
@@ -157,7 +157,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  
  // Returns whether or not this node should be ignored in the
  // accessibility tree.
-@@ -2148,6 +2165,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2146,6 +2163,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    return ret;
  }
  
@@ -165,7 +165,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  - (NSString*)selectedText {
    if (![self instanceActive])
      return nil;
-@@ -2159,11 +2177,13 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2157,11 +2175,13 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
      return nil;
    return base::SysUTF16ToNSString(range.GetText());
  }
@@ -179,7 +179,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  - (NSValue*)selectedTextRange {
    if (![self instanceActive])
      return nil;
-@@ -2184,12 +2204,15 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2182,12 +2202,15 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    int selLength = range.GetText().length();
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
@@ -195,7 +195,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2222,6 +2245,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2220,6 +2243,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    return nil;
  }
  
@@ -203,7 +203,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2232,6 +2256,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2230,6 +2254,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfAnchor());
  }
@@ -211,7 +211,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  
  // Returns a subrole based upon the role.
  - (NSString*)subrole {
-@@ -2557,11 +2582,13 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2552,11 +2577,13 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
    NSMutableAttributedString* attributedInnerText =
        [[[NSMutableAttributedString alloc]
            initWithString:base::SysUTF16ToNSString(innerText)] autorelease];
@@ -225,7 +225,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  
    return [attributedInnerText attributedSubstringFromRange:range];
  }
-@@ -2665,9 +2692,8 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2660,9 +2687,8 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
        return ToBrowserAccessibilityCocoa(cell);
    }
  
@@ -237,7 +237,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
      BrowserAccessibilityPositionInstance position =
          CreatePositionFromTextMarker(parameter);
      if (!position->IsNullPosition())
-@@ -2980,6 +3006,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2975,6 +3001,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
  
      return CreateTextMarker(root->CreatePositionAt(index));
    }
@@ -245,7 +245,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -3015,6 +3042,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -3010,6 +3037,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
      return nil;
    }
  
@@ -253,7 +253,7 @@ index df491190becee0c6ae57d9344dbce6d0e352e163..1b29b3bd3eddc8573bc778a31152869b
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3129,6 +3157,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -3124,6 +3152,7 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
  
      return @(child->GetIndexInParent());
    }

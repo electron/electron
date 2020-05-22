@@ -9,7 +9,7 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index c2c45f5bb2e76471865649caac873c1db281c47c..0f6b587f7c12843cdaaca5ea274a514bb738d968 100644
+index ca546f2253b5b49b7c4580798ee173ffdaaa9e30..71cfbc3cd2b5d0de13862e7fa300b9d2a2a3e862 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 @@ -50,6 +50,9 @@ namespace {
@@ -22,7 +22,7 @@ index c2c45f5bb2e76471865649caac873c1db281c47c..0f6b587f7c12843cdaaca5ea274a514b
  // Close the file.
  void CloseDictionary(base::File file) {
    base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-@@ -268,6 +271,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+@@ -270,6 +273,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
    g_download_url_for_testing.Get() = url;
  }
  
@@ -33,7 +33,7 @@ index c2c45f5bb2e76471865649caac873c1db281c47c..0f6b587f7c12843cdaaca5ea274a514b
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    if (g_download_url_for_testing.Get() != GURL())
      return g_download_url_for_testing.Get();
-@@ -275,6 +282,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+@@ -277,6 +284,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  
@@ -44,7 +44,7 @@ index c2c45f5bb2e76471865649caac873c1db281c47c..0f6b587f7c12843cdaaca5ea274a514b
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index 5c4c5cc17c0749bc6e423a6876fd1909dce392e8..5c58e8adbcdbc28ca203e0d8c837ebb3e8a3f46b 100644
+index a8acd00dc449812d336364229fade2a16e21ccbc..8d8eca3c7de3080111043dc465ed4316af026c0b 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 @@ -88,6 +88,8 @@ class SpellcheckHunspellDictionary

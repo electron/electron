@@ -71,10 +71,10 @@ index b1ba002d7f6cabb631cb7ca86075178cbd0bd641..aeae819b11046e0ac70d1cb9c999cb46
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 2a9479560ebf9172071b996f0e84d8e11d824097..a4d19af97f92ccd88aa00207b127f44d999f3df1 100644
+index 7bb200e53367c911d872d4ad294eaa1a5a1ecf80..7ea1106a93b9882614d9c1143054d41e4d13db4d 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2405,6 +2405,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2406,6 +2406,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index 2a9479560ebf9172071b996f0e84d8e11d824097..a4d19af97f92ccd88aa00207b127f44d
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2424,10 +2434,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2425,10 +2435,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index 2a9479560ebf9172071b996f0e84d8e11d824097..a4d19af97f92ccd88aa00207b127f44d
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2492,6 +2552,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2493,6 +2553,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -167,7 +167,7 @@ index 2a9479560ebf9172071b996f0e84d8e11d824097..a4d19af97f92ccd88aa00207b127f44d
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 5b6fa895077debe65615683681d527d6aacfe1e5..25b5c7d054afa67f3c450bbb0a282d54d477f995 100644
+index e17d9239c65aac5d0038a2162405b9f8525603ba..44361c84ff6bdee12908d518a84ec773c067d614 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
 @@ -456,6 +456,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const GURL& url) {

@@ -9,7 +9,7 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index c1d92ae00fe58a7f0d80914830d9607246231d33..ea801c7ce0d46cfec4f0dfaf38f12fa70de4e87c 100644
+index 86c0ba41074161a137a659afdd2d460dde07d589..de9c3e5f4f502c531af0d15529d535e31ba30dce 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
 @@ -1295,6 +1295,25 @@ bool ChromeContentRendererClient::AllowPopup() {
@@ -92,10 +92,10 @@ index de0274d03ff1a0838f0ab0002c5a6b6ea7e10bfd..892366cd9d2f70498e2e7429a66dcf13
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 412e8c5d698be885a2f2682adffc7d62f6d22f33..583f45e5a506b5c0f57df75c271a9698bba5f880 100644
+index 7b03f30f5aa53e41c4a6153cc38179a80fa60015..3b53c739b899861bc5b1b5cd200e2509bf7a9a46 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5601,6 +5601,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5607,6 +5607,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);
