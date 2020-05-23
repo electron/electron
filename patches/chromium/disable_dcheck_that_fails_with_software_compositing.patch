@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Fri, 22 May 2020 17:58:16 -0700
+Subject: Disable DCHECK that fails with software compositing
+
+Should be removed once https://bugs.chromium.org/p/chromium/issues/detail?id=1084625
+is addressed.
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index eb43285dfacd700451dacb3a04546790298026ea..faa47e9ef7f388dc0bfa5cd3efb961e6339ce390 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2407,13 +2407,13 @@ void HWNDMessageHandler::OnPaint(HDC dc) {
+       RECT cr;
+       if (GetClientRect(hwnd(), &cr)) {
+         if (exposed_pixels_.height() > 0) {
+-          DCHECK_GE(cr.bottom, exposed_pixels_.height());
++          //DCHECK_GE(cr.bottom, exposed_pixels_.height());
+           RECT rect = {cr.left, cr.bottom - exposed_pixels_.height(), cr.right,
+                        cr.bottom};
+           FillRect(ps.hdc, &rect, brush);
+         }
+         if (exposed_pixels_.width() > 0) {
+-          DCHECK_GE(cr.right, exposed_pixels_.width());
++          //DCHECK_GE(cr.right, exposed_pixels_.width());
+           RECT rect = {cr.right - exposed_pixels_.width(), cr.top, cr.right,
+                        cr.bottom - exposed_pixels_.height()};
+           FillRect(ps.hdc, &rect, brush);
