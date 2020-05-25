@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 5 May 2020 20:11:02 +0200
+Subject: Turn some DCHECKs into CHECKs in Schedule methods
+
+Bug: chromium:1076708
+Change-Id: I7f065791310606e11fe89936a36f0fe7cb0d38e7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2182639
+Auto-Submit: Georg Neis <neis@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#67576}
+
+diff --git a/src/compiler/schedule.cc b/src/compiler/schedule.cc
+index 8bdcef511b6ad9e42e54661e8b676170ac6ebe69..cc3243cb2e1b2080c208f8d4c72e1f450e33cf7c 100644
+--- a/src/compiler/schedule.cc
++++ b/src/compiler/schedule.cc
+@@ -218,7 +218,7 @@ void Schedule::AddNode(BasicBlock* block, Node* node) {
+ }
+ 
+ void Schedule::AddGoto(BasicBlock* block, BasicBlock* succ) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   block->set_control(BasicBlock::kGoto);
+   AddSuccessor(block, succ);
+ }
+@@ -243,7 +243,7 @@ bool IsPotentiallyThrowingCall(IrOpcode::Value opcode) {
+ 
+ void Schedule::AddCall(BasicBlock* block, Node* call, BasicBlock* success_block,
+                        BasicBlock* exception_block) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   DCHECK(IsPotentiallyThrowingCall(call->opcode()));
+   block->set_control(BasicBlock::kCall);
+   AddSuccessor(block, success_block);
+@@ -253,7 +253,7 @@ void Schedule::AddCall(BasicBlock* block, Node* call, BasicBlock* success_block,
+ 
+ void Schedule::AddBranch(BasicBlock* block, Node* branch, BasicBlock* tblock,
+                          BasicBlock* fblock) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   DCHECK_EQ(IrOpcode::kBranch, branch->opcode());
+   block->set_control(BasicBlock::kBranch);
+   AddSuccessor(block, tblock);
+@@ -263,7 +263,7 @@ void Schedule::AddBranch(BasicBlock* block, Node* branch, BasicBlock* tblock,
+ 
+ void Schedule::AddSwitch(BasicBlock* block, Node* sw, BasicBlock** succ_blocks,
+                          size_t succ_count) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   DCHECK_EQ(IrOpcode::kSwitch, sw->opcode());
+   block->set_control(BasicBlock::kSwitch);
+   for (size_t index = 0; index < succ_count; ++index) {
+@@ -273,28 +273,28 @@ void Schedule::AddSwitch(BasicBlock* block, Node* sw, BasicBlock** succ_blocks,
+ }
+ 
+ void Schedule::AddTailCall(BasicBlock* block, Node* input) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   block->set_control(BasicBlock::kTailCall);
+   SetControlInput(block, input);
+   if (block != end()) AddSuccessor(block, end());
+ }
+ 
+ void Schedule::AddReturn(BasicBlock* block, Node* input) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   block->set_control(BasicBlock::kReturn);
+   SetControlInput(block, input);
+   if (block != end()) AddSuccessor(block, end());
+ }
+ 
+ void Schedule::AddDeoptimize(BasicBlock* block, Node* input) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   block->set_control(BasicBlock::kDeoptimize);
+   SetControlInput(block, input);
+   if (block != end()) AddSuccessor(block, end());
+ }
+ 
+ void Schedule::AddThrow(BasicBlock* block, Node* input) {
+-  DCHECK_EQ(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, block->control());
+   block->set_control(BasicBlock::kThrow);
+   SetControlInput(block, input);
+   if (block != end()) AddSuccessor(block, end());
+@@ -302,8 +302,8 @@ void Schedule::AddThrow(BasicBlock* block, Node* input) {
+ 
+ void Schedule::InsertBranch(BasicBlock* block, BasicBlock* end, Node* branch,
+                             BasicBlock* tblock, BasicBlock* fblock) {
+-  DCHECK_NE(BasicBlock::kNone, block->control());
+-  DCHECK_EQ(BasicBlock::kNone, end->control());
++  CHECK_NE(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, end->control());
+   end->set_control(block->control());
+   block->set_control(BasicBlock::kBranch);
+   MoveSuccessors(block, end);
+@@ -317,8 +317,8 @@ void Schedule::InsertBranch(BasicBlock* block, BasicBlock* end, Node* branch,
+ 
+ void Schedule::InsertSwitch(BasicBlock* block, BasicBlock* end, Node* sw,
+                             BasicBlock** succ_blocks, size_t succ_count) {
+-  DCHECK_NE(BasicBlock::kNone, block->control());
+-  DCHECK_EQ(BasicBlock::kNone, end->control());
++  CHECK_NE(BasicBlock::kNone, block->control());
++  CHECK_EQ(BasicBlock::kNone, end->control());
+   end->set_control(block->control());
+   block->set_control(BasicBlock::kSwitch);
+   MoveSuccessors(block, end);
