@@ -23,10 +23,10 @@ index 831a3574055881f31a3e7dbc98c0525b47af5dcb..9626f181ee471fec68af7ddfc968f2d8
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index aab16241731113e59874bc473bcc58d4c1929665..7b03f30f5aa53e41c4a6153cc38179a80fa60015 100644
+index c01f9074c4896d7d67609efa86d5a0e995fa974c..95cec369e38dada721cbf26fe244461171d748f8 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4848,6 +4848,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4807,6 +4807,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index aab16241731113e59874bc473bcc58d4c1929665..7b03f30f5aa53e41c4a6153cc38179a8
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index e9121dc2d04564ffb804bff4a19ef66940fe54a8..dc23ac6a85e3d22170d134a2412ea62a9db56802 100644
+index 2d34029a192ad9680d445ae6c5394f1fbfc7e894..9f21385919593cfb1314d9fb659e4b5a3326bf44 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -757,6 +757,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -751,6 +751,8 @@ class CONTENT_EXPORT RenderFrameImpl
    bool ShouldTrackUseCounter(const blink::WebURL& url) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
