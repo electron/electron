@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Tue, 5 May 2020 14:19:52 +0200
+Subject: fix bug in DeadCodeElimination
+
+Bug: chromium:1076708
+Change-Id: I88a5eae0e562e32f1915deff3c4150ec4be14c6c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2181266
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Auto-Submit: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#67564}
+
+diff --git a/src/compiler/dead-code-elimination.cc b/src/compiler/dead-code-elimination.cc
+index f39e6cabfbeb3e4fdd95a36d619c14adb6d5d956..bab6b7b506e368b7b4219015cc34a84b156ccd2d 100644
+--- a/src/compiler/dead-code-elimination.cc
++++ b/src/compiler/dead-code-elimination.cc
+@@ -317,7 +317,10 @@ Reduction DeadCodeElimination::ReduceDeoptimizeOrReturnOrTerminateOrTailCall(
+          node->opcode() == IrOpcode::kTailCall);
+   Reduction reduction = PropagateDeadControl(node);
+   if (reduction.Changed()) return reduction;
+-  if (FindDeadInput(node) != nullptr) {
++  // Terminate nodes are not part of actual control flow, so they should never
++  // be replaced with Throw.
++  if (node->opcode() != IrOpcode::kTerminate &&
++      FindDeadInput(node) != nullptr) {
+     Node* effect = NodeProperties::GetEffectInput(node, 0);
+     Node* control = NodeProperties::GetControlInput(node, 0);
+     if (effect->opcode() != IrOpcode::kUnreachable) {
