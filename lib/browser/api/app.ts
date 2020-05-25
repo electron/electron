@@ -4,6 +4,8 @@ import * as path from 'path';
 import { deprecate, Menu } from 'electron';
 import { EventEmitter } from 'events';
 
+import filenamify = require('filenamify');
+
 const bindings = process.electronBinding('app');
 const commandLine = process.electronBinding('command_line');
 const { app, App } = bindings;
@@ -70,8 +72,8 @@ App.prototype.isPackaged = (() => {
 
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
-  app.setPath('userData', path.join(app.getPath('appData'), app.name!));
-  app.setPath('userCache', path.join(app.getPath('cache'), app.name!));
+  app.setPath('userData', path.join(app.getPath('appData'), filenamify(app.name!)));
+  app.setPath('userCache', path.join(app.getPath('cache'), filenamify(app.name!)));
   app.setAppPath(packagePath);
 
   // Add support for --user-data-dir=
