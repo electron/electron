@@ -1,3 +1,6 @@
 const { app } = require('electron');
 
-process.on('message', () => app.quit());
+process.on('message', () => {
+  console.log('Notified to quit');
+  app.quit();
+});
