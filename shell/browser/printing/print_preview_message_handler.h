@@ -58,6 +58,8 @@ class PrintPreviewMessageHandler
                             const PrintHostMsg_PreviewIds& ids);
   void OnPrintPreviewCancelled(int document_cookie,
                                const PrintHostMsg_PreviewIds& ids);
+  void CheckForCancel(int32_t request_id,
+                      CheckForCancelCallback callback) override;
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 

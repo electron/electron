@@ -150,6 +150,12 @@ void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
   RejectPromise(ids.request_id);
 }
 
+void PrintPreviewMessageHandler::CheckForCancel(
+    int32_t request_id,
+    CheckForCancelCallback callback) {
+  std::move(callback).Run(false);
+}
+
 void PrintPreviewMessageHandler::PrintToPDF(
     base::DictionaryValue options,
     gin_helper::Promise<v8::Local<v8::Value>> promise) {
