@@ -3,11 +3,9 @@ import { expect } from 'chai';
 import { closeAllWindows } from './window-helpers';
 import { ifdescribe } from './spec-helpers';
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, nativeImage, NativeImage } from 'electron';
 import { emittedOnce } from './events-helpers';
-import { NativeImage } from 'electron/common';
 import { serialize, deserialize } from '../lib/common/type-utils';
-import { nativeImage } from 'electron';
 
 const features = process.electronBinding('features');
 
@@ -364,11 +362,11 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const w = makeWindow();
     const remotely = makeRemotely(w);
 
-    it('can serialize an empty nativeImage', async () => {
-      const getEmptyImage = (img: NativeImage) => img.isEmpty();
+    it('can serialize an empty nativeImage from renderer to main', async () => {
+      const getImageEmpty = (img: NativeImage) => img.isEmpty();
 
       w().webContents.once('remote-get-global', (event) => {
-        event.returnValue = getEmptyImage;
+        event.returnValue = getImageEmpty;
       });
 
       await expect(remotely(() => {
@@ -377,17 +375,41 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       })).to.eventually.be.true();
     });
 
-    it('can serialize a non-empty nativeImage', async () => {
-      const getNonEmptyImage = (img: NativeImage) => img.getSize();
+    it('can serialize an empty nativeImage from main to renderer', async () => {
+      w().webContents.once('remote-get-global', (event) => {
+        const emptyImage = require('electron').nativeImage.createEmpty();
+        event.returnValue = emptyImage;
+      });
+
+      await expect(remotely(() => {
+        const image = require('electron').remote.getGlobal('someFunction');
+        return image.isEmpty();
+      })).to.eventually.be.true();
+    });
+
+    it('can serialize a non-empty nativeImage from renderer to main', async () => {
+      const getImageSize = (img: NativeImage) => img.getSize();
 
       w().webContents.once('remote-get-global', (event) => {
-        event.returnValue = getNonEmptyImage;
+        event.returnValue = getImageSize;
       });
 
       await expect(remotely(() => {
         const { nativeImage } = require('electron');
         const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
         return require('electron').remote.getGlobal('someFunction')(nonEmptyImage);
+      })).to.eventually.deep.equal({ width: 2, height: 2 });
+    });
+
+    it('can serialize a non-empty nativeImage from main to renderer', async () => {
+      w().webContents.once('remote-get-global', (event) => {
+        const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+        event.returnValue = nonEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const image = require('electron').remote.getGlobal('someFunction');
+        return image.getSize();
       })).to.eventually.deep.equal({ width: 2, height: 2 });
     });
 
