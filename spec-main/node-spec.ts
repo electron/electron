@@ -270,7 +270,7 @@ describe('node feature', () => {
             .then(() => w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
               connection.onopen = () => {
-                resolve()
+                connection.onclose = () => resolve()
                 connection.close()
               }
             })`))
