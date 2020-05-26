@@ -367,6 +367,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
+  // Notifies the web page that there is user interaction.
+  void NotifyUserActivation();
+
   v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
 
   // Properties.

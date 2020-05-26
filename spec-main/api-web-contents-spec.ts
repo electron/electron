@@ -42,23 +42,22 @@ describe('webContents module', () => {
   });
 
   describe('will-prevent-unload event', function () {
-    // TODO(nornagon): de-flake this properly
-    this.retries(3);
-
     afterEach(closeAllWindows);
-    it('does not emit if beforeunload returns undefined', (done) => {
+    it('does not emit if beforeunload returns undefined', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('closed', () => done());
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
       });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
 
     it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
+      w.close();
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
@@ -66,8 +65,9 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
-      await emittedOnce(w, 'closed');
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
   });
 
