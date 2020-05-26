@@ -5,12 +5,12 @@ Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index af11ea50738ca20453c5c20f7807455fca8becfa..301a9de1eb82ebea009f0c20028e8ed87764622b 100644
+index d048c713cddc0f53595c142e01a91d12e3232ae7..d353a024b8f18e8a02edd7bb9c8cdc76e1af1963 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -363,6 +363,9 @@ void SpellcheckService::LoadHunspellDictionaries() {
-         std::make_unique<SpellcheckHunspellDictionary>(dictionary, context_,
-                                                        this));
+@@ -436,6 +436,9 @@ void SpellcheckService::LoadHunspellDictionaries() {
+         std::make_unique<SpellcheckHunspellDictionary>(
+             dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
 +    if (hunspell_observer_) {
 +      hunspell_dictionaries_.back()->AddObserver(hunspell_observer_);
@@ -18,7 +18,7 @@ index af11ea50738ca20453c5c20f7807455fca8becfa..301a9de1eb82ebea009f0c20028e8ed8
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -376,6 +379,20 @@ SpellcheckService::GetHunspellDictionaries() {
+@@ -449,6 +452,20 @@ SpellcheckService::GetHunspellDictionaries() {
    return hunspell_dictionaries_;
  }
  
@@ -40,7 +40,7 @@ index af11ea50738ca20453c5c20f7807455fca8becfa..301a9de1eb82ebea009f0c20028e8ed8
                                                 std::string locale,
                                                 std::string path,
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index 97df131375cb11eb562ac0097ab7c870755b46dd..485331591812d0f28011160b186dc2e78f1e77a7 100644
+index ebb5db00c8215756978dab7f93bb15c41659f8ef..ed72a306c2e2b52256bba3b1cf9ab38f005f3632 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -123,6 +123,8 @@ class SpellcheckService : public KeyedService,
@@ -52,7 +52,7 @@ index 97df131375cb11eb562ac0097ab7c870755b46dd..485331591812d0f28011160b186dc2e7
    // Load a dictionary from a given path. Format specifies how the dictionary
    // is stored. Return value is true if successful.
    bool LoadExternalDictionary(std::string language,
-@@ -225,6 +227,8 @@ class SpellcheckService : public KeyedService,
+@@ -273,6 +275,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    content::BrowserContext* context_;
  

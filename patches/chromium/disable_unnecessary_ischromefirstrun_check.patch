@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Fri, 22 May 2020 17:40:47 -0700
+Subject: Disable unnecessary IsChromeFirstRun check
+
+https://crrev.com/c/2155167/18/chrome/browser/spellchecker/spellcheck_service.cc#586
+
+diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
+index d353a024b8f18e8a02edd7bb9c8cdc76e1af1963..8aef24d488365398161a75790ad306e4b1fecb72 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.cc
++++ b/chrome/browser/spellchecker/spellcheck_service.cc
+@@ -18,7 +18,9 @@
+ #include "base/synchronization/waitable_event.h"
+ #include "base/values.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/first_run/first_run.h"
++#endif
+ #include "chrome/browser/spellchecker/spellcheck_factory.h"
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+ #include "components/language/core/browser/pref_names.h"
+@@ -566,7 +568,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
+                 .empty());
+   });
+ 
+-  if (first_run::IsChromeFirstRun()) {
++  //if (first_run::IsChromeFirstRun()) {
+     // Ensure that spellcheck is enabled for the first dialect of the
+     // accepted languages if there is a Windows dictionary installed for
+     // that dialect.
+@@ -606,7 +608,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
+                                base::Value(first_user_language));
+       prefs->Set(spellcheck::prefs::kSpellCheckDictionaries, user_dictionaries);
+     }
+-  }
++  //}
+ 
+   // No need to call LoadHunspellDictionaries() as when the ListPrefUpdate
+   // object goes out of scope, the preference change handler will do this.

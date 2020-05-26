@@ -366,7 +366,7 @@ std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
 }
 
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
-    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+    mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
     content::RenderFrameHost* render_frame_host,
     const extensions::Extension* extension) const {
   PopulateExtensionFrameBinders(map, render_frame_host, extension);

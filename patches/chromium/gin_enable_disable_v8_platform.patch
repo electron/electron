@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index ee74e6ea92c64d0e95a4988557b236667f5b7e42..c3ae4c6221686479d05800c51d17d581c095e397 100644
+index 570a23af3c0fb4839b063c742d1d345a27799cd0..ece381bb1ce22bc65c3d8e428354adeb4b6fe4c1 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -103,9 +103,10 @@ IsolateHolder::~IsolateHolder() {
@@ -38,10 +38,10 @@ index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632b
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 2e2e3464a3760c39471b6897eee2b337f611cce0..d6effe50b5213b308cf59cd1c8cc7f1a62225763 100644
+index 517283e2f1886408ee5ad935e3bafecb9728ca94..e7224adc9f4def27a370bcca8effd7bccc01ab02 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -190,12 +190,14 @@ enum LoadV8FileResult {
+@@ -191,12 +191,14 @@ enum LoadV8FileResult {
  }  // namespace
  
  // static

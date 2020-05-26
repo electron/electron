@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Wed, 13 May 2020 14:54:39 -0700
+Subject: refactor: expose cursor changes to the WebContentsObserver
+
+Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `cursor-changed`.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
+
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
+index 2edad62668474c690adb283224400dc4e7163fbf..1c7928e66955e188f70d4f1c475f2ad33db80cb0 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.h
++++ b/content/browser/renderer_host/render_widget_host_delegate.h
+@@ -15,6 +15,7 @@
+ #include "components/viz/common/vertical_scroll_direction.h"
+ #include "content/browser/renderer_host/input_event_shim.h"
+ #include "content/common/content_export.h"
++#include "content/common/cursors/webcursor.h"
+ #include "content/common/drag_event_source_info.h"
+ #include "content/public/common/drop_data.h"
+ #include "services/metrics/public/cpp/ukm_recorder.h"
+@@ -281,6 +282,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+   // Allow the delegate to handle the cursor update. Returns true if handled.
+   virtual bool OnUpdateDragCursor();
+ 
++  // Notify the delegate of the RenderWidget's changing cursor.
++  virtual void OnCursorChanged(const WebCursor& cursor) {}
++
+   // Returns true if the provided RenderWidgetHostImpl matches the current
+   // RenderWidgetHost on the main frame, and false otherwise.
+   virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 77526d78e8113f7071fe269cbcdf63bb772db6e4..933377708dd4ef1793863fb042fd74c0aaef3f4c 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -1599,6 +1599,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+   if (!view_)
+     return;
+   view_->UpdateCursor(cursor);
++  if (delegate_)
++    delegate_->OnCursorChanged(cursor);
+ }
+ 
+ void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 402450783e76fedd1264d6d7f47352dd233be621..bf744d187a84df4c3ea93ec16ef2cc1ef5013d92 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3454,6 +3454,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+          browser_plugin_embedder_->OnUpdateDragCursor();
+ }
+ 
++void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
++  for (auto& observer : observers_)
++    observer.OnCursorChanged(cursor);
++}
++
+ bool WebContentsImpl::IsWidgetForMainFrame(
+     RenderWidgetHostImpl* render_widget_host) {
+   return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 71ddac828df2e3df42214aee30d8b0fa866938fe..acae46fdac0d8dc2a26c72595b6e4b49dc21106a 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -912,6 +912,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+   void SendScreenRects() override;
+   TextInputManager* GetTextInputManager() override;
+   bool OnUpdateDragCursor() override;
++  void OnCursorChanged(const WebCursor& cursor) override;
+   bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
+   bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
+   bool IsShowingContextMenuOnPage() const override;
+diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
+index d84c9abf8e8e46606a23d5e66ce740afeac01179..111d867f8a9076cf32e09d357dce9ff9aa1cadc2 100644
+--- a/content/public/browser/web_contents_observer.h
++++ b/content/public/browser/web_contents_observer.h
+@@ -14,6 +14,7 @@
+ #include "base/threading/thread_restrictions.h"
+ #include "components/viz/common/vertical_scroll_direction.h"
+ #include "content/common/content_export.h"
++#include "content/common/cursors/webcursor.h"
+ #include "content/public/browser/allow_service_worker_result.h"
+ #include "content/public/browser/cookie_access_details.h"
+ #include "content/public/browser/navigation_controller.h"
+@@ -354,6 +355,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+   // Invoked every time the WebContents changes visibility.
+   virtual void OnVisibilityChanged(Visibility visibility) {}
+ 
++  // Invoked every time the RenderWidget's cursor changes.
++  virtual void OnCursorChanged(const WebCursor& cursor) {}
++
+   // Invoked when the main frame changes size.
+   virtual void MainFrameWasResized(bool width_changed) {}
+ 

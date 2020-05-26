@@ -118,7 +118,7 @@ class ElectronExtensionsBrowserClient
   std::string GetApplicationLocale() override;
   std::string GetUserAgent() const override;
   void RegisterBrowserInterfaceBindersForFrame(
-      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+      mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
 

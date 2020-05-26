@@ -55,6 +55,7 @@
 #include "shell/browser/ui/x/window_state_watcher.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #include "ui/views/window/native_frame_view.h"
@@ -220,15 +221,15 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
-  std::vector<::Atom> state_atom_list;
+  std::vector<x11::Atom> state_atom_list;
   bool skip_taskbar = false;
   if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
   }
 
   // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
   if (fullscreen) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
+    state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
   if (parent) {
@@ -237,7 +238,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     window_type = "dialog";
     // Modal window needs the _NET_WM_STATE_MODAL hint.
     if (is_modal())
-      state_atom_list.push_back(GetAtom("_NET_WM_STATE_MODAL"));
+      state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_MODAL"));
   }
 
   if (!state_atom_list.empty())
@@ -453,7 +454,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
-  views::DesktopWindowTreeHostLinux* tree_host =
+  views::DesktopWindowTreeHostPlatform* tree_host =
       views::DesktopWindowTreeHostLinux::GetHostForWidget(
           GetAcceleratedWidget());
   if (enable) {
@@ -863,7 +864,7 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
   }
 #elif defined(USE_X11)
   SetWMSpecState(GetAcceleratedWidget(), skip,
-                 GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+                 gfx::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
@@ -955,8 +956,9 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};
-    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
-                            ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
+    XShapeCombineRectangles(
+        gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0, 0, &r, 1,
+        ShapeSet, static_cast<int>(x11::XProto::ClipOrdering::YXBanded));
   } else {
     XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
                       0, x11::None, ShapeSet);
@@ -1145,8 +1147,8 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 #if defined(USE_X11)
   // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
   // determine whether the current window is visible on all workspaces.
-  XAtom sticky_atom = GetAtom("_NET_WM_STATE_STICKY");
-  std::vector<XAtom> wm_states;
+  x11::Atom sticky_atom = gfx::GetAtom("_NET_WM_STATE_STICKY");
+  std::vector<x11::Atom> wm_states;
   ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
   return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
          wm_states.end();
@@ -1274,19 +1276,14 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 
 #if defined(USE_X11)
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-  XDisplay* xdisplay = gfx::GetXDisplay();
   if (use_dark_theme) {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"), 4);
+    ui::SetStringProperty(GetAcceleratedWidget(),
+                          gfx::GetAtom("_GTK_THEME_VARIANT"),
+                          gfx::GetAtom("UTF8_STRING"), "dark");
   } else {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("light"), 5);
+    ui::SetStringProperty(GetAcceleratedWidget(),
+                          gfx::GetAtom("_GTK_THEME_VARIANT"),
+                          gfx::GetAtom("UTF8_STRING"), "light");
   }
 }
 #endif

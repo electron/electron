@@ -111,7 +111,7 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 224d52b83533543398757ca487f99b3e59897e21..eb50b0393ba532766867aeec5ddeab1a6acd0bc2 100644
+index c81645e60a2a31429051fdfbf29666a09fa19c61..b3a6ed705f2f8bbbe74ec7e84ab07dc64f231dfd 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -10,14 +10,15 @@
@@ -131,7 +131,7 @@ index 224d52b83533543398757ca487f99b3e59897e21..eb50b0393ba532766867aeec5ddeab1a
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -221,6 +222,8 @@ void NativeDesktopMediaList::Worker::RefreshThumbnails(
+@@ -223,6 +224,8 @@ void NativeDesktopMediaList::Worker::RefreshThumbnails(
        FROM_HERE, {BrowserThread::UI},
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
@@ -139,4 +139,4 @@ index 224d52b83533543398757ca487f99b3e59897e21..eb50b0393ba532766867aeec5ddeab1a
 +  capturer_.reset();
  }
  
- void NativeDesktopMediaList::Worker::OnCaptureResult(
+ bool NativeDesktopMediaList::Worker::IsCurrentFrameValid() const {

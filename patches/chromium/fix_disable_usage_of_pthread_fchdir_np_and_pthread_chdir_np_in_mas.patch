@@ -7,7 +7,7 @@ Subject:
 Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 62ffd51c4dd3166d6adbda24e6ee47805a69c93b..398290ffe8dd2d8d2ab13a6877a1932722968255 100644
+index 6fc6ba115fb68072c1946d99710ea0a2c6233ecf..c4d31ee43ebac512f2de98e6a0d88d59bacd992d 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -26,8 +26,10 @@ extern "C" {
@@ -21,7 +21,7 @@ index 62ffd51c4dd3166d6adbda24e6ee47805a69c93b..398290ffe8dd2d8d2ab13a6877a19327
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -98,21 +100,29 @@ class PosixSpawnFileActions {
+@@ -102,21 +104,29 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -51,7 +51,7 @@ index 62ffd51c4dd3166d6adbda24e6ee47805a69c93b..398290ffe8dd2d8d2ab13a6877a19327
  }
  
  struct GetAppOutputOptions {
-@@ -228,11 +238,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -232,11 +242,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
