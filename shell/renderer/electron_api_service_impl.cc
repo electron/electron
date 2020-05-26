@@ -236,6 +236,12 @@ void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
 }
 #endif
 
+void ElectronApiServiceImpl::NotifyUserActivation() {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  if (frame)
+    frame->NotifyUserActivation();
+}
+
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {

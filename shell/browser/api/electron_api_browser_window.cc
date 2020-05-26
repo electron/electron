@@ -266,6 +266,9 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     // Already closed by renderer
     return;
 
+  // Required to make beforeunload handler work.
+  api_web_contents_->NotifyUserActivation();
+
   if (web_contents()->NeedToFireBeforeUnloadOrUnload())
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
   else
