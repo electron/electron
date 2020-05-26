@@ -95,16 +95,13 @@ describe('BrowserWindow module', () => {
       fs.unlinkSync(test);
       expect(String(content)).to.equal('unload');
     });
+
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'));
-      const beforeunload = new Promise(resolve => {
-        ipcMain.once('onbeforeunload', (e) => {
-          e.returnValue = null;
-          resolve();
-        });
-      });
+      await w.loadFile(path.join(fixtures, 'api', 'beforeunload-emit.html'));
       w.close();
-      await beforeunload;
+
+      const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
+      e.returnValue = null;
     });
 
     describe('when invoked synchronously inside navigation observer', () => {

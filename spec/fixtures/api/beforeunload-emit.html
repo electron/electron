@@ -1,0 +1,15 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  window.addEventListener('beforeunload', (event) => {
+    setTimeout(() => {
+      const { ipcRenderer } = require('electron');
+      ipcRenderer.sendSync('onbeforeunload');
+    }, 0);
+
+    // The absence of a returnValue property on the event will guarantee the browser unload happens.
+    delete event['returnValue'];
+  })
+</script>
+</body>
+</html>
