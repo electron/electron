@@ -92,6 +92,19 @@ bool GetNextArgument(gin::Arguments* args,
   }
 }
 
+// Support base::Optional as an argument.
+template <typename T>
+bool GetNextArgument(gin::Arguments* args,
+                     int create_flags,
+                     bool is_first,
+                     base::Optional<T>* result) {
+  T converted;
+  // Use gin::Arguments::GetNext which always advances |next| counter.
+  if (args->GetNext(&converted))
+    result->emplace(std::move(converted));
+  return true;
+}
+
 // For advanced use cases, we allow callers to request the unparsed Arguments
 // object and poke around in it directly.
 inline bool GetNextArgument(gin::Arguments* args,

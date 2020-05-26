@@ -3,9 +3,8 @@ import { expect } from 'chai'
 import { closeWindow } from './window-helpers'
 import { ifdescribe } from './spec-helpers';
 
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, nativeImage } from 'electron'
 import { serialize, deserialize } from '../lib/common/type-utils';
-import { nativeImage } from 'electron';
 
 const features = process.electronBinding('features')
 
@@ -37,7 +36,6 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     }
     return result
   }
-
 
   describe('typeUtils serialization/deserialization', () => {
     it('serializes and deserializes an empty NativeImage', () => {

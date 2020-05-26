@@ -5,12 +5,12 @@ import { EventEmitter } from 'events';
 import objectsRegistry from './objects-registry';
 import { ipcMainInternal } from '../ipc-main-internal';
 import * as guestViewManager from '@electron/internal/browser/guest-view-manager';
-import { isPromise, isSerializableObject, deserialize } from '@electron/internal/common/type-utils';
-import { Size } from 'electron/main';
+import { isPromise, isSerializableObject, deserialize, serialize } from '@electron/internal/common/type-utils';
 
 const v8Util = process.electronBinding('v8_util');
 const eventBinding = process.electronBinding('event');
 const features = process.electronBinding('features');
+const { NativeImage } = process.electronBinding('native_image');
 
 if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled');
@@ -115,6 +115,9 @@ type MetaType = {
 } | {
   type: 'promise',
   then: MetaType
+} | {
+  type: 'nativeimage'
+  value: electron.NativeImage
 }
 
 // Convert a real value into meta data.
@@ -125,6 +128,8 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
     // Recognize certain types of objects.
     if (value instanceof Buffer) {
       type = 'buffer';
+    } else if (value instanceof NativeImage) {
+      type = 'nativeimage';
     } else if (Array.isArray(value)) {
       type = 'array';
     } else if (value instanceof Error) {
@@ -148,6 +153,8 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
       type,
       members: value.map((el: any) => valueToMeta(sender, contextId, el, optimizeSimpleObject))
     };
+  } else if (type === 'nativeimage') {
+    return { type, value: serialize(value) };
   } else if (type === 'object' || type === 'function') {
     return {
       type,
@@ -250,7 +257,7 @@ type MetaTypeFromRenderer = {
 } | {
   type: 'nativeimage',
   value: {
-    size: Size,
+    size: electron.Size,
     buffer: Buffer,
     scaleFactor: number,
     dataURL: string
