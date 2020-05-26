@@ -802,19 +802,18 @@ describe('BrowserWindow module', () => {
     })
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
-      it('sets the content size', (done) => {
+      it('sets the content size', async () => {
         // NB. The CI server has a very small screen. Attempting to size the window
         // larger than the screen will limit the window's size to the screen and
         // cause the test to fail.
         const size = [456, 567]
         w.setContentSize(size[0], size[1])
-        setImmediate(() => {
-          const after = w.getContentSize()
-          expect(after).to.deep.equal(size)
-          done()
-        })
-      })
-      it('works for a frameless window', (done) => {
+        await new Promise(setImmediate)
+        const after = w.getContentSize()
+        expect(after).to.deep.equal(size)
+      });
+
+      it('works for a frameless window', async () => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
@@ -824,11 +823,9 @@ describe('BrowserWindow module', () => {
         })
         const size = [456, 567]
         w.setContentSize(size[0], size[1])
-        setImmediate(() => {
-          const after = w.getContentSize()
-          expect(after).to.deep.equal(size)
-          done()
-        })
+        await new Promise(setImmediate)
+        const after = w.getContentSize()
+        expect(after).to.deep.equal(size)
       })
     })
 
