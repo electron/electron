@@ -1186,7 +1186,10 @@ describe('chromium features', () => {
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1194,7 +1197,10 @@ describe('chromium features', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
   });
 
