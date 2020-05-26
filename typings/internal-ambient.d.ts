@@ -100,7 +100,10 @@ declare namespace NodeJS {
     electronBinding(name: 'v8_util'): V8UtilBinding;
     electronBinding(name: 'app'): { app: Electron.App, App: Function };
     electronBinding(name: 'command_line'): Electron.CommandLine;
-    electronBinding(name: 'desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer };
+    electronBinding(name: 'desktop_capturer'): {
+      createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+      getMediaSourceIdForWebContents(requestWebContentsId: number, webContentsId: number): string;
+    };
     electronBinding(name: 'net'): {
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
