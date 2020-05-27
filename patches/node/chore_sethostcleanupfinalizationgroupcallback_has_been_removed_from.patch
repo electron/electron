@@ -14,9 +14,9 @@ index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc8
  using v8::EscapableHandleScope;
 -using v8::FinalizationGroup;
  using v8::Function;
+ using v8::FunctionCallbackInfo;
  using v8::HandleScope;
- using v8::Isolate;
-@@ -77,15 +76,6 @@ static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -78,15 +77,6 @@ static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -30,8 +30,8 @@ index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc8
 -}
 -
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
+   void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
-     return UncheckedCalloc(size);
 @@ -228,11 +218,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      s.promise_reject_callback : task_queue::PromiseRejectCallback;
    isolate->SetPromiseRejectCallback(promise_reject_cb);
