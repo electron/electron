@@ -19,6 +19,21 @@ This can be removed once web content (including WebGL) learn how
 to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
+diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
+index 461198cc1c11bbd15e6bdc846ba563f4f62916af..454dc37ab4b46cd449ae10c6a5dc9014f57e74e8 100644
+--- a/cc/trees/layer_tree_host_impl.cc
++++ b/cc/trees/layer_tree_host_impl.cc
+@@ -1830,6 +1830,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+ 
+ gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
+     gfx::ContentColorUsage content_color_usage) const {
++  if (!settings_.enable_color_correct_rendering) {
++    return {};
++  }
++
+   constexpr gfx::ColorSpace srgb = gfx::ColorSpace::CreateSRGB();
+ 
+   if (settings_.prefer_raster_in_srgb &&
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index 95a901678c215220b9e88db768444d48e32f6dbd..841c809b0b50c8c34a9d9c972c511bd4fd57a7b0 100644
 --- a/cc/trees/layer_tree_settings.h
@@ -293,7 +308,7 @@ index d88680239152858689121d134559765fb8fae1b7..073ed8a8f84ebf994a2b9d9fa7e78f75
  
    gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..5b661c70c9c89883a1aaaf1a29a9ec9fe7f16da6 100644
+index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -16,6 +16,7 @@
@@ -304,33 +319,37 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..5b661c70c9c89883a1aaaf1a29a9ec9f
  
  namespace gfx {
  
-@@ -258,6 +259,11 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
-     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
-   } else {
-     CGColorSpaceRef color_space = base::mac::GetSRGBColorSpace();
-+    auto* cmd_line = base::CommandLine::ForCurrentProcess();
-+    if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
-+      color_space = base::mac::GetSystemColorSpace();
-+    }
-+
-     base::ScopedCFTypeRef<CFDataRef> color_space_icc(
-         CGColorSpaceCopyICCProfile(color_space));
-     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
-@@ -274,6 +280,14 @@ bool IOSurfaceCanSetColorSpace(const ColorSpace& color_space) {
- 
- void IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
+@@ -119,6 +120,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+ // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
+ bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
 +  auto* cmd_line = base::CommandLine::ForCurrentProcess();
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    base::ScopedCFTypeRef<CFDataRef> system_icc(
 +        CGColorSpaceCopyICCProfile(base::mac::GetSystemColorSpace()));
 +    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc);
-+    return;
++    return true;
 +  }
 +
-   if (!internal::IOSurfaceSetColorSpace(io_surface, color_space)) {
-     DLOG(ERROR) << "Failed to set color space for IOSurface: "
-                 << color_space.ToString();
+   // Allow but ignore invalid color spaces.
+   if (!color_space.IsValid())
+     return true;
+@@ -253,6 +262,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+     DCHECK_EQ(kIOReturnSuccess, r);
+   }
+ 
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
++    CGColorSpaceRef color_space = base::mac::GetSystemColorSpace();
++    base::ScopedCFTypeRef<CFDataRef> color_space_icc(
++        CGColorSpaceCopyICCProfile(color_space));
++    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
++    return surface;
++  }
++
+   // Ensure that all IOSurfaces start as sRGB.
+   if (__builtin_available(macos 10.12, *)) {
+     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
 index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
 --- a/ui/gfx/switches.cc
