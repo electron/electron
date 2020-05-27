@@ -7,15 +7,16 @@
 
 #include "base/hash/hash.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/common/api/electron_api_key_weak_map.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
-#include "shell/common/api/electron_api_key_weak_map.h"
 #include "shell/common/api/remote/remote_callback_freer.h"
 #include "shell/common/api/remote/remote_object_freer.h"
 #endif
@@ -111,6 +112,29 @@ bool IsSameOrigin(const GURL& l, const GURL& r) {
   return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
 }
 
+#ifdef DCHECK_IS_ON
+std::vector<v8::Global<v8::Value>> weakly_tracked_values;
+
+void WeaklyTrackValue(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  v8::Global<v8::Value> global_value(isolate, value);
+  global_value.SetWeak();
+  weakly_tracked_values.push_back(std::move(global_value));
+}
+
+void ClearWeaklyTrackedValues() {
+  weakly_tracked_values.clear();
+}
+
+std::vector<v8::Local<v8::Value>> GetWeaklyTrackedValues(v8::Isolate* isolate) {
+  std::vector<v8::Local<v8::Value>> locals;
+  for (size_t i = 0; i < weakly_tracked_values.size(); i++) {
+    if (!weakly_tracked_values[i].IsEmpty())
+      locals.push_back(weakly_tracked_values[i].Get(isolate));
+  }
+  return locals;
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -135,6 +159,11 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
+#ifdef DCHECK_IS_ON
+  dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
+  dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);
+  dict.SetMethod("weaklyTrackValue", &WeaklyTrackValue);
+#endif
 }
 
 }  // namespace

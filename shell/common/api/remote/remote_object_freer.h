@@ -8,7 +8,7 @@
 #include <map>
 #include <string>
 
-#include "shell/common/api/remote/object_life_monitor.h"
+#include "shell/common/api/object_life_monitor.h"
 
 namespace electron {
 

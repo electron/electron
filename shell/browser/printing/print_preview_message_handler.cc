@@ -69,16 +69,6 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
                         OnMetafileReadyForPrinting)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
-  if (handled)
-    return true;
-
-  handled = true;
-  IPC_BEGIN_MESSAGE_MAP(PrintPreviewMessageHandler, message)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed, OnPrintPreviewFailed)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewCancelled,
-                        OnPrintPreviewCancelled)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
   return handled;
 }
 
@@ -134,20 +124,24 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
       base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(region));
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewFailed(
-    int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+void PrintPreviewMessageHandler::PrintPreviewFailed(int32_t document_cookie,
+                                                    int32_t request_id) {
   StopWorker(document_cookie);
 
-  RejectPromise(ids.request_id);
+  RejectPromise(request_id);
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
-    int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+void PrintPreviewMessageHandler::PrintPreviewCancelled(int32_t document_cookie,
+                                                       int32_t request_id) {
   StopWorker(document_cookie);
 
-  RejectPromise(ids.request_id);
+  RejectPromise(request_id);
+}
+
+void PrintPreviewMessageHandler::CheckForCancel(
+    int32_t request_id,
+    CheckForCancelCallback callback) {
+  std::move(callback).Run(false);
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
@@ -162,8 +156,13 @@ void PrintPreviewMessageHandler::PrintToPDF(
                   ? focused_frame
                   : web_contents()->GetMainFrame();
 
-  if (!print_render_frame_.is_bound())
+  if (!print_render_frame_.is_bound()) {
     rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);
+  }
+  if (!receiver_.is_bound()) {
+    print_render_frame_->SetPrintPreviewUI(
+        receiver_.BindNewEndpointAndPassRemote());
+  }
   print_render_frame_->PrintPreview(options.Clone());
 }
 

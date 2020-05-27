@@ -67,18 +67,10 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 85378bb565de617b1bd611d28c8714361747a357..d67d558b91b49835dfa927893093948093c54f7a 100644
+index 85378bb565de617b1bd611d28c8714361747a357..36de4c0b0353be2418dacd388e92d7c38a7ee139 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -11,6 +11,7 @@
- #include <IOKit/hidsystem/ev_keymap.h>
- 
- #include "base/containers/flat_set.h"
-+#include "electron/buildflags/buildflags.h"
- #include "ui/base/accelerators/accelerator.h"
- #include "ui/base/accelerators/system_media_controls_media_keys_listener.h"
- 
-@@ -32,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -91,7 +83,7 @@ index 85378bb565de617b1bd611d28c8714361747a357..d67d558b91b49835dfa9278930939480
    }
    return VKEY_UNKNOWN;
  }
-@@ -192,7 +199,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
+@@ -192,7 +198,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

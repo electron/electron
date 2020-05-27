@@ -325,6 +325,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
+    "//components/crash/core/app",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
@@ -333,6 +334,7 @@ source_set("electron_lib") {
     "//components/network_session_configurator/common",
     "//components/pref_registry",
     "//components/prefs",
+    "//components/upload_list",
     "//components/user_prefs",
     "//components/viz/host",
     "//components/viz/service",
@@ -362,6 +364,7 @@ source_set("electron_lib") {
     "//third_party/blink/public:blink",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
+    "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:webrtc_component",
@@ -446,10 +449,15 @@ source_set("electron_lib") {
     ]
   }
 
+  if (is_linux) {
+    deps += [ "//components/crash/content/browser" ]
+  }
+
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
       "//content/common:mac_helpers",
+      "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -471,11 +479,7 @@ source_set("electron_lib") {
     ]
     if (is_mas_build) {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
-      sources -= [
-        "shell/browser/auto_updater_mac.mm",
-        "shell/common/crash_reporter/crash_reporter_mac.h",
-        "shell/common/crash_reporter/crash_reporter_mac.mm",
-      ]
+      sources -= [ "shell/browser/auto_updater_mac.mm" ]
       defines += [ "MAS_BUILD" ]
     } else {
       libs += [
@@ -498,7 +502,6 @@ source_set("electron_lib") {
       "//build/config/linux/gtk",
       "//dbus",
       "//device/bluetooth",
-      "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk",
@@ -512,7 +515,6 @@ source_set("electron_lib") {
       ]
     }
     configs += [ ":gio_unix" ]
-    include_dirs += [ "//third_party/breakpad" ]
     configs += [ "//build/config/linux:x11" ]
     defines += [
       # Disable warnings for g_settings_list_schemas.
@@ -528,6 +530,7 @@ source_set("electron_lib") {
   if (is_win) {
     libs += [ "dwmapi.lib" ]
     deps += [
+      "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",
       "//ui/views/controls/webview",
       "//ui/wm",
@@ -537,14 +540,6 @@ source_set("electron_lib") {
       "//sandbox/win:sandbox",
       "//third_party/crashpad/crashpad/handler",
     ]
-  }
-
-  if ((is_mac && !is_mas_build) || is_win) {
-    sources += [
-      "shell/common/crash_reporter/crash_reporter_crashpad.cc",
-      "shell/common/crash_reporter/crash_reporter_crashpad.h",
-    ]
-    deps += [ "//third_party/crashpad/crashpad/client" ]
   }
 
   if (enable_plugins) {
@@ -586,8 +581,6 @@ source_set("electron_lib") {
 
   if (enable_remote_module) {
     sources += [
-      "shell/common/api/remote/object_life_monitor.cc",
-      "shell/common/api/remote/object_life_monitor.h",
       "shell/common/api/remote/remote_callback_freer.cc",
       "shell/common/api/remote/remote_callback_freer.h",
       "shell/common/api/remote/remote_object_freer.cc",
@@ -751,11 +744,11 @@ if (is_mac) {
   }
 
   bundle_data("electron_crashpad_helper") {
-    sources = [ "$root_out_dir/crashpad_handler" ]
+    sources = [ "$root_out_dir/chrome_crashpad_handler" ]
 
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
 
-    public_deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+    public_deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
 
     if (is_asan) {
       # crashpad_handler requires the ASan runtime at its @executable_path.
@@ -770,6 +763,7 @@ if (is_mac) {
     framework_contents = [
       "Resources",
       "Libraries",
+      "Helpers",
     ]
     public_deps = [
       ":electron_framework_libraries",
@@ -993,10 +987,10 @@ if (is_mac) {
     }
 
     extract_symbols("crashpad_handler_syms") {
-      binary = "$root_out_dir/crashpad_handler"
+      binary = "$root_out_dir/chrome_crashpad_handler"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/crashpad_handler.dSYM/Contents/Resources/DWARF/crashpad_handler"
-      deps = [ "//third_party/crashpad/crashpad/handler:crashpad_handler" ]
+      dsym_file = "$root_out_dir/chrome_crashpad_handler.dSYM/Contents/Resources/DWARF/chrome_crashpad_handler"
+      deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
     }
 
     group("electron_symbols") {
@@ -1037,6 +1031,7 @@ if (is_mac) {
       ":electron_app_manifest",
       ":electron_lib",
       ":packed_resources",
+      "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
       "//ui/strings",
@@ -1064,6 +1059,11 @@ if (is_mac) {
         # TODO: we should be generating our .rc files more like how chrome does
         "shell/browser/resources/win/electron.rc",
         "shell/browser/resources/win/resource.h",
+      ]
+
+      deps += [
+        "//components/browser_watcher:browser_watcher_client",
+        "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
       libs = [
@@ -1269,7 +1269,7 @@ dist_zip("electron_chromedriver_zip") {
 
 mksnapshot_deps = [
   ":licenses",
-  "//tools/v8_context_snapshot:v8_context_snapshot_generator",
+  "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)",
   "//v8:mksnapshot($v8_snapshot_toolchain)",
 ]
 

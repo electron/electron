@@ -8,10 +8,10 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 9829c1507a71669308ff6215d68d56ce4f2825bd..5f513ec6a79b082de75ccd655d4210f37f63de42 100644
+index b5dd9b3023750cb6b23627788b411832cf53f702..baaf3383a55e897483829c79a297e06b3210ea29 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -796,9 +796,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+@@ -784,9 +784,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
  
  bool WebContentsViewAura::IsValidDragTarget(
      RenderWidgetHostImpl* target_rwh) const {
@@ -23,10 +23,10 @@ index 9829c1507a71669308ff6215d68d56ce4f2825bd..5f513ec6a79b082de75ccd655d4210f3
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index b874b3c4b16ca87c9730c6caaf5788cff0ab3493..2c82d63d646c9201abd6a669b726dae0f8bec12b 100644
+index 5cb5db078b33ecda5ef445e2141a1de76de72ca1..c0f03eb153cb0839e268148f30d7bf43f67648fe 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -419,9 +419,7 @@ void DropCompletionCallback(
+@@ -383,9 +383,7 @@ void DropCompletionCallback(
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

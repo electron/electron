@@ -7,7 +7,7 @@ Pass RenderProcessHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index a717d9f3539dc0fe86b743c6e29e4311b8b5cec3..1351217319c57be414e6c66f8a01f71fe46d2c04 100644
+index 659149f4c5dea45bead88d26369d8aeb9462b729..7105781e0019b456f287fd0ebb6e309efe2cecad 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -88,9 +88,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 4c88b83382bfe08e91ceb981392e72cbc8cbd80b..9beff8728eba07fe5bbb50701dcec78d61149fde 100644
+index 09252dcdf267aad57653a23def406653265eee13..64e781e055df605a2e205106eaed8264ebd3f4b8 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2110,7 +2110,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2125,7 +2125,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

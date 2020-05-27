@@ -25,11 +25,6 @@ extern const char kValidCertificateDescription[];
 extern const char kSecureProtocol[];
 extern const char kSecureProtocolDescription[];
 
-#if defined(OS_WIN)
-// Crashpad pipe name.
-extern const char kCrashpadPipeName[];
-#endif
-
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 extern const char kRunAsNode[];
 #endif

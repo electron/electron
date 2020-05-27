@@ -89,6 +89,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/language_util.h"
 #include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -100,8 +101,9 @@
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
+#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
-#include "ui/base/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -121,7 +123,6 @@
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
-#include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/gfx/font_render_params.h"
 #endif
 
@@ -177,22 +178,22 @@ struct Converter<printing::MarginType> {
 };
 
 template <>
-struct Converter<printing::DuplexMode> {
+struct Converter<printing::mojom::DuplexMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     printing::DuplexMode* out) {
+                     printing::mojom::DuplexMode* out) {
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "simplex") {
-        *out = printing::SIMPLEX;
+        *out = printing::mojom::DuplexMode::kSimplex;
         return true;
       }
       if (mode == "longEdge") {
-        *out = printing::LONG_EDGE;
+        *out = printing::mojom::DuplexMode::kLongEdge;
         return true;
       }
       if (mode == "shortEdge") {
-        *out = printing::SHORT_EDGE;
+        *out = printing::mojom::DuplexMode::kShortEdge;
         return true;
       }
     }
@@ -535,7 +536,22 @@ void WebContents::InitWithSessionAndOptions(
   managed_web_contents()->GetView()->SetDelegate(this);
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
-  prefs->accept_languages = g_browser_process->GetApplicationLocale();
+
+  // Collect preferred languages from OS and browser process. accept_languages
+  // effects HTTP header, navigator.languages, and CJK fallback font selection.
+  //
+  // Note that an application locale set to the browser process might be
+  // different with the one set to the preference list.
+  // (e.g. overridden with --lang)
+  std::string accept_languages =
+      g_browser_process->GetApplicationLocale() + ",";
+  for (auto const& language : electron::GetPreferredLanguages()) {
+    if (language == g_browser_process->GetApplicationLocale())
+      continue;
+    accept_languages += language + ",";
+  }
+  accept_languages.pop_back();
+  prefs->accept_languages = accept_languages;
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
@@ -692,6 +708,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
 void WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
+    const GURL& target_url,
     WindowOpenDisposition disposition,
     const gfx::Rect& initial_rect,
     bool user_gesture,
@@ -740,6 +757,8 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
+  // Note that Chromium does not emit this for navigations.
+  Emit("before-unload-fired", proceed);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
@@ -981,6 +1000,11 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+  v8::HandleScope handle_scope(isolate());
+  gin_helper::Dictionary details =
+      gin_helper::Dictionary::CreateEmpty(isolate());
+  details.Set("reason", status);
+  Emit("render-process-gone", details);
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
@@ -1369,8 +1393,6 @@ void WebContents::DevToolsClosed() {
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
-                             handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1416,6 +1438,10 @@ void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& details) {
   Emit("navigation-entry-committed", details.entry->GetURL(),
        details.is_same_document, details.did_replace_entry);
+}
+
+bool WebContents::GetBackgroundThrottling() const {
+  return background_throttling_;
 }
 
 void WebContents::SetBackgroundThrottling(bool allowed) {
@@ -1520,6 +1546,9 @@ void WebContents::LoadURL(const GURL& url,
 
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
+
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
@@ -2006,9 +2035,10 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
-  settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
+  settings.SetIntKey(printing::kSettingDuplexMode,
+                     static_cast<int>(duplex_mode));
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
@@ -2281,13 +2311,13 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
     content::NativeWebKeyboardEvent keyboard_event(
-        blink::WebKeyboardEvent::kRawKeyDown,
-        blink::WebInputEvent::kNoModifiers, ui::EventTimeForNow());
+        blink::WebKeyboardEvent::Type::kRawKeyDown,
+        blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
-  } else if (type == blink::WebInputEvent::kMouseWheel) {
+  } else if (type == blink::WebInputEvent::Type::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
@@ -2347,7 +2377,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
   }
 
   gin::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon)) {
+  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
     args->ThrowError("Must specify non-empty 'icon' option");
     return;
   }
@@ -2420,7 +2450,7 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
   const ui::Cursor& cursor = webcursor.cursor();
 
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
@@ -2650,6 +2680,15 @@ void WebContents::GrantOriginAccess(const GURL& url) {
       url::Origin::Create(url));
 }
 
+void WebContents::NotifyUserActivation() {
+  auto* frame = web_contents()->GetMainFrame();
+  if (!frame)
+    return;
+  mojo::AssociatedRemote<mojom::ElectronRenderer> renderer;
+  frame->GetRemoteAssociatedInterfaces()->GetInterface(&renderer);
+  renderer->NotifyUserActivation();
+}
+
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     const base::FilePath& file_path) {
   gin_helper::Promise<void> promise(isolate());
@@ -2698,6 +2737,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "WebContents"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("getBackgroundThrottling",
+                 &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)

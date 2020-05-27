@@ -5,6 +5,8 @@ Subject: Rename FinalizationGroup to FinalizationRegistry for JS
 
 https://chromium-review.googlesource.com/c/v8/v8/+/2071236
 
+This is already present in Node.js v14 and can be removed when we upgrade.
+
 diff --git a/test/parallel/test-finalization-group-error.js b/test/parallel/test-finalization-group-error.js
 index 0685811f55b7f8efc88e04ffd5e173ed7d415258..46a670073b1dbba9729e54166378991a7edba5a0 100644
 --- a/test/parallel/test-finalization-group-error.js

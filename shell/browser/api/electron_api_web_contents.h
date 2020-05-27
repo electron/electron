@@ -60,6 +60,42 @@ namespace network {
 class ResourceRequestBody;
 }
 
+namespace gin {
+
+template <>
+struct Converter<base::TerminationStatus> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::TerminationStatus& status) {
+    switch (status) {
+      case base::TERMINATION_STATUS_NORMAL_TERMINATION:
+        return gin::ConvertToV8(isolate, "clean-exit");
+      case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
+        return gin::ConvertToV8(isolate, "abnormal-exit");
+      case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
+        return gin::ConvertToV8(isolate, "killed");
+      case base::TERMINATION_STATUS_PROCESS_CRASHED:
+        return gin::ConvertToV8(isolate, "crashed");
+      case base::TERMINATION_STATUS_STILL_RUNNING:
+        return gin::ConvertToV8(isolate, "still-running");
+      case base::TERMINATION_STATUS_LAUNCH_FAILED:
+        return gin::ConvertToV8(isolate, "launch-failed");
+      case base::TERMINATION_STATUS_OOM:
+        return gin::ConvertToV8(isolate, "oom");
+#if defined(OS_WIN)
+      case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
+        return gin::ConvertToV8(isolate, "integrity-failure");
+#endif
+      case base::TERMINATION_STATUS_MAX_ENUM:
+        NOTREACHED();
+        return gin::ConvertToV8(isolate, "");
+    }
+    NOTREACHED();
+    return gin::ConvertToV8(isolate, "");
+  }
+};
+
+}  // namespace gin
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -151,6 +187,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // See https://github.com/electron/electron/issues/15133.
   void DestroyWebContents(bool async);
 
+  bool GetBackgroundThrottling() const;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
@@ -330,6 +367,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
+  // Notifies the web page that there is user interaction.
+  void NotifyUserActivation();
+
   v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
 
   // Properties.
@@ -407,6 +447,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
                       std::unique_ptr<content::WebContents> new_contents,
+                      const GURL& target_url,
                       WindowOpenDisposition disposition,
                       const gfx::Rect& initial_rect,
                       bool user_gesture,
@@ -511,6 +552,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
       mojo::ScopedMessagePipeHandle* interface_pipe) override;
+  void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
   // InspectableWebContentsDelegate:
@@ -567,9 +609,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  // Called when we receive a CursorChange message from chromium.
-  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.

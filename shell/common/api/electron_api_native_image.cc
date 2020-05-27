@@ -248,21 +248,32 @@ bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
 }
 
-gfx::Size NativeImage::GetSize() {
-  return image_.Size();
+gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
+  float sf = scale_factor.value_or(1.0f);
+  gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
+
+  return gfx::Size(image_rep.GetWidth(), image_rep.GetHeight());
 }
 
-float NativeImage::GetAspectRatio() {
-  gfx::Size size = GetSize();
+std::vector<float> NativeImage::GetScaleFactors() {
+  gfx::ImageSkia image_skia = image_.AsImageSkia();
+  return image_skia.GetSupportedScales();
+}
+
+float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
+  float sf = scale_factor.value_or(1.0f);
+  gfx::Size size = GetSize(sf);
   if (size.IsEmpty())
     return 1.f;
   else
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-gin::Handle<NativeImage> NativeImage::Resize(v8::Isolate* isolate,
+gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
                                              base::DictionaryValue options) {
-  gfx::Size size = GetSize();
+  float scale_factor = GetScaleFactorFromOptions(args);
+
+  gfx::Size size = GetSize(scale_factor);
   int width = size.width();
   int height = size.height();
   bool width_set = options.GetInteger("width", &width);
@@ -272,11 +283,12 @@ gin::Handle<NativeImage> NativeImage::Resize(v8::Isolate* isolate,
   if (width_set && !height_set) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
-    size = gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio());
+    size =
+        gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio(scale_factor));
   } else if (height_set && !width_set) {
     // Scale width to preserve original aspect ratio
     size.set_width(height);
-    size = gfx::ScaleToRoundedSize(size, GetAspectRatio(), 1.f);
+    size = gfx::ScaleToRoundedSize(size, GetAspectRatio(scale_factor), 1.f);
   }
 
   skia::ImageOperations::ResizeMethod method =
@@ -290,8 +302,8 @@ gin::Handle<NativeImage> NativeImage::Resize(v8::Isolate* isolate,
 
   gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(
       image_.AsImageSkia(), method, size);
-  return gin::CreateHandle(isolate,
-                           new NativeImage(isolate, gfx::Image(resized)));
+  return gin::CreateHandle(
+      args->isolate(), new NativeImage(args->isolate(), gfx::Image(resized)));
 }
 
 gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
@@ -490,9 +502,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !defined(OS_MACOSX)
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    gin::Arguments* args,
-    const std::string& name) {
+gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
+                                                           std::string name) {
   return CreateEmpty(args->isolate());
 }
 #endif
@@ -506,6 +517,7 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
       .SetMethod("getBitmap", &NativeImage::GetBitmap)
+      .SetMethod("getScaleFactors", &NativeImage::GetScaleFactors)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
       .SetMethod("isEmpty", &NativeImage::IsEmpty)

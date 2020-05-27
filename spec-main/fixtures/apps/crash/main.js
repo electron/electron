@@ -7,6 +7,7 @@ app.setVersion('0.1.0');
 const url = app.commandLine.getSwitchValue('crash-reporter-url');
 const uploadToServer = !app.commandLine.hasSwitch('no-upload');
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
+const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
 
 crashReporter.start({
   productName: 'Zombies',
@@ -15,9 +16,9 @@ crashReporter.start({
   submitURL: url,
   ignoreSystemCrashHandler: true,
   extra: {
-    extra1: 'extra1',
-    extra2: 'extra2'
-  }
+    mainProcessSpecific: 'mps'
+  },
+  globalExtra: addGlobalParam[0] ? { [addGlobalParam[0]]: addGlobalParam[1] } : {}
 });
 
 app.whenReady().then(() => {
@@ -28,21 +29,11 @@ app.whenReady().then(() => {
   } else if (crashType === 'renderer') {
     const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     w.loadURL('about:blank');
-    w.webContents.executeJavaScript(`require('electron').crashReporter.start({
-      productName: 'Zombies',
-      companyName: 'Umbrella Corporation',
-      uploadToServer: true,
-      ignoreSystemCrashHandler: true,
-      submitURL: '',
-      extra: {
-        'extra1': 'extra1',
-        'extra2': 'extra2',
-      }
-    })`);
     if (setExtraParameters) {
       w.webContents.executeJavaScript(`
-        require('electron').crashReporter.addExtraParameter('extra3', 'added');
-        require('electron').crashReporter.removeExtraParameter('extra1');
+        require('electron').crashReporter.addExtraParameter('rendererSpecific', 'rs');
+        require('electron').crashReporter.addExtraParameter('addedThenRemoved', 'to-be-removed');
+        require('electron').crashReporter.removeExtraParameter('addedThenRemoved');
       `);
     }
     w.webContents.executeJavaScript('process.crash()');

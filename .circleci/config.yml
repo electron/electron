@@ -670,8 +670,10 @@ step-mksnapshot-build: &step-mksnapshot-build
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
         elif [ "$TARGET_ARCH" == "arm64" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
         else
           electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
           electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
@@ -1162,8 +1164,8 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          (cd electron && node script/yarn test --runners=main --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
-          (cd electron && node script/yarn test --runners=remote --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+          (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
     - run:
         name: Check test results existence
         command: |
