@@ -132,9 +132,9 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
     node::Environment* env = *it;
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
-    node::InternalCallbackScope scope(
-        env, v8::Local<v8::Object>(), {0, 0},
-        node::InternalCallbackScope::kAllowEmptyResource);
+    node::InternalCallbackScope scope(env, v8::Object::New(env->isolate()),
+                                      {0, 0},
+                                      node::InternalCallbackScope::kNoFlags);
   }
 
   self->pending_next_ticks_.clear();

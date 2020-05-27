@@ -3,7 +3,7 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Sat, 6 Jan 2018 18:28:10 +0530
 Subject: fix: expose InternalCallbackScope
 
-This commit exposes InternalCallbackScope in order to allow us access to kAllowEmptyResource for usage https://github.com/electron/electron/blob/master/atom/common/api/atom_bindings.cc\#L108. We should look to accomplish this another way so we no longer need to do this, as in verbose mode the regular CallBack Scope doesn't swallow errors and so we can otherwise use it.
+This commit exposes InternalCallbackScope in order to allow us access to its internal flags.
 
 diff --git a/src/node_internals.h b/src/node_internals.h
 index 7ec3eac697e4b7d6160da59df709f416814e1f73..c362485dca561ed4a5210d7ac9f0e3b2a36a8d0c 100644
