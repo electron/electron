@@ -89,12 +89,14 @@ describe('release notes', () => {
   ];
 
   // these commits came after newBranch was created
-  const breaking9 = new Commit('2fad53e66b1a2cb6f7dad88fe9bb62d7a461fe98', 'refactor: use v8 serialization for ipc (#20214)');
-  const feat9 = new Commit('89eb309d0b22bd4aec058ffaf983e81e56a5c378', 'feat: allow GUID parameter to avoid systray demotion on Windows  (#21891)');
-  const fix8 = new Commit('f77bd19a70ac2d708d17ddbe4dc12745ca3a8577', 'fix: prevent menu gc during popup (#20785)');
-  const fix9 = new Commit('0600420bac25439fc2067d51c6aaa4ee11770577', "fix: don't allow window to go behind menu bar on mac (#22828)");
-  const sharedFix8 = new Commit('8751f485c5a6c8c78990bfd55a4350700f81f8cd', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22749)');
-  const sharedFix9 = new Commit('a6ff42c190cb5caf8f3e217748e49183a951491b', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22750)');
+  const newBreaking = new Commit('2fad53e66b1a2cb6f7dad88fe9bb62d7a461fe98', 'refactor: use v8 serialization for ipc (#20214)');
+  const newFeat = new Commit('89eb309d0b22bd4aec058ffaf983e81e56a5c378', 'feat: allow GUID parameter to avoid systray demotion on Windows  (#21891)');
+  const newFix = new Commit('0600420bac25439fc2067d51c6aaa4ee11770577', "fix: don't allow window to go behind menu bar on mac (#22828)");
+  const oldFix = new Commit('f77bd19a70ac2d708d17ddbe4dc12745ca3a8577', 'fix: prevent menu gc during popup (#20785)');
+
+  // a bug that's fixed in both branches by separate PRs
+  const newTropFix = new Commit('a6ff42c190cb5caf8f3e217748e49183a951491b', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22750)');
+  const oldTropFix = new Commit('8751f485c5a6c8c78990bfd55a4350700f81f8cd', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22749)');
 
   before(() => {
     // location of relase-notes' octokit reply cache
@@ -106,7 +108,7 @@ describe('release notes', () => {
     const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
     sandbox.replace(GitProcess, 'exec', wrapper);
 
-    gitFake.setBranch(oldBranch, [ ...sharedHistory, fix8 ]);
+    gitFake.setBranch(oldBranch, [ ...sharedHistory, oldFix ]);
   });
 
   afterEach(() => {
@@ -118,8 +120,8 @@ describe('release notes', () => {
     // while oldBranch was the latest stable release
     it('are skipped if the target version is a new major line (x.0.0)', async function () {
       const version = 'v9.0.0';
-      gitFake.setBranch(oldBranch, [ ...sharedHistory, sharedFix8 ]);
-      gitFake.setBranch(newBranch, [ ...sharedHistory, sharedFix9 ]);
+      gitFake.setBranch(oldBranch, [ ...sharedHistory, oldTropFix ]);
+      gitFake.setBranch(newBranch, [ ...sharedHistory, newTropFix ]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(0);
     });
@@ -128,8 +130,8 @@ describe('release notes', () => {
     // multiple stable branches at once, including newBranch.
     it('are included if the target version is a minor or patch bump', async function () {
       const version = 'v9.0.1';
-      gitFake.setBranch(oldBranch, [ ...sharedHistory, sharedFix8 ]);
-      gitFake.setBranch(newBranch, [ ...sharedHistory, sharedFix9 ]);
+      gitFake.setBranch(oldBranch, [ ...sharedHistory, oldTropFix ]);
+      gitFake.setBranch(newBranch, [ ...sharedHistory, newTropFix ]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(1);
     });
@@ -157,7 +159,7 @@ describe('release notes', () => {
     const version = 'v9.0.0';
 
     it("honors 'feat' type", async function () {
-      const testCommit = feat9;
+      const testCommit = newFeat;
       gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.feat).to.have.lengthOf(1);
@@ -165,7 +167,7 @@ describe('release notes', () => {
     });
 
     it("honors 'fix' type", async function () {
-      const testCommit = fix9;
+      const testCommit = newFix;
       gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(1);
@@ -173,7 +175,7 @@ describe('release notes', () => {
     });
 
     it("honors 'BREAKING CHANGE' message", async function () {
-      const testCommit = breaking9;
+      const testCommit = newBreaking;
       gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.breaking).to.have.lengthOf(1);
