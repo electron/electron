@@ -93,8 +93,8 @@ bool IsRunningInDesktopBridgeImpl() {
       }
     }
 
-    UINT32 length;
-    wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+    UINT32 length = PACKAGE_FAMILY_NAME_MAX_LENGTH;
+    wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH];
     HANDLE proc = GetCurrentProcess();
     LONG result =
         (*get_package_family_namePtr)(proc, &length, packageFamilyName);
