@@ -33,7 +33,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'no-fetch', privileges: { corsEnabled: true } }
 ])
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   require('ts-node/register')
 
   const argv = require('yargs')
@@ -65,34 +65,32 @@ app.whenReady().then(() => {
   if (argv.grep) mocha.grep(argv.grep)
   if (argv.invert) mocha.invert()
 
-  // Read all test files.
-  const walker = require('walkdir').walk(__dirname, {
-    no_recurse: true
-  })
-
-  // This allows you to run specific modules only:
-  // npm run test -match=menu
-  const moduleMatch = process.env.npm_config_match
-    ? new RegExp(process.env.npm_config_match, 'g')
-    : null
-
-  const testFiles = []
-  walker.on('file', (file) => {
-    if (/-spec\.[tj]s$/.test(file) &&
-        (!moduleMatch || moduleMatch.test(file))) {
-      testFiles.push(file)
+  const filter = (file) => {
+    if (!/-spec\.[tj]s$/.test(file)) {
+      return false
     }
-  })
 
-  walker.on('end', () => {
-    testFiles.sort()
-    testFiles.forEach((file) => mocha.addFile(file))
-    const cb = () => {
-      // Ensure the callback is called after runner is defined
-      process.nextTick(() => {
-        process.exit(runner.failures)
-      })
+    // This allows you to run specific modules only:
+    // npm run test -match=menu
+    const moduleMatch = process.env.npm_config_match
+      ? new RegExp(process.env.npm_config_match, 'g')
+      : null
+    if (moduleMatch && !moduleMatch.test(file)) {
+      return false
     }
-    const runner = mocha.run(cb)
-  })
+
+    return true
+  }
+
+  const getFiles = require('../spec/static/get-files')
+  const testFiles = await getFiles(__dirname, { filter })
+  testFiles.sort()
+  testFiles.forEach((file) => mocha.addFile(file))
+  const cb = () => {
+    // Ensure the callback is called after runner is defined
+    process.nextTick(() => {
+      process.exit(runner.failures)
+    })
+  }
+  const runner = mocha.run(cb)
 })
