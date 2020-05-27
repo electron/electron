@@ -24,10 +24,10 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index ec50d8841ac1e360411a87b3bfc1454969696582..65e4bda890461f691036005252db7e61865d2493 100644
+index 5b8a63a0017c4f9eed50afacb8de0b7f659f81b6..3974e6c7ebe74004a7a9e4dc2966fd8651c1522f 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -383,6 +383,12 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -410,6 +410,12 @@ Environment::Environment(IsolateData* isolate_data,
    // TODO(joyeecheung): deserialize when the snapshot covers the environment
    // properties.
    CreateProperties();
@@ -41,10 +41,10 @@ index ec50d8841ac1e360411a87b3bfc1454969696582..65e4bda890461f691036005252db7e61
  
  Environment::~Environment() {
 diff --git a/src/node.cc b/src/node.cc
-index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2c7fde060 100644
+index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce9f20042c 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -128,6 +129,9 @@ using v8::Undefined;
+@@ -124,6 +124,9 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
@@ -54,7 +54,7 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
  namespace per_process {
  
  // node_revert.h
-@@ -343,6 +347,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
+@@ -339,6 +342,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
  
    CHECK(!has_run_bootstrapping_code());
  
@@ -68,7 +68,7 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
    if (BootstrapInternalLoaders().IsEmpty()) {
      return MaybeLocal<Value>();
    }
-@@ -735,7 +735,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -735,7 +745,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -79,7 +79,7 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -762,6 +775,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -769,6 +781,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -88,7 +88,7 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
  
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -806,6 +821,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -813,6 +827,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif

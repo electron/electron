@@ -8,10 +8,10 @@ by using the implementations of those functions as found in the OpenSSL repo.
 I plan to try and upstream a version of this.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index a2f7190810552261dc66fae18acade3576ff4fe8..29f4d934623889010bf00bbde59d7710916307e4 100644
+index f81e2f789c4b3b5655073cf44700a16e5b2ec45c..ce48e608c07ca3d9dd717f92566c71c2a77cbcbc 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -4478,7 +4478,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
+@@ -4522,7 +4522,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
    if (base_id == EVP_PKEY_DSA) {
      DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
      // Both r and s are computed mod q, so their width is limited by that of q.

@@ -5,7 +5,7 @@ Subject: chore: SetHostCleanupFinalizationGroupCallback has been removed from
  V8
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc83726c376 100644
+index 60d30b7eff7329c4235024c31525107216d70d7a..21980987644c6e83029157785dea463070456c77 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -12,7 +12,6 @@ using errors::TryCatchScope;
@@ -32,7 +32,7 @@ index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc8
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
-@@ -228,11 +218,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -255,11 +245,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      s.promise_reject_callback : task_queue::PromiseRejectCallback;
    isolate->SetPromiseRejectCallback(promise_reject_cb);
  
@@ -45,10 +45,10 @@ index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc8
      v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(isolate);
  }
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 5248e7062354c1deb90b58a784237e6f01335c22..e2a104c9c4562abeb579fe62c9c46ca34bf03581 100644
+index fcb58dc6709d1333fb992e4a0fbf498fbb496994..71d86c4976806508c5b2db1563bfa4f460ff618f 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -1182,12 +1182,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
+@@ -1191,12 +1191,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
    cleanup_hooks_.erase(search);
  }
  
@@ -62,7 +62,7 @@ index 5248e7062354c1deb90b58a784237e6f01335c22..e2a104c9c4562abeb579fe62c9c46ca3
      const CleanupHookCallback& cb) const {
    return std::hash<void*>()(cb.arg_);
 diff --git a/src/env.cc b/src/env.cc
-index 65e4bda890461f691036005252db7e61865d2493..694bfd866a4d7f43046ea97a3e97ea503fffc21b 100644
+index 3974e6c7ebe74004a7a9e4dc2966fd8651c1522f..da779854f928abda5ee9d08c39ba1b5e5eb798a4 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -30,7 +30,6 @@ using v8::ArrayBuffer;
@@ -73,7 +73,7 @@ index 65e4bda890461f691036005252db7e61865d2493..694bfd866a4d7f43046ea97a3e97ea50
  using v8::Function;
  using v8::FunctionTemplate;
  using v8::HandleScope;
-@@ -473,7 +472,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
+@@ -500,7 +499,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
        [](uv_async_t* async) {
          Environment* env = ContainerOf(
              &Environment::task_queues_async_, async);
@@ -81,7 +81,7 @@ index 65e4bda890461f691036005252db7e61865d2493..694bfd866a4d7f43046ea97a3e97ea50
          env->RunAndClearNativeImmediates();
        });
    uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
-@@ -1112,25 +1110,6 @@ void Environment::RunWeakRefCleanup() {
+@@ -1138,25 +1136,6 @@ void Environment::RunWeakRefCleanup() {
    isolate()->ClearKeptObjects();
  }
  
@@ -108,10 +108,10 @@ index 65e4bda890461f691036005252db7e61865d2493..694bfd866a4d7f43046ea97a3e97ea50
  void BaseObject::DeleteMe(void* data) {
    BaseObject* self = static_cast<BaseObject*>(data);
 diff --git a/src/env.h b/src/env.h
-index b67f1e4876f42ae37a49bbcb865c049f5a3ac3f5..e269c47ae3814b42fdd2792360c1acb1995e98d2 100644
+index 5c0392a59b3938b0b6e433024f9dd92e222a1b47..7ba18f8ec0e2675cb634e26250266ad809708f82 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1125,9 +1125,7 @@ class Environment : public MemoryRetainer {
+@@ -1129,9 +1129,7 @@ class Environment : public MemoryRetainer {
    void AtExit(void (*cb)(void* arg), void* arg);
    void RunAtExitCallbacks();
  
@@ -121,7 +121,7 @@ index b67f1e4876f42ae37a49bbcb865c049f5a3ac3f5..e269c47ae3814b42fdd2792360c1acb1
  
    // Strings and private symbols are shared across shared contexts
    // The getters simply proxy to the per-isolate primitive.
-@@ -1350,8 +1348,6 @@ class Environment : public MemoryRetainer {
+@@ -1354,8 +1352,6 @@ class Environment : public MemoryRetainer {
    uint64_t thread_id_;
    std::unordered_set<worker::Worker*> sub_worker_contexts_;
  
