@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel McArdle <dmcardle@chromium.org>
+Date: Thu, 16 Apr 2020 20:18:47 +0000
+Subject: Avoid nullptr dereference in RTCPeerConnectionHandler
+
+Bug: 1071327
+Change-Id: Icf4189905dc5c95854b5af4b3e5e25e0607dd39e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2153325
+Reviewed-by: Harald Alvestrand <hta@chromium.org>
+Commit-Queue: Dan McArdle <dmcardle@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#759775}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 9457fb951fed176c54f9e792ea5f71cb73f5bbba..6745fc1ae9746a3f9949f856b1501c48e85b5260 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -2304,7 +2304,8 @@ void RTCPeerConnectionHandler::OnRemoveReceiverPlanB(uintptr_t receiver_id) {
+ 
+ void RTCPeerConnectionHandler::OnModifySctpTransport(
+     blink::WebRTCSctpTransportSnapshot state) {
+-  client_->DidModifySctpTransport(state);
++  if (client_)
++    client_->DidModifySctpTransport(state);
+ }
+ 
+ void RTCPeerConnectionHandler::OnModifyTransceivers(
+@@ -2431,7 +2432,8 @@ void RTCPeerConnectionHandler::OnIceCandidateError(const String& host_candidate,
+ }
+ 
+ void RTCPeerConnectionHandler::OnInterestingUsage(int usage_pattern) {
+-  client_->DidNoteInterestingUsage(usage_pattern);
++  if (client_)
++    client_->DidNoteInterestingUsage(usage_pattern);
+ }
+ 
+ webrtc::SessionDescriptionInterface*
