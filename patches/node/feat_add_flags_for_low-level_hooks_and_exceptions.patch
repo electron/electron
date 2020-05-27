@@ -44,14 +44,6 @@ diff --git a/src/node.cc b/src/node.cc
 index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2c7fde060 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -27,6 +27,7 @@
- #include "env-inl.h"
- #include "memory_tracker-inl.h"
- #include "node_binding.h"
-+#include "node_errors.h"
- #include "node_internals.h"
- #include "node_main_instance.h"
- #include "node_metadata.h"
 @@ -128,6 +129,9 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
@@ -76,7 +68,7 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
    if (BootstrapInternalLoaders().IsEmpty()) {
      return MaybeLocal<Value>();
    }
-@@ -726,7 +737,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -735,7 +735,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -85,8 +77,8 @@ index fee485f86e17f1987e140aea874656e5048cdbfe..7dda6b39c37cdf96f59a34ca6bc75ea2
 +    uv_disable_stdio_inheritance();
 +  }
  
- #ifdef NODE_REPORT
    // Cache the original command line to be
+   // used in diagnostic reports.
 @@ -762,6 +775,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
