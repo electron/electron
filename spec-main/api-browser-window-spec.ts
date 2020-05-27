@@ -4128,7 +4128,7 @@ describe('BrowserWindow module', () => {
         window.postMessage({openedLocation}, '*')
       `);
       const [, data] = await p;
-      expect(data.pageContext.openedLocation).to.equal('');
+      expect(data.pageContext.openedLocation).to.equal('about:blank');
     });
   });
 
