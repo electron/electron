@@ -291,7 +291,7 @@ index 0000000000000000000000000000000000000000..2d8952a1d23af0ab4b3e5de0e56ec1e3
 +    sources += [
 +      "src/node_crypto.cc",
 +      "src/node_crypto.h",
-+      "src/node_crypto_common.cc", 
++      "src/node_crypto_common.cc",
 +      "src/node_crypto_common.h",
 +      "src/node_crypto_bio.cc",
 +      "src/node_crypto_bio.h",
@@ -862,7 +862,7 @@ index 0000000000000000000000000000000000000000..6df1a603d5b2887e22e8e2863bb04c71
 +  deps = [ "../../deps/uv" ]
 +
 +  public_configs = [ ":uvwasi_config" ]
-+ 
++
 +  cflags_c = []
 +  if (!is_win) {
 +    cflags_c += [ "-fvisibility=hidden" ]
@@ -875,70 +875,6 @@ index 0000000000000000000000000000000000000000..6df1a603d5b2887e22e8e2863bb04c71
 +    "src/uvwasi.c",
 +    "src/wasi_rights.c",
 +  ]
-+}
-diff --git a/deps/zlib/BUILD.gn b/deps/zlib/BUILD.gn
-new file mode 100644
-index 0000000000000000000000000000000000000000..f13b471d17128468bed06e66bd03a2eaaea76280
---- /dev/null
-+++ b/deps/zlib/BUILD.gn
-@@ -0,0 +1,58 @@
-+config("includes") {
-+  include_dirs = [ "." ]
-+}
-+
-+config("ignored_warnings") {
-+  if (is_win) {
-+    cflags = [
-+      "/wd4131",  # old-style declarator
-+      "/wd4127",  # conditional expression is constant
-+      "/wd4244",  # possible loss of data on type conversion
-+      "/wd4996",  # deprecated 'open'
-+    ]
-+  } else {
-+    cflags = [
-+      "-Wno-implicit-function-declaration",
-+      "-Wno-shift-negative-value",
-+    ]
-+  }
-+}
-+
-+source_set("zlib") {
-+  sources = [
-+    "adler32.c",
-+    "compress.c",
-+    "crc32.c",
-+    "crc32.h",
-+    "deflate.c",
-+    "deflate.h",
-+    "gzclose.c",
-+    "gzguts.h",
-+    "gzlib.c",
-+    "gzread.c",
-+    "gzwrite.c",
-+    "infback.c",
-+    "inffast.c",
-+    "inffast.h",
-+    "inffixed.h",
-+    "inflate.c",
-+    "inflate.h",
-+    "inftrees.c",
-+    "inftrees.h",
-+    "trees.c",
-+    "trees.h",
-+    "uncompr.c",
-+    "zconf.h",
-+    "zlib.h",
-+    "zutil.c",
-+    "zutil.h",
-+  ]
-+
-+  if (is_win) {
-+    defines = [ "ZLIB_DLL" ]
-+  }
-+
-+  configs += [ ":ignored_warnings" ]
-+
-+  public_configs = [ ":includes" ]
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
