@@ -61,7 +61,7 @@ index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f8
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 89dd529e5e144f255dd320926f11cfbfe511d39a..a58812a4a43295fde57499ad3863899c996771d4 100644
+index af28d2be043f7f277504e06be365748f339d42c8..8c1499e91288a7cf134347311077e8b699cc34be 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1180,6 +1180,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -111,7 +111,7 @@ index 7a24073ecfe71c72551969f3901b07fae7f6dde5..aa1092bdfe13a54a5356d90e0a2dd837
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 35139c9031a95658908ddade232f12c8c189f7d9..6d8ff0b6267821292ffcd23c462f214c68958482 100644
+index 0d1654926c052f1752ba7bebe51c7672f0c485f6..b58e7236f4f633c2573a04b722f010b0caa93975 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3261,6 +3261,13 @@ PageScheduler* WebViewImpl::Scheduler() const {

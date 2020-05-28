@@ -8,7 +8,7 @@ categories in use are known / declared.  This patch is required for us
 to introduce a new Electron category for Electron-specific tracing.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
-index d02299e1fa84ee99930a4079e1494672be1d8a60..4b3ceec51304913f3ee9172a2c533f159ed81bd5 100644
+index 6badd892cae92b4ba3de42084d3bd63f4920bab7..854a29ecb98821625f975141d951dbacdbbee1d8 100644
 --- a/base/trace_event/builtin_categories.h
 +++ b/base/trace_event/builtin_categories.h
 @@ -73,6 +73,7 @@

@@ -7,7 +7,7 @@ This patch should be removed once https://bugs.chromium.org/p/chromium/issues/de
 is addressed.
 
 diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
-index 03282473ab22d2669d1b7ba9ada3ec483748dc57..b67f8104bd9f9b1dc517654f8658487c84d9a032 100644
+index f3a1aa4954523129179fc99679dfb43b90b1f6e7..430c7c7ae57b320c94b977d55f669006efc8c4b1 100644
 --- a/ui/base/x/x11_window.cc
 +++ b/ui/base/x/x11_window.cc
 @@ -64,17 +64,17 @@ gfx::Rect SanitizeBounds(const gfx::Rect& bounds) {

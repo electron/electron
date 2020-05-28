@@ -34,10 +34,10 @@ index befbaf9dbdb1d62788a815380f57eaef83b7374c..f90db95bcbd8854538dbd2d5d483e643
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb4af34301 100644
+index 25fd623deb7a5d580d80dfa4d99d4628c6800eb3..dd76a610f05e636a6f01e4f21a11507f65867a15 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
-@@ -21,7 +21,6 @@
+@@ -20,7 +20,6 @@
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/chrome_notification_types.h"
  #include "chrome/browser/printing/print_job.h"
@@ -45,7 +45,7 @@ index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb
  #include "components/crash/core/common/crash_keys.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
-@@ -29,6 +28,7 @@
+@@ -28,6 +27,7 @@
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
  #include "printing/backend/print_backend.h"
@@ -53,7 +53,7 @@ index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -224,16 +224,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -223,16 +223,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
          print_backend->GetPrinterDriverInfo(printer_name));
    }
  
@@ -78,7 +78,7 @@ index 65065b781a0ae6e70c59d7c31d1410b4457fca49..04a13092de8e18f6a960f7b46be217bb
  }
  
  #if defined(OS_CHROMEOS)
-@@ -249,6 +254,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -248,6 +253,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -311,10 +311,10 @@ index 94b65e85561e1440b60086b668865bda07303d35..7044463d163fd74e55ff1a042c36739f
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 86ee19d5926df13cea1c8bb9bbe223061b8d7a79..7177042770391880b235a1e25ec75567229d3115 100644
+index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c536a06795f 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
-@@ -22,6 +22,7 @@
+@@ -21,6 +21,7 @@
  #include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
  #include "components/printing/browser/print_manager_utils.h"
  #include "components/printing/common/print_messages.h"
@@ -322,7 +322,7 @@ index 86ee19d5926df13cea1c8bb9bbe223061b8d7a79..7177042770391880b235a1e25ec75567
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
-@@ -90,20 +91,23 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
+@@ -89,19 +90,27 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
    g_test_delegate = delegate;
  }
  
@@ -343,13 +343,17 @@ index 86ee19d5926df13cea1c8bb9bbe223061b8d7a79..7177042770391880b235a1e25ec75567
                                   base::Unretained(this)));
 +  #if 0
    is_printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
-   is_printing_enabled_.MoveToSequence(
-       base::CreateSingleThreadTaskRunner({BrowserThread::IO}));
++<<<<<<< HEAD
+   is_printing_enabled_.MoveToSequence(content::GetIOThreadTaskRunner({}));
++=======
++  is_printing_enabled_.MoveToSequence(
++      base::CreateSingleThreadTaskRunner({BrowserThread::IO}));
 +  #endif
++>>>>>>> printing.patch
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -135,11 +139,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -133,11 +142,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -363,7 +367,7 @@ index 86ee19d5926df13cea1c8bb9bbe223061b8d7a79..7177042770391880b235a1e25ec75567
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -225,12 +231,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -223,12 +234,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
@@ -378,7 +382,7 @@ index 86ee19d5926df13cea1c8bb9bbe223061b8d7a79..7177042770391880b235a1e25ec75567
    if (!job_settings.is_dict() ||
        !job_settings.FindIntKey(kSettingPrinterType)) {
      // Reply with null query.
-@@ -263,7 +270,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -261,7 +273,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
