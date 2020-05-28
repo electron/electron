@@ -125,7 +125,11 @@ class LocationProxy {
   }
 
   private getGuestURL (): URL | null {
-    const urlString = this._invokeWebContentsMethodSync('getURL') as string;
+    const maybeURL = this._invokeWebContentsMethodSync('getURL') as string;
+
+    // When there's no previous frame the url will be blank, so accountfor that here
+    // to prevent url parsing errors on an empty string.
+    const urlString = maybeURL !== '' ? maybeURL : 'about:blank';
     try {
       return new URL(urlString);
     } catch (e) {
