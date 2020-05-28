@@ -101,3 +101,5 @@ cherry-pick-38990b7d56e6.patch
 cherry-pick-67864c214770.patch
 cherry-pick-86c02c5dcd37.patch
 fix_hunspell_crash.patch
+avoid_nullptr_dereference_in_rtcpeerconnectionhandler.patch
+reland_onstate_handler_is_allowed_to_close_a_peerconnection.patch

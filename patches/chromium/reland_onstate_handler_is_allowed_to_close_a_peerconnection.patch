@@ -1,0 +1,359 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Wed, 22 Apr 2020 08:05:36 +0000
+Subject: Reland "Onstate handler is allowed to close a PeerConnection."
+
+This reverts commit 94b16e2f5a5e99aec0c62754c31de2d297becf2d.
+
+Reason for revert: Also landing fix from crbug.com/1071329
+Original change's description:
+> Revert "Onstate handler is allowed to close a PeerConnection."
+>
+> This reverts commit 9a2bc8e9cf63e70d47a443c673ae00d2b03ffc4f.
+>
+> Reason for revert: https://crbug.com/1073213
+>
+> Original change's description:
+> > Onstate handler is allowed to close a PeerConnection.
+> >
+> > (cherry picked from commit 919dd0c1244afdb269d023dd178bec8caec372ab)
+> >
+> > Bug: chromium:1068084
+> > Change-Id: Icd3f70b6784ac22ef4e3bc1c99233f51145a917f
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2146542
+> > Commit-Queue: Harald Alvestrand <hta@chromium.org>
+> > Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+> > Cr-Original-Commit-Position: refs/heads/master@{#759242}
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2156993
+> > Reviewed-by: Harald Alvestrand <hta@chromium.org>
+> > Cr-Commit-Position: refs/branch-heads/4103@{#250}
+> > Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+>
+> TBR=hta@chromium.org
+>
+> Change-Id: If7400e9b7d02898bfadb31d31da2bf1a5df39801
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Bug: chromium:1068084, chromium:1073213
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2159619
+> Reviewed-by: Carlos Knippschild <carlosk@chromium.org>
+> Commit-Queue: Carlos Knippschild <carlosk@chromium.org>
+> Cr-Commit-Position: refs/branch-heads/4103@{#262}
+> Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+
+TBR=hta@chromium.org,carlosk@chromium.org
+
+Change-Id: I7b6f58a11a83accc3cb14dcf3df637ea295a8d6e
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Bug: chromium:1068084, chromium:1073213
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2159715
+Reviewed-by: Harald Alvestrand <hta@chromium.org>
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4103@{#271}
+Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+
+diff --git a/third_party/blink/public/platform/web_rtc_peer_connection_handler.h b/third_party/blink/public/platform/web_rtc_peer_connection_handler.h
+index e1dd0f950d8a7391207e249242cd7b0e8d09a31a..1ad77dc31815a85e79d2e1cc5ce91cebd36a182e 100644
+--- a/third_party/blink/public/platform/web_rtc_peer_connection_handler.h
++++ b/third_party/blink/public/platform/web_rtc_peer_connection_handler.h
+@@ -81,6 +81,15 @@ class WebRTCPeerConnectionHandler {
+   virtual bool Initialize(
+       const webrtc::PeerConnectionInterface::RTCConfiguration&,
+       const WebMediaConstraints&) = 0;
++
++  virtual void Stop() = 0;
++  // This function should be called when the object is taken out of service.
++  // There might be functions that need to return through the object, so it
++  // cannot be deleted yet, but no new operations should be allowed.
++  // All references to the object except the owning reference are deleted
++  // by this function.
++  virtual void StopAndUnregister() = 0;
++
+   virtual void AssociateWithFrame(WebLocalFrame*) {}
+ 
+   // Unified Plan: The list of transceivers after the createOffer() call.
+@@ -144,7 +153,6 @@ class WebRTCPeerConnectionHandler {
+   // In Unified Plan: Returns OK() with the updated transceiver state.
+   virtual webrtc::RTCErrorOr<std::unique_ptr<RTCRtpTransceiverPlatform>>
+   RemoveTrack(RTCRtpSenderPlatform*) = 0;
+-  virtual void Stop() = 0;
+ 
+   // Returns a pointer to the underlying native PeerConnection object.
+   virtual webrtc::PeerConnectionInterface* NativePeerConnection() = 0;
+diff --git a/third_party/blink/public/platform/web_rtc_peer_connection_handler_client.h b/third_party/blink/public/platform/web_rtc_peer_connection_handler_client.h
+index cfe440ac5e77dce9582ee053e61a74569448993b..4a7181f90d41aaf80ed3ff26fb0364fd78827c71 100644
+--- a/third_party/blink/public/platform/web_rtc_peer_connection_handler_client.h
++++ b/third_party/blink/public/platform/web_rtc_peer_connection_handler_client.h
+@@ -84,7 +84,7 @@ class BLINK_PLATFORM_EXPORT WebRTCPeerConnectionHandlerClient {
+   virtual void DidAddRemoteDataChannel(
+       scoped_refptr<webrtc::DataChannelInterface>) = 0;
+   virtual void DidNoteInterestingUsage(int usage_pattern) = 0;
+-  virtual void ReleasePeerConnectionHandler() = 0;
++  virtual void UnregisterPeerConnectionHandler() = 0;
+   virtual void ClosePeerConnection();
+ };
+ 
+diff --git a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.cc
+index beb724770432ff6d492c002cf14e05d9593887a8..b2c2b211da242afaf0845f245156c8114000aedb 100644
+--- a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.cc
+@@ -395,6 +395,7 @@ MockWebRTCPeerConnectionHandler::CreateDataChannel(
+ }
+ 
+ void MockWebRTCPeerConnectionHandler::Stop() {}
++void MockWebRTCPeerConnectionHandler::StopAndUnregister() {}
+ 
+ webrtc::PeerConnectionInterface*
+ MockWebRTCPeerConnectionHandler::NativePeerConnection() {
+diff --git a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.h b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.h
+index 4fe3325eaeb3ef4bb7ce2186387513f96db3c913..c6b020707134e0628d6de28b29d354bf29fe24b1 100644
+--- a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.h
++++ b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler.h
+@@ -27,6 +27,8 @@ class MockWebRTCPeerConnectionHandler : public WebRTCPeerConnectionHandler {
+ 
+   bool Initialize(const webrtc::PeerConnectionInterface::RTCConfiguration&,
+                   const WebMediaConstraints&) override;
++  void Stop() override;
++  void StopAndUnregister() override;                  
+ 
+   WebVector<std::unique_ptr<RTCRtpTransceiverPlatform>> CreateOffer(
+       RTCSessionDescriptionRequest*,
+@@ -73,7 +75,6 @@ class MockWebRTCPeerConnectionHandler : public WebRTCPeerConnectionHandler {
+   scoped_refptr<webrtc::DataChannelInterface> CreateDataChannel(
+       const WebString& label,
+       const webrtc::DataChannelInit&) override;
+-  void Stop() override;
+   webrtc::PeerConnectionInterface* NativePeerConnection() override;
+   void RunSynchronousOnceClosureOnSignalingThread(
+       base::OnceClosure closure,
+diff --git a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler_client.h b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler_client.h
+index 34345c9a3a81f1cd62b69743de2d597e36372591..6cb5ae5c9d67ae3e986eb29e8bb97d615a7d322d 100644
+--- a/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler_client.h
++++ b/third_party/blink/renderer/modules/peerconnection/mock_web_rtc_peer_connection_handler_client.h
+@@ -63,7 +63,7 @@ class MockWebRTCPeerConnectionHandlerClient
+   MOCK_METHOD1(DidAddRemoteDataChannel,
+                void(scoped_refptr<webrtc::DataChannelInterface>));
+   MOCK_METHOD1(DidNoteInterestingUsage, void(int));
+-  MOCK_METHOD0(ReleasePeerConnectionHandler, void());
++  MOCK_METHOD0(UnregisterPeerConnectionHandler, void());
+ 
+   // Move-only arguments do not play nicely with MOCK, the workaround is to
+   // EXPECT_CALL with these instead.
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+index 6a70d3ba1f3c4ea263f07584110860265ff35162..8568a08d1380e844b27cc35919165357ba1b5c44 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+@@ -800,9 +800,11 @@ RTCPeerConnection::~RTCPeerConnection() {
+ }
+ 
+ void RTCPeerConnection::Dispose() {
+-  // Promptly clears a raw reference from content/ to an on-heap object
++  // Promptly clears the handler's pointer to |this|
+   // so that content/ doesn't access it in a lazy sweeping phase.
+-  peer_handler_.reset();
++  if (peer_handler_) {
++    peer_handler_->StopAndUnregister();
++  }
+ 
+   // UMA for CallSetupStates. This metric is reported regardless of whether or
+   // not getUserMedia() has been called in this document.
+@@ -3066,7 +3068,7 @@ void RTCPeerConnection::DidNoteInterestingUsage(int usage_pattern) {
+       .Record(document->UkmRecorder());
+ }
+ 
+-void RTCPeerConnection::ReleasePeerConnectionHandler() {
++void RTCPeerConnection::UnregisterPeerConnectionHandler() {
+   if (stopped_)
+     return;
+ 
+@@ -3074,7 +3076,7 @@ void RTCPeerConnection::ReleasePeerConnectionHandler() {
+   ice_connection_state_ = webrtc::PeerConnectionInterface::kIceConnectionClosed;
+   signaling_state_ = webrtc::PeerConnectionInterface::SignalingState::kClosed;
+ 
+-  peer_handler_.reset();
++  peer_handler_->StopAndUnregister();
+   dispatch_scheduled_events_task_handle_.Cancel();
+   feature_handle_for_scheduler_.reset();
+ }
+@@ -3094,7 +3096,7 @@ ExecutionContext* RTCPeerConnection::GetExecutionContext() const {
+ }
+ 
+ void RTCPeerConnection::ContextDestroyed(ExecutionContext*) {
+-  ReleasePeerConnectionHandler();
++  UnregisterPeerConnectionHandler();
+ }
+ 
+ void RTCPeerConnection::ChangeSignalingState(
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.h b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.h
+index d756173ba4beb88a73018e54e263d42b55fd0db1..e5112d52c14c1b2416824c4f4616383f4f8743eb 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.h
+@@ -309,7 +309,7 @@ class MODULES_EXPORT RTCPeerConnection final
+   void DidAddRemoteDataChannel(
+       scoped_refptr<webrtc::DataChannelInterface> channel) override;
+   void DidNoteInterestingUsage(int usage_pattern) override;
+-  void ReleasePeerConnectionHandler() override;
++  void UnregisterPeerConnectionHandler() override;
+   void ClosePeerConnection() override;
+ 
+   // EventTarget
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 6745fc1ae9746a3f9949f856b1501c48e85b5260..5b237e73a43f741aa0beb1ebffac31a1af711413 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -1007,6 +1007,7 @@ RTCPeerConnectionHandler::RTCPeerConnectionHandler(
+     : initialize_called_(false),
+       client_(client),
+       is_closed_(false),
++      is_unregistered_(false),
+       dependency_factory_(dependency_factory),
+       track_adapter_map_(
+           base::MakeRefCounted<blink::WebRtcMediaStreamTrackAdapterMap>(
+@@ -1019,6 +1020,12 @@ RTCPeerConnectionHandler::RTCPeerConnectionHandler(
+ }
+ 
+ RTCPeerConnectionHandler::~RTCPeerConnectionHandler() {
++  if (!is_unregistered_) {
++    StopAndUnregister();
++  }  
++}
++
++void RTCPeerConnectionHandler::StopAndUnregister() {  
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+ 
+   Stop();
+@@ -1029,6 +1036,10 @@ RTCPeerConnectionHandler::~RTCPeerConnectionHandler() {
+ 
+   UMA_HISTOGRAM_COUNTS_10000("WebRTC.NumDataChannelsPerPeerConnection",
+                              num_data_channels_created_);
++  // Clear the pointer to client_ so that it does not interfere with
++  // garbage collection.
++  client_ = nullptr;
++  is_unregistered_ = true;                             
+ }
+ 
+ void RTCPeerConnectionHandler::AssociateWithFrame(blink::WebLocalFrame* frame) {
+@@ -2131,6 +2142,10 @@ void RTCPeerConnectionHandler::OnSignalingChange(
+       peer_connection_tracker_->TrackSignalingStateChange(this, stable_state);
+     if (!is_closed_)
+       client_->DidChangeSignalingState(stable_state);
++    // The callback may have closed the PC. If so, do not continue.
++    if (is_closed_ || !client_) {
++      return;
++    }      
+   }
+   previous_signaling_state_ = new_state;
+   if (peer_connection_tracker_)
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.h b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.h
+index 1aa9ffa273be0e52e0c37268a78abf16b165b041..171d71e3ad69849d3bc5c3cc6d7c505f395df26a 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.h
+@@ -107,6 +107,9 @@ class MODULES_EXPORT RTCPeerConnectionHandler
+                       server_configuration,
+                   const blink::WebMediaConstraints& options) override;
+ 
++  void Stop() override;
++  void StopAndUnregister() override;                  
++
+   blink::WebVector<std::unique_ptr<RTCRtpTransceiverPlatform>> CreateOffer(
+       blink::RTCSessionDescriptionRequest* request,
+       const blink::WebMediaConstraints& options) override;
+@@ -162,7 +165,6 @@ class MODULES_EXPORT RTCPeerConnectionHandler
+   scoped_refptr<webrtc::DataChannelInterface> CreateDataChannel(
+       const blink::WebString& label,
+       const webrtc::DataChannelInit& init) override;
+-  void Stop() override;
+   webrtc::PeerConnectionInterface* NativePeerConnection() override;
+   void RunSynchronousOnceClosureOnSignalingThread(
+       base::OnceClosure closure,
+@@ -339,14 +341,18 @@ class MODULES_EXPORT RTCPeerConnectionHandler
+   // first call fails.
+   bool initialize_called_;
+ 
+-  // |client_| is a weak pointer to the blink object (blink::RTCPeerConnection)
++  // |client_| is a raw pointer to the blink object (blink::RTCPeerConnection)
+   // that owns this object.
+-  // It is valid for the lifetime of this object.
+-  blink::WebRTCPeerConnectionHandlerClient* const client_;
++  // It is valid for the lifetime of this object, but is cleared when
++  // StopAndUnregister() is called, in order to make sure it doesn't
++  // interfere with garbage collection of the owner object.
++  blink::WebRTCPeerConnectionHandlerClient* client_;
+   // True if this PeerConnection has been closed.
+   // After the PeerConnection has been closed, this object may no longer
+   // forward callbacks to blink.
+   bool is_closed_;
++  // True if StopAndUnregister has been called.
++  bool is_unregistered_;  
+ 
+   // Transition from kHaveLocalOffer to kHaveRemoteOffer indicates implicit
+   // rollback in which case we need to also make visiting of kStable observable.
+diff --git a/third_party/blink/web_tests/fast/peerconnection/resources/statechange-iframe-destroy-child.html b/third_party/blink/web_tests/fast/peerconnection/resources/statechange-iframe-destroy-child.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7e4ae5071d478329f66a6a70016a2705fff16a5
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/peerconnection/resources/statechange-iframe-destroy-child.html
+@@ -0,0 +1,30 @@
++<html>
++<script>
++'use strict;'
++
++let cnt = 0;
++
++function causeIssue() {
++  youConnection = new RTCPeerConnection({});
++
++  youConnection.onsignalingstatechange = ev => {
++    if(cnt==1) {
++      parent.trigger();
++    }
++    cnt++;
++  };
++  var offerOptions = {
++    offerToReceiveVideo: 1
++  };
++
++  youConnection.createOffer(offerOptions)
++    .then(function(offer){
++      youConnection.setLocalDescription(offer);
++      // Cause an implicit rollback.
++      youConnection.setRemoteDescription(offer);
++    });
++}
++
++causeIssue();
++</script>
++</html>
+diff --git a/third_party/blink/web_tests/fast/peerconnection/statechange-iframe-destroy-parent.html b/third_party/blink/web_tests/fast/peerconnection/statechange-iframe-destroy-parent.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcadc791fda05794362de0c1ff4352e258a6baeb
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/peerconnection/statechange-iframe-destroy-parent.html
+@@ -0,0 +1,24 @@
++<html>
++  <script src="../../resources/testharness.js"></script>
++  <script src="../../resources/testharnessreport.js"></script>
++  <iframe id="ifr">
++  </iframe>
++<script>
++
++let triggered = null;
++
++function trigger()
++{
++  ifr.remove();
++  triggered();
++}
++
++promise_test(t => {
++  ifr.src = "resources/statechange-iframe-destroy-child.html";
++  return new Promise(resolve => {
++    triggered = resolve;
++  });
++}, 'Remove iframe from a statechange callback invoked from iframe');
++
++</script>
++</html>
