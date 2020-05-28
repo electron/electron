@@ -7,6 +7,7 @@
 
 #include <map>
 
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "ui/base/models/simple_menu_model.h"
@@ -69,6 +70,10 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   void MenuWillClose() override;
   void MenuWillShow() override;
 
+  base::WeakPtr<ElectronMenuModel> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
   using SimpleMenuModel::GetSubmenuModelAt;
   ElectronMenuModel* GetSubmenuModelAt(int index);
 
@@ -79,6 +84,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::map<int, base::string16> roles_;      // command id -> role
   std::map<int, base::string16> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
+
+  base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronMenuModel);
 };
