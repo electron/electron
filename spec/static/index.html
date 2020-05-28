@@ -9,7 +9,7 @@
 <div id="mocha"></div>
 
 <script type="text/javascript" charset="utf-8">
-(function() {
+(async function() {
   // Deprecated APIs are still supported and should be tested.
   process.throwDeprecation = false
 
@@ -71,41 +71,43 @@
   if (query.grep) mocha.grep(query.grep)
   if (query.invert) mocha.invert()
 
-  // Read all test files.
-  const walker = require('walkdir').walk(path.dirname(__dirname), {
-    no_recurse: true
-  })
-
   const crashSpec = 'api-crash-reporter-spec.js'
 
-  // This allows you to run specific modules only:
-  // npm run test -match=menu
-  const moduleMatch = process.env.npm_config_match
-    ? new RegExp(process.env.npm_config_match, 'g')
-    : null
-
-  const testFiles = []
-  walker.on('file', (file) => {
-    if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
-        (!moduleMatch || moduleMatch.test(file))) {
-      testFiles.push(file)
-    }
-  })
-
-  walker.on('end', () => {
-    testFiles.sort()
-    testFiles.forEach((file) => mocha.addFile(file))
-    if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
-      mocha.addFile(path.resolve(__dirname, '..', crashSpec))
+  const filter = (file) => {
+    if (!/-spec\.js$/.test(file)) {
+      return false
     }
 
-    const runner = mocha.run(() => {
-      // Ensure the callback is called after runner is defined
-      setTimeout(() => {
-        Mocha.utils.highlightTags('code')
-        if (isCi) ipcRenderer.send('process.exit', runner.failures)
-      }, 0)
-    })
+    if (file.includes(crashSpec)) {
+      return false
+    }
+
+    // This allows you to run specific modules only:
+    // npm run test -match=menu
+    const moduleMatch = process.env.npm_config_match
+      ? new RegExp(process.env.npm_config_match, 'g')
+      : null
+    if (moduleMatch && !moduleMatch.test(file)) {
+      return false
+    }
+
+    return true
+  }
+
+  const getFiles = require('./get-files')
+  const testFiles = await getFiles(path.dirname(__dirname), { filter })
+  testFiles.sort()
+  testFiles.forEach((file) => mocha.addFile(file))
+  if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
+    mocha.addFile(path.resolve(__dirname, '..', crashSpec))
+  }
+
+  const runner = mocha.run(() => {
+    // Ensure the callback is called after runner is defined
+    setTimeout(() => {
+      Mocha.utils.highlightTags('code')
+      if (isCi) ipcRenderer.send('process.exit', runner.failures)
+    }, 0)
   })
 })()
 </script>
