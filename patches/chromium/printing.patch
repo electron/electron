@@ -10,29 +10,6 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
-diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index befbaf9dbdb1d62788a815380f57eaef83b7374c..f90db95bcbd8854538dbd2d5d483e643f7518a62 100644
---- a/chrome/browser/printing/print_job.cc
-+++ b/chrome/browser/printing/print_job.cc
-@@ -331,7 +331,18 @@ void PrintJob::StartPdfToEmfConversion(
-   bool print_text_with_gdi =
-       settings.print_text_with_gdi() && !settings.printer_is_xps() &&
-       base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
-+<<<<<<< HEAD
-   bool print_with_reduced_rasterization = PrintWithReducedRasterization();
-+=======
-+
-+  #if 0
-+  Profile* profile = Profile::FromBrowserContext(
-+      worker_->GetWebContents()->GetBrowserContext());
-+  bool print_with_reduced_rasterization =
-+      PrintWithReducedRasterization(profile->GetPrefs());
-+  #endif
-+  bool print_with_reduced_rasterization = base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
-+>>>>>>> printing.patch
- 
-   using RenderMode = PdfRenderSettings::Mode;
-   RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
 index 25fd623deb7a5d580d80dfa4d99d4628c6800eb3..dd76a610f05e636a6f01e4f21a11507f65867a15 100644
 --- a/chrome/browser/printing/print_job_worker.cc
@@ -311,7 +288,7 @@ index 94b65e85561e1440b60086b668865bda07303d35..7044463d163fd74e55ff1a042c36739f
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c536a06795f 100644
+index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60952ca04f 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -322,7 +299,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c53
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
-@@ -89,19 +90,27 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
+@@ -89,19 +90,22 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
    g_test_delegate = delegate;
  }
  
@@ -343,17 +320,12 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c53
                                   base::Unretained(this)));
 +  #if 0
    is_printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
-+<<<<<<< HEAD
    is_printing_enabled_.MoveToSequence(content::GetIOThreadTaskRunner({}));
-+=======
-+  is_printing_enabled_.MoveToSequence(
-+      base::CreateSingleThreadTaskRunner({BrowserThread::IO}));
 +  #endif
-+>>>>>>> printing.patch
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -133,11 +142,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -133,11 +137,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -367,7 +339,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c53
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -223,12 +234,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -223,12 +229,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
@@ -382,7 +354,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..0e3443fc3615b2347df56d72c4122c53
    if (!job_settings.is_dict() ||
        !job_settings.FindIntKey(kSettingPrinterType)) {
      // Reply with null query.
-@@ -261,7 +273,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -261,7 +268,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
