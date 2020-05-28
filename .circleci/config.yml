@@ -418,6 +418,7 @@ step-electron-build: &step-electron-build
       fi
       cd src
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+      node electron/script/check-symlinks.js
 
 step-native-unittests-build: &step-native-unittests-build
   run:
