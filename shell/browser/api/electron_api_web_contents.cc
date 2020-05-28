@@ -861,8 +861,6 @@ void WebContents::RendererResponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host) {
   Emit("responsive");
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnRendererResponsive();
 }
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
