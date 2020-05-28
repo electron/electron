@@ -44,7 +44,7 @@ diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/se
 index eb46993b8f40fdc7da35dae1b850dad637f6b47d..05a9ae47620d17b5a53f991c0b3a0a5c153b599c 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -63,6 +63,7 @@ ImageTransportSurfaceOverlayMacBase<
+@@ -63,6 +63,7 @@
  template <typename BaseClass>
  bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
      gl::GLSurfaceFormat format) {
@@ -52,7 +52,7 @@ index eb46993b8f40fdc7da35dae1b850dad637f6b47d..05a9ae47620d17b5a53f991c0b3a0a5c
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -71,6 +72,7 @@ bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
+@@ -71,6 +72,7 @@
          [CAContext contextWithCGSConnection:connection_id options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -60,7 +60,7 @@ index eb46993b8f40fdc7da35dae1b850dad637f6b47d..05a9ae47620d17b5a53f991c0b3a0a5c
    return true;
  }
  
-@@ -139,7 +141,9 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::SwapBuffersInternal(
+@@ -139,7 +141,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -74,7 +74,7 @@ diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated
 index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329fc8954826 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -97,6 +97,7 @@ void DisplayCALayerTree::UpdateCALayerTree(
+@@ -97,6 +97,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -82,7 +82,7 @@ index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329f
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -121,6 +122,9 @@ void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
+@@ -121,6 +122,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }

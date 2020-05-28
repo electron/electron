@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index fd47808a5a1e51dcca00ac7daff7107e3dfa17e4..f30eeb4f36c86431df1c965273eb188490db4ac0 100644
+index 7ebd7568c4f881137befd33c680f49c9d2c9b900..9e7db838b5ee4990a35ebc3e441d077579562366 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4654,6 +4654,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4656,6 +4656,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index fd47808a5a1e51dcca00ac7daff7107e3dfa17e4..f30eeb4f36c86431df1c965273eb1884
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a9c62d7efd00fea602cced369f64fb81c068b8cc..c017455770707877008e2df07e65c391068bdb8c 100644
+index e6478204fe2907ce917cc569af20cc96270510ef..bbee07c3efb454c5ac758b021a2a5b9b16c4d48b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2955,9 +2955,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2948,9 +2948,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -109,7 +109,7 @@ index 6017278cc0fa8d029477e7ef46a9c0cacae438be..18161c8f836134e470333381a16425e3
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7757c7720406aa9915a2a413b939be968c3cd988..7b329848850638941a7d8564dfe3786ae6f489ff 100644
+index ba2e37bfe4ac1cb1acfc7527214304e4e45be3eb..622a9dfd7c8c6d0e917f6ce5bd27168055871c59 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -135,7 +135,7 @@ index 7757c7720406aa9915a2a413b939be968c3cd988..7b329848850638941a7d8564dfe3786a
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 20ec8fc88cba99266ca9cf5f22f2565a762a97b3..00333d9aa46d643bf65db07cfac7a3a8959a14a3 100644
+index a67945577c297b27ac6af1c0238dea9a0b2d79a5..89dd529e5e144f255dd320926f11cfbfe511d39a 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -68,6 +68,7 @@
@@ -146,7 +146,7 @@ index 20ec8fc88cba99266ca9cf5f22f2565a762a97b3..00333d9aa46d643bf65db07cfac7a3a8
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1250,6 +1251,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1249,6 +1250,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -158,10 +158,10 @@ index 20ec8fc88cba99266ca9cf5f22f2565a762a97b3..00333d9aa46d643bf65db07cfac7a3a8
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index f963cc714c49c90b66195e84b4fdda9b1f38ad28..c6e10685403a1f6dd3f326b001d9ee5e2e351e67 100644
+index c69a7f463fbf629320c88f65a9c0f6ce9c3bf0db..6d7f47624414c4e9e77680e415facd8f3e2130ee 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
-@@ -401,6 +401,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -400,6 +400,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

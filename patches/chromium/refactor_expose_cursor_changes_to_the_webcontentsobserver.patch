@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 2edad62668474c690adb283224400dc4e7163fbf..1c7928e66955e188f70d4f1c475f2ad33db80cb0 100644
+index 7e9bddc9f002b938ed7804af7c484f4500988a9e..f77130c39b853ed6ba30e62dd59c4afec93d8d31 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -15,6 +15,7 @@
@@ -43,10 +43,10 @@ index 77526d78e8113f7071fe269cbcdf63bb772db6e4..933377708dd4ef1793863fb042fd74c0
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 402450783e76fedd1264d6d7f47352dd233be621..bf744d187a84df4c3ea93ec16ef2cc1ef5013d92 100644
+index 24b8e8587a66945cf28137fd13ba962cafefecd0..365cf42d71a416cc75a96583d9d7e1ddc292cda3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3454,6 +3454,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3447,6 +3447,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -59,7 +59,7 @@ index 402450783e76fedd1264d6d7f47352dd233be621..bf744d187a84df4c3ea93ec16ef2cc1e
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 71ddac828df2e3df42214aee30d8b0fa866938fe..acae46fdac0d8dc2a26c72595b6e4b49dc21106a 100644
+index fb847eacce5854aedd5afd7f398ec6ccf782d132..3b33845080a08699424385ed113626f4e1aaae6f 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -912,6 +912,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -71,7 +71,7 @@ index 71ddac828df2e3df42214aee30d8b0fa866938fe..acae46fdac0d8dc2a26c72595b6e4b49
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index d84c9abf8e8e46606a23d5e66ce740afeac01179..111d867f8a9076cf32e09d357dce9ff9aa1cadc2 100644
+index 8d16aa19316870bd16c991aedaaf392e793eb21f..6d1282c46ff538438ea141e5f46112a6ad3ab40c 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index d84c9abf8e8e46606a23d5e66ce740afeac01179..111d867f8a9076cf32e09d357dce9ff9
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -354,6 +355,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -357,6 +358,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  
