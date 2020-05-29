@@ -4,8 +4,6 @@ import * as path from 'path';
 import { deprecate, Menu } from 'electron';
 import { EventEmitter } from 'events';
 
-import filenamify = require('filenamify');
-
 const bindings = process.electronBinding('app');
 const commandLine = process.electronBinding('command_line');
 const { app, App } = bindings;
@@ -69,6 +67,17 @@ App.prototype.isPackaged = (() => {
   }
   return execFile !== 'electron';
 })();
+
+// Convert a string to a valid filesystem path
+function filenamify(string: string): string {
+	// Many thanks to Sindre Sorhus (https://github.com/sindresorhus) for this code.
+	string = string.replace(/[\u0000-\u001f\u0080-\u009f<>:"\/\\|?*\x00-\x1F]/g, '!');
+	string = string.replace(/!+/g, '!'); // Clean it up a little
+	if (/^(|con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(string)) {
+		return string + '!'; // Prevent empty string and reserved Windows names
+	}
+	return string;
+}
 
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
