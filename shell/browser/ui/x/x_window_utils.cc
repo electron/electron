@@ -99,8 +99,7 @@ void MoveWindowAbove(::Window xwindow, ::Window other_xwindow) {
   xclient.xclient.format = 32;
   xclient.xclient.data.l[0] = 2;
   xclient.xclient.data.l[1] = other_xwindow;
-  xclient.xclient.data.l[2] =
-      static_cast<uint32_t>(x11::Connection::StackMode::Above);
+  xclient.xclient.data.l[2] = static_cast<uint32_t>(x11::StackMode::Above);
   xclient.xclient.data.l[3] = 0;
   xclient.xclient.data.l[4] = 0;
 
