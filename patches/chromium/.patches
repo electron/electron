@@ -122,3 +122,4 @@ cherry-pick-67864c214770.patch
 cherry-pick-7101418f85a0.patch
 cherry-pick-86c02c5dcd37.patch
 fix_hunspell_crash.patch
+introduce_a_mutex_for_the_rendering_loop_in_baseaudiocontext.patch
