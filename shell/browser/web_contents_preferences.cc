@@ -492,7 +492,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->default_encoding = encoding;
 
   std::string v8_cache_options;
-  if (GetAsString(&preference_, "V8CacheOptions", &v8_cache_options)) {
+  if (GetAsString(&preference_, "v8CacheOptions", &v8_cache_options)) {
     if (v8_cache_options == "none") {
       prefs->v8_cache_options = blink::mojom::V8CacheOptions::kNone;
     } else if (v8_cache_options == "code") {

@@ -390,7 +390,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Default is `false`.
     * `enableWebSQL` Boolean (optional) - Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/).
       Default is `true`.
-    * `V8CacheOptions` String (optional) - Enforces the v8 code caching policy
+    * `v8CacheOptions` String (optional) - Enforces the v8 code caching policy
       used by blink. Accepted values are
       * `none` - Disables code caching
       * `code` - Heuristic based code caching
