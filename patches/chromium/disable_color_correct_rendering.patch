@@ -236,10 +236,10 @@ index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 9b5259c6c3382ce8435c838a339c9ec9c4b11a57..01765ed59f2c7b4e0bbca217136bfa8573ffe5a0 100644
+index 186a80b795a3cc67cfa4f60fdc013a8f0a004fe0..fdf7a85298a00be8b1888b63a4bc229b6d5888b1 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2527,6 +2527,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2540,6 +2540,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -250,7 +250,7 @@ index 9b5259c6c3382ce8435c838a339c9ec9c4b11a57..01765ed59f2c7b4e0bbca217136bfa85
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 570ac93ad8cffda1bf6a8a9847a8052c2daa0d1e..b9ff54463e950c39f282794191e55a721bc7a25a 100644
+index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
