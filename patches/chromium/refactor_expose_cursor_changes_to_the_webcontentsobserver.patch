@@ -43,7 +43,7 @@ index 43691a30a65d93be24abcc8f300cc4ed932d66b1..5628eeb3af1de28333d0c1cdb9c5cc47
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d005252eb64958d173e71b5b31302364f14c2f7d..058c679963076993b803bea8b4cdea46c7308944 100644
+index a324de9ab581171faa9114e14e7c4b2833164877..680df5c87e796352bb1eba4c251ceae9457087a9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3446,6 +3446,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
@@ -59,7 +59,7 @@ index d005252eb64958d173e71b5b31302364f14c2f7d..058c679963076993b803bea8b4cdea46
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index fb847eacce5854aedd5afd7f398ec6ccf782d132..3b33845080a08699424385ed113626f4e1aaae6f 100644
+index 5e744957760b91cb38eb0e51dd3d98958e1da819..300302a7a0554fe347b4625624101bbfc0caa0ba 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -912,6 +912,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -71,7 +71,7 @@ index fb847eacce5854aedd5afd7f398ec6ccf782d132..3b33845080a08699424385ed113626f4
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 8d16aa19316870bd16c991aedaaf392e793eb21f..6d1282c46ff538438ea141e5f46112a6ad3ab40c 100644
+index da2c6572dd7e9bbd6f59b864edc73dae56ca2103..4eb46a9b37f66fe41ae9e62ac8848801e065acda 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index 8d16aa19316870bd16c991aedaaf392e793eb21f..6d1282c46ff538438ea141e5f46112a6
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -357,6 +358,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -365,6 +366,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  

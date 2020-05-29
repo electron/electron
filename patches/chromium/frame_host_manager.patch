@@ -42,7 +42,7 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index feb8b0be7c2514805612e05ab6c50c943366d19b..a7de3c21d72ca4879ddd74e43d572b2b142f5538 100644
+index ae524680c78781c1b77ab1b638f89ae60759fde4..3fc14871cb0f06272190acf6d4c209e7ef1a19ff 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1278,6 +1278,24 @@ void NavigationRequest::BeginNavigation() {
@@ -71,7 +71,7 @@ index feb8b0be7c2514805612e05ab6c50c943366d19b..a7de3c21d72ca4879ddd74e43d572b2b
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 1943c73eea9974cdd05f1d6c5b1ac7094ad80663..3f7d352eb28f1173f19367a52d1136fe760efd0b 100644
+index 4d7009cddf8eed14af9279440b3cdaf8e27a31f8..e2c1e00de2f563020fe73aa181594caa41504785 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2407,6 +2407,16 @@ bool RenderFrameHostManager::InitRenderView(
@@ -194,7 +194,7 @@ index 10dd6f03af22bd7d0f7b65a58d4a58430c129b49..88504adb27e6461648f7dce48c93e2e1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3c743a74321d54e36248d7b6201d9fdf5b749af6..13418cab6cce233a14110eca7a887eb549cf438b 100644
+index 6b15ce8980b5109d76916397d19a84684dd258f3..2e2db0bf446d2fabeb2ee6c83f7ceb5de8d21271 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -220,7 +220,7 @@ index 3c743a74321d54e36248d7b6201d9fdf5b749af6..13418cab6cce233a14110eca7a887eb5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 491d6e7260dd329f312916c2f4aaba0aa177cc6a..a9119a722935a8320e463e2e24cdd39b9e8b1773 100644
+index 71b697dadd30cc0eb9d7f32c1b8fbe12d0e1ff0c..0128b701221564bd9d117a0c89c2ab6bfbf7a403 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {

@@ -7,7 +7,7 @@ This patch should be removed once https://bugs.chromium.org/p/chromium/issues/de
 is addressed.
 
 diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
-index f3a1aa4954523129179fc99679dfb43b90b1f6e7..430c7c7ae57b320c94b977d55f669006efc8c4b1 100644
+index bd464dc3ff1267f7133b537c2433dfaf89da78ed..2f3cbb48a070539d0b994478f334adc59eef5831 100644
 --- a/ui/base/x/x11_window.cc
 +++ b/ui/base/x/x11_window.cc
 @@ -64,17 +64,17 @@ gfx::Rect SanitizeBounds(const gfx::Rect& bounds) {
@@ -33,7 +33,7 @@ index f3a1aa4954523129179fc99679dfb43b90b1f6e7..430c7c7ae57b320c94b977d55f669006
        data->push_back(bitmap.getColor(x, y));
  }
  
-@@ -787,7 +787,7 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
+@@ -786,7 +786,7 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
    // so that we can pass to the WM.
    //
    // All of this could be made much, much better.
@@ -42,7 +42,7 @@ index f3a1aa4954523129179fc99679dfb43b90b1f6e7..430c7c7ae57b320c94b977d55f669006
  
    if (!window_icon.isNull())
      SerializeImageRepresentation(window_icon.GetRepresentation(1.0f), &data);
-@@ -796,8 +796,16 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
+@@ -795,8 +795,16 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
      SerializeImageRepresentation(app_icon.GetRepresentation(1.0f), &data);
  
    if (!data.empty()) {

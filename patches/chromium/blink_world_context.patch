@@ -20,10 +20,10 @@ index 52365dedbe109f5302ceabd6393a8a9ae104f392..c8f8f0f939e2bbe5e03867a02c235708
    // Executes script in the context of the current page and returns the value
    // that the script evaluated to with callback. Script execution can be
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 36dbb0cfeeb4afd124b555f4d8519d5a3af75cf8..3c3875f31eb7d3349b59c94e064e550fdd39b87e 100644
+index 26a3c819d5a212ef615bda20c56a76fe11a236a9..9c763bb22ecede8bb68cc81ba446f57ddf9430af 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -951,6 +951,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -952,6 +952,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  
