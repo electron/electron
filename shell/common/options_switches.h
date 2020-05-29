@@ -140,6 +140,7 @@ extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
+extern const char kDisableNTLMv2[];
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 extern const char kEnableSpellcheck[];
