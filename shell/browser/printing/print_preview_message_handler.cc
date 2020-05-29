@@ -79,7 +79,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   // Always try to stop the worker.
   StopWorker(params.document_cookie);
 
-  const PrintHostMsg_DidPrintContent_Params& content = params.content;
+  const printing::mojom::DidPrintContentParams& content = params.content;
   if (!content.metafile_data_region.IsValid() ||
       params.expected_pages_count <= 0) {
     RejectPromise(ids.request_id);
