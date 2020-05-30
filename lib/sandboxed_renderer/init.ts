@@ -43,13 +43,16 @@ process.isRemoteModuleEnabled = isRemoteModuleEnabled;
 // The electron module depends on process.electronBinding
 const electron = require('electron');
 
-const loadedModules = new Map([
+const loadedModules = new Map<string, any>([
   ['electron', electron],
   ['electron/common', electron],
   ['electron/renderer', electron],
-  ['events', events],
-  ['timers', require('timers')],
-  ['url', require('url')]
+  ['events', events]
+]);
+
+const loadableModules = new Map<string, Function>([
+  ['timers', () => require('timers')],
+  ['url', () => require('url')]
 ]);
 
 // ElectronApiServiceImpl will look for the "ipcNative" hidden object when
@@ -108,6 +111,11 @@ process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
 function preloadRequire (module: string) {
   if (loadedModules.has(module)) {
     return loadedModules.get(module);
+  }
+  if (loadableModules.has(module)) {
+    const loadedModule = loadableModules.get(module)!();
+    loadedModules.set(module, loadedModule);
+    return loadedModule;
   }
   throw new Error(`module not found: ${module}`);
 }
