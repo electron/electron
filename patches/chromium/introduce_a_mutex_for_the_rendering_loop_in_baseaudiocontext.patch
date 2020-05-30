@@ -1,0 +1,195 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Mon, 6 Jan 2020 16:06:27 +0000
+Subject: Introduce a Mutex for the rendering loop in BaseAudioContext
+
+The render loop in Web Audio API is performed by the rendering thread,
+and this thread can access the data storage that is allocated by
+the main thread (Oilpan). This relationship is prone to cause
+use-after-free error especially when the main thread objects gets
+collected.
+
+This newly introduced mutex will be able to lock up the data storage
+when it is accessed by the render loop, so it can be protected even
+when the GC attempts to collect the object.
+
+We believe the performance implication from the mutex would be
+negligible because it is locked only when Uninitialize() function
+gets called. The lock within the render loop uses TryLock, so it
+does not block the rendering thread.
+
+Why introduces a new lock instead of using the existing graph lock?:
+
+The graph lock is quite popular in various places in WebAudio,
+thus it is supposed to be very contentious. Each conflict will
+result in "silence" in the audio stream and we need to minimize
+such instance. This new lock is solely dedicated to the tear-down
+process, so we can guarantee that it will be locked from the main
+thread only once. Therefore, there is no risk causing redundant
+silence unless an AudioContext is getting collected.
+
+the web tests without any problem.
+
+(cherry picked from commit 417a58a838349c46dfce49bba04a9e956142975c)
+
+Bug: 1029462
+Test: Locally confirmed that it does not repro anymore, and also passed
+Change-Id: I1fb7c302ff21c3d3ac763088a9d0bb4e8584b03f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1960083
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#724249}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1988157
+Reviewed-by: Ben Mason <benmason@chromium.org>
+Cr-Commit-Position: refs/branch-heads/3945@{#1013}
+Cr-Branched-From: e4635fff7defbae0f9c29e798349f6fc0cce4b1b-refs/heads/master@{#706915}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+index 34adef56ced1effd3af5a50e091f58440a53e6a7..a9ecf56688acbf905d299fee1d336bf19834c87e 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+@@ -151,6 +151,8 @@ void BaseAudioContext::Clear() {
+ void BaseAudioContext::Uninitialize() {
+   DCHECK(IsMainThread());
+ 
++  MutexLocker locker(GetTearDownMutex());
++
+   if (!IsDestinationInitialized())
+     return;
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.h b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+index bb0b2335d848c6b5f1b1cb9ce24ad5adb8b331c5..af0a27d0cb49faa34de540df5c25ae4f1d6f8734 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.h
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.h
+@@ -328,6 +328,8 @@ class MODULES_EXPORT BaseAudioContext
+   void ReportDidCreate() final;
+   void ReportWillBeDestroyed() final;
+ 
++  Mutex& GetTearDownMutex() const { return tear_down_mutex_; }
++
+  protected:
+   enum ContextType { kRealtimeContext, kOfflineContext };
+ 
+@@ -429,6 +431,12 @@ class MODULES_EXPORT BaseAudioContext
+   // This cannot be nullptr once it is assigned from AudioWorkletThread until
+   // the BaseAudioContext goes away.
+   WorkerThread* audio_worklet_thread_ = nullptr;
++
++  // Due to the multi-threading architecture of WebAudio, it is possible that
++  // object allocated by the main thread still can be accessed by the audio
++  // rendering thread while this context is torn down (GCed) by
++  // |Uninitialize()|.
++  mutable Mutex tear_down_mutex_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+index 69a58ba8816127ee3214050b2eb1f5c3c5f56cf0..b0cc2b94ef45ccad063bf0c6ea898bfe6ea6200e 100644
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+@@ -293,24 +293,32 @@ bool OfflineAudioDestinationHandler::RenderIfNotSuspended(
+     return true;
+   }
+ 
+-  DCHECK_GE(NumberOfInputs(), 1u);
+-
+-  // This will cause the node(s) connected to us to process, which in turn will
+-  // pull on their input(s), all the way backwards through the rendering graph.
+-  AudioBus* rendered_bus = Input(0).Pull(destination_bus, number_of_frames);
++  {
++    MutexTryLocker try_locker(Context()->GetTearDownMutex());
++    if (try_locker.Locked()) {
++      DCHECK_GE(NumberOfInputs(), 1u);
++
++      // This will cause the node(s) connected to us to process, which in turn
++      // will pull on their input(s), all the way backwards through the
++      // rendering graph.
++      AudioBus* rendered_bus = Input(0).Pull(destination_bus, number_of_frames);
++
++      if (!rendered_bus) {
++        destination_bus->Zero();
++      } else if (rendered_bus != destination_bus) {
++        // in-place processing was not possible - so copy
++        destination_bus->CopyFrom(*rendered_bus);
++      }
++    } else {
++      destination_bus->Zero();
++    }
+ 
+-  if (!rendered_bus) {
+-    destination_bus->Zero();
+-  } else if (rendered_bus != destination_bus) {
+-    // in-place processing was not possible - so copy
+-    destination_bus->CopyFrom(*rendered_bus);
++    // Process nodes which need a little extra help because they are not
++    // connected to anything, but still need to process.
++    Context()->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
++        number_of_frames);
+   }
+ 
+-  // Process nodes which need a little extra help because they are not connected
+-  // to anything, but still need to process.
+-  Context()->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
+-      number_of_frames);
+-
+   // Let the context take care of any business at the end of each render
+   // quantum.
+   Context()->HandlePostRenderTasks();
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
+index 9f7119bb6cd8d92abc1e1cc3a283717857948260..58caf2b93a07cec072dc794d969a809c24c2123f 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
+@@ -198,28 +198,33 @@ void RealtimeAudioDestinationHandler::Render(
+   // Only pull on the audio graph if we have not stopped the destination.  It
+   // takes time for the destination to stop, but we want to stop pulling before
+   // the destination has actually stopped.
+-  if (IsPullingAudioGraphAllowed()) {
+-    // Renders the graph by pulling all the input(s) to this node. This will in
+-    // turn pull on their input(s), all the way backwards through the graph.
+-    AudioBus* rendered_bus = Input(0).Pull(destination_bus, number_of_frames);
+-
+-    DCHECK(rendered_bus);
+-    if (!rendered_bus) {
+-      // AudioNodeInput might be in the middle of destruction. Then the internal
+-      // summing bus will return as nullptr. Then zero out the output.
++  {
++    MutexTryLocker try_locker(context->GetTearDownMutex());
++    if (try_locker.Locked() && IsPullingAudioGraphAllowed()) {
++      // Renders the graph by pulling all the inputs to this node. This will
++      // in turn pull on their inputs, all the way backwards through the graph.
++      AudioBus* rendered_bus = Input(0).Pull(destination_bus, number_of_frames);
++
++      DCHECK(rendered_bus);
++      if (!rendered_bus) {
++        // AudioNodeInput might be in the middle of destruction. Then the
++        // internal summing bus will return as nullptr. Then zero out the
++        // output.
++        destination_bus->Zero();
++      } else if (rendered_bus != destination_bus) {
++        // In-place processing was not possible. Copy the rendererd result to
++        // the given |destination_bus| buffer.
++        destination_bus->CopyFrom(*rendered_bus);
++      }
++    } else {
+       destination_bus->Zero();
+-    } else if (rendered_bus != destination_bus) {
+-      // In-place processing was not possible. Copy the rendererd result to the
+-      // given |destination_bus| buffer.
+-      destination_bus->CopyFrom(*rendered_bus);
+     }
+-  } else {
+-    destination_bus->Zero();
+-  }
+ 
+-  // Processes "automatic" nodes that are not connected to anything. This can
+-  // be done after copying because it does not affect the rendered result.
+-  context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(number_of_frames);
++    // Processes "automatic" nodes that are not connected to anything. This can
++    // be done after copying because it does not affect the rendered result.
++    context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
++        number_of_frames);
++  }
+ 
+   context->HandlePostRenderTasks();
+ 
