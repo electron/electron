@@ -90,7 +90,8 @@ module.exports = ({
   alwaysHasNode,
   loadElectronFromAlternateTarget,
   targetDeletesNodeGlobals,
-  target
+  target,
+  wrapInitWithProfilingTimeout
 }) => {
   let entry = path.resolve(electronRoot, 'lib', target, 'init.ts')
   if (!fs.existsSync(entry)) {
@@ -105,6 +106,7 @@ module.exports = ({
     output: {
       filename: `${target}.bundle.js`
     },
+    wrapInitWithProfilingTimeout,
     resolve: {
       alias: {
         ...alias,
