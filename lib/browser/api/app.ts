@@ -69,14 +69,15 @@ App.prototype.isPackaged = (() => {
 })();
 
 // Convert a string to a valid filesystem path
-function filenamify(string: string): string {
-	// Many thanks to Sindre Sorhus (https://github.com/sindresorhus) for this code.
-	string = string.replace(/[\u0000-\u001f\u0080-\u009f<>:"\/\\|?*\x00-\x1F]/g, '!');
-	string = string.replace(/!+/g, '!'); // Clean it up a little
-	if (/^(|con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(string)) {
-		return string + '!'; // Prevent empty string and reserved Windows names
-	}
-	return string;
+function filenamify (string: string): string {
+  // Many thanks to Sindre Sorhus (https://github.com/sindresorhus) for this code.
+  // eslint-disable-next-line no-control-regex
+  string = string.replace(/[\u0000-\u001f\u0080-\u009f<>:"/\\|?*\x00-\x1F]/g, '!');
+  string = string.replace(/!+/g, '!'); // Clean it up a little
+  if (/^(|con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(string)) {
+    return string + '!'; // Prevent empty string and reserved Windows names
+  }
+  return string;
 }
 
 app._setDefaultAppPaths = (packagePath) => {
