@@ -241,7 +241,7 @@ void ElectronURLLoaderFactory::StartLoading(
         net::SiteForCookies::FromUrl(new_location);
     network::ResourceRequest new_request = request;
     new_request.url = new_location;
-    // new_request.site_for_cookies = newLocation;
+    new_request.site_for_cookies = new_site_for_cookies;
 
     net::RedirectInfo redirect_info;
     redirect_info.status_code = head->headers->response_code();
