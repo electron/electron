@@ -620,9 +620,9 @@ Returns `String` - The current application directory.
     * `%APPDATA%` on Windows
     * `$XDG_CONFIG_HOME` or `~/.config` on Linux
     * `~/Library/Application Support` on macOS
-  * `userData` The directory for storing your app's configuration files, which by
-    default it is the `appData` directory appended with your app's name.
+  * `userData` The directory for storing your app's configuration files. By default, it is the `appData` directory appended with your app's name (auto-tweaking invalid characters).
   * `cache`
+  * `userCache` The directory for storing your app's cache files. By default, it is the `cache` directory appended with your app's name (auto-tweaking invalid characters).
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.
