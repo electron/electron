@@ -21,10 +21,10 @@ index 21ff33131e62938ab04399a70d392ccbe5282034..79abda0cc919e3a79b49ebd417bf8636
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 52ec47756d99e7afea0adf408916d4e4199ba1fb..d606365a7fb69f23a53db26f44faf4494be5fbcb 100644
+index d2b8edd094a8585fe14e144e881feafd0917199a..e282718ec461f6c7bcb1fe36d5bb73359f04a30a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2947,9 +2947,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2969,9 +2969,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -53,7 +53,7 @@ index 21811c17c9ffc37ccae543a7f5d2181987e144ab..697acddd922caa5f5df27219b0e109a1
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 1fce581803bdef21afe9039eb9228b8e24e7237a..6b15ce8980b5109d76916397d19a84684dd258f3 100644
+index 8cfe2bfebd69be8aa4ed4fd1a8b846e7237be68f..8f36f7277a59d297a0700d1dfd5d8120f6a0ffa1 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -530,6 +530,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -66,7 +66,7 @@ index 1fce581803bdef21afe9039eb9228b8e24e7237a..6b15ce8980b5109d76916397d19a8468
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 74cc5fe9476ef77390a3ae08e66736952261ef49..71b697dadd30cc0eb9d7f32c1b8fbe12d0e1ff0c 100644
+index 21c7cfe08903cf92948af5fe069d7b25035c23fe..463fcc56d05a2e18c1d3752b5e7e275c8797eca8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -146,6 +146,7 @@ class NetworkService;
@@ -206,7 +206,7 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 49d42a74a74c3b99152eaaeaf0282690618ff94a..bac8b625bc8565f761c2e3fb1dd39682f37ecdd7 100644
+index 5137d99c8e94b8f2dfb903b3de87d2dfcfd14380..5859fa66f7878b77ccea0c41f22845f617123684 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1837,6 +1837,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

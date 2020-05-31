@@ -23,7 +23,7 @@ index 831a3574055881f31a3e7dbc98c0525b47af5dcb..9626f181ee471fec68af7ddfc968f2d8
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 63e11ac50bc938a39aa0e0b5b722d4af441e08da..9aa1dc751980898c580ec4aeca033c62364e3249 100644
+index 0fe316e4d949bf2c0e64a2374a8f639e3afee104..cb612a7002a4ae808ca488e2aa2adbb759310964 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4729,6 +4729,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
@@ -40,7 +40,7 @@ index 63e11ac50bc938a39aa0e0b5b722d4af441e08da..9aa1dc751980898c580ec4aeca033c62
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index b19b894b7b94167cf893c2006de31c8f81ad5139..fd3728c3c4ef5b28191949136713b56720383e7c 100644
+index c8772a65b238f52855a6634dbe1722491a663354..c856fb03735e3a46135492513e71daf3b1dc6c1a 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -724,6 +724,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -79,7 +79,7 @@ index 1841d4bea144e2fe0fb69839d52ff2ba4aa6b551..64c5eb7d0da7684531b044de9d6d114f
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
-index 0ca6dcbd4b4bf90aeff80c923c1d3a510caa14c6..b743bd59d8c14aeeed83a568031799d49193caa6 100644
+index eae1fafbaab524e590f414b54b366a6d709fad47..97da1b1639618dded697eb72d5959926ce725e24 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 @@ -348,6 +348,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
