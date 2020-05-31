@@ -294,11 +294,12 @@ describe('chrome extensions', () => {
     it('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
+      const winningMessage = emittedOnce(ipcMain, 'winning');
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
       w.webContents.openDevTools();
       showLastDevToolsPanel(w);
-      await emittedOnce(ipcMain, 'winning');
+      await winningMessage;
     });
   });
 

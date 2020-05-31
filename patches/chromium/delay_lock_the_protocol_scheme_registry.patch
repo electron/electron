@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 67d7e8e69d8a9b8b34b82b83bdf688df4c17ed59..9f6b797ea0489fc87b33a36bbcaae84a2cbf05f3 100644
+index 474f742a909b0a425c6b1f3e93da211b4bcee919..16b9f816d56dbb6b6943cca6d6b3610afa322f4e 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -640,7 +640,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -634,7 +634,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 6c27d324e6235051875b88c4bc5bd362d3907f3c..06c17d6673d280fabf5b47244e7f7f7ab374f9a3 100644
+index ed5b0e2c0b4d453560ee9e2e4a55780b409eeea9..46e29dca5d13691bcf9494c0f90b68d6219a75ef 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -37,6 +37,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
@@ -83,7 +83,7 @@ index 6c27d324e6235051875b88c4bc5bd362d3907f3c..06c17d6673d280fabf5b47244e7f7f7a
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index f8590642a8d6807a15746e9e7673b5e76cbe0e14..7d8df731b6dd18a42ec4fc2b1bb08a6198da8ff8 100644
+index 2d9ee9fa20a9aba1de168cc86bfeea5eab71e6d3..4b163c3fa2ddd258b5527e0ccaf9fc9d2621ef75 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -77,6 +77,20 @@ class CONTENT_EXPORT ContentMainDelegate {

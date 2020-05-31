@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/logging.h"
+#include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
@@ -87,6 +88,44 @@ NSMenu* MakeEmptySubmenu() {
 
 }  // namespace
 
+// This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
+// Objective-C object, which allows it to be stored in the representedObject
+// field of an NSMenuItem.
+@interface WeakPtrToElectronMenuModelAsNSObject : NSObject
++ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model;
++ (electron::ElectronMenuModel*)getFrom:(id)instance;
+- (instancetype)initWithModel:(electron::ElectronMenuModel*)model;
+- (electron::ElectronMenuModel*)menuModel;
+@end
+
+@implementation WeakPtrToElectronMenuModelAsNSObject {
+  base::WeakPtr<electron::ElectronMenuModel> _model;
+}
+
++ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model {
+  return [[[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model]
+      autorelease];
+}
+
++ (electron::ElectronMenuModel*)getFrom:(id)instance {
+  return
+      [base::mac::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(instance)
+          menuModel];
+}
+
+- (instancetype)initWithModel:(electron::ElectronMenuModel*)model {
+  if ((self = [super init])) {
+    _model = model->GetWeakPtr();
+  }
+  return self;
+}
+
+- (electron::ElectronMenuModel*)menuModel {
+  return _model.get();
+}
+
+@end
+
 // Menu item is located for ease of removing it from the parent owner
 static base::scoped_nsobject<NSMenuItem> recentDocumentsMenuItem_;
 
@@ -95,12 +134,18 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 @implementation ElectronMenuController
 
-@synthesize model = model_;
+- (electron::ElectronMenuModel*)model {
+  return model_.get();
+}
 
-- (id)initWithModel:(electron::ElectronMenuModel*)model
-    useDefaultAccelerator:(BOOL)use {
+- (void)setModel:(electron::ElectronMenuModel*)model {
+  model_ = model->GetWeakPtr();
+}
+
+- (instancetype)initWithModel:(electron::ElectronMenuModel*)model
+        useDefaultAccelerator:(BOOL)use {
   if ((self = [super init])) {
-    model_ = model;
+    model_ = model->GetWeakPtr();
     isMenuOpen_ = NO;
     useDefaultAccelerator_ = use;
     [self menu];
@@ -115,8 +160,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   // while its context menu is still open.
   [self cancel];
 
-  model_ = nil;
-
+  model_ = nullptr;
   [super dealloc];
 }
 
@@ -137,7 +181,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
         itemWithTitle:@"Electron"] submenu] itemWithTitle:openTitle] retain]);
   }
 
-  model_ = model;
+  model_ = model->GetWeakPtr();
   [menu_ removeAllItems];
 
   const int count = model->GetItemCount();
@@ -153,7 +197,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (isMenuOpen_) {
     [menu_ cancelTracking];
     isMenuOpen_ = NO;
-    model_->MenuWillClose();
+    if (model_)
+      model_->MenuWillClose();
     if (!closeCallback.is_null()) {
       base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
     }
@@ -290,8 +335,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     // model. Setting the target to |self| allows this class to participate
     // in validation of the menu items.
     [item setTag:index];
-    NSValue* modelObject = [NSValue valueWithPointer:model];
-    [item setRepresentedObject:modelObject];  // Retains |modelObject|.
+    [item setRepresentedObject:[WeakPtrToElectronMenuModelAsNSObject
+                                   weakPtrForModel:model]];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -331,9 +376,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     return NO;
 
   NSInteger modelIndex = [item tag];
-  electron::ElectronMenuModel* model =
-      static_cast<electron::ElectronMenuModel*>(
-          [[(id)item representedObject] pointerValue]);
+  electron::ElectronMenuModel* model = [WeakPtrToElectronMenuModelAsNSObject
+      getFrom:[(id)item representedObject]];
   DCHECK(model);
   if (model) {
     BOOL checked = model->IsItemCheckedAt(modelIndex);
@@ -352,8 +396,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
   electron::ElectronMenuModel* model =
-      static_cast<electron::ElectronMenuModel*>(
-          [[sender representedObject] pointerValue]);
+      [WeakPtrToElectronMenuModelAsNSObject getFrom:[sender representedObject]];
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
@@ -369,7 +412,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   menu_.reset([[NSMenu alloc] initWithTitle:@""]);
   [menu_ setDelegate:self];
   if (model_)
-    [self populateWithModel:model_];
+    [self populateWithModel:model_.get()];
   return menu_.get();
 }
 
@@ -379,7 +422,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 - (void)menuWillOpen:(NSMenu*)menu {
   isMenuOpen_ = YES;
-  model_->MenuWillShow();
+  if (model_)
+    model_->MenuWillShow();
 }
 
 - (void)menuDidClose:(NSMenu*)menu {

@@ -220,16 +220,6 @@ void SetNodeOptions(base::Environment* env) {
   }
 }
 
-void HostCleanupFinalizationGroupCallback(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::FinalizationGroup> group) {
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (env == nullptr) {
-    return;
-  }
-  env->RegisterFinalizationGroupForCleanup(group);
-}
-
 bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
                                      v8::Local<v8::String>) {
   v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
@@ -423,12 +413,6 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // This needs to be called before the inspector is initialized.
   env->InitializeDiagnostics();
-
-  // Ensure that WeakRefs work properly by specifying the callback to be called
-  // when FinalizationRegistries are ready to be cleaned up and require
-  // FinalizationGroup::Cleanup() to be called in a future task.
-  context->GetIsolate()->SetHostCleanupFinalizationGroupCallback(
-      HostCleanupFinalizationGroupCallback);
 
   // Set the callback to invoke to check if wasm code generation should be
   // allowed.

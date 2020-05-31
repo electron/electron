@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 4 May 2020 16:57:05 -0700
+Subject: chore: SetHostCleanupFinalizationGroupCallback has been removed from
+ V8
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc83726c376 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -12,7 +12,6 @@ using errors::TryCatchScope;
+ using v8::Array;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+-using v8::FinalizationGroup;
+ using v8::Function;
+ using v8::HandleScope;
+ using v8::Isolate;
+@@ -77,15 +76,6 @@ static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+   return result;
+ }
+ 
+-static void HostCleanupFinalizationGroupCallback(
+-    Local<Context> context, Local<FinalizationGroup> group) {
+-  Environment* env = Environment::GetCurrent(context);
+-  if (env == nullptr) {
+-    return;
+-  }
+-  env->RegisterFinalizationGroupForCleanup(group);
+-}
+-
+ void* NodeArrayBufferAllocator::Allocate(size_t size) {
+   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+     return UncheckedCalloc(size);
+@@ -228,11 +218,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+     s.promise_reject_callback : task_queue::PromiseRejectCallback;
+   isolate->SetPromiseRejectCallback(promise_reject_cb);
+ 
+-  auto* host_cleanup_cb = s.host_cleanup_finalization_group_callback ?
+-    s.host_cleanup_finalization_group_callback :
+-    HostCleanupFinalizationGroupCallback;
+-  isolate->SetHostCleanupFinalizationGroupCallback(host_cleanup_cb);
+-
+   if (s.flags & DETAILED_SOURCE_POSITIONS_FOR_PROFILING)
+     v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(isolate);
+ }
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 5248e7062354c1deb90b58a784237e6f01335c22..e2a104c9c4562abeb579fe62c9c46ca34bf03581 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -1182,12 +1182,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
+   cleanup_hooks_.erase(search);
+ }
+ 
+-inline void Environment::RegisterFinalizationGroupForCleanup(
+-    v8::Local<v8::FinalizationGroup> group) {
+-  cleanup_finalization_groups_.emplace_back(isolate(), group);
+-  uv_async_send(&task_queues_async_);
+-}
+-
+ size_t CleanupHookCallback::Hash::operator()(
+     const CleanupHookCallback& cb) const {
+   return std::hash<void*>()(cb.arg_);
+diff --git a/src/env.cc b/src/env.cc
+index 65e4bda890461f691036005252db7e61865d2493..694bfd866a4d7f43046ea97a3e97ea503fffc21b 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -30,7 +30,6 @@ using v8::ArrayBuffer;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::EmbedderGraph;
+-using v8::FinalizationGroup;
+ using v8::Function;
+ using v8::FunctionTemplate;
+ using v8::HandleScope;
+@@ -473,7 +472,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
+       [](uv_async_t* async) {
+         Environment* env = ContainerOf(
+             &Environment::task_queues_async_, async);
+-        env->CleanupFinalizationGroups();
+         env->RunAndClearNativeImmediates();
+       });
+   uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
+@@ -1112,25 +1110,6 @@ void Environment::RunWeakRefCleanup() {
+   isolate()->ClearKeptObjects();
+ }
+ 
+-void Environment::CleanupFinalizationGroups() {
+-  HandleScope handle_scope(isolate());
+-  Context::Scope context_scope(context());
+-  TryCatchScope try_catch(this);
+-
+-  while (!cleanup_finalization_groups_.empty() && can_call_into_js()) {
+-    Local<FinalizationGroup> fg =
+-        cleanup_finalization_groups_.front().Get(isolate());
+-    cleanup_finalization_groups_.pop_front();
+-    if (!FinalizationGroup::Cleanup(fg).FromMaybe(false)) {
+-      if (try_catch.HasCaught() && !try_catch.HasTerminated())
+-        errors::TriggerUncaughtException(isolate(), try_catch);
+-      // Re-schedule the execution of the remainder of the queue.
+-      uv_async_send(&task_queues_async_);
+-      return;
+-    }
+-  }
+-}
+-
+ // Not really any better place than env.cc at this moment.
+ void BaseObject::DeleteMe(void* data) {
+   BaseObject* self = static_cast<BaseObject*>(data);
+diff --git a/src/env.h b/src/env.h
+index b67f1e4876f42ae37a49bbcb865c049f5a3ac3f5..e269c47ae3814b42fdd2792360c1acb1995e98d2 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1125,9 +1125,7 @@ class Environment : public MemoryRetainer {
+   void AtExit(void (*cb)(void* arg), void* arg);
+   void RunAtExitCallbacks();
+ 
+-  void RegisterFinalizationGroupForCleanup(v8::Local<v8::FinalizationGroup> fg);
+   void RunWeakRefCleanup();
+-  void CleanupFinalizationGroups();
+ 
+   // Strings and private symbols are shared across shared contexts
+   // The getters simply proxy to the per-isolate primitive.
+@@ -1350,8 +1348,6 @@ class Environment : public MemoryRetainer {
+   uint64_t thread_id_;
+   std::unordered_set<worker::Worker*> sub_worker_contexts_;
+ 
+-  std::deque<v8::Global<v8::FinalizationGroup>> cleanup_finalization_groups_;
+-
+   static void* const kNodeContextTagPtr;
+   static int const kNodeContextTag;
+ 
+diff --git a/src/node.h b/src/node.h
+index 709d03145e3d5acdb67502110917e8147c275c60..a279cc7cc6205907eb5f9c3f6237513b2354f6be 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -323,8 +323,6 @@ struct IsolateSettings {
+   v8::PromiseRejectCallback promise_reject_callback = nullptr;
+   v8::AllowWasmCodeGenerationCallback
+       allow_wasm_code_generation_callback = nullptr;
+-  v8::HostCleanupFinalizationGroupCallback
+-      host_cleanup_finalization_group_callback = nullptr;
+ };
+ 
+ // Overriding IsolateSettings may produce unexpected behavior

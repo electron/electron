@@ -62,10 +62,6 @@ void ElectronExtensionSystem::LoadExtension(
 void ElectronExtensionSystem::FinishInitialization() {
   // Inform the rest of the extensions system to start.
   ready_.Signal();
-  content::NotificationService::current()->Notify(
-      NOTIFICATION_EXTENSIONS_READY_DEPRECATED,
-      content::Source<BrowserContext>(browser_context_),
-      content::NotificationService::NoDetails());
 }
 
 void ElectronExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {

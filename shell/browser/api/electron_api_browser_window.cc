@@ -113,9 +113,9 @@ BrowserWindow::~BrowserWindow() {
 
 void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
   switch (event.GetType()) {
-    case blink::WebInputEvent::kGestureScrollBegin:
-    case blink::WebInputEvent::kGestureScrollUpdate:
-    case blink::WebInputEvent::kGestureScrollEnd:
+    case blink::WebInputEvent::Type::kGestureScrollBegin:
+    case blink::WebInputEvent::Type::kGestureScrollUpdate:
+    case blink::WebInputEvent::Type::kGestureScrollEnd:
       Emit("scroll-touch-edge");
       break;
     default:
@@ -265,6 +265,9 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   if (!web_contents())
     // Already closed by renderer
     return;
+
+  // Required to make beforeunload handler work.
+  api_web_contents_->NotifyUserActivation();
 
   if (web_contents()->NeedToFireBeforeUnloadOrUnload())
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);

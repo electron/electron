@@ -167,10 +167,12 @@ auto_filenames = {
     "lib/renderer/window-setup.ts",
     "lib/sandboxed_renderer/api/exports/electron.ts",
     "lib/sandboxed_renderer/api/module-list.ts",
-    "lib/sandboxed_renderer/init.js",
+    "lib/sandboxed_renderer/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
   ]
 
   isolated_bundle_deps = [
@@ -181,6 +183,8 @@ auto_filenames = {
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
   ]
 
   browser_bundle_deps = [
@@ -256,6 +260,8 @@ auto_filenames = {
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
   ]
 
   renderer_bundle_deps = [
@@ -298,6 +304,8 @@ auto_filenames = {
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
   ]
 
   worker_bundle_deps = [
@@ -329,5 +337,7 @@ auto_filenames = {
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
   ]
 }

@@ -10,7 +10,6 @@ import { closeWindow } from './window-helpers';
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('Menu module', function () {
-  this.timeout(5000);
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
@@ -885,9 +884,14 @@ describe('Menu module', function () {
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';
-      appProcess.stdout.on('data', data => { output += data; });
-
-      await emittedOnce(appProcess, 'exit');
+      await new Promise((resolve) => {
+        appProcess.stdout.on('data', data => {
+          output += data;
+          if (data.indexOf('Window has') > -1) {
+            resolve();
+          }
+        });
+      });
       expect(output).to.include('Window has no menu');
     });
 

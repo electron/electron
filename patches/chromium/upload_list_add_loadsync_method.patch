@@ -9,10 +9,10 @@ deprecated, and this API should be removed once the deprecated behavior
 is no longer supported.
 
 diff --git a/components/upload_list/upload_list.cc b/components/upload_list/upload_list.cc
-index e39549c9bb552dc19cad3685629406fdbe44c2c7..428b0f486767b630fc42e0e19c8d63bdb2d04cbc 100644
+index 4a6b57e81398727977a9ad21ec601ee2f81e910b..03163affcc649ae53c2b7110d27dbd39ae00ae26 100644
 --- a/components/upload_list/upload_list.cc
 +++ b/components/upload_list/upload_list.cc
-@@ -71,6 +71,10 @@ void UploadList::Load(base::OnceClosure callback) {
+@@ -72,6 +72,10 @@ void UploadList::Load(base::OnceClosure callback) {
        base::BindOnce(&UploadList::OnLoadComplete, this));
  }
  

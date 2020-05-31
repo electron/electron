@@ -1,23 +1,14 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  function run() {
-    // Only prevent unload on the first window close
-    var unloadPrevented = false;
-    window.onbeforeunload = function() {
-      setTimeout(function() {
-        require('electron').ipcRenderer.sendSync('onbeforeunload');
-      }, 0);
-      if (!unloadPrevented) {
-        unloadPrevented = true;
-        return false;
-      }
+  // Only prevent unload on the first window close
+  var unloadPrevented = false;
+  window.onbeforeunload = function() {
+    if (!unloadPrevented) {
+      unloadPrevented = true;
+      console.log('prevent')
+      return false;
     }
-    // unload events don't get run unless load events have run.
-    if (document.readyState === 'complete')
-      window.close()
-    else
-      window.onload = () => window.close()
   }
 </script>
 </body>

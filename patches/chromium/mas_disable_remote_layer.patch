@@ -93,12 +93,12 @@ index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329f
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 2057fe69d1bb4a2eb0b1dabc5473a30d676847fe..2aba330fc488660ef874caae26a06e6847cdaf93 100644
+index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bfd2f9c3be 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -13,6 +13,7 @@
  
- #include "ui/base/ui_base_export.h"
+ #include "base/component_export.h"
  
 +#ifndef MAS_BUILD
  // The CGSConnectionID is used to create the CAContext in the process that is

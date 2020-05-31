@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 22 May 2020 12:05:07 -0700
+Subject: Fix XServer crash when using XWindow::SetXWindowIcons
+
+This patch should be removed once https://bugs.chromium.org/p/chromium/issues/detail?id=1085836
+is addressed.
+
+diff --git a/ui/base/x/x11_window.cc b/ui/base/x/x11_window.cc
+index 03282473ab22d2669d1b7ba9ada3ec483748dc57..b67f8104bd9f9b1dc517654f8658487c84d9a032 100644
+--- a/ui/base/x/x11_window.cc
++++ b/ui/base/x/x11_window.cc
+@@ -64,17 +64,17 @@ gfx::Rect SanitizeBounds(const gfx::Rect& bounds) {
+ }
+ 
+ void SerializeImageRepresentation(const gfx::ImageSkiaRep& rep,
+-                                  std::vector<uint32_t>* data) {
+-  uint32_t width = rep.GetWidth();
++                                  std::vector<unsigned long>* data) {
++  int width = rep.GetWidth();
+   data->push_back(width);
+ 
+-  uint32_t height = rep.GetHeight();
++  int height = rep.GetHeight();
+   data->push_back(height);
+ 
+   const SkBitmap& bitmap = rep.GetBitmap();
+ 
+-  for (uint32_t y = 0; y < height; ++y)
+-    for (uint32_t x = 0; x < width; ++x)
++  for (int y = 0; y < height; ++y)
++    for (int x = 0; x < width; ++x)
+       data->push_back(bitmap.getColor(x, y));
+ }
+ 
+@@ -787,7 +787,7 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
+   // so that we can pass to the WM.
+   //
+   // All of this could be made much, much better.
+-  std::vector<uint32_t> data;
++  std::vector<unsigned long> data;
+ 
+   if (!window_icon.isNull())
+     SerializeImageRepresentation(window_icon.GetRepresentation(1.0f), &data);
+@@ -796,8 +796,16 @@ void XWindow::SetXWindowIcons(const gfx::ImageSkia& window_icon,
+     SerializeImageRepresentation(app_icon.GetRepresentation(1.0f), &data);
+ 
+   if (!data.empty()) {
+-    ui::SetArrayProperty(xwindow_, gfx::GetAtom("_NET_WM_ICON"),
+-                         x11::Atom::CARDINAL, data);
++    // XChangeProperty() expects values of type 32 to be longs.
++    std::unique_ptr<unsigned long[]> value(new Atom[data.size()]);
++    for (size_t i = 0; i < data.size(); ++i)
++      value[i] = data[i];
++    XChangeProperty(
++        gfx::GetXDisplay(), xwindow_,
++        XInternAtom(gfx::GetXDisplay(), "_NET_WM_ICON", x11::False),
++        XA_CARDINAL, 32, PropModeReplace,
++        reinterpret_cast<const unsigned char*>(value.get()),
++        data.size());
+   }
+ }
+ 

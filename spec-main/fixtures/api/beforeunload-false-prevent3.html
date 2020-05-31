@@ -1,15 +1,14 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  function preventNextBeforeUnload() {
+  function installBeforeUnload(removeAfterNTimes) {
+    let count = 0
     window.addEventListener('beforeunload', function handler(e) {
-      e.preventDefault();
-      e.returnValue = '';
-      window.removeEventListener('beforeunload', handler)
-      setTimeout(function() {
-        require('electron').ipcRenderer.sendSync('onbeforeunload')
-      }, 0);
-      return false;
+      setTimeout(() => console.log('beforeunload'))
+      if (++count <= removeAfterNTimes) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
     })
   }
 </script>

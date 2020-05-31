@@ -258,16 +258,19 @@ describe('node feature', () => {
       const success = false;
       function listener (data: Buffer) {
         output += data;
-        console.log(data); // NOTE: temporary debug logging to try to catch flake.
+        console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
         const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
         if (match) {
           cleanup();
+          // NOTE: temporary debug logging to try to catch flake.
+          child.stderr.on('data', (m) => console.log(m.toString()));
+          child.stdout.on('data', (m) => console.log(m.toString()));
           const w = (webContents as any).create({}) as WebContents;
           w.loadURL('about:blank')
             .then(() => w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
               connection.onopen = () => {
-                resolve()
+                connection.onclose = () => resolve()
                 connection.close()
               }
             })`))

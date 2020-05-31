@@ -69,8 +69,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       mojo::GenericPendingReceiver receiver) override;
   void RegisterBrowserInterfaceBindersForFrame(
       content::RenderFrameHost* render_frame_host,
-      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map)
-      override;
+      mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
 #if defined(OS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,
@@ -152,10 +151,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
-  mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext(
+  void ConfigureNetworkContextParams(
       content::BrowserContext* browser_context,
       bool in_memory,
-      const base::FilePath& relative_partition_path) override;
+      const base::FilePath& relative_partition_path,
+      network::mojom::NetworkContextParams* network_context_params,
+      network::mojom::CertVerifierCreationParams* cert_verifier_creation_params)
+      override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
       base::StringPiece name) override;
