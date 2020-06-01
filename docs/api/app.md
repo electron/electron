@@ -1403,7 +1403,7 @@ in your app's initialization to ensure that your overridden value is used.
 
 A `Boolean` which when `true` disables the overrides that Electron has in place
 to ensure renderer processes are restarted on every navigation.  The current
-default value for this property is `false`.
+default value for this property is `true`.
 
 The intention is for these overrides to become disabled by default and then at
 some point in the future this property will be removed.  This property impacts
