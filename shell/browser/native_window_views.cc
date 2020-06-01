@@ -956,9 +956,9 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};
-    XShapeCombineRectangles(
-        gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0, 0, &r, 1,
-        ShapeSet, static_cast<int>(x11::XProto::ClipOrdering::YXBanded));
+    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
+                            ShapeInput, 0, 0, &r, 1, ShapeSet,
+                            static_cast<int>(x11::ClipOrdering::YXBanded));
   } else {
     XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
                       0, x11::None, ShapeSet);

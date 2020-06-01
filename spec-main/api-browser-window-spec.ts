@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -54,6 +55,12 @@ describe('BrowserWindow module', () => {
         } as any);
         w.destroy();
       }).not.to.throw();
+    });
+
+    ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
+      const appPath = path.join(__dirname, 'spec-main', 'fixtures', 'apps', 'xwindow-icon');
+      const appProcess = childProcess.spawn(process.execPath, [appPath]);
+      await new Promise((resolve) => { appProcess.once('exit', resolve); });
     });
   });
 

@@ -204,10 +204,10 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index ae8f3b65971935237d98893fcd266ce7d32a625b..75ee5e40bbef5448c7e33457ebc0f3d04698d379 100644
+index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c7f60b7ca 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -216,10 +216,10 @@ index ae8f3b65971935237d98893fcd266ce7d32a625b..75ee5e40bbef5448c7e33457ebc0f3d0
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c6da5e081 100644
+index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d56f9a862 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -230,6 +230,7 @@
+@@ -226,6 +226,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -227,7 +227,7 @@ index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3252,6 +3253,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -236,7 +236,7 @@ index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 56397e6a28846508730dfcfe6f0009f944ffd18d..9e8b76407029b3b768c94a16622bcf7df8bd50e2 100644
+index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e5bb9bf85 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
@@ -250,7 +250,7 @@ index 56397e6a28846508730dfcfe6f0009f944ffd18d..9e8b76407029b3b768c94a16622bcf7d
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 570ac93ad8cffda1bf6a8a9847a8052c2daa0d1e..b9ff54463e950c39f282794191e55a721bc7a25a 100644
+index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
