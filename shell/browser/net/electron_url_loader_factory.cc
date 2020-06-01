@@ -250,7 +250,11 @@ void ElectronURLLoaderFactory::StartLoading(
     redirect_info.new_site_for_cookies = new_site_for_cookies;
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
-    client_remote->OnReceiveRedirect(redirect_info, head.Clone());
+
+    client_remote->OnReceiveRedirect(redirect_info, std::move(head));
+
+    // Unound client, so it an be passed to sub-methods
+    client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
     // |proxy_factory| passed), we askes the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
