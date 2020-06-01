@@ -38,7 +38,7 @@ index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c48e52b67c 100755
+index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..dc3946e3ac579134dd26e5855a1db0a7ed44e405 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -187,13 +187,15 @@ namespace native_module {{
@@ -100,14 +100,14 @@ index 752344d68c3f63b4c5e491b33d4576ed48f8b74f..a6f0805048e3c3f4dd81ce6e90b684c4
 -  definitions.append(config_def)
 +    # Electron: Expose fs module without asar support.
 +    if filename == 'lib/fs.js':
-+      # Node's 'fs' and 'internal/fs/streams' have a lazy-loaded circular
-+      # dependency. So to expose the unmodified Node 'fs' functionality here,
-+      # we have to copy both 'fs' *and* 'internal/fs/streams' and modify the
++      # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
++      # dependencies. So to expose the unmodified Node 'fs' functionality here,
++      # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
 +      # copies to depend on each other instead of on our asarified 'fs' code.
-+      # See https://github.com/electron/electron/pull/16028 for more.
-+      AddModule('lib/original-fs.js', consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/streams')", "require('internal/original-fs/streams')"))
-+    elif filename == 'lib/internal/fs/streams.js':
-+      AddModule('lib/internal/original-fs/streams.js', consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
++      AddModule('lib/original-fs.js', consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
++    elif filename.startswith('lib/internal/fs/'):
++      original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
++      AddModule(original_fs_filename, consts, macros, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
 +
 +  config_size = 0
 +  if not only_js:
