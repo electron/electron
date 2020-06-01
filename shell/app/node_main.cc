@@ -14,7 +14,6 @@
 #include "base/feature_list.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "components/crash/core/app/crashpad.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
@@ -37,6 +36,10 @@
 
 #if defined(OS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
+#endif
+
+#if !defined(MAS_BUILD)
+#include "components/crash/core/app/crashpad.h"
 #endif
 
 namespace {
