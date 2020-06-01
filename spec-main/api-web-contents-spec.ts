@@ -830,7 +830,7 @@ describe('webContents module', () => {
       host3: 0.2
     };
 
-    before((done) => {
+    before(() => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         const response = `<script>
@@ -841,12 +841,12 @@ describe('webContents module', () => {
                             })
                           </script>`;
         callback({ data: response, mimeType: 'text/html' });
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = session.defaultSession.protocol;
-      protocol.unregisterProtocol(scheme, (error) => done(error));
+      protocol.unregisterProtocol(scheme);
     });
 
     afterEach(closeAllWindows);
@@ -981,29 +981,25 @@ describe('webContents module', () => {
       const protocol = w2.webContents.session.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         callback('hello');
-      }, (error) => {
-        if (error) return done(error);
-        w2.webContents.on('did-finish-load', () => {
-          const zoomLevel1 = w.webContents.zoomLevel;
-          expect(zoomLevel1).to.equal(hostZoomMap.host3);
-
-          const zoomLevel2 = w2.webContents.zoomLevel;
-          expect(zoomLevel2).to.equal(0);
-          expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-          protocol.unregisterProtocol(scheme, (error) => {
-            if (error) return done(error);
-            w2.setClosable(true);
-            w2.close();
-            done();
-          });
-        });
-        w.webContents.on('did-finish-load', () => {
-          w.webContents.zoomLevel = hostZoomMap.host3;
-          w2.loadURL(`${scheme}://host3`);
-        });
-        w.loadURL(`${scheme}://host3`);
       });
+      w2.webContents.on('did-finish-load', () => {
+        const zoomLevel1 = w.webContents.zoomLevel;
+        expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+        const zoomLevel2 = w2.webContents.zoomLevel;
+        expect(zoomLevel2).to.equal(0);
+        expect(zoomLevel1).to.not.equal(zoomLevel2);
+
+        protocol.unregisterProtocol(scheme);
+        w2.setClosable(true);
+        w2.close();
+        done();
+      });
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.zoomLevel = hostZoomMap.host3;
+        w2.loadURL(`${scheme}://host3`);
+      });
+      w.loadURL(`${scheme}://host3`);
     });
 
     it('can persist when it contains iframe', (done) => {

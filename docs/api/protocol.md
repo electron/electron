@@ -111,6 +111,8 @@ it as a standard scheme.
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
+Returns `Boolean` - Whether the protocol was successfully registered
+
 Registers a protocol of `scheme` that will send a file as the response. The
 `handler` will be called with `request` and `callback` where `request` is
 an incoming request for the `scheme`.
@@ -129,6 +131,8 @@ from protocols that follow the "generic URI syntax" like `file:`.
   * `request` ProtocolRequest
   * `callback` Function
     * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully registered
 
 Registers a protocol of `scheme` that will send a `Buffer` as a response.
 
@@ -152,6 +156,8 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
+Returns `Boolean` - Whether the protocol was successfully registered
+
 Registers a protocol of `scheme` that will send a `String` as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
@@ -166,6 +172,8 @@ property.
   * `callback` Function
     * `response` ProtocolResponse
 
+Returns `Boolean` - Whether the protocol was successfully registered
+
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
@@ -178,6 +186,8 @@ should be called with an object that has the `url` property.
   * `request` ProtocolRequest
   * `callback` Function
     * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully registered
 
 Registers a protocol of `scheme` that will send a stream as a response.
 
@@ -222,6 +232,8 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
 
 * `scheme` String
 
+Returns `Boolean` - Whether the protocol was successfully unregistered
+
 Unregisters the custom protocol of `scheme`.
 
 ### `protocol.isProtocolRegistered(scheme)`
@@ -238,6 +250,8 @@ Returns `Boolean` - Whether `scheme` is already registered.
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
+Returns `Boolean` - Whether the protocol was successfully intercepted
+
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
 
@@ -248,6 +262,8 @@ which sends a file as a response.
   * `request` ProtocolRequest
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
@@ -260,6 +276,8 @@ which sends a `String` as a response.
   * `callback` Function
     * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
 
+Returns `Boolean` - Whether the protocol was successfully intercepted
+
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
 
@@ -269,7 +287,9 @@ which sends a `Buffer` as a response.
 * `handler` Function
   * `request` ProtocolRequest
   * `callback` Function
-    * `response` ProtocolResponse
+    * `response` [ProtocolResponse](structures/protocol-response.md)
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
@@ -282,12 +302,16 @@ which sends a new HTTP request as a response.
   * `callback` Function
     * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
+Returns `Boolean` - Whether the protocol was successfully intercepted
+
 Same as `protocol.registerStreamProtocol`, except that it replaces an existing
 protocol handler.
 
 ### `protocol.uninterceptProtocol(scheme)`
 
 * `scheme` String
+
+Returns `Boolean` - Whether the protocol was successfully unintercepted
 
 Remove the interceptor installed for `scheme` and restore its original handler.
 

@@ -176,11 +176,12 @@ ProtocolError Protocol::RegisterProtocol(ProtocolType type,
   return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
-void Protocol::UnregisterProtocol(const std::string& scheme,
+bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
   HandleOptionalCallback(
       args, removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED);
+  return removed;
 }
 
 bool Protocol::IsProtocolRegistered(const std::string& scheme) {
@@ -194,11 +195,12 @@ ProtocolError Protocol::InterceptProtocol(ProtocolType type,
   return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
-void Protocol::UninterceptProtocol(const std::string& scheme,
+bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
   HandleOptionalCallback(
       args, removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED);
+  return removed;
 }
 
 bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
