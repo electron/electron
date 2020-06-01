@@ -822,25 +822,25 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
 }
 
 void WebContents::EnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
+  auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
-                          base::Unretained(this), source, origin, options);
+                          base::Unretained(this), requesting_frame, options);
   permission_helper->RequestFullscreenPermission(callback);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed)
     return;
-  CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin, options);
+  CommonWebContentsDelegate::EnterFullscreenModeForTab(requesting_frame,
+                                                       options);
   Emit("enter-html-full-screen");
 }
 
