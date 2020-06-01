@@ -7,12 +7,20 @@ import { closeAllWindows } from './window-helpers';
 
 const features = process.electronBinding('features');
 
-ifdescribe(features.isDesktopCapturerEnabled() && !process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+  if (!features.isDesktopCapturerEnabled()) {
+    // This condition can't go the `ifdescribe` call because its inner code
+    // it still executed, and if the feature is disabled some function calls here fail.
+    return;
+  }
+
   let w: BrowserWindow;
+
   before(async () => {
     w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     await w.loadURL('about:blank');
   });
+
   after(closeAllWindows);
 
   const getSources: typeof desktopCapturer.getSources = (options: SourcesOptions) => {
