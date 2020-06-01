@@ -34,8 +34,7 @@ if (buildFlagArg) {
   for (const line of flagFile.split(/(\r\n|\r|\n)/g)) {
     const flagMatch = line.match(/#define BUILDFLAG_INTERNAL_(.+?)\(\) \(([01])\)/)
     if (flagMatch) {
-      const flagName = flagMatch[1];
-      const flagValue = flagMatch[2];
+      const [, flagName, flagValue] = flagMatch;
       defines[flagName] = JSON.stringify(Boolean(parseInt(flagValue, 10)));
     }
   }
@@ -64,11 +63,6 @@ if (defines['ENABLE_VIEWS_API'] === 'false') {
   )
 }
 
-const alias = {}
-for (const ignoredModule of ignoredModules) {
-  alias[ignoredModule] = path.resolve(electronRoot, 'lib/common/dummy.ts')
-}
-
 module.exports = ({
   alwaysHasNode,
   loadElectronFromAlternateTarget,
@@ -90,22 +84,27 @@ module.exports = ({
     },
     resolve: {
       alias: {
-        ...alias,
         '@electron/internal': path.resolve(electronRoot, 'lib'),
         'electron': path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts'),
-        // Force timers to resolve to our dependency that doens't use window.postMessage
+        // Force timers to resolve to our dependency that doesn't use window.postMessage
         'timers': path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
       },
       extensions: ['.ts', '.js']
     },
     module: {
       rules: [{
+        test: (moduleName) => ignoredModules.includes(moduleName),
+        loader: 'null-loader',
+      }, {
         test: /\.ts$/,
         loader: 'ts-loader',
         options: {
           configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
           transpileOnly: onlyPrintingGraph,
-          ignoreDiagnostics: [6059]
+          ignoreDiagnostics: [
+            // File '{0}' is not under 'rootDir' '{1}'.
+            6059,
+          ]
         }
       }]
     },
