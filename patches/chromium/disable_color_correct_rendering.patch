@@ -236,10 +236,10 @@ index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 731b66b6d1f0d83b7c30040c25966112d44f4226..db1a94f8187487ab6b20bb044d878a09505381ad 100644
+index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e5bb9bf85 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2554,6 +2554,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
