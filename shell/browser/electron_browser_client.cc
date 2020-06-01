@@ -766,6 +766,11 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
     }
 
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
+      command_line->AppendSwitch("profile-electron-init");
+    }
+
     content::WebContents* web_contents =
         GetWebContentsFromProcessID(process_id);
     if (web_contents) {
