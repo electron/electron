@@ -217,16 +217,16 @@ describe('<webview> tag', function () {
     const zoomScheme = standardScheme;
     const webviewSession = session.fromPartition('webview-temp');
 
-    before((done) => {
+    before(() => {
       const protocol = webviewSession.protocol;
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
         callback('hello');
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = webviewSession.protocol;
-      protocol.unregisterProtocol(zoomScheme, (error) => done(error));
+      protocol.unregisterProtocol(zoomScheme);
     });
 
     it('inherits the zoomFactor of the parent window', async () => {

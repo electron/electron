@@ -241,10 +241,10 @@ describe('BrowserWindow module', () => {
     let w = null as unknown as BrowserWindow;
     const scheme = 'other';
     const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
-    before((done) => {
+    before(() => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
         callback(srcPath);
-      }, (error) => done(error));
+      });
     });
 
     after(() => {
@@ -2532,26 +2532,20 @@ describe('BrowserWindow module', () => {
           ['foo', path.join(fixtures, 'api', 'window-open-location-change.html')],
           ['bar', path.join(fixtures, 'api', 'window-open-location-final.html')]
         ];
-        beforeEach(async () => {
-          await Promise.all(protocols.map(([scheme, path]) => new Promise((resolve, reject) => {
+        beforeEach(() => {
+          for (const [scheme, path] of protocols) {
             protocol.registerBufferProtocol(scheme, (request, callback) => {
               callback({
                 mimeType: 'text/html',
                 data: fs.readFileSync(path)
               });
-            }, (error) => {
-              if (error != null) {
-                reject(error);
-              } else {
-                resolve();
-              }
             });
-          })));
+          }
         });
-        afterEach(async () => {
-          await Promise.all(protocols.map(([scheme]) => {
-            return new Promise(resolve => protocol.unregisterProtocol(scheme, () => resolve()));
-          }));
+        afterEach(() => {
+          for (const [scheme] of protocols) {
+            protocol.unregisterProtocol(scheme);
+          }
         });
         it('retains the original web preferences when window.location is changed to a new origin', async () => {
           const w = new BrowserWindow({
