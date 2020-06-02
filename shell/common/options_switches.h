@@ -130,6 +130,7 @@ extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
+extern const char kDisableNTLMv2[];
 
 }  // namespace switches
 
