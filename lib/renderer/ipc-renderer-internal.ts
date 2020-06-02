@@ -1,33 +1,32 @@
-const { ipc } = process.electronBinding('ipc');
-const v8Util = process.electronBinding('v8_util');
+import { EventEmitter } from 'events';
 
-// Created by init.js.
-export const ipcRendererInternal = v8Util.getHiddenValue<Electron.IpcRendererInternal>(global, 'ipc-internal');
+const { ipc } = process.electronBinding('ipc');
+
 const internal = true;
 
-// TODO(MarshallOfSound): Remove if statement when isolated_bundle and content_script_bundle are gone
-if (!ipcRendererInternal.send) {
-  ipcRendererInternal.send = function (channel, ...args) {
-    return ipc.send(internal, channel, args);
-  };
+const ipcRendererInternal = new EventEmitter() as any as Electron.IpcRendererInternal;
+ipcRendererInternal.send = function (channel, ...args) {
+  return ipc.send(internal, channel, args);
+};
 
-  ipcRendererInternal.sendSync = function (channel, ...args) {
-    return ipc.sendSync(internal, channel, args)[0];
-  };
+ipcRendererInternal.sendSync = function (channel, ...args) {
+  return ipc.sendSync(internal, channel, args)[0];
+};
 
-  ipcRendererInternal.sendTo = function (webContentsId, channel, ...args) {
-    return ipc.sendTo(internal, false, webContentsId, channel, args);
-  };
+ipcRendererInternal.sendTo = function (webContentsId, channel, ...args) {
+  return ipc.sendTo(internal, false, webContentsId, channel, args);
+};
 
-  ipcRendererInternal.sendToAll = function (webContentsId, channel, ...args) {
-    return ipc.sendTo(internal, true, webContentsId, channel, args);
-  };
+ipcRendererInternal.sendToAll = function (webContentsId, channel, ...args) {
+  return ipc.sendTo(internal, true, webContentsId, channel, args);
+};
 
-  ipcRendererInternal.invoke = async function<T> (channel: string, ...args: any[]) {
-    const { error, result } = await ipc.invoke<T>(internal, channel, args);
-    if (error) {
-      throw new Error(`Error invoking remote method '${channel}': ${error}`);
-    }
-    return result;
-  };
-}
+ipcRendererInternal.invoke = async function<T> (channel: string, ...args: any[]) {
+  const { error, result } = await ipc.invoke<T>(internal, channel, args);
+  if (error) {
+    throw new Error(`Error invoking remote method '${channel}': ${error}`);
+  }
+  return result;
+};
+
+export { ipcRendererInternal };

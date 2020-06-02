@@ -11,12 +11,6 @@ const v8Util = process.electronBinding('v8_util');
 // Expose Buffer shim as a hidden value. This is used by C++ code to
 // deserialize Buffer instances sent from browser process.
 v8Util.setHiddenValue(global, 'Buffer', Buffer);
-// The `lib/renderer/api/ipc-renderer.ts` module looks for the ipc object in the
-// "ipc" hidden value
-v8Util.setHiddenValue(global, 'ipc', new EventEmitter());
-// The `lib/renderer/ipc-renderer-internal.ts` module looks for the ipc object in the
-// "ipc-internal" hidden value
-v8Util.setHiddenValue(global, 'ipc-internal', new EventEmitter());
 // The process object created by webpack is not an event emitter, fix it so
 // the API is more compatible with non-sandboxed renderers.
 for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)[]) {
