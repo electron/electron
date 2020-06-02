@@ -16,7 +16,6 @@ For guides on Electron app development, see
 * [Build Instructions (macOS)](build-instructions-macos.md)
 * [Build Instructions (Windows)](build-instructions-windows.md)
 * [Build Instructions (Linux)](build-instructions-linux.md)
-* [Build Instructions (Build Tools)](build-instructions-with-build-tools.md)
 * [Chromium Development](chromium-development.md)
 * [V8 Development](v8-development.md)
 * [Testing](testing.md)
