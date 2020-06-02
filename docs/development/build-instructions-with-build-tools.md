@@ -1,6 +1,6 @@
 # Build Instructions (Build-Tools)
 
-[Electron Build Tools](https://github.com/electron/build-tools) provides an easy way to build Electron. This is a step-by-step guide use them.
+[Electron Build Tools](https://github.com/electron/build-tools) provides an easy way to build Electron. This is a step-by-step guide to use the build tools.
 
 ## Prerequisites
 
