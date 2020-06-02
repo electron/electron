@@ -10,11 +10,13 @@ import { emittedOnce, emittedNTimes } from './events-helpers';
 const fixtures = path.join(__dirname, 'fixtures');
 
 describe('chrome extensions', () => {
+  const emptyPage = '<script>console.log("loaded")</script>';
+
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer((req, res) => res.end());
+    server = http.createServer((req, res) => res.end(emptyPage));
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();
@@ -132,7 +134,7 @@ describe('chrome extensions', () => {
     let content: any;
     before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       try {
         await w.loadURL(url);
