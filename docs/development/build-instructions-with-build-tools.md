@@ -12,8 +12,9 @@ Check the build prerequisites for your platform before proceeding
 
 ## Installation
 
+Install the build tools globally.
 
-```
+```sh
 npm i -g @electron/build-tools
 ```
 
@@ -21,16 +22,16 @@ npm i -g @electron/build-tools
 
 ## Getting the Code and Building Electron
 
-To create a new build configuration and initialize a [GN](https://chromium.googlesource.com/chromium/src/tools/gn/+/48062805e19b4697c5fbd926dc649c78b6aaa138/README.md) directory:
+Create a new build configuration and initialize a [GN](https://chromium.googlesource.com/chromium/src/tools/gn/+/48062805e19b4697c5fbd926dc649c78b6aaa138/README.md) directory.
 
-```
+```sh
 e init --root=~/electron testing
 ```
 
 **root:** is the place where electron source and build files reside. the default is (`~/projects/electron`)
 
 The next step is running:
-```
+```sh
 e sync
 ```
 
@@ -38,11 +39,11 @@ e sync
 
 The final step is running:
 
-```
+```sh
 e build
 ```
 
-This command starts buillding Electron `e build` supports these builds:
+This command starts building Electron `e build` supports these builds:
 
 | Target        | Description                                              |
 |:--------------|:---------------------------------------------------------|
@@ -70,17 +71,17 @@ After you've built Electron, it's time to use it!
 | e test  | Run current Electron's spec runner           |
 
 To switch between build configurations, you can view the previous build configurations by running:
-```
+```sh
 e show configs
 ```
 
 To choose a configuration:
-```
+```sh
 e use <config-name>
 ```
 
 To show the current configuration:
-```
+```sh
 e show current
 ```
 
