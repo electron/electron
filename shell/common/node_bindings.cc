@@ -299,8 +299,7 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform,
-    bool bootstrap_env) {
+    node::MultiIsolatePlatform* platform) {
 #if defined(OS_WIN)
   auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
@@ -339,7 +338,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
-      context, args.size(), c_argv.get(), 0, nullptr, bootstrap_env);
+      context, args.size(), c_argv.get(), 0, nullptr);
   DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
@@ -347,7 +346,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ != BrowserEnvironment::BROWSER) {
     // We need to bootstrap the env in non-browser processes so that
     // _noBrowserGlobals is read correctly before we remove it
-    DCHECK(bootstrap_env);
     global.Delete("_noBrowserGlobals");
   }
 
