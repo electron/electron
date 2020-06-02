@@ -108,7 +108,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await emittedOnce(w.webContents, 'before-unload-fired');
     });
@@ -193,7 +193,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload event', async function () {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
       await emittedOnce(w.webContents, 'before-unload-fired');
     });
@@ -2640,21 +2640,21 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('returning undefined would not prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
       const wait = emittedOnce(w, 'closed');
       w.close();
       await wait;
     });
 
     it('returning false would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       const [, proceed] = await emittedOnce(w.webContents, 'before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-empty-string.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
       w.close();
       const [, proceed] = await emittedOnce(w.webContents, 'before-unload-fired');
       expect(proceed).to.equal(false);
@@ -2666,7 +2666,11 @@ describe('BrowserWindow module', () => {
       const destroyListener = () => { expect.fail('Close was not prevented'); };
       w.webContents.once('destroyed', destroyListener);
 
-      await w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
       w.close();
       await emittedOnce(w.webContents, 'before-unload-fired');
       w.close();
@@ -2684,7 +2688,11 @@ describe('BrowserWindow module', () => {
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
 
-      await w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
       w.reload();
       // Chromium does not emit 'before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
@@ -2704,7 +2712,11 @@ describe('BrowserWindow module', () => {
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
 
-      await w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
       w.loadURL('about:blank');
       // Chromium does not emit 'before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
