@@ -1393,8 +1393,6 @@ void WebContents::DevToolsClosed() {
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
-                             handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -2452,7 +2450,7 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
   const ui::Cursor& cursor = webcursor.cursor();
 
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
