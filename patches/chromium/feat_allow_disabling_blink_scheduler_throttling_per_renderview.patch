@@ -122,7 +122,7 @@ index 78b796cc46c479525b1c99ee39ed9576efc17d5b..874a607167dd78686d6ec25ece7a006e
 +  DCHECK(GetPage());
 +  scheduler_throttling_allowed_ = allowed;
 +  GetPage()->GetPageScheduler()->SetPageVisible(allowed ?
-+      (GetVisibilityState() == PageVisibilityState::kVisible) : true);
++      (GetVisibilityState() == mojom::blink::PageVisibilityState::kVisible) : true);
 +}
 +
  void WebViewImpl::SetVisibilityState(
