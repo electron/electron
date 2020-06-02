@@ -111,7 +111,7 @@ index 53faedcea05f045e42b87bf13db5961964f9c298..851409ebf365e74e4b2c9de4a658f67f
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 78b796cc46c479525b1c99ee39ed9576efc17d5b..874a607167dd78686d6ec25ece7a006e2372a4b7 100644
+index 78b796cc46c479525b1c99ee39ed9576efc17d5b..119fcd4066eb57c9a919132b5e3c24cb00529768 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3342,6 +3342,13 @@ PageScheduler* WebViewImpl::Scheduler() const {

@@ -4,7 +4,6 @@ Date: Mon, 4 May 2020 16:57:05 -0700
 Subject: chore: SetHostCleanupFinalizationGroupCallback has been removed from
  V8
 
-
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index 68ccef87356755a8a99283d55bf5492831a46ce0..7b370579d365204b2bd40a25e740bbc83726c376 100644
 --- a/src/api/environment.cc
