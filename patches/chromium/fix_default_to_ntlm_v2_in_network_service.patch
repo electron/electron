@@ -6,7 +6,7 @@ Subject: fix: default to NTLM v2 in network service
 Backports https://chromium-review.googlesource.com/c/chromium/src/+/2222116
 
 diff --git a/services/network/public/mojom/network_service.mojom b/services/network/public/mojom/network_service.mojom
-index 8e61b7e6eb887668e2d7b692f07b4f57623e061f..3bc90dddcfb2d1aac5ddf6a0019a37531191f79f 100644
+index 565d98ad87ca9c8f2fc5325ad25cbf18f500f36e..072d24087e1f1bed867788c068b651658ad6ce4e 100644
 --- a/services/network/public/mojom/network_service.mojom
 +++ b/services/network/public/mojom/network_service.mojom
 @@ -152,7 +152,7 @@ struct HttpAuthDynamicParams {
