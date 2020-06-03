@@ -425,7 +425,7 @@ describe('node feature', () => {
       .and.matches(/^\d+\.\d+\.\d+\.\d+$/);
   });
 
-  it('handles Promise timeouts correctly', (done) => {
+  ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', (done) => {
     const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
     const child = ChildProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
