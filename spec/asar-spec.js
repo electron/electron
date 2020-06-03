@@ -1415,6 +1415,14 @@ describe('asar package', function () {
       originalFs.createReadStream(path.join(asarDir, 'a.asar'));
     });
 
+    it('can recursively delete a directory with an asar file in it', () => {
+      const deleteDir = path.join(asarDir, 'deleteme');
+
+      originalFs.rmdirSync(deleteDir, { recursive: true });
+
+      expect(fs.existsSync(deleteDir)).to.be.false();
+    });
+
     it('has the same APIs as fs', function () {
       expect(Object.keys(require('fs'))).to.deep.equal(Object.keys(require('original-fs')));
       expect(Object.keys(require('fs').promises)).to.deep.equal(Object.keys(require('original-fs').promises));
