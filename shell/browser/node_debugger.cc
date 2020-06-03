@@ -55,7 +55,11 @@ void NodeDebugger::Start() {
   if (inspector->Start(path, options,
                        std::make_shared<node::HostPort>(options.host_port),
                        true /* is_main */))
-    DCHECK(env_->inspector_agent()->IsListening());
+    DCHECK(inspector->IsListening());
+
+  if (inspector->options().break_node_first_line) {
+    inspector->PauseOnNextJavascriptStatement("Break at bootstrap");
+  }
 }
 
 void NodeDebugger::Stop() {
