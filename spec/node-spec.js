@@ -9,6 +9,7 @@ const { ipcRenderer, remote } = require('electron');
 const features = process.electronBinding('features');
 
 const { emittedOnce } = require('./events-helpers');
+const { ifit } = require('./spec-helpers');
 
 const isCI = remote.getGlobal('isCi');
 chai.use(dirtyChai);
@@ -691,7 +692,7 @@ describe('node feature', () => {
     expect(result.status).to.equal(0);
   });
 
-  it('handles Promise timeouts correctly', (done) => {
+  ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', (done) => {
     const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
     const child = ChildProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
