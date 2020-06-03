@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/strings/sys_string_conversions.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -195,6 +196,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:item_id])
     return;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[item_id];
   std::string item_type;
   settings.Get("type", &item_type);
@@ -345,6 +349,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return nil;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item(
       [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
@@ -403,6 +410,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return nil;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item(
       [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
@@ -436,6 +446,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSColorPickerTouchBarItem> item(
@@ -472,6 +485,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return nil;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSSliderTouchBarItem> item(
       [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier]);
@@ -505,6 +521,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return nil;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSPopoverTouchBarItem> item(
       [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier]);
@@ -527,6 +546,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("showCloseButton", &showCloseButton);
   item.showsCloseButton = showCloseButton;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary child;
   std::vector<gin_helper::PersistentDictionary> items;
   if (settings.Get("child", &child) && child.Get("ordereredItems", &items)) {
@@ -540,6 +562,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
 
   gin_helper::PersistentDictionary child;
@@ -568,6 +594,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)updateGroup:(NSGroupTouchBarItem*)item
        withSettings:(const gin_helper::PersistentDictionary&)settings
     API_AVAILABLE(macosx(10.12.2)) {
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary child;
   if (!settings.Get("child", &child))
     return;
@@ -585,6 +614,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item(
@@ -671,6 +703,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return nil;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item(
       [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
@@ -748,6 +783,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   if (![self hasItemWithID:s_id])
     return 0;
 
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   gin_helper::PersistentDictionary settings = settings_[s_id];
   std::vector<gin_helper::PersistentDictionary> items;
   settings.Get("items", &items);
@@ -760,6 +798,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string s_id([[scrubber identifier] UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
   std::vector<gin_helper::PersistentDictionary> items;
@@ -804,6 +845,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string s_id([[scrubber identifier] UTF8String]);
   if (![self hasItemWithID:s_id])
     return defaultSize;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
   std::vector<gin_helper::PersistentDictionary> items;
