@@ -203,10 +203,10 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   void Finished() {
-    size_callback_.Reset();
     body_func_.Reset();
-    receiver_.reset();
     data_producer_.reset();
+    receiver_.reset();
+    size_callback_.Reset();
   }
 
   GetSizeCallback size_callback_;
