@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 1 Jun 2020 20:36:16 +0000
+Subject: fix: default to NTLM v2 in network service for POSIX platforms
+
+NTLM always defaults to NTLM v2 at the //net layer for quite
+sometime now https://crbug.com/22532.
+
+Change-Id: I4ea2dedc10c63a7c4e00101c0acc6d8a713c5054
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2222116
+Auto-Submit: Deepak Mohan <hop2deep@gmail.com>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#773809}
+
+diff --git a/services/network/public/mojom/network_service.mojom b/services/network/public/mojom/network_service.mojom
+index eae5e85eac3a0b946c413bb0b65510a95faba3b8..d63a9a325d3c5d51470d33dd30934ea14a169b0b 100644
+--- a/services/network/public/mojom/network_service.mojom
++++ b/services/network/public/mojom/network_service.mojom
+@@ -112,7 +112,7 @@ struct HttpAuthDynamicParams {
+   bool enable_negotiate_port = true;
+ 
+   // Whether NTLM V2 is enabled on POSIX platforms. No effect elsewhere.
+-  bool ntlm_v2_enabled = false;
++  bool ntlm_v2_enabled = true;
+ 
+   // The AccountManager AccountManagerget.AccountsByTypeAndFeatures on Android
+   // when using Negotiate authentication.
