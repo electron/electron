@@ -10,11 +10,13 @@ import { emittedOnce, emittedNTimes } from './events-helpers';
 const fixtures = path.join(__dirname, 'fixtures');
 
 describe('chrome extensions', () => {
+  const emptyPage = '<script>console.log("loaded")</script>';
+
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer((req, res) => res.end());
+    server = http.createServer((req, res) => res.end(emptyPage));
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();
@@ -38,7 +40,8 @@ describe('chrome extensions', () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-    await w.loadURL(url);
+    w.loadURL(url);
+    await emittedOnce(w.webContents, 'dom-ready');
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('red');
   });
@@ -92,7 +95,8 @@ describe('chrome extensions', () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false }); // not in the session
-    await w.loadURL(url);
+    w.loadURL(url);
+    await emittedOnce(w.webContents, 'dom-ready');
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('');
   });
@@ -115,7 +119,8 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL(url);
+      w.loadURL(url);
+      await emittedOnce(w.webContents, 'dom-ready');
     });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
@@ -132,10 +137,11 @@ describe('chrome extensions', () => {
     let content: any;
     before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       try {
-        await w.loadURL(url);
+        w.loadURL(url);
+        await emittedOnce(w.webContents, 'dom-ready');
         content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'));
         expect(content).to.be.an('object');
       } finally {
@@ -484,7 +490,8 @@ describe('chrome extensions', () => {
     it('loads a ui page of an extension', async () => {
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
-      await w.loadURL(`chrome-extension://${id}/bare-page.html`);
+      w.loadURL(`chrome-extension://${id}/bare-page.html`);
+      await emittedOnce(w.webContents, 'dom-ready');
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('ui page loaded ok\n');
     });
@@ -492,7 +499,8 @@ describe('chrome extensions', () => {
     it('can load resources', async () => {
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
-      await w.loadURL(`chrome-extension://${id}/page-script-load.html`);
+      w.loadURL(`chrome-extension://${id}/page-script-load.html`);
+      await emittedOnce(w.webContents, 'dom-ready');
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('script loaded ok\n');
     });
