@@ -21,7 +21,7 @@ class AccessDependenciesPlugin {
 }
 
 const defines = {
-  BUILDFLAG: ''
+  BUILDFLAG: onlyPrintingGraph ? '(a => a)' : ''
 }
 
 const buildFlagsPrefix = '--buildflags='
@@ -95,7 +95,7 @@ module.exports = ({
     },
     module: {
       rules: [{
-        test: (moduleName) => ignoredModules.includes(moduleName),
+        test: (moduleName) => !onlyPrintingGraph && ignoredModules.includes(moduleName),
         loader: 'null-loader',
       }, {
         test: /\.ts$/,
