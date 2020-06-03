@@ -58,8 +58,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::string16 GetToolTipAt(int index);
   void SetRole(int index, const base::string16& role);
   base::string16 GetRoleAt(int index);
-  void SetSublabel(int index, const base::string16& sublabel);
-  base::string16 GetSublabelAt(int index) const override;
+  void SetSecondaryLabel(int index, const base::string16& sublabel);
+  base::string16 GetSecondaryLabelAt(int index) const override;
   bool GetAcceleratorAtWithParams(int index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;

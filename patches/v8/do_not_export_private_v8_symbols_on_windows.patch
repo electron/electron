@@ -12,10 +12,10 @@ This patch can be safely removed if, when it is removed, `node.lib` does not
 contain any standard C++ library exports (e.g. `std::ostringstream`).
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1b8fd83602ba0a34c861961c1c11ffa43d12f79d..4216d7888e77d0ee4af382d52fa0dff5e22b0073 100644
+index 635b9b3cddbd9d5698c7299a576b798e720439a3..5fd4439ae6f7525a935a20078da3af197195e4d4 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -316,6 +316,10 @@ config("internal_config") {
+@@ -341,6 +341,10 @@ config("internal_config") {
      ":v8_header_features",
    ]
  

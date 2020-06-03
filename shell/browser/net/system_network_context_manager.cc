@@ -11,7 +11,6 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/cors_exempt_headers.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/service_names.mojom.h"
@@ -22,6 +21,7 @@
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
@@ -157,10 +157,12 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       network::mojom::NetworkContextParams::New();
 
-  // This is required to avoid blocking X-Requested-With headers sent by PPAPI
-  // plugins, more info crbug.com/940331
-  content::UpdateCorsExemptHeader(network_context_params.get());
+  ConfigureDefaultNetworkContextParams(network_context_params.get());
+  return network_context_params;
+}
 
+void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
+    network::mojom::NetworkContextParams* network_context_params) {
   network_context_params->enable_brotli = true;
 
   network_context_params->enable_referrers = true;
@@ -171,8 +173,6 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif
-
-  return network_context_params;
 }
 
 // static
@@ -210,8 +210,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
   network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
 
-  // The system NetworkContext must be created first, since it sets
-  // |primary_network_context| to true.
   network_context_.reset();
   network_service->CreateNetworkContext(
       network_context_.BindNewPipeAndPassReceiver(),
@@ -230,8 +228,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
-
-  network_context_params->primary_network_context = true;
 
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params.get());
 

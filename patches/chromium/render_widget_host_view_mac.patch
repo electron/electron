@@ -10,10 +10,10 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 9461c206fe9e7062d5b3f0af26d3afb7320aa7aa..4b3d0f92e0dfffda8e86e8eab0539425da2fbbad 100644
+index a629da6b5496964814ddf144a9cfa3f1c586ee4f..866b25da5977c4ebc4569abb1869329809ab16d3 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -154,6 +154,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -225,6 +225,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -25,7 +25,7 @@ index 9461c206fe9e7062d5b3f0af26d3afb7320aa7aa..4b3d0f92e0dfffda8e86e8eab0539425
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -573,6 +578,9 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -644,6 +649,9 @@ void ExtractUnderlines(NSAttributedString* string,
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -35,7 +35,7 @@ index 9461c206fe9e7062d5b3f0af26d3afb7320aa7aa..4b3d0f92e0dfffda8e86e8eab0539425
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -983,6 +991,10 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -1069,6 +1077,10 @@ void ExtractUnderlines(NSAttributedString* string,
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -46,7 +46,7 @@ index 9461c206fe9e7062d5b3f0af26d3afb7320aa7aa..4b3d0f92e0dfffda8e86e8eab0539425
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1759,9 +1771,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -1845,9 +1857,11 @@ void ExtractUnderlines(NSAttributedString* string,
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -58,7 +58,7 @@ index 9461c206fe9e7062d5b3f0af26d3afb7320aa7aa..4b3d0f92e0dfffda8e86e8eab0539425
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1770,7 +1784,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
+@@ -1856,7 +1870,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,

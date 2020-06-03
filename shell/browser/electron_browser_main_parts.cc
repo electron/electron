@@ -69,6 +69,7 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/x11_types.h"
+#include "ui/gfx/x/xproto_util.h"
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
 #include "ui/gtk/gtk_util.h"
@@ -168,7 +169,7 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&ui::LogErrorEventDescription, d, *error));
+        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
   }
   return 0;
 }

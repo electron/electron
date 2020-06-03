@@ -22,11 +22,11 @@ index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca8871
    }
  }
 diff --git a/ui/base/accelerators/media_keys_listener.h b/ui/base/accelerators/media_keys_listener.h
-index 997718d8affaa193fcaabff4cd4c8b0c23df8891..e121598d46e7c62a3b14cb7960136f655cc69ab6 100644
+index 6787fa39da18ec26c215e4cbe0b3f69093323f8c..ec10c46cde437a935edfdf79e5ba9622c6ba1d67 100644
 --- a/ui/base/accelerators/media_keys_listener.h
 +++ b/ui/base/accelerators/media_keys_listener.h
 @@ -20,8 +20,9 @@ class Accelerator;
- class UI_BASE_EXPORT MediaKeysListener {
+ class COMPONENT_EXPORT(UI_BASE) MediaKeysListener {
   public:
    enum class Scope {
 -    kGlobal,   // Listener works whenever application in focus or not.

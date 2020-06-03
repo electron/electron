@@ -103,7 +103,7 @@
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
-#include "ui/base/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -178,22 +178,22 @@ struct Converter<printing::MarginType> {
 };
 
 template <>
-struct Converter<printing::DuplexMode> {
+struct Converter<printing::mojom::DuplexMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     printing::DuplexMode* out) {
+                     printing::mojom::DuplexMode* out) {
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "simplex") {
-        *out = printing::SIMPLEX;
+        *out = printing::mojom::DuplexMode::kSimplex;
         return true;
       }
       if (mode == "longEdge") {
-        *out = printing::LONG_EDGE;
+        *out = printing::mojom::DuplexMode::kLongEdge;
         return true;
       }
       if (mode == "shortEdge") {
-        *out = printing::SHORT_EDGE;
+        *out = printing::mojom::DuplexMode::kShortEdge;
         return true;
       }
     }
@@ -708,6 +708,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
 void WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
+    const GURL& target_url,
     WindowOpenDisposition disposition,
     const gfx::Rect& initial_rect,
     bool user_gesture,
@@ -822,25 +823,25 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
 }
 
 void WebContents::EnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
+  auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
-                          base::Unretained(this), source, origin, options);
+                          base::Unretained(this), requesting_frame, options);
   permission_helper->RequestFullscreenPermission(callback);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed)
     return;
-  CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin, options);
+  CommonWebContentsDelegate::EnterFullscreenModeForTab(requesting_frame,
+                                                       options);
   Emit("enter-html-full-screen");
 }
 
@@ -860,8 +861,6 @@ void WebContents::RendererResponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host) {
   Emit("responsive");
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnRendererResponsive();
 }
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
@@ -1392,8 +1391,6 @@ void WebContents::DevToolsClosed() {
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
-                             handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -2036,9 +2033,10 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode;
   options.Get("duplexMode", &duplex_mode);
-  settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
+  settings.SetIntKey(printing::kSettingDuplexMode,
+                     static_cast<int>(duplex_mode));
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
@@ -2311,13 +2309,13 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
     content::NativeWebKeyboardEvent keyboard_event(
-        blink::WebKeyboardEvent::kRawKeyDown,
-        blink::WebInputEvent::kNoModifiers, ui::EventTimeForNow());
+        blink::WebKeyboardEvent::Type::kRawKeyDown,
+        blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
-  } else if (type == blink::WebInputEvent::kMouseWheel) {
+  } else if (type == blink::WebInputEvent::Type::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
@@ -2450,7 +2448,7 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChange(const content::WebCursor& webcursor) {
+void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
   const ui::Cursor& cursor = webcursor.cursor();
 
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
