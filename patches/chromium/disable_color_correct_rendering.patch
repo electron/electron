@@ -19,6 +19,21 @@ This can be removed once web content (including WebGL) learn how
 to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
+diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
+index f2beaa8238c66b942620e053f4abae32441f2851..82aa964e34a966e3e2300c2b951d6431d294d111 100644
+--- a/cc/trees/layer_tree_host_impl.cc
++++ b/cc/trees/layer_tree_host_impl.cc
+@@ -1859,6 +1859,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+ 
+ gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
+     gfx::ContentColorUsage content_color_usage) const {
++  if (!settings_.enable_color_correct_rendering) {
++    return {};
++  }
++
+   constexpr gfx::ColorSpace srgb = gfx::ColorSpace::CreateSRGB();
+ 
+   if (settings_.prefer_raster_in_srgb &&
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index c2684645484c7e1b6a555ba31f6634496a4fec76..9250d3b772fdeb6eb943f6cddeb96200e0f819f4 100644
 --- a/cc/trees/layer_tree_settings.h
@@ -204,10 +219,10 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index ae8f3b65971935237d98893fcd266ce7d32a625b..75ee5e40bbef5448c7e33457ebc0f3d04698d379 100644
+index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c7f60b7ca 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -216,10 +231,10 @@ index ae8f3b65971935237d98893fcd266ce7d32a625b..75ee5e40bbef5448c7e33457ebc0f3d0
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c6da5e081 100644
+index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d56f9a862 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -230,6 +230,7 @@
+@@ -226,6 +226,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -227,7 +242,7 @@ index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3252,6 +3253,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -236,7 +251,7 @@ index 11b18f08dbaba89a483908faef465adfb6bd4019..02b0fa9444c07396aee177b9a5d5bc1c
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 56397e6a28846508730dfcfe6f0009f944ffd18d..9e8b76407029b3b768c94a16622bcf7df8bd50e2 100644
+index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e5bb9bf85 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
@@ -250,7 +265,7 @@ index 56397e6a28846508730dfcfe6f0009f944ffd18d..9e8b76407029b3b768c94a16622bcf7d
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 570ac93ad8cffda1bf6a8a9847a8052c2daa0d1e..b9ff54463e950c39f282794191e55a721bc7a25a 100644
+index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -294,7 +309,7 @@ index 570ac93ad8cffda1bf6a8a9847a8052c2daa0d1e..b9ff54463e950c39f282794191e55a72
  
    gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..5b661c70c9c89883a1aaaf1a29a9ec9fe7f16da6 100644
+index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -16,6 +16,7 @@
@@ -305,33 +320,37 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..5b661c70c9c89883a1aaaf1a29a9ec9f
  
  namespace gfx {
  
-@@ -258,6 +259,11 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
-     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
-   } else {
-     CGColorSpaceRef color_space = base::mac::GetSRGBColorSpace();
-+    auto* cmd_line = base::CommandLine::ForCurrentProcess();
-+    if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
-+      color_space = base::mac::GetSystemColorSpace();
-+    }
-+
-     base::ScopedCFTypeRef<CFDataRef> color_space_icc(
-         CGColorSpaceCopyICCProfile(color_space));
-     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
-@@ -274,6 +280,14 @@ bool IOSurfaceCanSetColorSpace(const ColorSpace& color_space) {
- 
- void IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
+@@ -119,6 +120,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+ // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
+ bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
 +  auto* cmd_line = base::CommandLine::ForCurrentProcess();
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    base::ScopedCFTypeRef<CFDataRef> system_icc(
 +        CGColorSpaceCopyICCProfile(base::mac::GetSystemColorSpace()));
 +    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc);
-+    return;
++    return true;
 +  }
 +
-   if (!internal::IOSurfaceSetColorSpace(io_surface, color_space)) {
-     DLOG(ERROR) << "Failed to set color space for IOSurface: "
-                 << color_space.ToString();
+   // Allow but ignore invalid color spaces.
+   if (!color_space.IsValid())
+     return true;
+@@ -253,6 +262,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+     DCHECK_EQ(kIOReturnSuccess, r);
+   }
+ 
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
++    CGColorSpaceRef color_space = base::mac::GetSystemColorSpace();
++    base::ScopedCFTypeRef<CFDataRef> color_space_icc(
++        CGColorSpaceCopyICCProfile(color_space));
++    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
++    return surface;
++  }
++
+   // Ensure that all IOSurfaces start as sRGB.
+   if (__builtin_available(macos 10.12, *)) {
+     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
 index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
 --- a/ui/gfx/switches.cc

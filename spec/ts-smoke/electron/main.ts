@@ -897,13 +897,9 @@ app.whenReady().then(() => {
     callback({ url: request.url, method: request.method })
   })
 
-  protocol.unregisterProtocol('atom', (error) => {
-    console.log(error ? error.message : 'ok')
-  })
+  protocol.unregisterProtocol('atom')
 
-  protocol.isProtocolHandled('atom').then(handled => {
-    console.log(handled)
-  })
+  const registered: boolean = protocol.isProtocolRegistered('atom')
 })
 
 // tray
@@ -1195,10 +1191,6 @@ app.whenReady().then(function () {
   protocol.registerFileProtocol('atom', function (request, callback) {
     const url = request.url.substr(7)
     callback(path.normalize(__dirname + '/' + url))
-  }, function (error) {
-    if (error) {
-      console.error('Failed to register protocol')
-    }
   })
 })
 

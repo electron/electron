@@ -51,10 +51,11 @@ class BrowserWindow : public TopLevelWindow,
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
+  void OnRendererResponsive(
+      content::RenderProcessHost* render_process_host) override;
 
   // ExtendedWebContentsObserver:
   void OnCloseContents() override;
-  void OnRendererResponsive() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;

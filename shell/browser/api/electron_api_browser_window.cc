@@ -210,7 +210,7 @@ void BrowserWindow::OnCloseContents() {
   window_unresponsive_closure_.Cancel();
 }
 
-void BrowserWindow::OnRendererResponsive() {
+void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
   window_unresponsive_closure_.Cancel();
   Emit("responsive");
 }

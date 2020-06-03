@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "11.0.0-nightly.20200526",
+  "version": "11.0.0-nightly.20200602",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -46,6 +46,7 @@
     "lint-staged": "^8.1.0",
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
+    "null-loader": "^4.0.0",
     "pre-flight": "^1.1.0",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",

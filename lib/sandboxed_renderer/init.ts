@@ -1,25 +1,19 @@
-'use strict';
-
 /* eslint no-eval: "off" */
 /* global binding, Buffer */
-const events = require('events');
+import { electronBindingSetup } from '@electron/internal/common/electron-binding-setup';
+import * as events from 'events';
+
 const { EventEmitter } = events;
 
-process.electronBinding = require('@electron/internal/common/electron-binding-setup').electronBindingSetup(binding.get, 'renderer');
+process.electronBinding = electronBindingSetup(binding.get, 'renderer');
 
 const v8Util = process.electronBinding('v8_util');
 // Expose Buffer shim as a hidden value. This is used by C++ code to
 // deserialize Buffer instances sent from browser process.
 v8Util.setHiddenValue(global, 'Buffer', Buffer);
-// The `lib/renderer/api/ipc-renderer.ts` module looks for the ipc object in the
-// "ipc" hidden value
-v8Util.setHiddenValue(global, 'ipc', new EventEmitter());
-// The `lib/renderer/ipc-renderer-internal.ts` module looks for the ipc object in the
-// "ipc-internal" hidden value
-v8Util.setHiddenValue(global, 'ipc-internal', new EventEmitter());
 // The process object created by webpack is not an event emitter, fix it so
 // the API is more compatible with non-sandboxed renderers.
-for (const prop of Object.keys(EventEmitter.prototype)) {
+for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)[]) {
   if (Object.prototype.hasOwnProperty.call(process, prop)) {
     delete process[prop];
   }
@@ -43,17 +37,22 @@ process.isRemoteModuleEnabled = isRemoteModuleEnabled;
 // The electron module depends on process.electronBinding
 const electron = require('electron');
 
-const loadedModules = new Map([
+const loadedModules = new Map<string, any>([
   ['electron', electron],
-  ['events', events],
-  ['timers', require('timers')],
-  ['url', require('url')]
+  ['electron/common', electron],
+  ['electron/renderer', electron],
+  ['events', events]
+]);
+
+const loadableModules = new Map<string, Function>([
+  ['timers', () => require('timers')],
+  ['url', () => require('url')]
 ]);
 
 // ElectronApiServiceImpl will look for the "ipcNative" hidden object when
 // invoking the 'onMessage' callback.
 v8Util.setHiddenValue(global, 'ipcNative', {
-  onMessage (internal, channel, ports, args, senderId) {
+  onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[], senderId: number) {
     const sender = internal ? ipcRendererInternal : electron.ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
@@ -62,16 +61,16 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 // ElectronSandboxedRendererClient will look for the "lifecycle" hidden object when
 v8Util.setHiddenValue(global, 'lifecycle', {
   onLoaded () {
-    process.emit('loaded');
+    (process as events.EventEmitter).emit('loaded');
   },
   onExit () {
-    process.emit('exit');
+    (process as events.EventEmitter).emit('exit');
   },
   onDocumentStart () {
-    process.emit('document-start');
+    (process as events.EventEmitter).emit('document-start');
   },
   onDocumentEnd () {
-    process.emit('document-end');
+    (process as events.EventEmitter).emit('document-end');
   }
 });
 
@@ -80,7 +79,7 @@ webFrameInit();
 
 // Pass different process object to the preload script(which should not have
 // access to things like `process.electronBinding`).
-const preloadProcess = new EventEmitter();
+const preloadProcess: NodeJS.Process = new EventEmitter() as any;
 
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
@@ -97,15 +96,20 @@ Object.defineProperty(preloadProcess, 'noDeprecation', {
   }
 });
 
-process.on('loaded', () => preloadProcess.emit('loaded'));
-process.on('exit', () => preloadProcess.emit('exit'));
-process.on('document-start', () => preloadProcess.emit('document-start'));
-process.on('document-end', () => preloadProcess.emit('document-end'));
+process.on('loaded', () => (preloadProcess as events.EventEmitter).emit('loaded'));
+process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
+(process as events.EventEmitter).on('document-start', () => (preloadProcess as events.EventEmitter).emit('document-start'));
+(process as events.EventEmitter).on('document-end', () => (preloadProcess as events.EventEmitter).emit('document-end'));
 
 // This is the `require` function that will be visible to the preload script
-function preloadRequire (module) {
+function preloadRequire (module: string) {
   if (loadedModules.has(module)) {
     return loadedModules.get(module);
+  }
+  if (loadableModules.has(module)) {
+    const loadedModule = loadableModules.get(module)!();
+    loadedModules.set(module, loadedModule);
+    return loadedModule;
   }
   throw new Error(`module not found: ${module}`);
 }
@@ -156,7 +160,7 @@ if (process.isMainFrame) {
 // - `process`: The `preloadProcess` object
 // - `Buffer`: Shim of `Buffer` implementation
 // - `global`: The window object, which is aliased to `global` by webpack.
-function runPreloadScript (preloadSrc) {
+function runPreloadScript (preloadSrc: string) {
   const preloadWrapperSrc = `(function(require, process, Buffer, global, setImmediate, clearImmediate, exports) {
   ${preloadSrc}
   })`;

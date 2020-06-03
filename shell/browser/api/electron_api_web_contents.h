@@ -116,7 +116,6 @@ namespace api {
 class ExtendedWebContentsObserver : public base::CheckedObserver {
  public:
   virtual void OnCloseContents() {}
-  virtual void OnRendererResponsive() {}
   virtual void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) {}
   virtual void OnSetContentBounds(const gfx::Rect& rect) {}
@@ -340,8 +339,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
@@ -471,8 +469,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const content::NativeWebKeyboardEvent& event) override;
   void ContentsZoomChange(bool zoom_in) override;
   void EnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
