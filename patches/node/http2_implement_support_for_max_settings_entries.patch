@@ -1,0 +1,212 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James M Snell <jasnell@gmail.com>
+Date: Mon, 27 Apr 2020 10:47:58 -0700
+Subject: http2: implement support for max settings entries
+
+Adds the maxSettings option to limit the number of settings
+entries allowed per SETTINGS frame. Default 32
+
+Signed-off-by: James M Snell <jasnell@gmail.com>
+
+Fixes: https://hackerone.com/reports/446662
+CVE-ID: CVE-2020-11080
+PR-URL: https://github.com/nodejs-private/node-private/pull/206
+Reviewed-By: Sam Roberts <vieuxtech@gmail.com>
+
+diff --git a/doc/api/http2.md b/doc/api/http2.md
+index 8a4d3445008a6f424516d29ade6f4b814c39bd11..08884feab9e5e8ac0a7111078ef77d98c04e8b51 100644
+--- a/doc/api/http2.md
++++ b/doc/api/http2.md
+@@ -1948,6 +1948,9 @@ error will be thrown.
+ <!-- YAML
+ added: v8.4.0
+ changes:
++  - version: REPLACEME
++    pr-url: https://github.com/nodejs-private/node-private/pull/204
++    description: Added `maxSettings` option with a default of 32.
+   - version: v12.16.0
+     pr-url: https://github.com/nodejs/node/pull/30534
+     description: Added `maxSessionRejectedStreams` option with a default of 100.
+@@ -1975,6 +1978,8 @@ changes:
+ * `options` {Object}
+   * `maxDeflateDynamicTableSize` {number} Sets the maximum dynamic table size
+     for deflating header fields. **Default:** `4Kib`.
++  * `maxSettings` {number} Sets the maximum number of settings entries per
++    `SETTINGS` frame. The minimum value allowed is `1`. **Default:** `32`.
+   * `maxSessionMemory`{number} Sets the maximum memory that the `Http2Session`
+     is permitted to use. The value is expressed in terms of number of megabytes,
+     e.g. `1` equal 1 megabyte. The minimum value allowed is `1`.
+@@ -2078,6 +2083,9 @@ server.listen(80);
+ <!-- YAML
+ added: v8.4.0
+ changes:
++  - version: REPLACEME
++    pr-url: https://github.com/nodejs-private/node-private/pull/204
++    description: Added `maxSettings` option with a default of 32.
+   - version: v12.16.0
+     pr-url: https://github.com/nodejs/node/pull/30534
+     description: Added `maxSessionRejectedStreams` option with a default of 100.
+@@ -2105,6 +2113,8 @@ changes:
+     **Default:** `false`.
+   * `maxDeflateDynamicTableSize` {number} Sets the maximum dynamic table size
+     for deflating header fields. **Default:** `4Kib`.
++  * `maxSettings` {number} Sets the maximum number of settings entries per
++    `SETTINGS` frame. The minimum value allowed is `1`. **Default:** `32`.
+   * `maxSessionMemory`{number} Sets the maximum memory that the `Http2Session`
+     is permitted to use. The value is expressed in terms of number of megabytes,
+     e.g. `1` equal 1 megabyte. The minimum value allowed is `1`. This is a
+@@ -2195,6 +2205,9 @@ server.listen(80);
+ <!-- YAML
+ added: v8.4.0
+ changes:
++  - version: REPLACEME
++    pr-url: https://github.com/nodejs-private/node-private/pull/204
++    description: Added `maxSettings` option with a default of 32.
+   - version: v8.9.3
+     pr-url: https://github.com/nodejs/node/pull/17105
+     description: Added the `maxOutstandingPings` option with a default limit of
+@@ -2213,6 +2226,8 @@ changes:
+ * `options` {Object}
+   * `maxDeflateDynamicTableSize` {number} Sets the maximum dynamic table size
+     for deflating header fields. **Default:** `4Kib`.
++  * `maxSettings` {number} Sets the maximum number of settings entries per
++    `SETTINGS` frame. The minimum value allowed is `1`. **Default:** `32`.
+   * `maxSessionMemory`{number} Sets the maximum memory that the `Http2Session`
+     is permitted to use. The value is expressed in terms of number of megabytes,
+     e.g. `1` equal 1 megabyte. The minimum value allowed is `1`.
+diff --git a/lib/internal/http2/util.js b/lib/internal/http2/util.js
+index dcc1355a3230fdc38b1b75ad4ceabaee3a78d7e2..d069f726db7795c96f3345d820337d242caa5f9b 100644
+--- a/lib/internal/http2/util.js
++++ b/lib/internal/http2/util.js
+@@ -203,7 +203,8 @@ const IDX_OPTIONS_MAX_HEADER_LIST_PAIRS = 5;
+ const IDX_OPTIONS_MAX_OUTSTANDING_PINGS = 6;
+ const IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS = 7;
+ const IDX_OPTIONS_MAX_SESSION_MEMORY = 8;
+-const IDX_OPTIONS_FLAGS = 9;
++const IDX_OPTIONS_MAX_SETTINGS = 9;
++const IDX_OPTIONS_FLAGS = 10;
+ 
+ function updateOptionsBuffer(options) {
+   let flags = 0;
+@@ -252,6 +253,11 @@ function updateOptionsBuffer(options) {
+     optionsBuffer[IDX_OPTIONS_MAX_SESSION_MEMORY] =
+       MathMax(1, options.maxSessionMemory);
+   }
++  if (typeof options.maxSettings === 'number') {
++    flags |= (1 << IDX_OPTIONS_MAX_SETTINGS);
++    optionsBuffer[IDX_OPTIONS_MAX_SETTINGS] =
++      MathMax(1, options.maxSettings);
++  }
+   optionsBuffer[IDX_OPTIONS_FLAGS] = flags;
+ }
+ 
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index 0eebe2935e248bbdc4d0f17a93dfd856430ed0e0..de296fe6453ab897a68333d8085e0ad989db5459 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -203,6 +203,12 @@ Http2Options::Http2Options(Environment* env, nghttp2_session_type type) {
+   if (flags & (1 << IDX_OPTIONS_MAX_SESSION_MEMORY)) {
+     SetMaxSessionMemory(buffer[IDX_OPTIONS_MAX_SESSION_MEMORY] * 1e6);
+   }
++
++  if (flags & (1 << IDX_OPTIONS_MAX_SETTINGS)) {
++    nghttp2_option_set_max_settings(
++        options_,
++        static_cast<size_t>(buffer[IDX_OPTIONS_MAX_SETTINGS]));
++  }
+ }
+ 
+ void Http2Session::Http2Settings::Init() {
+diff --git a/src/node_http2_state.h b/src/node_http2_state.h
+index 692299a187f60a5e5b7d045b9894abc435a29de8..fd8f1c56607b1457f921382f729abfc6c63bfb0d 100644
+--- a/src/node_http2_state.h
++++ b/src/node_http2_state.h
+@@ -52,6 +52,7 @@ namespace http2 {
+     IDX_OPTIONS_MAX_OUTSTANDING_PINGS,
+     IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS,
+     IDX_OPTIONS_MAX_SESSION_MEMORY,
++    IDX_OPTIONS_MAX_SETTINGS,
+     IDX_OPTIONS_FLAGS
+   };
+ 
+diff --git a/test/parallel/test-http2-max-settings.js b/test/parallel/test-http2-max-settings.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2eae223d21bcc7388cb15969b6a3934acc6b3a7f
+--- /dev/null
++++ b/test/parallel/test-http2-max-settings.js
+@@ -0,0 +1,35 @@
++'use strict';
++
++const common = require('../common');
++if (!common.hasCrypto)
++  common.skip('missing crypto');
++
++const http2 = require('http2');
++
++const server = http2.createServer({ maxSettings: 1 });
++
++// TODO(@jasnell): There is still a session event
++// emitted on the server side but it will be destroyed
++// immediately after creation and there will be no
++// stream created.
++server.on('session', common.mustCall((session) => {
++  session.on('stream', common.mustNotCall());
++  session.on('remoteSettings', common.mustNotCall());
++}));
++server.on('stream', common.mustNotCall());
++
++server.listen(0, common.mustCall(() => {
++  // Specify two settings entries when a max of 1 is allowed.
++  // Connection should error immediately.
++  const client = http2.connect(
++    `http://localhost:${server.address().port}`, {
++      settings: {
++        // The actual settings values do not matter.
++        headerTableSize: 1000,
++        enablePush: false,
++      } });
++
++  client.on('error', common.mustCall(() => {
++    server.close();
++  }));
++}));
+diff --git a/test/parallel/test-http2-util-update-options-buffer.js b/test/parallel/test-http2-util-update-options-buffer.js
+index d9cfa0784926aeb720fccc28f0c1257bf35ac30e..9587d93d3bcbc84aafa669d2c95841df8bacc010 100644
+--- a/test/parallel/test-http2-util-update-options-buffer.js
++++ b/test/parallel/test-http2-util-update-options-buffer.js
+@@ -22,7 +22,8 @@ const IDX_OPTIONS_MAX_HEADER_LIST_PAIRS = 5;
+ const IDX_OPTIONS_MAX_OUTSTANDING_PINGS = 6;
+ const IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS = 7;
+ const IDX_OPTIONS_MAX_SESSION_MEMORY = 8;
+-const IDX_OPTIONS_FLAGS = 9;
++const IDX_OPTIONS_MAX_SETTINGS = 9;
++const IDX_OPTIONS_FLAGS = 10;
+ 
+ {
+   updateOptionsBuffer({
+@@ -34,7 +35,8 @@ const IDX_OPTIONS_FLAGS = 9;
+     maxHeaderListPairs: 6,
+     maxOutstandingPings: 7,
+     maxOutstandingSettings: 8,
+-    maxSessionMemory: 9
++    maxSessionMemory: 9,
++    maxSettings: 10,
+   });
+ 
+   strictEqual(optionsBuffer[IDX_OPTIONS_MAX_DEFLATE_DYNAMIC_TABLE_SIZE], 1);
+@@ -46,6 +48,7 @@ const IDX_OPTIONS_FLAGS = 9;
+   strictEqual(optionsBuffer[IDX_OPTIONS_MAX_OUTSTANDING_PINGS], 7);
+   strictEqual(optionsBuffer[IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS], 8);
+   strictEqual(optionsBuffer[IDX_OPTIONS_MAX_SESSION_MEMORY], 9);
++  strictEqual(optionsBuffer[IDX_OPTIONS_MAX_SETTINGS], 10);
+ 
+   const flags = optionsBuffer[IDX_OPTIONS_FLAGS];
+ 
+@@ -57,6 +60,7 @@ const IDX_OPTIONS_FLAGS = 9;
+   ok(flags & (1 << IDX_OPTIONS_MAX_HEADER_LIST_PAIRS));
+   ok(flags & (1 << IDX_OPTIONS_MAX_OUTSTANDING_PINGS));
+   ok(flags & (1 << IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS));
++  ok(flags & (1 << IDX_OPTIONS_MAX_SETTINGS));
+ }
+ 
+ {

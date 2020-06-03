@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fedor Indutny <fedor@indutny.com>
+Date: Tue, 17 Mar 2020 20:51:38 -0700
+Subject: tls: emit `session` after verifying certificate
+
+Prior to this patch `session` event was emitted after `secure` event on
+TLSSocket, but before `secureConnect` event. This is problematic for
+`https.Agent` because it must cache session only after verifying the
+remote peer's certificate.
+
+Connecting to a server that presents an invalid certificate resulted
+in the session being cached after the handshake with the server and
+evicted right after a certifiate validation error and socket's
+destruction. A request initiated during this narrow window would pick
+the faulty session, send it to the malicious server and skip the
+verification of the server's certificate.
+
+Fixes: https://hackerone.com/reports/811502
+CVE-ID: CVE-2020-8172
+PR-URL: https://github.com/nodejs-private/node-private/pull/200
+Reviewed-By: Sam Roberts <vieuxtech@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Michael Dawson <michael_dawson@ca.ibm.com>
+
+diff --git a/lib/_tls_wrap.js b/lib/_tls_wrap.js
+index c8ccbdb84286a49e9d311f1bf335bd87410a302d..6ae333ddd05f9b10445cc998f9c2e6b6e97bce74 100644
+--- a/lib/_tls_wrap.js
++++ b/lib/_tls_wrap.js
+@@ -82,6 +82,8 @@ const kSNICallback = Symbol('snicallback');
+ const kEnableTrace = Symbol('enableTrace');
+ const kPskCallback = Symbol('pskcallback');
+ const kPskIdentityHint = Symbol('pskidentityhint');
++const kPendingSession = Symbol('pendingSession');
++const kIsVerified = Symbol('verified');
+ 
+ const noop = () => {};
+ 
+@@ -265,7 +267,11 @@ function requestOCSPDone(socket) {
+ function onnewsessionclient(sessionId, session) {
+   debug('client emit session');
+   const owner = this[owner_symbol];
+-  owner.emit('session', session);
++  if (owner[kIsVerified]) {
++    owner.emit('session', session);
++  } else {
++    owner[kPendingSession] = session;
++  }
+ }
+ 
+ function onnewsession(sessionId, session) {
+@@ -464,6 +470,8 @@ function TLSSocket(socket, opts) {
+   this.authorized = false;
+   this.authorizationError = null;
+   this[kRes] = null;
++  this[kIsVerified] = false;
++  this[kPendingSession] = null;
+ 
+   let wrap;
+   if ((socket instanceof net.Socket && socket._handle) || !socket) {
+@@ -634,6 +642,8 @@ TLSSocket.prototype._destroySSL = function _destroySSL() {
+     this.ssl._secureContext.context = null;
+   }
+   this.ssl = null;
++  this[kPendingSession] = null;
++  this[kIsVerified] = false;
+ };
+ 
+ // Constructor guts, arbitrarily factored out.
+@@ -1503,6 +1513,12 @@ function onConnectSecure() {
+     this.emit('secureConnect');
+   }
+ 
++  this[kIsVerified] = true;
++  const session = this[kPendingSession];
++  this[kPendingSession] = null;
++  if (session)
++    this.emit('session', session);
++
+   this.removeListener('end', onConnectEnd);
+ }
+ 
+diff --git a/test/parallel/test-https-agent-session-injection.js b/test/parallel/test-https-agent-session-injection.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cb9358b1b1700925e893fa9680fc734b35fb699c
+--- /dev/null
++++ b/test/parallel/test-https-agent-session-injection.js
+@@ -0,0 +1,59 @@
++'use strict';
++const common = require('../common');
++const assert = require('assert');
++
++if (!common.hasCrypto)
++  common.skip('missing crypto');
++
++const https = require('https');
++const fixtures = require('../common/fixtures');
++
++const options = {
++  key: fixtures.readKey('agent1-key.pem'),
++
++  // NOTE: Certificate Common Name is 'agent1'
++  cert: fixtures.readKey('agent1-cert.pem'),
++
++  // NOTE: TLS 1.3 creates new session ticket **after** handshake so
++  // `getSession()` output will be different even if the session was reused
++  // during the handshake.
++  secureProtocol: 'TLSv1_2_method'
++};
++
++const ca = [ fixtures.readKey('ca1-cert.pem') ];
++
++const server = https.createServer(options, function(req, res) {
++  res.end('ok');
++}).listen(0, common.mustCall(function() {
++  const port = this.address().port;
++
++  const req = https.get({
++    port,
++    path: '/',
++    ca,
++    servername: 'nodejs.org',
++  }, common.mustNotCall(() => {}));
++
++  req.on('error', common.mustCall((err) => {
++    assert.strictEqual(
++      err.message,
++      'Hostname/IP does not match certificate\'s altnames: ' +
++        'Host: nodejs.org. is not cert\'s CN: agent1');
++
++    const second = https.get({
++      port,
++      path: '/',
++      ca,
++      servername: 'nodejs.org',
++    }, common.mustNotCall(() => {}));
++
++    second.on('error', common.mustCall((err) => {
++      server.close();
++
++      assert.strictEqual(
++        err.message,
++        'Hostname/IP does not match certificate\'s altnames: ' +
++          'Host: nodejs.org. is not cert\'s CN: agent1');
++    }));
++  }));
++}));
+diff --git a/test/parallel/test-tls-secure-session.js b/test/parallel/test-tls-secure-session.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4b9638a2ccc7a27f63285f42e825fbf342e435d
+--- /dev/null
++++ b/test/parallel/test-tls-secure-session.js
+@@ -0,0 +1,46 @@
++'use strict';
++const common = require('../common');
++if (!common.hasCrypto)
++  common.skip('missing crypto');
++const fixtures = require('../common/fixtures');
++const assert = require('assert');
++const tls = require('tls');
++
++const options = {
++  key: fixtures.readKey('agent1-key.pem'),
++
++  // NOTE: Certificate Common Name is 'agent1'
++  cert: fixtures.readKey('agent1-cert.pem'),
++
++  // NOTE: TLS 1.3 creates new session ticket **after** handshake so
++  // `getSession()` output will be different even if the session was reused
++  // during the handshake.
++  secureProtocol: 'TLSv1_2_method'
++};
++
++const server = tls.createServer(options, common.mustCall((socket) => {
++  socket.end();
++})).listen(0, common.mustCall(() => {
++  let connected = false;
++  let session = null;
++
++  const client = tls.connect({
++    rejectUnauthorized: false,
++    port: server.address().port,
++  }, common.mustCall(() => {
++    assert(!connected);
++    assert(!session);
++
++    connected = true;
++  }));
++
++  client.on('session', common.mustCall((newSession) => {
++    assert(connected);
++    assert(!session);
++
++    session = newSession;
++
++    client.end();
++    server.close();
++  }));
++}));
