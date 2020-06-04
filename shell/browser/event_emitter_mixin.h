@@ -39,6 +39,7 @@ class EventEmitterMixin {
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
@@ -58,6 +59,8 @@ class EventEmitterMixin {
         data->GetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
       constructor = v8::FunctionTemplate::New(isolate);
+      constructor->SetClassName(
+          gin::StringToV8(isolate, static_cast<T*>(this)->GetTypeName()));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
       data->SetFunctionTemplate(wrapper_info, constructor);
     }

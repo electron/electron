@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { promisify } from 'util';
 import { ifit, ifdescribe } from './spec-helpers';
 import { AddressInfo } from 'net';
+import { PipeTransport } from './pipe-transport';
 
 const features = process.electronBinding('features');
 
@@ -247,13 +248,20 @@ describe('web security', () => {
 });
 
 describe('command line switches', () => {
+  let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
+  afterEach(() => {
+    if (appProcess && !appProcess.killed) {
+      appProcess.kill();
+      appProcess = undefined;
+    }
+  });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
     const testLocale = (locale: string, result: string, done: () => void) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
       let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
 
       appProcess.stdout.on('data', (data) => { output += data; });
       appProcess.stdout.on('end', () => {
@@ -267,21 +275,62 @@ describe('command line switches', () => {
     it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
   });
 
+  describe('--remote-debugging-pipe switch', () => {
+    it('should expose CDP via pipe', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(message.result.product).to.contain('Chrome');
+      expect(message.result.userAgent).to.contain('Electron');
+    });
+    it('should override --remote-debugging-port switch', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      let stderr = '';
+      appProcess.stderr.on('data', (data: string) => { stderr += data; });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(stderr).to.not.include('DevTools listening on');
+    });
+    it('should shut down Electron upon Browser.close CDP command', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      pipe.send({ id: 1, method: 'Browser.close', params: {} });
+      await new Promise(resolve => { appProcess!.on('exit', resolve); });
+    });
+  });
+
   describe('--remote-debugging-port switch', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
 
       appProcess.stderr.on('data', (data) => {
         output += data;
         const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output);
         if (m) {
-          appProcess.stderr.removeAllListeners('data');
+          appProcess!.stderr.removeAllListeners('data');
           const port = m[1];
           http.get(`http://127.0.0.1:${port}`, (res) => {
             res.destroy();
-            appProcess.kill();
             expect(res.statusCode).to.eql(200);
             expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
             done();
@@ -319,7 +368,8 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       const languages = await w.webContents.executeJavaScript('navigator.languages');
-      expect(languages).to.deep.equal([appLocale]);
+      expect(languages.length).to.be.greaterThan(0);
+      expect(languages).to.contain(appLocale);
     });
   });
 
@@ -360,8 +410,6 @@ describe('chromium features', () => {
 
         if (ext === '.js') type = 'application/javascript';
         callback({ data: content, mimeType: type } as any);
-      }, (error) => {
-        if (error) done(error);
       });
 
       const w = new BrowserWindow({
@@ -381,7 +429,8 @@ describe('chromium features', () => {
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
-            customSession.protocol.uninterceptProtocol('file', error => done(error));
+            customSession.protocol.uninterceptProtocol('file');
+            done();
           });
         }
       });
@@ -654,6 +703,34 @@ describe('chromium features', () => {
       const [, window] = await emittedOnce(app, 'browser-window-created');
       expect(window.getTitle()).to.equal('__proto__');
     });
+
+    it('denies custom open when nativeWindowOpen: true', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true,
+          nativeWindowOpen: true
+        }
+      });
+      w.loadURL('about:blank');
+
+      const previousListeners = process.listeners('uncaughtException');
+      process.removeAllListeners('uncaughtException');
+      try {
+        const uncaughtException = new Promise<Error>(resolve => {
+          process.once('uncaughtException', resolve);
+        });
+        expect(await w.webContents.executeJavaScript(`(${function () {
+          const ipc = process.electronBinding('ipc').ipc;
+          return ipc.sendSync(true, 'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
+        }})()`)).to.be.null();
+        const exception = await uncaughtException;
+        expect(exception.message).to.match(/denied: expected native window\.open/);
+      } finally {
+        previousListeners.forEach(l => process.on('uncaughtException', l));
+      }
+    });
   });
 
   describe('window.opener', () => {
@@ -762,8 +839,8 @@ describe('chromium features', () => {
     ];
     const s = (url: string) => url.startsWith('file') ? 'file://...' : url;
 
-    before(async () => {
-      await promisify(protocol.registerFileProtocol)(scheme, (request, callback) => {
+    before(() => {
+      protocol.registerFileProtocol(scheme, (request, callback) => {
         if (request.url.includes('blank')) {
           callback(`${fixturesPath}/pages/blank.html`);
         } else {
@@ -771,8 +848,8 @@ describe('chromium features', () => {
         }
       });
     });
-    after(async () => {
-      await promisify(protocol.unregisterProtocol)(scheme);
+    after(() => {
+      protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
@@ -851,7 +928,7 @@ describe('chromium features', () => {
     describe('custom non standard schemes', () => {
       const protocolName = 'storage';
       let contents: WebContents;
-      before((done) => {
+      before(() => {
         protocol.registerFileProtocol(protocolName, (request, callback) => {
           const parsedUrl = url.parse(request.url);
           let filename;
@@ -864,11 +941,11 @@ describe('chromium features', () => {
             default : filename = '';
           }
           callback({ path: `${fixturesPath}/pages/storage/${filename}` });
-        }, (error) => done(error));
+        });
       });
 
-      after((done) => {
-        protocol.unregisterProtocol(protocolName, () => done());
+      after(() => {
+        protocol.unregisterProtocol(protocolName);
       });
 
       beforeEach(() => {
@@ -981,6 +1058,166 @@ describe('chromium features', () => {
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect');
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true });
     });
+
+    describe('enableWebSQL webpreference', () => {
+      const standardScheme = (global as any).standardScheme;
+      const origin = `${standardScheme}://fake-host`;
+      const filePath = path.join(fixturesPath, 'pages', 'storage', 'web_sql.html');
+      const sqlPartition = 'web-sql-preference-test';
+      const sqlSession = session.fromPartition(sqlPartition);
+      const securityError = 'An attempt was made to break through the security policy of the user agent.';
+      let contents: WebContents, w: BrowserWindow;
+
+      before(() => {
+        sqlSession.protocol.registerFileProtocol(standardScheme, (request, callback) => {
+          callback({ path: filePath });
+        });
+      });
+
+      after(() => {
+        sqlSession.protocol.unregisterProtocol(standardScheme);
+      });
+
+      afterEach(async () => {
+        if (contents) {
+          (contents as any).destroy();
+          contents = null as any;
+        }
+        await closeAllWindows();
+        (w as any) = null;
+      });
+
+      it('default value allows websql', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+      });
+
+      it('when set to false can disallow websql', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true,
+          enableWebSQL: false
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.equal(securityError);
+      });
+
+      it('when set to false does not disable indexedDB', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true,
+          enableWebSQL: false
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.equal(securityError);
+        const dbName = 'random';
+        const result = await contents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            try {
+              let req = window.indexedDB.open('${dbName}');
+              req.onsuccess = (event) => { 
+                let db = req.result;
+                resolve(db.name);
+              }
+              req.onerror = (event) => { resolve(event.target.code); }
+            } catch (e) {
+              resolve(e.message);
+            }
+          });
+        `);
+        expect(result).to.equal(dbName);
+      });
+
+      it('child webContents can override when the embedder has allowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=0');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.equal(securityError);
+      });
+
+      it('child webContents cannot override when the embedder has disallowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            enableWebSQL: false,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL('data:text/html,<html></html>');
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.equal(securityError);
+      });
+
+      it('child webContents can use websql when the embedder has allowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.be.null();
+      });
+    });
   });
 
   ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
@@ -995,7 +1232,10 @@ describe('chromium features', () => {
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1003,7 +1243,10 @@ describe('chromium features', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
   });
 

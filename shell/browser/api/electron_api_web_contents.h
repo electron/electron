@@ -34,7 +34,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
-#include "printing/backend/print_backend.h"
+#include "printing/backend/print_backend.h"  // nogncheck
 #include "shell/browser/printing/print_preview_message_handler.h"
 
 #if defined(OS_WIN)
@@ -60,6 +60,42 @@ namespace network {
 class ResourceRequestBody;
 }
 
+namespace gin {
+
+template <>
+struct Converter<base::TerminationStatus> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::TerminationStatus& status) {
+    switch (status) {
+      case base::TERMINATION_STATUS_NORMAL_TERMINATION:
+        return gin::ConvertToV8(isolate, "clean-exit");
+      case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
+        return gin::ConvertToV8(isolate, "abnormal-exit");
+      case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
+        return gin::ConvertToV8(isolate, "killed");
+      case base::TERMINATION_STATUS_PROCESS_CRASHED:
+        return gin::ConvertToV8(isolate, "crashed");
+      case base::TERMINATION_STATUS_STILL_RUNNING:
+        return gin::ConvertToV8(isolate, "still-running");
+      case base::TERMINATION_STATUS_LAUNCH_FAILED:
+        return gin::ConvertToV8(isolate, "launch-failed");
+      case base::TERMINATION_STATUS_OOM:
+        return gin::ConvertToV8(isolate, "oom");
+#if defined(OS_WIN)
+      case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
+        return gin::ConvertToV8(isolate, "integrity-failure");
+#endif
+      case base::TERMINATION_STATUS_MAX_ENUM:
+        NOTREACHED();
+        return gin::ConvertToV8(isolate, "");
+    }
+    NOTREACHED();
+    return gin::ConvertToV8(isolate, "");
+  }
+};
+
+}  // namespace gin
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -80,7 +116,6 @@ namespace api {
 class ExtendedWebContentsObserver : public base::CheckedObserver {
  public:
   virtual void OnCloseContents() {}
-  virtual void OnRendererResponsive() {}
   virtual void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) {}
   virtual void OnSetContentBounds(const gfx::Rect& rect) {}
@@ -151,6 +186,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // See https://github.com/electron/electron/issues/15133.
   void DestroyWebContents(bool async);
 
+  bool GetBackgroundThrottling() const;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
@@ -303,8 +339,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
@@ -329,6 +364,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
+
+  // Notifies the web page that there is user interaction.
+  void NotifyUserActivation();
 
   v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
 
@@ -384,6 +422,21 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
+  bool IsWebContentsCreationOverridden(
+      content::SiteInstance* source_site_instance,
+      content::mojom::WindowContainerType window_container_type,
+      const GURL& opener_url,
+      const std::string& frame_name,
+      const GURL& target_url) override;
+  content::WebContents* CreateCustomWebContents(
+      content::RenderFrameHost* opener,
+      content::SiteInstance* source_site_instance,
+      bool is_new_browsing_instance,
+      const GURL& opener_url,
+      const std::string& frame_name,
+      const GURL& target_url,
+      const std::string& partition_id,
+      content::SessionStorageNamespace* session_storage_namespace) override;
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
       int opener_render_process_id,
@@ -392,6 +445,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
                       std::unique_ptr<content::WebContents> new_contents,
+                      const GURL& target_url,
                       WindowOpenDisposition disposition,
                       const gfx::Rect& initial_rect,
                       bool user_gesture,
@@ -415,8 +469,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const content::NativeWebKeyboardEvent& event) override;
   void ContentsZoomChange(bool zoom_in) override;
   void EnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
@@ -496,6 +549,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
       mojo::ScopedMessagePipeHandle* interface_pipe) override;
+  void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
   // InspectableWebContentsDelegate:
@@ -552,9 +606,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  // Called when we receive a CursorChange message from chromium.
-  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.

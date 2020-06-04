@@ -66,6 +66,9 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
         return;
       }
       guestViewInternal.deregisterEvents(internal.viewInstanceId);
+      if (internal.guestInstanceId) {
+        guestViewInternal.detachGuest(internal.guestInstanceId);
+      }
       internal.elementAttached = false;
       this.internalInstanceId = 0;
       internal.reset();

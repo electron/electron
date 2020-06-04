@@ -10,12 +10,12 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 24f9e8efd14ea8e4bb739655c662d01c8c4b80c5..c354891df92db510291ba351ee3bc88b07b4d990 100644
+index b502af8bb93dd45b5de046850f69ef34f9d04732..a6c84cd7909c6a1c70f3f4b5bd65531bf26f1a94 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -262,6 +262,10 @@ int GpuMain(const MainFunctionParams& parameters) {
- 
-   logging::SetLogMessageHandler(GpuProcessLogMessageHandler);
+@@ -255,6 +255,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+   // to the GpuProcessHost once the GpuServiceImpl has started.
+   viz::GpuServiceImpl::InstallPreInitializeLogHandler();
  
 +  auto* client = GetContentClient()->gpu();
 +  if (client)
@@ -24,8 +24,8 @@ index 24f9e8efd14ea8e4bb739655c662d01c8c4b80c5..c354891df92db510291ba351ee3bc88b
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
-@@ -384,7 +388,6 @@ int GpuMain(const MainFunctionParams& parameters) {
-       }));
+@@ -373,7 +377,6 @@ int GpuMain(const MainFunctionParams& parameters) {
+   }
  #endif
  
 -  auto* client = GetContentClient()->gpu();
@@ -33,10 +33,10 @@ index 24f9e8efd14ea8e4bb739655c662d01c8c4b80c5..c354891df92db510291ba351ee3bc88b
      client->PostIOThreadCreated(gpu_process.io_task_runner());
  
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index f68558bd2c4ff725443b0d6893ebe7da07c26a00..3dda58157f32dbc9c7d9001192c30a3a1c152437 100644
+index 88e80bdaecbdd9000109f638c6d79d8102d0e537..a0c0f17e6642dcd2690c095b95ff2c2de9b6ae4f 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -39,6 +39,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -30,6 +30,10 @@ class CONTENT_EXPORT ContentGpuClient {
   public:
    virtual ~ContentGpuClient() {}
  

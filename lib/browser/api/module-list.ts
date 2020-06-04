@@ -1,7 +1,5 @@
 // TODO: Updating this file also required updating the module-keys file
 
-const features = process.electronBinding('features');
-
 // Browser side modules, please sort alphabetically.
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'app', loader: () => require('./app') },
@@ -35,7 +33,13 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'WebContentsView', loader: () => require('./web-contents-view') }
 ];
 
-if (features.isViewApiEnabled()) {
+if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
+  browserModuleList.push(
+    { name: 'desktopCapturer', loader: () => require('./desktop-capturer') }
+  );
+}
+
+if (BUILDFLAG(ENABLE_VIEWS_API)) {
   browserModuleList.push(
     { name: 'ImageView', loader: () => require('./views/image-view') }
   );

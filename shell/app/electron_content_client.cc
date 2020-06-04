@@ -19,13 +19,13 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "ppapi/buildflags/buildflags.h"
-#include "shell/browser/electron_paths.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
 // In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include)
+#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "base/native_library.h"

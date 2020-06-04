@@ -97,8 +97,10 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   NSAlert* alert = CreateNSAlert(settings);
 
   // Use runModal for synchronous alert without parent, since we don't have a
-  // window to wait for.
-  if (!settings.parent_window)
+  // window to wait for. Also use it when window is provided but it is not
+  // shown as it would be impossible to dismiss the alert if it is connected
+  // to invisible window (see #22671).
+  if (!settings.parent_window || !settings.parent_window->IsVisible())
     return [[alert autorelease] runModal];
 
   __block int ret_code = -1;

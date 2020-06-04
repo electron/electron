@@ -11,17 +11,8 @@ const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools');
 
 const BLACKLIST = new Set([
-  ['shell', 'browser', 'mac', 'atom_application.h'],
-  ['shell', 'browser', 'mac', 'atom_application_delegate.h'],
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_bundle_mover.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],

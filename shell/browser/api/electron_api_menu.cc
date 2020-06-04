@@ -15,6 +15,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/base/models/image_model.h"
 
 namespace electron {
 
@@ -142,11 +143,11 @@ void Menu::InsertSubMenuAt(int index,
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {
-  model_->SetIcon(index, image);
+  model_->SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
 void Menu::SetSublabel(int index, const base::string16& sublabel) {
-  model_->SetSublabel(index, sublabel);
+  model_->SetSecondaryLabel(index, sublabel);
 }
 
 void Menu::SetToolTip(int index, const base::string16& toolTip) {
@@ -178,7 +179,7 @@ base::string16 Menu::GetLabelAt(int index) const {
 }
 
 base::string16 Menu::GetSublabelAt(int index) const {
-  return model_->GetSublabelAt(index);
+  return model_->GetSecondaryLabelAt(index);
 }
 
 base::string16 Menu::GetToolTipAt(int index) const {

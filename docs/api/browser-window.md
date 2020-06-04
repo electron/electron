@@ -385,6 +385,15 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       visible to users.
     * `spellcheck` Boolean (optional) - Whether to enable the builtin spellchecker.
       Default is `true`.
+    * `enableWebSQL` Boolean (optional) - Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/).
+      Default is `true`.
+    * `v8CacheOptions` String (optional) - Enforces the v8 code caching policy
+      used by blink. Accepted values are
+      * `none` - Disables code caching
+      * `code` - Heuristic based code caching
+      * `bypassHeatCheck` - Bypass code caching heuristics but with lazy compilation
+      * `bypassHeatCheckAndEagerCompile` - Same as above except compilation is eager.
+      Default policy is `code`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -623,6 +632,12 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
+The method underlying this event is built to handle older macOS-style trackpad swiping,
+where the content on the screen doesn't move with the swipe. Most macOS trackpads are not
+configured to allow this kind of swiping anymore, so in order for it to emit properly the
+'Swipe between pages' preference in `System Preferences > Trackpad > More Gestures` must be
+set to 'Swipe with two or three fingers'.
+
 #### Event: 'rotate-gesture' _macOS_
 
 Returns:
@@ -800,6 +815,10 @@ hide it immediately.
 #### `win.simpleFullScreen`
 
 A `Boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
+
+#### `win.fullScreen`
+
+A `Boolean` property that determines whether the window is in fullscreen mode.
 
 #### `win.visibleOnAllWorkspaces`
 

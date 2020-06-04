@@ -8,11 +8,13 @@ def read_patch(patch_dir, patch_filename):
   """Read a patch from |patch_dir/filename| and amend the commit message with
   metadata about the patch file it came from."""
   ret = []
+  added_filename_line = False
   patch_path = os.path.join(patch_dir, patch_filename)
   with codecs.open(patch_path, encoding='utf-8') as f:
     for l in f.readlines():
-      if l.startswith('diff -'):
+      if not added_filename_line and (l.startswith('diff -') or l.startswith('---')):
         ret.append('Patch-Filename: {}\n'.format(patch_filename))
+        added_filename_line = True
       ret.append(l)
   return ''.join(ret)
 

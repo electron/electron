@@ -84,6 +84,7 @@ extern const char kImages[];
 extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
+extern const char kEnableWebSQL[];
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 extern const char kSpellcheck[];
@@ -129,6 +130,7 @@ extern const char kWebviewTag[];
 extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableElectronSiteInstanceOverrides[];
 extern const char kEnableNodeLeakageInRenderers[];
+extern const char kEnableWebSQL[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
@@ -138,6 +140,7 @@ extern const char kIgnoreConnectionsLimit[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
+extern const char kDisableNTLMv2[];
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 extern const char kEnableSpellcheck[];
@@ -146,6 +149,8 @@ extern const char kEnableSpellcheck[];
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 extern const char kEnableRemoteModule[];
 #endif
+
+extern const char kGlobalCrashKeys[];
 
 }  // namespace switches
 

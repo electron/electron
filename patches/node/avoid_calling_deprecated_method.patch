@@ -5,8 +5,8 @@ Subject: Avoid calling deprecated method
 
 The {SetExpectInlineWasm} method is deprecated and non-functional since
 V8 v8.1.
-Thus node should stop calling it, so that it can be fully removed in a
-future v8 version.
+
+This is already present in Node.js v14 and can be removed when we upgrade.
 
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index a2d185c4167a75e227cd4b2abbf5c5abc7e16acb..e918ed9d12e9fb1d13b2fc05a98cab099fb71a68 100644

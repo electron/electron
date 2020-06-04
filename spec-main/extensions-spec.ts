@@ -1,16 +1,17 @@
 import { expect } from 'chai';
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
+import { session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import * as http from 'http';
 import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ifdescribe } from './spec-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 
 const fixtures = path.join(__dirname, 'fixtures');
 
-ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
+describe('chrome extensions', () => {
+  const emptyPage = '<script>console.log("loaded")</script>';
+
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
   let url: string;
@@ -26,7 +27,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
         res.write(html);
         res.end();
       } else {
-        res.end();
+        res.end(emptyPage);
       }
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
@@ -52,7 +53,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-    await w.loadURL(url);
+    w.loadURL(url);
+    await emittedOnce(w.webContents, 'dom-ready');
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('red');
   });
@@ -106,7 +108,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false }); // not in the session
-    await w.loadURL(url);
+    w.loadURL(url);
+    await emittedOnce(w.webContents, 'dom-ready');
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('');
   });
@@ -129,7 +132,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL(url);
+      w.loadURL(url);
+      await emittedOnce(w.webContents, 'dom-ready');
     });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
@@ -146,10 +150,11 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     let content: any;
     before(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       try {
-        await w.loadURL(url);
+        w.loadURL(url);
+        await emittedOnce(w.webContents, 'dom-ready');
         content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'));
         expect(content).to.be.an('object');
       } finally {
@@ -342,11 +347,12 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     it('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
+      const winningMessage = emittedOnce(ipcMain, 'winning');
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL('data:text/html,hello');
+      await w.loadURL(url);
       w.webContents.openDevTools();
       showLastDevToolsPanel(w);
-      await emittedOnce(ipcMain, 'winning');
+      await winningMessage;
     });
   });
 
@@ -531,7 +537,8 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     it('loads a ui page of an extension', async () => {
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
-      await w.loadURL(`chrome-extension://${id}/bare-page.html`);
+      w.loadURL(`chrome-extension://${id}/bare-page.html`);
+      await emittedOnce(w.webContents, 'dom-ready');
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('ui page loaded ok\n');
     });
@@ -539,286 +546,10 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     it('can load resources', async () => {
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
-      await w.loadURL(`chrome-extension://${id}/page-script-load.html`);
+      w.loadURL(`chrome-extension://${id}/page-script-load.html`);
+      await emittedOnce(w.webContents, 'dom-ready');
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('script loaded ok\n');
-    });
-  });
-});
-
-ifdescribe(!process.electronBinding('features').isExtensionsEnabled())('chrome extensions', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-  let w: BrowserWindow;
-
-  before(() => {
-    BrowserWindow.addExtension(path.join(fixtures, 'extensions/chrome-api'));
-  });
-
-  after(() => {
-    BrowserWindow.removeExtension('chrome-api');
-  });
-
-  beforeEach(() => {
-    w = new BrowserWindow({ show: false });
-  });
-
-  afterEach(() => closeWindow(w).then(() => { w = null as unknown as BrowserWindow; }));
-
-  it('chrome.runtime.connect parses arguments properly', async function () {
-    await w.loadURL('about:blank');
-
-    const promise = emittedOnce(w.webContents, 'console-message');
-
-    const message = { method: 'connect' };
-    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
-
-    const [,, responseString] = await promise;
-    const response = JSON.parse(responseString);
-
-    expect(response).to.be.true();
-  });
-
-  it('runtime.getManifest returns extension manifest', async () => {
-    const actualManifest = (() => {
-      const data = fs.readFileSync(path.join(fixtures, 'extensions/chrome-api/manifest.json'), 'utf-8');
-      return JSON.parse(data);
-    })();
-
-    await w.loadURL('about:blank');
-
-    const promise = emittedOnce(w.webContents, 'console-message');
-
-    const message = { method: 'getManifest' };
-    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
-
-    const [,, manifestString] = await promise;
-    const manifest = JSON.parse(manifestString);
-
-    expect(manifest.name).to.equal(actualManifest.name);
-    expect(manifest.content_scripts).to.have.lengthOf(actualManifest.content_scripts.length);
-  });
-
-  it('chrome.tabs.sendMessage receives the response', async function () {
-    await w.loadURL('about:blank');
-
-    const promise = emittedOnce(w.webContents, 'console-message');
-
-    const message = { method: 'sendMessage', args: ['Hello World!'] };
-    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
-
-    const [,, responseString] = await promise;
-    const response = JSON.parse(responseString);
-
-    expect(response.message).to.equal('Hello World!');
-    expect(response.tabId).to.equal(w.webContents.id);
-  });
-
-  it('chrome.tabs.executeScript receives the response', async function () {
-    await w.loadURL('about:blank');
-
-    const promise = emittedOnce(w.webContents, 'console-message');
-
-    const message = { method: 'executeScript', args: ['1 + 2'] };
-    w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
-
-    const [,, responseString] = await promise;
-    const response = JSON.parse(responseString);
-
-    expect(response).to.equal(3);
-  });
-
-  describe('extensions and dev tools extensions', () => {
-    let showPanelTimeoutId: NodeJS.Timeout | null = null;
-
-    const showLastDevToolsPanel = (w: BrowserWindow) => {
-      w.webContents.once('devtools-opened', () => {
-        const show = () => {
-          if (w == null || w.isDestroyed()) return;
-          const { devToolsWebContents } = w as unknown as { devToolsWebContents: WebContents | undefined };
-          if (devToolsWebContents == null || devToolsWebContents.isDestroyed()) {
-            return;
-          }
-
-          const showLastPanel = () => {
-            // this is executed in the devtools context, where UI is a global
-            const { UI } = (window as any);
-            const lastPanelId = UI.inspectorView._tabbedPane._tabs.peekLast().id;
-            UI.inspectorView.showPanel(lastPanelId);
-          };
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
-            showPanelTimeoutId = setTimeout(show, 100);
-          });
-        };
-        showPanelTimeoutId = setTimeout(show, 100);
-      });
-    };
-
-    afterEach(() => {
-      if (showPanelTimeoutId != null) {
-        clearTimeout(showPanelTimeoutId);
-        showPanelTimeoutId = null;
-      }
-    });
-
-    describe('BrowserWindow.addDevToolsExtension', () => {
-      describe('for invalid extensions', () => {
-        it('throws errors for missing manifest.json files', () => {
-          const nonexistentExtensionPath = path.join(__dirname, 'does-not-exist');
-          expect(() => {
-            BrowserWindow.addDevToolsExtension(nonexistentExtensionPath);
-          }).to.throw(/ENOENT: no such file or directory/);
-        });
-
-        it('throws errors for invalid manifest.json files', () => {
-          const badManifestExtensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest');
-          expect(() => {
-            BrowserWindow.addDevToolsExtension(badManifestExtensionPath);
-          }).to.throw(/Unexpected token }/);
-        });
-      });
-
-      describe('for a valid extension', () => {
-        const extensionName = 'foo';
-
-        before(() => {
-          const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-          BrowserWindow.addDevToolsExtension(extensionPath);
-          expect(BrowserWindow.getDevToolsExtensions()).to.have.property(extensionName);
-        });
-
-        after(() => {
-          BrowserWindow.removeDevToolsExtension('foo');
-          expect(BrowserWindow.getDevToolsExtensions()).to.not.have.property(extensionName);
-        });
-
-        describe('when the devtools is docked', () => {
-          let message: any;
-          let w: BrowserWindow;
-          before(async () => {
-            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-            const p = new Promise(resolve => ipcMain.once('answer', (event, message) => {
-              resolve(message);
-            }));
-            showLastDevToolsPanel(w);
-            w.loadURL('about:blank');
-            w.webContents.openDevTools({ mode: 'bottom' });
-            message = await p;
-          });
-          after(closeAllWindows);
-
-          describe('created extension info', function () {
-            it('has proper "runtimeId"', async function () {
-              expect(message).to.have.ownProperty('runtimeId');
-              expect(message.runtimeId).to.equal(extensionName);
-            });
-            it('has "tabId" matching webContents id', function () {
-              expect(message).to.have.ownProperty('tabId');
-              expect(message.tabId).to.equal(w.webContents.id);
-            });
-            it('has "i18nString" with proper contents', function () {
-              expect(message).to.have.ownProperty('i18nString');
-              expect(message.i18nString).to.equal('foo - bar (baz)');
-            });
-            it('has "storageItems" with proper contents', function () {
-              expect(message).to.have.ownProperty('storageItems');
-              expect(message.storageItems).to.deep.equal({
-                local: {
-                  set: { hello: 'world', world: 'hello' },
-                  remove: { world: 'hello' },
-                  clear: {}
-                },
-                sync: {
-                  set: { foo: 'bar', bar: 'foo' },
-                  remove: { foo: 'bar' },
-                  clear: {}
-                }
-              });
-            });
-          });
-        });
-
-        describe('when the devtools is undocked', () => {
-          let message: any;
-          let w: BrowserWindow;
-          before(async () => {
-            w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-            showLastDevToolsPanel(w);
-            w.loadURL('about:blank');
-            w.webContents.openDevTools({ mode: 'undocked' });
-            message = await new Promise(resolve => ipcMain.once('answer', (event, message) => {
-              resolve(message);
-            }));
-          });
-          after(closeAllWindows);
-
-          describe('created extension info', function () {
-            it('has proper "runtimeId"', function () {
-              expect(message).to.have.ownProperty('runtimeId');
-              expect(message.runtimeId).to.equal(extensionName);
-            });
-            it('has "tabId" matching webContents id', function () {
-              expect(message).to.have.ownProperty('tabId');
-              expect(message.tabId).to.equal(w.webContents.id);
-            });
-          });
-        });
-      });
-    });
-
-    it('works when used with partitions', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          partition: 'temp'
-        }
-      });
-
-      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-      BrowserWindow.addDevToolsExtension(extensionPath);
-      try {
-        showLastDevToolsPanel(w);
-
-        const p: Promise<any> = new Promise(resolve => ipcMain.once('answer', function (event, message) {
-          resolve(message);
-        }));
-
-        w.loadURL('about:blank');
-        w.webContents.openDevTools({ mode: 'bottom' });
-        const message = await p;
-        expect(message.runtimeId).to.equal('foo');
-      } finally {
-        BrowserWindow.removeDevToolsExtension('foo');
-        await closeAllWindows();
-      }
-    });
-
-    it('serializes the registered extensions on quit', () => {
-      const extensionName = 'foo';
-      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName);
-      const serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions');
-
-      BrowserWindow.addDevToolsExtension(extensionPath);
-      app.emit('will-quit');
-      expect(JSON.parse(fs.readFileSync(serializedPath, 'utf8'))).to.deep.equal([extensionPath]);
-
-      BrowserWindow.removeDevToolsExtension(extensionName);
-      app.emit('will-quit');
-      expect(fs.existsSync(serializedPath)).to.be.false('file exists');
-    });
-
-    describe('BrowserWindow.addExtension', () => {
-      it('throws errors for missing manifest.json files', () => {
-        expect(() => {
-          BrowserWindow.addExtension(path.join(__dirname, 'does-not-exist'));
-        }).to.throw('ENOENT: no such file or directory');
-      });
-
-      it('throws errors for invalid manifest.json files', () => {
-        expect(() => {
-          BrowserWindow.addExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'));
-        }).to.throw('Unexpected token }');
-      });
     });
   });
 });

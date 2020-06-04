@@ -26,6 +26,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -130,6 +131,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
   SetDefaultBoolIfUndefined(options::kWebGL, true);
+  SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
@@ -419,6 +421,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 #endif
 
+  // Whether to allow the WebSQL api
+  if (IsEnabled(options::kEnableWebSQL))
+    command_line->AppendSwitch(switches::kEnableWebSQL);
+
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
@@ -480,6 +486,23 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+
+  std::string v8_cache_options;
+  if (GetAsString(&preference_, "v8CacheOptions", &v8_cache_options)) {
+    if (v8_cache_options == "none") {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kNone;
+    } else if (v8_cache_options == "code") {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kCode;
+    } else if (v8_cache_options == "bypassHeatCheck") {
+      prefs->v8_cache_options =
+          blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
+    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
+      prefs->v8_cache_options =
+          blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
+    } else {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kDefault;
+    }
+  }
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)

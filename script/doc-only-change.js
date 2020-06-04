@@ -39,7 +39,7 @@ async function checkIfDocOnlyChange () {
           return true;
         }
       });
-      if (nonDocChange) {
+      if (nonDocChange || filesChanged.data.length === 0) {
         process.exit(1);
       } else {
         process.exit(0);

@@ -203,10 +203,10 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   void Finished() {
-    size_callback_.Reset();
     body_func_.Reset();
-    receiver_.reset();
     data_producer_.reset();
+    receiver_.reset();
+    size_callback_.Reset();
   }
 
   GetSizeCallback size_callback_;
@@ -349,9 +349,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
-  request->attach_same_site_cookies = true;
+  request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  opts.Get("referrer", &request->referrer);
   std::map<std::string, std::string> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {

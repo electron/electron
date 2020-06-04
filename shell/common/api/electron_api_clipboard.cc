@@ -29,10 +29,8 @@ ui::ClipboardBuffer Clipboard::GetClipboardBuffer(gin_helper::Arguments* args) {
 std::vector<base::string16> Clipboard::AvailableFormats(
     gin_helper::Arguments* args) {
   std::vector<base::string16> format_types;
-  bool ignore;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadAvailableTypes(GetClipboardBuffer(args), &format_types,
-                                &ignore);
+  clipboard->ReadAvailableTypes(GetClipboardBuffer(args), &format_types);
   return format_types;
 }
 
@@ -180,8 +178,16 @@ void Clipboard::WriteBookmark(const base::string16& title,
 
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  SkBitmap bitmap = clipboard->ReadImage(GetClipboardBuffer(args));
-  return gfx::Image::CreateFrom1xBitmap(bitmap);
+  base::Optional<gfx::Image> image;
+  clipboard->ReadImage(
+      GetClipboardBuffer(args),
+      base::Bind(
+          [](base::Optional<gfx::Image>* image, const SkBitmap& result) {
+            image->emplace(gfx::Image::CreateFrom1xBitmap(result));
+          },
+          &image));
+  DCHECK(image.has_value());
+  return image.value();
 }
 
 void Clipboard::WriteImage(const gfx::Image& image,

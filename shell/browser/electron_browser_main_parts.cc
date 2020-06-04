@@ -37,7 +37,6 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/electron_paths.h"
 #include "shell/browser/electron_web_ui_controller_factory.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/javascript_environment.h"
@@ -47,6 +46,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -64,11 +64,16 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/browser/ui/gtk/gtk_ui.h"
-#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
+#include "ui/gfx/color_utils.h"
+#include "ui/gfx/x/x11_types.h"
+#include "ui/gfx/x/xproto_util.h"
+#include "ui/gtk/gtk_ui.h"
+#include "ui/gtk/gtk_ui_delegate.h"
+#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
@@ -164,7 +169,7 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&ui::LogErrorEventDescription, d, *error));
+        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
   }
   return 0;
 }
@@ -207,9 +212,35 @@ int X11EmptyErrorHandler(Display* d, XErrorEvent* error) {
 int X11EmptyIOErrorHandler(Display* d) {
   return 0;
 }
+
+// GTK does not provide a way to check if current theme is dark, so we compare
+// the text and background luminosity to get a result.
+// This trick comes from FireFox.
+void UpdateDarkThemeSetting() {
+  float bg = color_utils::GetRelativeLuminance(gtk::GetBgColor("GtkLabel"));
+  float fg = color_utils::GetRelativeLuminance(gtk::GetFgColor("GtkLabel"));
+  bool is_dark = fg > bg;
+  // Pass it to NativeUi theme, which is used by the nativeTheme module and most
+  // places in Electron.
+  ui::NativeTheme::GetInstanceForNativeUi()->set_use_dark_colors(is_dark);
+  // Pass it to Web Theme, to make "prefers-color-scheme" media query work.
+  ui::NativeTheme::GetInstanceForWeb()->set_use_dark_colors(is_dark);
+}
 #endif
 
 }  // namespace
+
+#if defined(USE_X11)
+class DarkThemeObserver : public ui::NativeThemeObserver {
+ public:
+  DarkThemeObserver() = default;
+
+  // ui::NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override {
+    UpdateDarkThemeSetting();
+  }
+};
+#endif
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
@@ -258,7 +289,6 @@ void ElectronBrowserMainParts::RegisterDestructionCallback(
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(USE_X11)
-  views::LinuxUI::SetInstance(BuildGtkUi());
   OverrideLinuxAppDataPath();
 
   // Installs the X11 error handlers for the browser process used during
@@ -343,6 +373,9 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   fake_browser_process_->PreCreateThreads();
 
+  // Notify observers.
+  Browser::Get()->PreCreateThreads();
+
   return 0;
 }
 
@@ -365,8 +398,23 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
-#if defined(USE_AURA) && defined(USE_X11)
-  views::LinuxUI::instance()->Initialize();
+#if defined(USE_X11)
+  // In Aura/X11, Gtk-based LinuxUI implementation is used.
+  gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
+  ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
+  views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
+  views::LinuxUI::SetInstance(linux_ui);
+  linux_ui->Initialize();
+
+  // Chromium does not respect GTK dark theme setting, but they may change
+  // in future and this code might be no longer needed. Check the Chromium
+  // issue to keep updated:
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=998903
+  UpdateDarkThemeSetting();
+  // Update the naitve theme when GTK theme changes. The GetNativeTheme
+  // here returns a NativeThemeGtk, which monitors GTK settings.
+  dark_theme_observer_.reset(new DarkThemeObserver);
+  linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
 #endif
 
 #if defined(USE_AURA)
@@ -427,10 +475,14 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
 
-  // --remote-debugging-port
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
+  if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
+    // --remote-debugging-pipe
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+  } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
+    // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
+  }
 
 #if !defined(OS_MACOSX)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
@@ -495,10 +547,11 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
-  node_env_.reset();
   js_env_->OnMessageLoopDestroying();
+  node_env_.reset();
 
   fake_browser_process_->PostMainMessageLoopRun();
+  content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 }
 
 #if !defined(OS_MACOSX)

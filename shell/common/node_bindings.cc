@@ -37,6 +37,7 @@
   V(electron_browser_auto_updater)       \
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
+  V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
   V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
@@ -52,15 +53,14 @@
   V(electron_browser_system_preferences) \
   V(electron_browser_top_level_window)   \
   V(electron_browser_tray)               \
+  V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
-  V(electron_browser_view)               \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
-  V(electron_common_crash_reporter)      \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_native_theme)        \
@@ -69,6 +69,7 @@
   V(electron_common_shell)               \
   V(electron_common_v8_util)             \
   V(electron_renderer_context_bridge)    \
+  V(electron_renderer_crash_reporter)    \
   V(electron_renderer_ipc)               \
   V(electron_renderer_web_frame)
 
@@ -217,6 +218,13 @@ void SetNodeOptions(base::Environment* env) {
     // overwrite new NODE_OPTIONS without unsupported variables
     env->SetVar("NODE_OPTIONS", options);
   }
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
+      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
+  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
 }
 
 }  // namespace
@@ -394,14 +402,27 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
-    // so instead call it here to match expected node behavior
+    // This policy requires that microtask checkpoints be explicitly invoked.
+    // Node.js requires this.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
   } else {
-    // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should
-    // switch to use the scoped policy to match blink's behavior.
+    // Match Blink's behavior by allowing microtasks invocation to be controlled
+    // by MicrotasksScope objects.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
   }
+
+  // This needs to be called before the inspector is initialized.
+  env->InitializeDiagnostics();
+
+  // Set the callback to invoke to check if wasm code generation should be
+  // allowed.
+  context->GetIsolate()->SetAllowWasmCodeGenerationCallback(
+      AllowWasmCodeGenerationCallback);
+
+  // Generate more detailed source positions to code objects. This results in
+  // better results when mapping profiling samples to script source.
+  v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(
+      context->GetIsolate());
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);

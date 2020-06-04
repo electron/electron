@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 20 May 2020 13:48:51 -0700
+Subject: fix: swap global proxies before initializing the windows proxies
+
+Electron's Context Isolation implementation has a side-effect of initializing
+the isolated worlds WindowProxy during the initialization of the main world
+WindowProxy as a result of creating the isolated world inside the DidCreateScriptContext
+hook.  This results in an assertion failing in Chromium during a frame
+swap where it expects to be able to set a new global_proxy in the WindowProxy
+of the isolated world BEFORE it is initialized.
+
+To meet this assumption this patch splits SetGlobalProxy into two calls,
+SetGlobalProxyWithoutInitializing and InitializeIfNeeded which has the same
+resultant effect but means that all of the global_proxy objects are set
+BEFORE any WindowProxy's are initialized.
+
+This could probably be upstreamed as it doesn't affect the way Chromium works
+but also it has no benefit for them at this time.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/window_proxy.cc
+index 3139b74a464888159cbb6b93f15e54b578986f92..784f3b31e1258ff29e01f556a0d37f45ddc9b117 100644
+--- a/third_party/blink/renderer/bindings/core/v8/window_proxy.cc
++++ b/third_party/blink/renderer/bindings/core/v8/window_proxy.cc
+@@ -104,10 +104,7 @@ v8::Local<v8::Object> WindowProxy::ReleaseGlobalProxy() {
+ }
+ 
+ void WindowProxy::SetGlobalProxy(v8::Local<v8::Object> global_proxy) {
+-  DCHECK_EQ(lifecycle_, Lifecycle::kContextIsUninitialized);
+-
+-  CHECK(global_proxy_.IsEmpty());
+-  global_proxy_.Set(isolate_, global_proxy);
++  SetGlobalProxyWithoutInitializing(global_proxy);
+ 
+   // Initialize the window proxy now, to re-establish the connection between
+   // the global object and the v8::Context. This is really only needed for a
+@@ -118,6 +115,13 @@ void WindowProxy::SetGlobalProxy(v8::Local<v8::Object> global_proxy) {
+   Initialize();
+ }
+ 
++void WindowProxy::SetGlobalProxyWithoutInitializing(v8::Local<v8::Object> global_proxy) {
++  DCHECK_EQ(lifecycle_, Lifecycle::kContextIsUninitialized);
++
++  CHECK(global_proxy_.IsEmpty());
++  global_proxy_.Set(isolate_, global_proxy);
++}
++
+ // Create a new environment and setup the global object.
+ //
+ // The global object corresponds to a DOMWindow instance. However, to
+diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy.h b/third_party/blink/renderer/bindings/core/v8/window_proxy.h
+index 33d85e22813ee15ced7e8c41d1bc070c8dbbdd26..d9ff55f67ffa4208a6fa342ed24cd6e1a3af145e 100644
+--- a/third_party/blink/renderer/bindings/core/v8/window_proxy.h
++++ b/third_party/blink/renderer/bindings/core/v8/window_proxy.h
+@@ -156,6 +156,7 @@ class WindowProxy : public GarbageCollected<WindowProxy> {
+   CORE_EXPORT v8::Local<v8::Object> GlobalProxyIfNotDetached();
+   v8::Local<v8::Object> ReleaseGlobalProxy();
+   void SetGlobalProxy(v8::Local<v8::Object>);
++  void SetGlobalProxyWithoutInitializing(v8::Local<v8::Object>);
+ 
+   // TODO(dcheng): Temporarily exposed to avoid include cycles. Remove the need
+   // for this and remove this getter.
+diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc b/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
+index b302d33b3dfe211cacf4f3b842a5c52baa2788d1..f95018422eb8c9948f33687b0aaabcf3f003949e 100644
+--- a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
++++ b/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
+@@ -55,8 +55,11 @@ void WindowProxyManager::ReleaseGlobalProxies(
+ 
+ void WindowProxyManager::SetGlobalProxies(
+     const GlobalProxyVector& global_proxies) {
++  for (const auto& entry : global_proxies) {
++    WindowProxyMaybeUninitialized(*entry.first)->SetGlobalProxyWithoutInitializing(entry.second);
++  }
+   for (const auto& entry : global_proxies)
+-    WindowProxyMaybeUninitialized(*entry.first)->SetGlobalProxy(entry.second);
++    WindowProxyMaybeUninitialized(*entry.first)->InitializeIfNeeded();
+ }
+ 
+ WindowProxyManager::WindowProxyManager(Frame& frame, FrameType frame_type)

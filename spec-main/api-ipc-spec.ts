@@ -44,7 +44,7 @@ describe('ipc module', () => {
     it('receives a response from an asynchronous handler', async () => {
       ipcMain.handleOnce('test', async (e: IpcMainInvokeEvent, arg: number) => {
         expect(arg).to.equal(123);
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise(setImmediate);
         return 3;
       });
       const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
@@ -69,7 +69,7 @@ describe('ipc module', () => {
 
     it('receives an error from an asynchronous handler', async () => {
       ipcMain.handleOnce('test', async () => {
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise(setImmediate);
         throw new Error('some error');
       });
       const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {

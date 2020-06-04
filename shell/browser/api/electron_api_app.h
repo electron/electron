@@ -56,13 +56,14 @@ class App : public ElectronBrowserClient::Delegate,
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
 
   static gin::Handle<App> Create(v8::Isolate* isolate);
+  static App* Get();
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
-      std::unique_ptr<base::DictionaryValue> options,
+      base::Value options,
       net::CompletionOnceCallback callback,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
@@ -70,10 +71,10 @@ class App : public ElectronBrowserClient::Delegate,
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
-  void PreMainMessageLoopRun();
 
- protected:
   explicit App(v8::Isolate* isolate);
+
+ private:
   ~App() override;
 
   // BrowserObserver:
@@ -88,6 +89,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
+  void OnPreCreateThreads() override;
 #if defined(OS_MACOSX)
   void OnWillContinueUserActivity(bool* prevent_default,
                                   const std::string& type) override;
@@ -184,8 +186,9 @@ class App : public ElectronBrowserClient::Delegate,
                                       bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(gin_helper::Arguments* args);
 #if defined(USE_NSS_CERTS)
-  void ImportCertificate(const base::DictionaryValue& options,
-                         net::CompletionRepeatingCallback callback);
+  void ImportCertificate(gin_helper::ErrorThrower thrower,
+                         base::Value options,
+                         net::CompletionOnceCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      gin_helper::Arguments* args);
@@ -238,6 +241,9 @@ class App : public ElectronBrowserClient::Delegate,
       std::unordered_map<base::ProcessId,
                          std::unique_ptr<electron::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
+
+  bool disable_hw_acceleration_ = false;
+  bool disable_domain_blocking_for_3DAPIs_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

@@ -90,8 +90,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
                           std::unique_ptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
   void EnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;

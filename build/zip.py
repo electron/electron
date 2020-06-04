@@ -25,6 +25,13 @@ PATHS_TO_SKIP = [
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
   # ship it.
   'pyproto',
+
+  # On Windows, this binary doesn't exist (the crashpad handler is built-in).
+  # On MacOS, the binary is called 'chrome_crashpad_handler' and is inside the
+  # app bundle.
+  # On Linux, we don't use crashpad, but this binary is still built for some
+  # reason. Exclude it from the zip.
+  './crashpad_handler',
 ]
 
 def skip_path(dep, dist_zip, target_cpu):

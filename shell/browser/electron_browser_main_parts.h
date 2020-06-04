@@ -29,6 +29,12 @@ class WMState;
 }
 #endif
 
+#if defined(USE_X11)
+namespace ui {
+class GtkUiDelegate;
+}
+#endif
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -51,6 +57,10 @@ class ViewsDelegate;
 
 #if defined(OS_MACOSX)
 class ViewsDelegateMac;
+#endif
+
+#if defined(USE_X11)
+class DarkThemeObserver;
 #endif
 
 class ElectronBrowserMainParts : public content::BrowserMainParts {
@@ -119,6 +129,12 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
+#endif
+
+#if defined(USE_X11)
+  std::unique_ptr<ui::GtkUiDelegate> gtk_ui_delegate_;
+  // Used to notify the native theme of changes to dark mode.
+  std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;

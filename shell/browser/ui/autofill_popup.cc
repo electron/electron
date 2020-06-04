@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "base/i18n/rtl.h"
-#include "chrome/browser/ui/autofill/popup_view_common.h"
+#include "chrome/browser/ui/views/autofill/autofill_popup_view_utils.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/native_window_views.h"
@@ -30,19 +30,6 @@
 #endif
 
 namespace electron {
-
-class PopupViewCommon : public autofill::PopupViewCommon {
- public:
-  explicit PopupViewCommon(const gfx::Rect& window_bounds)
-      : window_bounds_(window_bounds) {}
-
-  gfx::Rect GetWindowBounds(gfx::NativeView container_view) override {
-    return window_bounds_;
-  }
-
- private:
-  gfx::Rect window_bounds_;
-};
 
 AutofillPopup::AutofillPopup() {
   bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
@@ -127,10 +114,10 @@ void AutofillPopup::UpdatePopupBounds() {
   gfx::Rect bounds(origin, element_bounds_.size());
   gfx::Rect window_bounds = parent_->GetBoundsInScreen();
 
-  PopupViewCommon popup_view_common(window_bounds);
-  popup_bounds_ = popup_view_common.CalculatePopupBounds(
-      GetDesiredPopupWidth(), GetDesiredPopupHeight(), bounds,
-      gfx::NativeView(), base::i18n::IsRTL());
+  gfx::Size preferred_size =
+      gfx::Size(GetDesiredPopupWidth(), GetDesiredPopupHeight());
+  popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
+                                       base::i18n::IsRTL());
 }
 
 gfx::Rect AutofillPopup::popup_bounds_in_view() {

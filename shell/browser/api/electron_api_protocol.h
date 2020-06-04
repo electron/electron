@@ -58,13 +58,13 @@ class Protocol : public gin::Wrappable<Protocol> {
   ProtocolError RegisterProtocol(ProtocolType type,
                                  const std::string& scheme,
                                  const ProtocolHandler& handler);
-  void UnregisterProtocol(const std::string& scheme, gin::Arguments* args);
+  bool UnregisterProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
 
   ProtocolError InterceptProtocol(ProtocolType type,
                                   const std::string& scheme,
                                   const ProtocolHandler& handler);
-  void UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
+  bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
@@ -73,16 +73,20 @@ class Protocol : public gin::Wrappable<Protocol> {
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>
-  void RegisterProtocolFor(const std::string& scheme,
+  bool RegisterProtocolFor(const std::string& scheme,
                            const ProtocolHandler& handler,
                            gin::Arguments* args) {
-    HandleOptionalCallback(args, RegisterProtocol(type, scheme, handler));
+    auto result = RegisterProtocol(type, scheme, handler);
+    HandleOptionalCallback(args, result);
+    return result == ProtocolError::OK;
   }
   template <ProtocolType type>
-  void InterceptProtocolFor(const std::string& scheme,
+  bool InterceptProtocolFor(const std::string& scheme,
                             const ProtocolHandler& handler,
                             gin::Arguments* args) {
-    HandleOptionalCallback(args, InterceptProtocol(type, scheme, handler));
+    auto result = InterceptProtocol(type, scheme, handler);
+    HandleOptionalCallback(args, result);
+    return result == ProtocolError::OK;
   }
 
   // Be compatible with old interface, which accepts optional callback.

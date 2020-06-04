@@ -1,7 +1,7 @@
 <body>
 <script src="jquery-2.0.3.min.js"></script>
 <script type="text/javascript" charset="utf-8">
-(function() {
+(async function() {
   // Deprecated APIs are still supported and should be tested.
   process.throwDeprecation = false
 
@@ -41,53 +41,53 @@
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter('tap')
   }
-  mocha.timeout(30000)
+
+  const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000
+  mocha.timeout(mochaTimeout)
 
   const query = Mocha.utils.parseQuery(window.location.search || '')
   if (query.grep) mocha.grep(query.grep)
   if (query.invert) mocha.invert()
 
-  const files = query.files ? query.files.split(',') : undefined
-
-  // Read all test files.
-  const walker = require('walkdir').walk(path.dirname(__dirname), {
-    no_recurse: true
-  })
-
-  // This allows you to run specific modules only:
-  // npm run test -match=menu
-  const moduleMatch = process.env.npm_config_match
-    ? new RegExp(process.env.npm_config_match, 'g')
-    : null
-
-  const testFiles = []
-  walker.on('file', (file) => {
-    if (/-spec\.js$/.test(file) && (!moduleMatch || moduleMatch.test(file))) {
-      testFiles.push(file)
+  const filter = (file) => {
+    if (!/-spec\.js$/.test(file)) {
+      return false
     }
+
+    // This allows you to run specific modules only:
+    // npm run test -match=menu
+    const moduleMatch = process.env.npm_config_match
+      ? new RegExp(process.env.npm_config_match, 'g')
+      : null
+    if (moduleMatch && !moduleMatch.test(file)) {
+      return false
+    }
+
+    const files = query.files ? query.files.split(',') : undefined
+    const baseElectronDir = path.resolve(__dirname, '..', '..')
+    if (files && !files.includes(path.relative(baseElectronDir, file))) {
+      return false
+    }
+
+    return true
+  }
+
+  const getFiles = require('./get-files')
+  const testFiles = await getFiles(path.dirname(__dirname), { filter })
+  testFiles.sort().forEach((file) => {
+    mocha.addFile(file)
   })
 
-  const baseElectronDir = path.resolve(__dirname, '..', '..')
+  // Set up chai in the correct order
+  const chai = require('chai')
+  chai.use(require('chai-as-promised'))
+  chai.use(require('dirty-chai'))
 
-  walker.on('end', () => {
-    testFiles.sort()
-    testFiles.forEach((file) => {
-      if (!files || files.includes(path.relative(baseElectronDir, file))) {
-        mocha.addFile(file)
-      }
-    })
-
-    // Set up chai in the correct order
-    const chai = require('chai')
-    chai.use(require('chai-as-promised'))
-    chai.use(require('dirty-chai'))
-
-    const runner = mocha.run(() => {
-      // Ensure the callback is called after runner is defined
-      setTimeout(() => {
-        ipcRenderer.send('process.exit', runner.failures)
-      }, 0)
-    })
+  const runner = mocha.run(() => {
+    // Ensure the callback is called after runner is defined
+    setTimeout(() => {
+      ipcRenderer.send('process.exit', runner.failures)
+    }, 0)
   })
 })()
 </script>

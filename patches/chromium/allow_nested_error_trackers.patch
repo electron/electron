@@ -20,15 +20,15 @@ least harm in the interim by removing the check that prevents more than
 one tracker from existing at a time.
 
 diff --git a/ui/gfx/x/x11_error_tracker.cc b/ui/gfx/x/x11_error_tracker.cc
-index af031de356c5e0938fd3b84a494e48dc9a0e0476..2a5c18dc473a4f88fc0427bec69142917159bbd9 100644
+index 6592ae0483884815697358040123eed5ee657816..d6862673c0b5a61db550c084291787ad1549db69 100644
 --- a/ui/gfx/x/x11_error_tracker.cc
 +++ b/ui/gfx/x/x11_error_tracker.cc
 @@ -24,7 +24,7 @@ namespace gfx {
  X11ErrorTracker::X11ErrorTracker() {
    // This is a non-exhaustive check for incorrect usage. It disallows nested
    // X11ErrorTracker instances on the same thread.
--  DCHECK(g_handler == NULL);
-+  // DCHECK(g_handler == NULL);
+-  DCHECK(g_handler == nullptr);
++  // DCHECK(g_handler == nullptr);
    g_handler = this;
    XSync(GetXDisplay(), False);
    old_handler_ = XSetErrorHandler(X11ErrorHandler);

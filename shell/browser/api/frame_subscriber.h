@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
 
 #include <memory>
+#include <string>
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
@@ -53,6 +54,7 @@ class FrameSubscriber : public content::WebContentsObserver,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
           callbacks) override;
   void OnStopped() override;
+  void OnLog(const std::string& message) override;
 
   void Done(const gfx::Rect& damage, const SkBitmap& frame);
 

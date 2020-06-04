@@ -137,13 +137,15 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
     // Handle this by deleting the item as a fallback.
     if (!did_trash && [err code] == NSFeatureUnsupportedError) {
       did_trash = [[NSFileManager defaultManager] removeItemAtURL:url
-                                                            error:nil];
+                                                            error:&err];
     }
   }
 
-  if (!did_trash)
+  if (!did_trash) {
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
-                 << " to trash";
+                 << " to trash: "
+                 << base::SysNSStringToUTF8([err localizedDescription]);
+  }
 
   return did_trash;
 }

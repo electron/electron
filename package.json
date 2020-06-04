@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "10.0.0-nightly.20200409",
+  "version": "11.0.0-nightly.20200604",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -9,6 +9,7 @@
     "@octokit/rest": "^16.3.2",
     "@primer/octicons": "^9.1.1",
     "@types/basic-auth": "^1.1.3",
+    "@types/busboy": "^0.2.3",
     "@types/chai": "^4.2.11",
     "@types/chai-as-promised": "^7.1.2",
     "@types/dirty-chai": "^2.0.2",
@@ -45,6 +46,7 @@
     "lint-staged": "^8.1.0",
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
+    "null-loader": "^4.0.0",
     "pre-flight": "^1.1.0",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
@@ -139,7 +141,6 @@
     ]
   },
   "dependencies": {
-    "@types/multiparty": "^0.0.32",
     "@types/temp": "^0.8.34"
   }
 }

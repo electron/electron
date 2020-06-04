@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/x/window_state_watcher.h"
-#include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
 namespace electron {
@@ -56,7 +55,7 @@ void WindowStateWatcher::DidProcessXEvent(XEvent* xev) {
 }
 
 bool WindowStateWatcher::IsWindowStateEvent(XEvent* xev) const {
-  return (xev->xproperty.atom == window_state_atom_ &&
+  return (static_cast<x11::Atom>(xev->xproperty.atom) == window_state_atom_ &&
           xev->type == PropertyNotify && xev->xproperty.window == widget_);
 }
 

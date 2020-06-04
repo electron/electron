@@ -39,7 +39,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   void DereferenceRemoteJSCallback(const std::string& context_id,
                                    int32_t object_id) override;
 #endif
-  void UpdateCrashpadPipeName(const std::string& pipe_name) override;
+  void NotifyUserActivation() override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 

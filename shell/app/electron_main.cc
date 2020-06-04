@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #if defined(OS_WIN)
@@ -21,11 +23,15 @@
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
+#include "components/browser_watcher/exit_code_watcher_win.h"
+#include "components/crash/core/app/crash_switches.h"
+#include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_main_delegate.h"
-#include "shell/common/crash_reporter/win/crash_service_main.h"
+#include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
+
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
 #include <cstdio>
@@ -50,6 +56,13 @@
 #endif
 
 namespace {
+
+#if defined(OS_WIN)
+// Redefined here so we don't have to introduce a dependency on //content
+// from //electron:electron_app
+const char kUserDataDir[] = "user-data-dir";
+const char kProcessType[] = "type";
+#endif
 
 ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -138,10 +151,49 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #endif
 
   base::CommandLine::Init(argv.size(), argv.data());
-  const base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
-  if (cmd_line.GetSwitchValueASCII("type") ==
-      crash_reporter::kCrashpadProcess) {
-    return crash_service::Main(&argv);
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+
+  const std::string process_type =
+      command_line->GetSwitchValueASCII(kProcessType);
+
+  if (process_type == crash_reporter::switches::kCrashpadHandler) {
+    // Check if we should monitor the exit code of this process
+    std::unique_ptr<browser_watcher::ExitCodeWatcher> exit_code_watcher;
+
+    // Retrieve the client process from the command line
+    crashpad::InitialClientData initial_client_data;
+    if (initial_client_data.InitializeFromString(
+            command_line->GetSwitchValueASCII("initial-client-data"))) {
+      // Setup exit code watcher to monitor the parent process
+      HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
+      if (DuplicateHandle(
+              ::GetCurrentProcess(), initial_client_data.client_process(),
+              ::GetCurrentProcess(), &duplicate_handle,
+              PROCESS_QUERY_INFORMATION, FALSE, DUPLICATE_SAME_ACCESS)) {
+        base::Process parent_process(duplicate_handle);
+        exit_code_watcher =
+            std::make_unique<browser_watcher::ExitCodeWatcher>();
+        if (exit_code_watcher->Initialize(std::move(parent_process))) {
+          exit_code_watcher->StartWatching();
+        }
+      }
+    }
+
+    // The handler process must always be passed the user data dir on the
+    // command line.
+    DCHECK(command_line->HasSwitch(kUserDataDir));
+
+    base::FilePath user_data_dir =
+        command_line->GetSwitchValuePath(kUserDataDir);
+    int crashpad_status = crash_reporter::RunAsCrashpadHandler(
+        *command_line, user_data_dir, kProcessType, kUserDataDir);
+    if (crashpad_status != 0 && exit_code_watcher) {
+      // Crashpad failed to initialize, explicitly stop the exit code watcher
+      // so the crashpad-handler process can exit with an error
+      exit_code_watcher->StopWatching();
+    }
+    return crashpad_status;
   }
 
   if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))

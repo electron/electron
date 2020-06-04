@@ -1,0 +1,161 @@
+[
+  [
+    "top=5,left=10,resizable=no",
+    {
+      "sender": "[WebContents]",
+      "frameId": 1
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "top": 5,
+      "left": 10,
+      "resizable": false,
+      "x": 10,
+      "y": 5,
+      "title": "frame name",
+      "webPreferences": {
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": "placeholder-opener-id"
+      },
+      "width": 800,
+      "height": 600,
+      "show": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "default"
+    },
+    null
+  ],
+  [
+    "zoomFactor=2,resizable=0,x=0,y=10",
+    {
+      "sender": "[WebContents]",
+      "frameId": 1
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "resizable": false,
+      "x": 0,
+      "y": 10,
+      "title": "frame name",
+      "webPreferences": {
+        "zoomFactor": "2",
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": "placeholder-opener-id"
+      },
+      "width": 800,
+      "height": 600,
+      "show": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "default"
+    },
+    null
+  ],
+  [
+    "backgroundColor=gray,webPreferences=0,x=100,y=100",
+    {
+      "sender": "[WebContents]",
+      "frameId": 1
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "backgroundColor": "gray",
+      "webPreferences": {
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": "placeholder-opener-id",
+        "backgroundColor": "gray"
+      },
+      "x": 100,
+      "y": 100,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
+      "show": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "default"
+    },
+    null
+  ],
+  [
+    "x=50,y=20,title=sup",
+    {
+      "sender": "[WebContents]",
+      "frameId": 1
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "x": 50,
+      "y": 20,
+      "title": "sup",
+      "webPreferences": {
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": "placeholder-opener-id"
+      },
+      "width": 800,
+      "height": 600,
+      "show": false
+    },
+    [],
+    {
+      "url": "",
+      "policy": "default"
+    },
+    null
+  ],
+  [
+    "show=false,top=1,left=1",
+    {
+      "sender": "[WebContents]",
+      "frameId": 1
+    },
+    "about:blank",
+    "frame name",
+    "new-window",
+    {
+      "show": false,
+      "top": 1,
+      "left": 1,
+      "x": 1,
+      "y": 1,
+      "title": "frame name",
+      "webPreferences": {
+        "nodeIntegration": false,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": "placeholder-opener-id"
+      },
+      "width": 800,
+      "height": 600
+    },
+    [],
+    {
+      "url": "",
+      "policy": "default"
+    },
+    null
+  ]
+]

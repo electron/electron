@@ -6,7 +6,7 @@
 
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
-#include "shell/browser/electron_paths.h"
+#include "shell/common/electron_paths.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -21,7 +21,10 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       thrower.ThrowError("Path must be absolute");
       return;
     }
-    base::PathService::Override(DIR_APP_LOGS, custom_path.value());
+    {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
+    }
   } else {
     NSString* bundle_name =
         [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
@@ -29,8 +32,11 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
         [NSString stringWithFormat:@"Library/Logs/%@", bundle_name];
     NSString* library_path =
         [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
-    base::PathService::Override(DIR_APP_LOGS,
-                                base::FilePath([library_path UTF8String]));
+    {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      base::PathService::Override(DIR_APP_LOGS,
+                                  base::FilePath([library_path UTF8String]));
+    }
   }
 }
 

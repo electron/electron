@@ -1,10 +1,10 @@
-const { ipc } = process.electronBinding('ipc');
-const v8Util = process.electronBinding('v8_util');
+import { EventEmitter } from 'events';
 
-// Created by init.js.
-export const ipcRendererInternal = v8Util.getHiddenValue<Electron.IpcRendererInternal>(global, 'ipc-internal');
+const { ipc } = process.electronBinding('ipc');
+
 const internal = true;
 
+const ipcRendererInternal = new EventEmitter() as any as Electron.IpcRendererInternal;
 ipcRendererInternal.send = function (channel, ...args) {
   return ipc.send(internal, channel, args);
 };
@@ -28,3 +28,5 @@ ipcRendererInternal.invoke = async function<T> (channel: string, ...args: any[])
   }
   return result;
 };
+
+export { ipcRendererInternal };

@@ -19,24 +19,14 @@ NetworkContextService::NetworkContextService(content::BrowserContext* context)
 
 NetworkContextService::~NetworkContextService() = default;
 
-mojo::Remote<network::mojom::NetworkContext>
-NetworkContextService::CreateNetworkContext() {
-  mojo::Remote<network::mojom::NetworkContext> network_context;
+void NetworkContextService::ConfigureNetworkContextParams(
+    network::mojom::NetworkContextParams* network_context_params,
+    network::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+  bool in_memory = browser_context_->IsOffTheRecord();
+  const base::FilePath& path = browser_context_->GetPath();
 
-  content::GetNetworkService()->CreateNetworkContext(
-      network_context.BindNewPipeAndPassReceiver(),
-      CreateNetworkContextParams(browser_context_->IsOffTheRecord(),
-                                 browser_context_->GetPath()));
-
-  return network_context;
-}
-
-network::mojom::NetworkContextParamsPtr
-NetworkContextService::CreateNetworkContextParams(bool in_memory,
-                                                  const base::FilePath& path) {
-  network::mojom::NetworkContextParamsPtr network_context_params =
-      g_browser_process->system_network_context_manager()
-          ->CreateDefaultNetworkContextParams();
+  g_browser_process->system_network_context_manager()
+      ->ConfigureDefaultNetworkContextParams(network_context_params);
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
@@ -80,12 +70,10 @@ NetworkContextService::CreateNetworkContextParams(bool in_memory,
   network_context_params->enable_ftp_url_support = true;
 #endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
 
-  proxy_config_monitor_.AddToNetworkContextParams(network_context_params.get());
+  proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
 
   BrowserProcessImpl::ApplyProxyModeFromCommandLine(
       browser_context_->in_memory_pref_store());
-
-  return network_context_params;
 }
 
 }  // namespace electron

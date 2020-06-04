@@ -24,7 +24,7 @@
     {
       "name": "sccache-linux-x64.zip",
       "platform": "linux",
-      "sha": "dd379b494122f9e85bdae3597b02c67b0a46192f20f4f16cae3f1258a57b39dd"
+      "sha": "ceb3e10e8a860467efc327c7bbb473481268cc8575bdd39d51acf6eba635e343"
     },
     {
       "name": "sccache-win32-x64.zip",

@@ -12,7 +12,7 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side and correspondingly in gin.
 
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
-index b94a71ef856f92404e16544e22ebbadf57cff363..b15685f6907bcafeb1acd62bfe76f0713dea27f3 100644
+index 891a2e316f6c9eeda9670aaf5201ed57e5f7ba49..00ea3682f491175c6f9bea727de120f5f0de3dac 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
 @@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
@@ -39,10 +39,10 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 696a6170a584c1bb71c8ad253963d9f64395a13e..9677aa931cd543adfc1e9844d6afee8dcb0f4c2d 100644
+index fa88b2bd0233a4c5ff35a26d10e20fa1b91e33b2..21504ce01403d20067c8439c0c61ee0d71de84a5 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -661,6 +661,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -672,6 +672,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
          size, ArrayBufferContents::kDontInitialize);
    }
  
@@ -54,10 +54,10 @@ index 696a6170a584c1bb71c8ad253963d9f64395a13e..9677aa931cd543adfc1e9844d6afee8d
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index 095ca3db051362319611976b9052725ab16c1b3a..13e802a5732f0b04832d6dd8031ae43e1240b79a 100644
+index fe4485a34797c93dba0626356716d729f223d905..65cf74482128d84a0b955af49bf83d7c097b4af1 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -126,6 +126,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -129,6 +129,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -67,8 +67,8 @@ index 095ca3db051362319611976b9052725ab16c1b3a..13e802a5732f0b04832d6dd8031ae43e
 +}
 +
  void ArrayBufferContents::FreeMemory(void* data) {
-   WTF::Partitions::ArrayBufferPartition()->Free(data);
- }
+   InstanceCounters::DecrementCounter(
+       InstanceCounters::kArrayBufferContentsCounter);
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
 index cce802e4fc94c258607bc943d9902e6d18173c44..4f7f4eaf005aac701360e567e6faca7f2e0ff3da 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h

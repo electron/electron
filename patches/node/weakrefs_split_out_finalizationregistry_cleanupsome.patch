@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sun, 12 Apr 2020 15:58:34 -0700
+Subject: Split out FinalizationRegistry#cleanupSome to a different flag
+
+https://chromium-review.googlesource.com/c/v8/v8/+/2141011
+
+This is already present in Node.js v14 and can be removed when we upgrade.
+
+diff --git a/test/parallel/test-finalization-group-error.js b/test/parallel/test-finalization-group-error.js
+index 46a670073b1dbba9729e54166378991a7edba5a0..0857bedd043f0436bddc6d8641c51e78a8b4c562 100644
+--- a/test/parallel/test-finalization-group-error.js
++++ b/test/parallel/test-finalization-group-error.js
+@@ -1,6 +1,6 @@
+ 'use strict';
+ 
+-// Flags: --expose-gc --harmony-weak-refs
++// Flags: --expose-gc --harmony-weak-refs-with-cleanup-some
+ 
+ const common = require('../common');
+ const assert = require('assert');
+diff --git a/test/parallel/test-finalization-group.js b/test/parallel/test-finalization-group.js
+index 4b9357e4d18e6c21d53fc6534f5af1f98805b150..95d36cd3506503b99d4b950b6b1caaf8be96b9e9 100644
+--- a/test/parallel/test-finalization-group.js
++++ b/test/parallel/test-finalization-group.js
+@@ -1,6 +1,6 @@
+ 'use strict';
+ 
+-// Flags: --expose-gc --harmony-weak-refs
++// Flags: --expose-gc --harmony-weak-refs-with-cleanup-some
+ 
+ const common = require('../common');
+ 

@@ -112,13 +112,13 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   if (dict.Get("headers", &headers)) {
     for (const auto& iter : headers.DictItems()) {
       if (iter.second.is_string()) {
-        // key: value
-        head->headers->AddHeader(iter.first + ": " + iter.second.GetString());
+        // key, value
+        head->headers->AddHeader(iter.first, iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
         for (const auto& item : iter.second.GetList()) {
           if (item.is_string())
-            head->headers->AddHeader(iter.first + ": " + item.GetString());
+            head->headers->AddHeader(iter.first, item.GetString());
         }
       } else {
         continue;
@@ -135,7 +135,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   // Setting |head->mime_type| does not automatically set the "content-type"
   // header in NetworkService.
   if (has_mime_type && !has_content_type)
-    head->headers->AddHeader("content-type: " + head->mime_type);
+    head->headers->AddHeader("content-type", head->mime_type);
   return head;
 }
 
@@ -236,8 +236,25 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
+    GURL new_location = GURL(location);
+    net::SiteForCookies new_site_for_cookies =
+        net::SiteForCookies::FromUrl(new_location);
     network::ResourceRequest new_request = request;
-    new_request.url = GURL(location);
+    new_request.url = new_location;
+    new_request.site_for_cookies = new_site_for_cookies;
+
+    net::RedirectInfo redirect_info;
+    redirect_info.status_code = head->headers->response_code();
+    redirect_info.new_method = request.method;
+    redirect_info.new_url = new_location;
+    redirect_info.new_site_for_cookies = new_site_for_cookies;
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+
+    client_remote->OnReceiveRedirect(redirect_info, std::move(head));
+
+    // Unound client, so it an be passed to sub-methods
+    client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
     // |proxy_factory| passed), we askes the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
@@ -376,7 +393,8 @@ void ElectronURLLoaderFactory::StartLoadingFile(
     return;
   }
 
-  head->headers->AddHeader(kCORSHeader);
+  // Add header to ignore CORS.
+  head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
                             head->headers);
 }
@@ -484,7 +502,9 @@ void ElectronURLLoaderFactory::SendContents(
     std::string data) {
   mojo::Remote<network::mojom::URLLoaderClient> client_remote(
       std::move(client));
-  head->headers->AddHeader(kCORSHeader);
+
+  // Add header to ignore CORS.
+  head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
   // Code bellow follows the pattern of data_url_loader_factory.cc.

@@ -24,13 +24,12 @@ try to download a Google-internal version that only Googlers have access to).
 
 [depot-tools]: http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
 
-## Cached builds (optional step)
+### Setting up the git cache
 
-### GIT\_CACHE\_PATH
-
-If you plan on building Electron more than once, adding a git cache will
-speed up subsequent calls to `gclient`. To do this, set a `GIT_CACHE_PATH`
-environment variable:
+If you plan on checking out Electron more than once (for example, to have
+multiple parallel directories checked out to different branches), using the git
+cache will speed up subsequent calls to `gclient`. To do this, set a
+`GIT_CACHE_PATH` environment variable:
 
 ```sh
 $ export GIT_CACHE_PATH="${HOME}/.git_cache"
@@ -38,22 +37,10 @@ $ mkdir -p "${GIT_CACHE_PATH}"
 # This will use about 16G.
 ```
 
-### sccache
-
-Thousands of files must be compiled to build Chromium and Electron.
-You can avoid much of the wait by reusing Electron CI's build output via
-[sccache](https://github.com/mozilla/sccache). This requires some
-optional steps (listed below) and these two environment variables:
-
-```sh
-export SCCACHE_BUCKET="electronjs-sccache-ci"
-export SCCACHE_TWO_TIER=true
-```
-
 ## Getting the code
 
 ```sh
-$ mkdir electron-gn && cd electron-gn
+$ mkdir electron && cd electron
 $ gclient config --name "src/electron" --unmanaged https://github.com/electron/electron
 $ gclient sync --with_branch_heads --with_tags
 # This will take a while, go get a coffee.

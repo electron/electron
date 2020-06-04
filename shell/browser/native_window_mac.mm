@@ -1454,25 +1454,27 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setState:NSVisualEffectStateActive];
 
     // Make frameless Vibrant windows have rounded corners.
-    CGFloat radius = 5.0f;  // default corner radius
-    CGFloat dimension = 2 * radius + 1;
-    NSSize size = NSMakeSize(dimension, dimension);
-    NSImage* maskImage = [NSImage imageWithSize:size
-                                        flipped:NO
-                                 drawingHandler:^BOOL(NSRect rect) {
-                                   NSBezierPath* bezierPath = [NSBezierPath
-                                       bezierPathWithRoundedRect:rect
-                                                         xRadius:radius
-                                                         yRadius:radius];
-                                   [[NSColor blackColor] set];
-                                   [bezierPath fill];
-                                   return YES;
-                                 }];
-    [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
-    [maskImage setResizingMode:NSImageResizingModeStretch];
+    if (!has_frame()) {
+      CGFloat radius = 5.0f;  // default corner radius
+      CGFloat dimension = 2 * radius + 1;
+      NSSize size = NSMakeSize(dimension, dimension);
+      NSImage* maskImage = [NSImage imageWithSize:size
+                                          flipped:NO
+                                   drawingHandler:^BOOL(NSRect rect) {
+                                     NSBezierPath* bezierPath = [NSBezierPath
+                                         bezierPathWithRoundedRect:rect
+                                                           xRadius:radius
+                                                           yRadius:radius];
+                                     [[NSColor blackColor] set];
+                                     [bezierPath fill];
+                                     return YES;
+                                   }];
+      [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
+      [maskImage setResizingMode:NSImageResizingModeStretch];
 
-    [effect_view setMaskImage:maskImage];
-    [window_ setCornerMask:maskImage];
+      [effect_view setMaskImage:maskImage];
+      [window_ setCornerMask:maskImage];
+    }
 
     [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow

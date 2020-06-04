@@ -42,7 +42,7 @@ improve performance.
 
 To learn more about how to profile your app's code, familiarize yourself with
 the Chrome Developer Tools. For advanced analysis looking at multiple processes
-at once, consider the [Chrome Tracing] tool.
+at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-tos/trace-event-profiling-tool) tool.
 
 ### Recommended Reading
 
@@ -352,7 +352,7 @@ Many users of Electron start with an entirely web-based app that they're
 turning into a desktop application. As web developers, we are used to loading
 resources from a variety of content delivery networks. Now that you are
 shipping a proper desktop application, attempt to "cut the cord" where possible
- - and avoid letting your users wait for resources that never change and could
+and avoid letting your users wait for resources that never change and could
 easily be included  in your app.
 
 A typical example is Google Fonts. Many developers make use of Google's
