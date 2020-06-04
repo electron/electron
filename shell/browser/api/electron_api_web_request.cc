@@ -376,10 +376,20 @@ void WebRequest::SetListener(Event event,
     if (result == URLPattern::ParseResult::kSuccess) {
       patterns.insert(pattern);
     } else {
-      const char* error_type = URLPattern::GetParseResultString(result);
-      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
-                           error_type);
-      return;
+      // Invalid scheme errors match only against Chromium's valid
+      // schemes (http, file, ftp, https, etc) which means that
+      // custom protocols will false-positively error. We choose to be
+      // more permissive here and allow potentially invalid schemes
+      // rather than disallow any custom procotols.
+      if (result == URLPattern::ParseResult::kInvalidScheme) {
+        patterns.insert(pattern);
+      } else {
+        const char* error_type = URLPattern::GetParseResultString(result);
+        if (error_type ==)
+          args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
+                               error_type);
+        return;
+      }
     }
   }
 
