@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index f2beaa8238c66b942620e053f4abae32441f2851..82aa964e34a966e3e2300c2b951d6431d294d111 100644
+index 4ad682ca547f651731f5d26245fe708ce0d4ce1d..079cef54cb1692ea788715fd21bf43cec0315a2e 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1859,6 +1859,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1860,6 +1860,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,7 +35,7 @@ index f2beaa8238c66b942620e053f4abae32441f2851..82aa964e34a966e3e2300c2b951d6431
  
    if (settings_.prefer_raster_in_srgb &&
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index c2684645484c7e1b6a555ba31f6634496a4fec76..9250d3b772fdeb6eb943f6cddeb96200e0f819f4 100644
+index 446d46764c5d001df665fea8737a95b4243f8ac8..c9a0244a0027d8918960e6441b4a49af0b7e71af 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,7 +81,7 @@ index 0fc4813b2f76fe6154ebdc60ffabd278bed75653..7423c91d661adcf9e761b93ddbfa4ea8
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c8d27ba2e 100644
+index 8ed1da04200eaf1b350fe95a3d9525648638b272..ca5f0d16a00c1d65bc059c68d7f0fe50ef493cff 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -85,6 +85,9 @@
@@ -212,17 +212,17 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4065,3 +4077,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4068,3 +4080,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c7f60b7ca 100644
+index 4c89647080bb281cb69d78532b7276b4ef4456ac..2ac910d1c16b1e5589ebe6af4d31a0cc14834fe4 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -231,7 +231,7 @@ index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d56f9a862 100644
+index 6c3016a74f939ef57423f4430e0a94c74a969c1c..ed35347b9537541106a2440cd7868d7a3fd64365 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -226,6 +226,7 @@
@@ -251,10 +251,10 @@ index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e5bb9bf85 100644
+index 3f7fc0bdd25236c447e113a1947d8c1139e3c300..63ee84ccc0a7de89f43522d99ea39e3d3e735357 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2539,6 +2539,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

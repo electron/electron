@@ -42,10 +42,10 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index fa3ed4e33b4fbe274738442f22e07ba233056ce8..e8e4eb7963b443b95e98a173df497d1662f9226b 100644
+index 914d8ffba8220597358bd6f4426db5de70d7a2af..193cff28296365746a51a40b1c0da65bd16f6890 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1278,6 +1278,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1314,6 +1314,24 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -71,10 +71,10 @@ index fa3ed4e33b4fbe274738442f22e07ba233056ce8..e8e4eb7963b443b95e98a173df497d16
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 829a14c0cc306fa74c80b7c123ddaa309c0c18c9..49a47e1f8d1fc4161684a13b6fdaceb6762234ad 100644
+index 2e4d2b3bdf1f6b3d118aadbf31bbbd4db235c90c..2d2802a6c35706e1c45c77988d70bd5017fb3fe7 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2464,6 +2464,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2409,6 +2409,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -91,7 +91,7 @@ index 829a14c0cc306fa74c80b7c123ddaa309c0c18c9..49a47e1f8d1fc4161684a13b6fdaceb6
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2483,10 +2493,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2428,10 +2438,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -156,7 +156,7 @@ index 829a14c0cc306fa74c80b7c123ddaa309c0c18c9..49a47e1f8d1fc4161684a13b6fdaceb6
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2551,6 +2611,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2496,6 +2556,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -194,7 +194,7 @@ index 10dd6f03af22bd7d0f7b65a58d4a58430c129b49..88504adb27e6461648f7dce48c93e2e1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 8f36f7277a59d297a0700d1dfd5d8120f6a0ffa1..4858b868972c02f580789a6e396fd5db52154bad 100644
+index 44ef92827fea505670e5ae5c940c802572a97178..cef633fe007e88f6c0596282aa1030387ad1c887 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -220,7 +220,7 @@ index 8f36f7277a59d297a0700d1dfd5d8120f6a0ffa1..4858b868972c02f580789a6e396fd5db
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 463fcc56d05a2e18c1d3752b5e7e275c8797eca8..df1e5d1ed6e9e40ac14f1aef289801b6d63fa78d 100644
+index f64cc028f59faa5a8e308095c48a6f029ae5107c..0862715e204432fd59f94843151ba865f3844b01 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {
