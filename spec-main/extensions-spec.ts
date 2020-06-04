@@ -24,8 +24,7 @@ describe('chrome extensions', () => {
       } else if (req.url === '/jquery') {
         const html = await fs.promises.readFile(path.join(fixtures, 'pages', 'jquery.html'));
         res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Length': html.length });
-        res.write(html);
-        res.end();
+        res.end(html, 'utf-8');
       } else {
         res.end(emptyPage);
       }
