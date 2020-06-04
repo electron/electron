@@ -16,6 +16,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter_gin_adapter.h"
 #include "shell/common/gin_converters/value_converter_gin_adapter.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/promise_util.h"
@@ -25,6 +26,9 @@ using blink::WebLocalFrame;
 using content::RenderFrame;
 
 namespace {
+
+const char kIPCMethodCalledAfterContextReleasedError[] =
+    "IPC method called after context was released";
 
 RenderFrame* GetCurrentRenderFrame() {
   WebLocalFrame* frame = WebLocalFrame::FrameForCurrentContext();
@@ -79,9 +83,14 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
 
  private:
   void SendMessage(v8::Isolate* isolate,
+                   gin_helper::ErrorThrower thrower,
                    bool internal,
                    const std::string& channel,
                    v8::Local<v8::Value> arguments) {
+    if (!electron_browser_ptr_) {
+      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      return;
+    }
     blink::CloneableMessage message;
     if (!mate::ConvertFromV8(isolate, arguments, &message)) {
       return;
@@ -90,9 +99,14 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
+                                gin_helper::ErrorThrower thrower,
                                 bool internal,
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
+    if (!electron_browser_ptr_) {
+      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      return v8::Local<v8::Promise>();
+    }
     blink::CloneableMessage message;
     if (!mate::ConvertFromV8(isolate, arguments, &message)) {
       return v8::Local<v8::Promise>();
@@ -111,11 +125,16 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   void SendTo(v8::Isolate* isolate,
+              gin_helper::ErrorThrower thrower,
               bool internal,
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
+    if (!electron_browser_ptr_) {
+      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      return;
+    }
     blink::CloneableMessage message;
     if (!mate::ConvertFromV8(isolate, arguments, &message)) {
       return;
@@ -125,8 +144,13 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   void SendToHost(v8::Isolate* isolate,
+                  gin_helper::ErrorThrower thrower,
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
+    if (!electron_browser_ptr_) {
+      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      return;
+    }
     blink::CloneableMessage message;
     if (!mate::ConvertFromV8(isolate, arguments, &message)) {
       return;
@@ -135,9 +159,14 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   blink::CloneableMessage SendSync(v8::Isolate* isolate,
+                                   gin_helper::ErrorThrower thrower,
                                    bool internal,
                                    const std::string& channel,
                                    v8::Local<v8::Value> arguments) {
+    if (!electron_browser_ptr_) {
+      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      return blink::CloneableMessage();
+    }
     blink::CloneableMessage message;
     if (!mate::ConvertFromV8(isolate, arguments, &message)) {
       return blink::CloneableMessage();
