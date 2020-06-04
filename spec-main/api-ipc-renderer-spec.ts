@@ -9,7 +9,7 @@ describe('ipcRenderer module', () => {
 
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true } });
     await w.loadURL('about:blank');
   });
   after(async () => {
@@ -180,6 +180,27 @@ describe('ipcRenderer module', () => {
         require('electron').ipcRenderer.eventNames()
       `);
       expect(result).to.deep.equal([]);
+    });
+  });
+
+  describe('after context is released', () => {
+    it('throws an exception', async () => {
+      const error = await w.webContents.executeJavaScript(`(${() => {
+        const child = window.open('', 'child', 'show=no,nodeIntegration=yes')! as any;
+        const childIpc = child.require('electron').ipcRenderer;
+        child.close();
+        return new Promise(resolve => {
+          setTimeout(() => {
+            try {
+              childIpc.send('hello');
+            } catch (e) {
+              resolve(e);
+            }
+            resolve(false);
+          }, 100);
+        });
+      }})()`);
+      expect(error).to.have.property('message', 'IPC method called after context was released');
     });
   });
 });
