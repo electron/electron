@@ -46,8 +46,8 @@ run the main process. An example of your `package.json` might look like this:
 __Note__: If the `main` field is not present in `package.json`, Electron will
 attempt to load an `index.js` (as Node.js does).
 
-By default `npm start` would run the main script with node, in order to make
-it run with Electron, you can add a `scripts` field:
+By default, `npm start` would run the main script with Node.js. in order to make
+it run with Electron, you can add a `start` script:
 
 ```json
 {
