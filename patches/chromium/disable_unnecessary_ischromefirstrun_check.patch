@@ -3,7 +3,7 @@ From: Deepak Mohan <hop2deep@gmail.com>
 Date: Fri, 22 May 2020 17:40:47 -0700
 Subject: Disable unnecessary IsChromeFirstRun check
 
-https://crrev.com/c/2155167/18/chrome/browser/spellchecker/spellcheck_service.cc#586
+Patch can be removed once https://bugs.chromium.org/p/chromium/issues/detail?id=1090030 is fixed.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
 index d353a024b8f18e8a02edd7bb9c8cdc76e1af1963..8aef24d488365398161a75790ad306e4b1fecb72 100644
