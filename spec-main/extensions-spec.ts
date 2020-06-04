@@ -188,7 +188,7 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.webRequest', () => {
-     async function ajax (contents: WebContents, url: string, options = {}) {
+    async function ajax (contents: WebContents, url: string, options = {}) {
       return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
     }
 
