@@ -16,19 +16,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer(async (req, res) => {
-      if (req.url === '/serverRedirect') {
-        res.statusCode = 301;
-        res.setHeader('Location', 'http://' + req.rawHeaders[1]);
-        res.end();
-      } else if (req.url === '/jquery') {
-        const html = await fs.promises.readFile(path.join(fixtures, 'pages', 'jquery.html'));
-        res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Length': html.length });
-        res.end(html, 'utf-8');
-      } else {
-        res.end(emptyPage);
-      }
-    });
+    server = http.createServer((req, res) => res.end(emptyPage));
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();
@@ -189,14 +177,16 @@ describe('chrome extensions', () => {
 
   describe('chrome.webRequest', () => {
     async function ajax (contents: WebContents, url: string, options = {}) {
-      return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
+      return contents.executeJavaScript(`fetch("${url}", ${JSON.stringify(options)}).then((res) => {
+        if (!res.ok) throw new Error(res.status.toString());
+      })`);
     }
 
     describe('chrome.webRequest.onBeforeRequest', () => {
       it('can cancel the request', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${url}/jquery`);
+        await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
         await expect(ajax(w.webContents, url)).to.eventually.be.rejectedWith('404');
@@ -207,7 +197,7 @@ describe('chrome extensions', () => {
       it('chrome.webRequest takes precedence over Electron webRequest', async () => {
         const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-        await w.loadURL(`${url}/jquery`);
+        await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
 
         customSession.webRequest.onBeforeRequest((details, callback) => {
