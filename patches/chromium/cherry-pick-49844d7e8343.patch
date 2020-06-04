@@ -1,0 +1,74 @@
+From 49844d7e83432b82b4e9fcdff515cd178f3af1f5 Mon Sep 17 00:00:00 2001
+From: Taylor Brandstetter <deadbeef@chromium.org>
+Date: Fri, 20 Mar 2020 22:09:18 +0000
+Subject: [PATCH] Update usrsctp to bee946a606752a443bd70bca1cb296527fed706d.
+
+This incorporates over a year and a half of changes, including
+several fixes for security vulnerabilities.
+
+Had been prevented from updating it due to a deadlock issue,
+however the commits that introduced that issue have been reverted.
+
+Intentionally not updating to tip-of-tree since there are changes
+in progress; will roll again when more confident things are stable.
+
+Commit log since last roll:
+https://chromium.googlesource.com/external/github.com/sctplab/usrsctp/+log/7a8bc9a90ca9..bee946a60675
+
+Bug: chromium:1025302
+
+Change-Id: Ie21cd4db12cbae07a764f6f1373eb964c88c56c3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2094540
+Commit-Queue: Taylor <deadbeef@chromium.org>
+Reviewed-by: Mirko Bonadei <mbonadei@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#752203}
+---
+ DEPS                                | 2 +-
+ third_party/usrsctp/BUILD.gn        | 5 +++++
+ third_party/usrsctp/README.chromium | 4 ++--
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/DEPS b/DEPS
+index 0fd12f1f24e71..4752311e66d7e 100644
+--- a/DEPS
++++ b/DEPS
+@@ -1418,7 +1418,7 @@ deps = {
+   },
+ 
+   'src/third_party/usrsctp/usrsctplib':
+-    Var('chromium_git') + '/external/github.com/sctplab/usrsctp' + '@' + 'a68325e7d9ed844cc84ec134192d788586ea6cc1',
++    Var('chromium_git') + '/external/github.com/sctplab/usrsctp' + '@' + 'bee946a606752a443bd70bca1cb296527fed706d',
+ 
+   # Display server protocol for Linux.
+   'src/third_party/wayland/src': {
+diff --git a/third_party/usrsctp/BUILD.gn b/third_party/usrsctp/BUILD.gn
+index 014a076aec3a8..e8a5b1f9d4191 100644
+--- a/third_party/usrsctp/BUILD.gn
++++ b/third_party/usrsctp/BUILD.gn
+@@ -21,6 +21,11 @@ config("usrsctp_warnings") {
+       # what they did in configure.ac. We can remove this once
+       # https://github.com/sctplab/usrsctp/issues/177 is fixed.
+       "-Wno-deprecated-declarations",
++
++      # usrsctp uses timingsafe_bcmp which is not available in all
++      # versions of OS X, however this isn't actually an issue since
++      # usrsctp provides its own implementation.
++      "-Wno-unguarded-availability",
+     ]
+   }
+ }
+diff --git a/third_party/usrsctp/README.chromium b/third_party/usrsctp/README.chromium
+index 24b0bdf45f7ad..18ebfe0d998c9 100644
+--- a/third_party/usrsctp/README.chromium
++++ b/third_party/usrsctp/README.chromium
+@@ -1,8 +1,8 @@
+ Name: usrsctp
+ URL: http://github.com/sctplab/usrsctp
+ Version: 0
+-Date: Jun 22, 2018
+-Revision: 7a8bc9a90ca96634aa56ee712856d97f27d903f8
++Date: Feb 2, 2020
++Revision: bee946a606752a443bd70bca1cb296527fed706d
+ License: New BSD
+ License File: LICENSE
+ Security Critical: yes
