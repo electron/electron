@@ -83,12 +83,12 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
 
  private:
   void SendMessage(v8::Isolate* isolate,
-                   gin_helper::ErrorThrower thrower,
                    bool internal,
                    const std::string& channel,
                    v8::Local<v8::Value> arguments) {
     if (!electron_browser_ptr_) {
-      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
       return;
     }
     blink::CloneableMessage message;
@@ -99,12 +99,12 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
-                                gin_helper::ErrorThrower thrower,
                                 bool internal,
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
     if (!electron_browser_ptr_) {
-      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
       return v8::Local<v8::Promise>();
     }
     blink::CloneableMessage message;
@@ -125,14 +125,14 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   void SendTo(v8::Isolate* isolate,
-              gin_helper::ErrorThrower thrower,
               bool internal,
               bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
     if (!electron_browser_ptr_) {
-      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
       return;
     }
     blink::CloneableMessage message;
@@ -144,11 +144,11 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   void SendToHost(v8::Isolate* isolate,
-                  gin_helper::ErrorThrower thrower,
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
     if (!electron_browser_ptr_) {
-      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
       return;
     }
     blink::CloneableMessage message;
@@ -159,12 +159,12 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   blink::CloneableMessage SendSync(v8::Isolate* isolate,
-                                   gin_helper::ErrorThrower thrower,
                                    bool internal,
                                    const std::string& channel,
                                    v8::Local<v8::Value> arguments) {
     if (!electron_browser_ptr_) {
-      thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
       return blink::CloneableMessage();
     }
     blink::CloneableMessage message;
