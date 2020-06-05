@@ -201,7 +201,7 @@ describe('chrome extensions', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
         w.loadURL(url);
-        await emittedOnce(w.webContents, 'dom-ready')
+        await emittedOnce(w.webContents, 'dom-ready');
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
         await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
       });
@@ -220,38 +220,30 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
-      w.webContents.once('dom-ready', async () => {
-        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-
-        customSession.webRequest.onBeforeRequest(() => {
-          throw new Error('Electron onBeforeRequest callback has been called');
-        });
-
-        await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
-      });
-
       w.loadURL(url);
+      await emittedOnce(w.webContents, 'dom-ready');
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
+      customSession.webRequest.onBeforeRequest(() => {
+        throw new Error('Electron onBeforeRequest callback has been called');
+      });
+      await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
     });
 
     it('takes precedence over Electron webRequest - WebSocket', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
-      w.webContents.once('dom-ready', async () => {
-        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-
-        customSession.webRequest.onBeforeSendHeaders(() => {
-          throw new Error('Electron onBeforeSendHeaders callback has been called');
-        });
-
-        customSession.webRequest.onSendHeaders((details) => {
-          if (details.url.startsWith('ws://')) {
-            expect(details.requestHeaders.foo).be.equal('bar');
-          }
-        });
-      });
-
       w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+      await emittedOnce(w.webContents, 'dom-ready');
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
+      customSession.webRequest.onBeforeSendHeaders(() => {
+        throw new Error('Electron onBeforeSendHeaders callback has been called');
+      });
+      customSession.webRequest.onSendHeaders((details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.requestHeaders.foo).be.equal('bar');
+        }
+      });
     });
 
     describe('WebSocket', () => {
@@ -259,17 +251,14 @@ describe('chrome extensions', () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
-        w.webContents.once('dom-ready', async () => {
-          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-
-          customSession.webRequest.onSendHeaders((details) => {
-            if (details.url.startsWith('ws://')) {
-              expect(details.requestHeaders.foo).be.equal('bar');
-            }
-          });
-        });
-
         w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+        await emittedOnce(w.webContents, 'dom-ready');
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
+        customSession.webRequest.onSendHeaders((details) => {
+          if (details.url.startsWith('ws://')) {
+            expect(details.requestHeaders.foo).be.equal('bar');
+          }
+        });
       });
     });
   });
