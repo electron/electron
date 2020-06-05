@@ -192,7 +192,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.webRequest', () => {
     async function fetch (contents: WebContents, url: string) {
-      return contents.executeJavaScript(`fetch("${url}")`);
+      return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
     }
 
     describe('onBeforeRequest', () => {
@@ -200,24 +200,19 @@ describe('chrome extensions', () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
-        w.webContents.once('dom-ready', async () => {
-          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-
-          await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
-        });
-
         w.loadURL(url);
+        await emittedOnce(w.webContents, 'dom-ready')
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
+        await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
       });
 
-      it('does not cancel http requests', async () => {
+      it('does not cancel http requests when no extension loaded', async () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
-        w.webContents.once('dom-ready', async () => {
-          await expect(fetch(w.webContents, url)).to.have.property('status', 200);
-        });
-
         w.loadURL(url);
+        await emittedOnce(w.webContents, 'dom-ready');
+        await expect(fetch(w.webContents, url)).to.have.property('status', 200);
       });
     });
 
