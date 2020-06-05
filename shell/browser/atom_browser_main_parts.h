@@ -52,6 +52,10 @@ class ViewsDelegate;
 class ViewsDelegateMac;
 #endif
 
+#if defined(USE_X11)
+class DarkThemeObserver;
+#endif
+
 class AtomBrowserMainParts : public content::BrowserMainParts {
  public:
   explicit AtomBrowserMainParts(const content::MainFunctionParams& params);
@@ -118,6 +122,10 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
+#endif
+
+#if defined(USE_X11)
+  std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
