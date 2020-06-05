@@ -924,7 +924,7 @@ describe('session module', () => {
     it('sets the User-Agent header for web requests made from renderers', async () => {
       const userAgent = 'test-agent';
       const ses = session.fromPartition('' + Math.random());
-      ses.setUserAgent(userAgent);
+      ses.setUserAgent(userAgent, 'en-US,fr,de');
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       let headers: http.IncomingHttpHeaders | null = null;
       const server = http.createServer((req, res) => {
@@ -935,6 +935,7 @@ describe('session module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
+      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
     });
   });
 
