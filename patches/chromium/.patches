@@ -124,3 +124,4 @@ cherry-pick-86c02c5dcd37.patch
 fix_hunspell_crash.patch
 introduce_a_mutex_for_the_rendering_loop_in_baseaudiocontext.patch
 fix_default_to_ntlm_v2_in_network_service.patch
+cherry-pick-6e6b3096ffa9.patch
