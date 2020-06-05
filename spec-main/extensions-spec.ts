@@ -5,6 +5,7 @@ import * as http from 'http';
 import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as WebSocket from 'ws';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 
 const uuid = require('uuid');
@@ -17,10 +18,22 @@ describe('chrome extensions', () => {
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
   let url: string;
+  let port: string;
   before(async () => {
     server = http.createServer((req, res) => res.end(emptyPage));
+
+    const wss = new WebSocket.Server({ noServer: true });
+    wss.on('connection', function connection (ws) {
+      ws.on('message', function incoming (message) {
+        if (message === 'foo') {
+          ws.send('bar');
+        }
+      });
+    });
+
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
-      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      port = String((server.address() as AddressInfo).port);
+      url = `http://127.0.0.1:${port}`;
       resolve();
     }));
   });
@@ -178,12 +191,12 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.webRequest', () => {
-    async function fetch(contents: WebContents, url: string) {
+    async function fetch (contents: WebContents, url: string) {
       return contents.executeJavaScript(`fetch("${url}")`);
     }
 
-    describe('chrome.webRequest.onBeforeRequest', () => {
-      it('can cancel the request', async () => {
+    describe('onBeforeRequest', () => {
+      it('can cancel http requests', async () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
@@ -196,7 +209,7 @@ describe('chrome extensions', () => {
         w.loadURL(url);
       });
 
-      it('does not cancel the request', async () => {
+      it('does not cancel http requests', async () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
@@ -208,24 +221,60 @@ describe('chrome extensions', () => {
       });
     });
 
-    describe('chrome.webRequest.onBeforeRequest and Electron webRequest', () => {
-      it('chrome.webRequest takes precedence over Electron webRequest', async () => {
+    it('takes precedence over Electron webRequest - http', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+
+      w.webContents.once('dom-ready', async () => {
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
+
+        customSession.webRequest.onBeforeRequest(() => {
+          throw new Error('Electron onBeforeRequest callback has been called');
+        });
+
+        await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
+      });
+
+      w.loadURL(url);
+    });
+
+    it('takes precedence over Electron webRequest - WebSocket', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+
+      w.webContents.once('dom-ready', async () => {
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
+
+        customSession.webRequest.onBeforeSendHeaders(() => {
+          throw new Error('Electron onBeforeSendHeaders callback has been called');
+        });
+
+        customSession.webRequest.onSendHeaders((details) => {
+          if (details.url.startsWith('ws://')) {
+            expect(details.requestHeaders.foo).be.equal('bar');
+          }
+        });
+      });
+
+      w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+    });
+
+    describe('WebSocket', () => {
+      it('can be proxied', async () => {
         const customSession = session.fromPartition(`persist:${uuid.v4()}`);
         const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
         w.webContents.once('dom-ready', async () => {
-          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
+          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
 
-          customSession.webRequest.onBeforeRequest((details: any, callback: any) => {
-            callback({
-              cancel: true
-            });
+          customSession.webRequest.onSendHeaders((details) => {
+            if (details.url.startsWith('ws://')) {
+              expect(details.requestHeaders.foo).be.equal('bar');
+            }
           });
-
-          await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
         });
 
-        w.loadURL(url);
+        w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
       });
     });
   });
