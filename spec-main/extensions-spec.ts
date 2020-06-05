@@ -269,7 +269,7 @@ describe('chrome extensions', () => {
     });
   });
 
-  it('has webPreferences and session in background page', async () => {
+  it('has session in background page', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
