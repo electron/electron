@@ -4,6 +4,6 @@ chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     return { cancel: false };
   },
-  { urls: ['<all_urls>'] },
+  { urls: ['*://127.0.0.1:*'] },
   ['blocking']
 );
