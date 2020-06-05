@@ -1446,9 +1446,7 @@ void ElectronBrowserClient::CreateWebSocket(
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
 
-  DCHECK(web_request_api);
-
-  if (web_request_api->MayHaveProxies()) {
+  if (web_request_api && web_request_api->MayHaveProxies()) {
     web_request_api->ProxyWebSocket(frame, std::move(factory), url,
                                     site_for_cookies.RepresentativeUrl(),
                                     user_agent, std::move(handshake_client));
