@@ -1,0 +1,182 @@
+From 6e6b3096ffa9d054c9a3b4f59594ef840dd25545 Mon Sep 17 00:00:00 2001
+From: Martin Kreichgauer <martinkr@google.com>
+Date: Thu, 28 May 2020 20:31:12 +0000
+Subject: [PATCH] [m83] fido: improve guards against adding authenticators with
+ identical IDs
+
+Make FidoRequestHandler::AuthenticatorAdded() return early when an
+FidoAuthenticator is added whose ID matches that of a previously added
+authenticator. The request handler  previously did not add the
+duplicate authenticator into its |active_authenticators_| map, but then
+attempted to dispatch its request to it (or rather to an invalid
+reference).
+
+Also better guard against authenticators being removed during
+initialization by making the (asynchronously run)
+InitializeAuthenticatorAndDispatchRequest() method look up the
+AuthenticatorState for the authenticator to be initialized by its ID
+rather than passing around AuthenticatorState pointers that may have
+been freed by the time the method runs because the authenticator went
+away.
+
+Lastly, derive VirtualFidoDevice IDs randomly. It previously used its
+instance pointer address for "randomness" which, aside from being weird,
+could lead to re-use of IDs. (FidoAuthenticator ID reuse in itself
+_should_ not be a problem, but certainly could lead to bugs if the rest
+of the code is less than careful about it.)
+
+(cherry picked from commit bdbf8ce8f546e6bc3e2c2fe7e68ac4ae6156c5b6)
+
+Bug: 1082105
+Change-Id: Ie4e3fd39c3360bf0131cdd6dd33b2be4dbb225a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2203776
+Commit-Queue: Martin Kreichgauer <martinkr@google.com>
+Reviewed-by: Christopher Thompson <cthomp@chromium.org>
+Reviewed-by: Adam Langley <agl@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#770190}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2220073
+Reviewed-by: Martin Kreichgauer <martinkr@google.com>
+Cr-Commit-Position: refs/branch-heads/4103@{#629}
+Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+---
+ device/fido/fido_request_handler_base.cc | 33 ++++++++++++++----------
+ device/fido/fido_request_handler_base.h  |  2 +-
+ device/fido/virtual_fido_device.cc       | 12 ++++++---
+ device/fido/virtual_fido_device.h        |  3 +++
+ 4 files changed, 32 insertions(+), 18 deletions(-)
+
+diff --git a/device/fido/fido_request_handler_base.cc b/device/fido/fido_request_handler_base.cc
+index a124609efbbf3..6e0dbd33899ad 100644
+--- a/device/fido/fido_request_handler_base.cc
++++ b/device/fido/fido_request_handler_base.cc
+@@ -168,11 +168,7 @@ FidoRequestHandlerBase::~FidoRequestHandlerBase() {
+ 
+ void FidoRequestHandlerBase::StartAuthenticatorRequest(
+     const std::string& authenticator_id) {
+-  auto authenticator_it = active_authenticators_.find(authenticator_id);
+-  if (authenticator_it == active_authenticators_.end())
+-    return;
+-
+-  InitializeAuthenticatorAndDispatchRequest(authenticator_it->second.get());
++  InitializeAuthenticatorAndDispatchRequest(authenticator_id);
+ }
+ 
+ void FidoRequestHandlerBase::CancelActiveAuthenticators(
+@@ -327,13 +323,17 @@ void FidoRequestHandlerBase::DiscoveryStarted(
+ void FidoRequestHandlerBase::AuthenticatorAdded(
+     FidoDiscoveryBase* discovery,
+     FidoAuthenticator* authenticator) {
+-  DCHECK(authenticator &&
+-         !base::Contains(active_authenticators(), authenticator->GetId()));
+-  auto authenticator_state =
+-      std::make_unique<AuthenticatorState>(authenticator);
+-  auto* weak_authenticator_state = authenticator_state.get();
+-  active_authenticators_.emplace(authenticator->GetId(),
+-                                 std::move(authenticator_state));
++  DCHECK(!authenticator->GetId().empty());
++  bool was_inserted;
++  std::tie(std::ignore, was_inserted) = active_authenticators_.insert(
++      {authenticator->GetId(),
++       std::make_unique<AuthenticatorState>(authenticator)});
++  if (!was_inserted) {
++    NOTREACHED();
++    FIDO_LOG(ERROR) << "Authenticator with duplicate ID "
++                    << authenticator->GetId();
++    return;
++  }
+ 
+   // If |observer_| exists, dispatching request to |authenticator| is
+   // delegated to |observer_|. Else, dispatch request to |authenticator|
+@@ -355,7 +355,7 @@ void FidoRequestHandlerBase::AuthenticatorAdded(
+         FROM_HERE,
+         base::BindOnce(
+             &FidoRequestHandlerBase::InitializeAuthenticatorAndDispatchRequest,
+-            GetWeakPtr(), weak_authenticator_state));
++            GetWeakPtr(), authenticator->GetId()));
+   } else {
+     VLOG(2) << "Embedder controls the dispatch.";
+   }
+@@ -384,7 +384,12 @@ void FidoRequestHandlerBase::NotifyObserverTransportAvailability() {
+ }
+ 
+ void FidoRequestHandlerBase::InitializeAuthenticatorAndDispatchRequest(
+-    AuthenticatorState* authenticator_state) {
++    const std::string& authenticator_id) {
++  auto authenticator_it = active_authenticators_.find(authenticator_id);
++  if (authenticator_it == active_authenticators_.end()) {
++    return;
++  }
++  AuthenticatorState* authenticator_state = authenticator_it->second.get();
+   authenticator_state->timer = std::make_unique<base::ElapsedTimer>();
+   authenticator_state->authenticator->InitializeAuthenticator(base::BindOnce(
+       &FidoRequestHandlerBase::DispatchRequest, weak_factory_.GetWeakPtr(),
+diff --git a/device/fido/fido_request_handler_base.h b/device/fido/fido_request_handler_base.h
+index 1a18301138b1d..8990c1b308d2f 100644
+--- a/device/fido/fido_request_handler_base.h
++++ b/device/fido/fido_request_handler_base.h
+@@ -294,7 +294,7 @@ class COMPONENT_EXPORT(DEVICE_FIDO) FidoRequestHandlerBase
+   // to FidoDeviceAuthenticator instances in order to determine their protocol
+   // versions before a request can be dispatched.
+   void InitializeAuthenticatorAndDispatchRequest(
+-      AuthenticatorState* authenticator_state);
++      const std::string& authenticator_id);
+   void ConstructBleAdapterPowerManager();
+ 
+   AuthenticatorMap active_authenticators_;
+diff --git a/device/fido/virtual_fido_device.cc b/device/fido/virtual_fido_device.cc
+index 084973d43c7cc..2b23fd88b0599 100644
+--- a/device/fido/virtual_fido_device.cc
++++ b/device/fido/virtual_fido_device.cc
+@@ -8,6 +8,7 @@
+ #include <tuple>
+ #include <utility>
+ 
++#include "base/rand_util.h"
+ #include "crypto/ec_signature_creator.h"
+ #include "device/fido/fido_parsing_utils.h"
+ #include "third_party/boringssl/src/include/openssl/ec_key.h"
+@@ -135,9 +136,10 @@ bool VirtualFidoDevice::State::InjectResidentKey(
+                                     /*icon_url=*/base::nullopt));
+ }
+ 
++// VirtualFidoDevice ----------------------------------------------------------
++
+ VirtualFidoDevice::VirtualFidoDevice() = default;
+ 
+-// VirtualFidoDevice ----------------------------------------------------------
+ 
+ VirtualFidoDevice::VirtualFidoDevice(scoped_refptr<State> state)
+     : state_(std::move(state)) {}
+@@ -264,12 +266,16 @@ void VirtualFidoDevice::TryWink(base::OnceClosure cb) {
+ }
+ 
+ std::string VirtualFidoDevice::GetId() const {
+-  // Use our heap address to get a unique-ish number. (0xffe1 is a prime).
+-  return "VirtualFidoDevice-" + std::to_string((size_t)this % 0xffe1);
++  return id_;
+ }
+ 
+ FidoTransportProtocol VirtualFidoDevice::DeviceTransport() const {
+   return state_->transport;
+ }
+ 
++// static
++std::string VirtualFidoDevice::MakeVirtualFidoDeviceId() {
++  return "VirtualFidoDevice-" + base::RandBytesAsString(32);
++}
++
+ }  // namespace device
+diff --git a/device/fido/virtual_fido_device.h b/device/fido/virtual_fido_device.h
+index 13c8ab9a02d23..1ee6659f39bd9 100644
+--- a/device/fido/virtual_fido_device.h
++++ b/device/fido/virtual_fido_device.h
+@@ -260,6 +260,9 @@ class COMPONENT_EXPORT(DEVICE_FIDO) VirtualFidoDevice : public FidoDevice {
+   FidoTransportProtocol DeviceTransport() const override;
+ 
+  private:
++  static std::string MakeVirtualFidoDeviceId();
++
++  const std::string id_ = MakeVirtualFidoDeviceId();
+   scoped_refptr<State> state_ = base::MakeRefCounted<State>();
+ 
+   DISALLOW_COPY_AND_ASSIGN(VirtualFidoDevice);
