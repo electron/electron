@@ -5,7 +5,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     if (details.requestHeaders) {
       details.requestHeaders.foo = 'bar';
     }
-    return { cancel: false, requestHeaders };
+    return { cancel: false, requestHeaders: details.requestHeaders };
   },
   { urls: ['<all_urls>'] },
   ['blocking']
