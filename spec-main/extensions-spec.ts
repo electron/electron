@@ -229,16 +229,17 @@ describe('chrome extensions', () => {
       await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
     });
 
-    it('does not take precedence over Electron webRequest with different filter - http', async (done) => {
+    it('does not take precedence over Electron webRequest with different filter - http', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
       w.loadURL(url);
       await emittedOnce(w.webContents, 'dom-ready');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*.google.com'] }, async () => {
-        done();
+      customSession.webRequest.onBeforeRequest({ urls: ['*.google.com'] }, async (details, callback) => {
+        callback({ cancel: true });
       });
+      await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
     });
 
     it('takes precedence over Electron webRequest - WebSocket', async () => {
@@ -258,16 +259,17 @@ describe('chrome extensions', () => {
       });
     });
 
-    it('does not take precedence over Electron webRequest with different filter - WebSocket', async (done) => {
+    it('does not take precedence over Electron webRequest with different filter - WebSocket', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
 
       w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
       await emittedOnce(w.webContents, 'dom-ready');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-      customSession.webRequest.onBeforeSendHeaders({ urls: ['*.google.com'] }, () => {
-        done();
+      customSession.webRequest.onBeforeRequest({ urls: ['*.google.com'] }, (details, callback) => {
+        callback({ cancel: true });
       });
+      await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
     });
 
     describe('WebSocket', () => {
