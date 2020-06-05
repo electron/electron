@@ -92,7 +92,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * Electron Releases & Developer Feedback
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
-  * [App Feedback Program](tutorial/app-feedback-program.md)
 * [Packaging App Source Code with asar](tutorial/application-packaging.md)
   * [Generating asar Archives](tutorial/application-packaging.md#generating-asar-archives)
   * [Using asar Archives](tutorial/application-packaging.md#using-asar-archives)

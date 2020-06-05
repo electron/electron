@@ -32,6 +32,20 @@ describe('<webview> tag', function () {
 
   afterEach(closeAllWindows);
 
+  function hideChildWindows (e: any, wc: WebContents) {
+    wc.on('new-window', (event, url, frameName, disposition, options) => {
+      options.show = false;
+    });
+  }
+
+  before(() => {
+    app.on('web-contents-created', hideChildWindows);
+  });
+
+  after(() => {
+    app.off('web-contents-created', hideChildWindows);
+  });
+
   it('works without script tag in page', async () => {
     const w = new BrowserWindow({
       show: false,
@@ -203,16 +217,16 @@ describe('<webview> tag', function () {
     const zoomScheme = standardScheme;
     const webviewSession = session.fromPartition('webview-temp');
 
-    before((done) => {
+    before(() => {
       const protocol = webviewSession.protocol;
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
         callback('hello');
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = webviewSession.protocol;
-      protocol.unregisterProtocol(zoomScheme, (error) => done(error));
+      protocol.unregisterProtocol(zoomScheme);
     });
 
     it('inherits the zoomFactor of the parent window', async () => {

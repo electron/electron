@@ -116,7 +116,6 @@ namespace api {
 class ExtendedWebContentsObserver : public base::CheckedObserver {
  public:
   virtual void OnCloseContents() {}
-  virtual void OnRendererResponsive() {}
   virtual void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) {}
   virtual void OnSetContentBounds(const gfx::Rect& rect) {}
@@ -340,8 +339,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
@@ -366,6 +364,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
+
+  // Notifies the web page that there is user interaction.
+  void NotifyUserActivation();
 
   v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
 
@@ -444,6 +445,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
                       std::unique_ptr<content::WebContents> new_contents,
+                      const GURL& target_url,
                       WindowOpenDisposition disposition,
                       const gfx::Rect& initial_rect,
                       bool user_gesture,
@@ -467,8 +469,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const content::NativeWebKeyboardEvent& event) override;
   void ContentsZoomChange(bool zoom_in) override;
   void EnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
+      content::RenderFrameHost* requesting_frame,
       const blink::mojom::FullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
@@ -548,6 +549,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       content::RenderFrameHost* render_frame_host,
       const std::string& interface_name,
       mojo::ScopedMessagePipeHandle* interface_pipe) override;
+  void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
   // InspectableWebContentsDelegate:
@@ -604,9 +606,6 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
-
-  // Called when we receive a CursorChange message from chromium.
-  void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.

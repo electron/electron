@@ -22,6 +22,8 @@ interface ElectronRenderer {
     string context_id,
     int32 object_id);
 
+  NotifyUserActivation();
+
   TakeHeapSnapshot(handle file) => (bool success);
 };
 

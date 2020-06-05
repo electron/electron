@@ -21,10 +21,10 @@ index 8ca43e2a8a104c3edf4087df5490fd47cd18f9a4..bb0c6aebb4fdb9b24de8292a3f1c8dc7
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 0ef0f00e4320b2ab1584621df5b3b8081c65a788..bb30a0fdd797b80a345212828060a38f25d78e67 100644
+index 44e81b2f95f6332df16cfa00bdd26c7abbc733dc..9b3db694b920048735789d4db0f8670addd22b40 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -153,6 +153,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -148,6 +148,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  
@@ -43,7 +43,7 @@ index 0ef0f00e4320b2ab1584621df5b3b8081c65a788..bb30a0fdd797b80a345212828060a38f
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index ad4bbbc5de3feb8441ba613009452c920d925820..c2dfc8fc897d901d237670e7c305fd263606bee7 100644
+index 05538423d0b9ad0d83e9326a58f8856e0403fed2..06d9f1e3b57db5cf33555eb5ad837f8d66aa8b3d 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -54,7 +54,7 @@ index ad4bbbc5de3feb8441ba613009452c920d925820..c2dfc8fc897d901d237670e7c305fd26
  #include <string>
  
  #include "base/strings/string16.h"
-@@ -153,6 +154,19 @@ class CrashReporterClient {
+@@ -150,6 +151,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -75,7 +75,7 @@ index ad4bbbc5de3feb8441ba613009452c920d925820..c2dfc8fc897d901d237670e7c305fd26
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index c49d38082c41c7eb71ed2c701b06ed5b7eaa514a..7d3a52951ac525640974e03b13f8827d465adf1d 100644
+index 0b594d053d7c7f2a8eae9a15e62daacab52ffa64..96210530f699a2331f57415beddc20ed19b9cb4b 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
 @@ -67,6 +67,8 @@ std::map<std::string, std::string> GetProcessSimpleAnnotations() {

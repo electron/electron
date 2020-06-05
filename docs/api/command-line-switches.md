@@ -36,6 +36,10 @@ for integrated authentication. Without `*` prefix the URL has to match exactly.
 A comma-separated list of servers for which delegation of user credentials is required.
 Without `*` prefix the URL has to match exactly.
 
+### --disable-ntlm-v2
+
+Disables NTLM v2 for posix platforms, no effect elsewhere.
+
 ### --disable-http-cache
 
 Disables the disk cache for HTTP requests.

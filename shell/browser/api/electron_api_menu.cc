@@ -147,7 +147,7 @@ void Menu::SetIcon(int index, const gfx::Image& image) {
 }
 
 void Menu::SetSublabel(int index, const base::string16& sublabel) {
-  model_->SetSublabel(index, sublabel);
+  model_->SetSecondaryLabel(index, sublabel);
 }
 
 void Menu::SetToolTip(int index, const base::string16& toolTip) {
@@ -179,7 +179,7 @@ base::string16 Menu::GetLabelAt(int index) const {
 }
 
 base::string16 Menu::GetSublabelAt(int index) const {
-  return model_->GetSublabelAt(index);
+  return model_->GetSecondaryLabelAt(index);
 }
 
 base::string16 Menu::GetToolTipAt(int index) const {

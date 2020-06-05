@@ -18,7 +18,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 #include "ui/views/controls/menu/menu_runner.h"
-#include "ui/views/widget/widget.h"
 
 namespace {
 
@@ -49,11 +48,7 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
                        HWND window,
                        UINT message,
                        GUID guid)
-    : host_(host),
-      icon_id_(id),
-      window_(window),
-      message_id_(message),
-      weak_factory_(this) {
+    : host_(host), icon_id_(id), window_(window), message_id_(message) {
   guid_ = guid;
   is_using_guid_ = guid != GUID_DEFAULT;
   NOTIFYICONDATA icon_data;
@@ -213,26 +208,10 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (pos.IsOrigin())
     rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
-  // Create a widget for the menu, otherwise we get no keyboard events, which
-  // is required for accessibility.
-  widget_.reset(new views::Widget());
-  views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
-  params.ownership =
-      views::Widget::InitParams::Ownership::WIDGET_OWNS_NATIVE_WIDGET;
-  params.bounds = gfx::Rect(0, 0, 0, 0);
-  params.force_software_compositing = true;
-  params.z_order = ui::ZOrderLevel::kFloatingUIElement;
-
-  widget_->Init(std::move(params));
-
-  widget_->Show();
-  widget_->Activate();
-  menu_runner_.reset(new views::MenuRunner(
-      menu_model != nullptr ? menu_model : menu_model_,
-      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS,
-      base::BindRepeating(&NotifyIcon::OnContextMenuClosed,
-                          weak_factory_.GetWeakPtr())));
-  menu_runner_->RunMenuAt(widget_.get(), NULL, rect,
+  menu_runner_.reset(
+      new views::MenuRunner(menu_model != nullptr ? menu_model : menu_model_,
+                            views::MenuRunner::HAS_MNEMONICS));
+  menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
                           ui::MENU_SOURCE_MOUSE);
 }
@@ -271,10 +250,6 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
     icon_data->uFlags = NIF_GUID;
     icon_data->guidItem = guid_;
   }
-}
-
-void NotifyIcon::OnContextMenuClosed() {
-  widget_->Close();
 }
 
 }  // namespace electron

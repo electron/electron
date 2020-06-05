@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import * as path from 'path';
 
 const Module = require('module');
@@ -39,20 +38,17 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process.electronBinding('v8_util');
 
-const ipcEmitter = new EventEmitter();
-const ipcInternalEmitter = new EventEmitter();
-v8Util.setHiddenValue(global, 'ipc', ipcEmitter);
-v8Util.setHiddenValue(global, 'ipc-internal', ipcInternalEmitter);
+const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: any[], args: any[], senderId: number) {
-    const sender = internal ? ipcInternalEmitter : ipcEmitter;
+    const sender = internal ? ipcRendererInternal : ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
 });
 
 // Use electron module after everything is ready.
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
 webFrameInit();
 
@@ -84,9 +80,6 @@ const appPath = parseOption('app-path', null);
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
 const openerId = parseOption('opener-id', null, value => parseInt(value));
 
-// The arguments to be passed to isolated world.
-const isolatedWorldArgs = { ipcRendererInternal, guestInstanceId, isHiddenPage, openerId, usesNativeWindowOpen, rendererProcessReuseEnabled };
-
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
   preloadScripts.push(preloadScript);
@@ -114,11 +107,6 @@ switch (window.location.protocol) {
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
-}
-
-// Pass the arguments to isolatedWorld.
-if (contextIsolation) {
-  v8Util.setHiddenValue(global, 'isolated-world-args', isolatedWorldArgs);
 }
 
 if (nodeIntegration) {

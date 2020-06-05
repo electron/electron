@@ -1,39 +1,36 @@
-const { ipc } = process.electronBinding('ipc');
-const v8Util = process.electronBinding('v8_util');
+import { EventEmitter } from 'events';
 
-// Created by init.js.
-const ipcRenderer = v8Util.getHiddenValue<Electron.IpcRenderer>(global, 'ipc');
+const { ipc } = process.electronBinding('ipc');
+
 const internal = false;
 
-// TODO(MarshallOfSound): Remove if statement when isolated_bundle and content_script_bundle are gone
-if (!ipcRenderer.send) {
-  ipcRenderer.send = function (channel, ...args) {
-    return ipc.send(internal, channel, args);
-  };
+const ipcRenderer = new EventEmitter() as Electron.IpcRenderer;
+ipcRenderer.send = function (channel, ...args) {
+  return ipc.send(internal, channel, args);
+};
 
-  ipcRenderer.sendSync = function (channel, ...args) {
-    return ipc.sendSync(internal, channel, args)[0];
-  };
+ipcRenderer.sendSync = function (channel, ...args) {
+  return ipc.sendSync(internal, channel, args)[0];
+};
 
-  ipcRenderer.sendToHost = function (channel, ...args) {
-    return ipc.sendToHost(channel, args);
-  };
+ipcRenderer.sendToHost = function (channel, ...args) {
+  return ipc.sendToHost(channel, args);
+};
 
-  ipcRenderer.sendTo = function (webContentsId, channel, ...args) {
-    return ipc.sendTo(internal, false, webContentsId, channel, args);
-  };
+ipcRenderer.sendTo = function (webContentsId, channel, ...args) {
+  return ipc.sendTo(internal, false, webContentsId, channel, args);
+};
 
-  ipcRenderer.invoke = async function (channel, ...args) {
-    const { error, result } = await ipc.invoke(internal, channel, args);
-    if (error) {
-      throw new Error(`Error invoking remote method '${channel}': ${error}`);
-    }
-    return result;
-  };
+ipcRenderer.invoke = async function (channel, ...args) {
+  const { error, result } = await ipc.invoke(internal, channel, args);
+  if (error) {
+    throw new Error(`Error invoking remote method '${channel}': ${error}`);
+  }
+  return result;
+};
 
-  ipcRenderer.postMessage = function (channel: string, message: any, transferables: any) {
-    return ipc.postMessage(channel, message, transferables);
-  };
-}
+ipcRenderer.postMessage = function (channel: string, message: any, transferables: any) {
+  return ipc.postMessage(channel, message, transferables);
+};
 
 export default ipcRenderer;

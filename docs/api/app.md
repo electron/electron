@@ -1304,6 +1304,25 @@ app.moveToApplicationsFolder({
 
 Would mean that if an app already exists in the user directory, if the user chooses to 'Continue Move' then the function would continue with its default behavior and the existing app will be trashed and the active app moved into its place.
 
+### `app.isSecureKeyboardEntryEnabled()` _macOS_
+
+Returns `Boolean` - whether `Secure Keyboard Entry` is enabled.
+
+By default this API will return `false`.
+
+### `app.setSecureKeyboardEntryEnabled(enabled)` _macOS_
+
+* `enabled` Boolean - Enable or disable `Secure Keyboard Entry`
+
+Set the `Secure Keyboard Entry` is enabled in your application.
+
+By using this API, important information such as password and other sensitive information can be prevented from being intercepted by other processes.
+
+See [Apple's documentation](https://developer.apple.com/library/archive/technotes/tn2150/_index.html) for more
+details.
+
+**Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
@@ -1384,7 +1403,7 @@ in your app's initialization to ensure that your overridden value is used.
 
 A `Boolean` which when `true` disables the overrides that Electron has in place
 to ensure renderer processes are restarted on every navigation.  The current
-default value for this property is `false`.
+default value for this property is `true`.
 
 The intention is for these overrides to become disabled by default and then at
 some point in the future this property will be removed.  This property impacts

@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -7,7 +8,7 @@ import * as http from 'http';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
-import { emittedOnce } from './events-helpers';
+import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
@@ -38,6 +39,10 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 };
 
+const isBeforeUnload = (event: Event, level: number, message: string) => {
+  return (message === 'beforeunload');
+};
+
 describe('BrowserWindow module', () => {
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
@@ -50,6 +55,12 @@ describe('BrowserWindow module', () => {
         } as any);
         w.destroy();
       }).not.to.throw();
+    });
+
+    ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
+      const appPath = path.join(__dirname, 'spec-main', 'fixtures', 'apps', 'xwindow-icon');
+      const appProcess = childProcess.spawn(process.execPath, [appPath]);
+      await new Promise((resolve) => { appProcess.once('exit', resolve); });
     });
   });
 
@@ -95,16 +106,11 @@ describe('BrowserWindow module', () => {
       fs.unlinkSync(test);
       expect(String(content)).to.equal('unload');
     });
+
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'beforeunload-false.html'));
-      const beforeunload = new Promise(resolve => {
-        ipcMain.once('onbeforeunload', (e) => {
-          e.returnValue = null;
-          resolve();
-        });
-      });
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
-      await beforeunload;
+      await emittedOnce(w.webContents, 'before-unload-fired');
     });
 
     describe('when invoked synchronously inside navigation observer', () => {
@@ -185,13 +191,11 @@ describe('BrowserWindow module', () => {
       fs.unlinkSync(test);
       expect(content).to.equal('close');
     });
+
     it('should emit beforeunload event', async function () {
-      // TODO(nornagon): deflake this test.
-      this.retries(3);
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
-      const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-      e.returnValue = null;
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.webContents.executeJavaScript('window.close()', true);
+      await emittedOnce(w.webContents, 'before-unload-fired');
     });
   });
 
@@ -237,10 +241,10 @@ describe('BrowserWindow module', () => {
     let w = null as unknown as BrowserWindow;
     const scheme = 'other';
     const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
-    before((done) => {
+    before(() => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
         callback(srcPath);
-      }, (error) => done(error));
+      });
     });
 
     after(() => {
@@ -866,19 +870,18 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
-      it('sets the content size', (done) => {
+      it('sets the content size', async () => {
         // NB. The CI server has a very small screen. Attempting to size the window
         // larger than the screen will limit the window's size to the screen and
         // cause the test to fail.
         const size = [456, 567];
         w.setContentSize(size[0], size[1]);
-        setImmediate(() => {
-          const after = w.getContentSize();
-          expect(after).to.deep.equal(size);
-          done();
-        });
+        await new Promise(setImmediate);
+        const after = w.getContentSize();
+        expect(after).to.deep.equal(size);
       });
-      it('works for a frameless window', (done) => {
+
+      it('works for a frameless window', async () => {
         w.destroy();
         w = new BrowserWindow({
           show: false,
@@ -888,11 +891,9 @@ describe('BrowserWindow module', () => {
         });
         const size = [456, 567];
         w.setContentSize(size[0], size[1]);
-        setImmediate(() => {
-          const after = w.getContentSize();
-          expect(after).to.deep.equal(size);
-          done();
-        });
+        await new Promise(setImmediate);
+        const after = w.getContentSize();
+        expect(after).to.deep.equal(size);
       });
     });
 
@@ -2531,26 +2532,20 @@ describe('BrowserWindow module', () => {
           ['foo', path.join(fixtures, 'api', 'window-open-location-change.html')],
           ['bar', path.join(fixtures, 'api', 'window-open-location-final.html')]
         ];
-        beforeEach(async () => {
-          await Promise.all(protocols.map(([scheme, path]) => new Promise((resolve, reject) => {
+        beforeEach(() => {
+          for (const [scheme, path] of protocols) {
             protocol.registerBufferProtocol(scheme, (request, callback) => {
               callback({
                 mimeType: 'text/html',
                 data: fs.readFileSync(path)
               });
-            }, (error) => {
-              if (error != null) {
-                reject(error);
-              } else {
-                resolve();
-              }
             });
-          })));
+          }
         });
-        afterEach(async () => {
-          await Promise.all(protocols.map(([scheme]) => {
-            return new Promise(resolve => protocol.unregisterProtocol(scheme, () => resolve()));
-          }));
+        afterEach(() => {
+          for (const [scheme] of protocols) {
+            protocol.unregisterProtocol(scheme);
+          }
         });
         it('retains the original web preferences when window.location is changed to a new origin', async () => {
           const w = new BrowserWindow({
@@ -2632,32 +2627,31 @@ describe('BrowserWindow module', () => {
   });
 
   describe('beforeunload handler', function () {
-    // TODO(nornagon): I feel like these tests _oughtn't_ be flakey, but
-    // beforeunload is in general not reliable on the web, so i'm not going to
-    // worry about it too much for now.
-    this.retries(3);
-
     let w: BrowserWindow = null as unknown as BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     });
-    afterEach(() => {
-      ipcMain.removeAllListeners('onbeforeunload');
-    });
     afterEach(closeAllWindows);
-    it('returning undefined would not prevent close', (done) => {
-      w.once('closed', () => { done(); });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+
+    it('returning undefined would not prevent close', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
+
     it('returning false would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
-      const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-      e.returnValue = null;
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
+      const [, proceed] = await emittedOnce(w.webContents, 'before-unload-fired');
+      expect(proceed).to.equal(false);
     });
-    it('returning empty string would prevent close', (done) => {
-      ipcMain.once('onbeforeunload', (e) => { e.returnValue = null; done(); });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-empty-string.html'));
+
+    it('returning empty string would prevent close', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
+      w.close();
+      const [, proceed] = await emittedOnce(w.webContents, 'before-unload-fired');
+      expect(proceed).to.equal(false);
     });
 
     it('emits for each close attempt', async () => {
@@ -2666,46 +2660,20 @@ describe('BrowserWindow module', () => {
       const destroyListener = () => { expect.fail('Close was not prevented'); };
       w.webContents.once('destroyed', destroyListener);
 
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
-      {
-        const p = emittedOnce(ipcMain, 'onbeforeunload');
-        w.close();
-        const [e] = await p;
-        e.returnValue = null;
-      }
-
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
-
-      // Hi future test refactorer! I don't know what event this timeout allows
-      // to occur, but without it, this test becomes flaky at this point and
-      // sometimes the window gets closed even though a `beforeunload` handler
-      // has been installed. I looked for events being emitted by the
-      // `webContents` during this timeout period and found nothing, so it
-      // might be some sort of internal timeout being applied by the content/
-      // layer, or blink?
-      //
-      // In any case, this incantation reduces flakiness. I'm going to add a
-      // summoning circle for good measure.
-      //
-      //      🕯 🕯
-      //   🕯       🕯
-      // 🕯           🕯
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // 🕯           🕯
-      //   🕯       🕯
-      //      🕯 🕯
-
-      {
-        const p = emittedOnce(ipcMain, 'onbeforeunload');
-        w.close();
-        const [e] = await p;
-        e.returnValue = null;
-      }
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
+      w.close();
+      await emittedOnce(w.webContents, 'before-unload-fired');
+      w.close();
+      await emittedOnce(w.webContents, 'before-unload-fired');
 
       w.webContents.removeListener('destroyed', destroyListener);
-      const p = emittedOnce(w.webContents, 'destroyed');
+      const wait = emittedOnce(w, 'closed');
       w.close();
-      await p;
+      await wait;
     });
 
     it('emits for each reload attempt', async () => {
@@ -2714,19 +2682,18 @@ describe('BrowserWindow module', () => {
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
 
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
       w.reload();
-      {
-        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-        e.returnValue = null;
-      }
-
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // navigations, so we have to use other ways to know if beforeunload
+      // is fired.
+      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
       w.reload();
-      {
-        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-        e.returnValue = null;
-      }
+      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
 
       w.webContents.removeListener('did-start-navigation', navigationListener);
       w.reload();
@@ -2739,19 +2706,18 @@ describe('BrowserWindow module', () => {
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
 
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      w.webContents.executeJavaScript('installBeforeUnload(2)', true);
+      // The renderer needs to report the status of beforeunload handler
+      // back to main process, so wait for next console message, which means
+      // the SuddenTerminationStatus message have been flushed.
+      await emittedOnce(w.webContents, 'console-message');
       w.loadURL('about:blank');
-      {
-        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-        e.returnValue = null;
-      }
-
-      await w.webContents.executeJavaScript('preventNextBeforeUnload()', true);
+      // Chromium does not emit 'before-unload-fired' on WebContents for
+      // navigations, so we have to use other ways to know if beforeunload
+      // is fired.
+      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
       w.loadURL('about:blank');
-      {
-        const [e] = await emittedOnce(ipcMain, 'onbeforeunload');
-        e.returnValue = null;
-      }
+      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
 
       w.webContents.removeListener('did-start-navigation', navigationListener);
       w.loadURL('about:blank');
@@ -4175,7 +4141,7 @@ describe('BrowserWindow module', () => {
         window.postMessage({openedLocation}, '*')
       `);
       const [, data] = await p;
-      expect(data.pageContext.openedLocation).to.equal('');
+      expect(data.pageContext.openedLocation).to.equal('about:blank');
     });
   });
 

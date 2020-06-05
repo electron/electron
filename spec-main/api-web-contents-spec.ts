@@ -42,32 +42,32 @@ describe('webContents module', () => {
   });
 
   describe('will-prevent-unload event', function () {
-    // TODO(nornagon): de-flake this properly
-    this.retries(3);
-
     afterEach(closeAllWindows);
-    it('does not emit if beforeunload returns undefined', (done) => {
+    it('does not emit if beforeunload returns undefined', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('closed', () => done());
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
       });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
 
     it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
     it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
-      await emittedOnce(w, 'closed');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
   });
 
@@ -830,7 +830,7 @@ describe('webContents module', () => {
       host3: 0.2
     };
 
-    before((done) => {
+    before(() => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         const response = `<script>
@@ -841,12 +841,12 @@ describe('webContents module', () => {
                             })
                           </script>`;
         callback({ data: response, mimeType: 'text/html' });
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = session.defaultSession.protocol;
-      protocol.unregisterProtocol(scheme, (error) => done(error));
+      protocol.unregisterProtocol(scheme);
     });
 
     afterEach(closeAllWindows);
@@ -981,29 +981,25 @@ describe('webContents module', () => {
       const protocol = w2.webContents.session.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         callback('hello');
-      }, (error) => {
-        if (error) return done(error);
-        w2.webContents.on('did-finish-load', () => {
-          const zoomLevel1 = w.webContents.zoomLevel;
-          expect(zoomLevel1).to.equal(hostZoomMap.host3);
-
-          const zoomLevel2 = w2.webContents.zoomLevel;
-          expect(zoomLevel2).to.equal(0);
-          expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-          protocol.unregisterProtocol(scheme, (error) => {
-            if (error) return done(error);
-            w2.setClosable(true);
-            w2.close();
-            done();
-          });
-        });
-        w.webContents.on('did-finish-load', () => {
-          w.webContents.zoomLevel = hostZoomMap.host3;
-          w2.loadURL(`${scheme}://host3`);
-        });
-        w.loadURL(`${scheme}://host3`);
       });
+      w2.webContents.on('did-finish-load', () => {
+        const zoomLevel1 = w.webContents.zoomLevel;
+        expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+        const zoomLevel2 = w2.webContents.zoomLevel;
+        expect(zoomLevel2).to.equal(0);
+        expect(zoomLevel1).to.not.equal(zoomLevel2);
+
+        protocol.unregisterProtocol(scheme);
+        w2.setClosable(true);
+        w2.close();
+        done();
+      });
+      w.webContents.on('did-finish-load', () => {
+        w.webContents.zoomLevel = hostZoomMap.host3;
+        w2.loadURL(`${scheme}://host3`);
+      });
+      w.loadURL(`${scheme}://host3`);
     });
 
     it('can persist when it contains iframe', (done) => {

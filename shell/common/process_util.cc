@@ -12,6 +12,7 @@ namespace electron {
 void EmitWarning(node::Environment* env,
                  const std::string& warning_msg,
                  const std::string& warning_type) {
+  v8::HandleScope scope(env->isolate());
   gin::Dictionary process(env->isolate(), env->process_object());
 
   base::RepeatingCallback<void(base::StringPiece, base::StringPiece,

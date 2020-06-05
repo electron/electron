@@ -40,6 +40,7 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
+#include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -576,12 +577,14 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
       network::mojom::HttpAuthDynamicParams::New();
   auth_dynamic_params->server_allowlist = domains;
   auth_dynamic_params->enable_negotiate_port =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          electron::switches::kEnableAuthNegotiatePort);
+      command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
+  auth_dynamic_params->ntlm_v2_enabled =
+      !command_line->HasSwitch(electron::switches::kDisableNTLMv2);
   content::GetNetworkService()->ConfigureHttpAuthPrefs(
       std::move(auth_dynamic_params));
 }
@@ -589,9 +592,16 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 void Session::SetUserAgent(const std::string& user_agent,
                            gin::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
-      ->GetNetworkContext()
-      ->SetUserAgent(user_agent);
+  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
+                              browser_context_.get())
+                              ->GetNetworkContext();
+  network_context->SetUserAgent(user_agent);
+
+  std::string accept_lang;
+  if (args->GetNext(&accept_lang)) {
+    network_context->SetAcceptLanguage(
+        net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
+  }
 }
 
 std::string Session::GetUserAgent() {

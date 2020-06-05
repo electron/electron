@@ -386,6 +386,7 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
       }
       return ret;
     };
+    this._urlLoaderOptions.referrer = this._urlLoaderOptions.extraHeaders.referer || '';
     const opts = { ...this._urlLoaderOptions, extraHeaders: stringifyValues(this._urlLoaderOptions.extraHeaders) };
     this._urlLoader = createURLLoader(opts);
     this._urlLoader.on('response-started', (event, finalUrl, responseHead) => {

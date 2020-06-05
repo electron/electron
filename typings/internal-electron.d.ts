@@ -87,6 +87,8 @@ declare namespace Electron {
   namespace Main {
     const deprecate: ElectronInternal.DeprecationUtil;
   }
+
+  class View {}
 }
 
 declare namespace ElectronInternal {

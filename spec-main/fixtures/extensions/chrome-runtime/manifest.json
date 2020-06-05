@@ -5,7 +5,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["main.js"],
-      "run_at": "document_start"
+      "run_at": "document_end"
     }
   ],
   "manifest_version": 2

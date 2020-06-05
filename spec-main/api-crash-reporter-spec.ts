@@ -556,7 +556,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
-          expect(newFiles).to.have.length(1);
+          expect(newFiles.length).to.be.greaterThan(0);
           expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
 
@@ -575,7 +575,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
-          expect(newFiles).to.have.length(1, `Files that appeared: ${JSON.stringify(newFiles)}`);
+          expect(newFiles.length).to.be.greaterThan(0);
           expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
       });

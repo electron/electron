@@ -737,9 +737,9 @@ Emitted when a `<webview>` has been attached to this web contents.
 Returns:
 
 * `event` Event
-* `level` Integer
-* `message` String
-* `line` Integer
+* `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
+* `message` String - The actual console message
+* `line` Integer - The line number of the source that triggered this console message
 * `sourceId` String
 
 Emitted when the associated window logs a console message.
@@ -907,10 +907,10 @@ Returns `String` - The URL of the current web page.
 ```javascript
 const { BrowserWindow } = require('electron')
 let win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('http://github.com')
-
-let currentURL = win.webContents.getURL()
-console.log(currentURL)
+win.loadURL('http://github.com').then(() => {
+  const currentURL = win.webContents.getURL()
+  console.log(currentURL)
+})
 ```
 
 #### `contents.getTitle()`
