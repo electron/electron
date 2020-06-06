@@ -12,11 +12,7 @@ Check the build prerequisites for your platform before proceeding
 
 ## Build Tools
 
-You may want to check [Electron Build Tools](https://github.com/electron/build-tools).
-
-It provides an easy way to build Electron with different configurations and different build targets.
-
-You can still follow the guidelines to build Electron from scratch.
+[Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
 
 ## GN prerequisites
 
