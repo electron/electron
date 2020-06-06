@@ -230,7 +230,19 @@ void AtomURLLoaderFactory::StartLoading(
   std::string location;
   if (head.headers->IsRedirect(&location)) {
     network::ResourceRequest new_request = request;
-    new_request.url = GURL(location);
+    GURL new_location = GURL(location);
+
+    new_request.url = new_location;
+    new_request.site_for_cookies = new_location;
+
+    net::RedirectInfo redirect_info;
+    redirect_info.status_code = head.headers->response_code();
+    redirect_info.new_method = request.method;
+    redirect_info.new_url = new_location;
+    redirect_info.new_site_for_cookies = new_location;
+
+    client->OnReceiveRedirect(redirect_info, head);
+
     // When the redirection comes from an intercepted scheme (which has
     // |proxy_factory| passed), we askes the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
