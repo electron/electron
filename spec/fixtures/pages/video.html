@@ -1,0 +1,14 @@
+<html>
+<body>
+<video id="videoPlayer" src="/video.webm" autoplay muted></video>
+<script>
+  const { ipcRenderer } = require('electron');
+  videoPlayer.addEventListener('play', e => {
+    ipcRenderer.send('result', 'play');
+  });
+  videoPlayer.addEventListener('error', e => {
+    ipcRenderer.send('result', 'error');
+  });
+</script>
+</body>
+</html>
