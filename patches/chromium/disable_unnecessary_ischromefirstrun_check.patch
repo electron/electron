@@ -6,7 +6,7 @@ Subject: Disable unnecessary IsChromeFirstRun check
 Patch can be removed once https://bugs.chromium.org/p/chromium/issues/detail?id=1090030 is fixed.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index d353a024b8f18e8a02edd7bb9c8cdc76e1af1963..8aef24d488365398161a75790ad306e4b1fecb72 100644
+index 497b1c12a2994722b4d4c3278d93344f0d6e3c26..6da0aa9128687e18b8825d7c2c448db71506a9f9 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -18,7 +18,9 @@

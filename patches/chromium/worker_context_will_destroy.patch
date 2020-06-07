@@ -55,10 +55,10 @@ index 80490f5b8d523f18906c372804bae9ee56d368de..236894dc0dd7242c1f47caeb982c4f24
        const blink::WebString& header_name) override;
  
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 6c813f0484f8ce2ef6e58b710a0117d3785f25f8..2872ee9d3a7b0eb888d332a7f7fe93543abd10f9 100644
+index 977d2c47345264bb3c4c6662fe97adf8f9faccd0..5d1187cb10f828e4774f871ead1c23833ce63948 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -617,6 +617,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -623,6 +623,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

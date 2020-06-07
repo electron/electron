@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index ea3b1339641dcd94373bc3696d5e9e7878ae000c..baa3432addbef73bd1f8e01e53d1ed2b4b176303 100644
+index 232b335120eb948b4ca7892d327328f1ab944236..396ff4d7e7a6c8e4c9446defca12dd06e2404bec 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4743,6 +4743,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4742,6 +4742,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index ea3b1339641dcd94373bc3696d5e9e7878ae000c..baa3432addbef73bd1f8e01e53d1ed2b
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2d6eb3caa9c23378a3a4ac544d575ab0475dec71..5618355e12eaad95ffb59b26b621660769503d7b 100644
+index 8a77eaf596e2a25fc758d0553648c1acf6aa8297..5b45b401896ab79e7bacf0200645dac04fa2c266 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2979,9 +2979,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2977,9 +2977,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -87,7 +87,7 @@ index a93b7c529fe2257e2764972ad8f571297465f387..f64cc028f59faa5a8e308095c48a6f02
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 6017278cc0fa8d029477e7ef46a9c0cacae438be..18161c8f836134e470333381a16425e3347ea867 100644
+index 50936cd961bf4d0e026ee3d150a34892e94601dd..f62a39dc9904f4edd7cc4e407c3d1ec58c0853c8 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,7 +109,7 @@ index 6017278cc0fa8d029477e7ef46a9c0cacae438be..18161c8f836134e470333381a16425e3
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 3844c78d8e56c43e08786af3128a1bcda3fc5839..089291f17512d24697ace85c93d1b3d4e024edf2 100644
+index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3ad852e5d 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -120,7 +120,7 @@ index 3844c78d8e56c43e08786af3128a1bcda3fc5839..089291f17512d24697ace85c93d1b3d4
  #include "content/public/browser/bluetooth_chooser.h"
  #include "content/public/browser/bluetooth_scanning_prompt.h"
  #include "content/public/browser/eye_dropper.h"
-@@ -331,6 +332,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -337,6 +338,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const std::string& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -135,7 +135,7 @@ index 3844c78d8e56c43e08786af3128a1bcda3fc5839..089291f17512d24697ace85c93d1b3d4
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 0d7c504ce1fb7cbd72e7b176f6d88d1734034cc0..80278388015825fee05771aff7af3376d327058a 100644
+index 52896aa3b0f272b4e299f1afe3ffa69ecdb8397a..8ad4a07fd94181f93d5474d22436162c1b19a058 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -68,6 +68,7 @@
@@ -146,7 +146,7 @@ index 0d7c504ce1fb7cbd72e7b176f6d88d1734034cc0..80278388015825fee05771aff7af3376
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1245,6 +1246,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1244,6 +1245,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
