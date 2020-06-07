@@ -53,6 +53,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
       electron::switches::kAuthNegotiateDelegateWhitelist);
   auth_dynamic_params->enable_negotiate_port =
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
+  auth_dynamic_params->ntlm_v2_enabled =
+      !command_line->HasSwitch(electron::switches::kDisableNTLMv2);
 
   return auth_dynamic_params;
 }
