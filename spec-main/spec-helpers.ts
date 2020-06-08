@@ -19,7 +19,7 @@ export async function runCleanupFunctions () {
 }
 
 export function defer (f: CleanupFunction) {
-  cleanupFunctions.push(f);
+  cleanupFunctions.unshift(f);
 }
 
 class RemoteControlApp {
