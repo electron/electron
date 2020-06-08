@@ -288,7 +288,7 @@ index 94b65e85561e1440b60086b668865bda07303d35..7044463d163fd74e55ff1a042c36739f
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index fb5d48349eee9469153d27084cf9ac9b08953b7a..335a3db8a45138ed43d6f085149626dd28f4a37c 100644
+index fb5d48349eee9469153d27084cf9ac9b08953b7a..cfd7c5162bba2771b6b5323ee179f640a9d92617 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -365,6 +365,15 @@ index fb5d48349eee9469153d27084cf9ac9b08953b7a..335a3db8a45138ed43d6f085149626dd
      params.Reset();
    } else {
      RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
+@@ -302,7 +311,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+ void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
+                                              bool* cancel) {
+-  *cancel = PrintPreviewUI::ShouldCancelRequest(ids);
++  *cancel = false;
+ }
+ #endif
+ 
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
 index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6305088d5 100644
 --- a/chrome/browser/printing/printing_message_filter.h
