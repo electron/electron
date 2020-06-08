@@ -535,6 +535,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       const content::LoadCommittedDetails& load_details) override;
   void TitleWasSet(content::NavigationEntry* entry) override;
   void DidUpdateFaviconURL(
+      content::RenderFrameHost* render_frame_host,
       const std::vector<blink::mojom::FaviconURLPtr>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
