@@ -64,6 +64,7 @@ auto_filenames = {
     "docs/api/touch-bar.md",
     "docs/api/tray.md",
     "docs/api/web-contents.md",
+    "docs/api/web-contents.md.orig",
     "docs/api/web-frame.md",
     "docs/api/web-request.md",
     "docs/api/webview-tag.md",
