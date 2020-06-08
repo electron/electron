@@ -2,8 +2,9 @@ import { expect } from 'chai';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow } from 'electron/main';
+import { BrowserView, BrowserWindow, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
+import { defer } from './spec-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -12,6 +13,7 @@ describe('BrowserView module', () => {
   let view: BrowserView;
 
   beforeEach(() => {
+    expect(webContents.getAllWebContents()).to.have.length(0);
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -24,10 +26,15 @@ describe('BrowserView module', () => {
 
   afterEach(async () => {
     await closeWindow(w);
+    w = null as any;
 
     if (view) {
+      (view.webContents as any).destroy();
       view = null as any;
     }
+    await new Promise(resolve => setTimeout(resolve));
+
+    expect(webContents.getAllWebContents()).to.have.length(0);
   });
 
   describe('BrowserView.setBackgroundColor()', () => {
@@ -116,9 +123,19 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.addBrowserView()', () => {
     it('does not throw for valid args', () => {
+      defer(() => {
+        for (const bv of w.getBrowserViews()) {
+          w.removeBrowserView(bv);
+        }
+      });
       const view1 = new BrowserView();
+      defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
       const view2 = new BrowserView();
+      defer(() => {
+        (view2.webContents as any).destroy();
+        console.log('view2 destroyed');
+      });
       w.addBrowserView(view2);
     });
     it('does not throw if called multiple times with same view', () => {
@@ -140,9 +157,16 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.getBrowserViews()', () => {
     it('returns same views as was added', () => {
+      defer(() => {
+        for (const bv of w.getBrowserViews()) {
+          w.removeBrowserView(bv);
+        }
+      });
       const view1 = new BrowserView();
+      defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
       const view2 = new BrowserView();
+      defer(() => (view2.webContents as any).destroy());
       w.addBrowserView(view2);
 
       const views = w.getBrowserViews();
