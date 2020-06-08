@@ -3,13 +3,12 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp } from './spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
-import * as v8 from 'v8';
 import * as uuid from 'uuid';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -47,49 +46,6 @@ function checkCrash (expectedProcessType: string, fields: CrashInfo) {
     expect(fields.upload_file_minidump.length).to.be.greaterThan(0);
   }
 }
-
-const startRemoteControlApp = async () => {
-  const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath]);
-  appProcess.stderr.on('data', d => {
-    process.stderr.write(d);
-  });
-  const port = await new Promise<number>(resolve => {
-    appProcess.stdout.on('data', d => {
-      const m = /Listening: (\d+)/.exec(d.toString());
-      if (m && m[1] != null) {
-        resolve(Number(m[1]));
-      }
-    });
-  });
-  function remoteEval (js: string): any {
-    return new Promise((resolve, reject) => {
-      const req = http.request({
-        host: '127.0.0.1',
-        port,
-        method: 'POST'
-      }, res => {
-        const chunks = [] as Buffer[];
-        res.on('data', chunk => { chunks.push(chunk); });
-        res.on('end', () => {
-          const ret = v8.deserialize(Buffer.concat(chunks));
-          if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
-            reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
-          } else {
-            resolve(ret.result);
-          }
-        });
-      });
-      req.write(js);
-      req.end();
-    });
-  }
-  function remotely (script: Function, ...args: any[]): Promise<any> {
-    return remoteEval(`(${script})(...${JSON.stringify(args)})`);
-  }
-  defer(() => { appProcess.kill('SIGINT'); });
-  return { remoteEval, remotely };
-};
 
 const startServer = async () => {
   const crashes: CrashInfo[] = [];
