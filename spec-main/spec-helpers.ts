@@ -31,7 +31,7 @@ class RemoteControlApp {
     this.port = port;
   }
 
-  remoteEval (js: string): Promise<any> {
+  remoteEval = (js: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       const req = http.request({
         host: '127.0.0.1',
@@ -53,7 +53,8 @@ class RemoteControlApp {
       req.end();
     });
   }
-  remotely (script: Function, ...args: any[]): Promise<any> {
+
+  remotely = (script: Function, ...args: any[]): Promise<any> => {
     return this.remoteEval(`(${script})(...${JSON.stringify(args)})`);
   }
 }
