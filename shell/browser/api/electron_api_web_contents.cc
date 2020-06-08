@@ -2167,7 +2167,7 @@ uint32_t WebContents::FindInPage(gin_helper::Arguments* args) {
   if (args->GetNext(&dict)) {
     dict.Get("forward", &options->forward);
     dict.Get("matchCase", &options->match_case);
-    dict.Get("findNext", &options->find_next);
+    dict.Get("findNext", &options->new_session);
   }
 
   web_contents()->Find(request_id, search_text, std::move(options));
