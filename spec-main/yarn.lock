@@ -2,6 +2,26 @@
 # yarn lockfile v1
 
 
+"@types/chai-as-promised@*":
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.2.tgz#2f564420e81eaf8650169e5a3a6b93e096e5068b"
+  integrity sha512-PO2gcfR3Oxa+u0QvECLe1xKXOqYTzCmWf0FhLhjREoW3fPAVamjihL7v1MOVLJLsnAMdLcjkfrs01yvDMwVK4Q==
+  dependencies:
+    "@types/chai" "*"
+
+"@types/chai@*":
+  version "4.2.11"
+  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.11.tgz#d3614d6c5f500142358e6ed24e1bf16657536c50"
+  integrity sha512-t7uW6eFafjO+qJ3BIV2gGUyZs27egcNRkUdalkud+Qa3+kg//f129iuOFivHDXQ+vnU3fDXuwgv0cqMCbcE8sw==
+
+"@types/dirty-chai@^2.0.0":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@types/dirty-chai/-/dirty-chai-2.0.2.tgz#eeac4802329a41ed7815ac0c1a6360335bf77d0c"
+  integrity sha512-BruwIN/UQEU0ePghxEX+OyjngpOfOUKJQh3cmfeq2h2Su/g001iljVi3+Y2y2EFp3IPgjf4sMrRU33Hxv1FUqw==
+  dependencies:
+    "@types/chai" "*"
+    "@types/chai-as-promised" "*"
+
 "@types/node@*":
   version "13.7.0"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.7.0.tgz#b417deda18cf8400f278733499ad5547ed1abec4"

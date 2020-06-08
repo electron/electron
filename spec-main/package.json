@@ -4,6 +4,7 @@
   "main": "index.js",
   "version": "0.1.0",
   "devDependencies": {
+    "@types/dirty-chai": "^2.0.0",
     "@types/ws": "^7.2.0",
     "ws": "^7.2.1"
   }
