@@ -13,8 +13,6 @@ export async function runCleanupFunctions () {
   cleanupFunctions.length = 0;
 }
 
-afterEach(runCleanupFunctions);
-
 export function defer (f: CleanupFunction) {
   cleanupFunctions.push(f);
 }

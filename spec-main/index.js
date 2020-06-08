@@ -109,4 +109,8 @@ app.whenReady().then(async () => {
   chai.use(require('dirty-chai'));
 
   const runner = mocha.run(cb);
+  const { runCleanupFunctions } = require('./spec-helpers');
+  runner.on('test end', () => {
+    runCleanupFunctions();
+  });
 });
