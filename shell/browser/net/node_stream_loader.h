@@ -85,6 +85,11 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // flag.
   bool readable_ = false;
 
+  // It's possible for reads to be queued using nextTick() during read()
+  // which will cause 'readable' to emit during ReadMore, so we track if
+  // that occurred in a flag.
+  bool has_read_waiting_ = false;
+
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;
 
