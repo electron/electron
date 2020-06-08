@@ -122,20 +122,14 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.addBrowserView()', () => {
     it('does not throw for valid args', () => {
-      defer(() => {
-        for (const bv of w.getBrowserViews()) {
-          w.removeBrowserView(bv);
-        }
-      });
       const view1 = new BrowserView();
       defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
+      defer(() => w.removeBrowserView(view1));
       const view2 = new BrowserView();
-      defer(() => {
-        (view2.webContents as any).destroy();
-        console.log('view2 destroyed');
-      });
+      defer(() => (view2.webContents as any).destroy());
       w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
     });
     it('does not throw if called multiple times with same view', () => {
       view = new BrowserView();
@@ -156,17 +150,14 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.getBrowserViews()', () => {
     it('returns same views as was added', () => {
-      defer(() => {
-        for (const bv of w.getBrowserViews()) {
-          w.removeBrowserView(bv);
-        }
-      });
       const view1 = new BrowserView();
       defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
+      defer(() => w.removeBrowserView(view1));
       const view2 = new BrowserView();
       defer(() => (view2.webContents as any).destroy());
       w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
 
       const views = w.getBrowserViews();
       expect(views).to.have.lengthOf(2);
