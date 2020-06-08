@@ -9,7 +9,7 @@ import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, defer } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
 const features = process.electronBinding('features');
@@ -1533,11 +1533,18 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       const bv = new BrowserView();
       w.setBrowserView(bv);
+      defer(() => {
+        w.removeBrowserView(bv);
+        (bv.webContents as any).destroy();
+      });
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id);
     });
 
     it('returns undefined if not attached', () => {
       const bv = new BrowserView();
+      defer(() => {
+        (bv.webContents as any).destroy();
+      });
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv');
     });
   });
