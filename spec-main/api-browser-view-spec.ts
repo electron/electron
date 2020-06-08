@@ -1,10 +1,9 @@
 import { expect } from 'chai';
-import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
 import { BrowserView, BrowserWindow, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
-import { defer } from './spec-helpers';
+import { defer, startRemoteControlApp } from './spec-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -189,12 +188,31 @@ describe('BrowserView module', () => {
     });
   });
 
-  describe('new BrowserView()', () => {
+  describe('shutdown behavior', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-browserview.js');
-      const electronPath = process.execPath;
-      const appProcess = ChildProcess.spawn(electronPath, [appPath]);
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const rc = await startRemoteControlApp();
+      await rc.remotely(() => {
+        const { BrowserView, app } = require('electron');
+        new BrowserView({})  // eslint-disable-line
+        app.quit();
+      });
+      const [code] = await emittedOnce(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('does not crash on exit if added to a browser window', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(() => {
+        const { BrowserView, BrowserWindow } = require('electron');
+        const bv = new BrowserView();
+        bv.webContents.loadURL('about:blank');
+        const bw = new BrowserWindow({ show: false });
+        bw.addBrowserView(bv);
+      });
+      rc.remotely(() => {
+        require('electron').app.quit();
+      });
+      const [code] = await emittedOnce(rc.process, 'exit');
       expect(code).to.equal(0);
     });
   });
