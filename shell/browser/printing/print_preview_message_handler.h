@@ -56,8 +56,6 @@ class PrintPreviewMessageHandler
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
-  void CheckForCancel(int32_t request_id,
-                      CheckForCancelCallback callback) override;
 
   // printing::mojo::PrintPreviewUI:
   void SetOptionsFromDocument(
