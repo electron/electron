@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, defer } from './spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
@@ -14,15 +14,6 @@ import * as uuid from 'uuid';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
-
-const afterTest: ((() => void) | (() => Promise<void>))[] = [];
-async function cleanup () {
-  for (const cleanup of afterTest) {
-    const r = cleanup();
-    if (r instanceof Promise) { await r; }
-  }
-  afterTest.length = 0;
-}
 
 type CrashInfo = {
   prod: string
@@ -96,7 +87,7 @@ const startRemoteControlApp = async () => {
   function remotely (script: Function, ...args: any[]): Promise<any> {
     return remoteEval(`(${script})(...${JSON.stringify(args)})`);
   }
-  afterTest.push(() => { appProcess.kill('SIGINT'); });
+  defer(() => { appProcess.kill('SIGINT'); });
   return { remoteEval, remotely };
 };
 
@@ -145,7 +136,7 @@ const startServer = async () => {
 
   const port = (server.address() as AddressInfo).port;
 
-  afterTest.push(() => { server.close(); });
+  defer(() => { server.close(); });
 
   return { getCrashes, port, waitForCrash };
 };
@@ -188,8 +179,6 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
 
 // TODO(nornagon): Fix tests on linux/arm.
 ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
-  afterEach(cleanup);
-
   describe('should send minidump', () => {
     it('when renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();
