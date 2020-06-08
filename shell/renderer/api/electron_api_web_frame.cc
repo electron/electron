@@ -30,12 +30,12 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
-#include "third_party/blink/public/web/web_ime_text_span.h"
 #include "third_party/blink/public/web/web_input_method_controller.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
 namespace gin {
@@ -420,8 +420,7 @@ void InsertText(gin_helper::ErrorThrower thrower,
         ->FrameWidget()
         ->GetActiveWebInputMethodController()
         ->CommitText(blink::WebString::FromUTF8(text),
-                     blink::WebVector<blink::WebImeTextSpan>(),
-                     blink::WebRange(), 0);
+                     blink::WebVector<ui::ImeTextSpan>(), blink::WebRange(), 0);
   }
 }
 
