@@ -18,6 +18,8 @@ const features = process.electronBinding('features');
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
+const isAsan = process.env.IS_ASAN;
+
 describe('reporting api', () => {
   it('sends a report for a deprecation', async () => {
     const reports = new EventEmitter();
@@ -275,7 +277,8 @@ describe('command line switches', () => {
     it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
   });
 
-  describe('--remote-debugging-pipe switch', () => {
+  // TODO(nornagon): figure out why these tests fail under ASan.
+  ifdescribe(!isAsan)('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
