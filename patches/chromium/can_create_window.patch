@@ -21,10 +21,10 @@ index 232b335120eb948b4ca7892d327328f1ab944236..396ff4d7e7a6c8e4c9446defca12dd06
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8a77eaf596e2a25fc758d0553648c1acf6aa8297..5b45b401896ab79e7bacf0200645dac04fa2c266 100644
+index e5575bae0c2ce24db531e0ed274093186703b759..73b24ce8d3d7dcddf4bd407fcafd3b83f89703ee 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2977,9 +2977,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2978,9 +2978,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index b6bb27b0768a0708c27e491b6f733ecda0c6c2b2..42fe964d83e598be560325796b574e236e890598 100644
+index f413390068eaff4fb79714a2cd46a10c290aac64..52b732b64e370e2336d8562c9937a70502880a85 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1861,6 +1861,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1890,6 +1890,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);

@@ -74,7 +74,7 @@ index 85378bb565de617b1bd611d28c8714361747a357..36de4c0b0353be2418dacd388e92d7c3
    }
    return VKEY_UNKNOWN;
  }
-@@ -192,7 +198,10 @@ CGEventRef MediaKeysListenerImpl::EventTapCallback(CGEventTapProxy proxy,
+@@ -192,7 +198,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

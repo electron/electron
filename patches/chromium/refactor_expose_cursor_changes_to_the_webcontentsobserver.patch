@@ -43,10 +43,10 @@ index e3d3f46f1d0c063be42a68a6e1e1c83a3ec7c61d..e3af7b78e43a3c4f8c7b9d27055bf251
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index de318bb21f19ef4d20d9d7b74a856e58bfa89533..fffec20a82d0628f62c0571ecd59a57b73aa0757 100644
+index d211f1c64c790e9fa71644711d0e133603e026e8..faea91fea2d7ae93721ee0422ffc822ae06a8a0d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3483,6 +3483,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3484,6 +3484,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -59,10 +59,10 @@ index de318bb21f19ef4d20d9d7b74a856e58bfa89533..fffec20a82d0628f62c0571ecd59a57b
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 64224bafe3ac43fa3dc0e8b1e2a65e48ea20ffff..75ebc7724e09f2eda0c85fc16a51bdf990a51e9e 100644
+index 230fe78dc06d8bc2aaa9222f7763000fb800694d..0818b3753fba18cafdddecedfdd7da9e6032e401 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -918,6 +918,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -919,6 +919,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;
@@ -71,7 +71,7 @@ index 64224bafe3ac43fa3dc0e8b1e2a65e48ea20ffff..75ebc7724e09f2eda0c85fc16a51bdf9
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 647ac7705c3dc1264374c65cd630dda66bff4af0..d2c1d69623cbf1139b03b1617620f5b3e36ade92 100644
+index 0cab1ba9e1efa9695fb0a12d71b6e960356460a6..fa831aaf51ba4bc20e68d0541eb657444ef37ab5 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@

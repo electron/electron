@@ -265,7 +265,7 @@ index f5b9808e16a042e0e078fa778ad17ac332416f7f..b082f7f15fc0f391a91a319cef7f8b2e
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
+index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -284,7 +284,7 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
  
  namespace blink {
  
-@@ -88,6 +90,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -90,6 +92,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -293,10 +293,10 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
- 
-   // TODO(ccameron): This needs to take into account whether or not this texture
-@@ -101,6 +108,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+   // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
+   // will need to take into account whether or not this texture will be sampled
+   // in linear or nonlinear space.
+@@ -97,6 +104,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -305,9 +305,9 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
+   return CanvasColorSpaceToGfxColorSpace(color_space_);
+ }
  
-   gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
@@ -352,7 +352,7 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
+index 16eeda0d910c555aae074fe1ed8ba04c4be76d9e..095b704442f55e978c7f60e9c97c2abe20b131a7 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -10,6 +10,7 @@ namespace switches {
@@ -364,7 +364,7 @@ index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce8865e888766 100644
+index fa86fc52621f4cf12bad58f8c1dd7ca6b29a307c..6b98b75c05643036ecd0fb71a8682ee1088ac52e 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -11,6 +11,8 @@
@@ -374,5 +374,5 @@ index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce886
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
 +
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
+ GFX_SWITCHES_EXPORT extern const char kDisableYuv420Biplanar[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
- GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];
