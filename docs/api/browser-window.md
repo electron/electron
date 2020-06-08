@@ -390,6 +390,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Default is `false`.
     * `enableWebSQL` Boolean (optional) - Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/).
       Default is `true`.
+    * `v8CacheOptions` String (optional) - Enforces the v8 code caching policy
+      used by blink. Accepted values are
+      * `none` - Disables code caching
+      * `code` - Heuristic based code caching
+      * `bypassHeatCheck` - Bypass code caching heuristics but with lazy compilation
+      * `bypassHeatCheckAndEagerCompile` - Same as above except compilation is eager.
+      Default policy is `code`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
