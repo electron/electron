@@ -7,7 +7,7 @@ Subject:
 Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 6fc6ba115fb68072c1946d99710ea0a2c6233ecf..c4d31ee43ebac512f2de98e6a0d88d59bacd992d 100644
+index 9e523d39181865aea8d35d998bc38a3a086943f6..57dd01b917242e0e83ade09a7356b351c666ab6d 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -26,8 +26,10 @@ extern "C" {

@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index b2ba22d8da656db0408194efad2a9999436ce9bc..e757de8ba0c6357275883f4c2bae51d61b98718a 100644
+index 7a76ba1a5bcd8a75ea1aae4e768d63a38b509a24..6e961934a8f62c3b36b018768bf1f365b7b44931 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -111,6 +111,8 @@ viz_component("service") {
@@ -107,7 +107,7 @@ index b2ba22d8da656db0408194efad2a9999436ce9bc..e757de8ba0c6357275883f4c2bae51d6
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index b4d4b1c1c5978ca9369f7348e51dde4d935c72b3..e70d95818adf62f2e966e715a5043f91b255b799 100644
+index b58099c6c1ad5727a806b81d674f4dac187da927..6d38e89500b6f3dd2b76fe3c7e67c568862aa4af 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -21,6 +21,7 @@
@@ -126,7 +126,7 @@ index b4d4b1c1c5978ca9369f7348e51dde4d935c72b3..e70d95818adf62f2e966e715a5043f91
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -224,6 +226,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -218,6 +220,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index e47736aae80be8433fdb5afd4678efde1a60e6d4..de0560a32863d2bd5089aadcfd74202a6fe2b560 100644
+index 1eb63f4292b2c9a88e029300ada128bdcef867db..4b042e75d429cab4cc6f5f6e4c1d9a670f0d6426 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -74,6 +74,7 @@ class DisplayPrivate;
@@ -564,7 +564,7 @@ index e47736aae80be8433fdb5afd4678efde1a60e6d4..de0560a32863d2bd5089aadcfd74202a
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -419,6 +432,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -423,6 +436,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

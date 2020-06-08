@@ -288,7 +288,7 @@ index 94b65e85561e1440b60086b668865bda07303d35..7044463d163fd74e55ff1a042c36739f
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60952ca04f 100644
+index fb5d48349eee9469153d27084cf9ac9b08953b7a..335a3db8a45138ed43d6f085149626dd28f4a37c 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -21,6 +21,7 @@
@@ -325,7 +325,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -133,11 +137,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -136,11 +140,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -339,7 +339,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -223,12 +229,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -226,12 +232,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
@@ -354,7 +354,7 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60
    if (!job_settings.is_dict() ||
        !job_settings.FindIntKey(kSettingPrinterType)) {
      // Reply with null query.
-@@ -261,7 +268,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -264,7 +271,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
@@ -366,10 +366,10 @@ index f4094c54075b9d4cdcbf1aa78c7264882889c76e..1643c637cf0b05427b9dd72e60045a60
    } else {
      RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index 49296adb525eeb511d4aad5f25ff1196f9f1333e..2d705bb98f47e79f0922af9675c42800aadc0206 100644
+index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6305088d5 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
-@@ -23,6 +23,10 @@ struct PrintHostMsg_ScriptedPrint_Params;
+@@ -24,6 +24,10 @@ struct PrintHostMsg_ScriptedPrint_Params;
  struct PrintMsg_Print_Params;
  class Profile;
  
@@ -380,7 +380,7 @@ index 49296adb525eeb511d4aad5f25ff1196f9f1333e..2d705bb98f47e79f0922af9675c42800
  namespace printing {
  
  class PrintQueriesQueue;
-@@ -43,7 +47,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
+@@ -44,7 +48,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
  
    static void SetDelegateForTesting(TestDelegate* delegate);
  
@@ -391,10 +391,10 @@ index 49296adb525eeb511d4aad5f25ff1196f9f1333e..2d705bb98f47e79f0922af9675c42800
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 5398362ff64fe948b492aa6dd362f2aa6ab19231..3ff75b7850e8ebb03cc202a2cc3f70fba0b1174f 100644
+index a2a16fe66774120d8ad993f54ac2d51cb4e8b739..ba8834f37c97a75e90e725dc793fbb404776acac 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -104,7 +104,7 @@ interface PrintPreviewUI {
+@@ -99,7 +99,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -404,7 +404,7 @@ index 5398362ff64fe948b492aa6dd362f2aa6ab19231..3ff75b7850e8ebb03cc202a2cc3f70fb
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a5aa97ab6254c27d04beaf758fbf9916189e3284..e566b1d22a5bb0aa40f15db83f1dc89e9099f62c 100644
+index c09b649b406e8155bdfcc619e88e8a4b94ba961a..cc4a256da724d99cbe527b217b32141511020022 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -44,6 +44,7 @@
@@ -506,7 +506,7 @@ index a5aa97ab6254c27d04beaf758fbf9916189e3284..e566b1d22a5bb0aa40f15db83f1dc89e
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2060,10 +2071,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2059,10 +2070,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -533,7 +533,7 @@ index a5aa97ab6254c27d04beaf758fbf9916189e3284..e566b1d22a5bb0aa40f15db83f1dc89e
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -2083,12 +2107,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2082,12 +2106,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
