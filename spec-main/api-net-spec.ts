@@ -4,6 +4,7 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
+import { defer } from './spec-helpers';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
@@ -20,13 +21,6 @@ function randomBuffer (size: number, start: number = 0, end: number = 255) {
 function randomString (length: number) {
   const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0));
   return buffer.toString();
-}
-
-const cleanupTasks: (() => void)[] = [];
-
-function cleanUp () {
-  cleanupTasks.forEach(t => t());
-  cleanupTasks.length = 0;
 }
 
 async function getResponse (urlRequest: Electron.ClientRequest) {
@@ -70,7 +64,7 @@ function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
     });
     const sockets: Socket[] = [];
     server.on('connection', s => sockets.push(s));
-    cleanupTasks.push(() => {
+    defer(() => {
       server.close();
       sockets.forEach(s => s.destroy());
     });
@@ -118,7 +112,6 @@ describe('net module', () => {
   beforeEach(() => {
     routeFailure = false;
   });
-  afterEach(cleanUp);
   afterEach(async function () {
     await session.defaultSession.clearCache();
     if (routeFailure && this.test) {
