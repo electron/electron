@@ -20,6 +20,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
+#include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -107,6 +108,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kCORSSchemes);
   for (const std::string& scheme : cors_schemes_list)
     url::AddCorsEnabledScheme(scheme.c_str());
+  // Parse --streaming-schemes=scheme1,scheme2
+  std::vector<std::string> streaming_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
+  for (const std::string& scheme : streaming_schemes_list)
+    media::AddStreamingScheme(scheme.c_str());
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the

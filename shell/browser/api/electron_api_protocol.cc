@@ -28,6 +28,9 @@ namespace {
 // List of registered custom standard schemes.
 std::vector<std::string> g_standard_schemes;
 
+// List of registered custom streaming schemes.
+std::vector<std::string> g_streaming_schemes;
+
 struct SchemeOptions {
   bool standard = false;
   bool secure = false;
@@ -35,6 +38,7 @@ struct SchemeOptions {
   bool allowServiceWorkers = false;
   bool supportFetchAPI = false;
   bool corsEnabled = false;
+  bool stream = false;
 };
 
 struct CustomScheme {
@@ -66,6 +70,7 @@ struct Converter<CustomScheme> {
       opt.Get("allowServiceWorkers", &(out->options.allowServiceWorkers));
       opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("corsEnabled", &(out->options.corsEnabled));
+      opt.Get("stream", &(out->options.stream));
     }
     return true;
   }
@@ -119,6 +124,9 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     if (custom_scheme.options.allowServiceWorkers) {
       service_worker_schemes.push_back(custom_scheme.scheme);
     }
+    if (custom_scheme.options.stream) {
+      g_streaming_schemes.push_back(custom_scheme.scheme);
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const char* switch_name,
@@ -138,6 +146,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          service_worker_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          g_standard_schemes);
+  AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
+                         g_streaming_schemes);
 }
 
 namespace {

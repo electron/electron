@@ -63,8 +63,8 @@ The `protocol` module has the following methods:
 module gets emitted and can be called only once.
 
 Registers the `scheme` as standard, secure, bypasses content security policy for
-resources, allows registering ServiceWorker and supports fetch API. Specify a
-privilege with the value of `true` to enable the capability.
+resources, allows registering ServiceWorker, supports fetch API, and streaming
+video/audio. Specify a privilege with the value of `true` to enable the capability.
 
 An example of registering a privileged scheme, that bypasses Content Security
 Policy:
@@ -102,6 +102,11 @@ By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB,
 cookies) are disabled for non standard schemes. So in general if you want to
 register a custom protocol to replace the `http` protocol, you have to register
 it as a standard scheme.
+
+Protocols that use streams (http and stream protocols) should set `stream: true`.
+The `<video>` and `<audio>` HTML elements expect protocols to buffer their
+responses by default. The `stream` flag configures those elements to correctly
+expect streaming responses.
 
 ### `protocol.registerFileProtocol(scheme, handler)`
 
