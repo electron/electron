@@ -22,7 +22,7 @@ describe('contextBridge', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   });
 
   after(async () => {
@@ -78,7 +78,8 @@ describe('contextBridge', () => {
             contextIsolation: true,
             nodeIntegration: true,
             sandbox: useSandbox,
-            preload: path.resolve(tmpDir, 'preload.js')
+            preload: path.resolve(tmpDir, 'preload.js'),
+            additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
           }
         });
         await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
@@ -88,13 +89,18 @@ describe('contextBridge', () => {
         w.webContents.executeJavaScript(`(${fn.toString()})(window)`);
 
       const getGCInfo = async (): Promise<{
-        functionCount: number
-        objectCount: number
-        liveFromValues: number
-        liveProxyValues: number
+        trackedValues: number;
       }> => {
         const [, info] = await emittedOnce(ipcMain, 'gc-info', () => w.webContents.send('get-gc-info'));
         return info;
+      };
+
+      const forceGCOnWindow = async () => {
+        w.webContents.debugger.attach();
+        await w.webContents.debugger.sendCommand('HeapProfiler.enable');
+        await w.webContents.debugger.sendCommand('HeapProfiler.collectGarbage');
+        await w.webContents.debugger.sendCommand('HeapProfiler.disable');
+        w.webContents.debugger.detach();
       };
 
       it('should proxy numbers', async () => {
@@ -341,45 +347,56 @@ describe('contextBridge', () => {
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', (contextBridge as any).debugGC()));
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process.electronBinding('v8_util');
             contextBridge.exposeInMainWorld('example', {
-              getFunction: () => () => 123
+              getFunction: () => () => 123,
+              track: weaklyTrackValue
             });
           });
           await callWithBindings(async (root: any) => {
             root.GCRunner.run();
           });
-          const baseValue = (await getGCInfo()).functionCount;
+          expect((await getGCInfo()).trackedValues).to.equal(0);
           await callWithBindings(async (root: any) => {
-            root.x = [root.example.getFunction()];
+            const fn = root.example.getFunction();
+            root.example.track(fn);
+            root.x = [fn];
           });
-          expect((await getGCInfo()).functionCount).to.equal(baseValue + 1);
+          expect((await getGCInfo()).trackedValues).to.equal(1);
           await callWithBindings(async (root: any) => {
             root.x = [];
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+          expect((await getGCInfo()).trackedValues).to.equal(0);
         });
       }
 
       if (useSandbox) {
         it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', (contextBridge as any).debugGC()));
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process.electronBinding('v8_util');
             contextBridge.exposeInMainWorld('example', {
-              getFunction: () => () => 123
+              getFunction: () => () => 123,
+              track: weaklyTrackValue
             });
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
           const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
-          const baseValue = (await getGCInfo()).functionCount;
+          expect((await getGCInfo()).trackedValues).to.equal(0);
+          await callWithBindings((root: any) => {
+            root.example.track(root.example.getFunction());
+          });
+          expect((await getGCInfo()).trackedValues).to.equal(1);
           await callWithBindings((root: any) => {
             root.location.reload();
           });
           await loadPromise;
+          await forceGCOnWindow();
           // If this is ever "2" it means we leaked the exposed function and
           // therefore the entire context after a reload
-          expect((await getGCInfo()).functionCount).to.equal(baseValue);
+          expect((await getGCInfo()).trackedValues).to.equal(0);
         });
       }
 
@@ -552,6 +569,148 @@ describe('contextBridge', () => {
         });
         // Every protomatch should be true
         expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true));
+      });
+
+      describe('internalContextBridge', () => {
+        describe('overrideGlobalValueFromIsolatedWorld', () => {
+          it('should override top level properties', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['open'], () => ({ you: 'are a wizard' }));
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.open();
+            });
+            expect(result).to.deep.equal({ you: 'are a wizard' });
+          });
+
+          it('should override deep properties', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['document', 'foo'], () => 'I am foo');
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.document.foo();
+            });
+            expect(result).to.equal('I am foo');
+          });
+        });
+
+        describe('overrideGlobalPropertyFromIsolatedWorld', () => {
+          it('should call the getter correctly', async () => {
+            await makeBindingWindow(() => {
+              let callCount = 0;
+              const getter = () => {
+                callCount++;
+                return true;
+              };
+              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], getter);
+              contextBridge.exposeInMainWorld('foo', {
+                callCount: () => callCount
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return [root.isFun, root.foo.callCount()];
+            });
+            expect(result[0]).to.equal(true);
+            expect(result[1]).to.equal(1);
+          });
+
+          it('should not make a setter if none is provided', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true);
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.isFun = 123;
+              return root.isFun;
+            });
+            expect(result).to.equal(true);
+          });
+
+          it('should call the setter correctly', async () => {
+            await makeBindingWindow(() => {
+              const callArgs: any[] = [];
+              const setter = (...args: any[]) => {
+                callArgs.push(args);
+                return true;
+              };
+              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true, setter);
+              contextBridge.exposeInMainWorld('foo', {
+                callArgs: () => callArgs
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.isFun = 123;
+              return root.foo.callArgs();
+            });
+            expect(result).to.have.lengthOf(1);
+            expect(result[0]).to.have.lengthOf(1);
+            expect(result[0][0]).to.equal(123);
+          });
+        });
+
+        describe('overrideGlobalValueWithDynamicPropsFromIsolatedWorld', () => {
+          it('should not affect normal values', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                a: 123,
+                b: () => 2,
+                c: () => ({ d: 3 })
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return [root.thing.a, root.thing.b(), root.thing.c()];
+            });
+            expect(result).to.deep.equal([123, 2, { d: 3 }]);
+          });
+
+          it('should work with getters', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get foo () {
+                  return 'hi there';
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.thing.foo;
+            });
+            expect(result).to.equal('hi there');
+          });
+
+          it('should work with setters', async () => {
+            await makeBindingWindow(() => {
+              let a: any = null;
+              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get foo () {
+                  return a;
+                },
+                set foo (arg: any) {
+                  a = arg + 1;
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.thing.foo = 123;
+              return root.thing.foo;
+            });
+            expect(result).to.equal(124);
+          });
+
+          it('should work with deep properties', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                a: () => ({
+                  get foo () {
+                    return 'still here';
+                  }
+                })
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.thing.a().foo;
+            });
+            expect(result).to.equal('still here');
+          });
+        });
       });
     });
   };

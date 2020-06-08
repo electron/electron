@@ -152,7 +152,11 @@ build_script:
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
   - ninja -C out/Default shell_browser_ui_unittests
+  - gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
   - ninja -C out/Default electron:electron_mksnapshot_zip
+  - cd out\Default
+  - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
+  - cd ..\..
   - ninja -C out/Default electron:hunspell_dictionaries_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
@@ -200,11 +204,10 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --enable-logging)
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging)
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
-  - echo "About to verify mksnapshot"  
-  - if "%RUN_TESTS%"=="true" ( gn desc out\Default v8:run_mksnapshot_default args > out\Default\mksnapshot_args )
+  - echo "About to verify mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )

@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 21 May 2020 13:58:01 -0700
+Subject: Allow setting secondary label via SimpleMenuModel
+
+Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
+
+diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
+index 88053e9d501413d18b6a6ae36b76668431db7ee9..481a04c4835d246cfa20edfc4f1dd10ce93fcdb8 100644
+--- a/ui/base/models/simple_menu_model.cc
++++ b/ui/base/models/simple_menu_model.cc
+@@ -49,6 +49,11 @@ base::string16 SimpleMenuModel::Delegate::GetLabelForCommandId(
+   return base::string16();
+ }
+ 
++base::string16 SimpleMenuModel::Delegate::GetSecondaryLabelForCommandId(
++    int command_id) const {
++  return base::string16();
++}
++
+ ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
+     int command_id) const {
+   return ImageModel();
+@@ -291,6 +296,11 @@ void SimpleMenuModel::SetLabel(int index, const base::string16& label) {
+   MenuItemsChanged();
+ }
+ 
++void SimpleMenuModel::SetSecondaryLabel(int index, const base::string16& secondary_label) {
++  items_[ValidateItemIndex(index)].secondary_label = secondary_label;
++  MenuItemsChanged();
++}
++
+ void SimpleMenuModel::SetMinorText(int index,
+                                    const base::string16& minor_text) {
+   items_[ValidateItemIndex(index)].minor_text = minor_text;
+@@ -364,6 +374,12 @@ base::string16 SimpleMenuModel::GetLabelAt(int index) const {
+   return items_[ValidateItemIndex(index)].label;
+ }
+ 
++base::string16 SimpleMenuModel::GetSecondaryLabelAt(int index) const {
++  if (IsItemDynamicAt(index))
++    return delegate_->GetSecondaryLabelForCommandId(GetCommandIdAt(index));
++  return items_[ValidateItemIndex(index)].secondary_label;
++}
++
+ base::string16 SimpleMenuModel::GetMinorTextAt(int index) const {
+   return items_[ValidateItemIndex(index)].minor_text;
+ }
+diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
+index 92975ff7dc5c5ca217717da6faa0042467076005..84cf58456cd8a879dbf5940737713027057546cd 100644
+--- a/ui/base/models/simple_menu_model.h
++++ b/ui/base/models/simple_menu_model.h
+@@ -44,6 +44,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+     // Some command ids have labels and icons that change over time.
+     virtual bool IsItemForCommandIdDynamic(int command_id) const;
+     virtual base::string16 GetLabelForCommandId(int command_id) const;
++    virtual base::string16 GetSecondaryLabelForCommandId(int command_id) const;
+     // Gets the icon for the item with the specified id.
+     virtual ImageModel GetIconForCommandId(int command_id) const;
+ 
+@@ -147,6 +148,9 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+   // Sets the label for the item at |index|.
+   void SetLabel(int index, const base::string16& label);
+ 
++  // Sets the secondary_label for the item at |index|.
++  void SetSecondaryLabel(int index, const base::string16& secondary_label);
++
+   // Sets the minor text for the item at |index|.
+   void SetMinorText(int index, const base::string16& minor_text);
+ 
+@@ -173,6 +177,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+   ui::MenuSeparatorType GetSeparatorTypeAt(int index) const override;
+   int GetCommandIdAt(int index) const override;
+   base::string16 GetLabelAt(int index) const override;
++  base::string16 GetSecondaryLabelAt(int index) const override;
+   base::string16 GetMinorTextAt(int index) const override;
+   ImageModel GetMinorIconAt(int index) const override;
+   bool IsItemDynamicAt(int index) const override;
+@@ -207,6 +212,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+     int command_id = 0;
+     ItemType type = TYPE_COMMAND;
+     base::string16 label;
++    base::string16 secondary_label;
+     base::string16 minor_text;
+     ImageModel minor_icon;
+     ImageModel icon;

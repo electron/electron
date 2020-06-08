@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
+import { app, session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
@@ -27,29 +27,6 @@ describe('session module', () => {
   describe('session.fromPartition(partition, options)', () => {
     it('returns existing session with same partition', () => {
       expect(session.fromPartition('test')).to.equal(session.fromPartition('test'));
-    });
-
-    // TODO(codebytere): remove in Electron v8.0.0
-    it.skip('created session is ref-counted (functions)', () => {
-      const partition = 'test2';
-      const userAgent = 'test-agent';
-      const ses1 = session.fromPartition(partition);
-      ses1.setUserAgent(userAgent);
-      expect(ses1.getUserAgent()).to.equal(userAgent);
-      ses1.destroy();
-      const ses2 = session.fromPartition(partition);
-      expect(ses2.getUserAgent()).to.not.equal(userAgent);
-    });
-
-    it.skip('created session is ref-counted', () => {
-      const partition = 'test2';
-      const userAgent = 'test-agent';
-      const ses1 = session.fromPartition(partition);
-      ses1.setUserAgent(userAgent);
-      expect(ses1.getUserAgent()).to.equal(userAgent);
-      ses1.destroy();
-      const ses2 = session.fromPartition(partition);
-      expect(ses2.getUserAgent()).to.not.equal(userAgent);
     });
   });
 
@@ -335,11 +312,11 @@ describe('session module', () => {
     });
     afterEach(closeAllWindows);
 
-    it('does not affect defaultSession', async () => {
-      const result1 = await protocol.isProtocolHandled(protocolName);
+    it('does not affect defaultSession', () => {
+      const result1 = protocol.isProtocolRegistered(protocolName);
       expect(result1).to.equal(false);
 
-      const result2 = await customSession.protocol.isProtocolHandled(protocolName);
+      const result2 = customSession.protocol.isProtocolRegistered(protocolName);
       expect(result2).to.equal(true);
     });
 
@@ -370,9 +347,7 @@ describe('session module', () => {
       if (server) {
         server.close();
       }
-      if (customSession) {
-        customSession.destroy();
-      }
+      customSession = null as any;
     });
 
     it('allows configuring proxy settings', async () => {
@@ -449,18 +424,16 @@ describe('session module', () => {
         if (request.method === 'GET') {
           callback({ data: content, mimeType: 'text/html' });
         } else if (request.method === 'POST') {
-          const uuid = request.uploadData[1].blobUUID;
+          const uuid = request.uploadData![1].blobUUID;
           expect(uuid).to.be.a('string');
           session.defaultSession.getBlobData(uuid!).then(result => {
             expect(result.toString()).to.equal(postData);
             done();
           });
         }
-      }, (error) => {
-        if (error) return done(error);
-        const w = new BrowserWindow({ show: false });
-        w.loadURL(url);
       });
+      const w = new BrowserWindow({ show: false });
+      w.loadURL(url);
     });
   });
 
@@ -669,18 +642,16 @@ describe('session module', () => {
       const handler = (ignoredError: any, callback: Function) => {
         callback({ url: `${url}:${port}` });
       };
-      protocol.registerHttpProtocol(protocolName, handler, (error) => {
-        if (error) return done(error);
-        const w = new BrowserWindow({ show: false });
-        w.webContents.session.once('will-download', function (e, item) {
-          item.savePath = downloadFilePath;
-          item.on('done', function (e, state) {
-            assertDownload(state, item, true);
-            done();
-          });
+      protocol.registerHttpProtocol(protocolName, handler);
+      const w = new BrowserWindow({ show: false });
+      w.webContents.session.once('will-download', function (e, item) {
+        item.savePath = downloadFilePath;
+        item.on('done', function (e, state) {
+          assertDownload(state, item, true);
+          done();
         });
-        w.webContents.downloadURL(`${protocolName}://item`);
       });
+      w.webContents.downloadURL(`${protocolName}://item`);
     });
 
     it('can download using WebView.downloadURL', async () => {
@@ -953,7 +924,7 @@ describe('session module', () => {
     it('sets the User-Agent header for web requests made from renderers', async () => {
       const userAgent = 'test-agent';
       const ses = session.fromPartition('' + Math.random());
-      ses.setUserAgent(userAgent);
+      ses.setUserAgent(userAgent, 'en-US,fr,de');
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       let headers: http.IncomingHttpHeaders | null = null;
       const server = http.createServer((req, res) => {
@@ -964,6 +935,16 @@ describe('session module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
+      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+    });
+  });
+
+  describe('session-created event', () => {
+    it('is emitted when a session is created', async () => {
+      const eventEmitted = new Promise<Session>(resolve => app.once('session-created', resolve));
+      session.fromPartition('' + Math.random());
+      const s = await eventEmitted;
+      expect(s.constructor.name).to.equal('Session');
     });
   });
 });

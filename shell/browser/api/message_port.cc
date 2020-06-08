@@ -27,7 +27,13 @@ namespace electron {
 gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 MessagePort::MessagePort() = default;
-MessagePort::~MessagePort() = default;
+MessagePort::~MessagePort() {
+  if (!IsNeutered()) {
+    // Disentangle before teardown. The MessagePortDescriptor will blow up if it
+    // hasn't had its underlying handle returned to it before teardown.
+    Disentangle();
+  }
+}
 
 // static
 gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
@@ -97,8 +103,9 @@ void MessagePort::Close() {
   if (closed_)
     return;
   if (!IsNeutered()) {
-    connector_ = nullptr;
-    Entangle(mojo::MessagePipe().handle0);
+    Disentangle().ReleaseHandle();
+    blink::MessagePortDescriptorPair pipe;
+    Entangle(pipe.TakePort0());
   }
   closed_ = true;
   if (!HasPendingActivity())
@@ -111,11 +118,15 @@ void MessagePort::Close() {
     gin_helper::EmitEvent(isolate, self, "close");
 }
 
-void MessagePort::Entangle(mojo::ScopedMessagePipeHandle handle) {
-  DCHECK(handle.is_valid());
+void MessagePort::Entangle(blink::MessagePortDescriptor port) {
+  DCHECK(port.IsValid());
   DCHECK(!connector_);
+  port_ = std::move(port);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
   connector_ = std::make_unique<mojo::Connector>(
-      std::move(handle), mojo::Connector::SINGLE_THREADED_SEND,
+      port_.TakeHandleToEntangleWithEmbedder(),
+      mojo::Connector::SINGLE_THREADED_SEND,
       base::ThreadTaskRunnerHandle::Get());
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
@@ -131,11 +142,11 @@ void MessagePort::Entangle(blink::MessagePortChannel channel) {
 
 blink::MessagePortChannel MessagePort::Disentangle() {
   DCHECK(!IsNeutered());
-  auto result = blink::MessagePortChannel(connector_->PassMessagePipe());
+  port_.GiveDisentangledHandle(connector_->PassMessagePipe());
   connector_ = nullptr;
   if (!HasPendingActivity())
     Unpin();
-  return result;
+  return blink::MessagePortChannel(std::move(port_));
 }
 
 bool MessagePort::HasPendingActivity() const {
@@ -260,9 +271,9 @@ using electron::MessagePort;
 v8::Local<v8::Value> CreatePair(v8::Isolate* isolate) {
   auto port1 = MessagePort::Create(isolate);
   auto port2 = MessagePort::Create(isolate);
-  mojo::MessagePipe pipe;
-  port1->Entangle(std::move(pipe.handle0));
-  port2->Entangle(std::move(pipe.handle1));
+  blink::MessagePortDescriptorPair pipe;
+  port1->Entangle(pipe.TakePort0());
+  port2->Entangle(pipe.TakePort1());
   return gin::DataObjectBuilder(isolate)
       .Set("port1", port1)
       .Set("port2", port2)

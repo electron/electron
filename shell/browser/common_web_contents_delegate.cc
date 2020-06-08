@@ -350,11 +350,11 @@ void CommonWebContentsDelegate::EnumerateDirectory(
 }
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
+  auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;

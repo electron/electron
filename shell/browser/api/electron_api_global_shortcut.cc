@@ -29,7 +29,9 @@ bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
   if (base::mac::IsAtLeastOS10_14()) {
     constexpr ui::KeyboardCode mediaKeys[] = {
         ui::VKEY_MEDIA_PLAY_PAUSE, ui::VKEY_MEDIA_NEXT_TRACK,
-        ui::VKEY_MEDIA_PREV_TRACK, ui::VKEY_MEDIA_STOP};
+        ui::VKEY_MEDIA_PREV_TRACK, ui::VKEY_MEDIA_STOP,
+        ui::VKEY_VOLUME_UP,        ui::VKEY_VOLUME_DOWN,
+        ui::VKEY_VOLUME_MUTE};
 
     if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
                   accelerator.key_code()) != std::end(mediaKeys)) {
@@ -60,7 +62,7 @@ GlobalShortcut::~GlobalShortcut() {
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   if (accelerator_callback_map_.find(accelerator) ==
       accelerator_callback_map_.end()) {
-    // This should never occur, because if it does, GlobalGlobalShortcutListener
+    // This should never occur, because if it does, GlobalShortcutListener
     // notifies us with wrong accelerator.
     NOTREACHED();
     return;

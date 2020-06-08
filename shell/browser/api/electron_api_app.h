@@ -56,6 +56,7 @@ class App : public ElectronBrowserClient::Delegate,
       base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
 
   static gin::Handle<App> Create(v8::Isolate* isolate);
+  static App* Get();
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -71,8 +72,9 @@ class App : public ElectronBrowserClient::Delegate,
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
 
- protected:
   explicit App(v8::Isolate* isolate);
+
+ private:
   ~App() override;
 
   // BrowserObserver:

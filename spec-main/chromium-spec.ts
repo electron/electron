@@ -410,8 +410,6 @@ describe('chromium features', () => {
 
         if (ext === '.js') type = 'application/javascript';
         callback({ data: content, mimeType: type } as any);
-      }, (error) => {
-        if (error) done(error);
       });
 
       const w = new BrowserWindow({
@@ -431,7 +429,8 @@ describe('chromium features', () => {
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
-            customSession.protocol.uninterceptProtocol('file', error => done(error));
+            customSession.protocol.uninterceptProtocol('file');
+            done();
           });
         }
       });
@@ -840,8 +839,8 @@ describe('chromium features', () => {
     ];
     const s = (url: string) => url.startsWith('file') ? 'file://...' : url;
 
-    before(async () => {
-      await promisify(protocol.registerFileProtocol)(scheme, (request, callback) => {
+    before(() => {
+      protocol.registerFileProtocol(scheme, (request, callback) => {
         if (request.url.includes('blank')) {
           callback(`${fixturesPath}/pages/blank.html`);
         } else {
@@ -849,8 +848,8 @@ describe('chromium features', () => {
         }
       });
     });
-    after(async () => {
-      await promisify(protocol.unregisterProtocol)(scheme);
+    after(() => {
+      protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
@@ -929,7 +928,7 @@ describe('chromium features', () => {
     describe('custom non standard schemes', () => {
       const protocolName = 'storage';
       let contents: WebContents;
-      before((done) => {
+      before(() => {
         protocol.registerFileProtocol(protocolName, (request, callback) => {
           const parsedUrl = url.parse(request.url);
           let filename;
@@ -942,11 +941,11 @@ describe('chromium features', () => {
             default : filename = '';
           }
           callback({ path: `${fixturesPath}/pages/storage/${filename}` });
-        }, (error) => done(error));
+        });
       });
 
-      after((done) => {
-        protocol.unregisterProtocol(protocolName, () => done());
+      after(() => {
+        protocol.unregisterProtocol(protocolName);
       });
 
       beforeEach(() => {
@@ -1233,7 +1232,10 @@ describe('chromium features', () => {
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1241,7 +1243,10 @@ describe('chromium features', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
+      await new Promise((resolve) => {
+        contents.on('did-finish-load', resolve);
+        contents.on('did-frame-finish-load', resolve);
+      });
     });
   });
 

@@ -130,6 +130,27 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
   }
 })
 
+desktopCapturer.getMediaSourceIdForWebContents(remote.getCurrentWebContents().id).then(mediaSourceId => {
+  (navigator as any).webkitGetUserMedia({
+    audio:  {
+      mandatory: {
+        chromeMediaSource: 'tab',
+        chromeMediaSourceId: mediaSourceId
+      }
+    },
+    video: {
+      mandatory: {
+        chromeMediaSource: 'tab',
+        chromeMediaSourceId: mediaSourceId,
+        minWidth: 1280,
+        maxWidth: 1280,
+        minHeight: 720,
+        maxHeight: 720
+      }
+    }
+  }, gotStream, getUserMediaError)
+})
+
 function gotStream (stream: any) {
   (document.querySelector('video') as HTMLVideoElement).src = URL.createObjectURL(stream)
 }

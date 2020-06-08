@@ -7,6 +7,7 @@
 
 #include <map>
 
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "ui/base/models/simple_menu_model.h"
@@ -57,8 +58,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::string16 GetToolTipAt(int index);
   void SetRole(int index, const base::string16& role);
   base::string16 GetRoleAt(int index);
-  void SetSublabel(int index, const base::string16& sublabel);
-  base::string16 GetSublabelAt(int index) const override;
+  void SetSecondaryLabel(int index, const base::string16& sublabel);
+  base::string16 GetSecondaryLabelAt(int index) const override;
   bool GetAcceleratorAtWithParams(int index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -68,6 +69,10 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   // ui::SimpleMenuModel:
   void MenuWillClose() override;
   void MenuWillShow() override;
+
+  base::WeakPtr<ElectronMenuModel> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   using SimpleMenuModel::GetSubmenuModelAt;
   ElectronMenuModel* GetSubmenuModelAt(int index);
@@ -79,6 +84,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::map<int, base::string16> roles_;      // command id -> role
   std::map<int, base::string16> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
+
+  base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronMenuModel);
 };

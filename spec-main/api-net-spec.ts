@@ -1208,7 +1208,7 @@ describe('net module', () => {
         response.end();
       });
       const netRequest = net.request({ url: serverUrl, method: 'POST' });
-      expect(netRequest.getUploadProgress()).to.deep.equal({ active: false });
+      expect(netRequest.getUploadProgress()).to.have.property('active', false);
       netRequest.end(Buffer.from('hello'));
       const [position, total] = await emittedOnce(netRequest, 'upload-progress');
       expect(netRequest.getUploadProgress()).to.deep.equal({ active: true, started: true, current: position, total });
@@ -1252,6 +1252,38 @@ describe('net module', () => {
         });
         setTimeout(resolve, 50);
       });
+    });
+
+    it('should remove the referer header when no referrer url specified', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers.referer).to.equal(undefined);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.end();
+
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+    });
+
+    it('should set the referer header when a referrer url specified', async () => {
+      const referrerURL = 'https://www.electronjs.org/';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers.referer).to.equal(referrerURL);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.setHeader('referer', referrerURL);
+      urlRequest.end();
+
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
     });
   });
 

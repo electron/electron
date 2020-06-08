@@ -54,6 +54,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -425,6 +426,10 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_PICTURES;
   else if (name == "videos")
     return chrome::DIR_USER_VIDEOS;
+#if defined(OS_WIN)
+  else if (name == "recent")
+    return electron::DIR_RECENT;
+#endif
   else if (name == "pepperFlashSystemPlugin")
     return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
@@ -885,6 +890,15 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
       SetAppLogsPath(thrower, base::Optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
+
+#if defined(OS_WIN)
+    // If we get the "recent" path before setting it, set it
+    if (!succeed && name == "recent" &&
+        platform_util::GetFolderPath(DIR_RECENT, &path)) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      succeed = base::PathService::Override(DIR_RECENT, path);
+    }
+#endif
   }
 
   if (!succeed)
@@ -1435,8 +1449,14 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 #endif
 
 // static
+App* App::Get() {
+  static base::NoDestructor<App> app(v8::Isolate::GetCurrent());
+  return app.get();
+}
+
+// static
 gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new App(isolate));
+  return gin::CreateHandle(isolate, Get());
 }
 
 // static
@@ -1505,6 +1525,14 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
                  base::BindRepeating(&Browser::ShowAboutPanel, browser))
+#if defined(OS_MACOSX)
+      .SetMethod(
+          "isSecureKeyboardEntryEnabled",
+          base::BindRepeating(&Browser::IsSecureKeyboardEntryEnabled, browser))
+      .SetMethod(
+          "setSecureKeyboardEntryEnabled",
+          base::BindRepeating(&Browser::SetSecureKeyboardEntryEnabled, browser))
+#endif
 #if defined(OS_MACOSX) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::BindRepeating(&Browser::ShowEmojiPanel, browser))

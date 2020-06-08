@@ -25,7 +25,6 @@ declare namespace Electron {
     constructor(args: {show: boolean})
     setContentView(view: View): void
   }
-  class View {}
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)
   }

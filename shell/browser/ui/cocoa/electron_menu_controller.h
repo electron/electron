@@ -10,6 +10,7 @@
 
 #include "base/callback.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
 
 namespace electron {
@@ -24,14 +25,12 @@ class ElectronMenuModel;
 // as it only maintains weak references.
 @interface ElectronMenuController : NSObject <NSMenuDelegate> {
  @protected
-  electron::ElectronMenuModel* model_;  // weak
+  base::WeakPtr<electron::ElectronMenuModel> model_;
   base::scoped_nsobject<NSMenu> menu_;
   BOOL isMenuOpen_;
   BOOL useDefaultAccelerator_;
   base::OnceClosure closeCallback;
 }
-
-@property(nonatomic, assign) electron::ElectronMenuModel* model;
 
 // Builds a NSMenu from the pre-built model (must not be nil). Changes made
 // to the contents of the model after calling this will not be noticed.
@@ -45,6 +44,9 @@ class ElectronMenuModel;
 
 // Programmatically close the constructed menu.
 - (void)cancel;
+
+- (electron::ElectronMenuModel*)model;
+- (void)setModel:(electron::ElectronMenuModel*)model;
 
 // Access to the constructed menu if the complex initializer was used. If the
 // default initializer was used, then this will create the menu on first call.

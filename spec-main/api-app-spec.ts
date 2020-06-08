@@ -8,7 +8,7 @@ import * as path from 'path';
 import { app, BrowserWindow, Menu, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
 const features = process.electronBinding('features');
@@ -376,47 +376,38 @@ describe('app module', () => {
 
     afterEach(() => closeWindow(w).then(() => { w = null as any; }));
 
-    it('should emit browser-window-focus event when window is focused', (done) => {
-      app.once('browser-window-focus', (e, window) => {
-        expect(w.id).to.equal(window.id);
-        done();
-      });
+    it('should emit browser-window-focus event when window is focused', async () => {
+      const emitted = emittedOnce(app, 'browser-window-focus');
       w = new BrowserWindow({ show: false });
       w.emit('focus');
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit browser-window-blur event when window is blured', (done) => {
-      app.once('browser-window-blur', (e, window) => {
-        expect(w.id).to.equal(window.id);
-        done();
-      });
+    it('should emit browser-window-blur event when window is blured', async () => {
+      const emitted = emittedOnce(app, 'browser-window-blur');
       w = new BrowserWindow({ show: false });
       w.emit('blur');
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit browser-window-created event when window is created', (done) => {
-      app.once('browser-window-created', (e, window) => {
-        setImmediate(() => {
-          expect(w.id).to.equal(window.id);
-          done();
-        });
-      });
+    it('should emit browser-window-created event when window is created', async () => {
+      const emitted = emittedOnce(app, 'browser-window-created');
       w = new BrowserWindow({ show: false });
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit web-contents-created event when a webContents is created', (done) => {
-      app.once('web-contents-created', (e, webContents) => {
-        setImmediate(() => {
-          expect(w.webContents.id).to.equal(webContents.id);
-          done();
-        });
-      });
+    it('should emit web-contents-created event when a webContents is created', async () => {
+      const emitted = emittedOnce(app, 'web-contents-created');
       w = new BrowserWindow({ show: false });
+      const [, webContents] = await emitted;
+      expect(webContents.id).to.equal(w.webContents.id);
     });
 
-    it('should emit renderer-process-crashed event when renderer crashes', async function () {
-      // FIXME: re-enable this test on win32.
-      if (process.platform === 'win32') { return this.skip(); }
+    // FIXME: re-enable this test on win32.
+    ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -425,11 +416,29 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const promise = emittedOnce(app, 'renderer-process-crashed');
+      const emitted = emittedOnce(app, 'renderer-process-crashed');
       w.webContents.executeJavaScript('process.crash()');
 
-      const [, webContents] = await promise;
+      const [, webContents] = await emitted;
       expect(webContents).to.equal(w.webContents);
+    });
+
+    // FIXME: re-enable this test on win32.
+    ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const emitted = emittedOnce(app, 'render-process-gone');
+      w.webContents.executeJavaScript('process.crash()');
+
+      const [, webContents, details] = await emitted;
+      expect(webContents).to.equal(w.webContents);
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
@@ -737,6 +746,22 @@ describe('app module', () => {
       app.setPath('music', __dirname);
       expect(app.getPath('music')).to.equal(__dirname);
     });
+
+    if (process.platform === 'win32') {
+      it('gets the folder for recent files', () => {
+        const recent = app.getPath('recent');
+
+        // We expect that one of our test machines have overriden this
+        // to be something crazy, it'll always include the word "Recent"
+        // unless people have been registry-hacking like crazy
+        expect(recent).to.include('Recent');
+      });
+
+      it('can override the recent files path', () => {
+        app.setPath('recent', 'C:\\fake-path');
+        expect(app.getPath('recent')).to.equal('C:\\fake-path');
+      });
+    }
   });
 
   describe('setPath(name, path)', () => {
@@ -1412,6 +1437,15 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line');
       expect(getSwitchValue).to.equal('');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('app.setSecureKeyboardEntryEnabled', () => {
+    it('changes Secure Keyboard Entry is enabled', () => {
+      app.setSecureKeyboardEntryEnabled(true);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(true);
+      app.setSecureKeyboardEntryEnabled(false);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(false);
     });
   });
 });

@@ -44,23 +44,10 @@ run the main process. An example of your `package.json` might look like this:
 ```
 
 __Note__: If the `main` field is not present in `package.json`, Electron will
-attempt to load an `index.js` (as Node.js does). If this was actually
-a simple Node application, you would add a `start` script that instructs `node`
-to execute the current package:
+attempt to load an `index.js` (as Node.js does).
 
-```json
-{
-  "name": "your-app",
-  "version": "0.1.0",
-  "main": "main.js",
-  "scripts": {
-    "start": "node ."
-  }
-}
-```
-
-Turning this Node application into an Electron application is quite simple - we
-merely replace the `node` runtime with the `electron` runtime.
+By default, `npm start` would run the main script with Node.js. in order to make
+it run with Electron, you can add a `start` script:
 
 ```json
 {

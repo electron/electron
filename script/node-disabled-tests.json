@@ -160,6 +160,7 @@
   "parallel/test-worker-message-port",
   "parallel/test-worker-message-port-transfer-duplicate",
   "parallel/test-worker-message-port-transfer-target",
+  "parallel/test-worker-sharedarraybuffer-from-worker-thread",
   "parallel/test-worker-stdio",
   "parallel/test-zlib-unused-weak",
   "pseudo-tty/test-set-raw-mode-reset-process-exit",

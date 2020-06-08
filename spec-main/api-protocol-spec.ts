@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
-import { promisify } from 'util';
 import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
@@ -13,17 +12,17 @@ import { emittedOnce } from './events-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
-const registerStringProtocol = promisify(protocol.registerStringProtocol);
-const registerBufferProtocol = promisify(protocol.registerBufferProtocol);
-const registerFileProtocol = promisify(protocol.registerFileProtocol);
-const registerHttpProtocol = promisify(protocol.registerHttpProtocol);
-const registerStreamProtocol = promisify(protocol.registerStreamProtocol);
-const interceptStringProtocol = promisify(protocol.interceptStringProtocol);
-const interceptBufferProtocol = promisify(protocol.interceptBufferProtocol);
-const interceptHttpProtocol = promisify(protocol.interceptHttpProtocol);
-const interceptStreamProtocol = promisify(protocol.interceptStreamProtocol);
-const unregisterProtocol = promisify(protocol.unregisterProtocol);
-const uninterceptProtocol = promisify(protocol.uninterceptProtocol);
+const registerStringProtocol = protocol.registerStringProtocol;
+const registerBufferProtocol = protocol.registerBufferProtocol;
+const registerFileProtocol = protocol.registerFileProtocol;
+const registerHttpProtocol = protocol.registerHttpProtocol;
+const registerStreamProtocol = protocol.registerStreamProtocol;
+const interceptStringProtocol = protocol.interceptStringProtocol;
+const interceptBufferProtocol = protocol.interceptBufferProtocol;
+const interceptHttpProtocol = protocol.interceptHttpProtocol;
+const interceptStreamProtocol = protocol.interceptStreamProtocol;
+const unregisterProtocol = protocol.unregisterProtocol;
+const uninterceptProtocol = protocol.uninterceptProtocol;
 
 const text = 'valar morghulis';
 const protocolName = 'sp';
@@ -87,22 +86,22 @@ describe('protocol module', () => {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
   }
 
-  afterEach(async () => {
-    await new Promise(resolve => protocol.unregisterProtocol(protocolName, (/* ignore error */) => resolve()));
-    await new Promise(resolve => protocol.uninterceptProtocol('http', () => resolve()));
+  afterEach(() => {
+    protocol.unregisterProtocol(protocolName);
+    protocol.uninterceptProtocol('http');
   });
 
   describe('protocol.register(Any)Protocol', () => {
-    it('throws error when scheme is already registered', async () => {
-      await registerStringProtocol(protocolName, (req, cb) => cb());
-      await expect(registerBufferProtocol(protocolName, (req, cb) => cb())).to.be.eventually.rejectedWith(Error);
+    it('fails when scheme is already registered', () => {
+      expect(registerStringProtocol(protocolName, (req, cb) => cb(''))).to.equal(true);
+      expect(registerBufferProtocol(protocolName, (req, cb) => cb(Buffer.from('')))).to.equal(false);
     });
 
     it('does not crash when handler is called twice', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => {
+      registerStringProtocol(protocolName, (request, callback) => {
         try {
           callback(text);
-          callback();
+          callback('');
         } catch (error) {
           // Ignore error
         }
@@ -112,12 +111,12 @@ describe('protocol module', () => {
     });
 
     it('sends error when callback is called with nothing', async () => {
-      await registerBufferProtocol(protocolName, (req, cb) => cb());
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      registerBufferProtocol(protocolName, (req, cb: any) => cb());
+      await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejectedWith(Error, '404');
     });
 
     it('does not crash when callback is called in next tick', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => {
+      registerStringProtocol(protocolName, (request, callback) => {
         setImmediate(() => callback(text));
       });
       const r = await ajax(protocolName + '://fake-host');
@@ -126,27 +125,27 @@ describe('protocol module', () => {
   });
 
   describe('protocol.unregisterProtocol', () => {
-    it('returns error when scheme does not exist', async () => {
-      await expect(unregisterProtocol('not-exist')).to.be.eventually.rejectedWith(Error);
+    it('returns false when scheme does not exist', () => {
+      expect(unregisterProtocol('not-exist')).to.equal(false);
     });
   });
 
   describe('protocol.registerStringProtocol', () => {
     it('sends string as response', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => callback(text));
+      registerStringProtocol(protocolName, (request, callback) => callback(text));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('sets Access-Control-Allow-Origin', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => callback(text));
+      registerStringProtocol(protocolName, (request, callback) => callback(text));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
       expect(r.headers).to.include('access-control-allow-origin: *');
     });
 
     it('sends object as response', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => {
+      registerStringProtocol(protocolName, (request, callback) => {
         callback({
           data: text,
           mimeType: 'text/html'
@@ -158,7 +157,7 @@ describe('protocol module', () => {
 
     it('fails when sending object other than string', async () => {
       const notAString = () => {};
-      await registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
+      registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
   });
@@ -166,20 +165,20 @@ describe('protocol module', () => {
   describe('protocol.registerBufferProtocol', () => {
     const buffer = Buffer.from(text);
     it('sends Buffer as response', async () => {
-      await registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
+      registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('sets Access-Control-Allow-Origin', async () => {
-      await registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
+      registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
       expect(r.headers).to.include('access-control-allow-origin: *');
     });
 
     it('sends object as response', async () => {
-      await registerBufferProtocol(protocolName, (request, callback) => {
+      registerBufferProtocol(protocolName, (request, callback) => {
         callback({
           data: buffer,
           mimeType: 'text/html'
@@ -190,7 +189,7 @@ describe('protocol module', () => {
     });
 
     it('fails when sending string', async () => {
-      await registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
+      registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
   });
@@ -202,20 +201,20 @@ describe('protocol module', () => {
     const normalContent = fs.readFileSync(normalPath);
 
     it('sends file path as response', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback(filePath));
+      registerFileProtocol(protocolName, (request, callback) => callback(filePath));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(fileContent));
     });
 
     it('sets Access-Control-Allow-Origin', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback(filePath));
+      registerFileProtocol(protocolName, (request, callback) => callback(filePath));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(fileContent));
       expect(r.headers).to.include('access-control-allow-origin: *');
     });
 
     it('sets custom headers', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback({
+      registerFileProtocol(protocolName, (request, callback) => callback({
         path: filePath,
         headers: { 'X-Great-Header': 'sogreat' }
       }));
@@ -231,31 +230,30 @@ describe('protocol module', () => {
           headers: { 'X-Great-Header': (42 as any) }
         })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
         done();
-      }).then(() => {
-        ajax(protocolName + '://fake-host');
       });
+      ajax(protocolName + '://fake-host');
     });
 
     it('sends object as response', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
+      registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(fileContent));
     });
 
     it('can send normal file', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback(normalPath));
+      registerFileProtocol(protocolName, (request, callback) => callback(normalPath));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(normalContent));
     });
 
     it('fails when sending unexist-file', async () => {
       const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
-      await registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath));
+      registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
 
     it('fails when sending unsupported content', async () => {
-      await registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
+      registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
   });
@@ -267,22 +265,22 @@ describe('protocol module', () => {
         res.end(text);
         server.close();
       });
-      await server.listen(0, '127.0.0.1');
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = 'http://127.0.0.1:' + port;
-      await registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
+      registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('fails when sending invalid url', async () => {
-      await registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
+      registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
 
     it('fails when sending unsupported content', async () => {
-      await registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
+      registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
 
@@ -297,12 +295,12 @@ describe('protocol module', () => {
         }
       });
       after(() => server.close());
-      await server.listen(0, '127.0.0.1');
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = `${protocolName}://fake-host`;
       const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
-      await registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
+      registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
 
       const r = await ajax(url);
       expect(r.data).to.equal(text);
@@ -312,28 +310,27 @@ describe('protocol module', () => {
       protocol.registerHttpProtocol(protocolName, (request) => {
         expect(request).to.have.property('headers');
         done();
-      }, () => {
-        ajax(protocolName + '://fake-host');
       });
+      ajax(protocolName + '://fake-host');
     });
   });
 
   describe('protocol.registerStreamProtocol', () => {
     it('sends Stream as response', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => callback(getStream()));
+      registerStreamProtocol(protocolName, (request, callback) => callback(getStream()));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('sends object as response', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => callback({ data: getStream() }));
+      registerStreamProtocol(protocolName, (request, callback) => callback({ data: getStream() }));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
       expect(r.status).to.equal(200);
     });
 
     it('sends custom response headers', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => callback({
+      registerStreamProtocol(protocolName, (request, callback) => callback({
         data: getStream(3),
         headers: {
           'x-electron': ['a', 'b']
@@ -346,9 +343,9 @@ describe('protocol module', () => {
     });
 
     it('sends custom status code', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => callback({
+      registerStreamProtocol(protocolName, (request, callback) => callback({
         statusCode: 204,
-        data: null
+        data: null as any
       }));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.be.undefined('data');
@@ -356,7 +353,7 @@ describe('protocol module', () => {
     });
 
     it('receives request headers', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => {
+      registerStreamProtocol(protocolName, (request, callback) => {
         callback({
           headers: {
             'content-type': 'application/json'
@@ -369,7 +366,7 @@ describe('protocol module', () => {
     });
 
     it('returns response multiple response headers with the same name', async () => {
-      await registerStreamProtocol(protocolName, (request, callback) => {
+      registerStreamProtocol(protocolName, (request, callback) => {
         callback({
           headers: {
             header1: ['value1', 'value2'],
@@ -387,7 +384,7 @@ describe('protocol module', () => {
 
     it('can handle large responses', async () => {
       const data = Buffer.alloc(128 * 1024);
-      await registerStreamProtocol(protocolName, (request, callback) => {
+      registerStreamProtocol(protocolName, (request, callback) => {
         callback(getStream(data.length, data));
       });
       const r = await ajax(protocolName + '://fake-host');
@@ -402,7 +399,7 @@ describe('protocol module', () => {
           }
         });
       }
-      await registerStreamProtocol(protocolName, (request, callback) => {
+      registerStreamProtocol(protocolName, (request, callback) => {
         callback({
           statusCode: 200,
           headers: { 'Content-Type': 'text/plain' },
@@ -414,48 +411,38 @@ describe('protocol module', () => {
     });
   });
 
-  describe('protocol.isProtocolHandled', () => {
-    it('returns true for built-in protocols', async () => {
-      for (const p of ['about', 'file', 'http', 'https']) {
-        const handled = await protocol.isProtocolHandled(p);
-        expect(handled).to.be.true(`${p}: is handled`);
-      }
-    });
-
-    it('returns false when scheme is not registered', async () => {
-      const result = await protocol.isProtocolHandled('no-exist');
+  describe('protocol.isProtocolRegistered', () => {
+    it('returns false when scheme is not registered', () => {
+      const result = protocol.isProtocolRegistered('no-exist');
       expect(result).to.be.false('no-exist: is handled');
     });
 
-    it('returns true for custom protocol', async () => {
-      await registerStringProtocol(protocolName, (request, callback) => callback());
-      const result = await protocol.isProtocolHandled(protocolName);
+    it('returns true for custom protocol', () => {
+      registerStringProtocol(protocolName, (request, callback) => callback(''));
+      const result = protocol.isProtocolRegistered(protocolName);
       expect(result).to.be.true('custom protocol is handled');
     });
+  });
 
-    it('returns true for intercepted protocol', async () => {
-      await interceptStringProtocol('http', (request, callback) => callback());
-      const result = await protocol.isProtocolHandled('http');
+  describe('protocol.isProtocolIntercepted', () => {
+    it('returns true for intercepted protocol', () => {
+      interceptStringProtocol('http', (request, callback) => callback(''));
+      const result = protocol.isProtocolIntercepted('http');
       expect(result).to.be.true('intercepted protocol is handled');
     });
   });
 
   describe('protocol.intercept(Any)Protocol', () => {
-    it('throws error when scheme is already intercepted', (done) => {
-      protocol.interceptStringProtocol('http', (request, callback) => callback(), (error) => {
-        expect(error).to.be.null('error');
-        protocol.interceptBufferProtocol('http', (request, callback) => callback(), (error) => {
-          expect(error).to.not.be.null('error');
-          done();
-        });
-      });
+    it('returns false when scheme is already intercepted', () => {
+      expect(protocol.interceptStringProtocol('http', (request, callback) => callback(''))).to.equal(true);
+      expect(protocol.interceptBufferProtocol('http', (request, callback) => callback(Buffer.from('')))).to.equal(false);
     });
 
     it('does not crash when handler is called twice', async () => {
-      await interceptStringProtocol('http', (request, callback) => {
+      interceptStringProtocol('http', (request, callback) => {
         try {
           callback(text);
-          callback();
+          callback('');
         } catch (error) {
           // Ignore error
         }
@@ -465,20 +452,20 @@ describe('protocol module', () => {
     });
 
     it('sends error when callback is called with nothing', async () => {
-      await interceptStringProtocol('http', (request, callback) => callback());
+      interceptStringProtocol('http', (request, callback: any) => callback());
       await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error, '404');
     });
   });
 
   describe('protocol.interceptStringProtocol', () => {
     it('can intercept http protocol', async () => {
-      await interceptStringProtocol('http', (request, callback) => callback(text));
+      interceptStringProtocol('http', (request, callback) => callback(text));
       const r = await ajax('http://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('can set content-type', async () => {
-      await interceptStringProtocol('http', (request, callback) => {
+      interceptStringProtocol('http', (request, callback) => {
         callback({
           mimeType: 'application/json',
           data: '{"value": 1}'
@@ -490,7 +477,7 @@ describe('protocol module', () => {
     });
 
     it('can set content-type with charset', async () => {
-      await interceptStringProtocol('http', (request, callback) => {
+      interceptStringProtocol('http', (request, callback) => {
         callback({
           mimeType: 'application/json; charset=UTF-8',
           data: '{"value": 1}'
@@ -502,8 +489,8 @@ describe('protocol module', () => {
     });
 
     it('can receive post data', async () => {
-      await interceptStringProtocol('http', (request, callback) => {
-        const uploadData = request.uploadData[0].bytes.toString();
+      interceptStringProtocol('http', (request, callback) => {
+        const uploadData = request.uploadData![0].bytes.toString();
         callback({ data: uploadData });
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
@@ -513,14 +500,14 @@ describe('protocol module', () => {
 
   describe('protocol.interceptBufferProtocol', () => {
     it('can intercept http protocol', async () => {
-      await interceptBufferProtocol('http', (request, callback) => callback(Buffer.from(text)));
+      interceptBufferProtocol('http', (request, callback) => callback(Buffer.from(text)));
       const r = await ajax('http://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('can receive post data', async () => {
-      await interceptBufferProtocol('http', (request, callback) => {
-        const uploadData = request.uploadData[0].bytes;
+      interceptBufferProtocol('http', (request, callback) => {
+        const uploadData = request.uploadData![0].bytes;
         callback(uploadData);
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
@@ -544,19 +531,19 @@ describe('protocol module', () => {
         server.close();
       });
       after(() => server.close());
-      await server.listen(0, '127.0.0.1');
+      server.listen(0, '127.0.0.1');
 
       const port = (server.address() as AddressInfo).port;
       const url = `http://127.0.0.1:${port}`;
-      await interceptHttpProtocol('http', (request, callback) => {
-        const data: Electron.RedirectRequest = {
+      interceptHttpProtocol('http', (request, callback) => {
+        const data: Electron.ProtocolResponse = {
           url: url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
-            data: request.uploadData[0].bytes
+            data: request.uploadData![0].bytes
           },
-          session: null
+          session: undefined
         };
         callback(data);
       });
@@ -572,7 +559,7 @@ describe('protocol module', () => {
       });
       after(() => customSession.webRequest.onBeforeRequest(null));
 
-      await interceptHttpProtocol('http', (request, callback) => {
+      interceptHttpProtocol('http', (request, callback) => {
         callback({
           url: request.url,
           session: customSession
@@ -585,33 +572,32 @@ describe('protocol module', () => {
       protocol.interceptHttpProtocol('http', (request) => {
         expect(request).to.have.property('headers');
         done();
-      }, () => {
-        ajax('http://fake-host');
       });
+      ajax('http://fake-host');
     });
   });
 
   describe('protocol.interceptStreamProtocol', () => {
     it('can intercept http protocol', async () => {
-      await interceptStreamProtocol('http', (request, callback) => callback(getStream()));
+      interceptStreamProtocol('http', (request, callback) => callback(getStream()));
       const r = await ajax('http://fake-host');
       expect(r.data).to.equal(text);
     });
 
     it('can receive post data', async () => {
-      await interceptStreamProtocol('http', (request, callback) => {
-        callback(getStream(3, request.uploadData[0].bytes.toString()));
+      interceptStreamProtocol('http', (request, callback) => {
+        callback(getStream(3, request.uploadData![0].bytes.toString()));
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
     });
 
     it('can execute redirects', async () => {
-      await interceptStreamProtocol('http', (request, callback) => {
+      interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
           setTimeout(() => {
             callback({
-              data: null,
+              data: '',
               statusCode: 302,
               headers: {
                 Location: 'http://fake-redirect'
@@ -629,12 +615,12 @@ describe('protocol module', () => {
   });
 
   describe('protocol.uninterceptProtocol', () => {
-    it('returns error when scheme does not exist', async () => {
-      await expect(uninterceptProtocol('not-exist')).to.be.eventually.rejectedWith(Error);
+    it('returns false when scheme does not exist', () => {
+      expect(uninterceptProtocol('not-exist')).to.equal(false);
     });
 
-    it('returns error when scheme is not intercepted', async () => {
-      await expect(uninterceptProtocol('http')).to.be.eventually.rejectedWith(Error);
+    it('returns false when scheme is not intercepted', () => {
+      expect(uninterceptProtocol('http')).to.equal(false);
     });
   });
 
@@ -677,14 +663,14 @@ describe('protocol module', () => {
 
     afterEach(async () => {
       await closeWindow(w);
-      await unregisterProtocol(standardScheme);
+      unregisterProtocol(standardScheme);
       w = null as unknown as BrowserWindow;
     });
 
     it('resolves relative resources', async () => {
-      await registerFileProtocol(standardScheme, (request, callback) => {
+      registerFileProtocol(standardScheme, (request, callback) => {
         if (request.url === imageURL) {
-          callback();
+          callback('');
         } else {
           callback(filePath);
         }
@@ -693,9 +679,9 @@ describe('protocol module', () => {
     });
 
     it('resolves absolute resources', async () => {
-      await registerStringProtocol(standardScheme, (request, callback) => {
+      registerStringProtocol(standardScheme, (request, callback) => {
         if (request.url === imageURL) {
-          callback();
+          callback('');
         } else {
           callback({
             data: fileContent,
@@ -716,17 +702,15 @@ describe('protocol module', () => {
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = (server.address() as AddressInfo).port;
       const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
-      await registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
+      registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
       await w.loadURL(origin);
       await requestReceived;
     });
 
     it.skip('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
-        if (error) return done(error);
-        w.loadURL(origin);
-      });
+      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+      w.loadURL(origin);
       ipcMain.once('file-system-error', (event, err) => done(err));
       ipcMain.once('file-system-write-end', () => done());
     });
@@ -735,10 +719,8 @@ describe('protocol module', () => {
       const filePath = path.join(fixturesPath, 'pages', 'cache-storage.html');
       ipcMain.once('success', () => done());
       ipcMain.once('failure', (event, err) => done(err));
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
-        if (error) return done(error);
-        w.loadURL(origin);
-      });
+      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+      w.loadURL(origin);
     });
   });
 
@@ -752,11 +734,9 @@ describe('protocol module', () => {
     afterEach(async () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
-      await Promise.all(
-        [standardScheme, 'cors', 'no-cors', 'no-fetch'].map(scheme =>
-          new Promise(resolve => protocol.unregisterProtocol(scheme, (/* ignore error */) => resolve()))
-        )
-      );
+      for (const scheme of [standardScheme, 'cors', 'no-cors', 'no-fetch']) {
+        protocol.unregisterProtocol(scheme);
+      }
     });
 
     it('supports fetch api by default', async () => {
@@ -818,10 +798,10 @@ describe('protocol module', () => {
     });
 
     async function allowsCORSRequests (corsScheme: string, expected: any, expectedConsole: RegExp, content: Function) {
-      await registerStringProtocol(standardScheme, (request, callback) => {
+      registerStringProtocol(standardScheme, (request, callback) => {
         callback({ data: `<script>(${content})()</script>`, mimeType: 'text/html' });
       });
-      await registerStringProtocol(corsScheme, (request, callback) => {
+      registerStringProtocol(corsScheme, (request, callback) => {
         callback('');
       });
 

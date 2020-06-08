@@ -37,7 +37,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'bar', privileges: { standard: true } }
 ]);
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   require('ts-node/register');
 
   const argv = require('yargs')
@@ -62,58 +62,51 @@ app.whenReady().then(() => {
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter('tap');
   }
-  mocha.timeout(30000);
+  const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
+  mocha.timeout(mochaTimeout);
 
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();
 
-  // Read all test files.
-  const walker = require('walkdir').walk(__dirname, {
-    no_recurse: true
-  });
-
-  // This allows you to run specific modules only:
-  // npm run test -match=menu
-  const moduleMatch = process.env.npm_config_match
-    ? new RegExp(process.env.npm_config_match, 'g')
-    : null;
-
-  const testFiles = [];
-  walker.on('file', (file) => {
-    if (/-spec\.[tj]s$/.test(file) &&
-        (!moduleMatch || moduleMatch.test(file))) {
-      testFiles.push(file);
+  const filter = (file) => {
+    if (!/-spec\.[tj]s$/.test(file)) {
+      return false;
     }
+
+    // This allows you to run specific modules only:
+    // npm run test -match=menu
+    const moduleMatch = process.env.npm_config_match
+      ? new RegExp(process.env.npm_config_match, 'g')
+      : null;
+    if (moduleMatch && !moduleMatch.test(file)) {
+      return false;
+    }
+
+    const baseElectronDir = path.resolve(__dirname, '..');
+    if (argv.files && !argv.files.includes(path.relative(baseElectronDir, file))) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const getFiles = require('../spec/static/get-files');
+  const testFiles = await getFiles(__dirname, { filter });
+  testFiles.sort().forEach((file) => {
+    mocha.addFile(file);
   });
 
-  const baseElectronDir = path.resolve(__dirname, '..');
-
-  walker.on('end', () => {
-    testFiles.sort();
-    testFiles.forEach((file) => {
-      if (!argv.files || argv.files.includes(path.relative(baseElectronDir, file))) {
-        mocha.addFile(file);
-      }
+  const cb = () => {
+    // Ensure the callback is called after runner is defined
+    process.nextTick(() => {
+      process.exit(runner.failures);
     });
-    const cb = () => {
-      // Ensure the callback is called after runner is defined
-      process.nextTick(() => {
-        process.exit(runner.failures);
-      });
-    };
+  };
 
-    // Set up chai in the correct order
-    const chai = require('chai');
-    chai.use(require('chai-as-promised'));
-    chai.use(require('dirty-chai'));
+  // Set up chai in the correct order
+  const chai = require('chai');
+  chai.use(require('chai-as-promised'));
+  chai.use(require('dirty-chai'));
 
-    const runner = mocha.run(cb);
-  });
+  const runner = mocha.run(cb);
 });
-
-function partition (xs, f) {
-  const trues = [];
-  const falses = [];
-  xs.forEach(x => (f(x) ? trues : falses).push(x));
-  return [trues, falses];
-}

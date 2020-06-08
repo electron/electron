@@ -329,27 +329,27 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
 int WebEventModifiersToEventFlags(int modifiers) {
   int flags = 0;
 
-  if (modifiers & blink::WebInputEvent::kShiftKey)
+  if (modifiers & blink::WebInputEvent::Modifiers::kShiftKey)
     flags |= ui::EF_SHIFT_DOWN;
-  if (modifiers & blink::WebInputEvent::kControlKey)
+  if (modifiers & blink::WebInputEvent::Modifiers::kControlKey)
     flags |= ui::EF_CONTROL_DOWN;
-  if (modifiers & blink::WebInputEvent::kAltKey)
+  if (modifiers & blink::WebInputEvent::Modifiers::kAltKey)
     flags |= ui::EF_ALT_DOWN;
-  if (modifiers & blink::WebInputEvent::kMetaKey)
+  if (modifiers & blink::WebInputEvent::Modifiers::kMetaKey)
     flags |= ui::EF_COMMAND_DOWN;
-  if (modifiers & blink::WebInputEvent::kCapsLockOn)
+  if (modifiers & blink::WebInputEvent::Modifiers::kCapsLockOn)
     flags |= ui::EF_CAPS_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::kNumLockOn)
+  if (modifiers & blink::WebInputEvent::Modifiers::kNumLockOn)
     flags |= ui::EF_NUM_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::kScrollLockOn)
+  if (modifiers & blink::WebInputEvent::Modifiers::kScrollLockOn)
     flags |= ui::EF_SCROLL_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::kLeftButtonDown)
+  if (modifiers & blink::WebInputEvent::Modifiers::kLeftButtonDown)
     flags |= ui::EF_LEFT_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::kMiddleButtonDown)
+  if (modifiers & blink::WebInputEvent::Modifiers::kMiddleButtonDown)
     flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::kRightButtonDown)
+  if (modifiers & blink::WebInputEvent::Modifiers::kRightButtonDown)
     flags |= ui::EF_RIGHT_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::kIsAutoRepeat)
+  if (modifiers & blink::WebInputEvent::Modifiers::kIsAutoRepeat)
     flags |= ui::EF_IS_REPEAT;
 
   return flags;
