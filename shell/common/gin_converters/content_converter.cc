@@ -302,6 +302,7 @@ v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
 
   using Modifiers = blink::WebInputEvent::Modifiers;
   dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
+  dict.Set("isComposing", (in.GetModifiers() & Modifiers::kIsComposing) != 0);
   dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
   dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
   dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
