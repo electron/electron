@@ -842,8 +842,7 @@ describe('Menu module', function () {
 
       // Keep a weak reference to the menu.
       const v8Util = process.electronBinding('v8_util');
-      const map = v8Util.createIDWeakMap<Electron.Menu>();
-      map.set(0, menu);
+      const ref = new WeakRef(menu);
 
       setTimeout(() => {
         // Do garbage collection, since |menu| is not referenced in this closure
@@ -851,8 +850,9 @@ describe('Menu module', function () {
         v8Util.requestGarbageCollectionForTesting();
         setTimeout(() => {
           // Try to receive menu from weak reference.
-          if (map.has(0)) {
-            map.get(0)!.closePopup();
+          const menu = ref.deref();
+          if (menu) {
+            menu.closePopup();
             done();
           } else {
             done('Menu is garbage-collected while popuping');

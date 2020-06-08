@@ -71,15 +71,14 @@ describe('BrowserWindow module', () => {
     it('window does not get garbage collected when opened', (done) => {
       const w = new BrowserWindow({ show: false });
       // Keep a weak reference to the window.
-      const map = v8Util.createIDWeakMap<Electron.BrowserWindow>();
-      map.set(0, w);
+      const ref = new WeakRef(w);
       setTimeout(() => {
         // Do garbage collection, since |w| is not referenced in this closure
         // it would be gone after next call if there is no other reference.
         v8Util.requestGarbageCollectionForTesting();
 
         setTimeout(() => {
-          expect(map.has(0)).to.equal(true);
+          expect(ref.deref()).to.not.equal(undefined);
           done();
         });
       });

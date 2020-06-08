@@ -7,7 +7,6 @@
 
 #include "base/hash/hash.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/common/api/electron_api_key_weak_map.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -17,6 +16,7 @@
 #include "v8/include/v8-profiler.h"
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
+#include "shell/common/api/electron_api_key_weak_map.h"
 #include "shell/common/api/remote/remote_callback_freer.h"
 #include "shell/common/api/remote/remote_object_freer.h"
 #endif
@@ -153,9 +153,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod(
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
-#endif
   dict.SetMethod("createIDWeakMap",
                  &electron::api::KeyWeakMap<int32_t>::Create);
+#endif
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
