@@ -109,8 +109,17 @@ app.whenReady().then(async () => {
   chai.use(require('dirty-chai'));
 
   const runner = mocha.run(cb);
+
+  // The cleanup method is registered this way rather than through an
+  // `afterEach` at the top level so that it can run before other `afterEach`
+  // methods.
+  //
+  // The order of events is:
+  // 1. test completes,
+  // 2. `defer()`-ed methods run, in reverse order,
+  // 3. regular `afterEach` hooks run.
   const { runCleanupFunctions } = require('./spec-helpers');
-  runner.on('test end', () => {
-    runCleanupFunctions();
+  runner.on('suite', (suite) => {
+    suite.afterEach('cleanup', runCleanupFunctions);
   });
 });
