@@ -141,9 +141,13 @@ this limitation.
 * `userGesture` Boolean (optional) - Default is `false`.
 
 Returns `Promise<any>` - A promise that resolves with the result of the executed code
-or is rejected if the result of the code is a rejected promise.
+or is rejected if execution could not start.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
+
+Note that when the execution of script fails, the returned promise will not
+and the `result` would be `undefined`. This is because Chromium does not
+errors of isolated worlds to foreign worlds.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
