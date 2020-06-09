@@ -24,14 +24,17 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
+    const p = emittedOnce(w.webContents, 'destroyed');
     await closeWindow(w);
     w = null as any;
+    await p;
 
     if (view) {
+      const p = emittedOnce(view.webContents, 'destroyed');
       (view.webContents as any).destroy();
       view = null as any;
+      await p;
     }
-    await new Promise(resolve => setTimeout(resolve));
 
     expect(webContents.getAllWebContents()).to.have.length(0);
   });
