@@ -8,3 +8,4 @@
   * `allowServiceWorkers` Boolean (optional) - Default false.
   * `supportFetchAPI` Boolean (optional) - Default false.
   * `corsEnabled` Boolean (optional) - Default false.
+  * `stream` Boolean (optional) - Default false.
