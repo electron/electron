@@ -231,10 +231,10 @@ index 4c89647080bb281cb69d78532b7276b4ef4456ac..2ac910d1c16b1e5589ebe6af4d31a0cc
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6c3016a74f939ef57423f4430e0a94c74a969c1c..ed35347b9537541106a2440cd7868d7a3fd64365 100644
+index 192f9f9990e0921032bae7430e0287247922be8f..5ea0c5e3c1002a593d77ba97612ffef8a681ea3a 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -226,6 +226,7 @@
+@@ -227,6 +227,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -242,7 +242,7 @@ index 6c3016a74f939ef57423f4430e0a94c74a969c1c..ed35347b9537541106a2440cd7868d7a
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3247,6 +3248,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -251,10 +251,10 @@ index 6c3016a74f939ef57423f4430e0a94c74a969c1c..ed35347b9537541106a2440cd7868d7a
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 8f50719201ddb0fcaadd4338886ba4a1fb03681c..ce201cb40f28f3864a4c50f6a785bac4617964de 100644
+index b1ed0a0174eda6e4f99c41ec1391b477c94508ab..51076fb70e866a9e98d906d6d173f21e90bbb5e7 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2539,6 +2539,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2543,6 +2543,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -265,7 +265,7 @@ index 8f50719201ddb0fcaadd4338886ba4a1fb03681c..ce201cb40f28f3864a4c50f6a785bac4
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
+index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -284,7 +284,7 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
  
  namespace blink {
  
-@@ -88,6 +90,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -90,6 +92,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -293,10 +293,10 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
- 
-   // TODO(ccameron): This needs to take into account whether or not this texture
-@@ -101,6 +108,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+   // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
+   // will need to take into account whether or not this texture will be sampled
+   // in linear or nonlinear space.
+@@ -97,6 +104,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -305,9 +305,9 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
+   return CanvasColorSpaceToGfxColorSpace(color_space_);
+ }
  
-   gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
@@ -352,7 +352,7 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
+index 16eeda0d910c555aae074fe1ed8ba04c4be76d9e..095b704442f55e978c7f60e9c97c2abe20b131a7 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -10,6 +10,7 @@ namespace switches {
@@ -364,7 +364,7 @@ index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce8865e888766 100644
+index fa86fc52621f4cf12bad58f8c1dd7ca6b29a307c..6b98b75c05643036ecd0fb71a8682ee1088ac52e 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -11,6 +11,8 @@
@@ -374,5 +374,5 @@ index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce886
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
 +
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
+ GFX_SWITCHES_EXPORT extern const char kDisableYuv420Biplanar[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
- GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];
