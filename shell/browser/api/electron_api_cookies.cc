@@ -157,7 +157,7 @@ void FilterCookieWithStatuses(const base::Value& filter,
                               const net::CookieStatusList& list,
                               const net::CookieStatusList& excluded_list) {
   FilterCookies(filter, std::move(promise),
-                net::cookie_util::StripStatuses(list));
+                net::cookie_util::StripAccessResults(list));
 }
 
 // Parse dictionary property to CanonicalCookie time correctly.
