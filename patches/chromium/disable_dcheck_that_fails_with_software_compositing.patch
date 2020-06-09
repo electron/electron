@@ -7,10 +7,10 @@ Should be removed once https://bugs.chromium.org/p/chromium/issues/detail?id=108
 is addressed.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 6b6185c45b4f39bf6afeb61deb51a00a29fb454e..3d7c93d9f1d6c54a944121520faf4fcfbc210f8b 100644
+index db101407da7678b61af311791dcc6689a51e35b5..6191775ea0566862722741a3c6102867082f33d6 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -2412,13 +2412,13 @@ void HWNDMessageHandler::OnPaint(HDC dc) {
+@@ -2421,13 +2421,13 @@ void HWNDMessageHandler::OnPaint(HDC dc) {
        RECT cr;
        if (GetClientRect(hwnd(), &cr)) {
          if (exposed_pixels_.height() > 0) {

@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 232b335120eb948b4ca7892d327328f1ab944236..396ff4d7e7a6c8e4c9446defca12dd06e2404bec 100644
+index 13046b2446a57cd7088cf95cf795e548662f26c5..40f8a16ab82efe9f7dfb78987551f19cbb063d8a 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4742,6 +4742,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4719,6 +4719,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 232b335120eb948b4ca7892d327328f1ab944236..396ff4d7e7a6c8e4c9446defca12dd06
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e5575bae0c2ce24db531e0ed274093186703b759..73b24ce8d3d7dcddf4bd407fcafd3b83f89703ee 100644
+index a1ae6820c83f33e1300e26cf861d886cb75c5b77..b37152dcb88e8ab905c0119e81bf9307b38153e0 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2978,9 +2978,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -2982,9 +2982,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -38,10 +38,10 @@ index e5575bae0c2ce24db531e0ed274093186703b759..73b24ce8d3d7dcddf4bd407fcafd3b83
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 89fe82ec16e67ee8e23a00208b379711fd17347a..a0d5225dd61f98964faf8ea21b2e42f40f90eb1e 100644
+index 26523f771b366e52af6902047b85ab822f5afadf..8545f982d4142db1140ddb6b4fa71e64cef0966e 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -278,6 +278,10 @@ struct CreateNewWindowParams {
+@@ -277,6 +277,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -135,18 +135,18 @@ index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 52896aa3b0f272b4e299f1afe3ffa69ecdb8397a..8ad4a07fd94181f93d5474d22436162c1b19a058 100644
+index e651e66c1cfc83581fc81471d5d1f9172cfbfa31..6a8428d59c985c1078e6196a400a129647139caa 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -68,6 +68,7 @@
- #include "content/renderer/ime_event_guard.h"
+@@ -67,6 +67,7 @@
+ #include "content/renderer/history_serialization.h"
  #include "content/renderer/internal_document_state_data.h"
  #include "content/renderer/loader/request_extra_data.h"
 +#include "content/renderer/loader/web_url_request_util.h"
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1244,6 +1245,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1243,6 +1244,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -158,7 +158,7 @@ index 52896aa3b0f272b4e299f1afe3ffa69ecdb8397a..8ad4a07fd94181f93d5474d22436162c
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b/content/shell/browser/web_test/web_test_content_browser_client.cc
-index c69a7f463fbf629320c88f65a9c0f6ce9c3bf0db..6d7f47624414c4e9e77680e415facd8f3e2130ee 100644
+index 021b06878da520d5e5576cb01c60a4a2e017b9ad..71d9fc7215180a47b45c924ed95fb8619db598f6 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
 @@ -400,6 +400,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(

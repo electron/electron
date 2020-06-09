@@ -8,15 +8,15 @@ and cause a DCHECK(), since the resource will be loaded as an empty
 string.
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 877d0ba2f48359243527ddebf1d91132b3d5c455..cd69de498c4968ade0ffabf45b72d4d63b70b10f 100644
+index 73a46d0597b391c7f87e5f99411cd19fa1d26a83..9d1896203fea1d57cf084a6589f9ebbfdedc4fa3 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -6,7 +6,7 @@
- 
+@@ -7,7 +7,7 @@
  #include "base/strings/string_util.h"
+ #include "base/values.h"
  #include "chrome/common/chrome_content_client.h"
 -#include "chrome/grit/browser_resources.h"
 +#include "electron/grit/electron_resources.h"
- #include "ui/base/resource/resource_bundle.h"
- 
- namespace pdf_extension_util {
+ #include "components/strings/grit/components_strings.h"
+ #include "components/zoom/page_zoom_constants.h"
+ #include "pdf/pdf_features.h"
