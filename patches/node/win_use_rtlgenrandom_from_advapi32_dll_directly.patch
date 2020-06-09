@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Tue, 9 Jun 2020 11:23:55 -0700
+Subject: win: use RtlGenRandom from advapi32.dll directly
+
+At least two people have reported that `LoadLibrary("advapi32.dll")`
+fails in some configurations.
+
+Libuv already links against advapi32.dll so let's sidestep the issue
+by linking to `RtlGenRandom()` directly instead of looking it up at
+runtime.
+
+Fixes: #2759
+PR-URL: #2762
+Reviewed-By: Bartosz Sosnowski <bartosz@janeasystems.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Jameson Nash <vtjnash@gmail.com>
+
+Cherry-Pick: https://github.com/libuv/libuv/commit/335e8a6d128646e5a19d39dfc677f5a5a555f7cc
+
+diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
+index 4de638f5971c35aaeb9fe5e2ff67a806bbc54baf..34a898bfa425b6ba716a681541b602f3a191b258 100644
+--- a/deps/uv/src/win/util.c
++++ b/deps/uv/src/win/util.c
+@@ -63,6 +63,9 @@
+ /* Maximum environment variable size, including the terminating null */
+ #define MAX_ENV_VAR_LENGTH 32767
+ 
++/* A RtlGenRandom() by any other name... */
++extern BOOLEAN NTAPI SystemFunction036(PVOID Buffer, ULONG BufferLength);
++
+ /* Cached copy of the process title, plus a mutex guarding it. */
+ static char *process_title;
+ static CRITICAL_SECTION process_title_lock;
+@@ -1862,13 +1865,10 @@ int uv_gettimeofday(uv_timeval64_t* tv) {
+ }
+ 
+ int uv__random_rtlgenrandom(void* buf, size_t buflen) {
+-  if (pRtlGenRandom == NULL)
+-    return UV_ENOSYS;
+-
+   if (buflen == 0)
+     return 0;
+ 
+-  if (pRtlGenRandom(buf, buflen) == FALSE)
++  if (SystemFunction036(buf, buflen) == FALSE)
+     return UV_EIO;
+ 
+   return 0;
+diff --git a/deps/uv/src/win/winapi.c b/deps/uv/src/win/winapi.c
+index 85a9de8a2295ec3250f9ae41f5ef6dbe72dc2a8a..bb86ec8ceac8ba3fccd02b292aca7ddfab38e187 100644
+--- a/deps/uv/src/win/winapi.c
++++ b/deps/uv/src/win/winapi.c
+@@ -36,9 +36,6 @@ sNtQueryDirectoryFile pNtQueryDirectoryFile;
+ sNtQuerySystemInformation pNtQuerySystemInformation;
+ sNtQueryInformationProcess pNtQueryInformationProcess;
+ 
+-/* Advapi32 function pointers */
+-sRtlGenRandom pRtlGenRandom;
+-
+ /* Kernel32 function pointers */
+ sGetQueuedCompletionStatusEx pGetQueuedCompletionStatusEx;
+ 
+@@ -54,7 +51,6 @@ void uv_winapi_init(void) {
+   HMODULE powrprof_module;
+   HMODULE user32_module;
+   HMODULE kernel32_module;
+-  HMODULE advapi32_module;
+ 
+   ntdll_module = GetModuleHandleA("ntdll.dll");
+   if (ntdll_module == NULL) {
+@@ -138,12 +134,4 @@ void uv_winapi_init(void) {
+     pSetWinEventHook = (sSetWinEventHook)
+       GetProcAddress(user32_module, "SetWinEventHook");
+   }
+-
+-  advapi32_module = GetModuleHandleA("advapi32.dll");
+-  if (advapi32_module == NULL) {
+-    uv_fatal_error(GetLastError(), "GetModuleHandleA");
+-  }
+-
+-  pRtlGenRandom =
+-      (sRtlGenRandom) GetProcAddress(advapi32_module, "SystemFunction036");
+ }
+diff --git a/deps/uv/src/win/winapi.h b/deps/uv/src/win/winapi.h
+index fcc70652a9aedb72f92ce78b8ee21cea8933b905..322a212dd73c19378b7abda01c5b60a93cb8e1d5 100644
+--- a/deps/uv/src/win/winapi.h
++++ b/deps/uv/src/win/winapi.h
+@@ -4589,11 +4589,6 @@ typedef NTSTATUS (NTAPI *sNtQueryInformationProcess)
+                   ULONG Length,
+                   PULONG ReturnLength);
+ 
+-/*
+- * Advapi32 headers
+- */
+-typedef BOOLEAN (WINAPI *sRtlGenRandom)(PVOID Buffer, ULONG BufferLength);
+-
+ /*
+  * Kernel32 headers
+  */
+@@ -4736,9 +4731,6 @@ extern sNtQueryDirectoryFile pNtQueryDirectoryFile;
+ extern sNtQuerySystemInformation pNtQuerySystemInformation;
+ extern sNtQueryInformationProcess pNtQueryInformationProcess;
+ 
+-/* Advapi32 function pointers */
+-extern sRtlGenRandom pRtlGenRandom;
+-
+ /* Kernel32 function pointers */
+ extern sGetQueuedCompletionStatusEx pGetQueuedCompletionStatusEx;
+ 
