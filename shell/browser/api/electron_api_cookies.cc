@@ -152,10 +152,11 @@ void FilterCookies(const base::Value& filter,
   promise.Resolve(result);
 }
 
-void FilterCookieWithStatuses(const base::Value& filter,
-                              gin_helper::Promise<net::CookieList> promise,
-                              const net::CookieStatusList& list,
-                              const net::CookieStatusList& excluded_list) {
+void FilterCookieWithStatuses(
+    const base::Value& filter,
+    gin_helper::Promise<net::CookieList> promise,
+    const net::CookieAccessResultList& list,
+    const net::CookieAccessResultList& excluded_list) {
   FilterCookies(filter, std::move(promise),
                 net::cookie_util::StripAccessResults(list));
 }
