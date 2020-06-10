@@ -16,6 +16,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -24,6 +25,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
+#include "skia/ext/platform_canvas.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
@@ -100,6 +102,10 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 #endif
 
 void Noop(char*, void*) {}
+
+int kPillFontSize = 96;
+int kPillBuffer = 100;
+int kPillEncircleDistance = 64;
 
 }  // namespace
 
@@ -509,6 +515,200 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
 }
 #endif
 
+gin::Handle<NativeImage> NativeImage::AddBadge(gin_helper::ErrorThrower thrower,
+                                               gin_helper::Dictionary options) {
+  if (IsEmpty())
+    return CreateEmpty(thrower.isolate());
+
+  v8::Isolate* isolate = thrower.isolate();
+  std::string text;
+  SkColor text_color = SK_ColorWHITE;
+  SkColor pill_color = SK_ColorRED;
+  if (!options.Get("text", &text)) {
+    thrower.ThrowError("Required option 'text' was not provided to addBadge");
+    return gin::Handle<NativeImage>();
+  }
+  {
+    std::string text_hex_code;
+    if (options.Get("textColor", &text_hex_code)) {
+      text_color = ParseHexColor(text_hex_code);
+    }
+  }
+  {
+    std::string pill_hex_code;
+    if (options.Get("badgeColor", &pill_hex_code)) {
+      pill_color = ParseHexColor(pill_hex_code);
+    }
+  }
+  if (text_color == pill_color) {
+    thrower.ThrowError(
+        "textColor and pillColor must be different colors, but they resolved "
+        "to the same color");
+    return gin::Handle<NativeImage>();
+  }
+  BadgePosition badge_position = BadgePosition::TOP_RIGHT;
+  options.Get("badgePosition", &badge_position);
+
+  SkFont font;
+  font.setTypeface(SkTypeface::MakeFromName("monospace", SkFontStyle()));
+  font.setHinting(SkFontHinting::kNormal);
+  font.setSize(kPillFontSize);
+  font.setSubpixel(true);
+  font.setEdging(SkFont::Edging::kSubpixelAntiAlias);
+
+  auto blob = SkTextBlob::MakeFromString(text.c_str(), font);
+  // Get loose bounds of text, these are not exact and we can't know
+  // the exact bounds without painting to the canvas
+  auto bounds = blob->bounds();
+  int width = static_cast<int>(bounds.width());
+  int height = static_cast<int>(bounds.height());
+  const SkImageInfo info =
+      SkImageInfo::Make(width, height, kN32_SkColorType, kPremul_SkAlphaType);
+
+  SkBitmap only_text_bitmap;
+  only_text_bitmap.setInfo(info);
+  only_text_bitmap.allocPixels(info);
+
+  SkPaint pill_paint;
+  pill_paint.setColor(pill_color);
+  pill_paint.setStyle(SkPaint::kFill_Style);
+
+  SkCanvas canvas(only_text_bitmap);
+
+  SkPaint text_paint;
+  text_paint.setColor(text_color);
+  text_paint.setStyle(SkPaint::kFill_Style);
+
+  // Draw text to canvas
+  canvas.drawTextBlob(blob, 0, bounds.height() * 0.5, text_paint);
+
+  // Get drawn bounds of text, we do this by searching for the most
+  // top-left and most bottom-right white pixel.  Those two pixels
+  // can be considered the bounding box around the drawn text
+  gfx::Point top_left;
+  gfx::Point bottom_right;
+  bool found_first = false;
+  for (int x = 0; x < only_text_bitmap.width(); ++x) {
+    for (int y = 0; y < only_text_bitmap.height(); ++y) {
+      SkColor color = only_text_bitmap.getColor(x, y);
+      // Every non-transparent pixel is part of the text
+      if (SkColorGetA(color) != 0) {
+        if (!found_first) {
+          top_left.SetPoint(x, y);
+          bottom_right.SetPoint(x, y);
+          found_first = true;
+        } else {
+          if (x < top_left.x())
+            top_left.set_x(x);
+          if (y < top_left.y())
+            top_left.set_y(y);
+          if (x > bottom_right.x())
+            bottom_right.set_x(x);
+          if (y > bottom_right.y())
+            bottom_right.set_y(y);
+        }
+      }
+    }
+  }
+
+  // Cropped Text
+  SkBitmap cropped_bitmap;
+  {
+    const SkImageInfo cropped_info = SkImageInfo::Make(
+        bottom_right.x() - top_left.x(), bottom_right.y() - top_left.y(),
+        kN32_SkColorType, kPremul_SkAlphaType);
+    cropped_bitmap.setInfo(cropped_info);
+    cropped_bitmap.allocPixels(cropped_info);
+    cropped_bitmap.writePixels(only_text_bitmap.pixmap(), -top_left.x(),
+                               -top_left.y());
+  }
+
+  int text_width = bottom_right.x() - top_left.x();
+  int pill_height = bottom_right.y() - top_left.y() + kPillBuffer;
+  int pill_width = bottom_right.x() - top_left.x();
+  if (pill_width < pill_height)
+    pill_width = pill_height;
+  // The pill must be at least kPillEncircleDistance wider than the text so the
+  // text is guaranteed to be encircled by the pill.  I could put the math here
+  // but if you're here doing math you're changing this enough that it probably
+  // won't matter
+  if (pill_width < text_width + kPillEncircleDistance)
+    pill_width = text_width + kPillEncircleDistance;
+
+  // Pill / Badge
+  SkBitmap pill_bitmap;
+  {
+    const SkImageInfo pill_info = SkImageInfo::Make(
+        pill_width, pill_height, kN32_SkColorType, kPremul_SkAlphaType);
+    pill_bitmap.setInfo(pill_info);
+    pill_bitmap.allocPixels(pill_info);
+
+    SkCanvas pill_canvas(pill_bitmap);
+
+    pill_canvas.drawCircle(pill_height / 2, pill_height / 2, pill_height / 2,
+                           pill_paint);
+    // If the pill is wider than it's height we'll need to draw a rectangle and
+    // another circle to get the required "pill" shape
+    if (pill_width > pill_height) {
+      pill_canvas.drawCircle(pill_width - (pill_height / 2), pill_height / 2,
+                             pill_height / 2, pill_paint);
+      SkRect rect = SkRect::MakeLTRB(
+          pill_height / 2, 0.f, pill_width - (pill_height / 2), pill_height);
+      pill_canvas.drawRect(rect, pill_paint);
+    }
+
+    pill_canvas.drawBitmap(cropped_bitmap, (pill_width / 2) - (text_width / 2),
+                           kPillBuffer / 2);
+  }
+
+  gfx::ImageSkia pill_skia;
+  pill_skia.AddRepresentation(gfx::ImageSkiaRep(pill_bitmap, 1.0f));
+
+  SkBitmap current_bitmap =
+      image_.AsImageSkia().GetRepresentation(1.0f).GetBitmap();
+  SkBitmap badged_bitmap;
+  badged_bitmap.setInfo(current_bitmap.info());
+  badged_bitmap.allocPixels(current_bitmap.info());
+  badged_bitmap.writePixels(current_bitmap.pixmap(), 0, 0);
+  SkCanvas badged_canvas(badged_bitmap);
+
+  int target_height = current_bitmap.height() * 23 / 60;
+  float scale = target_height * 1.f / pill_height;
+  gfx::Size size =
+      gfx::ScaleToRoundedSize(gfx::Size(pill_width, pill_height), scale, scale);
+  gfx::ImageSkia scaled_pill = gfx::ImageSkiaOperations::CreateResizedImage(
+      pill_skia, skia::ImageOperations::ResizeMethod::RESIZE_BEST, size);
+
+  SkBitmap scaled_pill_bitmap = scaled_pill.GetRepresentation(1.0f).GetBitmap();
+
+  SkScalar badge_left;
+  SkScalar badge_top;
+  switch (badge_position) {
+    case BadgePosition::TOP_LEFT:
+      badge_left = 0;
+      badge_top = 0;
+      break;
+    case BadgePosition::TOP_RIGHT:
+      badge_left = current_bitmap.width() - size.width();
+      badge_top = 0;
+      break;
+    case BadgePosition::BOTTOM_LEFT:
+      badge_left = 0;
+      badge_top = current_bitmap.height() - size.height();
+      break;
+    case BadgePosition::BOTTOM_RIGHT:
+      badge_left = current_bitmap.width() - size.width();
+      badge_top = current_bitmap.height() - size.height();
+      break;
+  }
+  badged_canvas.drawBitmap(scaled_pill_bitmap, badge_left, badge_top);
+
+  gfx::ImageSkia badged;
+  badged.AddRepresentation(gfx::ImageSkiaRep(badged_bitmap, 1.0f));
+
+  return Create(isolate, gfx::Image(badged));
+}
+
 // static
 void NativeImage::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
@@ -529,6 +729,7 @@ void NativeImage::BuildPrototype(v8::Isolate* isolate,
                    &NativeImage::SetTemplateImage)
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
+      .SetMethod("addBadge", &NativeImage::AddBadge)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
       .SetMethod("addRepresentation", &NativeImage::AddRepresentation);
 }
@@ -574,6 +775,30 @@ bool Converter<electron::api::NativeImage*>::FromV8(
       static_cast<gin_helper::WrappableBase*>(
           gin_helper::internal::FromV8Impl(isolate, val)));
   return *out != nullptr;
+}
+
+bool Converter<electron::api::BadgePosition>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    electron::api::BadgePosition* out) {
+  std::string position;
+  if (!gin::ConvertFromV8(isolate, val, &position))
+    return false;
+  if (position == "top-left") {
+    *out = electron::api::BadgePosition::TOP_LEFT;
+    return true;
+  } else if (position == "top-right") {
+    *out = electron::api::BadgePosition::TOP_RIGHT;
+    return true;
+  } else if (position == "bottom-left") {
+    *out = electron::api::BadgePosition::BOTTOM_LEFT;
+    return true;
+  } else if (position == "bottom-right") {
+    *out = electron::api::BadgePosition::BOTTOM_RIGHT;
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace gin

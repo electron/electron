@@ -39,6 +39,13 @@ namespace electron {
 
 namespace api {
 
+enum class BadgePosition {
+  TOP_LEFT,
+  TOP_RIGHT,
+  BOTTOM_LEFT,
+  BOTTOM_RIGHT,
+};
+
 class NativeImage : public gin_helper::Wrappable<NativeImage> {
  public:
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
@@ -91,6 +98,8 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
   gin::Handle<NativeImage> Resize(gin::Arguments* args,
                                   base::DictionaryValue options);
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
+  gin::Handle<NativeImage> AddBadge(gin_helper::ErrorThrower thrower,
+                                    gin_helper::Dictionary options);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
   gfx::Size GetSize(const base::Optional<float> scale_factor);
@@ -126,6 +135,13 @@ struct Converter<electron::api::NativeImage*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::api::NativeImage** out);
+};
+
+template <>
+struct Converter<electron::api::BadgePosition> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::BadgePosition* out);
 };
 
 }  // namespace gin

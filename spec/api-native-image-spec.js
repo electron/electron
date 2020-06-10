@@ -500,6 +500,19 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('addBadge(options)', () => {
+    it('returns an empty image when called on an empty image', () => {
+      expect(nativeImage.createEmpty().addBadge({ text: 'foo' }).isEmpty()).to.be.true();
+    });
+
+    it('returns a badged image', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png')).resize({ width: 40 });
+      const badged = image.addBadge({ text: '1' });
+      expect(badged.toPNG().equals(image.toPNG())).to.be.false();
+      expect(badged.toDataURL()).to.equal('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAOCAYAAABdC15GAAAFcUlEQVRIia2VfWzVVx3GP9/z+922ty/0ttALxQq4gbwUAwQca4gOyIxMl0nEiyZOhcjoXsyGqDEmi7nzD5XMMYSEuKFurpku7SImLFF5kZnhiDjXUqUwmo1BBy3t7cvtKL2/l3O+/lG6lJb9Y/b975zvOc95npPzPEdADYibt2NwuSYS91tr4jgOPcWbrWKKXRT8LudVHWafBHx0JYAW/X7LRlNVuoG+9/9R+GZTk8Ji4DlgBdAKbDUgbs7OgfvFlwPq3J/eezP5eM/e1A9cPNroXPRPPH9/aZCrHsNVURDNYjSDlwUz8VQFUcVoM57qzT1QIauGjHqsfMYHNSHa6QpRY6RufG0TicRq6usNsBp4gVnfzd8xZ+dQUPdofsGtpFZ94+05EwlM7usNkpqdTAhUx9frlH0A7Lqvwjz/9ZjffvVLN7BUjYl082annhcpqG+c3R0jr13Zm+pk7XGfV9fFEzEGm26/NE5OQC9t+twqk2CxtVF1FIfH5ODr/9UsRrI4/Xv1x8FroMibTmwviPT9BUUQ0dpHBud6ycQajextVhKFOAjO56ZvP+HUGawkbshoFZEV2tXlxPN8rH3DODUN1moHqFCzVqfKVDNO7sKX1/1IsZtMFP3LhvayieyJji8s3yZZnB6Z9nlUdwGdxPEpYvsLe3R6E4LevuPqmpIS9qnjjFUNTUnySaPJgG+3XEMFDKGm5qWu3LUy54yc5eRJGyQTcdeqBe2+UwV0BojSojcTzGiRtkgkmWZzZvjplUTBjrmHXp95o3uuY/2nFnnGHHhnW/oQieH9xDTK3YVWAH2FjElXdOivebGsNb291sudu7y76jRweuZ3cpswRZuAw54TsenEAMtmbL9ekehrrYk3li1ctkGN3iNG3jDOxu2KWQtqyI7dGEDqob67qtMjP0s/3H+K6kzjzLj7ziAMEgBZMApGZfSP8ai1fqn5ClKoo1AY1OyYSeReztqrhV7K2XB9BLGqa8Z1O+SiOrk+9k6dEqg/rGF9sY0WVi5dvsX3GFlyrP2BxUdOP2NcrD8lmaqterD3+2TFgTiyaoZyvScHOq/92Nl4FZb+6YPvvlNpTNWZtUtmZcEBmsT2h86GOqpv4SjCsUKyOHrwAURtHkMP7/KEldJF6ceGv1fzcH4DSj6Iyn/Cs3dPk9gqxnN+IbwQx9GiBYfb9i84evqv42LMwLPplmi4d7dXmt6Veij3OJmuJFlxtNSHVPZHVhKUkqvkTY5dC8MeX/glgIDmg6Kvia9/m3vg6lFGeYlifq7NVMqjBPoKSw0uyBXzAq9KW8Wli7WgfSY57c9xdH3v8G9kgO7bEs5zhqGRstLzPc95uGTnuvqXT3163qyuhrpkW8MnPyZjESBa+WD/ZmP8neriEVzU7pwMiUhSPH92opDf3ff8J9qON9TPryvhKavurLNcDKymA9v79Op7Bq4BPg08SUwNhhPE1IWWPxRv5D8AMxqHVqnROozsEWPK7FDFusE77/Dx6l4yQfSaq03+sH1P29LS4qKnQuvi2Oq/C6E7OCGnRAHKt75fY4pGU1HoFUbjaICmWSOTfd35mfk1ceC7xafO9U/xfDPllFEuX6QHVOoyJ0tGZsz/lTh5m6KSl23/QLdJTdtHHK0fLH1xCXt25Mnel8ycORS0tGAB+tYsrDg++FawuYNwgmObvVsGakY/mNcxFR8E8pSfpBlvIp4qkmrs3lrV2NM3GbbygSvnS7YMzrtp/5j5ZMJYbp3wE270/6+xP75y23vrJVF2xMV2y/DQ1YNULXHl8eV7jZHPDudnP0bLEwpZ92EoH0Lwo6oxoRXbe79lTOIRXHwZpBsbduXDvr00LZvyfCbX/wC7qLID4lOywQAAAABJRU5ErkJggg==');
+    });
+  });
+
   describe('getAspectRatio()', () => {
     it('returns an aspect ratio of an empty image', () => {
       expect(nativeImage.createEmpty().getAspectRatio()).to.equal(1.0);

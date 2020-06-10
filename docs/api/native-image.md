@@ -335,6 +335,29 @@ Add an image representation for a specific scale factor. This can be used
 to explicitly add different scale factor representations to an image. This
 can be called on empty images.
 
+#### `image.addBadge(options)`
+
+* `options` Object
+  * `text` String - The text to put inside the generated badge
+  * `textColor` String - Hex code for a #RGB or #ARGB color to use for the text of the badge
+  * `badgeColor` String - Hex code for a #RGB or #ARGB color to use for the background color of the badge
+  * `badgePosition` String - Where to draw the badge on the image. Can be any of the following:
+    * `top-left`
+    * `top-right`
+    * `bottom-left`
+    * `bottom-right`
+
+Returns `NativeImage` - The current image with a badge generated and painted on top.
+
+Adds a badge to the provided image, this can be used for adding notification badges to your app icon
+for use on Windows / Linux.  E.g.
+
+```js
+const appIcon = nativeImage.createFromPath('/my/app/icon.png')
+// Set the window icon to your app icon with a badge with the number '2' in it
+mainWindow.setIcon(appIcon.addBadge({ text: '2' }))
+```
+
 [buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
 
 ### Instance Properties
