@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 1f69a4845de28aa0df482d8d69ee5d874c8d68f5..94334a03648e58433b92e94ef1711edefb132e02 100644
+index debf7a24dd9900794791cfeb451ad527ff1a8c84..b3474afe9f44337937380812e05e02cad447d7fb 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -114,6 +114,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -115,6 +115,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 1f69a4845de28aa0df482d8d69ee5d874c8d68f5..94334a03648e58433b92e94ef1711ede
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f7773d50098c467b811cd0c022a67ead817201b5..93913c2046e621fed9e18d49342c43d00be5a160 100644
+index 074e9eb5ade9de1bb14c8c66a81931c3a17aac6a..a2884f9a9f15b7db9c602342232d4ec57684ad64 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4755,6 +4755,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4753,6 +4753,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index f7773d50098c467b811cd0c022a67ead817201b5..93913c2046e621fed9e18d49342c43d0
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index aa254978f77bf167aebea2500a0271e3b8583e82..effbbcd787c8fb7b7771c0ba95c1cc3313678bf6 100644
+index 4355ba82e8db2948b3518e544602b47ba278ca3f..f2bd1ebc565172bbaf6441fb177efdbb5e594dad 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -725,6 +725,8 @@ class CONTENT_EXPORT RenderFrameImpl

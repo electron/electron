@@ -12,7 +12,7 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side and correspondingly in gin.
 
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
-index 891a2e316f6c9eeda9670aaf5201ed57e5f7ba49..00ea3682f491175c6f9bea727de120f5f0de3dac 100644
+index 124c2f72a5cbc2abe8c7686c32b61718d4c95d4b..fa4a478450cc97d231496ab82c74c1a94d1f3557 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
 @@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {

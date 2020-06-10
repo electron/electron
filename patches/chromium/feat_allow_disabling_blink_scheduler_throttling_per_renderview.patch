@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index ae5aa1288ab21e9163811d955068224e2818a3cd..387b7dff11f1d8dc73b282fbe15b1c1063586227 100644
+index dcf72ea82e21859b57e6e8b2aa713b057825504c..3ff30fffb788bc0fac668c0df076a11b38fdb510 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -490,6 +490,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -61,10 +61,10 @@ index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f8
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 6a8428d59c985c1078e6196a400a129647139caa..46b985203f76ed55cc84874a7e58c3d5eaa2909e 100644
+index 57447f4529917692155d1861c7658156978fa0be..2eaf980889ef9053e728dc09e76f1fcd889153b8 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1178,6 +1178,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1173,6 +1173,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -73,7 +73,7 @@ index 6a8428d59c985c1078e6196a400a129647139caa..46b985203f76ed55cc84874a7e58c3d5
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1674,6 +1676,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1669,6 +1671,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  

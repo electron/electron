@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index d8fcc693b35968542c24e2f07d2af2d70ec6e9ca..ebe16bf496fbea3c5a53b4d812bb6c1f51dde2fb 100644
+index 6882099ec36d8e697189e19fb9d52d800c4e1da4..bbcd1faaddc1aea09be9bcfc8b72c9e5c802b75c 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4719,6 +4719,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index d8fcc693b35968542c24e2f07d2af2d70ec6e9ca..ebe16bf496fbea3c5a53b4d812bb6c1f
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 48e9ae2dd7f0173ee5fcebcccbeaee5c4d660df9..dc7c8d140de66bb5e4f21f9905de6dbcd22a9071 100644
+index ff6f930ebab26889cba8f5ff0449bc9da54d4684..86feae868886f53da24658010dc2dd32620f0a45 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2978,9 +2978,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3001,9 +3001,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -135,7 +135,7 @@ index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index e651e66c1cfc83581fc81471d5d1f9172cfbfa31..6a8428d59c985c1078e6196a400a129647139caa 100644
+index 29220e08371ad0f7a400c81bd024c55130430767..57447f4529917692155d1861c7658156978fa0be 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -67,6 +67,7 @@
@@ -146,7 +146,7 @@ index e651e66c1cfc83581fc81471d5d1f9172cfbfa31..6a8428d59c985c1078e6196a400a1296
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1243,6 +1244,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1238,6 +1239,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
