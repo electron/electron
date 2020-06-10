@@ -14,12 +14,14 @@
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
+#include "gin/dictionary.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
+
 #include "base/files/file_path.h"
 #endif
 
@@ -97,6 +99,10 @@ class Browser : public WindowListObserver {
                                gin_helper::Arguments* args);
 
   base::string16 GetApplicationNameForProtocol(const GURL& url);
+
+  // get the name, icon and path for an application
+  gin::Dictionary GetApplicationInfoForProtocol(const GURL& url,
+                                                v8::Isolate* isolate);
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);

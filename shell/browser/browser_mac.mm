@@ -21,6 +21,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -147,20 +148,62 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return result == NSOrderedSame;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
+  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
+  gfx::Image icon(image);
+  return icon;
+}
+
+base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
+  NSString* app_display_name =
+      [[NSFileManager defaultManager] displayNameAtPath:app_path];
+  return base::SysNSStringToUTF16(app_display_name);
+}
+
+NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
       URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
   base::ScopedCFTypeRef<CFErrorRef> out_err;
+
   base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
       (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+
   if (out_err) {
     // likely kLSApplicationNotFoundErr
+    return nullptr;
+  }
+  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  return app_path;
+}
+
+base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+  NSString* app_path = GetAppPathForProtocol(url);
+  if (!app_path) {
     return base::string16();
   }
-  NSString* appPath = [base::mac::CFToNSCast(openingApp.get()) path];
-  NSString* appDisplayName =
-      [[NSFileManager defaultManager] displayNameAtPath:appPath];
-  return base::SysNSStringToUTF16(appDisplayName);
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(app_path);
+  return app_display_name;
+}
+
+gin::Dictionary Browser::GetApplicationInfoForProtocol(const GURL& url,
+                                                       v8::Isolate* isolate) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  NSString* ns_app_path = GetAppPathForProtocol(url);
+
+  if (!ns_app_path) {
+    return dict;
+  }
+
+  base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
+  gfx::Image app_icon = GetApplicationIconForProtocol(ns_app_path);
+
+  dict.Set("name", app_display_name);
+  dict.Set("path", app_path);
+  dict.Set("icon", app_icon);
+
+  return dict;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
