@@ -59,11 +59,11 @@ class ObjectsRegistry {
   // object
   // For more details on why we do renderer side ref counting see
   // https://github.com/electron/electron/pull/17464
-  remove (webContents: WebContents, contextId: string, id: number, rendererSideRefCount: number) {
+  remove (webContents: WebContents, contextId: string, id: number) {
     const ownerKey = getOwnerKey(webContents, contextId);
     const owner = this.owners[ownerKey];
     if (owner && owner.has(id)) {
-      const newRefCount = owner.get(id)! - rendererSideRefCount;
+      const newRefCount = owner.get(id)! - 1;
 
       // Only completely remove if the number of references GCed in the
       // renderer is the same as the number of references we sent them

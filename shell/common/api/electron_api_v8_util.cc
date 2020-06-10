@@ -149,7 +149,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("setRemoteCallbackFreer",
                  &electron::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
-  dict.SetMethod("addRemoteObjectRef", &electron::RemoteObjectFreer::AddRef);
   dict.SetMethod(
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
