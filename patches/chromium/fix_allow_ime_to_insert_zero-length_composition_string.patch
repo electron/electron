@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Lyu <penn.lv@gmail.com>
+Date: Tue, 9 Jun 2020 21:49:37 -0700
+Subject: Fix: allow IME to insert zero-length composition string
+
+Backport: https://chromium.googlesource.com/chromium/src.git/+/c20afc96e36f572d10c65d97f4313ba50a58280f%5E%21/#F0
+
+diff --git a/ui/base/ime/win/tsf_text_store.cc b/ui/base/ime/win/tsf_text_store.cc
+index 069a7caf54f4bd9027d8c473eec9315e6f14d8ff..73188e73bd5fd0f162a9b23b045b8927d6536ad4 100644
+--- a/ui/base/ime/win/tsf_text_store.cc
++++ b/ui/base/ime/win/tsf_text_store.cc
+@@ -610,9 +610,7 @@ STDMETHODIMP TSFTextStore::RequestLock(DWORD lock_flags, HRESULT* result) {
+   // 3. User commits current composition text.
+   if (((new_composition_start > last_composition_start &&
+         text_input_client_->HasCompositionText()) ||
+-       (wparam_keydown_fired_ == 0 && !has_composition_range_ &&
+-        !text_input_client_->HasCompositionText()) ||
+-       (wparam_keydown_fired_ != 0 && !has_composition_range_)) &&
++      !has_composition_range_) &&
+       text_input_client_) {
+     CommitTextAndEndCompositionIfAny(last_composition_start,
+                                      new_composition_start);
+@@ -1295,8 +1293,11 @@ void TSFTextStore::CommitTextAndEndCompositionIfAny(size_t old_size,
+             : new_committed_string_size);
+     // TODO(crbug.com/978678): Unify the behavior of
+     //     |TextInputClient::InsertText(text)| for the empty text.
+-    if (!new_committed_string.empty())
++    if (!new_committed_string.empty()) {
+       text_input_client_->InsertText(new_committed_string);
++    } else {
++      text_input_client_->ClearCompositionText();
++    }
+     // Notify accessibility about this committed composition
+     text_input_client_->SetActiveCompositionForAccessibility(
+         replace_text_range_, new_committed_string,
