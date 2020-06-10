@@ -21,11 +21,16 @@
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
+#include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
+#include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
@@ -104,6 +109,53 @@ base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
   }
   return base::string16(out_buffer);
 }
+//
+base::string16 GetAppInfoHelperForProtocol(const GURL& url,
+                                           ASSOCSTR assoc_str) {
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme))
+    return base::string16();
+
+  wchar_t out_buffer[1024];
+  DWORD buffer_size = base::size(out_buffer);
+  HRESULT hr =
+      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
+                       out_buffer, &buffer_size);
+  if (FAILED(hr)) {
+    DLOG(WARNING) << "AssocQueryString failed!";
+    return base::string16();
+  }
+  return base::string16(out_buffer);
+}
+
+void OnIconDataAvailable(base::string16 app_path,
+                         base::string16 app_display_name,
+                         gin_helper::Promise<gin_helper::Dictionary> promise,
+                         gfx::Image icon) {
+  if (!icon.IsEmpty()) {
+    v8::HandleScope scope(promise.isolate());
+    gin_helper::Dictionary dict =
+        gin::Dictionary::CreateEmpty(promise.isolate());
+    dict.Set("appPath", app_path);
+    dict.Set("displayName", app_display_name), dict.Set("icon", icon);
+
+    promise.Resolve(dict);
+  } else {
+    promise.RejectWithErrorMessage("Failed to get file icon.");
+  }
+}
+
+base::string16 GetAppDisplayNameForProtocol(const GURL& url) {
+  return GetAppInfoHelperForProtocol(url, ASSOCSTR_FRIENDLYAPPNAME);
+}
+
+base::string16 GetAppPathForProtocol(const GURL& url) {
+  return GetAppInfoHelperForProtocol(url, ASSOCSTR_EXECUTABLE);
+}
+
+base::string16 GetApplicationIconForProtocol(const GURL& url) {
+  return GetAppInfoHelperForProtocol(url, ASSOCSTR_DEFAULTICON);
+}
 
 base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
   const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
@@ -167,6 +219,60 @@ void Browser::Focus(gin_helper::Arguments* args) {
   // On Windows we just focus on the first window found for this process.
   DWORD pid = GetCurrentProcessId();
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
+}
+
+void GetFileIcon(base::FilePath& path,
+                 v8::Isolate* isolate,
+                 base::CancelableTaskTracker& cancelable_task_tracker_,
+                 base::string16 app_path,
+                 base::string16 app_display_name,
+                 gin_helper::Promise<gin_helper::Dictionary> promise) {
+  base::FilePath normalized_path = path.NormalizePathSeparators();
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
+
+  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
+  gfx::Image* icon =
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+  if (icon) {
+    dict.Set("icon", *icon);
+    dict.Set("displayName", app_display_name);
+    dict.Set("appPath", app_path);
+    promise.Resolve(dict);
+  } else {
+    icon_manager->LoadIcon(normalized_path, icon_size,
+                           base::BindOnce(&OnIconDataAvailable, app_path,
+                                          app_display_name, std::move(promise)),
+                           &cancelable_task_tracker_);
+  }
+}
+
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    const GURL& url,
+    v8::Isolate* isolate) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  base::string16 app_path = GetAppPathForProtocol(url);
+
+  if (app_path.empty()) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
+
+  if (app_display_name.empty()) {
+    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return handle;
+  }
+
+  base::string16 app_icon_path = GetApplicationIconForProtocol(url);
+  base::FilePath app_icon_file_path = base::FilePath(app_icon_path);
+  GetFileIcon(app_icon_file_path, isolate, cancelable_task_tracker_, app_path,
+              app_display_name, std::move(promise));
+  return handle;
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {

@@ -185,14 +185,19 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   return app_display_name;
 }
 
-gin::Dictionary Browser::GetApplicationInfoForProtocol(const GURL& url,
-                                                       v8::Isolate* isolate) {
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    const GURL& url,
+    v8::Isolate* isolate) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
   NSString* ns_app_path = GetAppPathForProtocol(url);
 
   if (!ns_app_path) {
-    return dict;
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
   }
 
   base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
@@ -203,7 +208,8 @@ gin::Dictionary Browser::GetApplicationInfoForProtocol(const GURL& url,
   dict.Set("path", app_path);
   dict.Set("icon", app_icon);
 
-  return dict;
+  promise.Resolve(dict);
+  return handle;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
