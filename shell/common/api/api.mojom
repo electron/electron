@@ -84,8 +84,7 @@ interface ElectronBrowser {
   [EnableIf=enable_remote_module]
   DereferenceRemoteJSObject(
     string context_id,
-    int32 object_id,
-    int32 ref_count);
+    int32 object_id);
 
   UpdateDraggableRegions(
     array<DraggableRegion> regions);

@@ -91,8 +91,20 @@ bool ScopedDisableResize::disable_resize_ = false;
 
   NSRect result = [super constrainFrameRect:frameRect toScreen:screen];
   // Enable the window to be larger than screen.
-  if ([self enableLargerThanScreen])
-    result.size = frameRect.size;
+  if ([self enableLargerThanScreen]) {
+    // If we have a frame, ensure that we only position the window
+    // somewhere where the user can move or resize it (and not
+    // behind the menu bar, for instance)
+    //
+    // If there's no frame, put the window wherever the developer
+    // wanted it to go
+    if (shell_->has_frame()) {
+      result.size = frameRect.size;
+    } else {
+      result = frameRect;
+    }
+  }
+
   return result;
 }
 

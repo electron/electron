@@ -10,7 +10,7 @@ const path = require('path');
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools');
 
-const BLACKLIST = new Set([
+const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
@@ -232,16 +232,16 @@ async function findMatchingFiles (top, test) {
 
 async function findFiles (args, linter) {
   let filenames = [];
-  let whitelist = null;
+  let includelist = null;
 
-  // build the whitelist
+  // build the includelist
   if (args.changed) {
-    whitelist = await findChangedFiles(SOURCE_ROOT);
-    if (!whitelist.size) {
+    includelist = await findChangedFiles(SOURCE_ROOT);
+    if (!includelist.size) {
       return [];
     }
   } else if (args.only) {
-    whitelist = new Set(args._.map(p => path.resolve(p)));
+    includelist = new Set(args._.map(p => path.resolve(p)));
   }
 
   // accumulate the raw list of files
@@ -258,12 +258,12 @@ async function findFiles (args, linter) {
     filenames = filenames.filter(fileName => !ignoreFiles.has(fileName));
   }
 
-  // remove blacklisted files
-  filenames = filenames.filter(x => !BLACKLIST.has(x));
+  // remove ignored files
+  filenames = filenames.filter(x => !IGNORELIST.has(x));
 
-  // if a whitelist exists, remove anything not in it
-  if (whitelist) {
-    filenames = filenames.filter(x => whitelist.has(x));
+  // if a includelist exists, remove anything not in it
+  if (includelist) {
+    filenames = filenames.filter(x => includelist.has(x));
   }
 
   // it's important that filenames be relative otherwise clang-format will

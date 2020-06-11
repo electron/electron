@@ -1,0 +1,9 @@
+{
+  "name": "persistent-background-page",
+  "version": "1.0",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "manifest_version": 2
+}

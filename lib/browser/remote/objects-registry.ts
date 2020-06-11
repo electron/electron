@@ -51,19 +51,11 @@ class ObjectsRegistry {
   // Dereference an object according to its ID.
   // Note that an object may be double-freed (cleared when page is reloaded, and
   // then garbage collected in old page).
-  // rendererSideRefCount is the ref count that the renderer process reported
-  // at time of GC if this is different to the number of references we sent to
-  // the given owner then a GC occurred between a ref being sent and the value
-  // being pulled out of the weak map.
-  // In this case we decrement out ref count and do not delete the stored
-  // object
-  // For more details on why we do renderer side ref counting see
-  // https://github.com/electron/electron/pull/17464
-  remove (webContents: WebContents, contextId: string, id: number, rendererSideRefCount: number) {
+  remove (webContents: WebContents, contextId: string, id: number) {
     const ownerKey = getOwnerKey(webContents, contextId);
     const owner = this.owners[ownerKey];
     if (owner && owner.has(id)) {
-      const newRefCount = owner.get(id)! - rendererSideRefCount;
+      const newRefCount = owner.get(id)! - 1;
 
       // Only completely remove if the number of references GCed in the
       // renderer is the same as the number of references we sent them

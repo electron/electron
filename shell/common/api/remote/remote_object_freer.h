@@ -18,7 +18,6 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
                      v8::Local<v8::Object> target,
                      const std::string& context_id,
                      int object_id);
-  static void AddRef(const std::string& context_id, int object_id);
 
  protected:
   RemoteObjectFreer(v8::Isolate* isolate,
@@ -28,9 +27,6 @@ class RemoteObjectFreer : public ObjectLifeMonitor {
   ~RemoteObjectFreer() override;
 
   void RunDestructor() override;
-
-  // { context_id => { object_id => ref_count }}
-  static std::map<std::string, std::map<int, int>> ref_mapper_;
 
  private:
   std::string context_id_;
