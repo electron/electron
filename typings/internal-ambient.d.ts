@@ -46,7 +46,6 @@ declare namespace NodeJS {
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
     setRemoteCallbackFreer(fn: Function, contextId: string, id: number, sender: any): void
-    setRemoteObjectFreer(object: any, contextId: string, id: number): void
   }
 
   type DataPipe = {
