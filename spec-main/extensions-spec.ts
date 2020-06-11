@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
+import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import * as http from 'http';
 import { AddressInfo } from 'net';
@@ -267,6 +267,16 @@ describe('chrome extensions', () => {
       const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
       expect(receivedMessage).to.deep.equal({ some: 'message' });
     });
+  });
+
+  it('has session in background page', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    const promise = emittedOnce(app, 'web-contents-created');
+    await w.loadURL(`about:blank`);
+    const [, bgPageContents] = await promise;
+    expect(bgPageContents.session).to.not.equal(undefined);
   });
 
   describe('devtools extensions', () => {

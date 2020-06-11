@@ -1673,6 +1673,13 @@ describe('BrowserWindow module', () => {
       const after = w.getPosition();
       expect(after[1]).to.be.at.least(0);
     });
+    it('can move the window behind menu bar if it has no frame', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: true, frame: false });
+      w.setPosition(-10, -10);
+      const after = w.getPosition();
+      expect(after[0]).to.be.equal(-10);
+      expect(after[1]).to.be.equal(-10);
+    });
     it('without it, cannot move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: false });
       w.setPosition(-10, -10);

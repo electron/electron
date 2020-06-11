@@ -87,12 +87,24 @@ index 85378bb565de617b1bd611d28c8714361747a357..36de4c0b0353be2418dacd388e92d7c3
    }
  
 diff --git a/ui/base/accelerators/system_media_controls_media_keys_listener.cc b/ui/base/accelerators/system_media_controls_media_keys_listener.cc
-index 9d6084ceaccfd071549e63e3015f55ef292312ec..3f6af8b1b49bf0f226e9336c222884b07bf69e55 100644
+index 9d6084ceaccfd071549e63e3015f55ef292312ec..846210b04d6e2e193413c643296938ec550f6d25 100644
 --- a/ui/base/accelerators/system_media_controls_media_keys_listener.cc
 +++ b/ui/base/accelerators/system_media_controls_media_keys_listener.cc
 @@ -65,6 +65,11 @@ bool SystemMediaControlsMediaKeysListener::StartWatchingMediaKey(
      case VKEY_MEDIA_STOP:
        service_->SetIsStopEnabled(true);
+       break;
++    case VKEY_VOLUME_DOWN:
++    case VKEY_VOLUME_UP:
++    case VKEY_VOLUME_MUTE:
++      // Do nothing.
++      break;
+     default:
+       NOTREACHED();
+   }
+@@ -97,6 +102,11 @@ void SystemMediaControlsMediaKeysListener::StopWatchingMediaKey(
+     case VKEY_MEDIA_STOP:
+       service_->SetIsStopEnabled(false);
        break;
 +    case VKEY_VOLUME_DOWN:
 +    case VKEY_VOLUME_UP:

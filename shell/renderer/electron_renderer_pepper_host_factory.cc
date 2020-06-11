@@ -95,8 +95,8 @@ ElectronRendererPepperHostFactory::CreateResourceHost(
 
   // Permissions for the following interfaces will be checked at the
   // time of the corresponding instance's method calls.  Currently these
-  // interfaces are available only for whitelisted apps which may not have
-  // access to the other private interfaces.
+  // interfaces are available only for specifically permitted apps which may
+  // not have access to the other private interfaces.
   switch (message.type()) {
     case PpapiHostMsg_UMA_Create::ID: {
       return std::make_unique<PepperUMAHost>(host_, instance, resource);

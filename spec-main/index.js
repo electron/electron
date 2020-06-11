@@ -27,12 +27,13 @@ app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
 protocol.registerSchemesAsPrivileged([
-  { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.standardScheme, privileges: { standard: true, secure: true, stream: false } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
+  { scheme: 'stream', privileges: { standard: true, stream: true } },
   { scheme: 'foo', privileges: { standard: true } },
   { scheme: 'bar', privileges: { standard: true } }
 ]);
