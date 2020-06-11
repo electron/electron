@@ -522,12 +522,14 @@ gin::Handle<NativeImage> NativeImage::AddBadge(gin_helper::ErrorThrower thrower,
 
   v8::Isolate* isolate = thrower.isolate();
   std::string text;
+  std::string font = "monospace";
   SkColor text_color = SK_ColorWHITE;
   SkColor pill_color = SK_ColorRED;
   if (!options.Get("text", &text)) {
     thrower.ThrowError("Required option 'text' was not provided to addBadge");
     return gin::Handle<NativeImage>();
   }
+  options.Get("font", &font);
   {
     std::string text_hex_code;
     if (options.Get("textColor", &text_hex_code)) {
@@ -540,17 +542,11 @@ gin::Handle<NativeImage> NativeImage::AddBadge(gin_helper::ErrorThrower thrower,
       pill_color = ParseHexColor(pill_hex_code);
     }
   }
-  if (text_color == pill_color) {
-    thrower.ThrowError(
-        "textColor and pillColor must be different colors, but they resolved "
-        "to the same color");
-    return gin::Handle<NativeImage>();
-  }
   BadgePosition badge_position = BadgePosition::TOP_RIGHT;
   options.Get("badgePosition", &badge_position);
 
   SkFont font;
-  font.setTypeface(SkTypeface::MakeFromName("monospace", SkFontStyle()));
+  font.setTypeface(SkTypeface::MakeFromName(font, SkFontStyle()));
   font.setHinting(SkFontHinting::kNormal);
   font.setSize(kPillFontSize);
   font.setSubpixel(true);

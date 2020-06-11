@@ -339,6 +339,7 @@ can be called on empty images.
 
 * `options` Object
   * `text` String - The text to put inside the generated badge
+  * `font` String - The name of a font family to use for the drawn text, default is "monospace".  Please note that this is **not** a CSS font-family value.  It has to be a **single** family name.
   * `textColor` String - Hex code for a #RGB or #ARGB color to use for the text of the badge
   * `badgeColor` String - Hex code for a #RGB or #ARGB color to use for the background color of the badge
   * `badgePosition` String - Where to draw the badge on the image. Can be any of the following:
