@@ -352,6 +352,8 @@ Returns `NativeImage` - The current image with a badge generated and painted on 
 Adds a badge to the provided image, this can be used for adding notification badges to your app icon
 for use on Windows / Linux.  E.g.
 
+Colors must be provided in one of the following formats `#RGB`, `#RRGGBB`, `#AARRGGBB`.
+
 ```js
 const appIcon = nativeImage.createFromPath('/my/app/icon.png')
 // Set the window icon to your app icon with a badge with the number '2' in it
