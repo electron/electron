@@ -102,6 +102,10 @@ class IPCRenderer : public mate::Wrappable<IPCRenderer> {
 
     electron_browser_ptr_->MessageSync(internal, channel, std::move(arguments),
                                        &result);
+
+    if (!result.is_list() || result.GetList().empty())
+      return base::Value{};
+
     return std::move(result.GetList().at(0));
   }
 
