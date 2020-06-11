@@ -358,7 +358,7 @@ Returns `Boolean` - `true` if an inverted color scheme (a high contrast color sc
 
 Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
-**Depreacted:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
+**Deprecated:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
@@ -375,8 +375,6 @@ using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode
 packager option to `true`.  See the [Electron Packager API](https://github.com/electron/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 for more details.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `systemPreferences.getAppLevelAppearance()` _macOS_ _Deprecated_
 
 Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
@@ -385,16 +383,12 @@ Gets the macOS appearance setting that you have declared you want for
 your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
 You can use the `setAppLevelAppearance` API to set this value.
 
-**[Deprecated](modernization/property-updates.md)**
-
 ### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_ _Deprecated_
 
 * `appearance` String | null - Can be `dark` or `light`
 
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
-
-**[Deprecated](modernization/property-updates.md)**
 
 ### `systemPreferences.canPromptTouchID()` _macOS_
 
