@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/logging.h"
+#include "base/optional.h"
 #include "native_mate/arguments.h"
 #include "native_mate/wrappable_base.h"
 #include "v8/include/v8.h"
@@ -102,6 +103,18 @@ bool GetNextArgument(Arguments* args,
   } else {
     return args->GetNext(result);
   }
+}
+
+// Support base::Optional as an argument.
+template <typename T>
+bool GetNextArgument(Arguments* args,
+                     int create_flags,
+                     bool is_first,
+                     base::Optional<T>* result) {
+  T converted;
+  if (args->GetNext(&converted))
+    result->emplace(std::move(converted));
+  return true;
 }
 
 // For advanced use cases, we allow callers to request the unparsed Arguments

@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "base/values.h"
 #include "native_mate/dictionary.h"
@@ -84,16 +85,17 @@ class NativeImage : public mate::Wrappable<NativeImage> {
   v8::Local<v8::Value> ToPNG(mate::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   v8::Local<v8::Value> ToBitmap(mate::Arguments* args);
+  std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(mate::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(v8::Isolate* isolate,
                                        mate::Arguments* args);
-  mate::Handle<NativeImage> Resize(v8::Isolate* isolate,
+  mate::Handle<NativeImage> Resize(mate::Arguments* args,
                                    const base::DictionaryValue& options);
   mate::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(mate::Arguments* args);
   bool IsEmpty();
-  gfx::Size GetSize();
-  float GetAspectRatio();
+  gfx::Size GetSize(const base::Optional<float> scale_factor);
+  float GetAspectRatio(const base::Optional<float> scale_factor);
   void AddRepresentation(const mate::Dictionary& options);
 
   // Mark the image as template image.
