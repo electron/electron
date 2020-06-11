@@ -19,7 +19,7 @@ Reviewed-By: Jameson Nash <vtjnash@gmail.com>
 Cherry-Pick: https://github.com/libuv/libuv/commit/335e8a6d128646e5a19d39dfc677f5a5a555f7cc
 
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
-index 4de638f5971c35aaeb9fe5e2ff67a806bbc54baf..34a898bfa425b6ba716a681541b602f3a191b258 100644
+index 4bbeb3154123ddae1bf8c3dc7c684e9de05ad67d..1ba35bf56d4a6906c241a1fddca2e1ba9464909c 100644
 --- a/deps/uv/src/win/util.c
 +++ b/deps/uv/src/win/util.c
 @@ -63,6 +63,9 @@
