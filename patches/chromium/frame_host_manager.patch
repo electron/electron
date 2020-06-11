@@ -42,10 +42,10 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..df2e8cffedca837bef89ad59c27869d77551dab0 100644
+index 5c32029d29097b2ca03ba2a2bbd082d384a966c3..a672c31797959dd85ca58f6839d71b2bf3a0682f 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1314,6 +1314,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1406,6 +1406,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -67,7 +67,7 @@ index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..df2e8cffedca837bef89ad59c27869d7
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4652,13 +4667,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4753,13 +4768,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WAITING_FOR_RENDERER_RESPONSE, {WILL_START_NAVIGATION}},
            {WILL_START_NAVIGATION, {WILL_START_REQUEST, WILL_FAIL_REQUEST}},
            {WILL_START_REQUEST,
@@ -87,10 +87,10 @@ index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..df2e8cffedca837bef89ad59c27869d7
            {DID_COMMIT, {}},
            {CANCELING, {READY_TO_COMMIT, WILL_FAIL_REQUEST}},
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index 5d2839963ccbaef4b511c9105d75cee1f8aa1c18..8f26aface4e4a59fd17a113b5613e5d1a057002c 100644
+index cb004ae1ebd76210f826b988c439f71e221b1ad4..50b6381ae4d9d89658c99c6e8a532d0d065c8dc0 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -144,6 +144,10 @@ class CONTENT_EXPORT NavigationRequest
+@@ -142,6 +142,10 @@ class CONTENT_EXPORT NavigationRequest
      // asynchronous.
      WILL_PROCESS_RESPONSE,
  
@@ -102,10 +102,10 @@ index 5d2839963ccbaef4b511c9105d75cee1f8aa1c18..8f26aface4e4a59fd17a113b5613e5d1
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 08bcfadbb02e93cc483c13fc4fd185cb6a829c78..ca37c200a557026e2dd0c8573ea495d91cb07bf0 100644
+index b9eedf1568e9c2f33fd01a31ba2f0037fde96570..8dc7b5a8351c5901001f1d6f1b44916db5c80ec7 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2410,6 +2410,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2337,6 +2337,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -122,7 +122,7 @@ index 08bcfadbb02e93cc483c13fc4fd185cb6a829c78..ca37c200a557026e2dd0c8573ea495d9
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2429,10 +2439,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2356,10 +2366,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -187,7 +187,7 @@ index 08bcfadbb02e93cc483c13fc4fd185cb6a829c78..ca37c200a557026e2dd0c8573ea495d9
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2510,6 +2570,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2388,6 +2448,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
