@@ -42,7 +42,7 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 90a4052c97696d85d6fbe3274b999b09fb4015c0..c0be3721db3be1c9da89f227ed4cfb5a36201f30 100644
+index 5c32029d29097b2ca03ba2a2bbd082d384a966c3..a672c31797959dd85ca58f6839d71b2bf3a0682f 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1406,6 +1406,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 90a4052c97696d85d6fbe3274b999b09fb4015c0..c0be3721db3be1c9da89f227ed4cfb5a
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4761,13 +4776,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4753,13 +4768,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WAITING_FOR_RENDERER_RESPONSE, {WILL_START_NAVIGATION}},
            {WILL_START_NAVIGATION, {WILL_START_REQUEST, WILL_FAIL_REQUEST}},
            {WILL_START_REQUEST,
@@ -251,7 +251,7 @@ index 44ef92827fea505670e5ae5c940c802572a97178..cef633fe007e88f6c0596282aa103038
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f64cc028f59faa5a8e308095c48a6f029ae5107c..0862715e204432fd59f94843151ba865f3844b01 100644
+index 34318837f956167fbdfcd82be3488c0a488f7711..e050a4db49130fbbf291ee761b5a5a8b223d0e89 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {

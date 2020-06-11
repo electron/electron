@@ -455,7 +455,7 @@ index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c0
    waiting_on_draw_ack_ = true;
  
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 0e1b4bf9d45582dcfa8882b73e4cd239baa0b1f1..645b4359f49e931f769d6ea7e3be98e8a70dd3f0 100644
+index 641a63e8c18e3e81acacb67a59b285dac44abbb1..72b74ec00402ff7b5b4853c08365eb2f69d62713 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -403,8 +403,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(

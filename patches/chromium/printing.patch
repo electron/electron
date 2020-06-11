@@ -413,7 +413,7 @@ index a2a16fe66774120d8ad993f54ac2d51cb4e8b739..ba8834f37c97a75e90e725dc793fbb40
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3d681dc00 100644
+index 40da3fd950fe8b070e67fb53c909c16fd1ed5370..8b44a41310c945aa985035e5a2df7db739af9e4d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -44,6 +44,7 @@
@@ -469,8 +469,8 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
 +  print_preview_context_.InitWithFrame(frame);
    print_preview_context_.OnPrintPreview();
  
-   base::UmaHistogramEnumeration(print_preview_context_.IsForArc()
-@@ -1784,7 +1788,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+   if (print_preview_context_.IsForArc()) {
+@@ -1787,7 +1791,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
      Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -481,7 +481,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -1795,7 +1801,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1798,7 +1804,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -492,7 +492,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
-@@ -1803,7 +1811,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1806,7 +1814,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
    int expected_page_count = 0;
@@ -501,7 +501,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1823,8 +1831,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1826,8 +1834,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
  
      PrintMsg_PrintPages_Params print_settings;
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -515,7 +515,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2059,10 +2070,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2062,10 +2073,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -542,7 +542,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -2082,12 +2106,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2085,12 +2109,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -562,7 +562,7 @@ index d96a17e550f5b78727844dd6c508c28022157ba6..c586a8bc30c3ae5b57171cbe70e935a3
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 85b7989513d014c2dea2b649248c85c912109904..a0d1b786dd21afd5047e84bf323171adef912835 100644
+index 882af6ce96a8536a9f2a14cd0f63083399301363..d21519b98e8c2664b8aa78421e816198c6978758 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -225,7 +225,7 @@ class PrintRenderFrameHelper
