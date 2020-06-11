@@ -18,7 +18,6 @@
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 #include "shell/common/api/remote/remote_callback_freer.h"
-#include "shell/common/api/remote/remote_object_freer.h"
 #endif
 
 namespace std {
