@@ -35,14 +35,6 @@ void RemoteObjectFreer::BindTo(v8::Isolate* isolate,
   new RemoteObjectFreer(isolate, target, context_id, object_id);
 }
 
-// static
-void RemoteObjectFreer::AddRef(const std::string& context_id, int object_id) {
-  ref_mapper_[context_id][object_id]++;
-}
-
-// static
-std::map<std::string, std::map<int, int>> RemoteObjectFreer::ref_mapper_;
-
 RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
                                      v8::Local<v8::Object> target,
                                      const std::string& context_id,
@@ -65,25 +57,10 @@ void RemoteObjectFreer::RunDestructor() {
   if (!render_frame)
     return;
 
-  // Reset our local ref count in case we are in a GC race condition
-  // and will get more references in an inbound IPC message
-  int ref_count = 0;
-  const auto objects_it = ref_mapper_.find(context_id_);
-  if (objects_it != std::end(ref_mapper_)) {
-    auto& objects = objects_it->second;
-    const auto ref_it = objects.find(object_id_);
-    if (ref_it != std::end(objects)) {
-      ref_count = ref_it->second;
-      objects.erase(ref_it);
-    }
-    if (objects.empty())
-      ref_mapper_.erase(objects_it);
-  }
-
   mojom::ElectronBrowserPtr electron_ptr;
   render_frame->GetRemoteInterfaces()->GetInterface(
       mojo::MakeRequest(&electron_ptr));
-  electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
+  electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_);
 }
 
 }  // namespace electron

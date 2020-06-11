@@ -599,8 +599,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                    blink::CloneableMessage arguments) override;
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   void DereferenceRemoteJSObject(const std::string& context_id,
-                                 int object_id,
-                                 int ref_count) override;
+                                 int object_id) override;
 #endif
   void UpdateDraggableRegions(
       std::vector<mojom::DraggableRegionPtr> regions) override;

@@ -235,7 +235,6 @@ function metaToValue (meta: MetaType): any {
   } else {
     let ret;
     if ('id' in meta && remoteObjectCache.has(meta.id)) {
-      v8Util.addRemoteObjectRef(contextId, meta.id);
       return remoteObjectCache.get(meta.id);
     }
 
@@ -265,7 +264,6 @@ function metaToValue (meta: MetaType): any {
     // Track delegate obj's lifetime & tell browser to clean up when object is GCed.
     v8Util.setRemoteObjectFreer(ret, contextId, meta.id);
     v8Util.setHiddenValue(ret, 'electronId', meta.id);
-    v8Util.addRemoteObjectRef(contextId, meta.id);
     remoteObjectCache.set(meta.id, ret);
     return ret;
   }
