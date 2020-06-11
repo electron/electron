@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julie Jeongeun Kim <jkim@igalia.com>
+Date: Fri, 3 Apr 2020 19:22:20 +0000
+Subject: a11y: Allows kListBoxOption as an item to kGroup
+
+This CL adds ListBoxOption role as an item for Group role in
+AXNode::SetRoleMatchesItemRole() since Group role could have
+ListBoxOption as an item[1]. With this change, when the parent
+of ListBoxOption is a group role, PosInSet and SetSize has
+proper values.
+
+[1]https://w3c.github.io/aria-practices/examples/listbox/listbox-grouped.html
+
+Bug: 1066632
+Change-Id: I23cf0c34ee479d6e8ee33b3f9e327def820527e1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2134037
+Commit-Queue: Dominic Mazzoni <dmazzoni@chromium.org>
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#756360}
+
+diff --git a/ui/accessibility/ax_node.cc b/ui/accessibility/ax_node.cc
+index b2012c7ac2169d366923b9b1f5645f03401ea44a..0db263e38b2364fb660d305dddf42c65483e015a 100644
+--- a/ui/accessibility/ax_node.cc
++++ b/ui/accessibility/ax_node.cc
+@@ -819,6 +819,7 @@ bool AXNode::SetRoleMatchesItemRole(const AXNode* ordered_set) const {
+              item_role == ax::mojom::Role::kListItem ||
+              item_role == ax::mojom::Role::kMenuItem ||
+              item_role == ax::mojom::Role::kMenuItemRadio ||
++             item_role == ax::mojom::Role::kListBoxOption ||
+              item_role == ax::mojom::Role::kTreeItem;
+     case ax::mojom::Role::kMenu:
+       return item_role == ax::mojom::Role::kMenuItem ||
+diff --git a/ui/accessibility/ax_tree_unittest.cc b/ui/accessibility/ax_tree_unittest.cc
+index c48318b7a8cc592cf9adc97a2cb29124c7578250..3cf7532755f2163a372233ca63c88cae20b8f272 100644
+--- a/ui/accessibility/ax_tree_unittest.cc
++++ b/ui/accessibility/ax_tree_unittest.cc
+@@ -3647,6 +3647,43 @@ TEST(AXTreeTest, TestSetSizePosInSetMenuItemValidChildOfMenuListPopup) {
+   EXPECT_OPTIONAL_EQ(2, item2->GetSetSize());
+ }
+ 
++TEST(AXTreeTest, TestSetSizePostInSetListBoxOptionWithGroup) {
++  AXTreeUpdate initial_state;
++  initial_state.root_id = 1;
++  initial_state.nodes.resize(7);
++  initial_state.nodes[0].id = 1;
++  initial_state.nodes[0].child_ids = {2, 3};
++  initial_state.nodes[0].role = ax::mojom::Role::kListBox;
++  initial_state.nodes[1].id = 2;
++  initial_state.nodes[1].child_ids = {4, 5};
++  initial_state.nodes[1].role = ax::mojom::Role::kGroup;
++  initial_state.nodes[2].id = 3;
++  initial_state.nodes[2].child_ids = {6, 7};
++  initial_state.nodes[2].role = ax::mojom::Role::kGroup;
++  initial_state.nodes[3].id = 4;
++  initial_state.nodes[3].role = ax::mojom::Role::kListBoxOption;
++  initial_state.nodes[4].id = 5;
++  initial_state.nodes[4].role = ax::mojom::Role::kListBoxOption;
++  initial_state.nodes[5].id = 6;
++  initial_state.nodes[5].role = ax::mojom::Role::kListBoxOption;
++  initial_state.nodes[6].id = 7;
++  initial_state.nodes[6].role = ax::mojom::Role::kListBoxOption;
++  AXTree tree(initial_state);
++
++  AXNode* listbox_option1 = tree.GetFromId(4);
++  EXPECT_OPTIONAL_EQ(1, listbox_option1->GetPosInSet());
++  EXPECT_OPTIONAL_EQ(2, listbox_option1->GetSetSize());
++  AXNode* listbox_option2 = tree.GetFromId(5);
++  EXPECT_OPTIONAL_EQ(2, listbox_option2->GetPosInSet());
++  EXPECT_OPTIONAL_EQ(2, listbox_option2->GetSetSize());
++  AXNode* listbox_option3 = tree.GetFromId(6);
++  EXPECT_OPTIONAL_EQ(1, listbox_option3->GetPosInSet());
++  EXPECT_OPTIONAL_EQ(2, listbox_option3->GetSetSize());
++  AXNode* listbox_option4 = tree.GetFromId(7);
++  EXPECT_OPTIONAL_EQ(2, listbox_option4->GetPosInSet());
++  EXPECT_OPTIONAL_EQ(2, listbox_option4->GetSetSize());
++}
++
+ TEST(AXTreeTest, OnNodeWillBeDeletedHasValidUnignoredParent) {
+   AXTreeUpdate initial_state;
+   initial_state.root_id = 1;
