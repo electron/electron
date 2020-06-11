@@ -22,7 +22,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
-#include "mojo/public/cpp/bindings/binding_set.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
@@ -566,8 +566,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   // Binds the given request for the ElectronBrowser API. When the
   // RenderFrameHost is destroyed, all related bindings will be removed.
-  void BindElectronBrowser(mojom::ElectronBrowserRequest request,
-                           content::RenderFrameHost* render_frame_host);
+  void BindElectronBrowser(
+      mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
+      content::RenderFrameHost* render_frame_host);
   void OnElectronBrowserConnectionError();
 
   uint32_t GetNextRequestId() { return ++request_id_; }
@@ -654,9 +655,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   int currently_committed_process_id_ = -1;
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
-  mojo::BindingSet<mojom::ElectronBrowser, content::RenderFrameHost*> bindings_;
-  std::map<content::RenderFrameHost*, std::vector<mojo::BindingId>>
-      frame_to_bindings_map_;
+  mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>
+      receivers_;
+  std::map<content::RenderFrameHost*, std::vector<mojo::ReceiverId>>
+      frame_to_receivers_map_;
 
   base::WeakPtrFactory<WebContents> weak_factory_;
 

@@ -52,6 +52,8 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -409,7 +411,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
-  bindings_.set_connection_error_handler(base::BindRepeating(
+  receivers_.set_disconnect_handler(base::BindRepeating(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 }
 
@@ -586,7 +588,7 @@ void WebContents::InitWithSessionAndOptions(
 
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
-  bindings_.set_connection_error_handler(base::BindRepeating(
+  receivers_.set_disconnect_handler(base::BindRepeating(
       &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
@@ -1117,16 +1119,16 @@ bool WebContents::EmitNavigationEvent(
 }
 
 void WebContents::BindElectronBrowser(
-    mojom::ElectronBrowserRequest request,
+    mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
     content::RenderFrameHost* render_frame_host) {
-  auto id = bindings_.AddBinding(this, std::move(request), render_frame_host);
-  frame_to_bindings_map_[render_frame_host].push_back(id);
+  auto id = receivers_.Add(this, std::move(receiver), render_frame_host);
+  frame_to_receivers_map_[render_frame_host].push_back(id);
 }
 
 void WebContents::OnElectronBrowserConnectionError() {
-  auto binding_id = bindings_.dispatch_binding();
-  auto* frame_host = bindings_.dispatch_context();
-  base::Erase(frame_to_bindings_map_[frame_host], binding_id);
+  auto receiver_id = receivers_.current_receiver();
+  auto* frame_host = receivers_.current_context();
+  base::Erase(frame_to_receivers_map_[frame_host], receiver_id);
 }
 
 void WebContents::Message(bool internal,
@@ -1135,7 +1137,7 @@ void WebContents::Message(bool internal,
   TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
+  EmitWithSender("-ipc-message", receivers_.current_context(), InvokeCallback(),
                  internal, channel, std::move(arguments));
 }
 
@@ -1145,7 +1147,7 @@ void WebContents::Invoke(bool internal,
                          InvokeCallback callback) {
   TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
-  EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
+  EmitWithSender("-ipc-invoke", receivers_.current_context(),
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
@@ -1156,7 +1158,7 @@ void WebContents::ReceivePostMessage(const std::string& channel,
       MessagePort::EntanglePorts(isolate(), std::move(message.ports));
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate(), message);
-  EmitWithSender("-ipc-ports", bindings_.dispatch_context(), InvokeCallback(),
+  EmitWithSender("-ipc-ports", receivers_.current_context(), InvokeCallback(),
                  false, channel, message_value, std::move(wrapped_ports));
 }
 
@@ -1199,7 +1201,7 @@ void WebContents::MessageSync(bool internal,
   TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
-  EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
+  EmitWithSender("-ipc-message-sync", receivers_.current_context(),
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
@@ -1222,7 +1224,7 @@ void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
+  EmitWithSender("ipc-message-host", receivers_.current_context(),
                  InvokeCallback(), channel, std::move(arguments));
 }
 
@@ -1253,12 +1255,12 @@ void WebContents::RenderFrameDeleted(
   // that no longer exist. To prevent this from happening, when a
   // RenderFrameHost goes away, we close all the bindings related to that
   // frame.
-  auto it = frame_to_bindings_map_.find(render_frame_host);
-  if (it == frame_to_bindings_map_.end())
+  auto it = frame_to_receivers_map_.find(render_frame_host);
+  if (it == frame_to_receivers_map_.end())
     return;
   for (auto id : it->second)
-    bindings_.RemoveBinding(id);
-  frame_to_bindings_map_.erase(it);
+    receivers_.Remove(id);
+  frame_to_receivers_map_.erase(it);
 }
 
 void WebContents::DidStartNavigation(

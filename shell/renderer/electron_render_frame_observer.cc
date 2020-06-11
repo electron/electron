@@ -111,10 +111,10 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
     regions.push_back(std::move(region));
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame_->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->UpdateDraggableRegions(std::move(regions));
+      browser_remote.BindPipeAndPassReceiver());
+  browser_remote->UpdateDraggableRegions(std::move(regions));
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(

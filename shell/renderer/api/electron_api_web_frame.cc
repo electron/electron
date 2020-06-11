@@ -270,10 +270,10 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->SetTemporaryZoomLevel(level);
+      browser_remote.BindPipeAndPassReceiver());
+  browser_remote->SetTemporaryZoomLevel(level);
 }
 
 double GetZoomLevel(gin_helper::ErrorThrower thrower,
@@ -287,10 +287,10 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
     return result;
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->DoGetZoomLevel(&result);
+      browser_remote.BindPipeAndPassReceiver());
+  browser_remote->DoGetZoomLevel(&result);
   return result;
 }
 
