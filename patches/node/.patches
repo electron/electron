@@ -37,3 +37,4 @@ override_existing_v8_reallocate.patch
 avoid_calling_deprecated_method.patch
 remove_deprecated_wasm_module_type_check.patch
 fix_don_t_preparemainexecution_twice.patch
+win_use_rtlgenrandom_from_advapi32_dll_directly.patch
