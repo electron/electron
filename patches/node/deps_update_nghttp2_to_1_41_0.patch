@@ -1,0 +1,496 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James M Snell <jasnell@gmail.com>
+Date: Tue, 5 May 2020 13:18:16 -0700
+Subject: deps: update nghttp2 to 1.41.0
+
+Signed-off-by: James M Snell <jasnell@gmail.com>
+
+Fixes: https://hackerone.com/reports/446662
+CVE-ID: CVE-2020-11080
+PR-URL: https://github.com/nodejs-private/node-private/pull/206
+Reviewed-By: Sam Roberts <vieuxtech@gmail.com>
+
+diff --git a/deps/nghttp2/lib/CMakeLists.txt b/deps/nghttp2/lib/CMakeLists.txt
+deleted file mode 100644
+index 4e3f5da0f9f00afb272de2e110d0e101c075fc01..0000000000000000000000000000000000000000
+--- a/deps/nghttp2/lib/CMakeLists.txt
++++ /dev/null
+@@ -1,76 +0,0 @@
+-add_subdirectory(includes)
+-
+-include_directories(
+-  "${CMAKE_CURRENT_SOURCE_DIR}/includes"
+-  "${CMAKE_CURRENT_BINARY_DIR}/includes"
+-)
+-
+-add_definitions(-DBUILDING_NGHTTP2)
+-
+-set(NGHTTP2_SOURCES
+-  nghttp2_pq.c nghttp2_map.c nghttp2_queue.c
+-  nghttp2_frame.c
+-  nghttp2_buf.c
+-  nghttp2_stream.c nghttp2_outbound_item.c
+-  nghttp2_session.c nghttp2_submit.c
+-  nghttp2_helper.c
+-  nghttp2_npn.c
+-  nghttp2_hd.c nghttp2_hd_huffman.c nghttp2_hd_huffman_data.c
+-  nghttp2_version.c
+-  nghttp2_priority_spec.c
+-  nghttp2_option.c
+-  nghttp2_callbacks.c
+-  nghttp2_mem.c
+-  nghttp2_http.c
+-  nghttp2_rcbuf.c
+-  nghttp2_debug.c
+-)
+-
+-set(NGHTTP2_RES "")
+-
+-if(WIN32)
+-  configure_file(
+-    version.rc.in
+-    ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+-    @ONLY)
+-
+-  set(NGHTTP2_RES ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
+-endif()
+-
+-# Public shared library
+-if(ENABLE_SHARED_LIB)
+-  add_library(nghttp2 SHARED ${NGHTTP2_SOURCES} ${NGHTTP2_RES})
+-  set_target_properties(nghttp2 PROPERTIES
+-    COMPILE_FLAGS "${WARNCFLAGS}"
+-    VERSION ${LT_VERSION} SOVERSION ${LT_SOVERSION}
+-    C_VISIBILITY_PRESET hidden
+-  )
+-  target_include_directories(nghttp2 INTERFACE
+-    "${CMAKE_CURRENT_BINARY_DIR}/includes"
+-    "${CMAKE_CURRENT_SOURCE_DIR}/includes"
+-  )
+-
+-  install(TARGETS nghttp2
+-    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+-    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+-endif()
+-
+-if(HAVE_CUNIT OR ENABLE_STATIC_LIB)
+-  # Static library (for unittests because of symbol visibility)
+-  add_library(nghttp2_static STATIC ${NGHTTP2_SOURCES})
+-  set_target_properties(nghttp2_static PROPERTIES
+-    COMPILE_FLAGS "${WARNCFLAGS}"
+-    VERSION ${LT_VERSION} SOVERSION ${LT_SOVERSION}
+-    ARCHIVE_OUTPUT_NAME nghttp2_static
+-  )
+-  target_compile_definitions(nghttp2_static PUBLIC "-DNGHTTP2_STATICLIB")
+-  if(ENABLE_STATIC_LIB)
+-    install(TARGETS nghttp2_static
+-      DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+-  endif()
+-endif()
+-
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libnghttp2.pc"
+-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+diff --git a/deps/nghttp2/lib/includes/nghttp2/nghttp2.h b/deps/nghttp2/lib/includes/nghttp2/nghttp2.h
+index e3aeb9fed31ecc11e068a42e656c307575b4f024..9be6eea5c02257ac12522e43829f47b3f371b857 100644
+--- a/deps/nghttp2/lib/includes/nghttp2/nghttp2.h
++++ b/deps/nghttp2/lib/includes/nghttp2/nghttp2.h
+@@ -228,6 +228,13 @@ typedef struct {
+  */
+ #define NGHTTP2_CLIENT_MAGIC_LEN 24
+ 
++/**
++ * @macro
++ *
++ * The default max number of settings per SETTINGS frame
++ */
++#define NGHTTP2_DEFAULT_MAX_SETTINGS 32
++
+ /**
+  * @enum
+  *
+@@ -398,6 +405,11 @@ typedef enum {
+    * receives an other type of frame.
+    */
+   NGHTTP2_ERR_SETTINGS_EXPECTED = -536,
++  /**
++   * When a local endpoint receives too many settings entries
++   * in a single SETTINGS frame.
++   */
++  NGHTTP2_ERR_TOO_MANY_SETTINGS = -537,
+   /**
+    * The errors < :enum:`NGHTTP2_ERR_FATAL` mean that the library is
+    * under unexpected condition and processing was terminated (e.g.,
+@@ -2659,6 +2671,17 @@ NGHTTP2_EXTERN void nghttp2_option_set_no_closed_streams(nghttp2_option *option,
+ NGHTTP2_EXTERN void nghttp2_option_set_max_outbound_ack(nghttp2_option *option,
+                                                         size_t val);
+ 
++/**
++ * @function
++ *
++ * This function sets the maximum number of SETTINGS entries per
++ * SETTINGS frame that will be accepted. If more than those entries
++ * are received, the peer is considered to be misbehaving and session
++ * will be closed. The default value is 32.
++ */
++NGHTTP2_EXTERN void nghttp2_option_set_max_settings(nghttp2_option *option,
++                                                    size_t val);
++
+ /**
+  * @function
+  *
+diff --git a/deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h b/deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h
+index 45d21e2645c6cf8be52e445b3ab8862c08597d85..795a44c1e86863119e33e09309d7305e579af132 100644
+--- a/deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h
++++ b/deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h
+@@ -29,7 +29,7 @@
+  * @macro
+  * Version number of the nghttp2 library release
+  */
+-#define NGHTTP2_VERSION "1.40.0"
++#define NGHTTP2_VERSION "1.41.0"
+ 
+ /**
+  * @macro
+@@ -37,6 +37,6 @@
+  * release. This is a 24 bit number with 8 bits for major number, 8 bits
+  * for minor and 8 bits for patch. Version 1.2.3 becomes 0x010203.
+  */
+-#define NGHTTP2_VERSION_NUM 0x012800
++#define NGHTTP2_VERSION_NUM 0x012900
+ 
+ #endif /* NGHTTP2VER_H */
+diff --git a/deps/nghttp2/lib/nghttp2_helper.c b/deps/nghttp2/lib/nghttp2_helper.c
+index 91136a61986014706b091d177e6abdf88f6444e3..0bd5414723d73688a2a546f9036c3d910ef3e53c 100644
+--- a/deps/nghttp2/lib/nghttp2_helper.c
++++ b/deps/nghttp2/lib/nghttp2_helper.c
+@@ -334,6 +334,8 @@ const char *nghttp2_strerror(int error_code) {
+   case NGHTTP2_ERR_FLOODED:
+     return "Flooding was detected in this HTTP/2 session, and it must be "
+            "closed";
++  case NGHTTP2_ERR_TOO_MANY_SETTINGS:
++    return "SETTINGS frame contained more than the maximum allowed entries";
+   default:
+     return "Unknown error code";
+   }
+diff --git a/deps/nghttp2/lib/nghttp2_option.c b/deps/nghttp2/lib/nghttp2_option.c
+index e53f22d367f84a11792721d38a1cdc1a538e2a03..34348e6606ccf4206048f3f2f76d75a2ec366cc8 100644
+--- a/deps/nghttp2/lib/nghttp2_option.c
++++ b/deps/nghttp2/lib/nghttp2_option.c
+@@ -121,3 +121,8 @@ void nghttp2_option_set_max_outbound_ack(nghttp2_option *option, size_t val) {
+   option->opt_set_mask |= NGHTTP2_OPT_MAX_OUTBOUND_ACK;
+   option->max_outbound_ack = val;
+ }
++
++void nghttp2_option_set_max_settings(nghttp2_option *option, size_t val) {
++  option->opt_set_mask |= NGHTTP2_OPT_MAX_SETTINGS;
++  option->max_settings = val;
++}
+diff --git a/deps/nghttp2/lib/nghttp2_option.h b/deps/nghttp2/lib/nghttp2_option.h
+index 1f740aaa6e364ed5a8df4804cff307ef36970b0b..939729fdcd5b6ec11078aef0d9b51e45270092a3 100644
+--- a/deps/nghttp2/lib/nghttp2_option.h
++++ b/deps/nghttp2/lib/nghttp2_option.h
+@@ -67,6 +67,7 @@ typedef enum {
+   NGHTTP2_OPT_MAX_DEFLATE_DYNAMIC_TABLE_SIZE = 1 << 9,
+   NGHTTP2_OPT_NO_CLOSED_STREAMS = 1 << 10,
+   NGHTTP2_OPT_MAX_OUTBOUND_ACK = 1 << 11,
++  NGHTTP2_OPT_MAX_SETTINGS = 1 << 12,
+ } nghttp2_option_flag;
+ 
+ /**
+@@ -85,6 +86,10 @@ struct nghttp2_option {
+    * NGHTTP2_OPT_MAX_OUTBOUND_ACK
+    */
+   size_t max_outbound_ack;
++  /**
++   * NGHTTP2_OPT_MAX_SETTINGS
++   */
++  size_t max_settings;
+   /**
+    * Bitwise OR of nghttp2_option_flag to determine that which fields
+    * are specified.
+diff --git a/deps/nghttp2/lib/nghttp2_session.c b/deps/nghttp2/lib/nghttp2_session.c
+index 9df3d6f32938a692191abbad915e028a9669d24d..39f81f498cda798bcd18926414d7297f34361d2b 100644
+--- a/deps/nghttp2/lib/nghttp2_session.c
++++ b/deps/nghttp2/lib/nghttp2_session.c
+@@ -458,6 +458,7 @@ static int session_new(nghttp2_session **session_ptr,
+ 
+   (*session_ptr)->max_send_header_block_length = NGHTTP2_MAX_HEADERSLEN;
+   (*session_ptr)->max_outbound_ack = NGHTTP2_DEFAULT_MAX_OBQ_FLOOD_ITEM;
++  (*session_ptr)->max_settings = NGHTTP2_DEFAULT_MAX_SETTINGS;
+ 
+   if (option) {
+     if ((option->opt_set_mask & NGHTTP2_OPT_NO_AUTO_WINDOW_UPDATE) &&
+@@ -521,6 +522,11 @@ static int session_new(nghttp2_session **session_ptr,
+     if (option->opt_set_mask & NGHTTP2_OPT_MAX_OUTBOUND_ACK) {
+       (*session_ptr)->max_outbound_ack = option->max_outbound_ack;
+     }
++
++    if ((option->opt_set_mask & NGHTTP2_OPT_MAX_SETTINGS) &&
++        option->max_settings) {
++      (*session_ptr)->max_settings = option->max_settings;
++    }
+   }
+ 
+   rv = nghttp2_hd_deflate_init2(&(*session_ptr)->hd_deflater,
+@@ -2494,14 +2500,6 @@ static int session_update_stream_consumed_size(nghttp2_session *session,
+ static int session_update_connection_consumed_size(nghttp2_session *session,
+                                                    size_t delta_size);
+ 
+-static int session_update_recv_connection_window_size(nghttp2_session *session,
+-                                                      size_t delta_size);
+-
+-static int session_update_recv_stream_window_size(nghttp2_session *session,
+-                                                  nghttp2_stream *stream,
+-                                                  size_t delta_size,
+-                                                  int send_window_update);
+-
+ /*
+  * Called after a frame is sent.  This function runs
+  * on_frame_send_callback and handles stream closure upon END_STREAM
+@@ -2735,7 +2733,7 @@ static int session_after_frame_sent1(nghttp2_session *session) {
+       if (session->opt_flags & NGHTTP2_OPTMASK_NO_AUTO_WINDOW_UPDATE) {
+         rv = session_update_connection_consumed_size(session, 0);
+       } else {
+-        rv = session_update_recv_connection_window_size(session, 0);
++        rv = nghttp2_session_update_recv_connection_window_size(session, 0);
+       }
+ 
+       if (nghttp2_is_fatal(rv)) {
+@@ -2761,7 +2759,8 @@ static int session_after_frame_sent1(nghttp2_session *session) {
+     if (session->opt_flags & NGHTTP2_OPTMASK_NO_AUTO_WINDOW_UPDATE) {
+       rv = session_update_stream_consumed_size(session, stream, 0);
+     } else {
+-      rv = session_update_recv_stream_window_size(session, stream, 0, 1);
++      rv =
++          nghttp2_session_update_recv_stream_window_size(session, stream, 0, 1);
+     }
+ 
+     if (nghttp2_is_fatal(rv)) {
+@@ -5019,22 +5018,10 @@ static int adjust_recv_window_size(int32_t *recv_window_size_ptr, size_t delta,
+   return 0;
+ }
+ 
+-/*
+- * Accumulates received bytes |delta_size| for stream-level flow
+- * control and decides whether to send WINDOW_UPDATE to that stream.
+- * If NGHTTP2_OPT_NO_AUTO_WINDOW_UPDATE is set, WINDOW_UPDATE will not
+- * be sent.
+- *
+- * This function returns 0 if it succeeds, or one of the following
+- * negative error codes:
+- *
+- * NGHTTP2_ERR_NOMEM
+- *     Out of memory.
+- */
+-static int session_update_recv_stream_window_size(nghttp2_session *session,
+-                                                  nghttp2_stream *stream,
+-                                                  size_t delta_size,
+-                                                  int send_window_update) {
++int nghttp2_session_update_recv_stream_window_size(nghttp2_session *session,
++                                                   nghttp2_stream *stream,
++                                                   size_t delta_size,
++                                                   int send_window_update) {
+   int rv;
+   rv = adjust_recv_window_size(&stream->recv_window_size, delta_size,
+                                stream->local_window_size);
+@@ -5063,20 +5050,8 @@ static int session_update_recv_stream_window_size(nghttp2_session *session,
+   return 0;
+ }
+ 
+-/*
+- * Accumulates received bytes |delta_size| for connection-level flow
+- * control and decides whether to send WINDOW_UPDATE to the
+- * connection.  If NGHTTP2_OPT_NO_AUTO_WINDOW_UPDATE is set,
+- * WINDOW_UPDATE will not be sent.
+- *
+- * This function returns 0 if it succeeds, or one of the following
+- * negative error codes:
+- *
+- * NGHTTP2_ERR_NOMEM
+- *     Out of memory.
+- */
+-static int session_update_recv_connection_window_size(nghttp2_session *session,
+-                                                      size_t delta_size) {
++int nghttp2_session_update_recv_connection_window_size(nghttp2_session *session,
++                                                       size_t delta_size) {
+   int rv;
+   rv = adjust_recv_window_size(&session->recv_window_size, delta_size,
+                                session->local_window_size);
+@@ -5678,6 +5653,12 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+           break;
+         }
+ 
++        /* Check the settings flood counter early to be safe */
++        if (session->obq_flood_counter_ >= session->max_outbound_ack &&
++            !(iframe->frame.hd.flags & NGHTTP2_FLAG_ACK)) {
++          return NGHTTP2_ERR_FLOODED;
++        }
++
+         iframe->state = NGHTTP2_IB_READ_SETTINGS;
+ 
+         if (iframe->payloadleft) {
+@@ -5688,6 +5669,16 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+           iframe->max_niv =
+               iframe->frame.hd.length / NGHTTP2_FRAME_SETTINGS_ENTRY_LENGTH + 1;
+ 
++          if (iframe->max_niv - 1 > session->max_settings) {
++            rv = nghttp2_session_terminate_session_with_reason(
++                session, NGHTTP2_ENHANCE_YOUR_CALM,
++                "SETTINGS: too many setting entries");
++            if (nghttp2_is_fatal(rv)) {
++              return rv;
++            }
++            return (ssize_t)inlen;
++          }
++
+           iframe->iv = nghttp2_mem_malloc(mem, sizeof(nghttp2_settings_entry) *
+                                                    iframe->max_niv);
+ 
+@@ -6454,7 +6445,7 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+       }
+ 
+       /* Pad Length field is subject to flow control */
+-      rv = session_update_recv_connection_window_size(session, readlen);
++      rv = nghttp2_session_update_recv_connection_window_size(session, readlen);
+       if (nghttp2_is_fatal(rv)) {
+         return rv;
+       }
+@@ -6477,7 +6468,7 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+ 
+       stream = nghttp2_session_get_stream(session, iframe->frame.hd.stream_id);
+       if (stream) {
+-        rv = session_update_recv_stream_window_size(
++        rv = nghttp2_session_update_recv_stream_window_size(
+             session, stream, readlen,
+             iframe->payloadleft ||
+                 (iframe->frame.hd.flags & NGHTTP2_FLAG_END_STREAM) == 0);
+@@ -6524,7 +6515,8 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+       if (readlen > 0) {
+         ssize_t data_readlen;
+ 
+-        rv = session_update_recv_connection_window_size(session, readlen);
++        rv = nghttp2_session_update_recv_connection_window_size(session,
++                                                                readlen);
+         if (nghttp2_is_fatal(rv)) {
+           return rv;
+         }
+@@ -6533,7 +6525,7 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+           return (ssize_t)inlen;
+         }
+ 
+-        rv = session_update_recv_stream_window_size(
++        rv = nghttp2_session_update_recv_stream_window_size(
+             session, stream, readlen,
+             iframe->payloadleft ||
+                 (iframe->frame.hd.flags & NGHTTP2_FLAG_END_STREAM) == 0);
+@@ -6634,7 +6626,8 @@ ssize_t nghttp2_session_mem_recv(nghttp2_session *session, const uint8_t *in,
+       if (readlen > 0) {
+         /* Update connection-level flow control window for ignored
+            DATA frame too */
+-        rv = session_update_recv_connection_window_size(session, readlen);
++        rv = nghttp2_session_update_recv_connection_window_size(session,
++                                                                readlen);
+         if (nghttp2_is_fatal(rv)) {
+           return rv;
+         }
+@@ -7454,6 +7447,11 @@ static int nghttp2_session_upgrade_internal(nghttp2_session *session,
+   if (settings_payloadlen % NGHTTP2_FRAME_SETTINGS_ENTRY_LENGTH) {
+     return NGHTTP2_ERR_INVALID_ARGUMENT;
+   }
++  /* SETTINGS frame contains too many settings */
++  if (settings_payloadlen / NGHTTP2_FRAME_SETTINGS_ENTRY_LENGTH
++        > session->max_settings) {
++    return NGHTTP2_ERR_TOO_MANY_SETTINGS;
++  }
+   rv = nghttp2_frame_unpack_settings_payload2(&iv, &niv, settings_payload,
+                                               settings_payloadlen, mem);
+   if (rv != 0) {
+diff --git a/deps/nghttp2/lib/nghttp2_session.h b/deps/nghttp2/lib/nghttp2_session.h
+index 90ead9c0395b4f1e42f94daadae57928e6c38df3..07bfbb6c90c8df07c0de4909bb72ff4942d15763 100644
+--- a/deps/nghttp2/lib/nghttp2_session.h
++++ b/deps/nghttp2/lib/nghttp2_session.h
+@@ -267,6 +267,8 @@ struct nghttp2_session {
+   /* The maximum length of header block to send.  Calculated by the
+      same way as nghttp2_hd_deflate_bound() does. */
+   size_t max_send_header_block_length;
++  /* The maximum number of settings accepted per SETTINGS frame. */
++  size_t max_settings;
+   /* Next Stream ID. Made unsigned int to detect >= (1 << 31). */
+   uint32_t next_stream_id;
+   /* The last stream ID this session initiated.  For client session,
+@@ -898,4 +900,36 @@ int nghttp2_session_terminate_session_with_reason(nghttp2_session *session,
+                                                   uint32_t error_code,
+                                                   const char *reason);
+ 
++/*
++ * Accumulates received bytes |delta_size| for connection-level flow
++ * control and decides whether to send WINDOW_UPDATE to the
++ * connection.  If NGHTTP2_OPT_NO_AUTO_WINDOW_UPDATE is set,
++ * WINDOW_UPDATE will not be sent.
++ *
++ * This function returns 0 if it succeeds, or one of the following
++ * negative error codes:
++ *
++ * NGHTTP2_ERR_NOMEM
++ *     Out of memory.
++ */
++int nghttp2_session_update_recv_connection_window_size(nghttp2_session *session,
++                                                       size_t delta_size);
++
++/*
++ * Accumulates received bytes |delta_size| for stream-level flow
++ * control and decides whether to send WINDOW_UPDATE to that stream.
++ * If NGHTTP2_OPT_NO_AUTO_WINDOW_UPDATE is set, WINDOW_UPDATE will not
++ * be sent.
++ *
++ * This function returns 0 if it succeeds, or one of the following
++ * negative error codes:
++ *
++ * NGHTTP2_ERR_NOMEM
++ *     Out of memory.
++ */
++int nghttp2_session_update_recv_stream_window_size(nghttp2_session *session,
++                                                   nghttp2_stream *stream,
++                                                   size_t delta_size,
++                                                   int send_window_update);
++
+ #endif /* NGHTTP2_SESSION_H */
+diff --git a/deps/nghttp2/lib/nghttp2_submit.c b/deps/nghttp2/lib/nghttp2_submit.c
+index f604eff5c9017fc272ac876d255d522303826d5e..744a49cf6098ec656a72553aa6f6f25240749109 100644
+--- a/deps/nghttp2/lib/nghttp2_submit.c
++++ b/deps/nghttp2/lib/nghttp2_submit.c
+@@ -450,6 +450,13 @@ int nghttp2_session_set_local_window_size(nghttp2_session *session,
+     if (rv != 0) {
+       return rv;
+     }
++
++    if (window_size_increment > 0) {
++      return nghttp2_session_add_window_update(session, 0, stream_id,
++                                               window_size_increment);
++    }
++
++    return nghttp2_session_update_recv_connection_window_size(session, 0);
+   } else {
+     stream = nghttp2_session_get_stream(session, stream_id);
+ 
+@@ -476,11 +483,14 @@ int nghttp2_session_set_local_window_size(nghttp2_session *session,
+     if (rv != 0) {
+       return rv;
+     }
+-  }
+ 
+-  if (window_size_increment > 0) {
+-    return nghttp2_session_add_window_update(session, 0, stream_id,
+-                                             window_size_increment);
++    if (window_size_increment > 0) {
++      return nghttp2_session_add_window_update(session, 0, stream_id,
++                                               window_size_increment);
++    }
++
++    return nghttp2_session_update_recv_stream_window_size(session, stream, 0,
++                                                          1);
+   }
+ 
+   return 0;
