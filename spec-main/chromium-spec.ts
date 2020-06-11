@@ -1081,7 +1081,7 @@ describe('chromium features', () => {
           new Promise((resolve, reject) => {
             try {
               let req = window.indexedDB.open('${dbName}');
-              req.onsuccess = (event) => { 
+              req.onsuccess = (event) => {
                 let db = req.result;
                 resolve(db.name);
               }
@@ -1313,8 +1313,29 @@ describe('chromium features', () => {
       })
     })
   })
-})
 
+  describe('chrome://media-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('chrome://media-internals')
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      )
+      expect(pageExists).to.be.true()
+    })
+  })
+
+  describe('chrome://webrtc-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false })
+      w.loadURL('chrome://webrtc-internals')
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      )
+      expect(pageExists).to.be.true()
+    })
+  })
+})
 
 describe('font fallback', () => {
   async function getRenderedFonts (html: string) {
