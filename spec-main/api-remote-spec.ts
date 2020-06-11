@@ -1006,4 +1006,29 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       }
     });
   });
+
+  describe('gc behavior', () => {
+    const win = makeWindow();
+    const remotely = makeRemotely(win);
+    it('is resilient to gc happening between request and response', async () => {
+      const obj = { x: 'y' };
+      win().webContents.on('remote-get-global', (event) => {
+        event.returnValue = obj;
+      });
+      await remotely(() => {
+        const { ipc } = process.electronBinding('ipc');
+        const originalSendSync = ipc.sendSync.bind(ipc) as any;
+        ipc.sendSync = (...args: any[]): any => {
+          const ret = originalSendSync(...args);
+          (window as any).gc();
+          return ret;
+        };
+
+        for (let i = 0; i < 100; i++) {
+          // eslint-disable-next-line
+          require('electron').remote.getGlobal('test').x;
+        }
+      });
+    });
+  });
 });
