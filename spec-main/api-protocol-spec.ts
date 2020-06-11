@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron'
 import { promisify } from 'util'
 import { AddressInfo } from 'net'
+import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as http from 'http'
 import * as fs from 'fs'
@@ -410,6 +411,36 @@ describe('protocol module', () => {
       })
       const r = await ajax(protocolName + '://fake-host')
       expect(r.data).to.have.lengthOf(1024 * 1024 * 2)
+    })
+
+    it('can handle next-tick scheduling during read calls', async () => {
+      const events = new EventEmitter()
+      function createStream () {
+        const buffers = [
+          Buffer.alloc(65536),
+          Buffer.alloc(65537),
+          Buffer.alloc(39156)
+        ]
+        const e = new stream.Readable({ highWaterMark: 0 })
+        e.push(buffers.shift())
+        e._read = function () {
+          process.nextTick(() => this.push(buffers.shift() || null))
+        }
+        e.on('end', function () {
+          events.emit('end')
+        })
+        return e
+      }
+      registerStreamProtocol(protocolName, (request, callback) => {
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: createStream()
+        })
+      })
+      const hasEndedPromise = emittedOnce(events, 'end')
+      ajax(protocolName + '://fake-host')
+      await hasEndedPromise
     })
   })
 
