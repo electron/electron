@@ -42,10 +42,10 @@ index 06f0961e122f326e41610dd7a1b32fa752f0c68f..a041189f79cea5b59e1792b79c1348e3
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..b3db0fcfd34800f8068c1e24a1dcd5e2b08d879a 100644
+index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..df2e8cffedca837bef89ad59c27869d77551dab0 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1314,6 +1314,24 @@ void NavigationRequest::BeginNavigation() {
+@@ -1314,6 +1314,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -61,15 +61,46 @@ index 07e3baa13e4e7632cf286fdd980998e2eda9f84f..b3db0fcfd34800f8068c1e24a1dcd5e2
 +    //    (request->state() >= NavigationRequest::WILL_PROCESS_RESPONSE &&
 +    //     !speculative_render_frame_host_);
 +    //
-+    // Hence this call is necesary before the call to GetFrameHostForNavigation. Also
-+    // the state_ here is anyway going to end up being READY_TO_COMMIT because of
-+    // ReadyToCommitNavigation a few lines later, so will not affect normal chromium
-+    // request cycle.
-+    state_ = READY_TO_COMMIT;
++    // Hence this call is necesary before the call to GetFrameHostForNavigation.
++    SetState(REUSE_SITE_INSTANCE);
 +
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
+@@ -4652,13 +4667,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+           {WAITING_FOR_RENDERER_RESPONSE, {WILL_START_NAVIGATION}},
+           {WILL_START_NAVIGATION, {WILL_START_REQUEST, WILL_FAIL_REQUEST}},
+           {WILL_START_REQUEST,
+-           {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, READY_TO_COMMIT,
+-            DID_COMMIT, CANCELING, WILL_FAIL_REQUEST, DID_COMMIT_ERROR_PAGE}},
++           {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, REUSE_SITE_INSTANCE,
++            READY_TO_COMMIT, DID_COMMIT, CANCELING, WILL_FAIL_REQUEST,
++            DID_COMMIT_ERROR_PAGE}},
+           {WILL_REDIRECT_REQUEST,
+            {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, CANCELING,
+             WILL_FAIL_REQUEST}},
+           {WILL_PROCESS_RESPONSE,
+-           {READY_TO_COMMIT, CANCELING, WILL_FAIL_REQUEST}},
++           {REUSE_SITE_INSTANCE, READY_TO_COMMIT, CANCELING, WILL_FAIL_REQUEST}},
++          {REUSE_SITE_INSTANCE, {READY_TO_COMMIT}},
+           {READY_TO_COMMIT, {NOT_STARTED, DID_COMMIT, DID_COMMIT_ERROR_PAGE}},
+           {DID_COMMIT, {}},
+           {CANCELING, {READY_TO_COMMIT, WILL_FAIL_REQUEST}},
+diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
+index 5d2839963ccbaef4b511c9105d75cee1f8aa1c18..8f26aface4e4a59fd17a113b5613e5d1a057002c 100644
+--- a/content/browser/frame_host/navigation_request.h
++++ b/content/browser/frame_host/navigation_request.h
+@@ -144,6 +144,10 @@ class CONTENT_EXPORT NavigationRequest
+     // asynchronous.
+     WILL_PROCESS_RESPONSE,
+ 
++    // Electron: state that is between than WILL_PROCESS_RESPONSE and
++    // READY_TO_COMMIT to force reuse the same site instance.
++    REUSE_SITE_INSTANCE,
++
+     // The response started on the IO thread and is ready to be committed.
+     READY_TO_COMMIT,
+ 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
 index 08bcfadbb02e93cc483c13fc4fd185cb6a829c78..ca37c200a557026e2dd0c8573ea495d91cb07bf0 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
