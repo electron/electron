@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Siye Liu <siliu@microsoft.com>
+Date: Mon, 8 Jun 2020 21:19:00 +0000
+Subject: Allow IME to insert zero-length composition string.
+
+Some IMEs and Windows OS dictation will either insert zero-length text
+or delete existing composition text to commit active composition.
+Therefore, we should allow IMEs to cancel composition by committing zero
+length text.
+
+Bug: 1091069
+Change-Id: I99cb213dc2ba1965abfa88ccf6858b89bd7e82df
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2233234
+Commit-Queue: Siye Liu <siliu@microsoft.com>
+Reviewed-by: Yohei Yukawa <yukawa@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#776198}
+
+diff --git a/ui/base/ime/win/tsf_text_store.cc b/ui/base/ime/win/tsf_text_store.cc
+index 2a8cde4995fc41305847fd995654e3a012f68e1d..31174ba0eb0559aa461cfba1689d9ef627914e71 100644
+--- a/ui/base/ime/win/tsf_text_store.cc
++++ b/ui/base/ime/win/tsf_text_store.cc
+@@ -647,9 +647,7 @@ HRESULT TSFTextStore::RequestLock(DWORD lock_flags, HRESULT* result) {
+   // 3. User commits current composition text.
+   if (((new_composition_start > last_composition_start &&
+         text_input_client_->HasCompositionText()) ||
+-       (wparam_keydown_fired_ == 0 && !has_composition_range_ &&
+-        !text_input_client_->HasCompositionText()) ||
+-       (wparam_keydown_fired_ != 0 && !has_composition_range_)) &&
++       !has_composition_range_) &&
+       text_input_client_) {
+     CommitTextAndEndCompositionIfAny(last_composition_start,
+                                      new_composition_start);
+@@ -1355,8 +1353,11 @@ void TSFTextStore::CommitTextAndEndCompositionIfAny(size_t old_size,
+             : new_committed_string_size);
+     // TODO(crbug.com/978678): Unify the behavior of
+     //     |TextInputClient::InsertText(text)| for the empty text.
+-    if (!new_committed_string.empty())
++    if (!new_committed_string.empty()) {
+       text_input_client_->InsertText(new_committed_string);
++    } else {
++      text_input_client_->ClearCompositionText();
++    }
+     // Notify accessibility about this committed composition
+     text_input_client_->SetActiveCompositionForAccessibility(
+         replace_text_range_, new_committed_string,
+diff --git a/ui/base/ime/win/tsf_text_store_unittest.cc b/ui/base/ime/win/tsf_text_store_unittest.cc
+index 081809d75a1fbbedbcbc722302d4d915eabc46d4..4e81d7c1012f86712f1bba2bfe4037ed1ef79772 100644
+--- a/ui/base/ime/win/tsf_text_store_unittest.cc
++++ b/ui/base/ime/win/tsf_text_store_unittest.cc
+@@ -3394,5 +3394,92 @@ TEST_F(TSFTextStoreTest, RegressionTest7) {
+   EXPECT_EQ(S_OK, result);
+ }
+ 
++// regression tests for crbug.com/1091069.
++// We should allow inserting empty compositon string to cancel composition.
++class RegressionTest8Callback : public TSFTextStoreTestCallback {
++ public:
++  explicit RegressionTest8Callback(TSFTextStore* text_store)
++      : TSFTextStoreTestCallback(text_store) {}
++
++  HRESULT LockGranted1(DWORD flags) {
++    SetTextTest(0, 0, L"bbbb", S_OK);
++    SetSelectionTest(0, 4, S_OK);
++
++    text_spans()->clear();
++    ImeTextSpan text_span_1;
++    text_span_1.start_offset = 0;
++    text_span_1.end_offset = 4;
++    text_span_1.underline_color = SK_ColorBLACK;
++    text_span_1.thickness = ImeTextSpan::Thickness::kThin;
++    text_span_1.background_color = SK_ColorTRANSPARENT;
++    text_spans()->push_back(text_span_1);
++
++    *edit_flag() = true;
++    *composition_start() = 0;
++    composition_range()->set_start(0);
++    composition_range()->set_end(4);
++    *has_composition_range() = true;
++
++    text_store_->OnKeyTraceDown(65u, 1966081u);
++    return S_OK;
++  }
++
++  void SetCompositionText1(const ui::CompositionText& composition) {
++    EXPECT_EQ(L"bbbb", composition.text);
++    EXPECT_EQ(0u, composition.selection.start());
++    EXPECT_EQ(4u, composition.selection.end());
++    ASSERT_EQ(1u, composition.ime_text_spans.size());
++    EXPECT_EQ(0u, composition.ime_text_spans[0].start_offset);
++    EXPECT_EQ(4u, composition.ime_text_spans[0].end_offset);
++    SetHasCompositionText(true);
++  }
++
++  HRESULT LockGranted2(DWORD flags) {
++    GetTextTest(0, -1, L"bbbb", 4);
++    SetTextTest(0, 4, L"", S_OK);
++
++    text_spans()->clear();
++    *edit_flag() = true;
++    *composition_start() = 0;
++    composition_range()->set_start(0);
++    composition_range()->set_end(0);
++
++    *has_composition_range() = false;
++    text_store_->OnKeyTraceUp(65u, 1966081u);
++    return S_OK;
++  }
++
++  void ClearCompositionText2() { EXPECT_EQ(false, *has_composition_range()); }
++
++ private:
++  DISALLOW_COPY_AND_ASSIGN(RegressionTest8Callback);
++};
++
++TEST_F(TSFTextStoreTest, RegressionTest8) {
++  RegressionTest8Callback callback(text_store_.get());
++  EXPECT_CALL(text_input_client_, SetCompositionText(_))
++      .WillOnce(
++          Invoke(&callback, &RegressionTest8Callback::SetCompositionText1));
++
++  EXPECT_CALL(text_input_client_, ClearCompositionText())
++      .WillOnce(
++          Invoke(&callback, &RegressionTest8Callback::ClearCompositionText2));
++
++  EXPECT_CALL(*sink_, OnLockGranted(_))
++      .WillOnce(Invoke(&callback, &RegressionTest8Callback::LockGranted1))
++      .WillOnce(Invoke(&callback, &RegressionTest8Callback::LockGranted2));
++
++  ON_CALL(text_input_client_, HasCompositionText())
++      .WillByDefault(
++          Invoke(&callback, &TSFTextStoreTestCallback::HasCompositionText));
++
++  HRESULT result = kInvalidResult;
++  EXPECT_EQ(S_OK, text_store_->RequestLock(TS_LF_READWRITE, &result));
++  EXPECT_EQ(S_OK, result);
++  result = kInvalidResult;
++  EXPECT_EQ(S_OK, text_store_->RequestLock(TS_LF_READWRITE, &result));
++  EXPECT_EQ(S_OK, result);
++}
++
+ }  // namespace
+ }  // namespace ui
