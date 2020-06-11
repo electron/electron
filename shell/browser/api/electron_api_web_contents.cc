@@ -393,6 +393,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       weak_factory_(this) {
+  auto session = Session::CreateFrom(isolate, GetBrowserContext());
+  session_.Reset(isolate, session.ToV8());
+
   web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
                                          GetBrowserContext()->GetUserAgent()),
                                      false);
