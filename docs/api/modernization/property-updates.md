@@ -45,9 +45,3 @@ The Electron team is currently undergoing an initiative to convert separate gett
   * `isMacTemplateImage`
 * `SystemPreferences` module
   * `appLevelAppearance`
-* `webContents` module
-  * `audioMuted`
-  * `frameRate`
-  * `userAgent`
-  * `zoomFactor`
-  * `zoomLevel`
