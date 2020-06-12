@@ -32,7 +32,7 @@ const finalizationRegistry = new (globalThis as any).FinalizationRegistry((fi: F
   const ref = rendererFunctionCache.get(mapKey);
   if (ref !== undefined && ref.deref() === undefined) {
     rendererFunctionCache.delete(mapKey);
-    fi.webContents.sendToFrame(fi.frameId, 'ELECTRON_RENDERER_RELEASE_CALLBACK', fi.id[0], fi.id[1]);
+    if (!fi.webContents.isDestroyed()) { fi.webContents.sendToFrame(fi.frameId, 'ELECTRON_RENDERER_RELEASE_CALLBACK', fi.id[0], fi.id[1]); }
   }
 });
 
