@@ -17,6 +17,7 @@
   base::scoped_nsobject<NSUserActivity> currentActivity_;
   NSCondition* handoffLock_;
   BOOL updateReceived_;
+  BOOL userStoppedShutdown_;
   base::Callback<bool()> shouldShutdown_;
 }
 
@@ -24,6 +25,9 @@
 
 - (void)setShutdownHandler:(base::Callback<bool()>)handler;
 - (void)registerURLHandler;
+
+// Called when macOS itself is shutting down.
+- (void)willPowerOff:(NSNotification*)notify;
 
 // CrAppProtocol:
 - (BOOL)isHandlingSendEvent;
