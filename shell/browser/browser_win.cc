@@ -230,9 +230,9 @@ void Browser::Focus(gin_helper::Arguments* args) {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
-void GetFileIcon(base::FilePath& path,
+void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
-                 base::CancelableTaskTracker& cancelable_task_tracker_,
+                 const base::CancelableTaskTracker& cancelable_task_tracker_,
                  base::string16 app_path,
                  base::string16 app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
