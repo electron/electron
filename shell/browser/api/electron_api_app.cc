@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_app.h"
 
 #include <memory>
+
 #include <string>
 #include <vector>
 
@@ -63,7 +64,6 @@
 
 #if defined(OS_MACOSX)
 #include <CoreFoundation/CoreFoundation.h>
-
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
 
@@ -1491,9 +1491,11 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+#if !defined(OS_LINUX)
       .SetMethod(
           "getApplicationInfoForProtocol",
           base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
+#endif
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
@@ -1558,7 +1560,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
-
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif

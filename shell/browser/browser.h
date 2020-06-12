@@ -22,7 +22,6 @@
 
 #if defined(OS_WIN)
 #include <windows.h>
-
 #include "base/files/file_path.h"
 #endif
 
@@ -101,9 +100,11 @@ class Browser : public WindowListObserver {
 
   base::string16 GetApplicationNameForProtocol(const GURL& url);
 
+#if !defined(OS_LINUX)
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(const GURL& url,
                                                        v8::Isolate* isolate);
+#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);

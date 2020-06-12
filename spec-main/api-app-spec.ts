@@ -974,7 +974,11 @@ describe('app module', () => {
   });
 
   describe('getApplicationInfoForProtocol()', () => {
-    it('returns promise rejection for a bogus protocol', async () => {
+    it('returns promise rejection for a bogus protocol', async function () {
+      if (process.platform === 'linux') {
+        this.skip();
+      }
+
       await expect(
         app.getApplicationInfoForProtocol('bogus-protocol://')
       ).to.eventually.be.rejectedWith(
@@ -982,7 +986,11 @@ describe('app module', () => {
       );
     });
 
-    it('returns promise with appPath, displayName and icon', async () => {
+    it('returns resolved promise with appPath, displayName and icon', async function () {
+      if (process.platform === 'linux') {
+        this.skip();
+      }
+
       const appInfo = await app.getApplicationInfoForProtocol('https://');
       expect(appInfo.path).not.to.be.undefined();
       expect(appInfo.name).not.to.be.undefined();

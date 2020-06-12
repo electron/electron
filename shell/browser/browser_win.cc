@@ -109,7 +109,15 @@ base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
   }
   return base::string16(out_buffer);
 }
+
+// Helper for GetApplicationInfoForProtocol().
+// takes in an assoc_str
+// (https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/ne-shlwapi-assocstr)
+// and returns the application name, icon and path that handles the protocol.
 //
+// Windows 8 introduced a new protocol->executable binding system which cannot
+// be retrieved in the HKCR registry subkey method implemented below. We call
+// AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
 base::string16 GetAppInfoHelperForProtocol(const GURL& url,
                                            ASSOCSTR assoc_str) {
   const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
@@ -247,6 +255,10 @@ void GetFileIcon(base::FilePath& path,
   }
 }
 
+// Returns `Promise<Object>` - Resolve with an object containing the following:
+// * `icon` NativeImage - the display icon of the app handling the protocol.
+// * `path` String  - installation path of the app handling the protocol.
+// * `name` String - display name of the app handling the protocol.
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     const GURL& url,
     v8::Isolate* isolate) {
