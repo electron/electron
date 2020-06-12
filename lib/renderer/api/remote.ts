@@ -12,25 +12,25 @@ const { NativeImage } = process.electronBinding('native_image');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();
-const finalizationRegistry = new (window as any).FinalizationRegistry((name: any) => {
-  const ref = remoteObjectCache.get(name);
+const finalizationRegistry = new (window as any).FinalizationRegistry((id: number) => {
+  const ref = remoteObjectCache.get(id);
   if (ref !== undefined && ref.deref() === undefined) {
-    remoteObjectCache.delete(name);
-    ipcRendererInternal.send('ELECTRON_BROWSER_DEREFERENCE', contextId, name, 0);
+    remoteObjectCache.delete(id);
+    ipcRendererInternal.send('ELECTRON_BROWSER_DEREFERENCE', contextId, id, 0);
   }
 });
 
-function getCachedRemoteObject (name: number) {
-  const ref = remoteObjectCache.get(name);
+function getCachedRemoteObject (id: number) {
+  const ref = remoteObjectCache.get(id);
   if (ref !== undefined) {
     const deref = ref.deref();
     if (deref !== undefined) return deref;
   }
 }
-function setCachedRemoteObject (name: number, value: any) {
+function setCachedRemoteObject (id: number, value: any) {
   const wr = new (window as any).WeakRef(value);
-  remoteObjectCache.set(name, wr);
-  finalizationRegistry.register(value, name);
+  remoteObjectCache.set(id, wr);
+  finalizationRegistry.register(value, id);
   return value;
 }
 
