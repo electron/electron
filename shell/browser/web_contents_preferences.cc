@@ -127,6 +127,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -336,6 +337,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))
     command_line->AppendSwitch(switches::kContextIsolation);
+
+  if (IsEnabled(options::kWorldSafeExecuteJavaScript))
+    command_line->AppendSwitch(switches::kWorldSafeExecuteJavaScript);
 
   // --background-color.
   std::string s;
