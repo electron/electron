@@ -11,7 +11,28 @@ const { hasSwitch } = process.electronBinding('command_line');
 const { NativeImage } = process.electronBinding('native_image');
 
 const callbacksRegistry = new CallbacksRegistry();
-const remoteObjectCache = v8Util.createIDWeakMap();
+const remoteObjectCache = new Map();
+const finalizationRegistry = new (window as any).FinalizationRegistry((id: number) => {
+  const ref = remoteObjectCache.get(id);
+  if (ref !== undefined && ref.deref() === undefined) {
+    remoteObjectCache.delete(id);
+    ipcRendererInternal.send('ELECTRON_BROWSER_DEREFERENCE', contextId, id, 0);
+  }
+});
+
+function getCachedRemoteObject (id: number) {
+  const ref = remoteObjectCache.get(id);
+  if (ref !== undefined) {
+    const deref = ref.deref();
+    if (deref !== undefined) return deref;
+  }
+}
+function setCachedRemoteObject (id: number, value: any) {
+  const wr = new (window as any).WeakRef(value);
+  remoteObjectCache.set(id, wr);
+  finalizationRegistry.register(value, id);
+  return value;
+}
 
 // An unique ID that can represent current context.
 const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
@@ -234,8 +255,9 @@ function metaToValue (meta: MetaType): any {
     if (meta.value.type === 'error') { throw metaToError(meta.value); } else { throw new Error(`Unexpected value type in exception: ${meta.value.type}`); }
   } else {
     let ret;
-    if ('id' in meta && remoteObjectCache.has(meta.id)) {
-      return remoteObjectCache.get(meta.id);
+    if ('id' in meta) {
+      const cached = getCachedRemoteObject(meta.id);
+      if (cached !== undefined) { return cached; }
     }
 
     // A shadow class to represent the remote function object.
@@ -262,9 +284,8 @@ function metaToValue (meta: MetaType): any {
     }
 
     // Track delegate obj's lifetime & tell browser to clean up when object is GCed.
-    v8Util.setRemoteObjectFreer(ret, contextId, meta.id);
     v8Util.setHiddenValue(ret, 'electronId', meta.id);
-    remoteObjectCache.set(meta.id, ret);
+    setCachedRemoteObject(meta.id, ret);
     return ret;
   }
 }

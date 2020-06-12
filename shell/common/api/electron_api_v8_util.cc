@@ -18,7 +18,6 @@
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 #include "shell/common/api/remote/remote_callback_freer.h"
-#include "shell/common/api/remote/remote_object_freer.h"
 #endif
 
 namespace std {
@@ -148,7 +147,6 @@ void Initialize(v8::Local<v8::Object> exports,
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   dict.SetMethod("setRemoteCallbackFreer",
                  &electron::RemoteCallbackFreer::BindTo);
-  dict.SetMethod("setRemoteObjectFreer", &electron::RemoteObjectFreer::BindTo);
   dict.SetMethod(
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);

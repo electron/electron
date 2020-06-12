@@ -595,8 +595,6 @@ source_set("electron_lib") {
     sources += [
       "shell/common/api/remote/remote_callback_freer.cc",
       "shell/common/api/remote/remote_callback_freer.h",
-      "shell/common/api/remote/remote_object_freer.cc",
-      "shell/common/api/remote/remote_object_freer.h",
     ]
   }
 
