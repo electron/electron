@@ -2,11 +2,30 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './events-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
   afterEach(closeAllWindows);
+
+  for (const worldSafe of [true, false]) {
+    it(`can use executeJavaScript with world safe mode ${worldSafe ? 'enabled' : 'disabled'}`, async () => {
+      const w = new BrowserWindow({
+        show: true,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: true,
+          worldSafeExecuteJavaScript: worldSafe,
+          preload: path.join(fixtures, 'pages', 'world-safe-preload.js')
+        }
+      });
+      const isSafe = emittedOnce(ipcMain, 'executejs-safe');
+      w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      const [, wasSafe] = await isSafe;
+      expect(wasSafe).to.equal(worldSafe);
+    });
+  }
 
   it('calls a spellcheck provider', async () => {
     const w = new BrowserWindow({
