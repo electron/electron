@@ -144,9 +144,10 @@ void OnIconDataAvailable(base::string16 app_path,
     v8::HandleScope scope(promise.isolate());
     gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("appPath", app_path);
-    dict.Set("displayName", app_display_name), dict.Set("icon", icon);
 
+    dict.Set("appPath", app_path);
+    dict.Set("displayName", app_display_name);
+    dict.Set("icon", icon);
     promise.Resolve(dict);
   } else {
     promise.RejectWithErrorMessage("Failed to get file icon.");
