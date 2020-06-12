@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: remove menu window from taskbar
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/2245941
+
+diff --git a/ui/views/widget/widget_hwnd_utils.cc b/ui/views/widget/widget_hwnd_utils.cc
+index 40e66a212e3ea158b61f11d804a3c1644023b2d7..89f5b62f95dfec59bacf79f33895438039fac1c5 100644
+--- a/ui/views/widget/widget_hwnd_utils.cc
++++ b/ui/views/widget/widget_hwnd_utils.cc
+@@ -118,6 +118,8 @@ void CalculateWindowStylesFromInitParams(
+         else
+           *style |= WS_BORDER;
+       }
++      if (!params.force_show_in_taskbar)
++        *ex_style |= WS_EX_TOOLWINDOW;
+       break;
+     case Widget::InitParams::TYPE_TOOLTIP:
+       *style |= WS_POPUP;
