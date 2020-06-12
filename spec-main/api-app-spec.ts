@@ -973,6 +973,23 @@ describe('app module', () => {
     });
   });
 
+  describe('getApplicationInfoForProtocol()', () => {
+    it('returns promise rejection for a bogus protocol', async () => {
+      await expect(
+        app.getApplicationInfoForProtocol('bogus-protocol://')
+      ).to.eventually.be.rejectedWith(
+        'Unable to retrieve installation path to app'
+      );
+    });
+
+    it('returns promise with appPath, displayName and icon', async () => {
+      const appInfo = await app.getApplicationInfoForProtocol('https://');
+      expect(appInfo.path).not.to.be.undefined();
+      expect(appInfo.name).not.to.be.undefined();
+      expect(appInfo.icon).not.to.be.undefined();
+    });
+  });
+
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
