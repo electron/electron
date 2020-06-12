@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import deprecate from '@electron/internal/common/api/deprecate';
 
 const binding = process._linkedBinding('electron_renderer_web_frame');
 
@@ -47,12 +48,18 @@ class WebFrame extends EventEmitter {
   }
 }
 
+const { hasSwitch } = process.electronBinding('command_line');
+const worldSafeJS = hasSwitch('world-safe-execute-javascript') && hasSwitch('context-isolation');
+
 // Populate the methods.
 for (const name in binding) {
   if (!name.startsWith('_')) { // some methods are manually populated above
     // TODO(felixrieseberg): Once we can type web_frame natives, we could
     // use a neat `keyof` here
     (WebFrame as any).prototype[name] = function (...args: Array<any>) {
+      if (!worldSafeJS && name.startsWith('executeJavaScript')) {
+        deprecate.log(`Security Warning: webFrame.${name} was called without worldSafeExecuteJavaScript set to true.  This is considered unsafe and the default of worldSafeExecuteJavaScript will be changing to true in Electron 12.`);
+      }
       return binding[name](this.context, ...args);
     };
   }
