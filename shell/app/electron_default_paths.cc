@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/atom_paths.h"
+#include "shell/app/electron_default_paths.h"
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -11,7 +11,7 @@
 #include "shell/browser/browser.h"
 
 #if defined(OS_MACOSX)
-#include "shell/browser/atom_paths_mac.h"
+#include "shell/app/electron_register_path_mac.h"
 #endif
 
 #if defined(USE_X11)
@@ -32,16 +32,26 @@ void GetLinuxAppDataPath(base::FilePath* path) {
 }
 #endif
 
-}  // namespace
-
-// This cannot be done as a static initializer sadly since Visual Studio will
-// eliminate this object file if there is no direct entry point into it.
-void AtomPaths::Register() {
-  base::PathService::RegisterProvider(AtomPaths::GetDefault, PATH_START,
-                                      PATH_END);
+bool GetDefaultCrashDumpsPath(base::FilePath* path) {
+  base::FilePath cur;
+  if (!base::PathService::Get(DIR_USER_DATA, &cur))
+    return false;
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+#else
+  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+#endif
+  // TODO(bauerb): http://crbug.com/259796
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
+    return false;
+  *path = cur;
+  return true;
 }
 
-bool AtomPaths::GetDefault(int key, base::FilePath* path) {
+}  // namespace
+
+bool ElectronDefaultPaths::GetDefault(int key, base::FilePath* path) {
   switch (key) {
 #if defined(USE_X11)
     case DIR_APP_DATA:
@@ -66,6 +76,8 @@ bool AtomPaths::GetDefault(int key, base::FilePath* path) {
       *path = path->Append(base::FilePath::FromUTF8Unsafe("logs"));
 #endif
       return true;
+    case DIR_CRASH_DUMPS:
+      return GetDefaultCrashDumpsPath(path);
   }
   return false;
 }

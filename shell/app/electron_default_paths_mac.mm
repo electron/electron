@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/atom_paths_mac.h"
+#include "shell/app/electron_default_paths_mac.h"
 
 #include "base/base_paths_mac.h"
 #include "base/files/file_path.h"

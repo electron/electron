@@ -34,6 +34,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/app/electron_crash_reporter_client.h"
+#include "shell/app/electron_default_paths.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
@@ -115,33 +116,9 @@ void InvalidParameterHandler(const wchar_t*,
 // shell/common
 namespace electron {
 
-bool GetDefaultCrashDumpsPath(base::FilePath* path) {
-  base::FilePath cur;
-  if (!base::PathService::Get(DIR_USER_DATA, &cur))
-    return false;
-#if defined(OS_MACOSX) || defined(OS_WIN)
-  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
-#else
-  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
-#endif
-  // TODO(bauerb): http://crbug.com/259796
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
-    return false;
-  *path = cur;
-  return true;
-}
-
-bool ElectronPathProvider(int key, base::FilePath* path) {
-  if (key == DIR_CRASH_DUMPS) {
-    return GetDefaultCrashDumpsPath(path);
-  }
-  return false;
-}
-
 void RegisterPathProvider() {
-  base::PathService::RegisterProvider(ElectronPathProvider, PATH_START,
-                                      PATH_END);
+  base::PathService::RegisterProvider(ElectronDefaultPaths::GetDefault, PATH_START,
+    PATH_END);
 }
 
 }  // namespace electron

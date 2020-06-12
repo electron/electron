@@ -33,11 +33,11 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/service_manager/sandbox/switches.h"
+#include "shell/app/electron_default_paths.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
-#include "shell/browser/atom_paths.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/login_handler.h"
@@ -861,7 +861,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     }
     logs_path = custom_path.value();
   } else {
-    AtomPaths::GetDefault(DIR_APP_LOGS, &logs_path);
+    ElectronDefaultPaths::GetDefault(DIR_APP_LOGS, &logs_path);
   }
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::PathService::Override(DIR_APP_LOGS, logs_path);

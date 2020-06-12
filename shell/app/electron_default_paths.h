@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ATOM_PATHS_H_
-#define SHELL_BROWSER_ATOM_PATHS_H_
+#ifndef SHELL_APP_ELECTRON_DEFAULT_PATHS_H_
+#define SHELL_APP_ELECTRON_DEFAULT_PATHS_H_
 
-#include "shell/browser/electron_paths.h"
+#include "shell/common/electron_paths.h"
 
 namespace base {
 class FilePath;
@@ -13,13 +13,11 @@ class FilePath;
 
 namespace electron {
 
-class AtomPaths {
+class ElectronDefaultPaths {
  public:
-  static void Register();
-
   static bool GetDefault(int key, base::FilePath* path);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ATOM_PATHS_H_
+#endif  // SHELL_APP_ELECTRON_DEFAULT_PATHS_H_

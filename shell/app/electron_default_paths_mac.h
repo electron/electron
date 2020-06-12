@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ATOM_PATHS_MAC_H_
-#define SHELL_BROWSER_ATOM_PATHS_MAC_H_
+#ifndef SHELL_APP_ELECTRON_DEFAULT_PATHS_MAC_H_
+#define SHELL_APP_ELECTRON_DEFAULT_PATHS_MAC_H_
 
 namespace base {
 class FilePath;
@@ -15,4 +15,4 @@ void GetMacAppLogsPath(base::FilePath* path);
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ATOM_PATHS_MAC_H_
+#endif  // SHELL_APP_ELECTRON_DEFAULT_PATHS_MAC_H_
