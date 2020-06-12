@@ -11,12 +11,18 @@ namespace node {
 class Environment;
 }  // namespace node
 
+namespace v8_inspector {
+class V8InspectorClient;
+}  // namespace v8_inspector
+
 namespace electron {
 
 // Add support for node's "--inspect" switch.
 class NodeDebugger {
  public:
   explicit NodeDebugger(node::Environment* env);
+  NodeDebugger(node::Environment* env,
+               v8_inspector::V8InspectorClient* inspector);
   ~NodeDebugger();
 
   void Start();
@@ -24,6 +30,7 @@ class NodeDebugger {
 
  private:
   node::Environment* env_;
+  v8_inspector::V8InspectorClient* client_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };

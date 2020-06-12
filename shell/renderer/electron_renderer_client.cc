@@ -22,6 +22,7 @@
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/core/inspector/thread_debugger.h"  // nogncheck
 
 namespace electron {
 
@@ -127,6 +128,10 @@ void ElectronRendererClient::DidCreateScriptContext(
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr);
 
+  blink::ThreadDebugger* debugger = blink::ThreadDebugger::From(env->isolate());
+  auto node_debugger_ = std::make_unique<NodeDebugger>(env, debugger);
+  node_debugger_->Start();
+
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
@@ -168,6 +173,8 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);
+
+  node_debugger_->Stop();
 
   // Destroy the node environment.  We only do this if node support has been
   // enabled for sub-frames to avoid a change-of-behavior / introduce crashes

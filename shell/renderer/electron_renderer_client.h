@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "shell/browser/node_debugger.h"
 #include "shell/renderer/renderer_client_base.h"
 
 namespace node {
@@ -59,6 +60,8 @@ class ElectronRendererClient : public RendererClientBase {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
+
+  std::unique_ptr<NodeDebugger> node_debugger_;
 
   // The node::Environment::GetCurrent API does not return nullptr when it
   // is called for a context without node::Environment, so we have to keep

@@ -19,6 +19,9 @@
 namespace electron {
 
 NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
+NodeDebugger::NodeDebugger(node::Environment* env,
+                           v8_inspector::V8InspectorClient* client)
+    : env_(env), client_(client) {}
 
 NodeDebugger::~NodeDebugger() = default;
 
@@ -33,7 +36,7 @@ void NodeDebugger::Start() {
   if (inspector->Start("" /* path */, debug_options,
                        std::make_shared<node::ExclusiveAccess<node::HostPort>>(
                            debug_options.host_port),
-                       true /* is_main */))
+                       true /* is_main */, client_))
     DCHECK(inspector->IsListening());
 
   if (inspector->options().break_node_first_line) {

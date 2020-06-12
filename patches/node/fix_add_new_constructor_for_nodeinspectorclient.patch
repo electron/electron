@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 12 Jun 2020 10:18:55 -0700
+Subject: fix: add new constructor for NodeInspectorClient
+
+V8Inspector was designed with an idea that there is only one V8Inspector per isolate - since the
+renderer process already has one via Blink, this meant that if we tried to start the
+Node.js debugger in the renderer it would crash. We can work around this by adding a new
+contructor to NodeInspectorClient that allows it to be initialized with an existing V8InspectorClient,
+and pass it the one Blink created previously.
+
+I plan to try and upstream this new constructor to Node.js to see what they think.
+
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index 3e865357f409470f15ed29a3f87b717812637c37..7de20c4cc9cc47aeb45519e188fefddc5a925b44 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -476,6 +476,17 @@ class NodeInspectorClient : public V8InspectorClient {
+     contextCreated(env->context(), info);
+   }
+ 
++  NodeInspectorClient(V8InspectorClient* client, node::Environment* env, bool is_main)
++      : env_(env), is_main_(is_main) {
++    client_ = V8Inspector::create(env->isolate(), client);
++    // TODO(bnoordhuis) Make name configurable from src/node.cc.
++    std::string name =
++        is_main_ ? GetHumanReadableProcessName() : GetWorkerLabel(env);
++    ContextInfo info(name);
++    info.is_default = true;
++    contextCreated(env->context(), info);
++  }
++
+   void runMessageLoopOnPause(int context_group_id) override {
+     waiting_for_resume_ = true;
+     runMessageLoop();
+@@ -758,13 +769,19 @@ Agent::~Agent() {}
+ bool Agent::Start(const std::string& path,
+                   const DebugOptions& options,
+                   std::shared_ptr<ExclusiveAccess<HostPort>> host_port,
+-                  bool is_main) {
++                  bool is_main,
++                  V8InspectorClient* inspector_client) {
+   path_ = path;
+   debug_options_ = options;
+   CHECK_NOT_NULL(host_port);
+   host_port_ = host_port;
+ 
+-  client_ = std::make_shared<NodeInspectorClient>(parent_env_, is_main);
++  if (inspector_client) {
++    client_ = std::make_shared<NodeInspectorClient>(inspector_client, parent_env_, is_main);
++  } else {
++    client_ = std::make_shared<NodeInspectorClient>(parent_env_, is_main);
++  }
++
+   if (parent_env_->owns_inspector()) {
+     Mutex::ScopedLock lock(start_io_thread_async_mutex);
+     CHECK_EQ(start_io_thread_async_initialized.exchange(true), false);
+diff --git a/src/inspector_agent.h b/src/inspector_agent.h
+index 5594f4ba637c5c890a8226d9face18815c41a97b..678953afae26bbbab7d25ccdf311aebdf794af31 100644
+--- a/src/inspector_agent.h
++++ b/src/inspector_agent.h
+@@ -16,6 +16,7 @@
+ 
+ namespace v8_inspector {
+ class StringView;
++class V8InspectorClient;
+ }  // namespace v8_inspector
+ 
+ namespace node {
+@@ -51,7 +52,8 @@ class NODE_EXTERN Agent {
+   bool Start(const std::string& path,
+              const DebugOptions& options,
+              std::shared_ptr<ExclusiveAccess<HostPort>> host_port,
+-             bool is_main);
++             bool is_main,
++             v8_inspector::V8InspectorClient* inspector_client = nullptr);
+   // Stop and destroy io_
+   void Stop();
+ 
