@@ -117,8 +117,8 @@ void InvalidParameterHandler(const wchar_t*,
 namespace electron {
 
 void RegisterPathProvider() {
-  base::PathService::RegisterProvider(ElectronDefaultPaths::GetDefault, PATH_START,
-    PATH_END);
+  base::PathService::RegisterProvider(ElectronDefaultPaths::GetDefault,
+                                      PATH_START, PATH_END);
 }
 
 }  // namespace electron
