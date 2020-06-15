@@ -14,7 +14,7 @@ let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
 })
 
-myNotification.onclick = () => {
+myNotification.on("click", () => {
   console.log('Notification clicked')
 }
 ```
