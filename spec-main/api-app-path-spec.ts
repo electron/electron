@@ -189,7 +189,24 @@ describe('app path module', () => {
       app.setPath('music', __dirname);
       expect(app.getPath('music')).to.equal(__dirname);
     });
-  });
+
+    if (process.platform === 'win32') {
+      it('gets the folder for recent files', () => {
+        const recent = app.getPath('recent');
+
+        // We expect that one of our test machines have overriden this
+        // to be something crazy, it'll always include the word "Recent"
+        // unless people have been registry-hacking like crazy
+        expect(recent).to.include('Recent');
+      });
+
+      it('can override the recent files path', () => {
+        app.setPath('recent', 'C:\\fake-path');
+        expect(app.getPath('recent')).to.equal('C:\\fake-path');
+      });
+    }
+
+    });
 
   describe('setPath(name, path)', () => {
     it('throws when a relative path is passed', () => {
