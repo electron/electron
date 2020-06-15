@@ -7,10 +7,10 @@ Refs: https://github.com/electron/electron/issues/21440
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2237535
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index faa47e9ef7f388dc0bfa5cd3efb961e6339ce390..274b9c247b8f970a6cf2be7b149d1885163551d9 100644
+index 0e957831c25ccbb27038b9a24587621a825ec5ee..dd330f71d203f473452455f6c96d0b89074ddc1d 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1988,6 +1988,15 @@ LRESULT HWNDMessageHandler::OnPointerEvent(UINT message,
+@@ -2052,6 +2052,15 @@ LRESULT HWNDMessageHandler::OnPointerEvent(UINT message,
      return -1;
    }
  
