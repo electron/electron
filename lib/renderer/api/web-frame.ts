@@ -62,6 +62,12 @@ for (const name in binding) {
       }
       return binding[name](this.context, ...args);
     };
+    // TODO(MarshallOfSound): Remove once the above deprecation is removed
+    if (name.startsWith('executeJavaScript')) {
+      (WebFrame as any).prototype[`_${name}`] = function (...args: Array<any>) {
+        return binding[name](this.context, ...args);
+      };
+    }
   }
 }
 
