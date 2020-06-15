@@ -118,8 +118,8 @@ base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
 // Windows 8 introduced a new protocol->executable binding system which cannot
 // be retrieved in the HKCR registry subkey method implemented below. We call
 // AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
-base::string16 GetAppInfoHelperForProtocol(const GURL& url,
-                                           ASSOCSTR assoc_str) {
+base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
+                                           const GURL& url) {
   const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
     return base::string16();
@@ -194,6 +194,35 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
   return base::string16();
 }
 
+void GetApplicationInfoForProtocolUsingRegistry(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
+  const base::string16 app_path;
+  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme)) {
+    promise.RejectWithErrorMessage("invalid url_scheme");
+    return;
+  }
+
+  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
+                                KEY_READ);
+  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
+    base::CommandLine command_line(
+        base::CommandLine::FromString(command_to_launch));
+    app_path = command_line.GetProgram();
+  } else {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_path,
+              app_display_name, std::move(promise));
+}
+
 bool FormatCommandLineString(base::string16* exe,
                              const std::vector<base::string16>& launch_args) {
   if (exe->empty() && !GetProcessExecPath(exe)) {
@@ -256,36 +285,31 @@ void GetFileIcon(const base::FilePath& path,
   }
 }
 
-// Returns `Promise<Object>` - Resolve with an object containing the following:
+// resolves `Promise<Object>` - Resolve with an object containing the following:
 // * `icon` NativeImage - the display icon of the app handling the protocol.
 // * `path` String  - installation path of the app handling the protocol.
 // * `name` String - display name of the app handling the protocol.
-v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+void Browser::GetApplicationInfoForProtocolUsingAssocQuery(
+    v8::Isolate* isolate,
     const GURL& url,
-    v8::Isolate* isolate) {
-  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
+    gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::string16 app_path = GetAppPathForProtocol(url);
 
   if (app_path.empty()) {
     promise.RejectWithErrorMessage(
         "Unable to retrieve installation path to app");
-    return handle;
   }
 
   base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
 
   if (app_display_name.empty()) {
     promise.RejectWithErrorMessage("Unable to retrieve display name of app");
-    return handle;
   }
 
   base::string16 app_icon_path = GetApplicationIconForProtocol(url);
   base::FilePath app_icon_file_path = base::FilePath(app_icon_path);
   GetFileIcon(app_icon_file_path, isolate, cancelable_task_tracker_, app_path,
               app_display_name, std::move(promise));
-  return handle;
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -483,6 +507,23 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   }
 
   return GetAppForProtocolUsingRegistry(url);
+}
+
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // Windows 8 or above has a new protocol association query.
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
+    GetApplicationInfoForProtocolUsingAssocQuery(isolate, url,
+                                                 std::move(promise));
+    return handle;
+  }
+
+  GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise));
+  return handle;
 }
 
 bool Browser::SetBadgeCount(int count) {
