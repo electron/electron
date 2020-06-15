@@ -1,12 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: "emmanuel.kimmerlin@thomsonreuters.com"
- <emmanuel.kimmerlin@thomsonreuters.com>
+From: emmanuel.kimmerlin@thomsonreuters.com <emmanuel.kimmerlin@thomsonreuters.com>
 Date: Mon, 18 Nov 2019 12:42:23 +0100
 Subject: Expose a method for invalidating internal cache
 
+Allow to customize Electron/Chromium cache location
+See MR: https://github.com/electron/electron/pull/19693
 
 diff --git a/base/path_service.cc b/base/path_service.cc
-index cc29cab2f1ffb0264cbb307e10da690d2a8e7863..3be206a4c3d3f4b12211ba222878c69af09c1666 100644
+index 8b05f150b3604d16aa96e63417c51bfdd9661bef..46f8680ec14328e4c4e3a3abc24f28df4e79fdcd 100644
 --- a/base/path_service.cc
 +++ b/base/path_service.cc
 @@ -326,6 +326,15 @@ void PathService::RegisterProvider(ProviderFunc func, int key_start,
