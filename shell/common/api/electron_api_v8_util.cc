@@ -151,8 +151,6 @@ void Initialize(v8::Local<v8::Object> exports,
       "createDoubleIDWeakMap",
       &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
 #endif
-  dict.SetMethod("createIDWeakMap",
-                 &electron::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
