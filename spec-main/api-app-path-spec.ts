@@ -205,8 +205,7 @@ describe('app path module', () => {
         expect(app.getPath('recent')).to.equal('C:\\fake-path');
       });
     }
-
-    });
+  });
 
   describe('setPath(name, path)', () => {
     it('throws when a relative path is passed', () => {
