@@ -6,10 +6,12 @@
 
 #include <utility>
 
+#include "base/feature_list.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/features.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/net/system_network_context_manager.h"
@@ -79,6 +81,14 @@ void NetworkContextService::ConfigureNetworkContextParams(
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
   network_context_params->enable_ftp_url_support = true;
 #endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
+
+  network_context_params->split_auth_cache_by_network_isolation_key =
+      base::FeatureList::IsEnabled(
+          network::features::kSplitAuthCacheByNetworkIsolationKey);
+
+  // All consumers of the main NetworkContext must provide NetworkIsolationKeys
+  // / IsolationInfos, so storage can be isolated on a per-site basis.
+  network_context_params->require_network_isolation_key = true;
 
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
 
