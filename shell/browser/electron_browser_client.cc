@@ -173,8 +173,8 @@
 #include "base/debug/leak_annotations.h"
 #include "components/crash/content/browser/crash_handler_host_linux.h"
 #include "components/crash/core/app/breakpad_linux.h"
-#include "components/crash/core/app/crash_switches.h"
-#include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
 using content::BrowserThread;
