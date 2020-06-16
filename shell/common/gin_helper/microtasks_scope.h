@@ -16,7 +16,8 @@ namespace gin_helper {
 // In the render process creates a v8::MicrotasksScope.
 class MicrotasksScope {
  public:
-  MicrotasksScope(v8::Isolate* isolate, bool ignore_browser_checkpoint = false);
+  explicit MicrotasksScope(v8::Isolate* isolate,
+                           bool ignore_browser_checkpoint = false);
   ~MicrotasksScope();
 
  private:
