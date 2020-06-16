@@ -226,11 +226,11 @@ int NodeMain(int argc, char* argv[]) {
 
       reporter.SetMethod("getParameters", &GetParameters);
 #if defined(MAS_BUILD)
-      dict.SetMethod("addExtraParameter", &SetCrashKeyStub);
-      dict.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
+      reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);
+      reporter.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
 #else
-      dict.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
-      dict.SetMethod("removeExtraParameter",
+      reporter.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
+      reporter.SetMethod("removeExtraParameter",
                      &electron::crash_keys::ClearCrashKey);
 #endif
 
