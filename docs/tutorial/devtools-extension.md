@@ -45,6 +45,9 @@ The extension will be remembered so you only need to call this API once per
 extension. If you try to add an extension that has already been loaded, this method
 will not return and instead log a warning to the console.
 
+**Note:** The `BrowserWindow.addDevToolsExtension` API is deprecated. Here is an alternative.
+[ses.getAllExtensions()](https://www.electronjs.org/docs/api/session#sesgetallextensions)
+
 ### How to remove a DevTools Extension
 
 You can pass the name of the extension to the `BrowserWindow.removeDevToolsExtension`
