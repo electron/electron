@@ -487,6 +487,12 @@ source_set("electron_lib") {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [ "shell/browser/auto_updater_mac.mm" ]
       defines += [ "MAS_BUILD" ]
+      sources -= [
+        "shell/app/electron_crash_reporter_client.cc",
+        "shell/app/electron_crash_reporter_client.h",
+        "shell/common/crash_keys.cc",
+        "shell/common/crash_keys.h",
+      ]
     } else {
       libs += [
         "Squirrel.framework",
