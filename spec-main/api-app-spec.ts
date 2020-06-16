@@ -973,7 +973,7 @@ describe('app module', () => {
     });
   });
 
-  describe('getApplicationInfoForProtocol()', () => {
+  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
     it('returns promise rejection for a bogus protocol', async function () {
       if (process.platform === 'linux') {
         this.skip();
