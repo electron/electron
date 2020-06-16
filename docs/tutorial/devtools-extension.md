@@ -27,30 +27,36 @@ Using the [React Developer Tools][react-devtools] as example:
      * `~/.config/google-chrome-canary/Default/Extensions/`
      * `~/.config/chromium/Default/Extensions/`
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
-1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
+1. Pass the location of the extension to `ses.loadExtension`
    API, for the React Developer Tools, it is something like:
+   
    ```javascript
+   const { app, session } = require('electron')
    const path = require('path')
-   const os = require('os')
-
-   BrowserWindow.addDevToolsExtension(
-      path.join(os.homedir(), '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.3.0_0')
-   )
+   app.on('ready', async () => {
+     const installedExtension = await session.defaultSession.loadExtension(path.join(__dirname, 'react-devtools'));
+     // Note that in order to use the React DevTools extension, you'll need to
+     // download and unzip a copy of the extension.
+   })
    ```
-
-**Note:** The `BrowserWindow.addDevToolsExtension` API cannot be called before the
-ready event of the app module is emitted.
 
 The extension will be remembered so you only need to call this API once per
 extension. If you try to add an extension that has already been loaded, this method
 will not return and instead log a warning to the console.
 
+
 ### How to remove a DevTools Extension
 
-You can pass the name of the extension to the `BrowserWindow.removeDevToolsExtension`
-API to remove it. The name of the extension is returned by
-`BrowserWindow.addDevToolsExtension` and you can get the names of all installed
-DevTools Extensions using the `BrowserWindow.getDevToolsExtensions` API.
+You can pass the Id of the extension to the `BrowserWindow.removeExtension`
+API to remove it. 
+   ```javascript
+      ses.removeExtension(extensionId)
+   ```
+
+### See Also 
+
+You can also refer to other methods for more information about extensions.
+[Loading Extensions using Session](https://www.electronjs.org/docs/api/session#sesloadextensionpath)
 
 ## Supported DevTools Extensions
 
