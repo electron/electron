@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: handle non client pointer events from pen on Windows 10
+
+Refs: https://github.com/electron/electron/issues/21440
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2237535
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 1fd8da727592fec91056021ea9616996a8f54b92..8c069f0ca4d3a0702a254f766c93d4c6830a911d 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2005,6 +2005,15 @@ LRESULT HWNDMessageHandler::OnPointerEvent(UINT message,
+     return -1;
+   }
+ 
++  // Pen may also send non client pointer messages, treat them as normal
++  // touch events so they can be properly handled.
++  if (pointer_type == PT_PEN &&
++      (message == WM_NCPOINTERDOWN ||
++       message == WM_NCPOINTERUP ||
++       message == WM_NCPOINTERUPDATE)) {
++    pointer_type = PT_TOUCH;
++  }
++
+   switch (pointer_type) {
+     case PT_PEN:
+       return HandlePointerEventTypePen(message, w_param, l_param);
