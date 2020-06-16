@@ -233,7 +233,7 @@ void Browser::Focus(gin_helper::Arguments* args) {
 
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
-                 base::CancelableTaskTracker& cancelable_task_tracker_,
+                 base::CancelableTaskTracker* cancelable_task_tracker_,
                  const base::FilePath& app_path,
                  base::string16 app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
@@ -253,7 +253,7 @@ void GetFileIcon(const base::FilePath& path,
     icon_manager->LoadIcon(normalized_path, icon_size,
                            base::BindOnce(&OnIconDataAvailable, app_path,
                                           app_display_name, std::move(promise)),
-                           &cancelable_task_tracker_);
+                           cancelable_task_tracker_);
   }
 }
 
@@ -261,7 +261,7 @@ void GetApplicationInfoForProtocolUsingRegistry(
     v8::Isolate* isolate,
     const GURL& url,
     gin_helper::Promise<gin_helper::Dictionary> promise,
-    base::CancelableTaskTracker& cancelable_task_tracker_) {
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
   base::FilePath app_path;
   const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
 
@@ -295,7 +295,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
     v8::Isolate* isolate,
     const GURL& url,
     gin_helper::Promise<gin_helper::Dictionary> promise,
-    base::CancelableTaskTracker& cancelable_task_tracker_) {
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
   base::string16 app_path = GetAppPathForProtocol(url);
 
   if (app_path.empty()) {
@@ -522,12 +522,12 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
     GetApplicationInfoForProtocolUsingAssocQuery(
-        isolate, url, std::move(promise), cancelable_task_tracker_);
+        isolate, url, std::move(promise), &cancelable_task_tracker_);
     return handle;
   }
 
   GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise),
-                                             cancelable_task_tracker_);
+                                             &cancelable_task_tracker_);
   return handle;
 }
 

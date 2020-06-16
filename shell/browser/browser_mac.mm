@@ -186,8 +186,8 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
 }
 
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
-    const GURL& url,
-    v8::Isolate* isolate) {
+    v8::Isolate* isolate,
+    const GURL& url) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
