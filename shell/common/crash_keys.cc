@@ -16,7 +16,7 @@
 #include "content/public/common/content_switches.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/options_switches.h"
-#include "third_party/crashpad/crashpad/client/annotation.h"  // nogncheck
+#include "third_party/crashpad/crashpad/client/annotation.h"
 
 namespace electron {
 
