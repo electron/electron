@@ -326,7 +326,6 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
-    "//components/crash/core/app",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
@@ -434,6 +433,9 @@ source_set("electron_lib") {
       "*\bviews/*",
     ]
   }
+  if (!is_mas_build) {
+    deps += [ "//components/crash/core/app" ]
+  }
 
   set_sources_assignment_filter(
       sources_assignment_filter + extra_source_filters)
@@ -459,9 +461,12 @@ source_set("electron_lib") {
     deps += [
       "//components/remote_cocoa/app_shim",
       "//content/common:mac_helpers",
-      "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
     ]
+
+    if (!is_mas_build) {
+      deps += [ "//third_party/crashpad/crashpad/client" ]
+    }
 
     libs = [
       "AVFoundation.framework",
@@ -773,8 +778,10 @@ if (is_mac) {
     framework_contents = [
       "Resources",
       "Libraries",
-      "Helpers",
     ]
+    if (!is_mas_build) {
+      framework_contents += [ "Helpers" ]
+    }
     public_deps = [
       ":electron_framework_libraries",
       ":electron_lib",
@@ -1005,12 +1012,15 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
-        ":crashpad_handler_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
         ":swiftshader_egl_syms",
         ":swiftshader_gles_syms",
       ]
+
+      if (!is_mas_build) {
+        deps += [ ":crashpad_handler_syms" ]
+      }
 
       foreach(helper_params, content_mac_helpers) {
         _helper_target = helper_params[0]
