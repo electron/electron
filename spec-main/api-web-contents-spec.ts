@@ -597,28 +597,50 @@ describe('webContents module', () => {
   // On Mac, zooming isn't done with the mouse wheel.
   ifdescribe(process.platform !== 'darwin')('zoom-changed', () => {
     afterEach(closeAllWindows);
-    it('is emitted with the correct zooming info', async () => {
+    it('is emitted with the correct zoom-in info', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
-      const testZoomChanged = async ({ zoomingIn }: { zoomingIn: boolean }) => {
+      const testZoomChanged = async () => {
         w.webContents.sendInputEvent({
           type: 'mouseWheel',
           x: 300,
           y: 300,
           deltaX: 0,
-          deltaY: zoomingIn ? 1 : -1,
+          deltaY: 1,
           wheelTicksX: 0,
-          wheelTicksY: zoomingIn ? 1 : -1,
+          wheelTicksY: 1,
           modifiers: ['control', 'meta']
         });
 
         const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed');
-        expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out');
+        expect(zoomDirection).to.equal('in');
       };
 
-      await testZoomChanged({ zoomingIn: true });
-      await testZoomChanged({ zoomingIn: false });
+      await testZoomChanged();
+    });
+
+    it('is emitted with the correct zoom-out info', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      const testZoomChanged = async () => {
+        w.webContents.sendInputEvent({
+          type: 'mouseWheel',
+          x: 300,
+          y: 300,
+          deltaX: 0,
+          deltaY: -1,
+          wheelTicksX: 0,
+          wheelTicksY: -1,
+          modifiers: ['control', 'meta']
+        });
+
+        const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed');
+        expect(zoomDirection).to.equal('out');
+      };
+
+      await testZoomChanged();
     });
   });
 
