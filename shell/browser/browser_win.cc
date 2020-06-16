@@ -28,6 +28,7 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -136,7 +137,7 @@ base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
   return base::string16(out_buffer);
 }
 
-void OnIconDataAvailable(base::string16 app_path,
+void OnIconDataAvailable(base::FilePath app_path,
                          base::string16 app_display_name,
                          gin_helper::Promise<gin_helper::Dictionary> promise,
                          gfx::Image icon) {
@@ -155,15 +156,15 @@ void OnIconDataAvailable(base::string16 app_path,
 }
 
 base::string16 GetAppDisplayNameForProtocol(const GURL& url) {
-  return GetAppInfoHelperForProtocol(url, ASSOCSTR_FRIENDLYAPPNAME);
+  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
 }
 
 base::string16 GetAppPathForProtocol(const GURL& url) {
-  return GetAppInfoHelperForProtocol(url, ASSOCSTR_EXECUTABLE);
+  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
 }
 
 base::string16 GetApplicationIconForProtocol(const GURL& url) {
-  return GetAppInfoHelperForProtocol(url, ASSOCSTR_DEFAULTICON);
+  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
 }
 
 base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
@@ -192,35 +193,6 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
   }
 
   return base::string16();
-}
-
-void GetApplicationInfoForProtocolUsingRegistry(
-    v8::Isolate* isolate,
-    const GURL& url,
-    gin_helper::Promise<gin_helper::Dictionary> promise) {
-  const base::string16 app_path;
-  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
-
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
-  if (!IsValidCustomProtocol(url_scheme)) {
-    promise.RejectWithErrorMessage("invalid url_scheme");
-    return;
-  }
-
-  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
-  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
-                                KEY_READ);
-  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
-    base::CommandLine command_line(
-        base::CommandLine::FromString(command_to_launch));
-    app_path = command_line.GetProgram();
-  } else {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve installation path to app");
-    return;
-  }
-  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_path,
-              app_display_name, std::move(promise));
 }
 
 bool FormatCommandLineString(base::string16* exe,
@@ -261,8 +233,8 @@ void Browser::Focus(gin_helper::Arguments* args) {
 
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
-                 const base::CancelableTaskTracker& cancelable_task_tracker_,
-                 base::string16 app_path,
+                 base::CancelableTaskTracker& cancelable_task_tracker_,
+                 const base::FilePath& app_path,
                  base::string16 app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath normalized_path = path.NormalizePathSeparators();
@@ -285,14 +257,45 @@ void GetFileIcon(const base::FilePath& path,
   }
 }
 
+void GetApplicationInfoForProtocolUsingRegistry(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker& cancelable_task_tracker_) {
+  base::FilePath app_path;
+  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme)) {
+    promise.RejectWithErrorMessage("invalid url_scheme");
+    return;
+  }
+  base::string16 command_to_launch;
+  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
+                                KEY_READ);
+  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
+    base::CommandLine command_line(
+        base::CommandLine::FromString(command_to_launch));
+    app_path = command_line.GetProgram();
+  } else {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_path,
+              app_display_name, std::move(promise));
+}
+
 // resolves `Promise<Object>` - Resolve with an object containing the following:
 // * `icon` NativeImage - the display icon of the app handling the protocol.
 // * `path` String  - installation path of the app handling the protocol.
 // * `name` String - display name of the app handling the protocol.
-void Browser::GetApplicationInfoForProtocolUsingAssocQuery(
+void GetApplicationInfoForProtocolUsingAssocQuery(
     v8::Isolate* isolate,
     const GURL& url,
-    gin_helper::Promise<gin_helper::Dictionary> promise) {
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker& cancelable_task_tracker_) {
   base::string16 app_path = GetAppPathForProtocol(url);
 
   if (app_path.empty()) {
@@ -308,8 +311,9 @@ void Browser::GetApplicationInfoForProtocolUsingAssocQuery(
 
   base::string16 app_icon_path = GetApplicationIconForProtocol(url);
   base::FilePath app_icon_file_path = base::FilePath(app_icon_path);
-  GetFileIcon(app_icon_file_path, isolate, cancelable_task_tracker_, app_path,
-              app_display_name, std::move(promise));
+  base::FilePath app_path_file_path = base::FilePath(app_path);
+  GetFileIcon(app_icon_file_path, isolate, cancelable_task_tracker_,
+              app_path_file_path, app_display_name, std::move(promise));
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -517,12 +521,13 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    GetApplicationInfoForProtocolUsingAssocQuery(isolate, url,
-                                                 std::move(promise));
+    GetApplicationInfoForProtocolUsingAssocQuery(
+        isolate, url, std::move(promise), cancelable_task_tracker_);
     return handle;
   }
 
-  GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise));
+  GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise),
+                                             cancelable_task_tracker_);
   return handle;
 }
 
