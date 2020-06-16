@@ -14,16 +14,48 @@ if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled');
 }
 
-const hasProp = {}.hasOwnProperty;
-
 // The internal properties of Function.
 const FUNCTION_PROPERTIES = [
   'length', 'name', 'arguments', 'caller', 'prototype'
 ];
 
+type RendererFunctionId = [string, number] // [contextId, funcId]
+type FinalizerInfo = { id: RendererFunctionId, webContents: electron.WebContents, frameId: number };
+type WeakRef<T> = { deref(): T | undefined }
+type CallIntoRenderer = (...args: any[]) => void
+
 // The remote functions in renderer processes.
-// id => Function
-const rendererFunctions = v8Util.createDoubleIDWeakMap<(...args: any[]) => void>();
+const rendererFunctionCache = new Map<string, WeakRef<CallIntoRenderer>>();
+// eslint-disable-next-line no-undef
+const finalizationRegistry = new (globalThis as any).FinalizationRegistry((fi: FinalizerInfo) => {
+  const mapKey = fi.id[0] + '~' + fi.id[1];
+  const ref = rendererFunctionCache.get(mapKey);
+  if (ref !== undefined && ref.deref() === undefined) {
+    rendererFunctionCache.delete(mapKey);
+    if (!fi.webContents.isDestroyed()) { fi.webContents.sendToFrame(fi.frameId, 'ELECTRON_RENDERER_RELEASE_CALLBACK', fi.id[0], fi.id[1]); }
+  }
+});
+
+function getCachedRendererFunction (id: RendererFunctionId): CallIntoRenderer | undefined {
+  const mapKey = id[0] + '~' + id[1];
+  const ref = rendererFunctionCache.get(mapKey);
+  if (ref !== undefined) {
+    const deref = ref.deref();
+    if (deref !== undefined) return deref;
+  }
+}
+function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebContents, frameId: number, value: CallIntoRenderer) {
+  // eslint-disable-next-line no-undef
+  const wr = new (globalThis as any).WeakRef(value) as WeakRef<CallIntoRenderer>;
+  const mapKey = id[0] + '~' + id[1];
+  rendererFunctionCache.set(mapKey, wr);
+  finalizationRegistry.register(value, {
+    id,
+    webContents: wc,
+    frameId
+  } as FinalizerInfo);
+  return value;
+}
 
 // Return the description of object's members:
 const getObjectMembers = function (object: any): ObjectMember[] {
@@ -80,7 +112,7 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
         type = 'value';
       } else if (isPromise(value)) {
         type = 'promise';
-      } else if (hasProp.call(value, 'callee') && value.length != null) {
+      } else if (Object.prototype.hasOwnProperty.call(value, 'callee') && value.length != null) {
         // Treat the arguments object as array.
         type = 'array';
       } else if (optimizeSimpleObject && v8Util.getHiddenValue(value, 'simple')) {
@@ -226,9 +258,8 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         const objectId: [string, number] = [contextId, meta.id];
 
         // Cache the callbacks in renderer.
-        if (rendererFunctions.has(objectId)) {
-          return rendererFunctions.get(objectId);
-        }
+        const cachedFunction = getCachedRendererFunction(objectId);
+        if (cachedFunction !== undefined) { return cachedFunction; }
 
         const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false;
@@ -242,8 +273,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         v8Util.setHiddenValue(callIntoRenderer, 'location', meta.location);
         Object.defineProperty(callIntoRenderer, 'length', { value: meta.length });
 
-        v8Util.setRemoteCallbackFreer(callIntoRenderer, frameId, contextId, meta.id, sender);
-        rendererFunctions.set(objectId, callIntoRenderer);
+        setCachedRendererFunction(objectId, sender, frameId, callIntoRenderer);
         return callIntoRenderer;
       }
       default:
@@ -308,11 +338,12 @@ const logStack = function (contents: electron.WebContents, code: string, stack: 
 
 handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, contextId, passedContextId, id) {
   const objectId: [string, number] = [passedContextId, id];
-  if (!rendererFunctions.has(objectId)) {
+  const cachedFunction = getCachedRendererFunction(objectId);
+  if (cachedFunction === undefined) {
     // Do nothing if the error has already been reported before.
     return;
   }
-  removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId)!);
+  removeRemoteListenersAndLogWarning(event.sender, cachedFunction);
 });
 
 handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName, stack) {

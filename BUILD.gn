@@ -602,13 +602,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_remote_module) {
-    sources += [
-      "shell/common/api/remote/remote_callback_freer.cc",
-      "shell/common/api/remote/remote_callback_freer.h",
-    ]
-  }
-
   if (enable_desktop_capturer) {
     if (is_component_build && !is_linux) {
       # On windows the implementation relies on unexported

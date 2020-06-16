@@ -16,10 +16,6 @@
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-#include "shell/common/api/remote/remote_callback_freer.h"
-#endif
-
 namespace std {
 
 // The hash function used by DoubleIDWeakMap.
@@ -144,13 +140,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  dict.SetMethod("setRemoteCallbackFreer",
-                 &electron::RemoteCallbackFreer::BindTo);
-  dict.SetMethod(
-      "createDoubleIDWeakMap",
-      &electron::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
-#endif
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);

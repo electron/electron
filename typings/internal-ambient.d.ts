@@ -38,13 +38,10 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
-    createDoubleIDWeakMap<V>(): ElectronInternal.KeyWeakMap<[string, number], V>;
-    setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
-    setRemoteCallbackFreer(fn: Function, contextId: string, id: number, sender: any): void
   }
 
   type DataPipe = {
