@@ -12,7 +12,7 @@
 #include "base/macros.h"
 #include "base/no_destructor.h"
 #include "build/build_config.h"
-#include "components/crash/core/app/crash_reporter_client.h"
+#include "components/crash/core/app/crash_reporter_client.h"  // nogncheck
 
 class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
  public:

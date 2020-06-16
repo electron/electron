@@ -32,11 +32,11 @@
 
 #if !defined(MAS_BUILD)
 #include "chrome/browser/crash_upload_list/crash_upload_list_crashpad.h"
-#include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "components/crash/core/common/crash_key.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
-#include "third_party/crashpad/crashpad/client/crashpad_info.h"
+#include "third_party/crashpad/crashpad/client/crashpad_info.h"  // nogncheck
 #endif
 
 #if defined(OS_LINUX)
