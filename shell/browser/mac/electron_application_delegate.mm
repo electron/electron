@@ -48,11 +48,21 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
                                                  useDefaultAccelerator:NO]);
 }
 
+- (void)willPowerOff:(NSNotification*)notify {
+  [[AtomApplication sharedApplication] willPowerOff:notify];
+}
+
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
   // Don't add the "Enter Full Screen" menu item automatically.
   [[NSUserDefaults standardUserDefaults]
       setBool:NO
        forKey:@"NSFullScreenMenuItemEverywhere"];
+
+  [[[NSWorkspace sharedWorkspace] notificationCenter]
+      addObserver:self
+         selector:@selector(willPowerOff:)
+             name:NSWorkspaceWillPowerOffNotification
+           object:nil];
 
   electron::Browser::Get()->WillFinishLaunching();
 }
