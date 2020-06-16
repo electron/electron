@@ -22,9 +22,6 @@
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
-#include "components/crash/core/app/crashpad.h"
-#include "components/crash/core/common/crash_key.h"
-#include "components/crash/core/common/crash_keys.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
@@ -33,13 +30,10 @@
 #include "services/service_manager/sandbox/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
-#include "shell/app/electron_crash_reporter_client.h"
-#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
-#include "shell/common/crash_keys.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
@@ -62,6 +56,15 @@
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
+#endif
+
+#if !defined(MAS_BUILD)
+#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/common/crash_key.h"
+#include "components/crash/core/common/crash_keys.h"
+#include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
+#include "shell/common/crash_keys.h"
 #endif
 
 namespace electron {
