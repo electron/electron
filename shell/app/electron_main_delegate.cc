@@ -64,7 +64,7 @@
 #endif
 
 #if !defined(MAS_BUILD)
-#include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/app/crashpad.h"  // nogncheck
 #endif
 
 namespace electron {
