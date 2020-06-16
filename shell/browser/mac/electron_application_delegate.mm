@@ -89,6 +89,10 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 #endif
 }
 
+- (void)applicationDidBecomeActive:(NSNotification*)notification {
+  electron::Browser::Get()->DidBecomeActive();
+}
+
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
   if (menu_controller_)
     return [menu_controller_ menu];
