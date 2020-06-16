@@ -28,6 +28,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -135,8 +136,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
 
     v8::HandleScope handle_scope(isolate_);
-    v8::MicrotasksScope script_scope(isolate_,
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(isolate_);
     auto maybe_wrapper = GetWrapper(isolate_);
     v8::Local<v8::Value> wrapper;
     if (!maybe_wrapper.ToLocal(&wrapper)) {

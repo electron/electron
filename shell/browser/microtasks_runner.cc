@@ -28,10 +28,12 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   // contention for performing checkpoint between Node.js and chromium, ending
   // up Node.js dealying its callbacks. To fix this, now we always lets Node.js
   // handle the checkpoint in the browser process.
-  auto* node_env = electron::ElectronBrowserMainParts::Get()->node_env();
-  node::InternalCallbackScope microtask_scope(
-      node_env->env(), v8::Local<v8::Object>(), {0, 0},
-      node::InternalCallbackScope::kAllowEmptyResource);
+  {
+    auto* node_env = electron::ElectronBrowserMainParts::Get()->node_env();
+    node::InternalCallbackScope microtasks_scope(
+        node_env->env(), v8::Local<v8::Object>(), {0, 0},
+        node::InternalCallbackScope::kAllowEmptyResource);
+  }
 }
 
 }  // namespace electron
