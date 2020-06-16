@@ -229,9 +229,10 @@ int NodeMain(int argc, char* argv[]) {
       reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);
       reporter.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
 #else
-      reporter.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
+      reporter.SetMethod("addExtraParameter",
+                         &electron::crash_keys::SetCrashKey);
       reporter.SetMethod("removeExtraParameter",
-                     &electron::crash_keys::ClearCrashKey);
+                         &electron::crash_keys::ClearCrashKey);
 #endif
 
       process.Set("crashReporter", reporter);
