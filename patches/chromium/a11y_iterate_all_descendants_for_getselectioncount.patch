@@ -1,0 +1,393 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julie Jeongeun Kim <jkim@igalia.com>
+Date: Fri, 10 Apr 2020 05:50:17 +0000
+Subject: a11y: Iterate all descendants for GetSelectionCount
+
+This CL iterates all descendants for GetSelectionCount and
+GetSelectedChild. When listbox has group children, it should
+iterates their children as well to check the select state.
+
+Bug: 1058961
+Change-Id: Ib6459bf6f47023d4258ef4c2f2dc545739d7a61b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2115211
+Commit-Queue: Julie Kim <jkim@igalia.com>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Reviewed-by: Joanmarie Diggs <jdiggs@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#758140}
+
+diff --git a/ui/accessibility/platform/ax_platform_node_auralinux.cc b/ui/accessibility/platform/ax_platform_node_auralinux.cc
+index 86ce9de34a5286b1c3990c4aab614450e1d6fb63..88528364e148284b7e45958451a65497c295f256 100644
+--- a/ui/accessibility/platform/ax_platform_node_auralinux.cc
++++ b/ui/accessibility/platform/ax_platform_node_auralinux.cc
+@@ -1435,19 +1435,10 @@ AtkObject* RefSelection(AtkSelection* selection, gint requested_child_index) {
+   if (!obj)
+     return nullptr;
+ 
+-  int child_count = obj->GetChildCount();
+-  gint selected_count = 0;
+-  for (int i = 0; i < child_count; ++i) {
+-    AtkObject* child = obj->ChildAtIndex(i);
+-    AXPlatformNodeAuraLinux* child_ax_node =
+-        AtkObjectToAXPlatformNodeAuraLinux(child);
+-    if (!child_ax_node)
+-      continue;
+-
+-    if (child_ax_node->GetBoolAttribute(ax::mojom::BoolAttribute::kSelected)) {
+-      if (selected_count == requested_child_index)
+-        return static_cast<AtkObject*>(g_object_ref(child));
+-      ++selected_count;
++  if (auto* selected_child = obj->GetSelectedItem(requested_child_index)) {
++    if (AtkObject* atk_object = selected_child->GetNativeViewAccessible()) {
++      g_object_ref(atk_object);
++      return atk_object;
+     }
+   }
+ 
+@@ -1460,19 +1451,7 @@ gint GetSelectionCount(AtkSelection* selection) {
+   if (!obj)
+     return 0;
+ 
+-  int child_count = obj->GetChildCount();
+-  gint selected_count = 0;
+-  for (int i = 0; i < child_count; ++i) {
+-    AXPlatformNodeAuraLinux* child =
+-        AtkObjectToAXPlatformNodeAuraLinux(obj->ChildAtIndex(i));
+-    if (!child)
+-      continue;
+-
+-    if (child->GetBoolAttribute(ax::mojom::BoolAttribute::kSelected))
+-      ++selected_count;
+-  }
+-
+-  return selected_count;
++  return obj->GetSelectionCount();
+ }
+ 
+ gboolean IsChildSelected(AtkSelection* selection, gint index) {
+diff --git a/ui/accessibility/platform/ax_platform_node_auralinux_unittest.cc b/ui/accessibility/platform/ax_platform_node_auralinux_unittest.cc
+index f17dbeda08917ef636f1f4342011394f076cee35..eb61fc1c1224e8a2ca94929e07f24bfa7dc41691 100644
+--- a/ui/accessibility/platform/ax_platform_node_auralinux_unittest.cc
++++ b/ui/accessibility/platform/ax_platform_node_auralinux_unittest.cc
+@@ -1853,6 +1853,8 @@ TEST_F(AXPlatformNodeAuraLinuxTest, TestAtkSelectionInterface) {
+   AXNodeData root;
+   root.id = 1;
+   root.role = ax::mojom::Role::kListBox;
++  root.AddState(ax::mojom::State::kFocusable);
++  root.AddState(ax::mojom::State::kMultiselectable);
+   root.child_ids.push_back(2);
+   root.child_ids.push_back(3);
+   root.child_ids.push_back(4);
+diff --git a/ui/accessibility/platform/ax_platform_node_base.cc b/ui/accessibility/platform/ax_platform_node_base.cc
+index d705cd927ed816208b22106e5beb30c550c55ca3..bf9dc27604ff5ae7f88c8fd734ec26c699e7bc04 100644
+--- a/ui/accessibility/platform/ax_platform_node_base.cc
++++ b/ui/accessibility/platform/ax_platform_node_base.cc
+@@ -92,7 +92,7 @@ int AXPlatformNodeBase::GetChildCount() const {
+   return 0;
+ }
+ 
+-gfx::NativeViewAccessible AXPlatformNodeBase::ChildAtIndex(int index) {
++gfx::NativeViewAccessible AXPlatformNodeBase::ChildAtIndex(int index) const {
+   if (delegate_)
+     return delegate_->ChildAtIndex(index);
+   return nullptr;
+@@ -701,8 +701,8 @@ bool AXPlatformNodeBase::HasCaret() {
+   return focus_object->IsDescendantOf(this);
+ }
+ 
+-bool AXPlatformNodeBase::IsLeaf() {
+-  if (GetChildCount() == 0)
++bool AXPlatformNodeBase::IsLeaf() const {
++  if (!GetChildCount())
+     return true;
+ 
+   // These types of objects may have children that we use as internal
+@@ -1868,9 +1868,73 @@ ui::TextAttributeList AXPlatformNodeBase::ComputeTextAttributes() const {
+   return attributes;
+ }
+ 
++int AXPlatformNodeBase::GetSelectionCount() const {
++  int max_items = GetMaxSelectableItems();
++  if (!max_items)
++    return 0;
++  return GetSelectedItems(max_items);
++}
++
++AXPlatformNodeBase* AXPlatformNodeBase::GetSelectedItem(
++    int selected_index) const {
++  DCHECK_GE(selected_index, 0);
++  int max_items = GetMaxSelectableItems();
++  if (max_items == 0)
++    return nullptr;
++  if (selected_index >= max_items)
++    return nullptr;
++
++  std::vector<AXPlatformNodeBase*> selected_children;
++  int requested_count = selected_index + 1;
++  int returned_count = GetSelectedItems(requested_count, &selected_children);
++
++  if (returned_count <= selected_index)
++    return nullptr;
++
++  DCHECK(!selected_children.empty());
++  DCHECK_LT(selected_index, static_cast<int>(selected_children.size()));
++  return selected_children[selected_index];
++}
++
++int AXPlatformNodeBase::GetSelectedItems(
++    int max_items,
++    std::vector<AXPlatformNodeBase*>* out_selected_items) const {
++  int selected_count = 0;
++  // TODO(Nektar): Remove const_cast by making all tree traversal methods const.
++  for (AXPlatformNodeBase* child =
++           const_cast<AXPlatformNodeBase*>(this)->GetFirstChild();
++       child && selected_count < max_items; child = child->GetNextSibling()) {
++    if (!IsItemLike(child->GetData().role)) {
++      selected_count += child->GetSelectedItems(max_items - selected_count,
++                                                out_selected_items);
++    } else if (child->GetBoolAttribute(ax::mojom::BoolAttribute::kSelected)) {
++      selected_count++;
++      if (out_selected_items)
++        out_selected_items->emplace_back(child);
++    }
++  }
++  return selected_count;
++}
++
+ void AXPlatformNodeBase::SanitizeTextAttributeValue(const std::string& input,
+                                                     std::string* output) const {
+   DCHECK(output);
+ }
+ 
++int AXPlatformNodeBase::GetMaxSelectableItems() const {
++  if (!GetData().HasState(ax::mojom::State::kFocusable))
++    return 0;
++
++  if (IsLeaf())
++    return 0;
++
++  if (!IsContainerWithSelectableChildren(GetData().role))
++    return 0;
++
++  int max_items = 1;
++  if (GetData().HasState(ax::mojom::State::kMultiselectable))
++    max_items = std::numeric_limits<int>::max();
++  return max_items;
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/platform/ax_platform_node_base.h b/ui/accessibility/platform/ax_platform_node_base.h
+index 2bee9a7e3108963847486139d40a087428323fbb..98a72c6be316803618f74ae0766e1fd24515509a 100644
+--- a/ui/accessibility/platform/ax_platform_node_base.h
++++ b/ui/accessibility/platform/ax_platform_node_base.h
+@@ -57,7 +57,7 @@ class AX_EXPORT AXPlatformNodeBase : public AXPlatformNode {
+   gfx::NativeViewAccessible GetFocus();
+   gfx::NativeViewAccessible GetParent() const;
+   int GetChildCount() const;
+-  gfx::NativeViewAccessible ChildAtIndex(int index);
++  gfx::NativeViewAccessible ChildAtIndex(int index) const;
+ 
+   // This needs to be implemented for each platform.
+   virtual int GetIndexInParent();
+@@ -202,7 +202,7 @@ class AX_EXPORT AXPlatformNodeBase : public AXPlatformNode {
+   // The definition of a leaf may vary depending on the platform,
+   // but a leaf node should never have children that are focusable or
+   // that might send notifications.
+-  bool IsLeaf();
++  bool IsLeaf() const;
+ 
+   bool IsInvisibleOrIgnored() const;
+ 
+@@ -275,6 +275,24 @@ class AX_EXPORT AXPlatformNodeBase : public AXPlatformNode {
+ 
+   ui::TextAttributeList ComputeTextAttributes() const;
+ 
++  // Get the number of items selected. It checks kMultiselectable and
++  // kFocusable. and uses GetSelectedItems to get the selected number.
++  int GetSelectionCount() const;
++
++  // If this object is a container that supports selectable children, returns
++  // the selected item at the provided index.
++  AXPlatformNodeBase* GetSelectedItem(int selected_index) const;
++
++  // If this object is a container that supports selectable children,
++  // returns the number of selected items in this container.
++  // |out_selected_items| could be set to nullptr if the caller just
++  // needs to know the number of items selected.
++  // |max_items| represents the number that the caller expects as a
++  // maximum. For a single selection list box, it will be 1.
++  int GetSelectedItems(
++      int max_items,
++      std::vector<AXPlatformNodeBase*>* out_selected_items = nullptr) const;
++
+   //
+   // Delegate.  This is a weak reference which owns |this|.
+   //
+@@ -412,6 +430,11 @@ class AX_EXPORT AXPlatformNodeBase : public AXPlatformNode {
+ 
+   std::string GetInvalidValue() const;
+ 
++  // Based on the characteristics of this object, such as its role and the
++  // presence of a multiselectable attribute, returns the maximum number of
++  // selectable children that this object could potentially contain.
++  int GetMaxSelectableItems() const;
++
+   AXHypertext hypertext_;
+ 
+  private:
+diff --git a/ui/accessibility/platform/ax_platform_node_unittest.cc b/ui/accessibility/platform/ax_platform_node_unittest.cc
+index 9950894e9fbb30b79b392ffe782dd31f75bd7f52..d8bfc0ed9c2b20c64dd15f3c6c2ef8cfaa87c510 100644
+--- a/ui/accessibility/platform/ax_platform_node_unittest.cc
++++ b/ui/accessibility/platform/ax_platform_node_unittest.cc
+@@ -379,13 +379,13 @@ AXTreeUpdate AXPlatformNodeTest::BuildListBox(
+     bool option_1_is_selected,
+     bool option_2_is_selected,
+     bool option_3_is_selected,
+-    ax::mojom::State additional_state /* ax::mojom::State::kNone */) {
++    const std::vector<ax::mojom::State>& additional_state) {
+   AXNodeData listbox;
+   listbox.id = 1;
+   listbox.SetName("ListBox");
+   listbox.role = ax::mojom::Role::kListBox;
+-  if (additional_state != ax::mojom::State::kNone)
+-    listbox.AddState(additional_state);
++  for (auto state : additional_state)
++    listbox.AddState(state);
+ 
+   AXNodeData option_1;
+   option_1.id = 2;
+diff --git a/ui/accessibility/platform/ax_platform_node_unittest.h b/ui/accessibility/platform/ax_platform_node_unittest.h
+index b512b5a79f103bf4524a7467f4ae60d8036054b6..2b5392f589b26795cc3971be297257b1c2ece615 100644
+--- a/ui/accessibility/platform/ax_platform_node_unittest.h
++++ b/ui/accessibility/platform/ax_platform_node_unittest.h
+@@ -58,10 +58,11 @@ class AXPlatformNodeTest : public testing::Test, public AXTreeManager {
+   AXTreeUpdate Build3X3Table();
+   AXTreeUpdate BuildAriaColumnAndRowCountGrids();
+ 
+-  AXTreeUpdate BuildListBox(bool option_1_is_selected,
+-                            bool option_2_is_selected,
+-                            bool option_3_is_selected,
+-                            ax::mojom::State additional_state);
++  AXTreeUpdate BuildListBox(
++      bool option_1_is_selected,
++      bool option_2_is_selected,
++      bool option_3_is_selected,
++      const std::vector<ax::mojom::State>& additional_state);
+ 
+   std::unique_ptr<AXTree> tree_;
+ };
+diff --git a/ui/accessibility/platform/ax_platform_node_win.cc b/ui/accessibility/platform/ax_platform_node_win.cc
+index 6b70f5eed20290141adc659b71900536ef052bb2..232eff3c4af371eaa7026f2a14953c947b2bda7a 100644
+--- a/ui/accessibility/platform/ax_platform_node_win.cc
++++ b/ui/accessibility/platform/ax_platform_node_win.cc
+@@ -2148,15 +2148,10 @@ IFACEMETHODIMP AXPlatformNodeWin::GetSelection(SAFEARRAY** result) {
+   WIN_ACCESSIBILITY_API_HISTOGRAM(UMA_API_SELECTION_GETSELECTION);
+   UIA_VALIDATE_CALL_1_ARG(result);
+ 
+-  std::vector<AXPlatformNodeWin*> selected_children;
+-  LONG child_count = GetDelegate()->GetChildCount();
+-  for (LONG i = 0; i < child_count; ++i) {
+-    auto* child = static_cast<AXPlatformNodeWin*>(
+-        FromNativeViewAccessible(GetDelegate()->ChildAtIndex(i)));
+-    DCHECK(child);
+-    if (child->GetData().GetBoolAttribute(ax::mojom::BoolAttribute::kSelected))
+-      selected_children.push_back(child);
+-  }
++  std::vector<AXPlatformNodeBase*> selected_children;
++  int max_items = GetMaxSelectableItems();
++  if (max_items)
++    GetSelectedItems(max_items, &selected_children);
+ 
+   LONG selected_children_count = selected_children.size();
+   *result = SafeArrayCreateVector(VT_UNKNOWN, 0, selected_children_count);
+@@ -2164,9 +2159,10 @@ IFACEMETHODIMP AXPlatformNodeWin::GetSelection(SAFEARRAY** result) {
+     return E_OUTOFMEMORY;
+ 
+   for (LONG i = 0; i < selected_children_count; ++i) {
++    AXPlatformNodeWin* children =
++        static_cast<AXPlatformNodeWin*>(selected_children[i]);
+     HRESULT hr = SafeArrayPutElement(
+-        *result, &i,
+-        static_cast<IRawElementProviderSimple*>(selected_children[i]));
++        *result, &i, static_cast<IRawElementProviderSimple*>(children));
+     if (FAILED(hr)) {
+       SafeArrayDestroy(*result);
+       *result = nullptr;
+diff --git a/ui/accessibility/platform/ax_platform_node_win_unittest.cc b/ui/accessibility/platform/ax_platform_node_win_unittest.cc
+index 31ebeaaae3ea801add4e7f8a609649de425ead04..e64aa75a2dd98ce2968ba314f78423058488cbd7 100644
+--- a/ui/accessibility/platform/ax_platform_node_win_unittest.cc
++++ b/ui/accessibility/platform/ax_platform_node_win_unittest.cc
+@@ -4532,8 +4532,7 @@ TEST_F(AXPlatformNodeWinTest, TestUIANavigate) {
+ TEST_F(AXPlatformNodeWinTest, TestISelectionProviderCanSelectMultipleDefault) {
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ false,
+-                    /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kNone));
++                    /*option_3_is_selected*/ false, {}));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4545,10 +4544,12 @@ TEST_F(AXPlatformNodeWinTest, TestISelectionProviderCanSelectMultipleDefault) {
+ }
+ 
+ TEST_F(AXPlatformNodeWinTest, TestISelectionProviderCanSelectMultipleTrue) {
++  const std::vector<ax::mojom::State> state = {
++      ax::mojom::State::kMultiselectable, ax::mojom::State::kFocusable};
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ false,
+                     /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kMultiselectable));
++                    /*additional_state*/ state));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4564,7 +4565,7 @@ TEST_F(AXPlatformNodeWinTest,
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ false,
+                     /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kNone));
++                    /*additional_state*/ {}));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4579,7 +4580,7 @@ TEST_F(AXPlatformNodeWinTest, TestISelectionProviderIsSelectionRequiredTrue) {
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ false,
+                     /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kRequired));
++                    /*additional_state*/ {ax::mojom::State::kRequired}));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4594,7 +4595,7 @@ TEST_F(AXPlatformNodeWinTest, TestISelectionProviderGetSelectionNoneSelected) {
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ false,
+                     /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kNone));
++                    /*additional_state*/ {ax::mojom::State::kFocusable}));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4620,7 +4621,7 @@ TEST_F(AXPlatformNodeWinTest,
+   Init(BuildListBox(/*option_1_is_selected*/ false,
+                     /*option_2_is_selected*/ true,
+                     /*option_3_is_selected*/ false,
+-                    /*additional_state*/ ax::mojom::State::kNone));
++                    /*additional_state*/ {ax::mojom::State::kFocusable}));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
+@@ -4652,10 +4653,12 @@ TEST_F(AXPlatformNodeWinTest,
+ 
+ TEST_F(AXPlatformNodeWinTest,
+        TestISelectionProviderGetSelectionMultipleItemsSelected) {
++  const std::vector<ax::mojom::State> state = {
++      ax::mojom::State::kMultiselectable, ax::mojom::State::kFocusable};
+   Init(BuildListBox(/*option_1_is_selected*/ true,
+                     /*option_2_is_selected*/ true,
+                     /*option_3_is_selected*/ true,
+-                    /*additional_state*/ ax::mojom::State::kNone));
++                    /*additional_state*/ state));
+ 
+   ComPtr<ISelectionProvider> selection_provider(
+       QueryInterfaceFromNode<ISelectionProvider>(GetRootNode()));
