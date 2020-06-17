@@ -2,7 +2,7 @@ resources:
   containers:
   - container: arm32v7-test-container
     image: electronjs/build:arm32v7-697b894f36d127155e020f4e8ad4b2e5f6a09613
-    options: --shm-size 128m
+    options: --shm-size 128m --cap-add SYS_ADMIN
 
 jobs:
 - job: Test_Arm32v7

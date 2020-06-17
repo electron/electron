@@ -22,7 +22,7 @@ index bb9a2b177c4304496dab1f1beaedc1ae9d9f55d9..36d06759aac57b1aa813b52c94e2168b
  process.config = JSONParse(internalBinding('native_module').config);
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 33f52a3c168840ea88da0e032069136e8a690830..992482525f8bdea399528f1e5673f4efa21b7246 100644
+index 92554a374d189b3b284546b0e122940e9a175de8..e478c57af873da717c00db73d6719f806280efe1 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -55,10 +55,7 @@ const assert = require('internal/assert');
@@ -37,7 +37,7 @@ index 33f52a3c168840ea88da0e032069136e8a690830..992482525f8bdea399528f1e5673f4ef
  const { safeGetenv } = internalBinding('credentials');
  const {
    makeRequireFunction,
-@@ -145,14 +142,12 @@ function enrichCJSError(err) {
+@@ -144,14 +141,12 @@ function enrichCJSError(err) {
  }
  
  function stat(filename) {
@@ -53,7 +53,7 @@ index 33f52a3c168840ea88da0e032069136e8a690830..992482525f8bdea399528f1e5673f4ef
    if (statCache !== null) statCache.set(filename, result);
    return result;
  }
-@@ -258,7 +253,7 @@ function readPackage(requestPath) {
+@@ -257,7 +252,7 @@ function readPackage(requestPath) {
    const existing = packageJsonCache.get(jsonPath);
    if (existing !== undefined) return existing;
  
