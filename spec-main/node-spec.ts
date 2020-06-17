@@ -273,4 +273,18 @@ describe('node feature', () => {
       done();
     });
   });
+
+  it('performs microtask checkpoint correctly', (done) => {
+    const f3 = async () => {
+      return new Promise((resolve, reject) => {
+        reject(new Error('oops'));
+      });
+    };
+
+    process.once('unhandledRejection', () => done('catch block is delayed to next tick'));
+
+    setTimeout(() => {
+      f3().catch(() => done());
+    });
+  });
 });
