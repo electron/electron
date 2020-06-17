@@ -31,8 +31,8 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   {
     auto* node_env = electron::ElectronBrowserMainParts::Get()->node_env();
     node::InternalCallbackScope microtasks_scope(
-        node_env->env(), v8::Local<v8::Object>(), {0, 0},
-        node::InternalCallbackScope::kAllowEmptyResource);
+        node_env->env(), v8::Object::New(node_env->isolate()), {0, 0},
+        node::InternalCallbackScope::kNoFlags);
   }
 }
 
