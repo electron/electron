@@ -57,6 +57,8 @@ class NodeEnvironment {
   explicit NodeEnvironment(node::Environment* env);
   ~NodeEnvironment();
 
+  node::Environment* env() { return env_; }
+
  private:
   node::Environment* env_;
 

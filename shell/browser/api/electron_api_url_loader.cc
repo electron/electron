@@ -135,8 +135,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
 
     v8::HandleScope handle_scope(isolate_);
-    v8::MicrotasksScope script_scope(isolate_,
-                                     v8::MicrotasksScope::kRunMicrotasks);
     auto maybe_wrapper = GetWrapper(isolate_);
     v8::Local<v8::Value> wrapper;
     if (!maybe_wrapper.ToLocal(&wrapper)) {
