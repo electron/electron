@@ -129,7 +129,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     std::move(callback).Run(path,
                             download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                             download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                            item->GetMixedContentStatus(), path,
+                            item->GetMixedContentStatus(), path, base::nullopt,
                             download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
@@ -173,7 +173,8 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   std::move(download_callback)
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-           item->GetMixedContentStatus(), path, interrupt_reason);
+           item->GetMixedContentStatus(), path, base::nullopt,
+           interrupt_reason);
 }
 
 void ElectronDownloadManagerDelegate::Shutdown() {
@@ -192,7 +193,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN,
-        download->GetForcedFilePath(),
+        download->GetForcedFilePath(), base::nullopt,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
@@ -205,7 +206,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         save_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
-        download::DOWNLOAD_INTERRUPT_REASON_NONE);
+        base::nullopt, download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
