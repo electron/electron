@@ -81,7 +81,8 @@ gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
   gfx::Image icon(image);
   return icon;
 }
-}
+
+}  // namespace
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
