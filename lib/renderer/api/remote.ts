@@ -1,18 +1,41 @@
-'use strict';
+import { CallbacksRegistry } from '../remote/callbacks-registry';
+import { isPromise, isSerializableObject, serialize, deserialize } from '../../common/type-utils';
+import { MetaTypeFromRenderer, ObjectMember, ObjProtoDescriptor, MetaType } from '../../common/remote/types';
+import { ipcRendererInternal } from '../ipc-renderer-internal';
+import type { BrowserWindow, WebContents } from 'electron/main';
+import { browserModuleNames } from '@electron/internal/browser/api/module-names';
+import { commonModuleList } from '@electron/internal/common/api/module-list';
 
 const v8Util = process.electronBinding('v8_util');
 const { hasSwitch } = process.electronBinding('command_line');
 const { NativeImage } = process.electronBinding('native_image');
 
-const { CallbacksRegistry } = require('@electron/internal/renderer/remote/callbacks-registry');
-const { isPromise, isSerializableObject, serialize, deserialize } = require('@electron/internal/common/type-utils');
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
-
 const callbacksRegistry = new CallbacksRegistry();
-const remoteObjectCache = v8Util.createIDWeakMap();
+const remoteObjectCache = new Map();
+const finalizationRegistry = new (window as any).FinalizationRegistry((id: number) => {
+  const ref = remoteObjectCache.get(id);
+  if (ref !== undefined && ref.deref() === undefined) {
+    remoteObjectCache.delete(id);
+    ipcRendererInternal.send('ELECTRON_BROWSER_DEREFERENCE', contextId, id, 0);
+  }
+});
+
+function getCachedRemoteObject (id: number) {
+  const ref = remoteObjectCache.get(id);
+  if (ref !== undefined) {
+    const deref = ref.deref();
+    if (deref !== undefined) return deref;
+  }
+}
+function setCachedRemoteObject (id: number, value: any) {
+  const wr = new (window as any).WeakRef(value);
+  remoteObjectCache.set(id, wr);
+  finalizationRegistry.register(value, id);
+  return value;
+}
 
 // An unique ID that can represent current context.
-const contextId = v8Util.getHiddenValue(global, 'contextId');
+const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
 
 // Notify the main process when current context is going to be released.
 // Note that when the renderer process is destroyed, the message may not be
@@ -26,8 +49,8 @@ process.on('exit', () => {
 const IS_REMOTE_PROXY = Symbol('is-remote-proxy');
 
 // Convert the arguments object into an array of meta data.
-function wrapArgs (args, visited = new Set()) {
-  const valueToMeta = (value) => {
+function wrapArgs (args: any[], visited = new Set()): any {
+  const valueToMeta = (value: any): any => {
     // Check for circular reference.
     if (visited.has(value)) {
       return {
@@ -60,7 +83,7 @@ function wrapArgs (args, visited = new Set()) {
       if (isPromise(value)) {
         return {
           type: 'promise',
-          then: valueToMeta(function (onFulfilled, onRejected) {
+          then: valueToMeta(function (onFulfilled: Function, onRejected: Function) {
             value.then(onFulfilled, onRejected);
           })
         };
@@ -71,7 +94,7 @@ function wrapArgs (args, visited = new Set()) {
         };
       }
 
-      const meta = {
+      const meta: MetaTypeFromRenderer = {
         type: 'object',
         name: value.constructor ? value.constructor.name : '',
         members: []
@@ -110,15 +133,15 @@ function wrapArgs (args, visited = new Set()) {
 // Populate object's members from descriptors.
 // The |ref| will be kept referenced by |members|.
 // This matches |getObjectMemebers| in rpc-server.
-function setObjectMembers (ref, object, metaId, members) {
+function setObjectMembers (ref: any, object: any, metaId: number, members: ObjectMember[]) {
   if (!Array.isArray(members)) return;
 
   for (const member of members) {
     if (Object.prototype.hasOwnProperty.call(object, member.name)) continue;
 
-    const descriptor = { enumerable: member.enumerable };
+    const descriptor: PropertyDescriptor = { enumerable: member.enumerable };
     if (member.type === 'method') {
-      const remoteMemberFunction = function (...args) {
+      const remoteMemberFunction = function (this: any, ...args: any[]) {
         let command;
         if (this && this.constructor === remoteMemberFunction) {
           command = 'ELECTRON_BROWSER_MEMBER_CONSTRUCTOR';
@@ -165,7 +188,7 @@ function setObjectMembers (ref, object, metaId, members) {
 
 // Populate object's prototype from descriptor.
 // This matches |getObjectPrototype| in rpc-server.
-function setObjectPrototype (ref, object, metaId, descriptor) {
+function setObjectPrototype (ref: any, object: any, metaId: number, descriptor: ObjProtoDescriptor) {
   if (descriptor === null) return;
   const proto = {};
   setObjectMembers(ref, proto, metaId, descriptor.members);
@@ -174,7 +197,7 @@ function setObjectPrototype (ref, object, metaId, descriptor) {
 }
 
 // Wrap function in Proxy for accessing remote properties
-function proxyFunctionProperties (remoteMemberFunction, metaId, name) {
+function proxyFunctionProperties (remoteMemberFunction: Function, metaId: number, name: string) {
   let loaded = false;
 
   // Lazily load function properties
@@ -186,13 +209,13 @@ function proxyFunctionProperties (remoteMemberFunction, metaId, name) {
     setObjectMembers(remoteMemberFunction, remoteMemberFunction, meta.id, meta.members);
   };
 
-  return new Proxy(remoteMemberFunction, {
-    set: (target, property, value, receiver) => {
+  return new Proxy(remoteMemberFunction as any, {
+    set: (target, property, value) => {
       if (property !== 'ref') loadRemoteProperties();
       target[property] = value;
       return true;
     },
-    get: (target, property, receiver) => {
+    get: (target, property) => {
       if (property === IS_REMOTE_PROXY) return true;
       if (!Object.prototype.hasOwnProperty.call(target, property)) loadRemoteProperties();
       const value = target[property];
@@ -215,29 +238,31 @@ function proxyFunctionProperties (remoteMemberFunction, metaId, name) {
 }
 
 // Convert meta data from browser into real value.
-function metaToValue (meta) {
-  const types = {
-    value: () => meta.value,
-    array: () => meta.members.map((member) => metaToValue(member)),
-    nativeimage: () => deserialize(meta.value),
-    buffer: () => Buffer.from(meta.value.buffer, meta.value.byteOffset, meta.value.byteLength),
-    promise: () => Promise.resolve({ then: metaToValue(meta.then) }),
-    error: () => metaToError(meta),
-    exception: () => { throw metaToError(meta.value); }
-  };
-
-  if (Object.prototype.hasOwnProperty.call(types, meta.type)) {
-    return types[meta.type]();
+function metaToValue (meta: MetaType): any {
+  if (meta.type === 'value') {
+    return meta.value;
+  } else if (meta.type === 'array') {
+    return meta.members.map((member) => metaToValue(member));
+  } else if (meta.type === 'nativeimage') {
+    return deserialize(meta.value);
+  } else if (meta.type === 'buffer') {
+    return Buffer.from(meta.value.buffer, meta.value.byteOffset, meta.value.byteLength);
+  } else if (meta.type === 'promise') {
+    return Promise.resolve({ then: metaToValue(meta.then) });
+  } else if (meta.type === 'error') {
+    return metaToError(meta);
+  } else if (meta.type === 'exception') {
+    if (meta.value.type === 'error') { throw metaToError(meta.value); } else { throw new Error(`Unexpected value type in exception: ${meta.value.type}`); }
   } else {
     let ret;
-    if (remoteObjectCache.has(meta.id)) {
-      v8Util.addRemoteObjectRef(contextId, meta.id);
-      return remoteObjectCache.get(meta.id);
+    if ('id' in meta) {
+      const cached = getCachedRemoteObject(meta.id);
+      if (cached !== undefined) { return cached; }
     }
 
     // A shadow class to represent the remote function object.
     if (meta.type === 'function') {
-      const remoteFunction = function (...args) {
+      const remoteFunction = function (this: any, ...args: any[]) {
         let command;
         if (this && this.constructor === remoteFunction) {
           command = 'ELECTRON_BROWSER_CONSTRUCTOR';
@@ -254,20 +279,18 @@ function metaToValue (meta) {
 
     setObjectMembers(ret, ret, meta.id, meta.members);
     setObjectPrototype(ret, ret, meta.id, meta.proto);
-    if (ret.constructor && ret.constructor[IS_REMOTE_PROXY]) {
+    if (ret.constructor && (ret.constructor as any)[IS_REMOTE_PROXY]) {
       Object.defineProperty(ret.constructor, 'name', { value: meta.name });
     }
 
     // Track delegate obj's lifetime & tell browser to clean up when object is GCed.
-    v8Util.setRemoteObjectFreer(ret, contextId, meta.id);
     v8Util.setHiddenValue(ret, 'electronId', meta.id);
-    v8Util.addRemoteObjectRef(contextId, meta.id);
-    remoteObjectCache.set(meta.id, ret);
+    setCachedRemoteObject(meta.id, ret);
     return ret;
   }
 }
 
-function metaToError (meta) {
+function metaToError (meta: { type: 'error', value: any, members: ObjectMember[] }) {
   const obj = meta.value;
   for (const { name, value } of meta.members) {
     obj[name] = metaToValue(value);
@@ -275,7 +298,7 @@ function metaToError (meta) {
   return obj;
 }
 
-function handleMessage (channel, handler) {
+function handleMessage (channel: string, handler: Function) {
   ipcRendererInternal.on(channel, (event, passedContextId, id, ...args) => {
     if (passedContextId === contextId) {
       handler(id, ...args);
@@ -288,8 +311,8 @@ function handleMessage (channel, handler) {
 
 const enableStacks = hasSwitch('enable-api-filtering-logging');
 
-function getCurrentStack () {
-  const target = {};
+function getCurrentStack (): string | undefined {
+  const target = { stack: undefined as string | undefined };
   if (enableStacks) {
     Error.captureStackTrace(target, getCurrentStack);
   }
@@ -297,47 +320,47 @@ function getCurrentStack () {
 }
 
 // Browser calls a callback in renderer.
-handleMessage('ELECTRON_RENDERER_CALLBACK', (id, args) => {
+handleMessage('ELECTRON_RENDERER_CALLBACK', (id: number, args: any) => {
   callbacksRegistry.apply(id, metaToValue(args));
 });
 
 // A callback in browser is released.
-handleMessage('ELECTRON_RENDERER_RELEASE_CALLBACK', (id) => {
+handleMessage('ELECTRON_RENDERER_RELEASE_CALLBACK', (id: number) => {
   callbacksRegistry.remove(id);
 });
 
-exports.require = (module) => {
+exports.require = (module: string) => {
   const command = 'ELECTRON_BROWSER_REQUIRE';
   const meta = ipcRendererInternal.sendSync(command, contextId, module, getCurrentStack());
   return metaToValue(meta);
 };
 
 // Alias to remote.require('electron').xxx.
-exports.getBuiltin = (module) => {
+export function getBuiltin (module: string) {
   const command = 'ELECTRON_BROWSER_GET_BUILTIN';
   const meta = ipcRendererInternal.sendSync(command, contextId, module, getCurrentStack());
   return metaToValue(meta);
-};
+}
 
-exports.getCurrentWindow = () => {
+export function getCurrentWindow (): BrowserWindow {
   const command = 'ELECTRON_BROWSER_CURRENT_WINDOW';
   const meta = ipcRendererInternal.sendSync(command, contextId, getCurrentStack());
   return metaToValue(meta);
-};
+}
 
 // Get current WebContents object.
-exports.getCurrentWebContents = () => {
+export function getCurrentWebContents (): WebContents {
   const command = 'ELECTRON_BROWSER_CURRENT_WEB_CONTENTS';
   const meta = ipcRendererInternal.sendSync(command, contextId, getCurrentStack());
   return metaToValue(meta);
-};
+}
 
 // Get a global object in browser.
-exports.getGlobal = (name) => {
+export function getGlobal<T = any> (name: string): T {
   const command = 'ELECTRON_BROWSER_GLOBAL';
   const meta = ipcRendererInternal.sendSync(command, contextId, name, getCurrentStack());
   return metaToValue(meta);
-};
+}
 
 // Get the process object in browser.
 Object.defineProperty(exports, 'process', {
@@ -345,22 +368,19 @@ Object.defineProperty(exports, 'process', {
 });
 
 // Create a function that will return the specified value when called in browser.
-exports.createFunctionWithReturnValue = (returnValue) => {
+export function createFunctionWithReturnValue<T> (returnValue: T): () => T {
   const func = () => returnValue;
   v8Util.setHiddenValue(func, 'returnValue', true);
   return func;
-};
+}
 
-const addBuiltinProperty = (name) => {
+const addBuiltinProperty = (name: string) => {
   Object.defineProperty(exports, name, {
     get: () => exports.getBuiltin(name)
   });
 };
 
-const { commonModuleList } = require('@electron/internal/common/api/module-list');
-const { browserModuleNames } = require('@electron/internal/browser/api/module-names');
-
-const browserModules = commonModuleList.concat(browserModuleNames.map(name => ({ name })));
+const browserModules = commonModuleList.concat(browserModuleNames.map(name => ({ name, loader: () => {} })));
 
 // And add a helper receiver for each one.
 browserModules

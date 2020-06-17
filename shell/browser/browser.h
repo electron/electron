@@ -248,6 +248,9 @@ class Browser : public WindowListObserver {
 #if defined(OS_MACOSX)
   // Tell the application to create a new window for a tab.
   void NewWindowForTab();
+
+  // Tell the application that application did become active
+  void DidBecomeActive();
 #endif  // defined(OS_MACOSX)
 
   // Tell the application that application is activated with visible/invisible

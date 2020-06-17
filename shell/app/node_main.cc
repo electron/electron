@@ -18,19 +18,15 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "components/crash/core/app/crashpad.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
-#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/uv_task_runner.h"
-#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/crash_keys.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -41,6 +37,13 @@
 
 #if defined(OS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
+#endif
+
+#if !defined(MAS_BUILD)
+#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
+#include "shell/common/crash_keys.h"
 #endif
 
 namespace {
@@ -83,6 +86,11 @@ void SetNodeCliFlags() {
   // console so we don't need to handle that ourselves
   ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
 }
+
+#if defined(MAS_BUILD)
+void SetCrashKeyStub(const std::string& key, const std::string& value) {}
+void ClearCrashKeyStub(const std::string& key) {}
+#endif
 
 }  // namespace
 
@@ -217,10 +225,15 @@ int NodeMain(int argc, char* argv[]) {
 #endif
 
       reporter.SetMethod("getParameters", &GetParameters);
+#if defined(MAS_BUILD)
+      reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);
+      reporter.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
+#else
       reporter.SetMethod("addExtraParameter",
                          &electron::crash_keys::SetCrashKey);
       reporter.SetMethod("removeExtraParameter",
                          &electron::crash_keys::ClearCrashKey);
+#endif
 
       process.Set("crashReporter", reporter);
 

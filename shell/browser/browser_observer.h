@@ -82,6 +82,9 @@ class BrowserObserver : public base::CheckedObserver {
       const base::DictionaryValue& user_info) {}
   // User clicked the native macOS new tab button. (macOS only)
   virtual void OnNewWindowForTab() {}
+
+  // Browser did become active.
+  virtual void OnDidBecomeActive() {}
 #endif
 
  protected:

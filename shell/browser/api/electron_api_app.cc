@@ -684,6 +684,10 @@ void App::OnUpdateUserActivityState(bool* prevent_default,
 void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
+
+void App::OnDidBecomeActive() {
+  Emit("did-become-active");
+}
 #endif
 
 bool App::CanCreateWindow(
