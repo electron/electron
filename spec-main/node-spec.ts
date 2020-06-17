@@ -203,4 +203,18 @@ describe('node feature', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')])
     expect(result.status).to.equal(0)
   })
+
+  it('performs microtask checkpoint correctly', (done) => {
+    const f3 = async () => {
+      return new Promise((resolve, reject) => {
+        reject(new Error('oops'))
+      })
+    }
+
+    process.once('unhandledRejection', () => done('catch block is delayed to next tick'))
+
+    setTimeout(() => {
+      f3().catch(() => done())
+    })
+  })
 })

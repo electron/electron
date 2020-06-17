@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
+#include "native_mate/microtasks_scope.h"
 #include "shell/common/gin_converters/std_converter.h"
 
 namespace electron {
@@ -109,8 +110,7 @@ class Promise {
     static_assert(std::is_same<void*, RT>(),
                   "Can only resolve void* promises with no value");
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
@@ -119,8 +119,7 @@ class Promise {
 
   v8::Maybe<bool> Reject() {
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
@@ -129,8 +128,7 @@ class Promise {
 
   v8::Maybe<bool> Reject(v8::Local<v8::Value> exception) {
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
@@ -163,8 +161,7 @@ class Promise {
     static_assert(!std::is_same<void*, RT>(),
                   "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
@@ -176,8 +173,7 @@ class Promise {
     static_assert(!std::is_same<void*, RT>(),
                   "void* promises can not be resolved with a value");
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 
@@ -187,8 +183,7 @@ class Promise {
 
   v8::Maybe<bool> RejectWithErrorMessage(base::StringPiece string) {
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(
         v8::Local<v8::Context>::New(isolate(), GetContext()));
 

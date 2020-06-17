@@ -23,6 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "native_mate/microtasks_scope.h"
 #include "shell/common/api/locker.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -410,8 +411,7 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  v8::MicrotasksScope script_scope(env->isolate(),
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  mate::MicrotasksScope microtasks_scope(env->isolate());
 
   if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
