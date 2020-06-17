@@ -10,6 +10,7 @@
 
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 
 namespace electron {
@@ -28,7 +29,7 @@ void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* web_contents =
       api::WebContents::From(isolate, content::WebContents::FromRenderFrameHost(

@@ -20,6 +20,7 @@
 #include "net/base/filename_util.h"
 #include "shell/browser/api/electron_api_download_item.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -116,7 +117,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
         !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
     settings.force_detached = offscreen;
 
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(

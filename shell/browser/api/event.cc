@@ -8,6 +8,7 @@
 
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 
@@ -19,7 +20,7 @@ Event::Event() {}
 
 Event::~Event() {
   if (callback_) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto message = gin::DataObjectBuilder(isolate)
                        .Set("error", "reply was never sent")

@@ -21,6 +21,7 @@
 #include "net/cookies/cookie_util.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -365,7 +366,7 @@ v8::Local<v8::Promise> Cookies::FlushStore(v8::Isolate* isolate) {
 }
 
 void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   Emit("changed", gin::ConvertToV8(isolate, change.cookie),
        gin::ConvertToV8(isolate, change.cause),
