@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 48fd4c83c08c401221c7b164fb560b3e248d7476..fc4ff0ef2c1cdd2ae1c2c4a672b80152d577af34 100644
+index 5e5eb4807ce61455d645a1813a21fd1a1e5358f4..ebf7f8ee8ded9fc5bb806361f1a740901163831b 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4797,6 +4797,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -38,7 +38,7 @@ index 1f19a480905ee513567c9763fdaafb4e9a47a1bd..21cc69b269a4b393652b28a2f855c97f
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 26523f771b366e52af6902047b85ab822f5afadf..8545f982d4142db1140ddb6b4fa71e64cef0966e 100644
+index 322e2f0f4f023cd2e34163f623c5b52eaad51c1d..46ae29207c804ae3474ae3a3dd8f76de93a1deb0 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -277,6 +277,10 @@ struct CreateNewWindowParams {
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index d20eb03ee7a085864e566d3c86a318deeae97359..edc22a477e2217fab1f5fe1eec4fda3eb100fdbe 100644
+index 21873099f35843c9bcf04de9c0e52a5e39f0d259..cf5a55c05448fe54b8572d646d30ffd420162cc0 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1919,6 +1919,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1933,6 +1933,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);
