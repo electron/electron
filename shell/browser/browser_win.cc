@@ -55,7 +55,6 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 bool GetProcessExecPath(base::string16* exe) {
   base::FilePath path;
   if (!base::PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
     return false;
   }
   *exe = path.value();
@@ -87,30 +86,6 @@ bool IsValidCustomProtocol(const base::string16& scheme) {
   return cmd_key.Valid() && cmd_key.HasValue(L"URL Protocol");
 }
 
-// Windows 8 introduced a new protocol->executable binding system which cannot
-// be retrieved in the HKCR registry subkey method implemented below. We call
-// AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
-base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
-  if (!IsValidCustomProtocol(url_scheme))
-    return base::string16();
-
-  // Query AssocQueryString for a human-readable description of the program
-  // that will be invoked given the provided URL spec. This is used only to
-  // populate the external protocol dialog box the user sees when invoking
-  // an unknown external protocol.
-  wchar_t out_buffer[1024];
-  DWORD buffer_size = base::size(out_buffer);
-  HRESULT hr =
-      AssocQueryString(ASSOCF_IS_PROTOCOL, ASSOCSTR_FRIENDLYAPPNAME,
-                       url_scheme.c_str(), NULL, out_buffer, &buffer_size);
-  if (FAILED(hr)) {
-    DLOG(WARNING) << "AssocQueryString failed!";
-    return base::string16();
-  }
-  return base::string16(out_buffer);
-}
-
 // Helper for GetApplicationInfoForProtocol().
 // takes in an assoc_str
 // (https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/ne-shlwapi-assocstr)
@@ -137,8 +112,8 @@ base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
   return base::string16(out_buffer);
 }
 
-void OnIconDataAvailable(base::FilePath app_path,
-                         base::string16 app_display_name,
+void OnIconDataAvailable(const base::FilePath app_path,
+                         const base::string16 app_display_name,
                          gin_helper::Promise<gin_helper::Dictionary> promise,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
@@ -160,11 +135,7 @@ base::string16 GetAppDisplayNameForProtocol(const GURL& url) {
 }
 
 base::string16 GetAppPathForProtocol(const GURL& url) {
-  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
-}
-
-base::string16 GetApplicationIconForProtocol(const GURL& url) {
-  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
+  return GetAppInfoHelperForProtocol(ASSOCSTR_EXECUTABLE, url);
 }
 
 base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
@@ -234,24 +205,23 @@ void Browser::Focus(gin_helper::Arguments* args) {
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
                  base::CancelableTaskTracker* cancelable_task_tracker_,
-                 const base::FilePath& app_path,
-                 base::string16 app_display_name,
+                 const base::string16 app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath normalized_path = path.NormalizePathSeparators();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
     dict.Set("displayName", app_display_name);
-    dict.Set("appPath", app_path);
+    dict.Set("appPath", normalized_path);
     promise.Resolve(dict);
   } else {
     icon_manager->LoadIcon(normalized_path, icon_size,
-                           base::BindOnce(&OnIconDataAvailable, app_path,
+                           base::BindOnce(&OnIconDataAvailable, normalized_path,
                                           app_display_name, std::move(promise)),
                            cancelable_task_tracker_);
   }
@@ -263,7 +233,6 @@ void GetApplicationInfoForProtocolUsingRegistry(
     gin_helper::Promise<gin_helper::Dictionary> promise,
     base::CancelableTaskTracker* cancelable_task_tracker_) {
   base::FilePath app_path;
-  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
 
   const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
   if (!IsValidCustomProtocol(url_scheme)) {
@@ -283,8 +252,15 @@ void GetApplicationInfoForProtocolUsingRegistry(
         "Unable to retrieve installation path to app");
     return;
   }
-  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_path,
-              app_display_name, std::move(promise));
+  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+
+  if (app_display_name.length() == 0) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve application display name");
+    return;
+  }
+  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_display_name,
+              std::move(promise));
 }
 
 // resolves `Promise<Object>` - Resolve with an object containing the following:
@@ -301,19 +277,19 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
   if (app_path.empty()) {
     promise.RejectWithErrorMessage(
         "Unable to retrieve installation path to app");
+    return;
   }
 
   base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
 
   if (app_display_name.empty()) {
     promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return;
   }
 
-  base::string16 app_icon_path = GetApplicationIconForProtocol(url);
-  base::FilePath app_icon_file_path = base::FilePath(app_icon_path);
   base::FilePath app_path_file_path = base::FilePath(app_path);
-  GetFileIcon(app_icon_file_path, isolate, cancelable_task_tracker_,
-              app_path_file_path, app_display_name, std::move(promise));
+  GetFileIcon(app_path_file_path, isolate, cancelable_task_tracker_,
+              app_display_name, std::move(promise));
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -505,7 +481,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    base::string16 application_name = GetAppForProtocolUsingAssocQuery(url);
+    base::string16 application_name = GetAppDisplayNameForProtocol(url);
     if (!application_name.empty())
       return application_name;
   }

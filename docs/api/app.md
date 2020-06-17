@@ -805,7 +805,7 @@ Returns `String` - Name of the application handling the protocol, or an empty
 This method returns the application name of the default handler for the protocol
 (aka URI scheme) of a URL.
 
-### `app.getApplicationInfoForProtocol(url)`
+### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
 
 * `url` String - a URL with the protocol name to check. Unlike the other
   methods in this family, this accepts an entire URL, including `://` at a

@@ -32,6 +32,57 @@
 
 namespace electron {
 
+namespace {
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  NSString* ns_app_path = GetAppPathForProtocol(url);
+
+  if (!ns_app_path) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
+  gfx::Image app_icon = GetApplicationIconForProtocol(ns_app_path);
+
+  dict.Set("name", app_display_name);
+  dict.Set("path", app_path);
+  dict.Set("icon", app_icon);
+
+  promise.Resolve(dict);
+  return handle;
+}
+
+NSString* GetAppPathForProtocol(const GURL& url) {
+  NSURL* ns_url = [NSURL
+      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
+  base::ScopedCFTypeRef<CFErrorRef> out_err;
+
+  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
+      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+
+  if (out_err) {
+    // likely kLSApplicationNotFoundErr
+    return nullptr;
+  }
+  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  return app_path;
+}
+
+gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
+  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
+  gfx::Image icon(image);
+  return icon;
+}
+}
+
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
@@ -148,32 +199,10 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return result == NSOrderedSame;
 }
 
-gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
-  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
-  gfx::Image icon(image);
-  return icon;
-}
-
 base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
   NSString* app_display_name =
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
-}
-
-NSString* GetAppPathForProtocol(const GURL& url) {
-  NSURL* ns_url = [NSURL
-      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
-  base::ScopedCFTypeRef<CFErrorRef> out_err;
-
-  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
-      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
-
-  if (out_err) {
-    // likely kLSApplicationNotFoundErr
-    return nullptr;
-  }
-  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
-  return app_path;
 }
 
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
@@ -183,33 +212,6 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   }
   base::string16 app_display_name = GetAppDisplayNameForProtocol(app_path);
   return app_display_name;
-}
-
-v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
-    v8::Isolate* isolate,
-    const GURL& url) {
-  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
-  NSString* ns_app_path = GetAppPathForProtocol(url);
-
-  if (!ns_app_path) {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve installation path to app");
-    return handle;
-  }
-
-  base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
-  base::string16 app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
-  gfx::Image app_icon = GetApplicationIconForProtocol(ns_app_path);
-
-  dict.Set("name", app_display_name);
-  dict.Set("path", app_path);
-  dict.Set("icon", app_icon);
-
-  promise.Resolve(dict);
-  return handle;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
