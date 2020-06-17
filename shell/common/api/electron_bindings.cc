@@ -273,8 +273,6 @@ void ElectronBindings::DidReceiveMemoryDump(
   v8::Isolate* isolate = promise.isolate();
   mate::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
   v8::Context::Scope context_scope(
       v8::Local<v8::Context>::New(isolate, context));
 
