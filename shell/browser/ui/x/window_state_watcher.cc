@@ -18,15 +18,15 @@ WindowStateWatcher::~WindowStateWatcher() {
   ui::X11EventSource::GetInstance()->RemoveXEventObserver(this);
 }
 
-void WindowStateWatcher::WillProcessXEvent(XEvent* xev) {
-  if (IsWindowStateEvent(xev)) {
+void WindowStateWatcher::WillProcessXEvent(x11::Event* x11_event) {
+  if (IsWindowStateEvent(x11_event)) {
     was_minimized_ = window_->IsMinimized();
     was_maximized_ = window_->IsMaximized();
   }
 }
 
-void WindowStateWatcher::DidProcessXEvent(XEvent* xev) {
-  if (IsWindowStateEvent(xev)) {
+void WindowStateWatcher::DidProcessXEvent(x11::Event* x11_event) {
+  if (IsWindowStateEvent(x11_event)) {
     bool is_minimized = window_->IsMinimized();
     bool is_maximized = window_->IsMaximized();
     bool is_fullscreen = window_->IsFullscreen();
@@ -54,7 +54,8 @@ void WindowStateWatcher::DidProcessXEvent(XEvent* xev) {
   }
 }
 
-bool WindowStateWatcher::IsWindowStateEvent(XEvent* xev) const {
+bool WindowStateWatcher::IsWindowStateEvent(x11::Event* x11_event) const {
+  const XEvent& xev = x11_event.xlib_event();
   return (static_cast<x11::Atom>(xev->xproperty.atom) == window_state_atom_ &&
           xev->type == PropertyNotify && xev->xproperty.window == widget_);
 }
