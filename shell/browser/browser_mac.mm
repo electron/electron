@@ -33,6 +33,37 @@
 namespace electron {
 
 namespace {
+
+NSString* GetAppPathForProtocol(const GURL& url) {
+  NSURL* ns_url = [NSURL
+      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
+  base::ScopedCFTypeRef<CFErrorRef> out_err;
+
+  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
+      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+
+  if (out_err) {
+    // likely kLSApplicationNotFoundErr
+    return nullptr;
+  }
+  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  return app_path;
+}
+
+gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
+  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
+  gfx::Image icon(image);
+  return icon;
+}
+
+base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
+  NSString* app_display_name =
+      [[NSFileManager defaultManager] displayNameAtPath:app_path];
+  return base::SysNSStringToUTF16(app_display_name);
+}
+
+}  // namespace
+
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     v8::Isolate* isolate,
     const GURL& url) {
@@ -59,30 +90,6 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   promise.Resolve(dict);
   return handle;
 }
-
-NSString* GetAppPathForProtocol(const GURL& url) {
-  NSURL* ns_url = [NSURL
-      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
-  base::ScopedCFTypeRef<CFErrorRef> out_err;
-
-  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
-      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
-
-  if (out_err) {
-    // likely kLSApplicationNotFoundErr
-    return nullptr;
-  }
-  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
-  return app_path;
-}
-
-gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
-  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
-  gfx::Image icon(image);
-  return icon;
-}
-
-}  // namespace
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
@@ -198,12 +205,6 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   NSComparisonResult result =
       [base::mac::CFToNSCast(bundleId) caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
-}
-
-base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
-  NSString* app_display_name =
-      [[NSFileManager defaultManager] displayNameAtPath:app_path];
-  return base::SysNSStringToUTF16(app_display_name);
 }
 
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
