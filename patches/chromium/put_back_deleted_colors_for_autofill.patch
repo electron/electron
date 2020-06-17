@@ -115,7 +115,7 @@ index 9b3d8039bc2dcded1fcf54327028e4335732026d..0bd3f08d3023f4cb219e9baae59823df
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 8cc9cdc5eab4ebab20fee78318d38b365e8408e9..54730260ccb2ca56fd3fa26db631821de0e7d796 100644
+index 91c5532be895114ac532d270cb5e00cbfd4abf89..1ff5451c10c4843557746df9daf879d422b9855a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -646,6 +646,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

@@ -117,10 +117,10 @@ index 51f91581aff32cd42b74c7086f51282cbc3629e8..8fa02de5ed90538923cd858a92f339da
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 8da3659d1de1f7ce84b4dcd4691f6164982be1af..c31c30283d69752a16c94ec2a827da987328ab55 100644
+index e2bbde83b8eaffd34aec149e034117adeb2583cd..1982a4e885b923a7a91c869e625a06f05ce89b90 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -232,8 +232,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
+@@ -233,8 +233,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -131,7 +131,7 @@ index 8da3659d1de1f7ce84b4dcd4691f6164982be1af..c31c30283d69752a16c94ec2a827da98
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1351,8 +1353,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
+@@ -1356,8 +1358,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -142,7 +142,7 @@ index 8da3659d1de1f7ce84b4dcd4691f6164982be1af..c31c30283d69752a16c94ec2a827da98
    return [GetInProcessNSView() window];
  }
  
-@@ -1384,9 +1388,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
+@@ -1389,9 +1393,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -154,7 +154,7 @@ index 8da3659d1de1f7ce84b4dcd4691f6164982be1af..c31c30283d69752a16c94ec2a827da98
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1873,12 +1879,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
+@@ -1878,12 +1884,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -170,10 +170,10 @@ index 8da3659d1de1f7ce84b4dcd4691f6164982be1af..c31c30283d69752a16c94ec2a827da98
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 8ead00df413f1cb4d1b6633940ce4a10d0086736..358d75ae063d2413307ae4aaf56a8fb0bc737981 100644
+index 3241093ca37134435507b6cfb7d9663317563860..aace5b11a419cdbb0e257dd3ba2329e9ea013c6a 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -309,6 +309,13 @@ jumbo_component("base") {
+@@ -311,6 +311,13 @@ jumbo_component("base") {
      ]
    }
  
