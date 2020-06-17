@@ -62,13 +62,13 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
         electron_browser_remote_.BindNewPipeAndPassReceiver());
   }
 
-  void OnDestruct() override { electron_pending_browser_.reset(); }
+  void OnDestruct() override { electron_browser_remote_.reset(); }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int32_t world_id) override {
     if (weak_context_.IsEmpty() ||
         weak_context_.Get(context->GetIsolate()) == context)
-      electron_pending_browser_.reset();
+      electron_browser_remote_.reset();
   }
 
   // gin::Wrappable:
