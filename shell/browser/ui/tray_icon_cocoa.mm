@@ -130,23 +130,7 @@
   [statusItem_ setMenu:[menuController_ menu]];
 }
 
-- (void)mouseDown:(NSEvent*)event {
-  trayIcon_->NotifyMouseDown(
-      gfx::ScreenPointFromNSPoint([event locationInWindow]),
-      ui::EventFlagsFromModifiers([event modifierFlags]));
-
-  // Pass click to superclass to show menu. Custom mouseUp handler won't be
-  // invoked.
-  if (menuController_) {
-    [super mouseDown:event];
-  } else {
-    [[statusItem_ button] highlight:YES];
-  }
-}
-
-- (void)mouseUp:(NSEvent*)event {
-  [[statusItem_ button] highlight:NO];
-
+- (void)handleClickNotifications:(NSEvent*)event {
   trayIcon_->NotifyMouseUp(
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
       ui::EventFlagsFromModifiers([event modifierFlags]));
@@ -168,6 +152,27 @@
     trayIcon_->NotifyDoubleClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
+}
+
+- (void)mouseDown:(NSEvent*)event {
+  trayIcon_->NotifyMouseDown(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
+  // Pass click to superclass to show menu. Custom mouseUp handler won't be
+  // invoked.
+  if (menuController_) {
+    [self handleClickNotifications:event];
+    [super mouseDown:event];
+  } else {
+    [[statusItem_ button] highlight:YES];
+  }
+}
+
+- (void)mouseUp:(NSEvent*)event {
+  [[statusItem_ button] highlight:NO];
+
+  [self handleClickNotifications:event];
 }
 
 - (void)popUpContextMenu:(electron::ElectronMenuModel*)menu_model {
