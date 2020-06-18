@@ -6,7 +6,7 @@ Subject: fix: key gen APIs are not available in BoringSSL
 This will make Node's key pair generation APIs fail.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 9e3c63b5ec92459a98c0f64f57b79d8732a9a25d..39f2c58657fb7315b9abb1817ccafb9cb3f64948 100644
+index f08d68d6b6e6303485e2c53aebc0d42708bd022a..17aeb99d586161d0af69376811b42e84a80553e3 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -267,24 +267,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,

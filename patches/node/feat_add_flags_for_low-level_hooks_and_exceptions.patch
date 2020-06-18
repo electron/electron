@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/env.cc b/src/env.cc
-index 5b8a63a0017c4f9eed50afacb8de0b7f659f81b6..3974e6c7ebe74004a7a9e4dc2966fd8651c1522f 100644
+index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -410,6 +410,12 @@ Environment::Environment(IsolateData* isolate_data,
@@ -41,10 +41,10 @@ index 5b8a63a0017c4f9eed50afacb8de0b7f659f81b6..3974e6c7ebe74004a7a9e4dc2966fd86
  
  Environment::~Environment() {
 diff --git a/src/node.cc b/src/node.cc
-index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce9f20042c 100644
+index 4ff7824b0011685289716d61b02427c3e264965d..2a21c6dfe74b97c0d4ca8608486f8f35c77cc831 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -124,6 +124,9 @@ using v8::Undefined;
+@@ -122,6 +122,9 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
@@ -54,7 +54,7 @@ index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce
  namespace per_process {
  
  // node_revert.h
-@@ -339,6 +342,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
+@@ -337,6 +340,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
  
    CHECK(!has_run_bootstrapping_code());
  
@@ -68,7 +68,7 @@ index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce
    if (BootstrapInternalLoaders().IsEmpty()) {
      return MaybeLocal<Value>();
    }
-@@ -735,7 +745,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -733,7 +743,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -79,7 +79,7 @@ index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -769,6 +781,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -767,6 +779,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -88,7 +88,7 @@ index da6aebf7178cf6d61ac46088bd50270b335e0b9e..f46db766de54f59d5baae28b16cd04ce
  
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -813,6 +827,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -811,6 +825,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif

@@ -6,10 +6,10 @@ Subject: feat: add uv_loop watcher_queue code
 Electron's Node Integration works by listening to Node's backend file descriptor in a separate thread; when an event is ready the backend file descriptor will trigger a new event for it, and the main thread will then iterate the libuv loop. For certain operations (ex. adding a timeout task) the backend file descriptor isn't informed, & as a result the main thread doesn't know it needs to iterate the libuv loop so the timeout task will never execute until something else trigger a new event. This commit should be removed when https://github.com/libuv/libuv/pull/1921 is merged
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index a3a770db88b90e3afc8f344c585c8c598ba2c088..b91e31237c5b3e2fb8c0bee8516155d23624a337 100644
+index fec663136a4ff14480cc8edcf846cba320ddd4eb..653c8910d7350185d1db4d343e19236a899b3a04 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -1767,6 +1767,8 @@ union uv_any_req {
+@@ -1770,6 +1770,8 @@ union uv_any_req {
  struct uv_loop_s {
    /* User data - use this for whatever. */
    void* data;

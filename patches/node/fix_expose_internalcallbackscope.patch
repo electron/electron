@@ -6,7 +6,7 @@ Subject: fix: expose InternalCallbackScope
 This commit exposes InternalCallbackScope in order to allow us access to its internal flags.
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 7ec3eac697e4b7d6160da59df709f416814e1f73..c362485dca561ed4a5210d7ac9f0e3b2a36a8d0c 100644
+index c1555b312e2f22e191d91d34a348d2e163d85b5b..084ecfa73657d1958d7552baa896e170934639c8 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -209,7 +209,7 @@ v8::MaybeLocal<v8::Value> InternalMakeCallback(

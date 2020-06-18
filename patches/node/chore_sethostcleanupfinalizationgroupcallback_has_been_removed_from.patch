@@ -45,10 +45,10 @@ index 60d30b7eff7329c4235024c31525107216d70d7a..21980987644c6e83029157785dea4630
      v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(isolate);
  }
 diff --git a/src/env-inl.h b/src/env-inl.h
-index fcb58dc6709d1333fb992e4a0fbf498fbb496994..71d86c4976806508c5b2db1563bfa4f460ff618f 100644
+index c6ef9dc13ab6f1d1a778871a62a0a98a01d84ec6..222555831aa1bf0b7b29b4b46e235c98a5dd4ac5 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -1191,12 +1191,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
+@@ -1123,12 +1123,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
    cleanup_hooks_.erase(search);
  }
  
@@ -62,7 +62,7 @@ index fcb58dc6709d1333fb992e4a0fbf498fbb496994..71d86c4976806508c5b2db1563bfa4f4
      const CleanupHookCallback& cb) const {
    return std::hash<void*>()(cb.arg_);
 diff --git a/src/env.cc b/src/env.cc
-index 3974e6c7ebe74004a7a9e4dc2966fd8651c1522f..da779854f928abda5ee9d08c39ba1b5e5eb798a4 100644
+index c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124..58f2372d664c4c6f8a513cb4206c24940891aa6d 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -30,7 +30,6 @@ using v8::ArrayBuffer;
@@ -81,7 +81,7 @@ index 3974e6c7ebe74004a7a9e4dc2966fd8651c1522f..da779854f928abda5ee9d08c39ba1b5e
          env->RunAndClearNativeImmediates();
        });
    uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
-@@ -1138,25 +1136,6 @@ void Environment::RunWeakRefCleanup() {
+@@ -1127,25 +1125,6 @@ void Environment::RunWeakRefCleanup() {
    isolate()->ClearKeptObjects();
  }
  
@@ -108,10 +108,10 @@ index 3974e6c7ebe74004a7a9e4dc2966fd8651c1522f..da779854f928abda5ee9d08c39ba1b5e
  void BaseObject::DeleteMe(void* data) {
    BaseObject* self = static_cast<BaseObject*>(data);
 diff --git a/src/env.h b/src/env.h
-index 5c0392a59b3938b0b6e433024f9dd92e222a1b47..7ba18f8ec0e2675cb634e26250266ad809708f82 100644
+index 12ba5b69369e858ee9e743ef06059d6cd5541078..b0b9b17dd6684c10139435b85e8724e31ad4d92c 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1129,9 +1129,7 @@ class Environment : public MemoryRetainer {
+@@ -1130,9 +1130,7 @@ class Environment : public MemoryRetainer {
    void AtExit(void (*cb)(void* arg), void* arg);
    void RunAtExitCallbacks();
  
@@ -121,7 +121,7 @@ index 5c0392a59b3938b0b6e433024f9dd92e222a1b47..7ba18f8ec0e2675cb634e26250266ad8
  
    // Strings and private symbols are shared across shared contexts
    // The getters simply proxy to the per-isolate primitive.
-@@ -1354,8 +1352,6 @@ class Environment : public MemoryRetainer {
+@@ -1355,8 +1353,6 @@ class Environment : public MemoryRetainer {
    uint64_t thread_id_;
    std::unordered_set<worker::Worker*> sub_worker_contexts_;
  
