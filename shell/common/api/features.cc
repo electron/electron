@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -30,7 +31,7 @@ bool IsPDFViewerEnabled() {
 }
 
 bool IsRunAsNodeEnabled() {
-  return BUILDFLAG(ENABLE_RUN_AS_NODE);
+  return electron::fuses::IsRunAsNodeEnabled() && BUILDFLAG(ENABLE_RUN_AS_NODE);
 }
 
 bool IsFakeLocationProviderEnabled() {
