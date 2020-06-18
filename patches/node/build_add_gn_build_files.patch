@@ -821,10 +821,10 @@ index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a
 +}
 diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b1c2cb80193bd0a0c56867428f2da8b46f11b16b
+index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df6369a765c07
 --- /dev/null
 +++ b/deps/uvwasi/BUILD.gn
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,38 @@
 +config("uvwasi_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -856,9 +856,11 @@ index 0000000000000000000000000000000000000000..b1c2cb80193bd0a0c56867428f2da8b4
 +    "src/clocks.c",
 +    "src/fd_table.c",
 +    "src/path_resolver.c",
++    "src/poll_oneoff.c",
 +    "src/uv_mapping.c",
 +    "src/uvwasi.c",
 +    "src/wasi_rights.c",
++    "src/wasi_serdes.c"
 +  ]
 +}
 diff --git a/filenames.json b/filenames.json
