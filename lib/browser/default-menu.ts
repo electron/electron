@@ -1,6 +1,6 @@
 import { shell, Menu } from 'electron';
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process.electronBinding('v8_util', 'common');
 
 const isMac = process.platform === 'darwin';
 

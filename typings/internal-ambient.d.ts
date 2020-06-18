@@ -93,17 +93,17 @@ declare namespace NodeJS {
      * DO NOT USE DIRECTLY, USE process.electronBinding
      */
     _linkedBinding(name: string): any;
-    electronBinding(name: string): any;
-    electronBinding(name: 'features'): FeaturesBinding;
-    electronBinding(name: 'ipc'): { ipc: IpcRendererBinding };
-    electronBinding(name: 'v8_util'): V8UtilBinding;
-    electronBinding(name: 'app'): { app: Electron.App, App: Function };
-    electronBinding(name: 'command_line'): Electron.CommandLine;
-    electronBinding(name: 'desktop_capturer'): {
+    electronBinding(name: string, processType: 'renderer' | 'browser' | 'common'): any;
+    electronBinding(name: 'features', processType: 'common'): FeaturesBinding;
+    electronBinding(name: 'ipc', processType: 'renderer'): { ipc: IpcRendererBinding };
+    electronBinding(name: 'v8_util', processType: 'common'): V8UtilBinding;
+    electronBinding(name: 'app', processType: 'browser'): { app: Electron.App, App: Function };
+    electronBinding(name: 'command_line', processType: 'common'): Electron.CommandLine;
+    electronBinding(name: 'desktop_capturer', processType: 'browser'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       getMediaSourceIdForWebContents(requestWebContentsId: number, webContentsId: number): string;
     };
-    electronBinding(name: 'net'): {
+    electronBinding(name: 'net', processType: 'browser'): {
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
       Net: any;

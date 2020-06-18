@@ -6,7 +6,7 @@ import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
 
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 
 ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   let w: BrowserWindow;

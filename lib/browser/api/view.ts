@@ -1,3 +1,3 @@
-const { View } = process.electronBinding('view');
+const { View } = process.electronBinding('view', 'browser');
 
 export default View;

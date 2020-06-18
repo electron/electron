@@ -1,4 +1,4 @@
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process.electronBinding('v8_util', 'common');
 
 const enableRemoteModule = v8Util.getHiddenValue<boolean>(global, 'enableRemoteModule');
 

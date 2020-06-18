@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { deprecate } from 'electron';
-const { systemPreferences, SystemPreferences } = process.electronBinding('system_preferences');
+const { systemPreferences, SystemPreferences } = process.electronBinding('system_preferences', 'browser');
 
 // SystemPreferences is an EventEmitter.
 Object.setPrototypeOf(SystemPreferences.prototype, EventEmitter.prototype);

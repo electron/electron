@@ -5,7 +5,7 @@ import { emittedOnce } from './events-helpers';
 import { ifdescribe } from './spec-helpers';
 import { expect } from 'chai';
 
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`

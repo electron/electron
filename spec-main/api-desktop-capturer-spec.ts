@@ -5,7 +5,7 @@ import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
 
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
   if (!features.isDesktopCapturerEnabled()) {

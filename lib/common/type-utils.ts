@@ -1,4 +1,4 @@
-const { nativeImage, NativeImage } = process.electronBinding('native_image');
+const { nativeImage, NativeImage } = process.electronBinding('native_image', 'common');
 
 export function isPromise (val: any) {
   return (

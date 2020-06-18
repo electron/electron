@@ -1,5 +1,5 @@
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-const { createPair } = process.electronBinding('message_port');
+const { createPair } = process.electronBinding('message_port', 'browser');
 
 export default class MessageChannelMain {
   port1: MessagePortMain;

@@ -1,3 +1,3 @@
-const { Tray } = process.electronBinding('tray');
+const { Tray } = process.electronBinding('tray', 'browser');
 
 export default Tray;

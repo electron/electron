@@ -5,9 +5,9 @@ import * as events from 'events';
 
 const { EventEmitter } = events;
 
-process.electronBinding = electronBindingSetup(binding.get, 'renderer');
+process.electronBinding = electronBindingSetup(binding.get);
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process.electronBinding('v8_util', 'common');
 // Expose Buffer shim as a hidden value. This is used by C++ code to
 // deserialize Buffer instances sent from browser process.
 v8Util.setHiddenValue(global, 'Buffer', Buffer);
@@ -115,7 +115,7 @@ function preloadRequire (module: string) {
 }
 
 // Process command line arguments.
-const { hasSwitch } = process.electronBinding('command_line');
+const { hasSwitch } = process.electronBinding('command_line', 'common');
 
 // Similar to nodes --expose-internals flag, this exposes electronBinding so
 // that tests can call it to get access to some test only bindings

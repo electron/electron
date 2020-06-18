@@ -1,7 +1,7 @@
 import { app, session } from 'electron';
 
 // Global protocol APIs.
-const protocol = process.electronBinding('protocol');
+const protocol = process.electronBinding('protocol', 'browser');
 
 // Fallback protocol APIs of default session.
 Object.setPrototypeOf(protocol, new Proxy({}, {

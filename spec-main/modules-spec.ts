@@ -8,7 +8,7 @@ import * as childProcess from 'child_process';
 
 const Module = require('module');
 
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 describe('modules support', () => {

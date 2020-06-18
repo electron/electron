@@ -1,4 +1,4 @@
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process.electronBinding('v8_util', 'common');
 
 export class CallbacksRegistry {
   private nextId: number = 0

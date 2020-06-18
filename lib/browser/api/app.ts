@@ -4,8 +4,8 @@ import * as path from 'path';
 import { deprecate, Menu } from 'electron';
 import { EventEmitter } from 'events';
 
-const bindings = process.electronBinding('app');
-const commandLine = process.electronBinding('command_line');
+const bindings = process.electronBinding('app', 'browser');
+const commandLine = process.electronBinding('command_line', 'common');
 const { app, App } = bindings;
 
 // Only one app object permitted.

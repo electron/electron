@@ -1,7 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { deserialize } from '@electron/internal/common/type-utils';
 
-const { hasSwitch } = process.electronBinding('command_line');
+const { hasSwitch } = process.electronBinding('command_line', 'common');
 
 const enableStacks = hasSwitch('enable-api-filtering-logging');
 

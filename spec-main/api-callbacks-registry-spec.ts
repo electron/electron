@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { CallbacksRegistry } from '../lib/renderer/remote/callbacks-registry';
 import { ifdescribe } from './spec-helpers';
 
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 
 ifdescribe(features.isRemoteModuleEnabled())('CallbacksRegistry module', () => {
   let registry: CallbacksRegistry;

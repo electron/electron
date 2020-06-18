@@ -1,1 +1,1 @@
-export default process.electronBinding('content_tracing');
+export default process.electronBinding('content_tracing', 'browser');

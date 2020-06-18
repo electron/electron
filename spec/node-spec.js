@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { ipcRenderer } = require('electron');
-const features = process.electronBinding('features');
+const features = process.electronBinding('features', 'common');
 
 const { emittedOnce } = require('./events-helpers');
 const { ifit } = require('./spec-helpers');

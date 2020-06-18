@@ -1,5 +1,5 @@
-const { hasSwitch } = process.electronBinding('command_line');
-const binding = process.electronBinding('context_bridge');
+const { hasSwitch } = process.electronBinding('command_line', 'common');
+const binding = process.electronBinding('context_bridge', 'renderer');
 
 const contextIsolationEnabled = hasSwitch('context-isolation');
 
