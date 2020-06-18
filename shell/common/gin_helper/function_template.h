@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "base/optional.h"
 #include "gin/arguments.h"
+#include "native_mate/microtasks_scope.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -213,8 +214,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(base::Callback<ReturnType(ArgTypes...)> callback) {
-    v8::MicrotasksScope script_scope(args_->isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(args_->isolate(), true);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -223,8 +223,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::Callback<void(ArgTypes...)> callback) {
-    v8::MicrotasksScope script_scope(args_->isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    mate::MicrotasksScope microtasks_scope(args_->isolate(), true);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 

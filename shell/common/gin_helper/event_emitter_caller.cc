@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/event_emitter_caller.h"
 
+#include "native_mate/microtasks_scope.h"
 #include "shell/common/api/locker.h"
 #include "shell/common/node_includes.h"
 
@@ -16,8 +17,7 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         const char* method,
                                         ValueVector* args) {
   // Perform microtask checkpoint after running JavaScript.
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  mate::MicrotasksScope microtasks_scope(isolate, true);
   // Use node::MakeCallback to call the callback, and it will also run pending
   // tasks in Node.js.
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
