@@ -303,6 +303,19 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
+action("electron_fuses") {
+  script = "build/fuses/build.py"
+
+  inputs = [ "build/fuses/fuses.json" ]
+
+  outputs = [
+    "$target_gen_dir/fuses.h",
+    "$target_gen_dir/fuses.cc",
+  ]
+
+  args = rebase_path(outputs)
+}
+
 source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -313,6 +326,7 @@ source_set("electron_lib") {
   ]
 
   deps = [
+    ":electron_fuses",
     ":electron_js2c",
     ":electron_version_header",
     ":manifests",
@@ -673,6 +687,8 @@ source_set("electron_lib") {
       "shell/browser/electron_pdf_web_contents_helper_client.h",
     ]
   }
+
+  sources += get_target_outputs(":electron_fuses")
 }
 
 electron_paks("packed_resources") {
