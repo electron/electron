@@ -112,8 +112,8 @@ base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
   return base::string16(out_buffer);
 }
 
-void OnIconDataAvailable(const base::FilePath app_path,
-                         const base::string16 app_display_name,
+void OnIconDataAvailable(const base::FilePath& app_path,
+                         const base::string16& app_display_name,
                          gin_helper::Promise<gin_helper::Dictionary> promise,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
