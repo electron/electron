@@ -121,8 +121,8 @@ void OnIconDataAvailable(const base::FilePath app_path,
     gin_helper::Dictionary dict =
         gin::Dictionary::CreateEmpty(promise.isolate());
 
-    dict.Set("appPath", app_path);
-    dict.Set("displayName", app_display_name);
+    dict.Set("path", app_path);
+    dict.Set("name", app_display_name);
     dict.Set("icon", icon);
     promise.Resolve(dict);
   } else {
@@ -216,8 +216,8 @@ void GetFileIcon(const base::FilePath& path,
   if (icon) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
-    dict.Set("displayName", app_display_name);
-    dict.Set("appPath", normalized_path);
+    dict.Set("name", app_display_name);
+    dict.Set("path", normalized_path);
     promise.Resolve(dict);
   } else {
     icon_manager->LoadIcon(normalized_path, icon_size,
