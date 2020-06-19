@@ -841,18 +841,18 @@ describe('Menu module', function () {
       menu.popup({ window: w });
 
       // Keep a weak reference to the menu.
-      const v8Util = process.electronBinding('v8_util');
-      const map = v8Util.createIDWeakMap<Electron.Menu>();
-      map.set(0, menu);
+      // eslint-disable-next-line no-undef
+      const wr = new (globalThis as any).WeakRef(menu);
 
       setTimeout(() => {
         // Do garbage collection, since |menu| is not referenced in this closure
         // it would be gone after next call.
+        const v8Util = process.electronBinding('v8_util');
         v8Util.requestGarbageCollectionForTesting();
         setTimeout(() => {
           // Try to receive menu from weak reference.
-          if (map.has(0)) {
-            map.get(0)!.closePopup();
+          if (wr.deref()) {
+            wr.deref().closePopup();
             done();
           } else {
             done('Menu is garbage-collected while popuping');

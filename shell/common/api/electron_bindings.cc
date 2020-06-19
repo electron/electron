@@ -25,6 +25,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
@@ -131,9 +132,10 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
     node::Environment* env = *it;
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
-    node::InternalCallbackScope scope(
-        env, v8::Local<v8::Object>(), {0, 0},
-        node::InternalCallbackScope::kAllowEmptyResource);
+    v8::HandleScope handle_scope(env->isolate());
+    node::InternalCallbackScope scope(env, v8::Object::New(env->isolate()),
+                                      {0, 0},
+                                      node::InternalCallbackScope::kNoFlags);
   }
 
   self->pending_next_ticks_.clear();
@@ -271,8 +273,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   v8::Isolate* isolate = promise.isolate();
   gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
   v8::Context::Scope context_scope(
       v8::Local<v8::Context>::New(isolate, context));
 

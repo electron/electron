@@ -29,6 +29,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 
@@ -475,8 +476,7 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  v8::MicrotasksScope script_scope(env->isolate(),
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope(env->isolate());
 
   if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");

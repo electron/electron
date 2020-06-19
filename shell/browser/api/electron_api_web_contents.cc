@@ -1226,18 +1226,6 @@ void WebContents::MessageHost(const std::string& channel,
                  InvokeCallback(), channel, std::move(arguments));
 }
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
-                                            int object_id) {
-  base::ListValue args;
-  args.Append(context_id);
-  args.Append(object_id);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
-                 /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
-                 std::move(args));
-}
-#endif
-
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
   for (ExtendedWebContentsObserver& observer : observers_)

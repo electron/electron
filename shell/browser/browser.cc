@@ -285,6 +285,11 @@ void Browser::NewWindowForTab() {
   for (BrowserObserver& observer : observers_)
     observer.OnNewWindowForTab();
 }
+
+void Browser::DidBecomeActive() {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidBecomeActive();
+}
 #endif
 
 }  // namespace electron

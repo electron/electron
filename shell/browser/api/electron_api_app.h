@@ -106,6 +106,7 @@ class App : public ElectronBrowserClient::Delegate,
       const std::string& type,
       const base::DictionaryValue& user_info) override;
   void OnNewWindowForTab() override;
+  void OnDidBecomeActive() override;
 #endif
 
   // content::ContentBrowserClient:

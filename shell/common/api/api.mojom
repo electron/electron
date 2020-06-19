@@ -15,13 +15,6 @@ interface ElectronRenderer {
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  // This is an API specific to the "remote" module, and will ultimately be
-  // replaced by generic IPC once WeakRef is generally available.
-  [EnableIf=enable_remote_module]
-  DereferenceRemoteJSCallback(
-    string context_id,
-    int32 object_id);
-
   NotifyUserActivation();
 
   TakeHeapSnapshot(handle file) => (bool success);
@@ -78,13 +71,6 @@ interface ElectronBrowser {
   MessageHost(
     string channel,
     blink.mojom.CloneableMessage arguments);
-
-  // This is an API specific to the "remote" module, and will ultimately be
-  // replaced by generic IPC once WeakRef is generally available.
-  [EnableIf=enable_remote_module]
-  DereferenceRemoteJSObject(
-    string context_id,
-    int32 object_id);
 
   UpdateDraggableRegions(
     array<DraggableRegion> regions);
