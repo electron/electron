@@ -5,7 +5,7 @@ const {
   createPowerMonitor,
   getSystemIdleState,
   getSystemIdleTime
-} = process.electronBinding('power_monitor', 'browser');
+} = process._linkedBinding('electron_browser_power_monitor');
 
 class PowerMonitor extends EventEmitter {
   constructor () {

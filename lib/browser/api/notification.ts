@@ -1,7 +1,7 @@
 const {
   Notification: ElectronNotification,
   isSupported
-} = process.electronBinding('notification', 'common');
+} = process._linkedBinding('electron_common_notification');
 
 ElectronNotification.isSupported = isSupported;
 

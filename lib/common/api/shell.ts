@@ -1,1 +1,1 @@
-export default process.electronBinding('shell', 'common');
+export default process._linkedBinding('electron_common_shell');

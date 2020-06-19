@@ -8,7 +8,7 @@ const {
   isValidHeaderName,
   isValidHeaderValue,
   createURLLoader
-} = process.electronBinding('net', 'browser');
+} = process._linkedBinding('electron_browser_net');
 
 const kSupportedProtocols = new Set(['http:', 'https:']);
 

@@ -1,2 +1,2 @@
-const { powerSaveBlocker } = process.electronBinding('power_save_blocker', 'browser');
+const { powerSaveBlocker } = process._linkedBinding('electron_browser_power_save_blocker');
 export default powerSaveBlocker;

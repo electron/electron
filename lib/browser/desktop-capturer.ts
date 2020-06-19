@@ -1,7 +1,7 @@
 const {
   createDesktopCapturer,
   getMediaSourceIdForWebContents: getMediaSourceIdForWebContentsBinding
-} = process.electronBinding('desktop_capturer', 'browser');
+} = process._linkedBinding('electron_browser_desktop_capturer');
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
 
