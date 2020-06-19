@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index bb9a2b177c4304496dab1f1beaedc1ae9d9f55d9..36d06759aac57b1aa813b52c94e2168b8a8f9087 100644
+index c872941b974216d94863bcbf0e597b9c09ca50e2..4e7c3c10255a0eae4d5333f88e51cf7178163a44 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -57,6 +57,10 @@ setupBuffer();

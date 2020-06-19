@@ -41,10 +41,10 @@ index e478c57af873da717c00db73d6719f806280efe1..1c949cab49224a6f1be7685acfd3ed19
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/src/env.h b/src/env.h
-index deeeb2a385ab75fbfd86af619e1aad118f1a0794..5c0392a59b3938b0b6e433024f9dd92e222a1b47 100644
+index c1fda87ecd536f2347f5011414932ec79aebfc60..12ba5b69369e858ee9e743ef06059d6cd5541078 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -887,6 +887,15 @@ class Environment : public MemoryRetainer {
+@@ -888,6 +888,15 @@ class Environment : public MemoryRetainer {
                uint64_t thread_id = kNoThreadId);
    ~Environment() override;
  
@@ -60,7 +60,7 @@ index deeeb2a385ab75fbfd86af619e1aad118f1a0794..5c0392a59b3938b0b6e433024f9dd92e
    void InitializeLibuv(bool start_profiler_idle_notifier);
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
-@@ -1270,6 +1279,9 @@ class Environment : public MemoryRetainer {
+@@ -1271,6 +1280,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  

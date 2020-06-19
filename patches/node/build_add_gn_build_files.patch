@@ -821,10 +821,10 @@ index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a
 +}
 diff --git a/deps/uvwasi/BUILD.gn b/deps/uvwasi/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b1c2cb80193bd0a0c56867428f2da8b46f11b16b
+index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df6369a765c07
 --- /dev/null
 +++ b/deps/uvwasi/BUILD.gn
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,38 @@
 +config("uvwasi_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -856,9 +856,11 @@ index 0000000000000000000000000000000000000000..b1c2cb80193bd0a0c56867428f2da8b4
 +    "src/clocks.c",
 +    "src/fd_table.c",
 +    "src/path_resolver.c",
++    "src/poll_oneoff.c",
 +    "src/uv_mapping.c",
 +    "src/uvwasi.c",
 +    "src/wasi_rights.c",
++    "src/wasi_serdes.c"
 +  ]
 +}
 diff --git a/filenames.json b/filenames.json
@@ -1586,7 +1588,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 49d0f6f8a69b48b79556e36c54daae080a00386b..aa1563e93ee66f1c1a2c6840b3d020dc8f9cef68 100644
+index 3d9276b8c92ad49681147b809a276c8157907b5e..2cc9fa91bf20bbde278e5d333ca485c0c159504e 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
