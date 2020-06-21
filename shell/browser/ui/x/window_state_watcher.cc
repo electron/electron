@@ -55,7 +55,7 @@ void WindowStateWatcher::DidProcessXEvent(x11::Event* x11_event) {
 }
 
 bool WindowStateWatcher::IsWindowStateEvent(x11::Event* x11_event) const {
-  const XEvent& xev = x11_event.xlib_event();
+  XEvent* xev = &x11_event->xlib_event();
   return (static_cast<x11::Atom>(xev->xproperty.atom) == window_state_atom_ &&
           xev->type == PropertyNotify && xev->xproperty.window == widget_);
 }
