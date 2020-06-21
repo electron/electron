@@ -11,14 +11,17 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 668a14bff461e83b2c6d9d7f23d9674ff081ef12..b0ba36a3c670a21aa5223d03e35502e69d29a7d2 100644
+index 668a14bff461e83b2c6d9d7f23d9674ff081ef12..674f141e80c0316fd47558c4d428a9706ac5a7b6 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -356,9 +356,11 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -353,12 +353,14 @@ void PrintJob::StartPdfToEmfConversion(
+   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
+   // because |web_contents| was null. As a result, this section has many more
+   // pointer checks to avoid crashing.
++#if 0
    content::WebContents* web_contents = worker_->GetWebContents();
    content::BrowserContext* context =
        web_contents ? web_contents->GetBrowserContext() : nullptr;
-+#if 0
    PrefService* prefs =
        context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
 -  bool print_with_reduced_rasterization = PrintWithReducedRasterization(prefs);
