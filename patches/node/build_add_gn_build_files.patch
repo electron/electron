@@ -942,7 +942,7 @@ index 0000000000000000000000000000000000000000..f13b471d17128468bed06e66bd03a2ea
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..c94fb6b3c4483b0b9270dcf582cdf1520b376e7e
+index 0000000000000000000000000000000000000000..6366ecf805106b4cce899d365bc183f91e8aa179
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,500 @@
@@ -985,15 +985,18 @@ index 0000000000000000000000000000000000000000..c94fb6b3c4483b0b9270dcf582cdf152
 +    {
 +      "dest_dir": "include/node//cppgc/internal/",
 +      "files": [
-+        "//v8/include/cppgc/internal/accessors.h",
 +        "//v8/include/cppgc/internal/api-constants.h",
++        "//v8/include/cppgc/internal/atomic-entry-flag.h",
++        "//v8/include/cppgc/internal/caged-heap-local-data.h",
 +        "//v8/include/cppgc/internal/compiler-specific.h",
 +        "//v8/include/cppgc/internal/finalizer-trait.h",
 +        "//v8/include/cppgc/internal/gc-info.h",
 +        "//v8/include/cppgc/internal/logging.h",
 +        "//v8/include/cppgc/internal/persistent-node.h",
 +        "//v8/include/cppgc/internal/pointer-policies.h",
-+        "//v8/include/cppgc/internal/prefinalizer-handler.h"
++        "//v8/include/cppgc/internal/prefinalizer-handler.h",
++        "//v8/include/cppgc/internal/process-heap.h",
++        "//v8/include/cppgc/internal/write-barrier.h"
 +      ]
 +    },
 +    {
@@ -1362,6 +1365,8 @@ index 0000000000000000000000000000000000000000..c94fb6b3c4483b0b9270dcf582cdf152
 +    "src/base_object.h",
 +    "src/base_object-inl.h",
 +    "src/base64.h",
++    "src/callback_queue.h",
++    "src/callback_queue-inl.h",
 +    "src/connect_wrap.h",
 +    "src/connection_wrap.h",
 +    "src/debug_utils.h",
@@ -1441,11 +1446,6 @@ index 0000000000000000000000000000000000000000..c94fb6b3c4483b0b9270dcf582cdf152
 +    "src/tty_wrap.h",
 +    "src/udp_wrap.h",
 +    "src/util.h",
-+    "src/util-inl.h",
-+    "deps/http_parser/http_parser.h",
-+    "deps/v8/include/v8.h"
-+  ]
-+}
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c477aecf6
