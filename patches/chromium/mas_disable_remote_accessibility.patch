@@ -117,7 +117,7 @@ index 51f91581aff32cd42b74c7086f51282cbc3629e8..8fa02de5ed90538923cd858a92f339da
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index e2bbde83b8eaffd34aec149e034117adeb2583cd..1982a4e885b923a7a91c869e625a06f05ce89b90 100644
+index 026bb184e3ecf21185900d3102fbbdb4bc9e1100..aef2f3625465d5de36d0ce496f7133865a7ba18a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -233,8 +233,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
@@ -131,7 +131,7 @@ index e2bbde83b8eaffd34aec149e034117adeb2583cd..1982a4e885b923a7a91c869e625a06f0
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1356,8 +1358,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
+@@ -1357,8 +1359,10 @@ RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessible() {
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -142,7 +142,7 @@ index e2bbde83b8eaffd34aec149e034117adeb2583cd..1982a4e885b923a7a91c869e625a06f0
    return [GetInProcessNSView() window];
  }
  
-@@ -1389,9 +1393,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
+@@ -1390,9 +1394,11 @@ id RenderWidgetHostViewMac::GetFocusedBrowserAccessibilityElement() {
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -154,7 +154,7 @@ index e2bbde83b8eaffd34aec149e034117adeb2583cd..1982a4e885b923a7a91c869e625a06f0
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1878,12 +1884,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
+@@ -1879,12 +1885,14 @@ void RenderWidgetHostViewMac::StopSpeaking() {
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {

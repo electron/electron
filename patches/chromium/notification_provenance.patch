@@ -108,10 +108,10 @@ index 4bf25bf1fa69f7d3869369172d375e2e489e62a1..f80ef2cecc8b111dc54e109646573a59
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 020ca3ab104f86e959de310eaccb457a2570b4df..09afb2ac6087304e17490b1ad771d792a0e9b26a 100644
+index 65bbefe6d5faf2778836a7e8cdbc885846de778f..e7e04894101ebe9964a4a34f361a114990f1d63c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2124,7 +2124,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2148,7 +2148,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

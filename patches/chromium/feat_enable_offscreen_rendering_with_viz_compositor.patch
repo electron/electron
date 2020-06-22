@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 1bfb8188340eecae0464acf742ba89b54d9d3df2..0f035741c349ee1cbc014baa3df306ec0df555e8 100644
+index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261cb8a6f58 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -111,6 +111,8 @@ viz_component("service") {
@@ -475,10 +475,10 @@ index 641a63e8c18e3e81acacb67a59b285dac44abbb1..72b74ec00402ff7b5b4853c08365eb2f
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
-index 60e1149205750740ab5bde81029e7e3b370bd1ed..abfb772cd318b4cca3aed167a8808839d947f896 100644
+index 599d24e260ae85a2f71054cc64f296875b97170d..70269ce3332edd07f1760476f3592d08c3dc3130 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -29,6 +29,7 @@ class Compositor;
+@@ -33,6 +33,7 @@ class Compositor;
  
  namespace viz {
  class HostFrameSinkManager;
@@ -486,7 +486,7 @@ index 60e1149205750740ab5bde81029e7e3b370bd1ed..abfb772cd318b4cca3aed167a8808839
  }
  
  namespace mojo {
-@@ -79,6 +80,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+@@ -83,6 +84,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
    // For destroying the GL context/surface that draw to a platform window before
    // the platform window is destroyed.
    friend class viz::HostFrameSinkManager;
