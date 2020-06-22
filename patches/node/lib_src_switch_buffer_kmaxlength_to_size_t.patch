@@ -23,7 +23,7 @@ Reviewed-By: Tobias Nießen <tniessen@tnie.de>
 Reviewed-By: Shelley Vohr <codebytere@gmail.com>
 
 diff --git a/lib/fs.js b/lib/fs.js
-index 4a19e3b6033711d8c77d1ac9ea7e0f2cd9742ce9..59a41fe62c68c05ab09ad280e4e9ecdb2ca23349 100644
+index 5fb1784605700e22ac4d6ffcf30acf47307b95a4..d585622037430145f2ce16bdb321e0fb840493da 100644
 --- a/lib/fs.js
 +++ b/lib/fs.js
 @@ -24,6 +24,10 @@
@@ -65,10 +65,10 @@ index 4a19e3b6033711d8c77d1ac9ea7e0f2cd9742ce9..59a41fe62c68c05ab09ad280e4e9ecdb
      }
      buffer = Buffer.allocUnsafe(size);
 diff --git a/lib/internal/errors.js b/lib/internal/errors.js
-index 1e987cefb156df8e7a494bcb80547ae8e0ea649f..567d82c7bd12a7233481d80042d331afd7471674 100644
+index b69ab5658d27f6ffe69f9119f307d89a3a0fed53..afecc5d9ce26a6d49e4121729d5727db168e1ef4 100644
 --- a/lib/internal/errors.js
 +++ b/lib/internal/errors.js
-@@ -822,9 +822,7 @@ E('ERR_FALSY_VALUE_REJECTION', function(reason) {
+@@ -801,9 +801,7 @@ E('ERR_FALSY_VALUE_REJECTION', function(reason) {
    this.reason = reason;
    return 'Promise was rejected with falsy value';
  }, Error);
@@ -80,7 +80,7 @@ index 1e987cefb156df8e7a494bcb80547ae8e0ea649f..567d82c7bd12a7233481d80042d331af
    'Symlink type must be one of "dir", "file", or "junction". Received "%s"',
    Error); // Switch to TypeError. The current implementation does not seem right
 diff --git a/lib/internal/fs/promises.js b/lib/internal/fs/promises.js
-index d653724474f314cd1c6bebe0a2d9285439d54928..98335fdc1027409a2f17ae50fba378f5d78b2cab 100644
+index 927bf739e79763621d9d16329414fc0039fe8e4a..a87fa6df80a9f875fcf0cfa4d27dfcf68dbe9f3c 100644
 --- a/lib/internal/fs/promises.js
 +++ b/lib/internal/fs/promises.js
 @@ -1,5 +1,9 @@
@@ -102,7 +102,7 @@ index d653724474f314cd1c6bebe0a2d9285439d54928..98335fdc1027409a2f17ae50fba378f5
  const {
    ERR_FS_FILE_TOO_LARGE,
    ERR_INVALID_ARG_TYPE,
-@@ -166,7 +170,7 @@ async function readFileHandle(filehandle, options) {
+@@ -162,7 +166,7 @@ async function readFileHandle(filehandle, options) {
      size = 0;
    }
  
@@ -112,7 +112,7 @@ index d653724474f314cd1c6bebe0a2d9285439d54928..98335fdc1027409a2f17ae50fba378f5
  
    const chunks = [];
 diff --git a/lib/internal/fs/utils.js b/lib/internal/fs/utils.js
-index 6f096336f20e10727b6328af9f0130b37de74050..ff26568bd95e0c966b7f3a7c63d3f594b411fbab 100644
+index e143f985a4da99d93067ca1125c6016f343015db..d581066f4e419bceb1fb2f7ccbce47e92ca5cebe 100644
 --- a/lib/internal/fs/utils.js
 +++ b/lib/internal/fs/utils.js
 @@ -12,7 +12,7 @@ const {
@@ -135,7 +135,7 @@ index 6f096336f20e10727b6328af9f0130b37de74050..ff26568bd95e0c966b7f3a7c63d3f594
  let fs;
  function lazyLoadFs() {
    if (!fs) {
-@@ -525,7 +529,7 @@ const validateOffsetLengthWrite = hideStackFrames(
+@@ -523,7 +527,7 @@ const validateOffsetLengthWrite = hideStackFrames(
        throw new ERR_OUT_OF_RANGE('offset', `<= ${byteLength}`, offset);
      }
  
