@@ -1236,7 +1236,7 @@ void WebContents::DereferenceRemoteJSObject(const std::string& context_id,
   args.Append(context_id);
   args.Append(object_id);
   args.Append(ref_count);
-  EmitWithSender("-ipc-message", bindings_.dispatch_context(), InvokeCallback(),
+  EmitWithSender("-ipc-message", receivers_.current_context(), InvokeCallback(),
                  /* internal */ true, "ELECTRON_BROWSER_DEREFERENCE",
                  std::move(args));
 }
