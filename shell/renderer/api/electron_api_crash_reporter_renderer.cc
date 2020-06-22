@@ -3,9 +3,12 @@
 // found in the LICENSE file.
 
 #include "base/bind.h"
-#include "shell/common/crash_keys.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+
+#if !defined(MAS_BUILD)
+#include "shell/common/crash_keys.h"
+#endif
 
 namespace {
 
