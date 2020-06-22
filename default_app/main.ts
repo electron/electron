@@ -149,10 +149,10 @@ function startRepl () {
   // Prevent quitting.
   app.on('window-all-closed', () => {});
 
-  const colors = { GREEN: '32', MAGENTA: '35' };
+  const GREEN = '32';
   const colorize = (color: string, s: string) => `\x1b[${color}m${s}\x1b[0m`;
-  const electronVersion = colorize(colors.MAGENTA, `v${process.versions.electron}`);
-  const nodeVersion = colorize(colors.GREEN, `v${process.versions.node}`);
+  const electronVersion = colorize(GREEN, `v${process.versions.electron}`);
+  const nodeVersion = colorize(GREEN, `v${process.versions.node}`);
 
   console.info(`
     Welcome to the Electron.js REPL \\[._.]/
