@@ -14,12 +14,7 @@ describe('ipc main module', () => {
     afterEach(() => { ipcMain.removeAllListeners('send-sync-message'); });
 
     it('does not crash when reply is not sent and browser is destroyed', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      const w = new BrowserWindow({ show: false });
       ipcMain.once('send-sync-message', (event) => {
         event.returnValue = null;
         done();
@@ -28,12 +23,7 @@ describe('ipc main module', () => {
     });
 
     it('does not crash when reply is sent by multiple listeners', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      const w = new BrowserWindow({ show: false });
       ipcMain.on('send-sync-message', (event) => {
         event.returnValue = null;
       });

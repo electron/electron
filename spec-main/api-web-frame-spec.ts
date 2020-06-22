@@ -9,12 +9,7 @@ describe('webFrame module', () => {
   afterEach(closeAllWindows);
 
   it('calls a spellcheck provider', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true
-      }
-    });
+    const w = new BrowserWindow({ show: false });
     await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'));
     w.focus();
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true);

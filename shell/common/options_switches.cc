@@ -108,9 +108,6 @@ const char kPreloadScript[] = "preload";
 // Like --preload, but the passed argument is an URL.
 const char kPreloadURL[] = "preloadURL";
 
-// Enable the node integration.
-const char kNodeIntegration[] = "nodeIntegration";
-
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
@@ -236,7 +233,6 @@ const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
 const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
 const char kPreloadScripts[] = "preload-scripts";
-const char kNodeIntegration[] = "node-integration";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[] = "opener-id";

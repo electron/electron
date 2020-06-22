@@ -118,7 +118,7 @@ describe('chrome extensions', () => {
     beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
-      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       w.loadURL(url);
       await emittedOnce(w.webContents, 'dom-ready');
     });
@@ -163,7 +163,7 @@ describe('chrome extensions', () => {
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       try {
         const p = emittedOnce(ipcMain, 'storage-success');
         await w.loadURL(url);
@@ -179,7 +179,7 @@ describe('chrome extensions', () => {
     it('executeScript', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(url);
 
       const message = { method: 'executeScript', args: ['1 + 2'] };
@@ -194,7 +194,7 @@ describe('chrome extensions', () => {
     it('connect', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(url);
 
       const portName = require('uuid').v4();
@@ -210,7 +210,7 @@ describe('chrome extensions', () => {
     it('sendMessage receives the response', async function () {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(url);
 
       const message = { method: 'sendMessage', args: ['Hello World!'] };
@@ -228,7 +228,7 @@ describe('chrome extensions', () => {
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       try {
         w.loadURL(url);
         const [, resp] = await emittedOnce(ipcMain, 'bg-page-message-response');
@@ -311,7 +311,7 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = emittedOnce(ipcMain, 'winning');
-      const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: customSession } });
       await w.loadURL(url);
       w.webContents.openDevTools();
       showLastDevToolsPanel(w);

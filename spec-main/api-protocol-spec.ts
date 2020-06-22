@@ -685,12 +685,7 @@ describe('protocol module', () => {
     let w: BrowserWindow = null as unknown as BrowserWindow;
 
     beforeEach(() => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      w = new BrowserWindow({ show: false });
     });
 
     afterEach(async () => {
@@ -837,7 +832,7 @@ describe('protocol module', () => {
         callback('');
       });
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true });
+      const newContents: WebContents = (webContents as any).create({});
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {
@@ -935,7 +930,7 @@ describe('protocol module', () => {
       await registerStreamProtocol(standardScheme, protocolHandler);
       await registerStreamProtocol('stream', protocolHandler);
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true });
+      const newContents: WebContents = (webContents as any).create({});
       try {
         newContents.loadURL(testingScheme + '://fake-host');
         const [, response] = await emittedOnce(ipcMain, 'result');

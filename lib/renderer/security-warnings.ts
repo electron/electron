@@ -128,8 +128,8 @@ const warnAboutInsecureResources = function () {
  *
  * Logs a warning message about Node integration.
  */
-const warnAboutNodeWithRemoteContent = function (nodeIntegration: boolean) {
-  if (!nodeIntegration || isLocalhost()) return;
+const warnAboutNodeWithRemoteContent = function () {
+  if (process.sandboxed || isLocalhost()) return;
 
   if (getIsRemoteProtocol()) {
     const warning = `This renderer process has Node.js integration enabled
@@ -286,9 +286,9 @@ const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electr
 //   #16 Filter the `remote` module
 
 const logSecurityWarnings = function (
-  webPreferences: Electron.WebPreferences | undefined, nodeIntegration: boolean
+  webPreferences: Electron.WebPreferences | undefined
 ) {
-  warnAboutNodeWithRemoteContent(nodeIntegration);
+  warnAboutNodeWithRemoteContent();
   warnAboutDisabledWebSecurity(webPreferences);
   warnAboutInsecureResources();
   warnAboutInsecureContentAllowed(webPreferences);
@@ -307,11 +307,11 @@ const getWebPreferences = async function () {
   }
 };
 
-export function securityWarnings (nodeIntegration: boolean) {
+export function securityWarnings () {
   const loadHandler = async function () {
     if (shouldLogSecurityWarnings()) {
       const webPreferences = await getWebPreferences();
-      logSecurityWarnings(webPreferences, nodeIntegration);
+      logSecurityWarnings(webPreferences);
     }
   };
   window.addEventListener('load', loadHandler, { once: true });

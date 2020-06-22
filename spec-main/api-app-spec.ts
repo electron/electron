@@ -408,12 +408,7 @@ describe('app module', () => {
 
     // FIXME: re-enable this test on win32.
     ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
 
       const emitted = emittedOnce(app, 'renderer-process-crashed');
@@ -425,12 +420,7 @@ describe('app module', () => {
 
     // FIXME: re-enable this test on win32.
     ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
 
       const emitted = emittedOnce(app, 'render-process-gone');
@@ -443,12 +433,7 @@ describe('app module', () => {
 
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
       it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true
-          }
-        });
+        w = new BrowserWindow({ show: false });
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'desktop-capturer-get-sources');
@@ -464,7 +449,6 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true
           }
         });
@@ -482,7 +466,6 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true
           }
         });
@@ -500,7 +483,6 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true
           }
         });
@@ -518,7 +500,6 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true
           }
         });
@@ -535,7 +516,6 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true
           }
         });
@@ -808,7 +788,6 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true,
           partition: 'empty-certificate'
         }
       });

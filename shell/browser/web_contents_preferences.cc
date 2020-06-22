@@ -119,7 +119,6 @@ WebContentsPreferences::WebContentsPreferences(
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
-  SetDefaultBoolIfUndefined(options::kNodeIntegration, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInSubFrames, false);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
@@ -279,10 +278,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kExperimentalFeatures))
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
-
-  // Check if we have node integration specified.
-  if (IsEnabled(options::kNodeIntegration))
-    command_line->AppendSwitch(switches::kNodeIntegration);
 
   // Whether to enable node integration in Worker.
   if (IsEnabled(options::kNodeIntegrationInWorker))

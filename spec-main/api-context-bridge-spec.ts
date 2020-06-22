@@ -76,7 +76,6 @@ describe('contextBridge', () => {
           show: false,
           webPreferences: {
             contextIsolation: true,
-            nodeIntegration: true,
             sandbox: useSandbox,
             preload: path.resolve(tmpDir, 'preload.js'),
             additionalArguments: ['--unsafely-expose-electron-internals-for-testing']

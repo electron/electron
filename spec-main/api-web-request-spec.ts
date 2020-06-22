@@ -477,7 +477,6 @@ describe('webRequest module', () => {
 
       const contents = (webContents as any).create({
         session: ses,
-        nodeIntegration: true,
         webSecurity: false
       });
 

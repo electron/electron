@@ -89,7 +89,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.close()', () => {
     let w = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -176,7 +176,7 @@ describe('BrowserWindow module', () => {
   describe('window.close()', () => {
     let w = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -202,7 +202,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.destroy()', () => {
     let w = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -252,7 +252,7 @@ describe('BrowserWindow module', () => {
     });
 
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -446,7 +446,7 @@ describe('BrowserWindow module', () => {
     describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
       let w = null as unknown as BrowserWindow;
       beforeEach(() => {
-        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, sandbox } });
+        w = new BrowserWindow({ show: false, webPreferences: { sandbox } });
       });
       afterEach(async () => {
         await closeWindow(w);
@@ -1740,7 +1740,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     describe('"preload" option', () => {
-      const doesNotLeakSpec = (name: string, webPrefs: { nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean }) => {
+      const doesNotLeakSpec = (name: string, webPrefs: { sandbox: boolean, contextIsolation: boolean }) => {
         it(name, async () => {
           const w = new BrowserWindow({
             webPreferences: {
@@ -1759,55 +1759,20 @@ describe('BrowserWindow module', () => {
         });
       };
       doesNotLeakSpec('does not leak require', {
-        nodeIntegration: false,
         sandbox: false,
         contextIsolation: false
       });
       doesNotLeakSpec('does not leak require when sandbox is enabled', {
-        nodeIntegration: false,
         sandbox: true,
         contextIsolation: false
       });
       doesNotLeakSpec('does not leak require when context isolation is enabled', {
-        nodeIntegration: false,
         sandbox: false,
         contextIsolation: true
       });
       doesNotLeakSpec('does not leak require when context isolation and sandbox are enabled', {
-        nodeIntegration: false,
         sandbox: true,
         contextIsolation: true
-      });
-      it('does not leak any node globals on the window object with nodeIntegration is disabled', async () => {
-        let w = new BrowserWindow({
-          webPreferences: {
-            contextIsolation: false,
-            nodeIntegration: false,
-            preload: path.resolve(fixtures, 'module', 'empty.js')
-          },
-          show: false
-        });
-        w.loadFile(path.join(fixtures, 'api', 'globals.html'));
-        const [, notIsolated] = await emittedOnce(ipcMain, 'leak-result');
-        expect(notIsolated).to.have.property('globals');
-
-        w.destroy();
-        w = new BrowserWindow({
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-            preload: path.resolve(fixtures, 'module', 'empty.js')
-          },
-          show: false
-        });
-        w.loadFile(path.join(fixtures, 'api', 'globals.html'));
-        const [, isolated] = await emittedOnce(ipcMain, 'leak-result');
-        expect(isolated).to.have.property('globals');
-        const notIsolatedGlobals = new Set(notIsolated.globals);
-        for (const isolatedGlobal of isolated.globals) {
-          notIsolatedGlobals.delete(isolatedGlobal);
-        }
-        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isoalted renderer should have no additional globals');
       });
 
       it('loads the script before other scripts in window', async () => {
@@ -1815,7 +1780,6 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             preload
           }
         });
@@ -1828,7 +1792,6 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true,
             preload
           }
@@ -1842,7 +1805,6 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             preload
           }
         });
@@ -1904,7 +1866,6 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             preload,
             additionalArguments: ['--my-magic-arg']
           }
@@ -1919,7 +1880,6 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             preload,
             additionalArguments: ['--my-magic-arg=foo']
           }
@@ -2440,7 +2400,6 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true,
             nativeWindowOpen: true,
             // tests relies on preloads in opened windows
             nodeIntegrationInSubFrames: true
@@ -2636,7 +2595,7 @@ describe('BrowserWindow module', () => {
   describe('beforeunload handler', function () {
     let w: BrowserWindow = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
     });
     afterEach(closeAllWindows);
 
@@ -2739,10 +2698,7 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({
         show: false,
         width: 100,
-        height: 100,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        height: 100
       });
 
       let readyToShow = false;
@@ -2763,10 +2719,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform !== 'win32')('visibilityState changes when window is hidden', async () => {
       const w = new BrowserWindow({
         width: 100,
-        height: 100,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        height: 100
       });
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
@@ -2790,10 +2743,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform !== 'win32')('visibilityState changes when window is shown', async () => {
       const w = new BrowserWindow({
         width: 100,
-        height: 100,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        height: 100
       });
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
@@ -2810,10 +2760,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform !== 'win32')('visibilityState changes when window is shown inactive', async () => {
       const w = new BrowserWindow({
         width: 100,
-        height: 100,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        height: 100
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
       if (process.platform === 'darwin') {
@@ -2830,10 +2777,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'darwin')('visibilityState changes when window is minimized', async () => {
       const w = new BrowserWindow({
         width: 100,
-        height: 100,
-        webPreferences: {
-          nodeIntegration: true
-        }
+        height: 100
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
@@ -2860,8 +2804,7 @@ describe('BrowserWindow module', () => {
         width: 100,
         height: 100,
         webPreferences: {
-          backgroundThrottling: false,
-          nodeIntegration: true
+          backgroundThrottling: false
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
@@ -2894,7 +2837,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('emits when window.open is called', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
         e.preventDefault();
         expect(url).to.equal('http://host/');
@@ -2918,7 +2861,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits when link with target is called', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       w.webContents.once('new-window', (e, url, frameName) => {
         e.preventDefault();
         expect(url).to.equal('http://host/');

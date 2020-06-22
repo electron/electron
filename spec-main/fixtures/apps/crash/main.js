@@ -27,7 +27,7 @@ app.whenReady().then(() => {
   if (crashType === 'main') {
     process.crash();
   } else if (crashType === 'renderer') {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false });
     w.loadURL('about:blank');
     if (setExtraParameters) {
       w.webContents.executeJavaScript(`

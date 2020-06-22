@@ -93,7 +93,6 @@ describe('webContents module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true,
           sandbox: false,
           contextIsolation: false
         }
@@ -506,7 +505,7 @@ describe('webContents module', () => {
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
       const keyDown = new Promise(resolve => {
         ipcMain.once('keydown', (event, key) => resolve(key));
@@ -647,7 +646,7 @@ describe('webContents module', () => {
   describe('sendInputEvent(event)', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
     });
     afterEach(closeAllWindows);
@@ -771,7 +770,7 @@ describe('webContents module', () => {
     describe('when the web contents is hidden', () => {
       afterEach(closeAllWindows);
       it('does not blur the focused window', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false });
         w.show();
         await w.loadURL('about:blank');
         w.focus();
@@ -945,7 +944,7 @@ describe('webContents module', () => {
     });
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       let finalNavigation = false;
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host];
@@ -973,7 +972,7 @@ describe('webContents module', () => {
     });
 
     it('can propagate zoom level across same session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       const w2 = new BrowserWindow({ show: false });
       w2.webContents.on('did-finish-load', () => {
         const zoomLevel1 = w.webContents.zoomLevel;
@@ -993,7 +992,7 @@ describe('webContents module', () => {
     });
 
     it('cannot propagate zoom level across different session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       const w2 = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1052,7 +1051,7 @@ describe('webContents module', () => {
     });
 
     it('cannot propagate when used with webframe', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       let finalZoomLevel = 0;
       const w2 = new BrowserWindow({
         show: false
@@ -1098,7 +1097,7 @@ describe('webContents module', () => {
       });
 
       it('cannot persist zoom level after navigation with webFrame', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false });
         const source = `
           const {ipcRenderer, webFrame} = require('electron')
           webFrame.setZoomLevel(0.6)
@@ -1334,7 +1333,7 @@ describe('webContents module', () => {
   describe('ipc-message event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends an asynchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true });
       await w.webContents.loadURL('about:blank');
       w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.send('message', 'Hello World!')
@@ -1349,7 +1348,7 @@ describe('webContents module', () => {
   describe('ipc-message-sync event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends a synchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true });
       await w.webContents.loadURL('about:blank');
       const promise: Promise<[string, string]> = new Promise(resolve => {
         w.webContents.once('ipc-message-sync', (event, channel, arg) => {
@@ -1704,7 +1703,7 @@ describe('webContents module', () => {
     // Privacy > Accessibility and grant your terminal the permission to control
     // your computer.
     ifit(hasRobotJS)('can receive and handle menu events', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true });
       w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
 
       // Ensure the devtools are loaded
@@ -1746,7 +1745,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
 
     it('can get multiple shared workers', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
@@ -1760,7 +1759,7 @@ describe('webContents module', () => {
     });
 
     it('can inspect a specific shared worker', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));

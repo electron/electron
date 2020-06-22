@@ -9,7 +9,7 @@ describe('ipcRenderer module', () => {
 
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
     await w.loadURL('about:blank');
   });
   after(async () => {
@@ -186,7 +186,7 @@ describe('ipcRenderer module', () => {
   describe('after context is released', () => {
     it('throws an exception', async () => {
       const error = await w.webContents.executeJavaScript(`(${() => {
-        const child = window.open('', 'child', 'show=no,nodeIntegration=yes')! as any;
+        const child = window.open('', 'child', 'show=no')! as any;
         const childIpc = child.require('electron').ipcRenderer;
         child.close();
         return new Promise(resolve => {

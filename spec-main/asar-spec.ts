@@ -15,14 +15,7 @@ describe('asar package', () => {
         ipcMain.removeAllListeners('dirname');
       });
 
-      const w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      const w = new BrowserWindow({ show: false });
       const p = path.resolve(asarDir, 'web.asar', 'index.html');
       ipcMain.once('dirname', function (event, dirname) {
         expect(dirname).to.equal(path.dirname(p));
@@ -36,14 +29,7 @@ describe('asar package', () => {
         ipcMain.removeAllListeners('ping');
       });
 
-      const w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      const w = new BrowserWindow({ show: false });
       const p = path.resolve(asarDir, 'script.asar', 'index.html');
       w.loadFile(p);
       ipcMain.once('ping', function (event, message) {
@@ -59,14 +45,7 @@ describe('asar package', () => {
         ipcMain.removeAllListeners('asar-video');
       });
 
-      const w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        webPreferences: {
-          nodeIntegration: true
-        }
-      });
+      const w = new BrowserWindow({ show: false });
       const p = path.resolve(asarDir, 'video.asar', 'index.html');
       w.loadFile(p);
       ipcMain.on('asar-video', function (event, message, error) {

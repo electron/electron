@@ -336,7 +336,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       // 2. generate a crash in the renderer.
       remotely(() => {
         const { BrowserWindow } = require('electron');
-        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const bw = new BrowserWindow({ show: false });
         bw.loadURL('about:blank');
         bw.webContents.executeJavaScript('process.crash()');
       });
@@ -412,7 +412,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       const rendererParameters = await remotely(async () => {
         const { crashReporter, BrowserWindow } = require('electron');
         crashReporter.start({ submitURL: 'http://' });
-        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const bw = new BrowserWindow({ show: false });
         bw.loadURL('about:blank');
         await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
         return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
@@ -462,7 +462,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       } else if (processType === 'renderer') {
         return remotely(() => {
           const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          const bw = new BrowserWindow({ show: false });
           bw.loadURL('about:blank');
           bw.webContents.executeJavaScript('process.crash()');
         });

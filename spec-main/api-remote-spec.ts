@@ -49,7 +49,7 @@ function makeRemotely (windowGetter: () => BrowserWindow) {
 function makeWindow () {
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { enableRemoteModule: true } });
     await w.loadURL('about:blank');
     await w.webContents.executeJavaScript(`{
       const chai_1 = window.chai_1 = require('chai')
@@ -65,7 +65,7 @@ function makeWindow () {
 function makeEachWindow () {
   let w: BrowserWindow;
   beforeEach(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { enableRemoteModule: true } });
     await w.loadURL('about:blank');
     await w.webContents.executeJavaScript(`{
       const chai_1 = window.chai_1 = require('chai')
@@ -348,7 +348,6 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true,
           enableRemoteModule: true
         }
       });
@@ -437,7 +436,6 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true,
           enableRemoteModule: true
         }
       });

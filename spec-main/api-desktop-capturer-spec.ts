@@ -17,7 +17,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   let w: BrowserWindow;
 
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+    w = new BrowserWindow({ show: false });
     await w.loadURL('about:blank');
   });
 

@@ -243,7 +243,7 @@ describe('session module', () => {
   describe('ses.clearStorageData(options)', () => {
     afterEach(closeAllWindows);
     it('clears localstorage data', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
       const options = {
         origin: 'file://',
@@ -326,8 +326,7 @@ describe('session module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: partitionName,
-          nodeIntegration: true
+          partition: partitionName
         }
       });
       customSession = session.fromPartition(partitionName);
@@ -860,8 +859,7 @@ describe('session module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'very-temp-permision-handler',
-          nodeIntegration: true
+          partition: 'very-temp-permision-handler'
         }
       });
 

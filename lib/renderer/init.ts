@@ -68,7 +68,6 @@ const parseOption = function<T> (
 };
 
 const contextIsolation = hasSwitch('context-isolation');
-const nodeIntegration = hasSwitch('node-integration');
 const webviewTag = hasSwitch('webview-tag');
 const isHiddenPage = hasSwitch('hidden-page');
 const usesNativeWindowOpen = hasSwitch('native-window-open');
@@ -109,72 +108,56 @@ if (process.isMainFrame) {
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
 
-if (nodeIntegration) {
-  // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
-  global.module = new Module('electron/js2c/renderer_init');
-  global.require = makeRequireFunction(global.module);
+// Export node bindings to global.
+const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+global.module = new Module('electron/js2c/renderer_init');
+global.require = makeRequireFunction(global.module);
 
-  // Set the __filename to the path of html file if it is file: protocol.
-  if (window.location.protocol === 'file:') {
-    const location = window.location;
-    let pathname = location.pathname;
+// Set the __filename to the path of html file if it is file: protocol.
+if (window.location.protocol === 'file:') {
+  const location = window.location;
+  let pathname = location.pathname;
 
-    if (process.platform === 'win32') {
-      if (pathname[0] === '/') pathname = pathname.substr(1);
+  if (process.platform === 'win32') {
+    if (pathname[0] === '/') pathname = pathname.substr(1);
 
-      const isWindowsNetworkSharePath = location.hostname.length > 0 && process.resourcesPath.startsWith('\\');
-      if (isWindowsNetworkSharePath) {
-        pathname = `//${location.host}/${pathname}`;
-      }
-    }
-
-    global.__filename = path.normalize(decodeURIComponent(pathname));
-    global.__dirname = path.dirname(global.__filename);
-
-    // Set module's filename so relative require can work as expected.
-    global.module.filename = global.__filename;
-
-    // Also search for module under the html file.
-    global.module.paths = Module._nodeModulePaths(global.__dirname);
-  } else {
-    // For backwards compatibility we fake these two paths here
-    global.__filename = path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js');
-    global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'renderer');
-
-    if (appPath) {
-      // Search for module under the app directory
-      global.module.paths = Module._nodeModulePaths(appPath);
+    const isWindowsNetworkSharePath = location.hostname.length > 0 && process.resourcesPath.startsWith('\\');
+    if (isWindowsNetworkSharePath) {
+      pathname = `//${location.host}/${pathname}`;
     }
   }
 
-  // Redirect window.onerror to uncaughtException.
-  window.onerror = function (_message, _filename, _lineno, _colno, error) {
-    if (global.process.listenerCount('uncaughtException') > 0) {
-      // We do not want to add `uncaughtException` to our definitions
-      // because we don't want anyone else (anywhere) to throw that kind
-      // of error.
-      global.process.emit('uncaughtException' as any, error as any);
-      return true;
-    } else {
-      return false;
-    }
-  };
+  global.__filename = path.normalize(decodeURIComponent(pathname));
+  global.__dirname = path.dirname(global.__filename);
+
+  // Set module's filename so relative require can work as expected.
+  global.module.filename = global.__filename;
+
+  // Also search for module under the html file.
+  global.module.paths = Module._nodeModulePaths(global.__dirname);
 } else {
-  // Delete Node's symbols after the Environment has been loaded in a
-  // non context-isolated environment
-  if (!contextIsolation) {
-    process.once('loaded', function () {
-      delete global.process;
-      delete global.Buffer;
-      delete global.setImmediate;
-      delete global.clearImmediate;
-      delete global.global;
-      delete global.root;
-      delete global.GLOBAL;
-    });
+  // For backwards compatibility we fake these two paths here
+  global.__filename = path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js');
+  global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'renderer');
+
+  if (appPath) {
+    // Search for module under the app directory
+    global.module.paths = Module._nodeModulePaths(appPath);
   }
 }
+
+// Redirect window.onerror to uncaughtException.
+window.onerror = function (_message, _filename, _lineno, _colno, error) {
+  if (global.process.listenerCount('uncaughtException') > 0) {
+    // We do not want to add `uncaughtException` to our definitions
+    // because we don't want anyone else (anywhere) to throw that kind
+    // of error.
+    global.process.emit('uncaughtException' as any, error as any);
+    return true;
+  } else {
+    return false;
+  }
+};
 
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
@@ -191,5 +174,5 @@ for (const preloadScript of preloadScripts) {
 // Warn about security issues
 if (process.isMainFrame) {
   const { securityWarnings } = require('@electron/internal/renderer/security-warnings');
-  securityWarnings(nodeIntegration);
+  securityWarnings(true);
 }

@@ -73,12 +73,7 @@ describe('security warnings', () => {
   });
 
   it('should warn about Node.js integration with remote content', async () => {
-    w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true
-      }
-    });
+    w = new BrowserWindow({ show: false });
 
     w.loadURL(`${serverUrl}/base-page-security.html`);
     const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
@@ -86,12 +81,7 @@ describe('security warnings', () => {
   });
 
   it('should not warn about Node.js integration with remote content from localhost', async () => {
-    w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true
-      }
-    });
+    w = new BrowserWindow({ show: false });
 
     w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
     const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
