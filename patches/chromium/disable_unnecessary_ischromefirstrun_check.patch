@@ -6,7 +6,7 @@ Subject: Disable unnecessary IsChromeFirstRun check
 https://crrev.com/c/2155167/18/chrome/browser/spellchecker/spellcheck_service.cc#586
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 497b1c12a2994722b4d4c3278d93344f0d6e3c26..6da0aa9128687e18b8825d7c2c448db71506a9f9 100644
+index 717d9c4da5ff4550b1e769bbe5347247ca596006..b7ee91bbd849da29590f00efaafc5ce0357d485d 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -18,7 +18,9 @@
@@ -19,7 +19,7 @@ index 497b1c12a2994722b4d4c3278d93344f0d6e3c26..6da0aa9128687e18b8825d7c2c448db7
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
  #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
  #include "components/language/core/browser/pref_names.h"
-@@ -566,7 +568,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
+@@ -610,7 +612,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
                  .empty());
    });
  
@@ -28,12 +28,12 @@ index 497b1c12a2994722b4d4c3278d93344f0d6e3c26..6da0aa9128687e18b8825d7c2c448db7
      // Ensure that spellcheck is enabled for the first dialect of the
      // accepted languages if there is a Windows dictionary installed for
      // that dialect.
-@@ -606,7 +608,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
+@@ -650,7 +652,7 @@ void SpellcheckService::InitWindowsDictionaryLanguages(
                                 base::Value(first_user_language));
        prefs->Set(spellcheck::prefs::kSpellCheckDictionaries, user_dictionaries);
      }
 -  }
 +  //}
  
-   // No need to call LoadHunspellDictionaries() as when the ListPrefUpdate
+   // No need to call LoadDictionaries() as when the ListPrefUpdate
    // object goes out of scope, the preference change handler will do this.

@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 8b2e467b0f4d9e1307ac362d93801f0caaba35af..5b995e5886b1ad6bec69ecbc91ffc140e962a185 100644
+index 177a7321153f68008f7c122b4f73e200feed72e9..f03c4fbad79ea829c440f13885a9005a46bc0640 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -345,7 +345,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -449,7 +449,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index 8b2e467b0f4d9e1307ac362d93801f0caaba35af..5b995e5886b1ad6bec69ecbc91ffc140
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -356,7 +356,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -460,7 +460,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexes_map);
    }
@@ -28,7 +28,7 @@ index 8b2e467b0f4d9e1307ac362d93801f0caaba35af..5b995e5886b1ad6bec69ecbc91ffc140
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -407,7 +407,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
+@@ -511,7 +511,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +37,7 @@ index 8b2e467b0f4d9e1307ac362d93801f0caaba35af..5b995e5886b1ad6bec69ecbc91ffc140
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexesMap& line_indexes_map) const {
-@@ -422,7 +422,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
+@@ -526,7 +526,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
    return dict;
  }
@@ -371,10 +371,10 @@ index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 0b2c4e6d169b08d82d2359576a29e2f7d2b09dcf..7b5fbbae1f9b2ade0c07360bd3fecda129a0c95b 100644
+index b29b68be6fa6b0329ed03c2d9011690c5e6f83c5..3a8aca70701534d19cdf1655da18811473e42ea4 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -35,6 +35,7 @@
+@@ -36,6 +36,7 @@
  #include "device/bluetooth/bluetooth_low_energy_peripheral_manager_delegate.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  
@@ -382,7 +382,7 @@ index 0b2c4e6d169b08d82d2359576a29e2f7d2b09dcf..7b5fbbae1f9b2ade0c07360bd3fecda1
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -48,6 +49,7 @@ extern "C" {
+@@ -49,6 +50,7 @@ extern "C" {
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -390,7 +390,7 @@ index 0b2c4e6d169b08d82d2359576a29e2f7d2b09dcf..7b5fbbae1f9b2ade0c07360bd3fecda1
  
  namespace {
  
-@@ -117,8 +119,10 @@ BluetoothAdapterMac::BluetoothAdapterMac()
+@@ -118,8 +120,10 @@ BluetoothAdapterMac::BluetoothAdapterMac()
        controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -401,7 +401,7 @@ index 0b2c4e6d169b08d82d2359576a29e2f7d2b09dcf..7b5fbbae1f9b2ade0c07360bd3fecda1
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -303,8 +307,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
+@@ -304,8 +308,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

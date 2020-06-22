@@ -10,14 +10,14 @@ understanding, it seems like we slightly misuse the print preview API
 and this is fallout from using it in a way the code doesn't expect.
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 5cdc34065275f8b810720023ffefe081d6ae5877..3008731427eda34550efe49ddfdef3e765269a04 100644
+index 7406760e1c0247899232fc96614cfb2359ade432..2bf4ea5817c80bef2f057c10195ca846e3d44d0b 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -1495,6 +1495,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {
+@@ -1499,6 +1499,7 @@ PrintRenderFrameHelper::CreatePreviewDocument() {
    const std::vector<int>& pages = print_pages_params_->pages;
  
    bool require_document_metafile =
 +      !g_is_preview_enabled ||
        print_renderer_ ||
-       print_params.printed_doc_type != SkiaDocumentType::MSKP;
+       print_params.printed_doc_type != mojom::SkiaDocumentType::kMSKP;
    if (!print_preview_context_.CreatePreviewDocument(

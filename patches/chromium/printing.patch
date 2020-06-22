@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 25fd623deb7a5d580d80dfa4d99d4628c6800eb3..dd76a610f05e636a6f01e4f21a11507f65867a15 100644
+index adb208ba3589e32536527219aaf4e89e3ee3311a..301f6416898445eed814d67901254ef8e5915e2a 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -400,7 +400,7 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index a2a16fe66774120d8ad993f54ac2d51cb4e8b739..ba8834f37c97a75e90e725dc793fbb404776acac 100644
+index faccd2a6881b74f1fa6538fc1011071ac54b03e0..342fba6eb86ee803aae6f11826ee5ccc1a6eeed0 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -99,7 +99,7 @@ interface PrintPreviewUI {
@@ -413,7 +413,7 @@ index a2a16fe66774120d8ad993f54ac2d51cb4e8b739..ba8834f37c97a75e90e725dc793fbb40
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081d6ae5877 100644
+index bb02f228d604976a668eb8ffa39f49e659975272..7406760e1c0247899232fc96614cfb2359ade432 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -44,6 +44,7 @@
@@ -470,7 +470,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
    print_preview_context_.OnPrintPreview();
  
    if (print_preview_context_.IsForArc()) {
-@@ -1785,7 +1789,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1790,7 +1794,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
      auto self = weak_ptr_factory_.GetWeakPtr();
      Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -481,7 +481,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -1796,7 +1802,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1801,7 +1807,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -492,7 +492,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
-@@ -1804,7 +1812,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1809,7 +1817,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
    int expected_page_count = 0;
@@ -501,7 +501,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1824,8 +1832,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1829,8 +1837,11 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
  
      PrintMsg_PrintPages_Params print_settings;
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -515,7 +515,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2060,10 +2071,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2065,10 +2076,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -542,7 +542,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -2083,12 +2107,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2088,12 +2112,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -562,7 +562,7 @@ index dd624410bbd80685d53ca8d74b4aa43be045c1c5..5cdc34065275f8b810720023ffefe081
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 85b7989513d014c2dea2b649248c85c912109904..a0d1b786dd21afd5047e84bf323171adef912835 100644
+index 674e43487837d858c4f90a111ab1e3f17fa71536..3dbe53f290779ed116744853857a3eae59b8751e 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -225,7 +225,7 @@ class PrintRenderFrameHelper
@@ -574,7 +574,7 @@ index 85b7989513d014c2dea2b649248c85c912109904..a0d1b786dd21afd5047e84bf323171ad
    void PrintForSystemDialog() override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void SetPrintPreviewUI(
-@@ -291,7 +291,9 @@ class PrintRenderFrameHelper
+@@ -292,7 +292,9 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
@@ -585,7 +585,7 @@ index 85b7989513d014c2dea2b649248c85c912109904..a0d1b786dd21afd5047e84bf323171ad
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
-@@ -300,12 +302,14 @@ class PrintRenderFrameHelper
+@@ -301,12 +303,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
