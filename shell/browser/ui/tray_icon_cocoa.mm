@@ -131,10 +131,6 @@
 }
 
 - (void)handleClickNotifications:(NSEvent*)event {
-  trayIcon_->NotifyMouseUp(
-      gfx::ScreenPointFromNSPoint([event locationInWindow]),
-      ui::EventFlagsFromModifiers([event modifierFlags]));
-
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
   BOOL shouldBeHandledAsASingleClick =
@@ -171,6 +167,10 @@
 
 - (void)mouseUp:(NSEvent*)event {
   [[statusItem_ button] highlight:NO];
+
+  trayIcon_->NotifyMouseUp(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 
   [self handleClickNotifications:event];
 }
