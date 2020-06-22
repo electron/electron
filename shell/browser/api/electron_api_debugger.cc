@@ -14,6 +14,7 @@
 #include "content/public/browser/web_contents.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -41,7 +42,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        base::span<const uint8_t> message) {
   DCHECK(agent_host == agent_host_);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
