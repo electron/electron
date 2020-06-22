@@ -2,9 +2,6 @@ From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ben Noordhuis <info@bnoordhuis.nl>
 Date: Sat, 18 Jan 2020 10:55:31 +0100
 Subject: lib,src: switch Buffer::kMaxLength to size_t
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 
 Change the type of `Buffer::kMaxLength` to size_t because upcoming
 changes in V8 will allow typed arrays > 2 GB on 64 bits platforms.
@@ -114,6 +111,39 @@ index d653724474f314cd1c6bebe0a2d9285439d54928..98335fdc1027409a2f17ae50fba378f5
      throw new ERR_FS_FILE_TOO_LARGE(size);
  
    const chunks = [];
+diff --git a/lib/internal/fs/utils.js b/lib/internal/fs/utils.js
+index 6f096336f20e10727b6328af9f0130b37de74050..ff26568bd95e0c966b7f3a7c63d3f594b411fbab 100644
+--- a/lib/internal/fs/utils.js
++++ b/lib/internal/fs/utils.js
+@@ -12,7 +12,7 @@ const {
+   Symbol,
+ } = primordials;
+ 
+-const { Buffer, kMaxLength } = require('buffer');
++const { Buffer } = require('buffer');
+ const {
+   codes: {
+     ERR_FS_INVALID_SYMLINK_TYPE,
+@@ -72,6 +72,10 @@ const {
+ 
+ const isWindows = process.platform === 'win32';
+ 
++// Most platforms don't allow reads or writes >= 2 GB.
++// See https://github.com/libuv/libuv/pull/1501.
++const kIoMaxLength = 2 ** 31 - 1;
++
+ let fs;
+ function lazyLoadFs() {
+   if (!fs) {
+@@ -525,7 +529,7 @@ const validateOffsetLengthWrite = hideStackFrames(
+       throw new ERR_OUT_OF_RANGE('offset', `<= ${byteLength}`, offset);
+     }
+ 
+-    const max = byteLength > kMaxLength ? kMaxLength : byteLength;
++    const max = byteLength > kIoMaxLength ? kIoMaxLength : byteLength;
+     if (length > max - offset) {
+       throw new ERR_OUT_OF_RANGE('length', `<= ${max - offset}`, length);
+     }
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
 index 59baa45413d500272d0e293ab06bfe4d24e5e0cb..4d1951b740240bff231b7f4c855beb5b73d076af 100644
 --- a/src/node_buffer.cc
