@@ -54,7 +54,7 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 let onlineStatusWindow
 
 app.whenReady().then(() => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false, webPreferences: { nodeIntegration: true } })
+  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
   onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
 })
 

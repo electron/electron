@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Clipboard copy',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Clipboard copy'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

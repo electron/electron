@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Synchronous Messages',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Synchronous Messages'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

@@ -249,8 +249,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
-    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled.
-      Default is `false`.
     * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
       enabled in web workers. Default is `false`. More about this can be found
       in [Multithreading](../tutorial/multithreading.md).
@@ -267,9 +265,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       [here](process.md#event-loaded).
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
-      OS-level sandbox and disabling the Node.js engine. This is not the same as
-      the `nodeIntegration` option and the APIs available to the preload script
-      are more limited. Read more about the option [here](sandbox-option.md).
+      OS-level sandbox and disabling the Node.js engine. The APIs available to
+      the preload script are more limited when in sandboxed mode. Read more
+      about the option [here](sandbox-option.md).
     * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
       Default is `true`.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
@@ -287,7 +285,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       `affinity` will run in the same renderer process. Note that due to reusing
       the renderer process, certain `webPreferences` options will also be shared
       between the web pages even when you specified different values for them,
-      including but not limited to `preload`, `sandbox` and `nodeIntegration`.
+      including but not limited to `preload` and `sandbox`.
       So it is suggested to use exact same `webPreferences` for web pages with
       the same `affinity`. _Deprecated_
     * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents

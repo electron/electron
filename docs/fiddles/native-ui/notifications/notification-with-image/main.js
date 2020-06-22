@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 300,
-    title: 'Advanced Notification',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Advanced Notification'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

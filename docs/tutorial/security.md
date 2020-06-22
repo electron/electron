@@ -42,7 +42,7 @@ practices:
 When releasing your product, you’re also shipping a bundle composed of Electron,
 Chromium shared library and Node.js. Vulnerabilities affecting these components
 may impact the security of your application. By updating Electron to the latest
-version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
+version, you ensure that critical vulnerabilities (such as *context isolation bypasses*)
 are already patched and cannot be exploited in your application. For more information,
 see "[Use a current version of Electron](#17-use-a-current-version-of-electron)".
 
@@ -66,11 +66,11 @@ an attacker somehow manages to change said content (either by attacking the
 source directly, or by sitting between your app and the actual destination), they
 will be able to execute native code on the user's machine.
 
-> :warning: Under no circumstances should you load and execute remote code with
-Node.js integration enabled. Instead, use only local files (packaged together
+> :warning: Under no circumstances should you load and execute remote code
+without the sandbox enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
 the [`<webview>`][webview-tag] tag or [`BrowserView`][browser-view], make sure
-to disable the `nodeIntegration` and enable `contextIsolation`.
+to enable `sandbox` and `contextIsolation`.
 
 ## Electron Security Warnings
 
@@ -181,7 +181,6 @@ so-called "Remote Code Execution" (RCE) attack.
 // Bad
 const mainWindow = new BrowserWindow({
   webPreferences: {
-    nodeIntegration: true,
     nodeIntegrationInWorker: true
   }
 })
@@ -202,7 +201,7 @@ mainWindow.loadURL('https://example.com')
 
 ```html
 <!-- Bad -->
-<webview nodeIntegration src="page.html"></webview>
+<webview src="page.html"></webview>
 
 <!-- Good -->
 <webview src="page.html"></webview>
@@ -235,9 +234,6 @@ practice, that means that global objects like `Array.prototype.push` or
 
 Electron uses the same technology as Chromium's [Content Scripts](https://developer.chrome.com/extensions/content_scripts#execution-environment)
 to enable this behavior.
-
-Even when you use `nodeIntegration: false` to enforce strong isolation and
-prevent the use of Node primitives, `contextIsolation` must also be used.
 
 ### Why & How?
 
@@ -542,9 +538,6 @@ app.on('web-contents-created', (event, contents) => {
     delete webPreferences.preload
     delete webPreferences.preloadURL
 
-    // Disable Node.js integration
-    webPreferences.nodeIntegration = false
-
     // Verify URL being loaded
     if (!params.src.startsWith('https://example.com/')) {
       event.preventDefault()
@@ -567,7 +560,7 @@ any other kinds of navigation.
 Navigation is a common attack vector. If an attacker can convince your app to
 navigate away from its current page, they can possibly force your app to open
 web sites on the Internet. Even if your `webContents` are configured to be more
-secure (like having `nodeIntegration` disabled or `contextIsolation` enabled),
+secure (like having `contextIsolation` enabled),
 getting your app to open a random web site will make the work of exploiting your
 app a lot easier.
 

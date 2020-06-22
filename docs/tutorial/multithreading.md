@@ -17,8 +17,7 @@ let win = new BrowserWindow({
 })
 ```
 
-The `nodeIntegrationInWorker` can be used independent of `nodeIntegration`, but
-`sandbox` must not be set to `true`.
+`nodeIntegrationInWorker` is incompatible with `sandbox: true`.
 
 ## Available APIs
 

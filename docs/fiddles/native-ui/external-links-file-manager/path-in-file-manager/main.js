@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Open Path in File Manager',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Open Path in File Manager'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

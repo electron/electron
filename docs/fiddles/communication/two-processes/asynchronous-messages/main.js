@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Asynchronous messages',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Asynchronous messages'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

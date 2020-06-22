@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Create a frameless window',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Create a frameless window'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 300,
-    title: 'Basic Notification',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Basic Notification'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

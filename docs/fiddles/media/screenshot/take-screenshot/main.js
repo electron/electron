@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 300,
-    title: 'Take a Screenshot',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Take a Screenshot'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

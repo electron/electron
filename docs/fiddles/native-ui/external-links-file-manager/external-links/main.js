@@ -6,10 +6,7 @@ function createWindow () {
   const windowOptions = {
     width: 600,
     height: 400,
-    title: 'Open External Links',
-    webPreferences: {
-      nodeIntegration: true
-    }
+    title: 'Open External Links'
   }
 
   mainWindow = new BrowserWindow(windowOptions)

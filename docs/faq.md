@@ -102,32 +102,17 @@ Due to the Node.js integration of Electron, there are some extra symbols
 inserted into the DOM like `module`, `exports`, `require`. This causes problems
 for some libraries since they want to insert the symbols with the same names.
 
-To solve this, you can turn off node integration in Electron:
+To solve this, enable `contextIsolation`:
 
 ```javascript
 // In the main process.
 const { BrowserWindow } = require('electron')
 let win = new BrowserWindow({
   webPreferences: {
-    nodeIntegration: false
+    contextIsolation: true
   }
 })
 win.show()
-```
-
-But if you want to keep the abilities of using Node.js and Electron APIs, you
-have to rename the symbols in the page before including other libraries:
-
-```html
-<head>
-<script>
-window.nodeRequire = require;
-delete window.require;
-delete window.exports;
-delete window.module;
-</script>
-<script type="text/javascript" src="jquery.js"></script>
-</head>
 ```
 
 ## `require('electron').xxx` is undefined.
