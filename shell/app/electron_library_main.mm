@@ -26,8 +26,10 @@ int ElectronMain(int argc, char* argv[]) {
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
-  if (!electron::fuses::IsRunAsNodeEnabled())
+  if (!electron::fuses::IsRunAsNodeEnabled()) {
+    CHECK(false);
     return 1;
+  }
 
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;

@@ -1,5 +1,6 @@
 {
-  "_comment": "Modifying this file in any way (removing, adding or changing values) should result in the _version prop being incremented",
+  "_comment": "Modifying the fuse schema in any way should result in the _version prop being incremented.  NEVER REMOVE A FUSE, instead mark it as removed with '-1'",
+  "_schema": "0 == off, 1 == on, -1 == removed fuse",
   "_version": 1,
-  "run_as_node": true
+  "run_as_node": "1"
 }
