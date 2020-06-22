@@ -437,7 +437,7 @@ content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
 void OffScreenRenderWidgetHostView::SetIsLoading(bool loading) {}
 
 void OffScreenRenderWidgetHostView::TextInputStateChanged(
-    const content::TextInputState& params) {}
+    const ui::mojom::TextInputState& params) {}
 
 void OffScreenRenderWidgetHostView::ImeCancelComposition() {}
 

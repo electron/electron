@@ -13,10 +13,10 @@ Ultimately we should remove the option to disable compression, and
 subsequently remove this patch.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 4bd9bfebb4e5119a5cdc48bb322745cfd9f98c02..a897622de0ea7a9e79955d7b80dfeafe3ec6fc94 100644
+index 342f16a4c8418c1e56703d8969d0f31d834ad74c..454e1c0d58a39cbf23da32f56af7cdf16e9085f0 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -108,6 +108,8 @@ void SetUploadURL(const std::string& url) {
+@@ -109,6 +109,8 @@ void SetUploadURL(const std::string& url) {
    DCHECK(!g_upload_url);
    g_upload_url = strdup(url.c_str());
  }
@@ -25,7 +25,7 @@ index 4bd9bfebb4e5119a5cdc48bb322745cfd9f98c02..a897622de0ea7a9e79955d7b80dfeafe
  #endif
  
  bool g_is_node = false;
-@@ -1335,56 +1337,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1336,56 +1338,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
  
  #else  // defined(OS_CHROMEOS)
  
@@ -127,7 +127,7 @@ index 4bd9bfebb4e5119a5cdc48bb322745cfd9f98c02..a897622de0ea7a9e79955d7b80dfeafe
    static const char header_msg[] =
        "--header=Content-Type: multipart/form-data; boundary=";
    const size_t header_content_type_size =
-@@ -1411,7 +1417,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1412,7 +1418,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
    static const char kWgetBinary[] = "/usr/bin/wget";
    const char* args[] = {
        kWgetBinary,
@@ -137,7 +137,7 @@ index 4bd9bfebb4e5119a5cdc48bb322745cfd9f98c02..a897622de0ea7a9e79955d7b80dfeafe
        header_content_type,
        post_file,
        g_upload_url,
-@@ -2054,6 +2061,7 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2055,6 +2062,7 @@ void InitCrashReporter(const std::string& process_type) {
  
  #if !defined(OS_CHROMEOS)
    SetUploadURL(GetCrashReporterClient()->GetUploadUrl());

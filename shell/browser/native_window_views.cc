@@ -659,10 +659,11 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
-  if (!IsWindowValid(id.id))
+  if (!IsWindowValid(static_cast<x11::Window>(id.id)))
     return false;
 
-  electron::MoveWindowAbove(GetAcceleratedWidget(), id.id);
+  electron::MoveWindowAbove(GetAcceleratedWidget(),
+                            static_cast<x11::Window>(id.id));
 #endif
 
   return true;
@@ -956,12 +957,14 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #elif defined(USE_X11)
   if (ignore) {
     XRectangle r = {0, 0, 1, 1};
-    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
+    XShapeCombineRectangles(gfx::GetXDisplay(),
+                            static_cast<uint32_t>(GetAcceleratedWidget()),
                             ShapeInput, 0, 0, &r, 1, ShapeSet,
                             static_cast<int>(x11::ClipOrdering::YXBanded));
   } else {
-    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
-                      0, x11::None, ShapeSet);
+    XShapeCombineMask(gfx::GetXDisplay(),
+                      static_cast<uint32_t>(GetAcceleratedWidget()), ShapeInput,
+                      0, 0, x11::None, ShapeSet);
   }
 #endif
 }
@@ -1070,8 +1073,9 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 #if defined(USE_X11)
   XDisplay* xdisplay = gfx::GetXDisplay();
   XSetTransientForHint(
-      xdisplay, GetAcceleratedWidget(),
-      parent ? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
+      xdisplay, static_cast<uint32_t>(GetAcceleratedWidget()),
+      static_cast<uint32_t>(parent ? parent->GetAcceleratedWidget()
+                                   : ui::GetX11RootWindow()));
 #elif defined(OS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1164,7 +1168,7 @@ content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
   window_handle =
       reinterpret_cast<content::DesktopMediaID::Id>(accelerated_widget);
 #elif defined(USE_X11)
-  window_handle = accelerated_widget;
+  window_handle = static_cast<uint32_t>(accelerated_widget);
 #endif
   aura::WindowTreeHost* const host =
       aura::WindowTreeHost::GetForAcceleratedWidget(accelerated_widget);
