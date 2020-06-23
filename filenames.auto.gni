@@ -237,7 +237,7 @@ auto_filenames = {
     "lib/browser/navigation-controller.js",
     "lib/browser/remote/objects-registry.ts",
     "lib/browser/remote/server.ts",
-    "lib/browser/rpc-server.js",
+    "lib/browser/rpc-server.ts",
     "lib/browser/utils.ts",
     "lib/common/api/clipboard.ts",
     "lib/common/api/deprecate.ts",
