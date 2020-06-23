@@ -174,5 +174,5 @@ for (const preloadScript of preloadScripts) {
 // Warn about security issues
 if (process.isMainFrame) {
   const { securityWarnings } = require('@electron/internal/renderer/security-warnings');
-  securityWarnings(true);
+  securityWarnings();
 }
