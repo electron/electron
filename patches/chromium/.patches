@@ -111,3 +111,4 @@ a11y_iterate_all_descendants_for_getselectioncount.patch
 allow_ime_to_insert_zero-length_composition_string.patch
 cherry-pick-eac3d9283d11.patch
 remove_menu_window_task_item.patch
+merge_to_m83_re-land_fix_uaf_in_ttsplatformimpl_if_a_browsercontext.patch
