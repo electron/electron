@@ -168,6 +168,39 @@ function startRepl () {
     process.exit(0);
   });
 
+  function defineBuiltin (context: any, name: string, getter: Function) {
+    const setReal = (val: any) => {
+      // Deleting the property before re-assigning it disables the
+      // getter/setter mechanism.
+      delete context[name];
+      context[name] = val;
+    };
+
+    Object.defineProperty(context, name, {
+      get: () => {
+        const lib = getter();
+
+        delete context[name];
+        Object.defineProperty(context, name, {
+          get: () => lib,
+          set: setReal,
+          configurable: true,
+          enumerable: false
+        });
+
+        return lib;
+      },
+      set: setReal,
+      configurable: true,
+      enumerable: false
+    });
+  }
+
+  defineBuiltin(repl.context, 'electron', () => electron);
+  for (const api of Object.keys(electron) as (keyof typeof electron)[]) {
+    defineBuiltin(repl.context, api, () => electron[api]);
+  }
+
   // Copied from node/lib/repl.js. For better DX, we don't want to
   // show e.g 'contentTracing' at a higher priority than 'const', so
   // we only trigger custom tab-completion when no common words are
