@@ -95,6 +95,7 @@ static_library("chrome") {
 
   if (is_win) {
     public_deps += [ "//chrome/services/util_win/public/mojom" ]
+    deps += [ "//chrome/services/util_win/public/mojom" ]
   }
 
   if (enable_desktop_capturer) {
