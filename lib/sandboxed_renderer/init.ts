@@ -1,11 +1,9 @@
 /* eslint no-eval: "off" */
 /* global binding, Buffer */
-import { electronBindingSetup } from '@electron/internal/common/electron-binding-setup';
 import * as events from 'events';
 
 const { EventEmitter } = events;
 
-process.electronBinding = electronBindingSetup(binding.get, 'renderer');
 process._linkedBinding = binding.get;
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -35,7 +33,6 @@ const {
 
 process.isRemoteModuleEnabled = isRemoteModuleEnabled;
 
-// The electron module depends on process.electronBinding
 const electron = require('electron');
 
 const loadedModules = new Map<string, any>([
@@ -78,8 +75,7 @@ v8Util.setHiddenValue(global, 'lifecycle', {
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
 webFrameInit();
 
-// Pass different process object to the preload script(which should not have
-// access to things like `process.electronBinding`).
+// Pass different process object to the preload script.
 const preloadProcess: NodeJS.Process = new EventEmitter() as any;
 
 Object.assign(preloadProcess, binding.process);
@@ -118,7 +114,7 @@ function preloadRequire (module: string) {
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
 
-// Similar to nodes --expose-internals flag, this exposes electronBinding so
+// Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
 if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;

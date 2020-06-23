@@ -89,7 +89,6 @@ declare namespace NodeJS {
   }
 
   interface Process {
-    electronBinding(name: string): any;
     _linkedBinding(name: string): any;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
