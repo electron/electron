@@ -6,6 +6,7 @@
 #define SHELL_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 
 namespace base {
 class File;
