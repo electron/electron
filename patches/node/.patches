@@ -40,3 +40,5 @@ tls_emit_session_after_verifying_certificate.patch
 http2_implement_support_for_max_settings_entries.patch
 deps_update_nghttp2_to_1_41_0.patch
 napi_fix_memory_corruption_vulnerability.patch
+tools_update_certdata_txt.patch
+crypto_update_root_certificates.patch
