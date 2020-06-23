@@ -99,6 +99,10 @@ process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
 (process as events.EventEmitter).on('document-start', () => (preloadProcess as events.EventEmitter).emit('document-start'));
 (process as events.EventEmitter).on('document-end', () => (preloadProcess as events.EventEmitter).emit('document-end'));
 
+if (process.platform === 'win32') {
+  require('@electron/internal/renderer/win32-queryendsession-setup.ts').setup(binding);
+}
+
 // This is the `require` function that will be visible to the preload script
 function preloadRequire (module: string) {
   if (loadedModules.has(module)) {

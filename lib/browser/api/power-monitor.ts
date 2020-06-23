@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { app } from 'electron/main';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 
 const {
   createPowerMonitor,
@@ -16,6 +17,20 @@ class PowerMonitor extends EventEmitter {
       app.whenReady().then(() => {
         const pm = createPowerMonitor();
         pm.emit = this.emit.bind(this);
+
+        if (process.platform === 'win32') {
+          // On Windows we need to handle shutdown event coming from renderers. See
+          // shutdown_blocker_win.h for more details.
+          // To prevent any race conditions where multiple renderers receive
+          // QUERYENDSESSION and forward the message to us, we debounce by using `once`
+          // to subscribe and reattach the handler 1 second later
+          ipcMainInternal.once('ELECTRON_BROWSER_QUERYENDSESSION', function remoteQueryEndSessionHandler (event) {
+            pm.emit('shutdown', event);
+            setTimeout(() => {
+              ipcMainInternal.once('ELECTRON_BROWSER_QUERYENDSESSION', remoteQueryEndSessionHandler);
+            }, 1000);
+          });
+        }
 
         if (process.platform === 'linux') {
           // On Linux, we inhibit shutdown in order to give the app a chance to

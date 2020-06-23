@@ -23,6 +23,7 @@
 #include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
@@ -47,6 +48,7 @@
 
 #if defined(OS_WIN)
 #include <shlobj.h>
+#include "shell/browser/lib/shutdown_blocker_win.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -96,7 +98,11 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
 
 }  // namespace
 
-RendererClientBase::RendererClientBase() {
+RendererClientBase::RendererClientBase()
+#ifdef OS_WIN
+    : shutdown_blocker_(new ShutdownBlockerWin(true))
+#endif
+{
   auto* command_line = base::CommandLine::ForCurrentProcess();
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
@@ -142,7 +148,14 @@ void RendererClientBase::DidCreateScriptContext(
 
 void RendererClientBase::AddRenderBindings(
     v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {}
+    v8::Local<v8::Object> binding_object) {
+#if defined(OS_WIN)
+  gin_helper::Dictionary dict(isolate, binding_object);
+  dict.SetMethod("setShutdownHandler",
+                 base::Bind(&ShutdownBlockerWin::SetShutdownHandler,
+                            base::Unretained(shutdown_blocker_.get())));
+#endif
+}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();

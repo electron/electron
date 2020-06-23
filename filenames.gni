@@ -66,6 +66,8 @@ filenames = {
     "shell/browser/api/electron_api_power_monitor_win.cc",
     "shell/browser/api/electron_api_system_preferences_win.cc",
     "shell/browser/browser_win.cc",
+    "shell/browser/lib/shutdown_blocker_win.cc",
+    "shell/browser/lib/shutdown_blocker_win.h",
     "shell/browser/native_window_views_win.cc",
     "shell/browser/notifications/win/notification_presenter_win.cc",
     "shell/browser/notifications/win/notification_presenter_win.h",

@@ -5,6 +5,8 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
+#include <memory>
+
 #include "base/power_monitor/power_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -13,6 +15,10 @@
 
 #if defined(OS_LINUX)
 #include "shell/browser/lib/power_observer_linux.h"
+#endif
+
+#if defined(OS_WIN)
+#include "shell/browser/lib/shutdown_blocker_win.h"
 #endif
 
 namespace electron {
@@ -72,6 +78,9 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
 
   // The window used for processing events.
   HWND window_;
+
+  // An object that encapsulates logic to handle shutdown/reboot events.
+  std::unique_ptr<ShutdownBlockerWin> shutdown_blocker_;
 #endif
 
 #if defined(OS_LINUX)

@@ -24,7 +24,7 @@ Emitted when the system changes to AC power.
 
 Emitted when system changes to battery power.
 
-### Event: 'shutdown' _Linux_ _macOS_
+### Event: 'shutdown'
 
 Emitted when the system is about to reboot or shut down. If the event handler
 invokes `e.preventDefault()`, Electron will attempt to delay system shutdown in
