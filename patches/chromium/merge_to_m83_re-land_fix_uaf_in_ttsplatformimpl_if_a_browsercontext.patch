@@ -1,0 +1,383 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dominic Mazzoni <dmazzoni@chromium.org>
+Date: Thu, 11 Jun 2020 21:11:53 +0000
+Subject: Merge to M83: Re-land: Fix UAF in TtsPlatformImpl if a BrowserContext
+ is deleted.
+
+Original: http://crrev.com/c/2211123
+Reverted: http://crrev.com/c/2213553
+
+The underlying issue that caused the crash was that we
+were trying to send a TTS event while a Profile was being
+deleted. In the first patch I tried to work around that
+and it added complexity.
+
+In this new patch, there's a simpler solution: just use
+PostTask to call Stop() - that way the Stop doesn't happen
+until the Profile/BrowserContext is fully deleted.
+
+(cherry picked from commit 622d2e3ee522557da4bceef4e3f2fc06cbdcfdff)
+
+Bug: 1081350
+Change-Id: Ia10fde26f526873d37855b03f66c5efb71a33225
+Tbr: jam@chromium.org
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2242111
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Commit-Queue: Dominic Mazzoni <dmazzoni@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4103@{#688}
+Cr-Branched-From: 8ad47e8d21f6866e4a37f47d83a860d41debf514-refs/heads/master@{#756066}
+
+diff --git a/content/browser/browser_context.cc b/content/browser/browser_context.cc
+index 9e5b73896b85f9738583d6ba23eb3d1d5c614100..a1923bf61b82ccbf92649fc7416ca378063e8f62 100644
+--- a/content/browser/browser_context.cc
++++ b/content/browser/browser_context.cc
+@@ -42,6 +42,7 @@
+ #include "content/browser/media/browser_feature_provider.h"
+ #include "content/browser/permissions/permission_controller_impl.h"
+ #include "content/browser/push_messaging/push_messaging_router.h"
++#include "content/browser/speech/tts_controller_impl.h"
+ #include "content/browser/service_manager/common_browser_interfaces.h"
+ #include "content/browser/storage_partition_impl_map.h"
+ #include "content/common/child_process_host_impl.h"
+@@ -750,6 +751,8 @@ BrowserContext::~BrowserContext() {
+ 
+   if (GetUserData(kDownloadManagerKeyName))
+     GetDownloadManager(this)->Shutdown();
++
++  TtsControllerImpl::GetInstance()->OnBrowserContextDestroyed(this);
+ }
+ 
+ void BrowserContext::ShutdownStoragePartitions() {
+diff --git a/content/browser/speech/tts_controller_impl.cc b/content/browser/speech/tts_controller_impl.cc
+index e64ffbd6ac30f201f8dba053494f1a87a676113a..5b5e7fedfac9a3c1ce7891a72fe069c77dff0970 100644
+--- a/content/browser/speech/tts_controller_impl.cc
++++ b/content/browser/speech/tts_controller_impl.cc
+@@ -99,14 +99,14 @@ void TtsControllerImpl::SpeakOrEnqueue(TtsUtterance* utterance) {
+   // If we're paused and we get an utterance that can't be queued,
+   // flush the queue but stay in the paused state.
+   if (paused_ && !utterance->GetCanEnqueue()) {
+-    utterance_queue_.push(utterance);
++    utterance_deque_.emplace_back(utterance);
+     Stop();
+     paused_ = true;
+     return;
+   }
+ 
+   if (paused_ || (IsSpeaking() && utterance->GetCanEnqueue())) {
+-    utterance_queue_.push(utterance);
++    utterance_deque_.emplace_back(utterance);
+   } else {
+     Stop();
+     SpeakNow(utterance);
+@@ -114,10 +114,14 @@ void TtsControllerImpl::SpeakOrEnqueue(TtsUtterance* utterance) {
+ }
+ 
+ void TtsControllerImpl::Stop() {
+-  Stop(GURL());
++  StopInternal(GURL());
+ }
+ 
+ void TtsControllerImpl::Stop(const GURL& source_url) {
++  StopInternal(source_url);
++}
++
++void TtsControllerImpl::StopInternal(const GURL& source_url) {
+   base::RecordAction(base::UserMetricsAction("TextToSpeech.Stop"));
+ 
+   paused_ = false;
+@@ -273,13 +277,13 @@ void TtsControllerImpl::RemoveVoicesChangedDelegate(
+ void TtsControllerImpl::RemoveUtteranceEventDelegate(
+     UtteranceEventDelegate* delegate) {
+   // First clear any pending utterances with this delegate.
+-  base::queue<TtsUtterance*> old_queue = utterance_queue_;
+-  utterance_queue_ = base::queue<TtsUtterance*>();
+-  while (!old_queue.empty()) {
+-    TtsUtterance* utterance = old_queue.front();
+-    old_queue.pop();
++  std::deque<TtsUtterance*> old_deque;
++  utterance_deque_.swap(old_deque);
++  while (!old_deque.empty()) {
++    TtsUtterance* utterance = old_deque.front();
++    old_deque.pop_front();
+     if (utterance->GetEventDelegate() != delegate)
+-      utterance_queue_.push(utterance);
++      utterance_deque_.emplace_back(utterance);
+     else
+       delete utterance;
+   }
+@@ -316,12 +320,42 @@ TtsEngineDelegate* TtsControllerImpl::GetTtsEngineDelegate() {
+   return GetTtsControllerDelegate()->GetTtsEngineDelegate();
+ }
+ 
++void TtsControllerImpl::OnBrowserContextDestroyed(
++    BrowserContext* browser_context) {
++  bool did_clear_utterances = false;
++
++  // First clear the BrowserContext from any utterances.
++  for (TtsUtterance* utterance : utterance_deque_) {
++    if (utterance->GetBrowserContext() == browser_context) {
++      utterance->ClearBrowserContext();
++      did_clear_utterances = true;
++    }
++  }
++
++  if (current_utterance_ &&
++      current_utterance_->GetBrowserContext() == browser_context) {
++    current_utterance_->ClearBrowserContext();
++    did_clear_utterances = true;
++  }
++
++  // If we cleared the BrowserContext from any utterances, stop speech
++  // just to be safe. Do this using PostTask because calling Stop might
++  // try to send notifications and that can trigger code paths that try
++  // to access the BrowserContext that's being deleted. Note that it's
++  // safe to use base::Unretained because this is a singleton.
++  if (did_clear_utterances) {
++    base::ThreadTaskRunnerHandle::Get()->PostTask(
++        FROM_HERE, base::BindOnce(&TtsControllerImpl::StopInternal,
++                                  base::Unretained(this), GURL()));
++  }
++}
++
+ void TtsControllerImpl::SetTtsPlatform(TtsPlatform* tts_platform) {
+   tts_platform_ = tts_platform;
+ }
+ 
+ int TtsControllerImpl::QueueSize() {
+-  return static_cast<int>(utterance_queue_.size());
++  return static_cast<int>(utterance_deque_.size());
+ }
+ 
+ TtsPlatform* TtsControllerImpl::GetTtsPlatform() {
+@@ -395,7 +429,7 @@ void TtsControllerImpl::SpeakNow(TtsUtterance* utterance) {
+     GetTtsPlatform()->Speak(utterance->GetId(), utterance->GetText(),
+                             utterance->GetLang(), voice,
+                             utterance->GetContinuousParameters(),
+-                            base::BindOnce(&TtsControllerImpl::OnSpeakFinished,
++        base::BindOnce(&TtsControllerImpl::OnSpeakFinished,
+                                            base::Unretained(this), utterance));
+   }
+ }
+@@ -408,7 +442,7 @@ void TtsControllerImpl::OnSpeakFinished(TtsUtterance* utterance, bool success) {
+   // the browser has built-in TTS that isn't loaded yet.
+   if (!success &&
+       GetTtsPlatform()->LoadBuiltInTtsEngine(utterance->GetBrowserContext())) {
+-    utterance_queue_.push(utterance);
++    utterance_deque_.emplace_back(utterance);
+     return;
+   }
+ 
+@@ -421,9 +455,9 @@ void TtsControllerImpl::OnSpeakFinished(TtsUtterance* utterance, bool success) {
+ }
+ 
+ void TtsControllerImpl::ClearUtteranceQueue(bool send_events) {
+-  while (!utterance_queue_.empty()) {
+-    TtsUtterance* utterance = utterance_queue_.front();
+-    utterance_queue_.pop();
++  while (!utterance_deque_.empty()) {
++    TtsUtterance* utterance = utterance_deque_.front();
++    utterance_deque_.pop_front();
+     if (send_events)
+       utterance->OnTtsEvent(TTS_EVENT_CANCELLED, kInvalidCharIndex,
+                             kInvalidLength, std::string());
+@@ -449,9 +483,9 @@ void TtsControllerImpl::SpeakNextUtterance() {
+ 
+   // Start speaking the next utterance in the queue.  Keep trying in case
+   // one fails but there are still more in the queue to try.
+-  while (!utterance_queue_.empty() && !current_utterance_) {
+-    TtsUtterance* utterance = utterance_queue_.front();
+-    utterance_queue_.pop();
++  while (!utterance_deque_.empty() && !current_utterance_) {
++    TtsUtterance* utterance = utterance_deque_.front();
++    utterance_deque_.pop_front();
+     SpeakNow(utterance);
+   }
+ }
+diff --git a/content/browser/speech/tts_controller_impl.h b/content/browser/speech/tts_controller_impl.h
+index 921beb6877a400a69ae0551dc2eb4b7daef18cee..6e096a8a3d4430d07e9bb7ee18dd772e46c30f3f 100644
+--- a/content/browser/speech/tts_controller_impl.h
++++ b/content/browser/speech/tts_controller_impl.h
+@@ -5,12 +5,12 @@
+ #ifndef CONTENT_BROWSER_SPEECH_TTS_CONTROLLER_IMPL_H_
+ #define CONTENT_BROWSER_SPEECH_TTS_CONTROLLER_IMPL_H_
+ 
++#include <deque>
+ #include <memory>
+ #include <set>
+ #include <string>
+ #include <vector>
+ 
+-#include "base/containers/queue.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/json/json_reader.h"
+ #include "base/macros.h"
+@@ -58,6 +58,10 @@ class CONTENT_EXPORT TtsControllerImpl : public TtsController {
+   void SetTtsEngineDelegate(TtsEngineDelegate* delegate) override;
+   TtsEngineDelegate* GetTtsEngineDelegate() override;
+ 
++  // Called directly by ~BrowserContext, because a raw BrowserContext pointer
++  // is stored in an Utterance.
++  void OnBrowserContextDestroyed(BrowserContext* browser_context);
++
+   // Testing methods
+   void SetTtsPlatform(TtsPlatform* tts_platform) override;
+   int QueueSize() override;
+@@ -76,6 +80,7 @@ class CONTENT_EXPORT TtsControllerImpl : public TtsController {
+   FRIEND_TEST_ALL_PREFIXES(TtsControllerTest, TestGetMatchingVoice);
+   FRIEND_TEST_ALL_PREFIXES(TtsControllerTest,
+                            TestTtsControllerUtteranceDefaults);
++  FRIEND_TEST_ALL_PREFIXES(TtsControllerTest, TestBrowserContextRemoved);
+ 
+   friend struct base::DefaultSingletonTraits<TtsControllerImpl>;
+ 
+@@ -86,6 +91,8 @@ class CONTENT_EXPORT TtsControllerImpl : public TtsController {
+   // |utterance| or delete it if there's an error. Returns true on success.
+   void SpeakNow(TtsUtterance* utterance);
+ 
++  void StopInternal(const GURL& source_url);
++
+   // Clear the utterance queue. If send_events is true, will send
+   // TTS_EVENT_CANCELLED events on each one.
+   void ClearUtteranceQueue(bool send_events);
+@@ -131,7 +138,7 @@ class CONTENT_EXPORT TtsControllerImpl : public TtsController {
+   TtsPlatform* tts_platform_;
+ 
+   // A queue of utterances to speak after the current one finishes.
+-  base::queue<TtsUtterance*> utterance_queue_;
++  std::deque<TtsUtterance*> utterance_deque_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(TtsControllerImpl);
+ };
+diff --git a/content/browser/speech/tts_controller_unittest.cc b/content/browser/speech/tts_controller_unittest.cc
+index 4210e6f9a3e569c7118d90af633bc1cd67d963ec..7d5e3a0cc8fa7283ff8eeb20e4d4e3ee4ff8cbfb 100644
+--- a/content/browser/speech/tts_controller_unittest.cc
++++ b/content/browser/speech/tts_controller_unittest.cc
+@@ -9,6 +9,8 @@
+ #include "content/browser/speech/tts_controller_impl.h"
+ #include "content/public/browser/tts_controller_delegate.h"
+ #include "content/public/browser/tts_platform.h"
++#include "content/public/test/browser_task_environment.h"
++#include "content/public/test/test_browser_context.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/mojom/speech/speech_synthesis.mojom.h"
+ 
+@@ -50,9 +52,15 @@ class MockTtsControllerDelegate : public TtsControllerDelegate {
+   MockTtsControllerDelegate() {}
+   ~MockTtsControllerDelegate() override {}
+ 
++  BrowserContext* GetLastBrowserContext() {
++    BrowserContext* result = last_browser_context_;
++    last_browser_context_ = nullptr;
++    return result;
++  }
++
+   int GetMatchingVoice(content::TtsUtterance* utterance,
+                        std::vector<content::VoiceData>& voices) override {
+-    // Below 0 implies a "native" voice.
++    last_browser_context_ = utterance->GetBrowserContext();
+     return -1;
+   }
+ 
+@@ -66,6 +74,9 @@ class MockTtsControllerDelegate : public TtsControllerDelegate {
+   content::TtsEngineDelegate* GetTtsEngineDelegate() override {
+     return nullptr;
+   }
++
++ private:
++  BrowserContext* last_browser_context_ = nullptr;
+ };
+ 
+ // Subclass of TtsController with a public ctor and dtor.
+@@ -101,6 +112,43 @@ TEST_F(TtsControllerTest, TestTtsControllerShutdown) {
+   delete delegate;
+ }
+ 
++TEST_F(TtsControllerTest, TestBrowserContextRemoved) {
++  // Create a controller, mock other stuff, and create a test
++  // browser context.
++  TtsControllerImpl* controller = TtsControllerImpl::GetInstance();
++  MockTtsPlatformImpl platform_impl;
++  MockTtsControllerDelegate delegate;
++  controller->delegate_ = &delegate;
++  controller->SetTtsPlatform(&platform_impl);
++  content::BrowserTaskEnvironment task_environment;
++  auto browser_context = std::make_unique<TestBrowserContext>();
++
++  // Speak an utterances associated with this test browser context.
++  TtsUtterance* utterance1 = TtsUtterance::Create(browser_context.get());
++  utterance1->SetCanEnqueue(true);
++  utterance1->SetSrcId(1);
++  controller->SpeakOrEnqueue(utterance1);
++
++  // Assert that the delegate was called and it got our browser context.
++  ASSERT_EQ(browser_context.get(), delegate.GetLastBrowserContext());
++
++  // Now queue up a second utterance to be spoken, also associated with
++  // this browser context.
++  TtsUtterance* utterance2 = TtsUtterance::Create(browser_context.get());
++  utterance2->SetCanEnqueue(true);
++  utterance2->SetSrcId(2);
++  controller->SpeakOrEnqueue(utterance2);
++
++  // Destroy the browser context before the utterance is spoken.
++  browser_context.reset();
++
++  // Now speak the next utterance, and ensure that we don't get the
++  // destroyed browser context.
++  controller->FinishCurrentUtterance();
++  controller->SpeakNextUtterance();
++  ASSERT_EQ(nullptr, delegate.GetLastBrowserContext());
++}
++
+ #if !defined(OS_CHROMEOS)
+ TEST_F(TtsControllerTest, TestTtsControllerUtteranceDefaults) {
+   std::unique_ptr<TtsControllerForTesting> controller =
+diff --git a/content/browser/speech/tts_utterance_impl.cc b/content/browser/speech/tts_utterance_impl.cc
+index 64f4112c1e7db4422997ebc15f8420deabe8a05f..bc510e80388d9877d77ba49dbd888c8814a2ecd8 100644
+--- a/content/browser/speech/tts_utterance_impl.cc
++++ b/content/browser/speech/tts_utterance_impl.cc
+@@ -181,6 +181,10 @@ BrowserContext* TtsUtteranceImpl::GetBrowserContext() {
+   return browser_context_;
+ }
+ 
++void TtsUtteranceImpl::ClearBrowserContext() {
++  browser_context_ = nullptr;
++}
++
+ int TtsUtteranceImpl::GetId() {
+   return id_;
+ }
+diff --git a/content/browser/speech/tts_utterance_impl.h b/content/browser/speech/tts_utterance_impl.h
+index 94b20dc48e19646d204cace2abff1ee34c1b1583..fc73f7c75702bcfe795a62ea5d9520f276eafae1 100644
+--- a/content/browser/speech/tts_utterance_impl.h
++++ b/content/browser/speech/tts_utterance_impl.h
+@@ -68,6 +68,8 @@ class CONTENT_EXPORT TtsUtteranceImpl : public TtsUtterance {
+   UtteranceEventDelegate* GetEventDelegate() override;
+ 
+   BrowserContext* GetBrowserContext() override;
++  void ClearBrowserContext() override;
++
+   int GetId() override;
+   bool IsFinished() override;
+ 
+@@ -102,7 +104,7 @@ class CONTENT_EXPORT TtsUtteranceImpl : public TtsUtterance {
+   GURL src_url_;
+ 
+   // The delegate to be called when an utterance event is fired.
+-  UtteranceEventDelegate* event_delegate_;
++  UtteranceEventDelegate* event_delegate_ = nullptr;
+ 
+   // The parsed options.
+   std::string voice_name_;
+diff --git a/content/public/browser/tts_utterance.h b/content/public/browser/tts_utterance.h
+index 68ef1b9430a43dd9f4da523df33ae6331cf4770d..0b4d59492fba97dced6b63e7d301371ef99b668d 100644
+--- a/content/public/browser/tts_utterance.h
++++ b/content/public/browser/tts_utterance.h
+@@ -117,6 +117,7 @@ class CONTENT_EXPORT TtsUtterance {
+ 
+   // Getters and setters for internal state.
+   virtual BrowserContext* GetBrowserContext() = 0;
++  virtual void ClearBrowserContext() = 0;
+   virtual int GetId() = 0;
+   virtual bool IsFinished() = 0;
+ };
