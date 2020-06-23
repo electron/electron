@@ -13,6 +13,7 @@
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
+#include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
