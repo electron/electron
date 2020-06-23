@@ -73,6 +73,12 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
         Emit("unlock-screen");
       }
     }
+  } else if (message == WM_POWERBROADCAST) {
+    if (wparam == PBT_APMRESUMEAUTOMATIC) {
+      Emit("resume");
+    } else if (wparam == PBT_APMSUSPEND) {
+      Emit("suspend");
+    }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }
