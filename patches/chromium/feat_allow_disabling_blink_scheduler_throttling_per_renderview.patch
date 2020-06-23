@@ -21,10 +21,10 @@ index 9a2cc0f076406d68910eeb5351e3869287515fcb..bde2f593f55edc677d44f4ae037042fe
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index c0bbded556c1159fae8c3e1dfe488008c46a1805..8fae7e3399ad27a5eed3257dcabbe4457cb0e5a5 100644
+index af15805b34d2cc038e73654017d4c0921e3fc321..3489f03bac1283efb6a27f5b959a72a8e5d0cb14 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -111,6 +111,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    SiteInstanceImpl* GetSiteInstance() override;
    bool IsRenderViewLive() override;
    void NotifyMoveOrResizeStarted() override;

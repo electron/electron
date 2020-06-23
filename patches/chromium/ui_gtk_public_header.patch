@@ -6,7 +6,7 @@ Subject: ui_gtk_public_header.patch
 Allow electron to depend on //ui/gtk/gtk_util.h
 
 diff --git a/ui/gtk/BUILD.gn b/ui/gtk/BUILD.gn
-index ad23dafe05acd1eabad737a16a4ea86d47ee53c8..0eab0fee9becf33e9337eb0d87f64d33ae123b3b 100644
+index d849743769837288848fd1a6e9ed75127e1a6d1d..bcdc4df20d86ac7f2b9a8a0327dd4d71aced9b20 100644
 --- a/ui/gtk/BUILD.gn
 +++ b/ui/gtk/BUILD.gn
 @@ -22,13 +22,15 @@ component("gtk_ui_delegate") {
