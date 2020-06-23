@@ -2,7 +2,13 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron';
 import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
-const { net, Net, isValidHeaderName, isValidHeaderValue, createURLLoader } = process.electronBinding('net');
+const {
+  net,
+  Net,
+  isValidHeaderName,
+  isValidHeaderValue,
+  createURLLoader
+} = process._linkedBinding('electron_browser_net');
 
 const kSupportedProtocols = new Set(['http:', 'https:']);
 

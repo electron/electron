@@ -12,7 +12,7 @@ import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
@@ -65,7 +65,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('garbage collection', () => {
-    const v8Util = process.electronBinding('v8_util');
+    const v8Util = process._linkedBinding('electron_common_v8_util');
     afterEach(closeAllWindows);
 
     it('window does not get garbage collected when opened', (done) => {

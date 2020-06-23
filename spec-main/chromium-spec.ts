@@ -14,7 +14,7 @@ import { ifit, ifdescribe } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -722,7 +722,7 @@ describe('chromium features', () => {
           process.once('uncaughtException', resolve);
         });
         expect(await w.webContents.executeJavaScript(`(${function () {
-          const ipc = process.electronBinding('ipc').ipc;
+          const { ipc } = process._linkedBinding('electron_renderer_ipc');
           return ipc.sendSync(true, 'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
         }})()`)).to.be.null();
         const exception = await uncaughtException;

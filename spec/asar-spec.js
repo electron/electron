@@ -6,7 +6,7 @@ const temp = require('temp').track();
 const util = require('util');
 const nativeImage = require('electron').nativeImage;
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 async function expectToThrowErrorWithCode (func, code) {
   let error;

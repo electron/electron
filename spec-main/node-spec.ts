@@ -6,7 +6,7 @@ import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { webContents, WebContents } from 'electron/main';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');

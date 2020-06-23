@@ -8,7 +8,7 @@ const ChildProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { emittedOnce } = require('./events-helpers');
 const { resolveGetters } = require('./expect-helpers');
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -26,7 +26,7 @@ describe('chromium feature', () => {
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
-      process.electronBinding('v8_util').takeHeapSnapshot();
+      process._linkedBinding('electron_common_v8_util').takeHeapSnapshot();
     });
   });
 

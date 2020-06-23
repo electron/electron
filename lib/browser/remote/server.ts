@@ -5,10 +5,10 @@ import { ipcMainInternal } from '../ipc-main-internal';
 import { isPromise, isSerializableObject, deserialize, serialize } from '../../common/type-utils';
 import type { MetaTypeFromRenderer, ObjectMember, MetaType, ObjProtoDescriptor } from '../../common/remote/types';
 
-const v8Util = process.electronBinding('v8_util');
-const eventBinding = process.electronBinding('event');
-const features = process.electronBinding('features');
-const { NativeImage } = process.electronBinding('native_image');
+const v8Util = process._linkedBinding('electron_common_v8_util');
+const eventBinding = process._linkedBinding('electron_browser_event');
+const features = process._linkedBinding('electron_common_features');
+const { NativeImage } = process._linkedBinding('electron_common_native_image');
 
 if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled');

@@ -9,7 +9,7 @@ import { NativeImage } from 'electron/common';
 import { serialize, deserialize } from '../lib/common/type-utils';
 import { nativeImage } from 'electron';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const expectPathsEqual = (path1: string, path2: string) => {
   if (process.platform === 'win32') {
@@ -1016,7 +1016,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         event.returnValue = obj;
       });
       await remotely(() => {
-        const { ipc } = process.electronBinding('ipc');
+        const { ipc } = process._linkedBinding('electron_renderer_ipc');
         const originalSendSync = ipc.sendSync.bind(ipc) as any;
         ipc.sendSync = (...args: any[]): any => {
           const ret = originalSendSync(...args);

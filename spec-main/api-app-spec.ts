@@ -11,7 +11,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -1298,7 +1298,7 @@ describe('app module', () => {
 
       it('keeps references to the menu', () => {
         app.dock.setMenu(new Menu());
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
     });

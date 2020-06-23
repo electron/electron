@@ -847,7 +847,7 @@ describe('Menu module', function () {
       setTimeout(() => {
         // Do garbage collection, since |menu| is not referenced in this closure
         // it would be gone after next call.
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
         setTimeout(() => {
           // Try to receive menu from weak reference.

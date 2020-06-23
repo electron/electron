@@ -1,7 +1,11 @@
 import { EventEmitter } from 'events';
 import { app } from 'electron';
 
-const { createPowerMonitor, getSystemIdleState, getSystemIdleTime } = process.electronBinding('power_monitor');
+const {
+  createPowerMonitor,
+  getSystemIdleState,
+  getSystemIdleTime
+} = process._linkedBinding('electron_browser_power_monitor');
 
 class PowerMonitor extends EventEmitter {
   constructor () {

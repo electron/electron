@@ -347,8 +347,8 @@ describe('contextBridge', () => {
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
-            const { weaklyTrackValue } = process.electronBinding('v8_util');
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process._linkedBinding('electron_common_v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process._linkedBinding('electron_common_v8_util');
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
               track: weaklyTrackValue
@@ -375,8 +375,8 @@ describe('contextBridge', () => {
       if (useSandbox) {
         it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process.electronBinding('v8_util').getWeaklyTrackedValues().length }));
-            const { weaklyTrackValue } = process.electronBinding('v8_util');
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process._linkedBinding('electron_common_v8_util').getWeaklyTrackedValues().length }));
+            const { weaklyTrackValue } = process._linkedBinding('electron_common_v8_util');
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
               track: weaklyTrackValue

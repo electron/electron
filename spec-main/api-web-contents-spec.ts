@@ -12,7 +12,7 @@ import { ifdescribe, ifit } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
