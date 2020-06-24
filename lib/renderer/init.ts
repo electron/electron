@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as vm from 'vm';
 
 const Module = require('module');
 
@@ -39,6 +40,7 @@ require('@electron/internal/common/init');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
@@ -74,16 +76,13 @@ const isHiddenPage = hasSwitch('hidden-page');
 const usesNativeWindowOpen = hasSwitch('native-window-open');
 const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
 
-const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[];
 const appPath = parseOption('app-path', null);
 const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
 const openerId = parseOption('opener-id', null, value => parseInt(value));
 
-// The webContents preload script is loaded after the session preload scripts.
-if (preloadScript) {
-  preloadScripts.push(preloadScript);
-}
+const {
+  preloadScripts
+} = ipcRendererUtils.invokeSync('ELECTRON_BROWSER_LOAD');
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -176,10 +175,21 @@ if (nodeIntegration) {
   }
 }
 
+function runPreloadScript (preloadSrc: string) {
+  const preloadWrapperSrc = `(function(exports, require, module, __filename, __dirname) {
+  ${preloadSrc}
+  })`;
+
+  // eval in window scope
+  const preloadFn = vm.runInThisContext(preloadWrapperSrc);
+
+  preloadFn({}, global.require, null, '<preloadSrc>', '');
+}
+
 // Load the preload scripts.
 for (const preloadScript of preloadScripts) {
   try {
-    Module._load(preloadScript);
+    if (preloadScript.path != null) { Module._load(preloadScript.path); } else { runPreloadScript(preloadScript.src); }
   } catch (error) {
     console.error(`Unable to load preload script: ${preloadScript}`);
     console.error(error);

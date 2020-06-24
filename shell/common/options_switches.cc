@@ -234,8 +234,6 @@ const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
 
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
-const char kPreloadScript[] = "preload";
-const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";

@@ -1853,6 +1853,28 @@ describe('BrowserWindow module', () => {
         expect(test.atLoad).to.be.an('array');
         expect(test.atPreload).to.deep.equal(test.atLoad, 'should have access to the same window APIs');
       });
+
+      it('loads a string with preloadSrc', async () => {
+        const preloadSrc = 'require("electron").ipcRenderer.send("preload", 42)';
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, preloadSrc }
+        });
+        w.loadURL('about:blank');
+        const [, response] = await emittedOnce(ipcMain, 'preload');
+        expect(response).to.equal(42);
+      });
+
+      it('loads a string with preloadSrc when not sandboxed', async () => {
+        const preloadSrc = 'require("electron").ipcRenderer.send("preload", 42)';
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { preloadSrc, nodeIntegration: true }
+        });
+        w.loadURL('about:blank');
+        const [, response] = await emittedOnce(ipcMain, 'preload');
+        expect(response).to.equal(42);
+      });
     });
 
     describe('session preload scripts', function () {

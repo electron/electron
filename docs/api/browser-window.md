@@ -265,6 +265,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](process.md#event-loaded).
+    * `preloadSrc` String (optional) - As `preload`, but specify the source code as a string
+      instead of a file name.
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
