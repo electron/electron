@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: AshCripps <Ashley.Cripps@ibm.com>
+Date: Mon, 1 Jun 2020 13:34:20 +0100
+Subject: crypto: update root certificates to NSS 3.53
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Update the list of root certificates in src/node_root_certs.h with
+tools/mk-ca-bundle.pl.
+
+Certificates added:
+Entrust Root Certification Authority - G4
+
+Certificates removed:
+
+PR-URL: https://github.com/nodejs/node/pull/33682
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Sam Roberts <vieuxtech@gmail.com>
+Reviewed-By: Beth Griggs <Bethany.Griggs@uk.ibm.com>
+Reviewed-By: Juan José Arboleda <soyjuanarbol@gmail.com>
+
+diff --git a/src/node_root_certs.h b/src/node_root_certs.h
+index bc08910c77ad4c9d1121614aa9b97eed0433175c..f8e84e7d231e33736a798c2fd344566df2d2c6a6 100644
+--- a/src/node_root_certs.h
++++ b/src/node_root_certs.h
+@@ -3421,4 +3421,38 @@
+ "qp9HpLIiyhY6UFfEW0NnxWViA0kB60PZ2Pierc+xYw5F9KBaLJstxabArahH9CdMOA0uG0k7\n"
+ "UvToiIMrVCjU8jVStDKDYmlkDJGcn5fqdBb9HxEGmpv0\n"
+ "-----END CERTIFICATE-----",
++
++/* Entrust Root Certification Authority - G4 */
++"-----BEGIN CERTIFICATE-----\n"
++"MIIGSzCCBDOgAwIBAgIRANm1Q3+vqTkPAAAAAFVlrVgwDQYJKoZIhvcNAQELBQAwgb4xCzAJ\n"
++"BgNVBAYTAlVTMRYwFAYDVQQKEw1FbnRydXN0LCBJbmMuMSgwJgYDVQQLEx9TZWUgd3d3LmVu\n"
++"dHJ1c3QubmV0L2xlZ2FsLXRlcm1zMTkwNwYDVQQLEzAoYykgMjAxNSBFbnRydXN0LCBJbmMu\n"
++"IC0gZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHkxMjAwBgNVBAMTKUVudHJ1c3QgUm9vdCBDZXJ0\n"
++"aWZpY2F0aW9uIEF1dGhvcml0eSAtIEc0MB4XDTE1MDUyNzExMTExNloXDTM3MTIyNzExNDEx\n"
++"Nlowgb4xCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1FbnRydXN0LCBJbmMuMSgwJgYDVQQLEx9T\n"
++"ZWUgd3d3LmVudHJ1c3QubmV0L2xlZ2FsLXRlcm1zMTkwNwYDVQQLEzAoYykgMjAxNSBFbnRy\n"
++"dXN0LCBJbmMuIC0gZm9yIGF1dGhvcml6ZWQgdXNlIG9ubHkxMjAwBgNVBAMTKUVudHJ1c3Qg\n"
++"Um9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAtIEc0MIICIjANBgkqhkiG9w0BAQEFAAOC\n"
++"Ag8AMIICCgKCAgEAsewsQu7i0TD/pZJH4i3DumSXbcr3DbVZwbPLqGgZ2K+EbTBwXX7zLtJT\n"
++"meH+H17ZSK9dE43b/2MzTdMAArzE+NEGCJR5WIoV3imz/f3ET+iq4qA7ec2/a0My3dl0ELn3\n"
++"9GjUu9CH1apLiipvKgS1sqbHoHrmSKvS0VnM1n4j5pds8ELl3FFLFUHtSUrJ3hCX1nbB76W1\n"
++"NhSXNdh4IjVS70O92yfbYVaCNNzLiGAMC1rlLAHGVK/XqsEQe9IFWrhAnoanw5CGAlZSCXqc\n"
++"0ieCU0plUmr1POeo8pyvi73TDtTUXm6Hnmo9RR3RXRv06QqsYJn7ibT/mCzPfB3pAqoEmh64\n"
++"3IhuJbNsZvc8kPNXwbMv9W3y+8qh+CmdRouzavbmZwe+LGcKKh9asj5XxNMhIWNlUpEbsZmO\n"
++"eX7m640A2Vqq6nPopIICR5b+W45UYaPrL0swsIsjdXJ8ITzI9vF01Bx7owVV7rtNOzK+mndm\n"
++"nqxpkCIHH2E6lr7lmk/MBTwoWdPBDFSoWWG9yHJM6Nyfh3+9nEg2XpWjDrk4JFX8dWbrAuMI\n"
++"NClKxuMrLzOg2qOGpRKX/YAr2hRC45K9PvJdXmd0LhyIRyk0X+IyqJwlN4y6mACXi0mWHv0l\n"
++"iqzc2thddG5msP9E36EYxr5ILzeUePiVSj9/E15dWf10hkNjc0kCAwEAAaNCMEAwDwYDVR0T\n"
++"AQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFJ84xFYjwznooHFs6FRM5Og6\n"
++"sb9nMA0GCSqGSIb3DQEBCwUAA4ICAQAS5UKme4sPDORGpbZgQIeMJX6tuGguW8ZAdjwD+MlZ\n"
++"9POrYs4QjbRaZIxowLByQzTSGwv2LFPSypBLhmb8qoMi9IsabyZIrHZ3CL/FmFz0Jomee8O5\n"
++"ZDIBf9PD3Vht7LGrhFV0d4QEJ1JrhkzO3bll/9bGXp+aEJlLdWr+aumXIOTkdnrG0CSqkM0g\n"
++"kLpHZPt/B7NTeLUKYvJzQ85BK4FqLoUWlFPUa19yIqtRLULVAJyZv967lDtX/Zr1hstWO1uI\n"
++"AeV8KEsD+UmDfLJ/fOPtjqF/YFOOVZ1QNBIPt5d7bIdKROf1beyAN/BYGW5KaHbwH5Lk6rWS\n"
++"02FREAutp9lfx1/cH6NcjKF+m7ee01ZvZl4HliDtC3T7Zk6LERXpgUl+b7DUUH8i119lAg2m\n"
++"9IUe2K4GS0qn0jFmwvjO5QimpAKWRGhXxNUzzxkvFMSUHHuk2fCfDrGA4tGeEWSpiBE6doLl\n"
++"YsKA2KSD7ZPvfC+QsDJMlhVoSFLUmQjAJOgc47OlIQ6SwJAfzyBfyjs4x7dtOvPmRLgOMWuI\n"
++"jnDrnBdSqEGULoe256YSxXXfW8AKbnuk5F6G+TaU33fD6Q3AOfF5u0aOq0NZJ7cguyPpVkAh\n"
++"7DE9ZapD8j3fcEThuk0mEDuYn/PIjhs4ViFqUZPTkcpG2om3PVODLAgfi49T3f+sHw==\n"
++"-----END CERTIFICATE-----",
+ #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS

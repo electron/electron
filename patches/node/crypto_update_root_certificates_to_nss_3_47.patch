@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: AshCripps <Ashley.Cripps@ibm.com>
+Date: Thu, 31 Oct 2019 11:15:07 +0000
+Subject: crypto: update root certificates to NSS 3.47
+
+Update the list of root certificates in src/node_root_certs.h with
+tools/mk-ca-bundle.pl.
+
+Certificates added:
+
+Certificates removed:
+- Certplus Class 2 Primary CA
+- Deutsche Telekom Root CA 2
+
+PR-URL: https://github.com/nodejs/node/pull/30195
+Reviewed-By: Sam Roberts <vieuxtech@gmail.com>
+Reviewed-By: David Carlier <devnexen@gmail.com>
+Reviewed-By: Beth Griggs <Bethany.Griggs@uk.ibm.com>
+Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Franziska Hinkelmann <franziska.hinkelmann@gmail.com>
+
+diff --git a/src/node_root_certs.h b/src/node_root_certs.h
+index a5032d645202fde30c3e9076e842b7644ec6e48a..bc08910c77ad4c9d1121614aa9b97eed0433175c 100644
+--- a/src/node_root_certs.h
++++ b/src/node_root_certs.h
+@@ -574,27 +574,6 @@
+ "yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep+OkuE6N36B9K\n"
+ "-----END CERTIFICATE-----",
+ 
+-/* Certplus Class 2 Primary CA */
+-"-----BEGIN CERTIFICATE-----\n"
+-"MIIDkjCCAnqgAwIBAgIRAIW9S/PY2uNp9pTXX8OlRCMwDQYJKoZIhvcNAQEFBQAwPTELMAkG\n"
+-"A1UEBhMCRlIxETAPBgNVBAoTCENlcnRwbHVzMRswGQYDVQQDExJDbGFzcyAyIFByaW1hcnkg\n"
+-"Q0EwHhcNOTkwNzA3MTcwNTAwWhcNMTkwNzA2MjM1OTU5WjA9MQswCQYDVQQGEwJGUjERMA8G\n"
+-"A1UEChMIQ2VydHBsdXMxGzAZBgNVBAMTEkNsYXNzIDIgUHJpbWFyeSBDQTCCASIwDQYJKoZI\n"
+-"hvcNAQEBBQADggEPADCCAQoCggEBANxQltAS+DXSCHh6tlJw/W/uz7kRy1134ezpfgSN1sxv\n"
+-"c0NXYKwzCkTsA18cgCSR5aiRVhKC9+Ar9NuuYS6JEI1rbLqzAr3VNsVINyPi8Fo3UjMXEuLR\n"
+-"YE2+L0ER4/YXJQyLkcAbmXuZVg2v7tK8R1fjeUl7NIknJITesezpWE7+Tt9avkGtrAjFGA7v\n"
+-"0lPubNCdEgETjdyAYveVqUSISnFOYFWe2yMZeVYHDD9jC1yw4r5+FfyUM1hBOHTE4Y+L3yas\n"
+-"H7WLO7dDWWuwJKZtkIvEcupdM5i3y95ee++U8Rs+yskhwcWYAqqi9lt3m/V+llU0HGdpwPFC\n"
+-"40es/CgcZlUCAwEAAaOBjDCBiTAPBgNVHRMECDAGAQH/AgEKMAsGA1UdDwQEAwIBBjAdBgNV\n"
+-"HQ4EFgQU43Mt38sOKAze3bOkynm4jrvoMIkwEQYJYIZIAYb4QgEBBAQDAgEGMDcGA1UdHwQw\n"
+-"MC4wLKAqoCiGJmh0dHA6Ly93d3cuY2VydHBsdXMuY29tL0NSTC9jbGFzczIuY3JsMA0GCSqG\n"
+-"SIb3DQEBBQUAA4IBAQCnVM+IRBnL39R/AN9WM2K191EBkOvDP9GIROkkXe/nFL0gt5o8AP5t\n"
+-"n9uQ3Nf0YtaLcF3n5QRIqWh8yfFC82x/xXp8HVGIutIKPidd3i1RTtMTZGnkLuPT55sJmabg\n"
+-"lZvOGtd/vjzOUrMRFcEPF80Du5wlFbqidon8BvEY0JNLDnyCt6X09l/+7UCmnYR0ObncHoUW\n"
+-"2ikbhiMAybuJfm6AiB4vFLQDJKgybwOaRywwvlbGp0ICcBvqQNi6BQNwB6SW//1IMwrh3KWB\n"
+-"kJtN3X3n57LNXMhqlfil9o3EXXgIvnsG1knPGTZQIy4I5p4FTUcY1Rbpsda2ENW7l7+ijrRU\n"
+-"-----END CERTIFICATE-----",
+-
+ /* DST Root CA X3 */
+ "-----BEGIN CERTIFICATE-----\n"
+ "MIIDSjCCAjKgAwIBAgIQRK+wgNajJ7qJMDmGLvhAazANBgkqhkiG9w0BAQUFADA/MSQwIgYD\n"
+@@ -904,28 +883,6 @@
+ "vkHve52Xdf+XlcCWWC/qu0bXu+TZLg==\n"
+ "-----END CERTIFICATE-----",
+ 
+-/* Deutsche Telekom Root CA 2 */
+-"-----BEGIN CERTIFICATE-----\n"
+-"MIIDnzCCAoegAwIBAgIBJjANBgkqhkiG9w0BAQUFADBxMQswCQYDVQQGEwJERTEcMBoGA1UE\n"
+-"ChMTRGV1dHNjaGUgVGVsZWtvbSBBRzEfMB0GA1UECxMWVC1UZWxlU2VjIFRydXN0IENlbnRl\n"
+-"cjEjMCEGA1UEAxMaRGV1dHNjaGUgVGVsZWtvbSBSb290IENBIDIwHhcNOTkwNzA5MTIxMTAw\n"
+-"WhcNMTkwNzA5MjM1OTAwWjBxMQswCQYDVQQGEwJERTEcMBoGA1UEChMTRGV1dHNjaGUgVGVs\n"
+-"ZWtvbSBBRzEfMB0GA1UECxMWVC1UZWxlU2VjIFRydXN0IENlbnRlcjEjMCEGA1UEAxMaRGV1\n"
+-"dHNjaGUgVGVsZWtvbSBSb290IENBIDIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB\n"
+-"AQCrC6M14IspFLEUha88EOQ5bzVdSq7d6mGNlUn0b2SjGmBmpKlAIoTZ1KXleJMOaAGtuU1c\n"
+-"Os7TuKhCQN/Po7qCWWqSG6wcmtoIKyUn+WkjR/Hg6yx6m/UTAtB+NHzCnjwAWav12gz1Mjwr\n"
+-"rFDa1sPeg5TKqAyZMg4ISFZbavva4VhYAUlfckE8FQYBjl2tqriTtM2e66foai1SNNs671x1\n"
+-"Udrb8zH57nGYMsRUFUQM+ZtV7a3fGAigo4aKSe5TBY8ZTNXeWHmb0mocQqvF1afPaA+W5OFh\n"
+-"mHZhyJF81j4A4pFQh+GdCuatl9Idxjp9y7zaAzTVjlsB9WoHtxa2bkp/AgMBAAGjQjBAMB0G\n"
+-"A1UdDgQWBBQxw3kbuvVT1xfgiXotF2wKsyudMzAPBgNVHRMECDAGAQH/AgEFMA4GA1UdDwEB\n"
+-"/wQEAwIBBjANBgkqhkiG9w0BAQUFAAOCAQEAlGRZrTlk5ynrE/5aw4sTV8gEJPB0d8Bg42f7\n"
+-"6Ymmg7+Wgnxu1MM9756AbrsptJh6sTtU6zkXR34ajgv8HzFZMQSyzhfzLMdiNlXiItiJVbSY\n"
+-"SKpk+tYcNthEeFpaIzpXl/V6ME+un2pMSyuOoAPjPuCp1NJ70rOo4nI8rZ7/gFnkm0W09juw\n"
+-"zTkZmDLl6iFhkOQxIY40sfcvNUqFENrnijchvllj4PKFiDFT1FQUhXB59C4Gdyd1Lx+4ivn+\n"
+-"xbrYNuSD7Odlt79jWvNGr4GUN9RBjNYj1h7P9WgbRGOiWrqnNVmh5XAFmw4jV5mUCm26OWMo\n"
+-"hpLzGITY+9HPBVZkVw==\n"
+-"-----END CERTIFICATE-----",
+-
+ /* Cybertrust Global Root */
+ "-----BEGIN CERTIFICATE-----\n"
+ "MIIDoTCCAomgAwIBAgILBAAAAAABD4WqLUgwDQYJKoZIhvcNAQEFBQAwOzEYMBYGA1UEChMP\n"
