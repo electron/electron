@@ -194,7 +194,7 @@ for (const preloadScript of preloadScripts) {
     console.error(`Unable to load preload script: ${preloadScript}`);
     console.error(error);
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, error);
+    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript.path || '<preloadSrc>', error);
   }
 }
 
