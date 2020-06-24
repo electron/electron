@@ -32,6 +32,13 @@ declare namespace Electron {
   interface WebContents {
     _getURL(): string;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
+    getLastWebPreferences(): Electron.WebPreferences;
+    _getPreloadPaths(): string[];
+  }
+
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number;
   }
 
   interface SerializedError {

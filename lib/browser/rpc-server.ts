@@ -34,7 +34,7 @@ ipcMainInternal.on('ELECTRON_BROWSER_WINDOW_CLOSE', function (event: ElectronInt
 });
 
 ipcMainInternal.handle('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES', function (event: IpcMainInvokeEvent) {
-  return (event.sender as any).getLastWebPreferences();
+  return event.sender.getLastWebPreferences();
 });
 
 // Methods not listed in this set are called directly in the renderer process.
@@ -93,8 +93,8 @@ const getPreloadScript = async function (preloadPath: string) {
 };
 
 ipcMainUtils.handleSync('ELECTRON_BROWSER_SANDBOX_LOAD', async function (event: IpcMainInvokeEvent) {
-  const preloadPaths = (event.sender as any)._getPreloadPaths() as string[];
-  const webPreferences = (event.sender as any).getLastWebPreferences() || {};
+  const preloadPaths = event.sender._getPreloadPaths();
+  const webPreferences = event.sender.getLastWebPreferences() || {};
 
   return {
     preloadScripts: await Promise.all(preloadPaths.map(path => getPreloadScript(path))),
