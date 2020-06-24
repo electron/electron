@@ -43,3 +43,7 @@ fsevents-regression-in-watching.patch
 build_bring_back_node_with_ltcg_configuration.patch
 fix_uv_fs_mkdir_for_invalid_names.patch
 win-fix-uv_spawn-ENOMEM-on-empty-env.patch
+tools_update_certdata_txt_to_nss_3_47.patch
+crypto_update_root_certificates_to_nss_3_47.patch
+tools_update_certdata_txt_to_nss_3_53.patch
+crypto_update_root_certificates_to_nss_3_53.patch
