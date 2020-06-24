@@ -32,6 +32,21 @@
                    selector:@selector(onScreenUnlocked:)
                        name:@"com.apple.screenIsUnlocked"
                      object:nil];
+
+    // A notification that the workspace posts before the machine goes to sleep.
+    [[[NSWorkspace sharedWorkspace] notificationCenter]
+        addObserver:self
+           selector:@selector(isSuspending:)
+               name:NSWorkspaceWillSleepNotification
+             object:nil];
+
+    // A notification that the workspace posts when the machine wakes from
+    // sleep.
+    [[[NSWorkspace sharedWorkspace] notificationCenter]
+        addObserver:self
+           selector:@selector(isResuming:)
+               name:NSWorkspaceDidWakeNotification
+             object:nil];
   }
   return self;
 }
@@ -45,14 +60,26 @@
   self->emitters.push_back(monitor_);
 }
 
+- (void)isSuspending:(NSNotification*)notify {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("suspend");
+  }
+}
+
+- (void)isResuming:(NSNotification*)notify {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("resume");
+  }
+}
+
 - (void)onScreenLocked:(NSNotification*)notification {
-  for (auto*& emitter : self->emitters) {
+  for (auto* emitter : self->emitters) {
     emitter->Emit("lock-screen");
   }
 }
 
 - (void)onScreenUnlocked:(NSNotification*)notification {
-  for (auto*& emitter : self->emitters) {
+  for (auto* emitter : self->emitters) {
     emitter->Emit("unlock-screen");
   }
 }
