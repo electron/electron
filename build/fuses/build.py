@@ -40,7 +40,7 @@ namespace electron {
 
 namespace fuses {
 
-const volatile char kFuseWire[] = "{sentinel}{fuse_version}{initial_config}";
+const volatile char kFuseWire[] = { /* sentinel */ {sentinel}, /* fuse_version */ {fuse_version}, /* fuse_wire_length */ {fuse_wire_length}, /* fuse_wire */ {initial_config}};
 
 {getters}
 
@@ -77,8 +77,22 @@ bool Is{name}Enabled() {
 }
 """.replace("{name}", name).replace("{index}", str(index))
 
+def c_hex(n):
+  s = hex(n)[2:]
+  return "0x" + s.rjust(2, '0')
+
+def hex_arr(s):
+  arr = []
+  for char in s:
+    arr.append(c_hex(ord(char)))
+  return ",".join(arr)
+
 header = TEMPLATE_H.replace("{getters}", getters_h.strip())
-impl = TEMPLATE_CC.replace("{sentinel}", SENTINEL).replace("{fuse_version}", chr(fuse_version) + chr(len(fuses))).replace("{initial_config}", initial_config).replace("{getters}", getters_cc.strip())
+impl = TEMPLATE_CC.replace("{sentinel}", hex_arr(SENTINEL))
+impl = impl.replace("{fuse_version}", c_hex(fuse_version))
+impl = impl.replace("{fuse_wire_length}", c_hex(len(fuses)))
+impl = impl.replace("{initial_config}", hex_arr(initial_config))
+impl = impl.replace("{getters}", getters_cc.strip())
 
 with open(sys.argv[1], 'w') as f:
   f.write(header)
