@@ -70,9 +70,9 @@ for fuse in fuses:
   index += 1
   initial_config += fuse_defaults[fuse]
   name = ''.join(word.title() for word in fuse.split('_'))
-  getters_h += "bool Is{name}Enabled();\n".replace("{name}", name)
+  getters_h += "FUSE_EXPORT bool Is{name}Enabled();\n".replace("{name}", name)
   getters_cc += """
-FUSE_EXPORT bool Is{name}Enabled() {
+bool Is{name}Enabled() {
   return kFuseWire[{index}] == '1';
 }
 """.replace("{name}", name).replace("{index}", str(index))
