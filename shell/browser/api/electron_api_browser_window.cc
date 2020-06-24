@@ -256,27 +256,27 @@ void BrowserWindow::OnWindowClosed() {
 
 void BrowserWindow::OnWindowBlur() {
   web_contents()->StoreFocus();
-#if defined(OS_MACOSX)
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(false);
-#endif
 
   TopLevelWindow::OnWindowBlur();
 }
 
 void BrowserWindow::OnWindowFocus() {
   web_contents()->RestoreFocus();
-#if defined(OS_MACOSX)
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(true);
-#else
+
+#if !defined(OS_MACOSX)
   if (!api_web_contents_->IsDevToolsOpened())
     web_contents()->Focus();
 #endif
 
   TopLevelWindow::OnWindowFocus();
+}
+
+void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
+#if defined(OS_MACOSX)
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(is_key);
+#endif
 }
 
 void BrowserWindow::OnWindowResize() {
