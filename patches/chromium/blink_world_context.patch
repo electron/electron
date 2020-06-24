@@ -7,7 +7,7 @@ This exposes a method for obtaining a reference to an isolated world, which is
 otherwise not available in the Blink API.
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 01aeea529fe6d5e91e13c514943b35df114911ee..b82010ac63d159da9402fce242bfbce75a73dff6 100644
+index be5efdc896fd9318b50c9e5ad02ec404ba7be23d..79234d0def2d4e97e05a03ecb1dbd7b077bc44b2 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -354,6 +354,8 @@ class WebLocalFrame : public WebFrame {

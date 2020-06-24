@@ -42,7 +42,7 @@ index 6b03c07316eaab83a50afc123fc9f17b1c1dfa3b..e821571731e4e1a93f873477c7410de7
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 97d3410671e498f7a46cbd5b401613db56290a1e..6006b54c615828cc3001201169ab99d50e429bcc 100644
+index 6c3252af5e5f6dac3045f6315704ba9d494add4c..a8853ff856aa923e3820eb68d7b8081332d2a004 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1406,6 +1406,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 97d3410671e498f7a46cbd5b401613db56290a1e..6006b54c615828cc3001201169ab99d5
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4775,6 +4790,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4783,6 +4798,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 97d3410671e498f7a46cbd5b401613db56290a1e..6006b54c615828cc3001201169ab99d5
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4788,10 +4804,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4796,10 +4812,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -229,7 +229,7 @@ index 571e6381f2456450a07b64c3a84d1f15f4cbbefa..cb342a6c4915c4b2cc7fe0c1b3c7219f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 456abd7838cff663805f09e8804ab8a2aa2f9b1b..6daec7affce6c0ca1254a6404dd5e575492be237 100644
+index a0ea7c6100eb437bf1c409ddad3bb5bbe1f3acb8..756cf1465e27820e1061ce251b03f77b3d8546aa 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -255,7 +255,7 @@ index 456abd7838cff663805f09e8804ab8a2aa2f9b1b..6daec7affce6c0ca1254a6404dd5e575
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2bffcedda2665dc832f9db8c69bbb707ac5f9059..141c21909a9d89de6408b6e0f429d15c3c1567fb 100644
+index 31a0a2b60dd96ede0beba95e8d1df65ed744cf83..e56dee7ea987b6b0b3f729f4c8ffa483e3e8c96f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {

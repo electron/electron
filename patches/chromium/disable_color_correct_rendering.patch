@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 3f281a56c2b9f367e2085b876ecbcc9b79c46b09..0b103af953ee9b5ca78554ef32d768dd352d1b17 100644
+index 82c14397633c55c4ffc5f09d5bd4fc434afa2759..86c5da137497fc01f141be076efa955188a79790 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1863,6 +1863,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1862,6 +1862,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -81,7 +81,7 @@ index 0fc4813b2f76fe6154ebdc60ffabd278bed75653..7423c91d661adcf9e761b93ddbfa4ea8
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 8ed1da04200eaf1b350fe95a3d9525648638b272..ca5f0d16a00c1d65bc059c68d7f0fe50ef493cff 100644
+index 9c3432fd618ec5d0fc8aa0d28c73c3e004d25438..c35e322f159ea77b63b8711ad7a7bf248e2ada8d 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -85,6 +85,9 @@
@@ -251,10 +251,10 @@ index 03c5e4cc58ae9321dc2a89cef43d615ac2023916..1800a97025d03d7fbf8cf5ab7a632277
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 14d836019d49fcf90a8e8863a9a0ca4148fd3894..02f9fb2e8564756c07c51637faa77b05c7f8af7a 100644
+index d56b2a18c3e1edc5c02ceb99d695dde3023f94dc..9e44fd8e77d5fcf651ab1bd9399317bd58881423 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2238,6 +2238,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2216,6 +2216,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
