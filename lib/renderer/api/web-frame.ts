@@ -58,7 +58,7 @@ for (const name in binding) {
     // use a neat `keyof` here
     (WebFrame as any).prototype[name] = function (...args: Array<any>) {
       if (!worldSafeJS && name.startsWith('executeJavaScript')) {
-        deprecate.log(`Security Warning: webFrame.${name} was called without worldSafeExecuteJavaScript set to true.  This is considered unsafe and the default of worldSafeExecuteJavaScript will be changing to true in Electron 12.`);
+        deprecate.log(`Security Warning: webFrame.${name} was called without worldSafeExecuteJavaScript enabled. This is considered unsafe. worldSafeExecuteJavaScript will be enabled by default in Electron 12.`);
       }
       return binding[name](this.context, ...args);
     };
