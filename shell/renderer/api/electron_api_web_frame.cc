@@ -134,7 +134,12 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
-        if (!world_safe_result_) {
+        // Either world safe results are disabled or the result was created in
+        // the same world as the caller
+        if (!world_safe_result_ ||
+            (result[0]->IsObject() &&
+             promise_.GetContext() ==
+                 result[0].As<v8::Object>()->CreationContext())) {
           // Right now only single results per frame is supported.
           if (!callback_.is_null())
             std::move(callback_).Run(result[0], v8::Undefined(isolate));
@@ -143,16 +148,31 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           // Serializable objects
           blink::CloneableMessage ret;
           bool success;
+          std::string error_message;
           {
             v8::TryCatch try_catch(isolate);
             success = gin::ConvertFromV8(isolate, result[0], &ret);
+            if (try_catch.HasCaught()) {
+              auto message = try_catch.Message();
+
+              if (message.IsEmpty() ||
+                  !gin::ConvertFromV8(isolate, message->Get(),
+                                      &error_message)) {
+                error_message =
+                    "An unknown exception occurred while getting the result of "
+                    "the script";
+              }
+            }
           }
           if (!success) {
             // Failed convert so we send undefined everywhere
             if (!callback_.is_null())
-              std::move(callback_).Run(v8::Undefined(isolate),
-                                       v8::Undefined(isolate));
-            promise_.Resolve(v8::Undefined(isolate));
+              std::move(callback_).Run(
+                  v8::Undefined(isolate),
+                  v8::Exception::Error(
+                      v8::String::NewFromUtf8(isolate, error_message.c_str())
+                          .ToLocalChecked()));
+            promise_.RejectWithErrorMessage(error_message);
           } else {
             v8::Local<v8::Context> context = promise_.GetContext();
             v8::Context::Scope context_scope(context);
