@@ -8,6 +8,7 @@
 #include <winuser.h>
 
 #include "base/bind.h"
+#include "base/logging.h"
 #include "base/stl_util.h"
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
