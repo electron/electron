@@ -18,7 +18,6 @@
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
@@ -57,7 +56,6 @@
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
@@ -93,7 +91,6 @@
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "gray",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
@@ -128,7 +125,6 @@
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
@@ -163,7 +159,6 @@
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
