@@ -44,7 +44,6 @@ notification_provenance.patch
 content_browser_main_loop.patch
 dump_syms.patch
 command-ismediakey.patch
-tts.patch
 printing.patch
 support_mixed_sandbox_with_zygote.patch
 fix_disable_usage_of_abort_report_np_in_mas_builds.patch
