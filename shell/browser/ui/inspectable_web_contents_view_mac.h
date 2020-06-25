@@ -20,6 +20,9 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
  public:
   explicit InspectableWebContentsViewMac(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
+  InspectableWebContentsViewMac(const InspectableWebContentsViewMac&) = delete;
+  InspectableWebContentsViewMac& operator=(
+      const InspectableWebContentsViewMac&) = delete;
   ~InspectableWebContentsViewMac() override;
 
   gfx::NativeView GetNativeView() const override;
@@ -41,8 +44,6 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   InspectableWebContentsImpl* inspectable_web_contents_;
 
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
-
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };
 
 }  // namespace electron
