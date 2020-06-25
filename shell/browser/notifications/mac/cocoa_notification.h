@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/logging.h"
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/notifications/notification.h"
 

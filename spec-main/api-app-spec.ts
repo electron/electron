@@ -1116,7 +1116,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getGPUInfo() API', () => {
+  // FIXME https://github.com/electron/electron/issues/24224
+  ifdescribe(process.platform !== 'linux')('getGPUInfo() API', () => {
     const appPath = path.join(fixturesPath, 'api', 'gpu-info.js');
 
     const getGPUInfo = async (type: string) => {

@@ -42,3 +42,5 @@ deps_update_nghttp2_to_1_41_0.patch
 napi_fix_memory_corruption_vulnerability.patch
 tools_update_certdata_txt.patch
 crypto_update_root_certificates.patch
+lib_src_switch_buffer_kmaxlength_to_size_t.patch
+update_tests_after_increasing_typed_array_size.patch

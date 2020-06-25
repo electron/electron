@@ -80,10 +80,10 @@ void RemoteObjectFreer::RunDestructor() {
       ref_mapper_.erase(objects_it);
   }
 
-  mojom::ElectronBrowserPtr electron_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&electron_ptr));
-  electron_ptr->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
+      browser_remote.BindNewPipeAndPassReceiver());
+  browser_remote->DereferenceRemoteJSObject(context_id_, object_id_, ref_count);
 }
 
 }  // namespace electron

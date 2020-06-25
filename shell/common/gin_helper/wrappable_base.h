@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 #define SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 
+#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace gin {

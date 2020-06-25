@@ -24,6 +24,8 @@
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #include "chrome/services/printing/printing_service.h"
 #include "chrome/services/printing/public/mojom/printing_service.mojom.h"
+#include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
+#include "chrome/services/util_win/util_read_icon.h"
 #include "chrome/utility/printing_handler.h"
 #endif  // defined(OS_WIN)
 
@@ -33,10 +35,17 @@ namespace electron {
 
 namespace {
 
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING)
 auto RunPrintingService(
     mojo::PendingReceiver<printing::mojom::PrintingService> receiver) {
   return std::make_unique<printing::PrintingService>(std::move(receiver));
+}
+#endif
+
+auto RunWindowsIconReader(
+    mojo::PendingReceiver<chrome::mojom::UtilReadIcon> receiver) {
+  return std::make_unique<UtilReadIcon>(std::move(receiver));
 }
 #endif
 
@@ -108,7 +117,7 @@ ElectronContentUtilityClient::GetMainThreadServiceFactory() {
 #if BUILDFLAG(ENABLE_PRINTING)
     RunPrintCompositor,
 #if defined(OS_WIN)
-        RunPrintingService
+        RunPrintingService, RunWindowsIconReader
 #endif
 #endif
   };

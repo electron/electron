@@ -19,11 +19,11 @@ class WindowStateWatcher : public ui::XEventObserver {
 
  protected:
   // ui::XEventObserver:
-  void WillProcessXEvent(XEvent* xev) override;
-  void DidProcessXEvent(XEvent* xev) override;
+  void WillProcessXEvent(x11::Event* x11_event) override;
+  void DidProcessXEvent(x11::Event* x11_event) override;
 
  private:
-  bool IsWindowStateEvent(XEvent* xev) const;
+  bool IsWindowStateEvent(x11::Event* x11_event) const;
 
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
