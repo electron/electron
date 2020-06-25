@@ -129,6 +129,45 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   ~ScriptExecutionCallback() override = default;
 
+  void CopyResultToCallingContextAndFinalize(
+      v8::Isolate* isolate,
+      const v8::Local<v8::Value>& result) {
+    blink::CloneableMessage ret;
+    bool success;
+    std::string error_message;
+    {
+      v8::TryCatch try_catch(isolate);
+      success = gin::ConvertFromV8(isolate, result, &ret);
+      if (try_catch.HasCaught()) {
+        auto message = try_catch.Message();
+
+        if (message.IsEmpty() ||
+            !gin::ConvertFromV8(isolate, message->Get(), &error_message)) {
+          error_message =
+              "An unknown exception occurred while getting the result of "
+              "the script";
+        }
+      }
+    }
+    if (!success) {
+      // Failed convert so we send undefined everywhere
+      if (!callback_.is_null())
+        std::move(callback_).Run(
+            v8::Undefined(isolate),
+            v8::Exception::Error(
+                v8::String::NewFromUtf8(isolate, error_message.c_str())
+                    .ToLocalChecked()));
+      promise_.RejectWithErrorMessage(error_message);
+    } else {
+      v8::Local<v8::Context> context = promise_.GetContext();
+      v8::Context::Scope context_scope(context);
+      v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
+      if (!callback_.is_null())
+        std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
+      promise_.Resolve(cloned_value);
+    }
+  }
+
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -145,42 +184,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
             std::move(callback_).Run(result[0], v8::Undefined(isolate));
           promise_.Resolve(result[0]);
         } else {
-          // Serializable objects
-          blink::CloneableMessage ret;
-          bool success;
-          std::string error_message;
-          {
-            v8::TryCatch try_catch(isolate);
-            success = gin::ConvertFromV8(isolate, result[0], &ret);
-            if (try_catch.HasCaught()) {
-              auto message = try_catch.Message();
-
-              if (message.IsEmpty() ||
-                  !gin::ConvertFromV8(isolate, message->Get(),
-                                      &error_message)) {
-                error_message =
-                    "An unknown exception occurred while getting the result of "
-                    "the script";
-              }
-            }
-          }
-          if (!success) {
-            // Failed convert so we send undefined everywhere
-            if (!callback_.is_null())
-              std::move(callback_).Run(
-                  v8::Undefined(isolate),
-                  v8::Exception::Error(
-                      v8::String::NewFromUtf8(isolate, error_message.c_str())
-                          .ToLocalChecked()));
-            promise_.RejectWithErrorMessage(error_message);
-          } else {
-            v8::Local<v8::Context> context = promise_.GetContext();
-            v8::Context::Scope context_scope(context);
-            v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
-            if (!callback_.is_null())
-              std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
-            promise_.Resolve(cloned_value);
-          }
+          CopyResultToCallingContextAndFinalize(isolate, result[0]);
         }
       } else {
         const char* error_message =
