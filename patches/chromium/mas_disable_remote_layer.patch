@@ -17,7 +17,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 3307998ec566e24a9050434af4e6e3bb09557d43..456603c97bfc2214b0d08fecd592ff1e2c26ceb6 100644
+index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73ca10c2b0 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -20,7 +20,9 @@
@@ -30,7 +30,7 @@ index 3307998ec566e24a9050434af4e6e3bb09557d43..456603c97bfc2214b0d08fecd592ff1e
  @class CALayer;
  
  namespace ui {
-@@ -111,7 +113,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
+@@ -116,7 +118,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -41,7 +41,7 @@ index 3307998ec566e24a9050434af4e6e3bb09557d43..456603c97bfc2214b0d08fecd592ff1e
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 0823c8a728f62679f076a6237ba4dcc207c5d9bb..5ce94e2e2d696664e75c1aeb30d0177458a27df1 100644
+index f0dd2928aefcfef71e148e4e5c1e88dd7f9b0724..3461a7839a13f5c34c78b9b13997d5d3e42977a4 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -51,7 +51,7 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::
@@ -61,7 +61,7 @@ index 0823c8a728f62679f076a6237ba4dcc207c5d9bb..5ce94e2e2d696664e75c1aeb30d01774
  }
  
  template <typename BaseClass>
-@@ -141,7 +142,9 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::SwapBuffersInternal(
+@@ -140,7 +141,9 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::SwapBuffersInternal(
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {

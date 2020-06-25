@@ -106,10 +106,10 @@ index 6941326796bb7e7b056ae0f83345edb2e4cb0479..8e8e1e6d994809159cf0433a4feeec85
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index b6f81430796a820992abc7dd81202853b9f6ed7f..c646423abc241e23252f5857abafcf44397c2c42 100644
+index 4d39ae3c17ee807b744dc4e8406c55fc623a779d..28acc2401ec7fc035c2548e633847fd297fb88a4 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2305,6 +2305,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2304,6 +2304,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -126,7 +126,7 @@ index b6f81430796a820992abc7dd81202853b9f6ed7f..c646423abc241e23252f5857abafcf44
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2324,10 +2334,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2323,10 +2333,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index b6f81430796a820992abc7dd81202853b9f6ed7f..c646423abc241e23252f5857abafcf44
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2357,6 +2417,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2356,6 +2416,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -229,7 +229,7 @@ index 571e6381f2456450a07b64c3a84d1f15f4cbbefa..cb342a6c4915c4b2cc7fe0c1b3c7219f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 10ae2cc43cef72cbfa58b650852d0113083ad059..58047cefa66435237bc8b63be240fad5dbe4b78c 100644
+index b2b0acfbfe0ee0d808ec973164b85eedd20eee00..81d624692ee9692c5a1d860eaac655ff2d5ff8d4 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -255,10 +255,10 @@ index 10ae2cc43cef72cbfa58b650852d0113083ad059..58047cefa66435237bc8b63be240fad5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2e50dfaeb1e97679ca84d3dd6daed121071ec013..fd04397b43eecb3342b79b4cc5a13f54d39ba13c 100644
+index 5fb6724a95d9fde9cae15da9de2b307fc1c1f3a5..004ff58ca6fcfcf4491dd90dc4ea29c5992a48da 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -239,8 +239,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -240,8 +240,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  

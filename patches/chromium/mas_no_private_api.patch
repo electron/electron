@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index c2a7ecffc64eba8ab95835afed035d987fb5c36b..586e49904ff3ef9728207d6f7361a014562b6bb6 100644
+index 628e4a28eec03529b65bb4a74e99919e94b74c35..5491a8153707f725a924c5050782a8350694fb1d 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -482,7 +482,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -480,7 +480,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index c2a7ecffc64eba8ab95835afed035d987fb5c36b..586e49904ff3ef9728207d6f7361a014
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -493,7 +493,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -491,7 +491,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexes_map);
    }
@@ -28,7 +28,7 @@ index c2a7ecffc64eba8ab95835afed035d987fb5c36b..586e49904ff3ef9728207d6f7361a014
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -544,7 +544,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
+@@ -542,7 +542,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +37,7 @@ index c2a7ecffc64eba8ab95835afed035d987fb5c36b..586e49904ff3ef9728207d6f7361a014
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexesMap& line_indexes_map) const {
-@@ -559,7 +559,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
+@@ -557,7 +557,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
    return dict;
  }

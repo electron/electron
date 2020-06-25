@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 9a2cc0f076406d68910eeb5351e3869287515fcb..bde2f593f55edc677d44f4ae037042fe10661679 100644
+index f2c4cbf786188b8aa5dad1e7f2b8ae9c785aaed9..2882ef3371960cc914ac27e9b6eedd09ff34cb63 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -512,6 +512,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -21,7 +21,7 @@ index 9a2cc0f076406d68910eeb5351e3869287515fcb..bde2f593f55edc677d44f4ae037042fe
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index af15805b34d2cc038e73654017d4c0921e3fc321..3489f03bac1283efb6a27f5b959a72a8e5d0cb14 100644
+index c0943cbdd019a37474e1727b8282b7138475e74f..cb58b299976745edb6e3f0d13687301b7fc61a10 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -111,10 +111,10 @@ index baa1cec07522a23221b146165a638d3f679f9817..50f0c46c8fcbb4ee8ebb316f859f84d0
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 94fb9863a6da4c049e45ec5966ef79d9c8e42b75..31d05575e2688178532b1ee9831236013159965c 100644
+index 27adaed62fe204202b4716cd573165b7456dbd29..56434ba48eb3af50ea965e24338dd70780952f19 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3366,6 +3366,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3368,6 +3368,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -128,7 +128,7 @@ index 94fb9863a6da4c049e45ec5966ef79d9c8e42b75..31d05575e2688178532b1ee983123601
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3376,7 +3383,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3378,7 +3385,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

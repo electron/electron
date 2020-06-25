@@ -31,7 +31,7 @@ index 668a14bff461e83b2c6d9d7f23d9674ff081ef12..674f141e80c0316fd47558c4d428a970
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index c8e626a79f6105421a1feecd294231467f63510e..b5ee1d3c919d3ad48b4e17a1515870e113155263 100644
+index 52efa2037a31f84a261502107bfebc69ae5a419e..4834e92ae99f12043e5ce476370f64345ad29001 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -50,8 +50,8 @@ index c8e626a79f6105421a1feecd294231467f63510e..b5ee1d3c919d3ad48b4e17a1515870e1
  #include "printing/print_job_constants.h"
  #include "printing/printed_document.h"
  #include "printing/printing_utils.h"
-@@ -223,16 +223,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
-         print_backend->GetPrinterDriverInfo(printer_name));
+@@ -235,16 +235,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+ #endif  // defined(OS_LINUX) && defined(USE_CUPS) && !defined(OS_CHROMEOS)
    }
  
 -  PrintingContext::Result result;
@@ -75,7 +75,7 @@ index c8e626a79f6105421a1feecd294231467f63510e..b5ee1d3c919d3ad48b4e17a1515870e1
  }
  
  #if defined(OS_CHROMEOS)
-@@ -248,6 +253,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -260,6 +265,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
