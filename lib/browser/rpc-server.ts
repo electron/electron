@@ -1,17 +1,15 @@
-'use strict';
-
-const electron = require('electron');
-const fs = require('fs');
+import * as electron from 'electron';
+import * as fs from 'fs';
+import { ipcMainInternal } from './ipc-main-internal';
+import * as ipcMainUtils from './ipc-main-internal-utils';
+import * as guestViewManager from './guest-view-manager';
+import * as typeUtils from '../common/type-utils';
+import { IpcMainInvokeEvent } from 'electron/main';
 
 const eventBinding = process._linkedBinding('electron_browser_event');
 const clipboard = process._linkedBinding('electron_common_clipboard');
 
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal');
-const ipcMainUtils = require('@electron/internal/browser/ipc-main-internal-utils');
-const guestViewManager = require('@electron/internal/browser/guest-view-manager');
-const typeUtils = require('@electron/internal/common/type-utils');
-
-const emitCustomEvent = function (contents, eventName, ...args) {
+const emitCustomEvent = function (contents: electron.WebContents, eventName: string, ...args: any[]) {
   const event = eventBinding.createWithSender(contents);
 
   electron.app.emit(eventName, event, contents, ...args);
@@ -20,14 +18,14 @@ const emitCustomEvent = function (contents, eventName, ...args) {
   return event;
 };
 
-const logStack = function (contents, code, stack) {
+const logStack = function (contents: electron.WebContents, code: string, stack: string) {
   if (stack) {
     console.warn(`WebContents (${contents.id}): ${code}`, stack);
   }
 };
 
 // Implements window.close()
-ipcMainInternal.on('ELECTRON_BROWSER_WINDOW_CLOSE', function (event) {
+ipcMainInternal.on('ELECTRON_BROWSER_WINDOW_CLOSE', function (event: ElectronInternal.IpcMainInternalEvent) {
   const window = event.sender.getOwnerBrowserWindow();
   if (window) {
     window.close();
@@ -35,7 +33,7 @@ ipcMainInternal.on('ELECTRON_BROWSER_WINDOW_CLOSE', function (event) {
   event.returnValue = null;
 });
 
-ipcMainInternal.handle('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES', function (event) {
+ipcMainInternal.handle('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES', function (event: IpcMainInvokeEvent) {
   return event.sender.getLastWebPreferences();
 });
 
@@ -51,18 +49,18 @@ const allowedClipboardMethods = (() => {
   }
 })();
 
-ipcMainUtils.handleSync('ELECTRON_BROWSER_CLIPBOARD_SYNC', function (event, method, ...args) {
+ipcMainUtils.handleSync('ELECTRON_BROWSER_CLIPBOARD_SYNC', function (event: IpcMainInvokeEvent, method: string, ...args: any[]) {
   if (!allowedClipboardMethods.has(method)) {
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return typeUtils.serialize(electron.clipboard[method](...typeUtils.deserialize(args)));
+  return typeUtils.serialize((electron.clipboard as any)[method](...typeUtils.deserialize(args)));
 });
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
   const desktopCapturer = require('@electron/internal/browser/desktop-capturer');
 
-  ipcMainInternal.handle('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', async function (event, options, stack) {
+  ipcMainInternal.handle('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', async function (event: IpcMainInvokeEvent, options: Electron.SourcesOptions, stack: string) {
     logStack(event.sender, 'desktopCapturer.getSources()', stack);
     const customEvent = emitCustomEvent(event.sender, 'desktop-capturer-get-sources');
 
@@ -74,7 +72,7 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
     return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event, options));
   });
 
-  ipcMainInternal.handle('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', function (event, webContentsId, stack) {
+  ipcMainInternal.handle('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', function (event: IpcMainInvokeEvent, webContentsId: number) {
     return desktopCapturer.getMediaSourceIdForWebContents(event, webContentsId);
   });
 }
@@ -83,7 +81,7 @@ const isRemoteModuleEnabled = BUILDFLAG(ENABLE_REMOTE_MODULE)
   ? require('@electron/internal/browser/remote/server').isRemoteModuleEnabled
   : () => false;
 
-const getPreloadScript = async function (preloadPath) {
+const getPreloadScript = async function (preloadPath: string) {
   let preloadSrc = null;
   let preloadError = null;
   try {
@@ -94,7 +92,7 @@ const getPreloadScript = async function (preloadPath) {
   return { preloadPath, preloadSrc, preloadError };
 };
 
-ipcMainUtils.handleSync('ELECTRON_BROWSER_SANDBOX_LOAD', async function (event) {
+ipcMainUtils.handleSync('ELECTRON_BROWSER_SANDBOX_LOAD', async function (event: IpcMainInvokeEvent) {
   const preloadPaths = event.sender._getPreloadPaths();
   const webPreferences = event.sender.getLastWebPreferences() || {};
 
@@ -115,7 +113,7 @@ ipcMainUtils.handleSync('ELECTRON_BROWSER_SANDBOX_LOAD', async function (event) 
   };
 });
 
-ipcMainInternal.on('ELECTRON_BROWSER_PRELOAD_ERROR', function (event, preloadPath, error) {
+ipcMainInternal.on('ELECTRON_BROWSER_PRELOAD_ERROR', function (event: ElectronInternal.IpcMainInternalEvent, preloadPath: string, error: Error) {
   event.sender.emit('preload-error', event, preloadPath, error);
 });
 
@@ -131,7 +129,7 @@ ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_UPLOAD_TO_SERVER', () => {
   return electron.crashReporter.getUploadToServer();
 });
 
-ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_SET_UPLOAD_TO_SERVER', (event, uploadToServer) => {
+ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_SET_UPLOAD_TO_SERVER', (event: IpcMainInvokeEvent, uploadToServer: boolean) => {
   return electron.crashReporter.setUploadToServer(uploadToServer);
 });
 
