@@ -153,13 +153,6 @@ static_library("chrome") {
     }
   }
 
-  if (enable_tts) {
-    sources += [
-      "//chrome/browser/speech/tts_controller_delegate_impl.cc",
-      "//chrome/browser/speech/tts_controller_delegate_impl.h",
-    ]
-  }
-
   if (enable_widevine) {
     sources += [
       "//chrome/renderer/media/chrome_key_systems.cc",
