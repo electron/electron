@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')
+const TerserPlugin = require('terser-webpack-plugin');
 
 const electronRoot = path.resolve(__dirname, '../..')
 
@@ -77,7 +78,7 @@ module.exports = ({
 
   return ({
     mode: 'development',
-    devtool: 'inline-source-map',
+    devtool: false,
     entry,
     target: alwaysHasNode ? 'node' : 'web',
     output: {
@@ -116,6 +117,17 @@ module.exports = ({
       // We provide our own "timers" import above, any usage of setImmediate inside
       // one of our renderer bundles should import it from the 'timers' package
       setImmediate: false,
+    },
+    optimization: {
+      minimize: true,
+      minimizer: [
+        new TerserPlugin({
+          terserOptions: {
+            keep_classnames: true,
+            keep_fnames: true,
+          },
+        }),
+      ],
     },
     plugins: [
       new AccessDependenciesPlugin(),
