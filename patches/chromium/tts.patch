@@ -10,22 +10,23 @@ Subject: tts.patch
   destruction from content layer.
 
 diff --git a/chrome/browser/speech/tts_controller_delegate_impl.cc b/chrome/browser/speech/tts_controller_delegate_impl.cc
-index cce8cad71b9f620a3d26946a7df937a1336d741e..ea5db4e66f1cbbb2728558091dc07a413a536e1f 100644
+index a0503e80805d47167cbce9deb848cdf14024f17a..da970c937f75b2048b035d34d977fbe67a428a39 100644
 --- a/chrome/browser/speech/tts_controller_delegate_impl.cc
 +++ b/chrome/browser/speech/tts_controller_delegate_impl.cc
-@@ -213,6 +213,7 @@ void TtsControllerDelegateImpl::UpdateUtteranceDefaultsFromPrefs(
+@@ -103,6 +103,7 @@ void TtsControllerDelegateImpl::UpdateUtteranceDefaultsFromPrefs(
+ 
  const PrefService* TtsControllerDelegateImpl::GetPrefService(
      content::TtsUtterance* utterance) {
-   const PrefService* prefs = nullptr;
 +#if 0
    // The utterance->GetBrowserContext() is null in tests.
-   if (utterance->GetBrowserContext()) {
-     const Profile* profile =
-@@ -220,6 +221,7 @@ const PrefService* TtsControllerDelegateImpl::GetPrefService(
-     if (profile)
-       prefs = profile->GetPrefs();
-   }
+   if (!utterance->GetBrowserContext())
+     return nullptr;
+@@ -110,6 +111,8 @@ const PrefService* TtsControllerDelegateImpl::GetPrefService(
+   const Profile* profile =
+       Profile::FromBrowserContext(utterance->GetBrowserContext());
+   return profile ? profile->GetPrefs() : nullptr;
 +#endif
-   return prefs;
++  return nullptr;
  }
  
+ const base::DictionaryValue* TtsControllerDelegateImpl::GetLangToVoicePref(

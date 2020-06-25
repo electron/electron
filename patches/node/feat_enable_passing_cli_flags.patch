@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 13 Nov 2019 15:39:48 +0000
+Subject: feat: enable passing cli flags
+
+This patches enables passing safelisted cli flags to Node.js.
+Upstreamed in https://github.com/nodejs/node/pull/30466.
+
+diff --git a/src/node.cc b/src/node.cc
+index 38c467c7d49589ef5d985ad999fe22d9462f07f6..37c6e9c516da3c1f208c065978c2c044c7ff8dba 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -113,8 +113,6 @@
+ namespace node {
+ 
+ using native_module::NativeModuleEnv;
+-using options_parser::kAllowedInEnvironment;
+-using options_parser::kDisallowedInEnvironment;
+ 
+ using v8::Boolean;
+ using v8::EscapableHandleScope;
+@@ -645,7 +643,7 @@ void ResetStdio() {
+ int ProcessGlobalArgs(std::vector<std::string>* args,
+                       std::vector<std::string>* exec_args,
+                       std::vector<std::string>* errors,
+-                      bool is_env) {
++                      OptionEnvvarSettings settings) {
+   // Parse a few arguments which are specific to Node.
+   std::vector<std::string> v8_args;
+ 
+@@ -655,7 +653,7 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
+       exec_args,
+       &v8_args,
+       per_process::cli_options.get(),
+-      is_env ? kAllowedInEnvironment : kDisallowedInEnvironment,
++      settings,
+       errors);
+ 
+   if (!errors->empty()) return 9;
+@@ -819,7 +817,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+       return 9;
+     }
+ 
+-    const int exit_code = ProcessGlobalArgs(&env_argv, nullptr, errors, true);
++    const int exit_code = ProcessGlobalArgs(&env_argv, nullptr, errors, kAllowedInEnvironment);
+     if (exit_code != 0) return exit_code;
+   }
+ #endif
+@@ -827,7 +825,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+   if (g_upstream_node_mode) {
+   // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
+ 
+-  const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, false);
++  const int exit_code = ProcessGlobalArgs(argv, exec_argv, errors, kDisallowedInEnvironment);
+   if (exit_code != 0) return exit_code;
+ 
+   // Set the process.title immediately after processing argv if --title is set.
+diff --git a/src/node.h b/src/node.h
+index 2ac35208ae8b2cfd067b5b712d4447121ef6e47d..2c085d71d056e89ea57fb738f8acd2c9e1ff539a 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -223,6 +223,16 @@ NODE_EXTERN void Init(int* argc,
+                       int* exec_argc,
+                       const char*** exec_argv);
+ 
++enum OptionEnvvarSettings {
++  kAllowedInEnvironment,
++  kDisallowedInEnvironment
++};
++
++NODE_EXTERN int ProcessGlobalArgs(std::vector<std::string>* args,
++                      std::vector<std::string>* exec_args,
++                      std::vector<std::string>* errors,
++                      OptionEnvvarSettings settings);
++
+ class NodeArrayBufferAllocator;
+ 
+ // An ArrayBuffer::Allocator class with some Node.js-specific tweaks. If you do
+diff --git a/src/node_options.h b/src/node_options.h
+index c0fd198ed3a210640e75d764c795d8f5ab21591b..4a20b732164ab97c9f8175bd517e07622fb73a8f 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -250,11 +250,6 @@ HostPort SplitHostPort(const std::string& arg,
+     std::vector<std::string>* errors);
+ void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
+ 
+-enum OptionEnvvarSettings {
+-  kAllowedInEnvironment,
+-  kDisallowedInEnvironment
+-};
+-
+ enum OptionType {
+   kNoOp,
+   kV8Option,
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index ab442a4a34a8c633834abd46fef52baf7d377705..9751dd8c1ea47b76832112cad43af99c881cf382 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -16,7 +16,7 @@
+ #include <string>
+ #include <vector>
+ 
+-using node::options_parser::kDisallowedInEnvironment;
++using node::kDisallowedInEnvironment;
+ using v8::Array;
+ using v8::Boolean;
+ using v8::Context;

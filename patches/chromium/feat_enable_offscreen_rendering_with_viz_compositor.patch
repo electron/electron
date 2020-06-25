@@ -107,7 +107,7 @@ index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index c5bd0c657501cf7fc7e746c79b8661df7fbe8d5e..6abf07975a263e8aa51ecba5a829cf0268d5c192 100644
+index da8936a87cfe156a90952c1ca79d9faf6ef2cd1f..6fd321aaf610ee985868af62b0e856f19e8be264 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -21,6 +21,7 @@
@@ -126,7 +126,7 @@ index c5bd0c657501cf7fc7e746c79b8661df7fbe8d5e..6abf07975a263e8aa51ecba5a829cf02
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -238,6 +240,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -223,6 +225,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

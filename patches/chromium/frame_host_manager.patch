@@ -42,7 +42,7 @@ index 6b03c07316eaab83a50afc123fc9f17b1c1dfa3b..e821571731e4e1a93f873477c7410de7
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index bda5c1f709729ea11f78049492d24fb978ed5ed9..c19b2ce56350f422a4e84fd974abf78c0f9c69af 100644
+index 6c3252af5e5f6dac3045f6315704ba9d494add4c..12ff9285320ca3c49bfdffb8a358024e80d18bd2 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1406,6 +1406,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,27 +67,31 @@ index bda5c1f709729ea11f78049492d24fb978ed5ed9..c19b2ce56350f422a4e84fd974abf78c
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4765,13 +4780,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
-           {WAITING_FOR_RENDERER_RESPONSE, {WILL_START_NAVIGATION}},
-           {WILL_START_NAVIGATION, {WILL_START_REQUEST, WILL_FAIL_REQUEST}},
-           {WILL_START_REQUEST,
--           {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, READY_TO_COMMIT,
--            DID_COMMIT, CANCELING, WILL_FAIL_REQUEST, DID_COMMIT_ERROR_PAGE}},
-+           {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, REUSE_SITE_INSTANCE,
-+            READY_TO_COMMIT, DID_COMMIT, CANCELING, WILL_FAIL_REQUEST,
-+            DID_COMMIT_ERROR_PAGE}},
-           {WILL_REDIRECT_REQUEST,
-            {WILL_REDIRECT_REQUEST, WILL_PROCESS_RESPONSE, CANCELING,
-             WILL_FAIL_REQUEST}},
-           {WILL_PROCESS_RESPONSE,
--           {READY_TO_COMMIT, CANCELING, WILL_FAIL_REQUEST}},
-+           {REUSE_SITE_INSTANCE, READY_TO_COMMIT, CANCELING, WILL_FAIL_REQUEST}},
-+          {REUSE_SITE_INSTANCE, {READY_TO_COMMIT}},
-           {READY_TO_COMMIT, {NOT_STARTED, DID_COMMIT, DID_COMMIT_ERROR_PAGE}},
-           {DID_COMMIT, {}},
-           {CANCELING, {READY_TO_COMMIT, WILL_FAIL_REQUEST}},
+@@ -4783,6 +4798,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+           {WILL_START_REQUEST, {
+               WILL_REDIRECT_REQUEST,
+               WILL_PROCESS_RESPONSE,
++              REUSE_SITE_INSTANCE,
+               READY_TO_COMMIT,
+               DID_COMMIT,
+               CANCELING,
+@@ -4796,10 +4812,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+               WILL_FAIL_REQUEST,
+           }},
+           {WILL_PROCESS_RESPONSE, {
++              REUSE_SITE_INSTANCE,
+               READY_TO_COMMIT,
+               CANCELING,
+               WILL_FAIL_REQUEST,
+           }},
++          {REUSE_SITE_INSTANCE, {
++              READY_TO_COMMIT,
++          }},
+           {READY_TO_COMMIT, {
+               NOT_STARTED,
+               DID_COMMIT,
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index 8ba74e2fa32b6d9b1a3d60d0d5f24b8f755d7a4e..55f418110d4a32e13d16d2eb3c403b1ec9f1d1e9 100644
+index 6941326796bb7e7b056ae0f83345edb2e4cb0479..8e8e1e6d994809159cf0433a4feeec85e68814f2 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
 @@ -142,6 +142,10 @@ class CONTENT_EXPORT NavigationRequest
@@ -225,7 +229,7 @@ index 571e6381f2456450a07b64c3a84d1f15f4cbbefa..cb342a6c4915c4b2cc7fe0c1b3c7219f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 456abd7838cff663805f09e8804ab8a2aa2f9b1b..6daec7affce6c0ca1254a6404dd5e575492be237 100644
+index 10ae2cc43cef72cbfa58b650852d0113083ad059..58047cefa66435237bc8b63be240fad5dbe4b78c 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -59,6 +59,21 @@
@@ -251,10 +255,10 @@ index 456abd7838cff663805f09e8804ab8a2aa2f9b1b..6daec7affce6c0ca1254a6404dd5e575
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3908e4e3398a53af8634a6a3ef74ab802cdfd33a..fde1ac29a06f034278c55bed30704770649cba96 100644
+index 2e50dfaeb1e97679ca84d3dd6daed121071ec013..fd04397b43eecb3342b79b4cc5a13f54d39ba13c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -236,8 +236,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -239,8 +239,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  

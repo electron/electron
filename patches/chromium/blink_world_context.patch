@@ -7,10 +7,10 @@ This exposes a method for obtaining a reference to an isolated world, which is
 otherwise not available in the Blink API.
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index dbc00b0e8e34ab0ba922cb4ad42a78bb188faccc..ce078ef2a5dbe360e1aff4926df4b5ac434c17a3 100644
+index be5efdc896fd9318b50c9e5ad02ec404ba7be23d..79234d0def2d4e97e05a03ecb1dbd7b077bc44b2 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
-@@ -352,6 +352,8 @@ class WebLocalFrame : public WebFrame {
+@@ -354,6 +354,8 @@ class WebLocalFrame : public WebFrame {
    // Returns the world ID associated with |script_context|.
    virtual int32_t GetScriptContextWorldId(
        v8::Local<v8::Context> script_context) const = 0;
