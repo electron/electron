@@ -38,8 +38,8 @@ bool SystemPreferences::IsDarkMode() {
 
 bool SystemPreferences::IsInvertedColorScheme() {
   return ui::NativeTheme::GetInstanceForNativeUi()
-             ->GetHighContrastColorScheme() ==
-         ui::NativeTheme::HighContrastColorScheme::kDark;
+             ->GetPlatformHighContrastColorScheme() ==
+         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
 }
 
 bool SystemPreferences::IsHighContrastColorScheme() {
