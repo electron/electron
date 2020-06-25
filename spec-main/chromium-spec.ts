@@ -598,7 +598,7 @@ describe('chromium features', () => {
       contents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
       contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 });
       const [, window] = await emittedOnce(app, 'browser-window-created');
-      const preferences = (window.webContents as any).getLastWebPreferences();
+      const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
     });
 

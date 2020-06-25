@@ -2235,7 +2235,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
-        const webPreferences = (childWebContents as any).getLastWebPreferences();
+        const webPreferences = childWebContents.getLastWebPreferences();
         expect(webPreferences.foo).to.equal('bar');
       });
 
@@ -2552,7 +2552,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
-        const webPreferences = (childWebContents as any).getLastWebPreferences();
+        const webPreferences = childWebContents.getLastWebPreferences();
         expect(webPreferences.foo).to.equal('bar');
       });
 
