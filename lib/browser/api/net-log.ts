@@ -2,21 +2,21 @@
 // it is now a property of session module.
 import { app, session } from 'electron';
 
-export const startLogging: typeof session.defaultSession.netLog.startLogging = async (path, options) => {
+const startLogging: typeof session.defaultSession.netLog.startLogging = async (path, options) => {
   if (!app.isReady()) return;
   return session.defaultSession.netLog.startLogging(path, options);
 };
 
-export const stopLogging: typeof session.defaultSession.netLog.stopLogging = async () => {
+const stopLogging: typeof session.defaultSession.netLog.stopLogging = async () => {
   if (!app.isReady()) return;
   return session.defaultSession.netLog.stopLogging();
 };
 
-Object.defineProperty(module.exports, 'currentlyLogging', {
-  get: () => {
+export default {
+  startLogging,
+  stopLogging,
+  get currentlyLogging (): boolean {
     if (!app.isReady()) return false;
     return session.defaultSession.netLog.currentlyLogging;
-  },
-  enumerable: true,
-  configurable: true
-});
+  }
+};
