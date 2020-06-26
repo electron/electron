@@ -1495,7 +1495,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('returns the window with id', () => {
       const w = new BrowserWindow({ show: false });
-      expect(BrowserWindow.fromId(w.id).id).to.equal(w.id);
+      expect(BrowserWindow.fromId(w.id)!.id).to.equal(w.id);
     });
   });
 
