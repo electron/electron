@@ -692,7 +692,7 @@ Returns `BrowserWindow | null` - The window that owns the given `browserView`. I
 
 * `id` Integer
 
-Returns `BrowserWindow` - The window with the given `id`.
+Returns `BrowserWindow | null` - The window with the given `id`.
 
 #### `BrowserWindow.addExtension(path)` _Deprecated_
 

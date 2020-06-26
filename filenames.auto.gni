@@ -191,7 +191,7 @@ auto_filenames = {
     "lib/browser/api/auto-updater/auto-updater-win.js",
     "lib/browser/api/auto-updater/squirrel-update-win.js",
     "lib/browser/api/browser-view.ts",
-    "lib/browser/api/browser-window.js",
+    "lib/browser/api/browser-window.ts",
     "lib/browser/api/content-tracing.ts",
     "lib/browser/api/crash-reporter.ts",
     "lib/browser/api/desktop-capturer.ts",
