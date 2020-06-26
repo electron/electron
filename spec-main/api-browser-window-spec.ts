@@ -8,7 +8,7 @@ import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
 const features = process.electronBinding('features');
@@ -3138,7 +3138,7 @@ describe('BrowserWindow module', () => {
         await w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true);
         await emittedOnce(w, 'enter-full-screen');
         // Wait a tick for the full-screen state to 'stick'
-        await new Promise(resolve => setTimeout(resolve));
+        await delay();
         w.setFullScreen(false);
         await emittedOnce(w, 'leave-html-full-screen');
       });
@@ -3779,7 +3779,6 @@ describe('BrowserWindow module', () => {
     });
 
     // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
-    const tick = () => new Promise(resolve => setTimeout(resolve));
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
       it('with properties', () => {
@@ -3791,7 +3790,7 @@ describe('BrowserWindow module', () => {
         it('can be changed ', (done) => {
           const w = new BrowserWindow();
           w.once('enter-full-screen', async () => {
-            await tick();
+            await delay();
             w.kiosk = false;
             expect(w.kiosk).to.be.false();
           });
@@ -3812,7 +3811,7 @@ describe('BrowserWindow module', () => {
         it('can be changed ', (done) => {
           const w = new BrowserWindow();
           w.once('enter-full-screen', async () => {
-            await tick();
+            await delay();
             w.setKiosk(false);
             expect(w.isKiosk()).to.be.false('isKiosk');
           });
@@ -3830,7 +3829,7 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({ resizable: false });
         w.once('enter-full-screen', async () => {
           expect(w.resizable).to.be.true('resizable');
-          await tick();
+          await delay();
           w.setFullScreen(false);
         });
         w.once('leave-full-screen', () => {
@@ -3846,7 +3845,7 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow();
         w.once('enter-full-screen', async () => {
           expect(w.isFullScreen()).to.be.true('isFullScreen');
-          await tick();
+          await delay();
           w.setFullScreen(false);
         });
         w.once('leave-full-screen', () => {
@@ -3880,9 +3879,9 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow();
         w.once('enter-full-screen', async () => {
           expect(w.isFullScreen()).to.be.true('isFullScreen');
-          await tick();
+          await delay();
           w.setKiosk(true);
-          await tick();
+          await delay();
           w.setKiosk(false);
           expect(w.isFullScreen()).to.be.true('isFullScreen');
           w.setFullScreen(false);

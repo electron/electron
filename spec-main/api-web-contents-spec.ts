@@ -8,7 +8,7 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from '
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, delay } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -406,7 +406,7 @@ describe('webContents module', () => {
       expect(() => { webContents.getFocusedWebContents(); }).to.not.throw();
 
       // Work around https://github.com/electron/electron/issues/19985
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
 
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
@@ -490,7 +490,7 @@ describe('webContents module', () => {
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
       expect(w.isFocused()).to.be.false();
     });
 
