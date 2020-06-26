@@ -597,28 +597,25 @@ WebContents.prototype._init = function () {
 };
 
 // Public APIs.
-module.exports = {
-  create (options = {}) {
-    return binding.create(options);
-  },
+export function create (options = {}) {
+  return binding.create(options);
+}
 
-  fromId (id: string) {
-    return binding.fromId(id);
-  },
+export function fromId (id: string) {
+  return binding.fromId(id);
+}
 
-  getFocusedWebContents () {
-    let focused = null;
-    for (const contents of binding.getAllWebContents()) {
-      if (!contents.isFocused()) continue;
-      if (focused == null) focused = contents;
-      // Return webview web contents which may be embedded inside another
-      // web contents that is also reporting as focused
-      if (contents.getType() === 'webview') return contents;
-    }
-    return focused;
-  },
-
-  getAllWebContents () {
-    return binding.getAllWebContents();
+export function getFocusedWebContents () {
+  let focused = null;
+  for (const contents of binding.getAllWebContents()) {
+    if (!contents.isFocused()) continue;
+    if (focused == null) focused = contents;
+    // Return webview web contents which may be embedded inside another
+    // web contents that is also reporting as focused
+    if (contents.getType() === 'webview') return contents;
   }
-};
+  return focused;
+}
+export function getAllWebContents () {
+  return binding.getAllWebContents();
+}
