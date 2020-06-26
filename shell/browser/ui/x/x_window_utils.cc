@@ -18,11 +18,11 @@
 
 namespace electron {
 
-void SetWMSpecState(::Window xwindow, bool enabled, x11::Atom state) {
+void SetWMSpecState(x11::Window window, bool enabled, x11::Atom state) {
   XEvent xclient;
   memset(&xclient, 0, sizeof(xclient));
   xclient.type = ClientMessage;
-  xclient.xclient.window = xwindow;
+  xclient.xclient.window = static_cast<uint32_t>(window);
   xclient.xclient.message_type =
       static_cast<uint32_t>(gfx::GetAtom("_NET_WM_STATE"));
   xclient.xclient.format = 32;
@@ -37,10 +37,10 @@ void SetWMSpecState(::Window xwindow, bool enabled, x11::Atom state) {
              SubstructureRedirectMask | SubstructureNotifyMask, &xclient);
 }
 
-void SetWindowType(::Window xwindow, const std::string& type) {
+void SetWindowType(x11::Window window, const std::string& type) {
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   x11::Atom window_type = gfx::GetAtom(type_prefix + base::ToUpperASCII(type));
-  ui::SetProperty(xwindow, gfx::GetAtom("_NET_WM_WINDOW_TYPE"), x11::Atom::ATOM,
+  ui::SetProperty(window, gfx::GetAtom("_NET_WM_WINDOW_TYPE"), x11::Atom::ATOM,
                   window_type);
 }
 
@@ -82,23 +82,23 @@ bool ShouldUseGlobalMenuBar() {
   return false;
 }
 
-void MoveWindowToForeground(::Window xwindow) {
-  MoveWindowAbove(xwindow, 0);
+void MoveWindowToForeground(x11::Window window) {
+  MoveWindowAbove(window, static_cast<x11::Window>(0));
 }
 
-void MoveWindowAbove(::Window xwindow, ::Window other_xwindow) {
+void MoveWindowAbove(x11::Window window, x11::Window other_window) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   XEvent xclient;
   memset(&xclient, 0, sizeof(xclient));
 
   xclient.type = ClientMessage;
   xclient.xclient.display = xdisplay;
-  xclient.xclient.window = xwindow;
+  xclient.xclient.window = static_cast<uint32_t>(window);
   xclient.xclient.message_type =
       static_cast<uint32_t>(gfx::GetAtom("_NET_RESTACK_WINDOW"));
   xclient.xclient.format = 32;
   xclient.xclient.data.l[0] = 2;
-  xclient.xclient.data.l[1] = other_xwindow;
+  xclient.xclient.data.l[1] = static_cast<uint32_t>(other_window);
   xclient.xclient.data.l[2] = static_cast<uint32_t>(x11::StackMode::Above);
   xclient.xclient.data.l[3] = 0;
   xclient.xclient.data.l[4] = 0;
@@ -108,9 +108,10 @@ void MoveWindowAbove(::Window xwindow, ::Window other_xwindow) {
   XFlush(xdisplay);
 }
 
-bool IsWindowValid(::Window xwindow) {
+bool IsWindowValid(x11::Window window) {
   XWindowAttributes attrs;
-  return XGetWindowAttributes(gfx::GetXDisplay(), xwindow, &attrs);
+  return XGetWindowAttributes(gfx::GetXDisplay(), static_cast<uint32_t>(window),
+                              &attrs);
 }
 
 }  // namespace electron

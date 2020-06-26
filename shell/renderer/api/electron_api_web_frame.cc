@@ -30,12 +30,12 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
-#include "third_party/blink/public/web/web_ime_text_span.h"
 #include "third_party/blink/public/web/web_input_method_controller.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
 namespace gin {
@@ -270,10 +270,10 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->SetTemporaryZoomLevel(level);
+      browser_remote.BindNewPipeAndPassReceiver());
+  browser_remote->SetTemporaryZoomLevel(level);
 }
 
 double GetZoomLevel(gin_helper::ErrorThrower thrower,
@@ -287,10 +287,10 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
     return result;
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->DoGetZoomLevel(&result);
+      browser_remote.BindNewPipeAndPassReceiver());
+  browser_remote->DoGetZoomLevel(&result);
   return result;
 }
 
@@ -420,8 +420,7 @@ void InsertText(gin_helper::ErrorThrower thrower,
         ->FrameWidget()
         ->GetActiveWebInputMethodController()
         ->CommitText(blink::WebString::FromUTF8(text),
-                     blink::WebVector<blink::WebImeTextSpan>(),
-                     blink::WebRange(), 0);
+                     blink::WebVector<ui::ImeTextSpan>(), blink::WebRange(), 0);
   }
 }
 

@@ -111,6 +111,7 @@ extern const char kSecureSchemes[];
 extern const char kBypassCSPSchemes[];
 extern const char kFetchSchemes[];
 extern const char kCORSSchemes[];
+extern const char kStreamingSchemes[];
 extern const char kAppUserModelId[];
 extern const char kAppPath[];
 extern const char kEnableApiFilteringLogging[];

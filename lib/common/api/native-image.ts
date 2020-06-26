@@ -1,3 +1,3 @@
-const { nativeImage } = process.electronBinding('native_image');
+const { nativeImage } = process._linkedBinding('electron_common_native_image');
 
 export default nativeImage;

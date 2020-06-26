@@ -14,7 +14,7 @@ import { ifit, ifdescribe } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -606,7 +606,7 @@ describe('chromium features', () => {
       contents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
       contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 });
       const [, window] = await emittedOnce(app, 'browser-window-created');
-      const preferences = (window.webContents as any).getLastWebPreferences();
+      const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
     });
 
@@ -730,7 +730,7 @@ describe('chromium features', () => {
           process.once('uncaughtException', resolve);
         });
         expect(await w.webContents.executeJavaScript(`(${function () {
-          const ipc = process.electronBinding('ipc').ipc;
+          const { ipc } = process._linkedBinding('electron_renderer_ipc');
           return ipc.sendSync(true, 'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
         }})()`)).to.be.null();
         const exception = await uncaughtException;
@@ -1130,7 +1130,7 @@ describe('chromium features', () => {
           new Promise((resolve, reject) => {
             try {
               let req = window.indexedDB.open('${dbName}');
-              req.onsuccess = (event) => { 
+              req.onsuccess = (event) => {
                 let db = req.result;
                 resolve(db.name);
               }
@@ -1272,6 +1272,28 @@ describe('chromium features', () => {
         // Initial page + pushed state.
         expect((w.webContents as any).length()).to.equal(2);
       });
+    });
+  });
+
+  describe('chrome://media-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('chrome://media-internals');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
+    });
+  });
+
+  describe('chrome://webrtc-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('chrome://webrtc-internals');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
     });
   });
 });

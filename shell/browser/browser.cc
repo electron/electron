@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/files/file_util.h"
-#include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -261,6 +260,11 @@ void Browser::OnWindowAllClosed() {
 void Browser::NewWindowForTab() {
   for (BrowserObserver& observer : observers_)
     observer.OnNewWindowForTab();
+}
+
+void Browser::DidBecomeActive() {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidBecomeActive();
 }
 #endif
 

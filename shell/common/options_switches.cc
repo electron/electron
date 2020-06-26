@@ -221,6 +221,9 @@ const char kFetchSchemes[] = "fetch-schemes";
 // Register schemes as CORS enabled.
 const char kCORSSchemes[] = "cors-schemes";
 
+// Register schemes as streaming responses.
+const char kStreamingSchemes[] = "streaming-schemes";
+
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 

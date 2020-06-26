@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-const { BrowserView } = process.electronBinding('browser_view');
+const { BrowserView } = process._linkedBinding('electron_browser_browser_view');
 
 Object.setPrototypeOf(BrowserView.prototype, EventEmitter.prototype);
 

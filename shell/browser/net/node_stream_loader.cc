@@ -68,6 +68,8 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
 void NodeStreamLoader::NotifyReadable() {
   if (!readable_)
     ReadMore();
+  else if (is_reading_)
+    has_read_waiting_ = true;
   readable_ = true;
 }
 
@@ -101,8 +103,16 @@ void NodeStreamLoader::ReadMore() {
   // If there is no buffer read, wait until |readable| is emitted again.
   v8::Local<v8::Value> buffer;
   if (!ret.ToLocal(&buffer) || !node::Buffer::HasInstance(buffer)) {
-    readable_ = false;
     is_reading_ = false;
+
+    // If 'readable' was called after 'read()', try again
+    if (has_read_waiting_) {
+      has_read_waiting_ = false;
+      ReadMore();
+      return;
+    }
+
+    readable_ = false;
     if (ended_) {
       NotifyComplete(result_);
     }

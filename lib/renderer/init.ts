@@ -36,7 +36,7 @@ require('../common/reset-search-paths');
 require('@electron/internal/common/init');
 
 // The global variable will be used by ipc for event dispatching
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
@@ -53,7 +53,7 @@ const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
 webFrameInit();
 
 // Process command line arguments.
-const { hasSwitch, getSwitchValue } = process.electronBinding('command_line');
+const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 
 const parseOption = function<T> (
   name: string, defaultValue: T, converter?: (value: string) => T

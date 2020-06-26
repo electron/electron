@@ -288,6 +288,8 @@ describe('session module', () => {
       const { item, itemUrl, itemFilename } = await downloadPrevented;
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
+      // Delay till the next tick.
+      await new Promise(resolve => setImmediate(() => resolve()));
       expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });

@@ -12,7 +12,7 @@ import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifit, ifdescribe } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
@@ -65,21 +65,21 @@ describe('BrowserWindow module', () => {
   });
 
   describe('garbage collection', () => {
-    const v8Util = process.electronBinding('v8_util');
+    const v8Util = process._linkedBinding('electron_common_v8_util');
     afterEach(closeAllWindows);
 
     it('window does not get garbage collected when opened', (done) => {
       const w = new BrowserWindow({ show: false });
       // Keep a weak reference to the window.
-      const map = v8Util.createIDWeakMap<Electron.BrowserWindow>();
-      map.set(0, w);
+      // eslint-disable-next-line no-undef
+      const wr = new (globalThis as any).WeakRef(w);
       setTimeout(() => {
         // Do garbage collection, since |w| is not referenced in this closure
         // it would be gone after next call if there is no other reference.
         v8Util.requestGarbageCollectionForTesting();
 
         setTimeout(() => {
-          expect(map.has(0)).to.equal(true);
+          expect(wr.deref()).to.not.be.undefined();
           done();
         });
       });
@@ -1673,6 +1673,13 @@ describe('BrowserWindow module', () => {
       const after = w.getPosition();
       expect(after[1]).to.be.at.least(0);
     });
+    it('can move the window behind menu bar if it has no frame', () => {
+      const w = new BrowserWindow({ show: true, enableLargerThanScreen: true, frame: false });
+      w.setPosition(-10, -10);
+      const after = w.getPosition();
+      expect(after[0]).to.be.equal(-10);
+      expect(after[1]).to.be.equal(-10);
+    });
     it('without it, cannot move the window out of screen', () => {
       const w = new BrowserWindow({ show: true, enableLargerThanScreen: false });
       w.setPosition(-10, -10);
@@ -2206,7 +2213,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
-        const webPreferences = (childWebContents as any).getLastWebPreferences();
+        const webPreferences = childWebContents.getLastWebPreferences();
         expect(webPreferences.foo).to.equal('bar');
       });
 
@@ -2523,7 +2530,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
-        const webPreferences = (childWebContents as any).getLastWebPreferences();
+        const webPreferences = childWebContents.getLastWebPreferences();
         expect(webPreferences.foo).to.equal('bar');
       });
 

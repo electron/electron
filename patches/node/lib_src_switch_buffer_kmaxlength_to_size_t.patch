@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Sat, 18 Jan 2020 10:55:31 +0100
+Subject: lib,src: switch Buffer::kMaxLength to size_t
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change the type of `Buffer::kMaxLength` to size_t because upcoming
+changes in V8 will allow typed arrays > 2 GB on 64 bits platforms.
+
+Not all platforms handle file reads and writes > 2 GB though so keep
+enforcing the 2 GB typed array limit for I/O operations.
+
+Fixes: https://github.com/nodejs/node/issues/31399
+Refs: https://github.com/libuv/libuv/pull/1501
+
+PR-URL: https://github.com/nodejs/node/pull/31406
+Reviewed-By: Richard Lau <riclau@uk.ibm.com>
+Reviewed-By: David Carlier <devnexen@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Rich Trott <rtrott@gmail.com>
+Reviewed-By: Tobias Nießen <tniessen@tnie.de>
+Reviewed-By: Shelley Vohr <codebytere@gmail.com>
+
+diff --git a/lib/fs.js b/lib/fs.js
+index 4a19e3b6033711d8c77d1ac9ea7e0f2cd9742ce9..59a41fe62c68c05ab09ad280e4e9ecdb2ca23349 100644
+--- a/lib/fs.js
++++ b/lib/fs.js
+@@ -24,6 +24,10 @@
+ 
+ 'use strict';
+ 
++// Most platforms don't allow reads or writes >= 2 GB.
++// See https://github.com/libuv/libuv/pull/1501.
++const kIoMaxLength = 2 ** 31 - 1;
++
+ const {
+   Map,
+   MathMax,
+@@ -52,7 +56,7 @@ const {
+ const pathModule = require('path');
+ const { isArrayBufferView } = require('internal/util/types');
+ const binding = internalBinding('fs');
+-const { Buffer, kMaxLength } = require('buffer');
++const { Buffer } = require('buffer');
+ const {
+   codes: {
+     ERR_FS_FILE_TOO_LARGE,
+@@ -274,7 +278,7 @@ function readFileAfterStat(err, stats) {
+ 
+   const size = context.size = isFileType(stats, S_IFREG) ? stats[8] : 0;
+ 
+-  if (size > kMaxLength) {
++  if (size > kIoMaxLength) {
+     err = new ERR_FS_FILE_TOO_LARGE(size);
+     return context.close(err);
+   }
+@@ -331,7 +335,7 @@ function tryCreateBuffer(size, fd, isUserFd) {
+   let threw = true;
+   let buffer;
+   try {
+-    if (size > kMaxLength) {
++    if (size > kIoMaxLength) {
+       throw new ERR_FS_FILE_TOO_LARGE(size);
+     }
+     buffer = Buffer.allocUnsafe(size);
+diff --git a/lib/internal/errors.js b/lib/internal/errors.js
+index 1e987cefb156df8e7a494bcb80547ae8e0ea649f..567d82c7bd12a7233481d80042d331afd7471674 100644
+--- a/lib/internal/errors.js
++++ b/lib/internal/errors.js
+@@ -822,9 +822,7 @@ E('ERR_FALSY_VALUE_REJECTION', function(reason) {
+   this.reason = reason;
+   return 'Promise was rejected with falsy value';
+ }, Error);
+-E('ERR_FS_FILE_TOO_LARGE', 'File size (%s) is greater than possible Buffer: ' +
+-    `${kMaxLength} bytes`,
+-  RangeError);
++E('ERR_FS_FILE_TOO_LARGE', 'File size (%s) is greater than 2 GB', RangeError);
+ E('ERR_FS_INVALID_SYMLINK_TYPE',
+   'Symlink type must be one of "dir", "file", or "junction". Received "%s"',
+   Error); // Switch to TypeError. The current implementation does not seem right
+diff --git a/lib/internal/fs/promises.js b/lib/internal/fs/promises.js
+index d653724474f314cd1c6bebe0a2d9285439d54928..98335fdc1027409a2f17ae50fba378f5d78b2cab 100644
+--- a/lib/internal/fs/promises.js
++++ b/lib/internal/fs/promises.js
+@@ -1,5 +1,9 @@
+ 'use strict';
+ 
++// Most platforms don't allow reads or writes >= 2 GB.
++// See https://github.com/libuv/libuv/pull/1501.
++const kIoMaxLength = 2 ** 31 - 1;
++
+ const {
+   MathMax,
+   MathMin,
+@@ -15,7 +19,7 @@ const {
+   S_IFREG
+ } = internalBinding('constants').fs;
+ const binding = internalBinding('fs');
+-const { Buffer, kMaxLength } = require('buffer');
++const { Buffer } = require('buffer');
+ const {
+   ERR_FS_FILE_TOO_LARGE,
+   ERR_INVALID_ARG_TYPE,
+@@ -166,7 +170,7 @@ async function readFileHandle(filehandle, options) {
+     size = 0;
+   }
+ 
+-  if (size > kMaxLength)
++  if (size > kIoMaxLength)
+     throw new ERR_FS_FILE_TOO_LARGE(size);
+ 
+   const chunks = [];
+diff --git a/lib/internal/fs/utils.js b/lib/internal/fs/utils.js
+index 6f096336f20e10727b6328af9f0130b37de74050..ff26568bd95e0c966b7f3a7c63d3f594b411fbab 100644
+--- a/lib/internal/fs/utils.js
++++ b/lib/internal/fs/utils.js
+@@ -12,7 +12,7 @@ const {
+   Symbol,
+ } = primordials;
+ 
+-const { Buffer, kMaxLength } = require('buffer');
++const { Buffer } = require('buffer');
+ const {
+   codes: {
+     ERR_FS_INVALID_SYMLINK_TYPE,
+@@ -72,6 +72,10 @@ const {
+ 
+ const isWindows = process.platform === 'win32';
+ 
++// Most platforms don't allow reads or writes >= 2 GB.
++// See https://github.com/libuv/libuv/pull/1501.
++const kIoMaxLength = 2 ** 31 - 1;
++
+ let fs;
+ function lazyLoadFs() {
+   if (!fs) {
+@@ -525,7 +529,7 @@ const validateOffsetLengthWrite = hideStackFrames(
+       throw new ERR_OUT_OF_RANGE('offset', `<= ${byteLength}`, offset);
+     }
+ 
+-    const max = byteLength > kMaxLength ? kMaxLength : byteLength;
++    const max = byteLength > kIoMaxLength ? kIoMaxLength : byteLength;
+     if (length > max - offset) {
+       throw new ERR_OUT_OF_RANGE('length', `<= ${max - offset}`, length);
+     }
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 59baa45413d500272d0e293ab06bfe4d24e5e0cb..4d1951b740240bff231b7f4c855beb5b73d076af 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -62,6 +62,7 @@ using v8::Local;
+ using v8::Maybe;
+ using v8::MaybeLocal;
+ using v8::Nothing;
++using v8::Number;
+ using v8::Object;
+ using v8::String;
+ using v8::Uint32;
+@@ -1161,7 +1162,7 @@ void Initialize(Local<Object> target,
+ 
+   target->Set(env->context(),
+               FIXED_ONE_BYTE_STRING(env->isolate(), "kMaxLength"),
+-              Integer::NewFromUnsigned(env->isolate(), kMaxLength)).Check();
++              Number::New(env->isolate(), kMaxLength)).Check();
+ 
+   target->Set(env->context(),
+               FIXED_ONE_BYTE_STRING(env->isolate(), "kStringMaxLength"),
+diff --git a/src/node_buffer.h b/src/node_buffer.h
+index 11010017ce0df8367b1992bd9df57117ff50454d..606a6f5caa3b11b6d2a9068ed2fd65800530a5eb 100644
+--- a/src/node_buffer.h
++++ b/src/node_buffer.h
+@@ -29,7 +29,7 @@ namespace node {
+ 
+ namespace Buffer {
+ 
+-static const unsigned int kMaxLength = v8::TypedArray::kMaxLength;
++static const size_t kMaxLength = v8::TypedArray::kMaxLength;
+ 
+ typedef void (*FreeCallback)(char* data, void* hint);
+ 
+diff --git a/test/parallel/test-fs-util-validateoffsetlengthwrite.js b/test/parallel/test-fs-util-validateoffsetlengthwrite.js
+index be6d8acea77efa5adc82a6bcaaa192167b510fb0..e2c583749d041d76da630bbbf6b46ac490076c56 100644
+--- a/test/parallel/test-fs-util-validateoffsetlengthwrite.js
++++ b/test/parallel/test-fs-util-validateoffsetlengthwrite.js
+@@ -4,7 +4,10 @@
+ require('../common');
+ const assert = require('assert');
+ const { validateOffsetLengthWrite } = require('internal/fs/utils');
+-const { kMaxLength } = require('buffer');
++
++// Most platforms don't allow reads or writes >= 2 GB.
++// See https://github.com/libuv/libuv/pull/1501.
++const kIoMaxLength = 2 ** 31 - 1;
+ 
+ // RangeError when offset > byteLength
+ {
+@@ -22,27 +25,27 @@ const { kMaxLength } = require('buffer');
+   );
+ }
+ 
+-// RangeError when byteLength > kMaxLength, and length > kMaxLength - offset .
++// RangeError when byteLength > kIoMaxLength, and length > kIoMaxLength - offset .
+ {
+-  const offset = kMaxLength;
++  const offset = kIoMaxLength;
+   const length = 100;
+-  const byteLength = kMaxLength + 1;
++  const byteLength = kIoMaxLength + 1;
+   assert.throws(
+     () => validateOffsetLengthWrite(offset, length, byteLength),
+     {
+       code: 'ERR_OUT_OF_RANGE',
+       name: 'RangeError',
+       message: 'The value of "length" is out of range. ' +
+-               `It must be <= ${kMaxLength - offset}. Received ${length}`
++               `It must be <= ${kIoMaxLength - offset}. Received ${length}`
+     }
+   );
+ }
+ 
+-// RangeError when byteLength < kMaxLength, and length > byteLength - offset .
++// RangeError when byteLength < kIoMaxLength, and length > byteLength - offset.
+ {
+-  const offset = kMaxLength - 150;
++  const offset = kIoMaxLength - 150;
+   const length = 200;
+-  const byteLength = kMaxLength - 100;
++  const byteLength = kIoMaxLength - 100;
+   assert.throws(
+     () => validateOffsetLengthWrite(offset, length, byteLength),
+     {

@@ -1,6 +1,6 @@
 import { app, deprecate } from 'electron';
 
-const binding = process.electronBinding('crash_reporter');
+const binding = process._linkedBinding('electron_browser_crash_reporter');
 
 class CrashReporter {
   start (options: Electron.CrashReporterStartOptions) {

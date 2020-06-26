@@ -6,7 +6,7 @@ const temp = require('temp').track();
 const util = require('util');
 const nativeImage = require('electron').nativeImage;
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 async function expectToThrowErrorWithCode (func, code) {
   let error;
@@ -792,6 +792,16 @@ describe('asar package', function () {
         expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
       });
 
+      it('supports withFileTypes', function () {
+        const p = path.join(asarDir, 'a.asar');
+        const dirs = fs.readdirSync(p, { withFileTypes: true });
+        for (const dir of dirs) {
+          expect(dir instanceof fs.Dirent).to.be.true();
+        }
+        const names = dirs.map(a => a.name);
+        expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
+      });
+
       it('reads dirs from a linked dir', function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const dirs = fs.readdirSync(p);
@@ -816,6 +826,21 @@ describe('asar package', function () {
         });
       });
 
+      it('supports withFileTypes', function (done) {
+        const p = path.join(asarDir, 'a.asar');
+
+        fs.readdir(p, { withFileTypes: true }, (err, dirs) => {
+          expect(err).to.be.null();
+          for (const dir of dirs) {
+            expect(dir instanceof fs.Dirent).to.be.true();
+          }
+
+          const names = dirs.map(a => a.name);
+          expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
+          done();
+        });
+      });
+
       it('reads dirs from a normal dir', function (done) {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         fs.readdir(p, function (err, dirs) {
@@ -824,6 +849,7 @@ describe('asar package', function () {
           done();
         });
       });
+
       it('reads dirs from a linked dir', function (done) {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         fs.readdir(p, function (err, dirs) {
@@ -847,6 +873,16 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar');
         const dirs = await fs.promises.readdir(p);
         expect(dirs).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
+      });
+
+      it('supports withFileTypes', async function () {
+        const p = path.join(asarDir, 'a.asar');
+        const dirs = await fs.promises.readdir(p, { withFileTypes: true });
+        for (const dir of dirs) {
+          expect(dir instanceof fs.Dirent).to.be.true();
+        }
+        const names = dirs.map(a => a.name);
+        expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
       });
 
       it('reads dirs from a normal dir', async function () {

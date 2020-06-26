@@ -1,4 +1,4 @@
-const clipboard = process.electronBinding('clipboard');
+const clipboard = process._linkedBinding('electron_common_clipboard');
 
 if (process.type === 'renderer') {
   const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');

@@ -190,14 +190,13 @@ describe('ipcRenderer module', () => {
         const childIpc = child.require('electron').ipcRenderer;
         child.close();
         return new Promise(resolve => {
-          setTimeout(() => {
+          setInterval(() => {
             try {
               childIpc.send('hello');
             } catch (e) {
               resolve(e);
             }
-            resolve(false);
-          }, 100);
+          }, 16);
         });
       }})()`);
       expect(error).to.have.property('message', 'IPC method called after context was released');

@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index f2beaa8238c66b942620e053f4abae32441f2851..82aa964e34a966e3e2300c2b951d6431d294d111 100644
+index 3f281a56c2b9f367e2085b876ecbcc9b79c46b09..0b103af953ee9b5ca78554ef32d768dd352d1b17 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1859,6 +1859,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1863,6 +1863,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,7 +35,7 @@ index f2beaa8238c66b942620e053f4abae32441f2851..82aa964e34a966e3e2300c2b951d6431
  
    if (settings_.prefer_raster_in_srgb &&
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index c2684645484c7e1b6a555ba31f6634496a4fec76..9250d3b772fdeb6eb943f6cddeb96200e0f819f4 100644
+index 446d46764c5d001df665fea8737a95b4243f8ac8..c9a0244a0027d8918960e6441b4a49af0b7e71af 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,7 +81,7 @@ index 0fc4813b2f76fe6154ebdc60ffabd278bed75653..7423c91d661adcf9e761b93ddbfa4ea8
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c8d27ba2e 100644
+index 8ed1da04200eaf1b350fe95a3d9525648638b272..ca5f0d16a00c1d65bc059c68d7f0fe50ef493cff 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -85,6 +85,9 @@
@@ -212,17 +212,17 @@ index 1efef99651721d7cdb159ef9fe1aea6c5fb299f0..efcdc1dbe7207f66862a7ab93f0f226c
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4065,3 +4077,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4068,3 +4080,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c7f60b7ca 100644
+index 6ec6024a9447817926acf551e23e6ae84a45eded..395633bb6f00d5363a1540ab67c730e507712f2e 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -209,6 +209,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -231,10 +231,10 @@ index 2ed4bf758cdc24de04b1cd37d5b0c0c195e5561d..f87824a4d6cf0f724f4b86c66f9d2a1c
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d56f9a862 100644
+index 7733e7adb0f166cb2ebf7fbede82cd0fc53df4e9..b40da6648c9bc14a505f1f8f5ef898208e0f8ff3 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -226,6 +226,7 @@
+@@ -227,6 +227,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -242,7 +242,7 @@ index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3282,6 +3283,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -251,10 +251,10 @@ index 0e84525e677131b3428e5fe73dfb7b48bf65a692..c473f13efc218c98942166715504006d
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e5bb9bf85 100644
+index 14d836019d49fcf90a8e8863a9a0ca4148fd3894..02f9fb2e8564756c07c51637faa77b05c7f8af7a 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
-@@ -2548,6 +2548,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+@@ -2238,6 +2238,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -265,7 +265,7 @@ index 85dae05a77b3189dac8d506705555dd96eea07a7..523a971c8e2c7a52eb8b7857cc8aa17e
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44baa96cfc 100644
+index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -284,7 +284,7 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
  
  namespace blink {
  
-@@ -88,6 +90,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -90,6 +92,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -293,10 +293,10 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
- 
-   // TODO(ccameron): This needs to take into account whether or not this texture
-@@ -101,6 +108,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+   // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
+   // will need to take into account whether or not this texture will be sampled
+   // in linear or nonlinear space.
+@@ -97,6 +104,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -305,9 +305,9 @@ index 6bf7541499dd849439f191cfddae92dded99ef85..a023ddd9f8311bff998bb6655445bb44
 +    return gfx::ColorSpace();
 +  }
 +
-   gfx::ColorSpace::PrimaryID primary_id = GetPrimaryID(color_space_);
+   return CanvasColorSpaceToGfxColorSpace(color_space_);
+ }
  
-   gfx::ColorSpace::TransferID transfer_id =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
@@ -352,7 +352,7 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
+index 16eeda0d910c555aae074fe1ed8ba04c4be76d9e..095b704442f55e978c7f60e9c97c2abe20b131a7 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -10,6 +10,7 @@ namespace switches {
@@ -364,7 +364,7 @@ index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce8865e888766 100644
+index fa86fc52621f4cf12bad58f8c1dd7ca6b29a307c..6b98b75c05643036ecd0fb71a8682ee1088ac52e 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -11,6 +11,8 @@
@@ -374,5 +374,5 @@ index abe0a58a9ccbcd1610f728baa5d9a1155402af0c..e48d800b432f77d364541c432a1ce886
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
 +
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
+ GFX_SWITCHES_EXPORT extern const char kDisableYuv420Biplanar[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
- GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

@@ -4,6 +4,7 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
+import { defer } from './spec-helpers';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
@@ -20,13 +21,6 @@ function randomBuffer (size: number, start: number = 0, end: number = 255) {
 function randomString (length: number) {
   const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0));
   return buffer.toString();
-}
-
-const cleanupTasks: (() => void)[] = [];
-
-function cleanUp () {
-  cleanupTasks.forEach(t => t());
-  cleanupTasks.length = 0;
 }
 
 async function getResponse (urlRequest: Electron.ClientRequest) {
@@ -70,7 +64,7 @@ function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
     });
     const sockets: Socket[] = [];
     server.on('connection', s => sockets.push(s));
-    cleanupTasks.push(() => {
+    defer(() => {
       server.close();
       sockets.forEach(s => s.destroy());
     });
@@ -118,7 +112,6 @@ describe('net module', () => {
   beforeEach(() => {
     routeFailure = false;
   });
-  afterEach(cleanUp);
   afterEach(async function () {
     await session.defaultSession.clearCache();
     if (routeFailure && this.test) {
@@ -1406,7 +1399,7 @@ describe('net module', () => {
     it('should free unreferenced, never-started request objects without crash', (done) => {
       net.request('https://test');
       process.nextTick(() => {
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
         done();
       });
@@ -1425,7 +1418,7 @@ describe('net module', () => {
       const response = await getResponse(urlRequest);
       process.nextTick(() => {
         // Trigger a garbage collection.
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
         finishResponse!();
       });
@@ -1438,7 +1431,7 @@ describe('net module', () => {
       });
       const urlRequest = net.request(serverUrl);
       process.nextTick(() => {
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
       const response = await getResponse(urlRequest);
@@ -1454,7 +1447,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('close', () => {
         process.nextTick(() => {
-          const v8Util = process.electronBinding('v8_util');
+          const v8Util = process._linkedBinding('electron_common_v8_util');
           v8Util.requestGarbageCollectionForTesting();
         });
       });
@@ -1475,7 +1468,7 @@ describe('net module', () => {
       const response = await getResponse(urlRequest);
       await collectStreamBody(response);
       process.nextTick(() => {
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
     });
@@ -1489,7 +1482,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.chunkedEncoding = true;
       urlRequest.write(randomBuffer(kOneMegaByte));
-      const v8Util = process.electronBinding('v8_util');
+      const v8Util = process._linkedBinding('electron_common_v8_util');
       v8Util.requestGarbageCollectionForTesting();
       await collectStreamBody(await getResponse(urlRequest));
     });
@@ -1503,7 +1496,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('close', () => {
         process.nextTick(() => {
-          const v8Util = process.electronBinding('v8_util');
+          const v8Util = process._linkedBinding('electron_common_v8_util');
           v8Util.requestGarbageCollectionForTesting();
         });
       });
@@ -1520,7 +1513,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('close', () => {
         process.nextTick(() => {
-          const v8Util = process.electronBinding('v8_util');
+          const v8Util = process._linkedBinding('electron_common_v8_util');
           v8Util.requestGarbageCollectionForTesting();
         });
       });

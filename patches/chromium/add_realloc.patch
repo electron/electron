@@ -12,7 +12,7 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side and correspondingly in gin.
 
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
-index 891a2e316f6c9eeda9670aaf5201ed57e5f7ba49..00ea3682f491175c6f9bea727de120f5f0de3dac 100644
+index 124c2f72a5cbc2abe8c7686c32b61718d4c95d4b..fa4a478450cc97d231496ab82c74c1a94d1f3557 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
 @@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
@@ -54,10 +54,10 @@ index fa88b2bd0233a4c5ff35a26d10e20fa1b91e33b2..21504ce01403d20067c8439c0c61ee0d
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index fe4485a34797c93dba0626356716d729f223d905..65cf74482128d84a0b955af49bf83d7c097b4af1 100644
+index 5026ce05c5eb0be037ce4085488eb473828175a5..639173c18ddb743a4abe650cefdd94d257437262 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -129,6 +129,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -128,6 +128,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  

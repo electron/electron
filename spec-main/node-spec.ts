@@ -6,7 +6,7 @@ import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { webContents, WebContents } from 'electron/main';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
@@ -321,6 +321,20 @@ describe('node feature', () => {
       expect(signal).to.equal(null);
       child.kill();
       done();
+    });
+  });
+
+  it('performs microtask checkpoint correctly', (done) => {
+    const f3 = async () => {
+      return new Promise((resolve, reject) => {
+        reject(new Error('oops'));
+      });
+    };
+
+    process.once('unhandledRejection', () => done('catch block is delayed to next tick'));
+
+    setTimeout(() => {
+      f3().catch(() => done());
     });
   });
 });

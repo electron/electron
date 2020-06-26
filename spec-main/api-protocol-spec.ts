@@ -7,8 +7,10 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as stream from 'stream';
+import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { WebmGenerator } from './video-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -408,6 +410,36 @@ describe('protocol module', () => {
       });
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.have.lengthOf(1024 * 1024 * 2);
+    });
+
+    it('can handle next-tick scheduling during read calls', async () => {
+      const events = new EventEmitter();
+      function createStream () {
+        const buffers = [
+          Buffer.alloc(65536),
+          Buffer.alloc(65537),
+          Buffer.alloc(39156)
+        ];
+        const e = new stream.Readable({ highWaterMark: 0 });
+        e.push(buffers.shift());
+        e._read = function () {
+          process.nextTick(() => this.push(buffers.shift() || null));
+        };
+        e.on('end', function () {
+          events.emit('end');
+        });
+        return e;
+      }
+      registerStreamProtocol(protocolName, (request, callback) => {
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: createStream()
+        });
+      });
+      const hasEndedPromise = emittedOnce(events, 'end');
+      ajax(protocolName + '://fake-host');
+      await hasEndedPromise;
     });
   });
 
@@ -813,6 +845,101 @@ describe('protocol module', () => {
         const [, response] = await emittedOnce(ipcMain, 'response');
         expect(response).to.deep.equal(expected);
         expect(consoleMessages.join('\n')).to.match(expectedConsole);
+      } finally {
+        // This is called in a timeout to avoid a crash that happens when
+        // calling destroy() in a microtask.
+        setTimeout(() => {
+          (newContents as any).destroy();
+        });
+      }
+    }
+  });
+
+  describe('protocol.registerSchemesAsPrivileged stream', async function () {
+    const pagePath = path.join(fixturesPath, 'pages', 'video.html');
+    const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
+    const videoPath = path.join(fixturesPath, 'video.webm');
+    const standardScheme = (global as any).standardScheme;
+    let w: BrowserWindow = null as unknown as BrowserWindow;
+
+    before(async () => {
+      // generate test video
+      const imageBase64 = await fs.promises.readFile(videoSourceImagePath, 'base64');
+      const imageDataUrl = `data:image/webp;base64,${imageBase64}`;
+      const encoder = new WebmGenerator(15);
+      for (let i = 0; i < 30; i++) {
+        encoder.add(imageDataUrl);
+      }
+      await new Promise((resolve, reject) => {
+        encoder.compile((output:Uint8Array) => {
+          fs.promises.writeFile(videoPath, output).then(resolve, reject);
+        });
+      });
+    });
+
+    after(async () => {
+      await fs.promises.unlink(videoPath);
+    });
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+      await protocol.unregisterProtocol(standardScheme);
+      await protocol.unregisterProtocol('stream');
+    });
+
+    it('does not successfully play videos with stream: false on streaming protocols', async () => {
+      await streamsResponses(standardScheme, 'error');
+    });
+
+    it('successfully plays videos with stream: true on streaming protocols', async () => {
+      await streamsResponses('stream', 'play');
+    });
+
+    async function streamsResponses (testingScheme: string, expected: any) {
+      const protocolHandler = (request: any, callback: Function) => {
+        if (request.url.includes('/video.webm')) {
+          const stat = fs.statSync(videoPath);
+          const fileSize = stat.size;
+          const range = request.headers.Range;
+          if (range) {
+            const parts = range.replace(/bytes=/, '').split('-');
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const chunksize = (end - start) + 1;
+            const headers = {
+              'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': String(chunksize),
+              'Content-Type': 'video/webm'
+            };
+            callback({ statusCode: 206, headers, data: fs.createReadStream(videoPath, { start, end }) });
+          } else {
+            callback({
+              statusCode: 200,
+              headers: {
+                'Content-Length': String(fileSize),
+                'Content-Type': 'video/webm'
+              },
+              data: fs.createReadStream(videoPath)
+            });
+          }
+        } else {
+          callback({ data: fs.createReadStream(pagePath), headers: { 'Content-Type': 'text/html' }, statusCode: 200 });
+        }
+      };
+      await registerStreamProtocol(standardScheme, protocolHandler);
+      await registerStreamProtocol('stream', protocolHandler);
+
+      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true });
+      try {
+        newContents.loadURL(testingScheme + '://fake-host');
+        const [, response] = await emittedOnce(ipcMain, 'result');
+        expect(response).to.deep.equal(expected);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.

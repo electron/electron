@@ -32,6 +32,13 @@ declare namespace Electron {
   interface WebContents {
     _getURL(): string;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
+    getLastWebPreferences(): Electron.WebPreferences;
+    _getPreloadPaths(): string[];
+  }
+
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number;
   }
 
   interface SerializedError {
@@ -102,7 +109,6 @@ declare namespace ElectronInternal {
     removeFunction(fn: Function, removedName: string): Function;
     renameFunction(fn: Function, newName: string | Function): Function;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
-    fnToProperty(module: any, prop: string, getter: string, setter?: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K, onlyForValues?: any[]): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
     moveAPI(fn: Function, oldUsage: string, newUsage: string): Function;

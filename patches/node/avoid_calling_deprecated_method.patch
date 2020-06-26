@@ -9,7 +9,7 @@ V8 v8.1.
 This is already present in Node.js v14 and can be removed when we upgrade.
 
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index a2d185c4167a75e227cd4b2abbf5c5abc7e16acb..e918ed9d12e9fb1d13b2fc05a98cab099fb71a68 100644
+index bcdcd19b261e8815e3c0c0f150f2eda72ef47cf5..86fb822dd5bfa9da7767418e6c6f206f8e96ca73 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -286,7 +286,6 @@ DeserializerContext::DeserializerContext(Environment* env,

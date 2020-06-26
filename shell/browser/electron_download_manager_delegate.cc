@@ -20,6 +20,7 @@
 #include "net/base/filename_util.h"
 #include "shell/browser/api/electron_api_download_item.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -116,7 +117,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
         !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
     settings.force_detached = offscreen;
 
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
@@ -129,7 +130,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     std::move(callback).Run(path,
                             download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                             download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                            item->GetMixedContentStatus(), path,
+                            item->GetMixedContentStatus(), path, base::nullopt,
                             download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
@@ -173,7 +174,8 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   std::move(download_callback)
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-           item->GetMixedContentStatus(), path, interrupt_reason);
+           item->GetMixedContentStatus(), path, base::nullopt,
+           interrupt_reason);
 }
 
 void ElectronDownloadManagerDelegate::Shutdown() {
@@ -192,7 +194,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN,
-        download->GetForcedFilePath(),
+        download->GetForcedFilePath(), base::nullopt,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
@@ -205,7 +207,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         save_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
-        download::DOWNLOAD_INTERRUPT_REASON_NONE);
+        base::nullopt, download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 

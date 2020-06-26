@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 27 May 2020 12:57:43 -0700
+Subject: fix: remove bad semicolon outside fn
+
+Node.js introduced a bad semicolon style in
+https://github.com/nodejs/node/pull/29207. Upstreamed in
+https://github.com/nodejs/node/pull/33592.
+
+diff --git a/src/node_watchdog.cc b/src/node_watchdog.cc
+index 107a25bc977bd38e97a2310b272e495d09847ecb..3ed390678962890d90d385cf2bca9deaca023c89 100644
+--- a/src/node_watchdog.cc
++++ b/src/node_watchdog.cc
+@@ -432,4 +432,4 @@ static void Initialize(Local<Object> target,
+ 
+ }  // namespace node
+ 
+-NODE_MODULE_CONTEXT_AWARE_INTERNAL(watchdog, node::watchdog::Initialize);
++NODE_MODULE_CONTEXT_AWARE_INTERNAL(watchdog, node::watchdog::Initialize)
