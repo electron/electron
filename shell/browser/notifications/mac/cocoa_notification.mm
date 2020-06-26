@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
