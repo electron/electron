@@ -16,7 +16,6 @@
       "y": 5,
       "title": "frame name",
       "webPreferences": {
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
@@ -48,7 +47,6 @@
       "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
@@ -76,7 +74,6 @@
     {
       "backgroundColor": "gray",
       "webPreferences": {
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id",
@@ -110,7 +107,6 @@
       "y": 20,
       "title": "sup",
       "webPreferences": {
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
@@ -143,7 +139,6 @@
       "y": 1,
       "title": "frame name",
       "webPreferences": {
-        "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
