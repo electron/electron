@@ -32,6 +32,7 @@ declare namespace Electron {
   interface WebContents {
     _getURL(): string;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
+    getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
   }
@@ -85,8 +86,16 @@ declare namespace Electron {
   }
 
   interface WebContentsInternal extends Electron.WebContents {
+    _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
+    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
+    _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
+    _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
+    _printToPDF(options: any): Promise<Buffer>;
+    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _getPrinters(): Electron.PrinterInfo[];
+    _init(): void;
   }
 
   const deprecate: ElectronInternal.DeprecationUtil;
