@@ -1,14 +1,12 @@
-'use strict';
-
-const electron = require('electron');
-const { EventEmitter } = require('events');
-const { TopLevelWindow } = process._linkedBinding('electron_browser_top_level_window');
+import { EventEmitter } from 'events';
+import type { TopLevelWindow as TLWT } from 'electron';
+const { TopLevelWindow } = process._linkedBinding('electron_browser_top_level_window') as { TopLevelWindow: typeof TLWT };
 
 Object.setPrototypeOf(TopLevelWindow.prototype, EventEmitter.prototype);
 
-TopLevelWindow.prototype._init = function () {
+(TopLevelWindow.prototype as any)._init = function () {
   // Avoid recursive require.
-  const { app } = electron;
+  const { app } = require('electron');
 
   // Simulate the application menu on platforms other than macOS.
   if (process.platform !== 'darwin') {

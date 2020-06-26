@@ -104,6 +104,8 @@ declare namespace Electron {
     setContentView(view: View): void
     static fromId(id: number): TopLevelWindow;
     static getAllWindows(): TopLevelWindow[];
+    isFocused(): boolean;
+    static getFocusedWindow(): TopLevelWindow | undefined;
   }
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)
