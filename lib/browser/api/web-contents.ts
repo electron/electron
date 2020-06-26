@@ -5,7 +5,7 @@ import * as url from 'url';
 import type { WebContentsInternal as WCT } from 'electron';
 import * as path from 'path';
 import { internalWindowOpen } from '../guest-window-manager';
-import * as NavigationController from '../navigation-controller';
+import { NavigationController } from '../navigation-controller';
 import { ipcMainInternal } from '../ipc-main-internal';
 import * as ipcMainUtils from '../ipc-main-internal-utils';
 import { parseFeatures } from '../../common/parse-features-string';
@@ -434,7 +434,7 @@ const addReturnValueToEvent = (event: any) => {
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
-  NavigationController.call(this, this);
+  NavigationController.call(this as any, this);
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
