@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -1374,7 +1374,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
         "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
       );
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await delay(500);
 
       const width = await w.webContents.executeJavaScript(
         "document.querySelector('iframe').offsetWidth"
