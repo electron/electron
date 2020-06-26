@@ -81,7 +81,7 @@ index f28c3218baa08e7ae885567e0ede1d8108f8a373..a5f4a4a10a776fc92a5e9fbc9593563d
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 5fd60eb6b1540bd51b3b19df6201ebf91de0bb09..678702151310ad7837df9b2cdf554755464f3431 100644
+index 591e5c4e6f7291412a5f05c244d6256a4b4fd57d..2af556050b7fe4ce7404d0c5ce6f2328a1e863fd 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -177,7 +177,7 @@ index 5fd60eb6b1540bd51b3b19df6201ebf91de0bb09..678702151310ad7837df9b2cdf554755
  
    if (current_program_->rounded_corner_rect_location() != -1) {
      SetShaderRoundedCorner(
-@@ -3356,7 +3366,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
+@@ -3357,7 +3367,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
  void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space) {
@@ -188,7 +188,7 @@ index 5fd60eb6b1540bd51b3b19df6201ebf91de0bb09..678702151310ad7837df9b2cdf554755
  
    // If the input color space is PQ, and it did not specify a white level,
    // override it with the frame's white level.
-@@ -3738,9 +3750,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -3739,9 +3751,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -201,7 +201,7 @@ index 5fd60eb6b1540bd51b3b19df6201ebf91de0bb09..678702151310ad7837df9b2cdf554755
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -3959,8 +3971,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -3960,8 +3972,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -212,17 +212,17 @@ index 5fd60eb6b1540bd51b3b19df6201ebf91de0bb09..678702151310ad7837df9b2cdf554755
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4077,3 +4089,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
+@@ -4079,3 +4091,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
  }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 55e4567abb1218ae99eda15d3cabbf408843a18b..59e8e4b4a9d490b0383fc5013e495d607f4cd84a 100644
+index 9f9d3422ad128fe3bfc305baa57971bd03e1b676..02747c0d4d7f0bb7ba034f35bcce86a91774bb36 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -210,6 +210,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -215,6 +215,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -231,7 +231,7 @@ index 55e4567abb1218ae99eda15d3cabbf408843a18b..59e8e4b4a9d490b0383fc5013e495d60
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 03c5e4cc58ae9321dc2a89cef43d615ac2023916..1800a97025d03d7fbf8cf5ab7a632277dd32202e 100644
+index e5a82f46cd58b0da9959930ee85303e4a1530425..753b926fbe0c6a3ef2b2e244d7f80f4f4574bc5c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -227,6 +227,7 @@
@@ -242,7 +242,7 @@ index 03c5e4cc58ae9321dc2a89cef43d615ac2023916..1800a97025d03d7fbf8cf5ab7a632277
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3282,6 +3283,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -251,7 +251,7 @@ index 03c5e4cc58ae9321dc2a89cef43d615ac2023916..1800a97025d03d7fbf8cf5ab7a632277
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
 diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index d56b2a18c3e1edc5c02ceb99d695dde3023f94dc..9e44fd8e77d5fcf651ab1bd9399317bd58881423 100644
+index 30e6638b9c5bf4b04e73156ee4b0f70a91134010..6a05f399a8a70f5d7f4f04ec9b02968bf2c0ef6d 100644
 --- a/content/renderer/render_widget.cc
 +++ b/content/renderer/render_widget.cc
 @@ -2216,6 +2216,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(

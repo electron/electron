@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 012615782c6aba669cb973945e2603b70e548173..b456378b2d1414720b285a6f18fe71adb8e1e6d6 100644
+index 2379e91cf3e2a04a25717a684a2c381d7328bf25..d9cf1c5996d3ed4c86200552dacaabf7e9da4ff0 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4787,6 +4787,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -38,7 +38,7 @@ index 1afd8ac2c2cf78efa1386b89227e4a5d2ca0ce60..4a576f48e677c7d91726e9c59dd4a24a
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 322e2f0f4f023cd2e34163f623c5b52eaad51c1d..46ae29207c804ae3474ae3a3dd8f76de93a1deb0 100644
+index 118a262e5e18c22df6a01312b9f99b235d60ae50..329a92f9c0089cf8f94c7cd2fe990204c670419c 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -277,6 +277,10 @@ struct CreateNewWindowParams {
@@ -53,10 +53,10 @@ index 322e2f0f4f023cd2e34163f623c5b52eaad51c1d..46ae29207c804ae3474ae3a3dd8f76de
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c5e90f4e5e706b84f5a5eec537f5c6886986a28b..b2b0acfbfe0ee0d808ec973164b85eedd20eee00 100644
+index 87375b2ef10c24b5d8d0f604f6a9ee601a706a0c..84ca4325a72a5c4267d43e5be9bfd7b73efa0b86 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -524,6 +524,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -529,6 +529,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -66,7 +66,7 @@ index c5e90f4e5e706b84f5a5eec537f5c6886986a28b..b2b0acfbfe0ee0d808ec973164b85eed
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 45900c9a9ef7d482af769fb2b95a5a6614ab400e..5fb6724a95d9fde9cae15da9de2b307fc1c1f3a5 100644
+index edf60410ba571866b03968804543188f7f00c088..00f3f557ccf69760c4e0ac7c9fcc7d048e21e8d8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -147,6 +147,7 @@ class NetworkService;
@@ -77,7 +77,7 @@ index 45900c9a9ef7d482af769fb2b95a5a6614ab400e..5fb6724a95d9fde9cae15da9de2b307f
  }  // namespace network
  
  namespace sandbox {
-@@ -841,6 +842,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -849,6 +850,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -135,7 +135,7 @@ index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 29220e08371ad0f7a400c81bd024c55130430767..57447f4529917692155d1861c7658156978fa0be 100644
+index c6a990f873066fec1ac7ce5e088ecd02d2142e71..272b613f658ef4bfa3869cbd17d342ceef665142 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -67,6 +67,7 @@
@@ -146,7 +146,7 @@ index 29220e08371ad0f7a400c81bd024c55130430767..57447f4529917692155d1861c7658156
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1238,6 +1239,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1235,6 +1236,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 6da6ad8caf756e8a0f8d6ba4974f6f44a85fe43d..73694633e84c76dcb54cf92c11e018cee1853007 100644
+index 314bc6c11a62bf0cc10c2323183caf97c1e2de16..df08ad7696358c70b2644ad07caefa913ceeeb30 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2001,6 +2001,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2011,6 +2011,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);

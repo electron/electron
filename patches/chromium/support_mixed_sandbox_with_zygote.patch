@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 5f73faa60d4e8d8688af6513134a7696fd464026..03c5e4cc58ae9321dc2a89cef43d615ac2023916 100644
+index a2fc5326f7ecc3d0bd57587f78d0e3231c5a49ac..e5a82f46cd58b0da9959930ee85303e4a1530425 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -414,6 +414,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -40,7 +40,7 @@ index 5f73faa60d4e8d8688af6513134a7696fd464026..03c5e4cc58ae9321dc2a89cef43d615a
 @@ -435,6 +440,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
-   service_manager::ZygoteHandle GetZygote() override {
+   ZygoteHandle GetZygote() override {
 +    if (!use_zygote_) {
 +      return nullptr;
 +    }
