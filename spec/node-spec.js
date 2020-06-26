@@ -20,96 +20,85 @@ describe('node feature', () => {
     });
 
     describe('child_process.fork', () => {
-      it('works in current process', (done) => {
+      it('works in current process', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'));
-        child.on('message', msg => {
-          expect(msg).to.equal('message');
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(msg).to.equal('message');
       });
 
-      it('preserves args', (done) => {
+      it('preserves args', async () => {
         const args = ['--expose_gc', '-test', '1'];
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'process_args.js'), args);
-        child.on('message', (msg) => {
-          expect(args).to.deep.equal(msg.slice(2));
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(args).to.deep.equal(msg.slice(2));
       });
 
-      it('works in forked process', (done) => {
+      it('works in forked process', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'));
-        child.on('message', (msg) => {
-          expect(msg).to.equal('message');
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(msg).to.equal('message');
       });
 
-      it('works in forked process when options.env is specifed', (done) => {
+      it('works in forked process when options.env is specifed', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
           path: process.env.PATH
         });
-        child.on('message', (msg) => {
-          expect(msg).to.equal('message');
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(msg).to.equal('message');
       });
 
-      it('has String::localeCompare working in script', (done) => {
+      it('has String::localeCompare working in script', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'locale-compare.js'));
-        child.on('message', (msg) => {
-          expect(msg).to.deep.equal([0, -1, 1]);
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(msg).to.deep.equal([0, -1, 1]);
       });
 
-      it('has setImmediate working in script', (done) => {
+      it('has setImmediate working in script', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'set-immediate.js'));
-        child.on('message', (msg) => {
-          expect(msg).to.equal('ok');
-          done();
-        });
+        const message = emittedOnce(child, 'message');
         child.send('message');
+        const [msg] = await message;
+        expect(msg).to.equal('ok');
       });
 
-      it('pipes stdio', (done) => {
+      it('pipes stdio', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), { silent: true });
         let data = '';
         child.stdout.on('data', (chunk) => {
           data += String(chunk);
         });
-        child.on('close', (code) => {
-          expect(code).to.equal(0);
-          expect(data).to.equal('pipes stdio');
-          done();
-        });
+        const [code] = await emittedOnce(child, 'close');
+        expect(code).to.equal(0);
+        expect(data).to.equal('pipes stdio');
       });
 
-      it('works when sending a message to a process forked with the --eval argument', (done) => {
+      it('works when sending a message to a process forked with the --eval argument', async () => {
         const source = "process.on('message', (message) => { process.send(message) })";
         const forked = ChildProcess.fork('--eval', [source]);
-        forked.once('message', (message) => {
-          expect(message).to.equal('hello');
-          done();
-        });
+        const message = emittedOnce(forked, 'message');
         forked.send('hello');
+        const [msg] = await message;
+        expect(msg).to.equal('hello');
       });
 
-      it('has the electron version in process.versions', (done) => {
+      it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = ChildProcess.fork('--eval', [source]);
-        forked.on('message', (message) => {
-          expect(message)
-            .to.have.own.property('electron')
-            .that.is.a('string')
-            .and.matches(/^\d+\.\d+\.\d+(\S*)?$/);
-          done();
-        });
+        const [message] = await emittedOnce(forked, 'message');
+        expect(message)
+          .to.have.own.property('electron')
+          .that.is.a('string')
+          .and.matches(/^\d+\.\d+\.\d+(\S*)?$/);
       });
     });
 
@@ -120,7 +109,7 @@ describe('node feature', () => {
         if (child != null) child.kill();
       });
 
-      it('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', (done) => {
+      it('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', async () => {
         child = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
           env: {
             ELECTRON_RUN_AS_NODE: true
@@ -131,13 +120,11 @@ describe('node feature', () => {
         child.stdout.on('data', data => {
           output += data;
         });
-        child.stdout.on('close', () => {
-          expect(JSON.parse(output)).to.deep.equal({
-            processLog: process.platform === 'win32' ? 'function' : 'undefined',
-            processType: 'undefined',
-            window: 'undefined'
-          });
-          done();
+        await emittedOnce(child.stdout, 'close');
+        expect(JSON.parse(output)).to.deep.equal({
+          processLog: process.platform === 'win32' ? 'function' : 'undefined',
+          processType: 'undefined',
+          window: 'undefined'
         });
       });
     });
@@ -258,18 +245,15 @@ describe('node feature', () => {
       }
     });
 
-    it('emit error when connect to a socket path without listeners', (done) => {
+    it('emit error when connect to a socket path without listeners', async () => {
       const socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
       const script = path.join(fixtures, 'module', 'create_socket.js');
       const child = ChildProcess.fork(script, [socketPath]);
-      child.on('exit', (code) => {
-        expect(code).to.equal(0);
-        const client = require('net').connect(socketPath);
-        client.on('error', (error) => {
-          expect(error.code).to.equal('ECONNREFUSED');
-          done();
-        });
-      });
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(0);
+      const client = require('net').connect(socketPath);
+      const [error] = await emittedOnce(client, 'error');
+      expect(error.code).to.equal('ECONNREFUSED');
     });
   });
 

@@ -305,8 +305,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.registerHttpProtocol(protocolName, (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax(protocolName + '://fake-host');
     });
@@ -597,8 +601,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.interceptHttpProtocol('http', (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax('http://fake-host');
     });
