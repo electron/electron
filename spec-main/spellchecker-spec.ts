@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, delay } from './spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -33,7 +33,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await delay(500);
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -50,7 +50,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
     // Wait for spellchecker to load
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await delay(500);
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
