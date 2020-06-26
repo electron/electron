@@ -18,6 +18,8 @@ vars = {
     'v12.18.1',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
+  'squirrel.mac_version':
+    'c7186061da815eb82dfba181caaac6f98e729b5c',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -101,6 +103,10 @@ deps = {
     'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
     'condition': 'checkout_requests and process_deps',
   },
+  'src/third_party/squirrel.mac': {
+    'url': Var("electron_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
+    'condition': 'process_deps',
+  }
 }
 
 hooks = [
@@ -156,4 +162,5 @@ hooks = [
 
 recursedeps = [
   'src',
+  'src/third_party/squirrel.mac',
 ]
