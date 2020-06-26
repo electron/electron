@@ -761,15 +761,15 @@ describe('webContents module', () => {
   describe('focus()', () => {
     describe('when the web contents is hidden', () => {
       afterEach(closeAllWindows)
-      it('does not blur the focused window', (done) => {
+      it('does not blur the focused window', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } })
-        ipcMain.once('answer', (event, parentFocused, childFocused) => {
-          expect(parentFocused).to.be.true()
-          expect(childFocused).to.be.false()
-          done()
-        })
+        const answer = emittedOnce(ipcMain, 'answer')
         w.show()
         w.loadFile(path.join(fixturesPath, 'pages', 'focus-web-contents.html'))
+
+        const [, parentFocused, childFocused] = await answer
+        expect(parentFocused).to.be.true()
+        expect(childFocused).to.be.false()
       })
     })
   })
