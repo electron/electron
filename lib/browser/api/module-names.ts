@@ -20,6 +20,7 @@ export const browserModuleNames = [
   'nativeTheme',
   'net',
   'netLog',
+  'MessageChannelMain',
   'Notification',
   'powerMonitor',
   'powerSaveBlocker',
