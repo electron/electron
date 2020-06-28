@@ -159,5 +159,18 @@ describe('tray module', () => {
 
       expect(newTitle).to.equal(title);
     });
+
+    it('can be called with a font type', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', 'monospaced');
+        tray.setTitle('Hello World!', 'monospacedDigit');
+      }).to.not.throw();
+    });
+
+    it('throws on non-string font types', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', 5.4 as any);
+      }).to.throw(/index 1/);
+    });
   });
 });
