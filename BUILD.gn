@@ -859,21 +859,48 @@ if (is_mac) {
     }
   }
 
+  template("striped_framework") {
+    action(target_name) {
+      assert(defined(invoker.framework))
+
+      script = "//electron/build/strip_framework.py"
+
+      forward_variables_from(invoker, [ "deps" ])
+      inputs = [ "$root_out_dir/" + invoker.framework ]
+      outputs = [ "$target_gen_dir/stripped_frameworks/" + invoker.framework ]
+
+      args = rebase_path(inputs) + rebase_path(outputs)
+    }
+  }
+
+  striped_framework("stripped_mantle_framework") {
+    framework = "Mantle.framework"
+    deps = [ "//third_party/squirrel.mac:mantle_framework" ]
+  }
+
+  striped_framework("stripped_reactiveobjc_framework") {
+    framework = "ReactiveObjC.framework"
+    deps = [ "//third_party/squirrel.mac:reactiveobjc_framework" ]
+  }
+
+  striped_framework("stripped_squirrel_framework") {
+    framework = "Squirrel.framework"
+    deps = [ "//third_party/squirrel.mac:squirrel_framework" ]
+  }
+
   bundle_data("electron_app_framework_bundle_data") {
     sources = [ "$root_out_dir/$electron_framework_name.framework" ]
     if (!is_mas_build) {
-      sources += [
-        "$root_out_dir/Mantle.framework",
-        "$root_out_dir/ReactiveObjC.framework",
-        "$root_out_dir/Squirrel.framework",
-      ]
+      sources += get_target_outputs(":stripped_mantle_framework") +
+                 get_target_outputs(":stripped_reactiveobjc_framework") +
+                 get_target_outputs(":stripped_squirrel_framework")
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
     public_deps = [
       ":electron_framework+link",
-      "//third_party/squirrel.mac:mantle_framework",
-      "//third_party/squirrel.mac:reactiveobjc_framework+link",
-      "//third_party/squirrel.mac:squirrel_framework+link",
+      ":stripped_mantle_framework",
+      ":stripped_reactiveobjc_framework",
+      ":stripped_squirrel_framework",
     ]
 
     foreach(helper_params, content_mac_helpers) {
