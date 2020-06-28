@@ -212,11 +212,19 @@ void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(const std::string& title) {
+void Tray::SetTitle(const std::string& title, gin::Arguments* args) {
   if (!CheckAlive())
     return;
 #if defined(OS_MAC)
-  tray_icon_->SetTitle(title);
+  std::string font_type;
+  v8::Local<v8::Value> font_arg;
+  if (args->GetNext(&font_arg)) {
+    if (!gin::ConvertFromV8(args->isolate(), font_arg, &font_type)) {
+      args->ThrowError();
+      return;
+    }
+  }
+  tray_icon_->SetTitle(title, font_type);
 #endif
 }
 

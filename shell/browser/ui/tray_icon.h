@@ -46,7 +46,8 @@ class TrayIcon {
   virtual bool GetIgnoreDoubleClickEvents() = 0;
 
   // Set/Get title displayed next to status icon in the status bar.
-  virtual void SetTitle(const std::string& title) = 0;
+  virtual void SetTitle(const std::string& title,
+                        const std::string& font_type) = 0;
   virtual std::string GetTitle() = 0;
 #endif
 

@@ -25,7 +25,8 @@ class TrayIconCocoa : public TrayIcon {
   void SetImage(const gfx::Image& image) override;
   void SetPressedImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void SetTitle(const std::string& title) override;
+  void SetTitle(const std::string& title,
+                const std::string& font_type) override;
   std::string GetTitle() override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;

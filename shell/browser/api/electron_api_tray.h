@@ -86,7 +86,7 @@ class Tray : public gin::Wrappable<Tray>,
   void SetImage(gin::Handle<NativeImage> image);
   void SetPressedImage(gin::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
-  void SetTitle(const std::string& title);
+  void SetTitle(const std::string& title, gin::Arguments* args);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();
