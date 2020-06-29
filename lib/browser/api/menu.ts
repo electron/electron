@@ -1,13 +1,11 @@
-'use strict';
+import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron';
+import { sortMenuItems } from './menu-utils';
 
-const { BaseWindow, MenuItem, webContents } = require('electron');
-const { sortMenuItems } = require('@electron/internal/browser/api/menu-utils');
-const EventEmitter = require('events').EventEmitter;
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const bindings = process._linkedBinding('electron_browser_menu');
 
-const { Menu } = bindings;
-let applicationMenu = null;
+const { Menu } = bindings as { Menu: typeof MenuType };
+let applicationMenu: MenuType | null = null;
 let groupIdIndex = 0;
 
 /* Instance Methods */
@@ -19,17 +17,17 @@ Menu.prototype._init = function () {
 };
 
 Menu.prototype._isCommandIdChecked = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].checked : undefined;
+  return this.commandsMap[id] ? this.commandsMap[id].checked : false;
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].enabled : undefined;
+  return this.commandsMap[id] ? this.commandsMap[id].enabled : false;
 };
 Menu.prototype._shouldCommandIdWorkWhenHidden = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].acceleratorWorksWhenHidden : undefined;
+  return this.commandsMap[id] ? !!this.commandsMap[id].acceleratorWorksWhenHidden : false;
 };
 Menu.prototype._isCommandIdVisible = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].visible : undefined;
+  return this.commandsMap[id] ? this.commandsMap[id].visible : false;
 };
 
 Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator) {
@@ -40,13 +38,14 @@ Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator
 };
 
 Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : undefined;
+  return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
 };
 
 Menu.prototype._executeCommand = function (event, id) {
   const command = this.commandsMap[id];
   if (!command) return;
-  command.click(event, BaseWindow.getFocusedWindow(), webContents.getFocusedWebContents());
+  const focusedWindow = BaseWindow.getFocusedWindow();
+  command.click(event, focusedWindow instanceof BrowserWindow ? focusedWindow : undefined, webContents.getFocusedWebContents());
 };
 
 Menu.prototype._menuWillShow = function () {
@@ -73,17 +72,17 @@ Menu.prototype.popup = function (options = {}) {
 
   // find which window to use
   const wins = BaseWindow.getAllWindows();
-  if (!wins || wins.indexOf(window) === -1) {
-    window = BaseWindow.getFocusedWindow();
+  if (!wins || wins.indexOf(window as any) === -1) {
+    window = BaseWindow.getFocusedWindow() as any;
     if (!window && wins && wins.length > 0) {
-      window = wins[0];
+      window = wins[0] as any;
     }
     if (!window) {
       throw new Error('Cannot open Menu without a BaseWindow present');
     }
   }
 
-  this.popupAt(window, x, y, positioningItem, callback);
+  this.popupAt(window as unknown as BaseWindow, x, y, positioningItem, callback);
   return { browserWindow: window, x, y, position: positioningItem };
 };
 
@@ -102,8 +101,9 @@ Menu.prototype.getMenuItemById = function (id) {
 
   let found = items.find(item => item.id === id) || null;
   for (let i = 0; !found && i < items.length; i++) {
-    if (items[i].submenu) {
-      found = items[i].submenu.getMenuItemById(id);
+    const { submenu } = items[i];
+    if (submenu) {
+      found = submenu.getMenuItemById(id);
     }
   }
   return found;
@@ -155,7 +155,7 @@ Menu.getApplicationMenu = () => applicationMenu;
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder;
 
 // set application menu with a preexisting menu
-Menu.setApplicationMenu = function (menu) {
+Menu.setApplicationMenu = function (menu: MenuType) {
   if (menu && menu.constructor !== Menu) {
     throw new TypeError('Invalid menu');
   }
@@ -200,7 +200,7 @@ Menu.buildFromTemplate = function (template) {
 /* Helper Functions */
 
 // validate the template against having the wrong attribute
-function areValidTemplateItems (template) {
+function areValidTemplateItems (template: (MenuItemConstructorOptions | MenuItem)[]) {
   return template.every(item =>
     item != null &&
     typeof item === 'object' &&
@@ -209,7 +209,7 @@ function areValidTemplateItems (template) {
      item.type === 'separator'));
 }
 
-function sortTemplate (template) {
+function sortTemplate (template: (MenuItemConstructorOptions | MenuItem)[]) {
   const sorted = sortMenuItems(template);
   for (const item of sorted) {
     if (Array.isArray(item.submenu)) {
@@ -220,15 +220,15 @@ function sortTemplate (template) {
 }
 
 // Search between separators to find a radio menu item and return its group id
-function generateGroupId (items, pos) {
+function generateGroupId (items: (MenuItemConstructorOptions | MenuItem)[], pos: number) {
   if (pos > 0) {
     for (let idx = pos - 1; idx >= 0; idx--) {
-      if (items[idx].type === 'radio') return items[idx].groupId;
+      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
       if (items[idx].type === 'separator') break;
     }
   } else if (pos < items.length) {
     for (let idx = pos; idx <= items.length - 1; idx++) {
-      if (items[idx].type === 'radio') return items[idx].groupId;
+      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
       if (items[idx].type === 'separator') break;
     }
   }
@@ -236,7 +236,7 @@ function generateGroupId (items, pos) {
   return groupIdIndex;
 }
 
-function removeExtraSeparators (items) {
+function removeExtraSeparators (items: (MenuItemConstructorOptions | MenuItem)[]) {
   // fold adjacent separators together
   let ret = items.filter((e, idx, arr) => {
     if (e.visible === false) return true;
@@ -252,7 +252,7 @@ function removeExtraSeparators (items) {
   return ret;
 }
 
-function insertItemByType (item, pos) {
+function insertItemByType (this: MenuType, item: MenuItem, pos: number) {
   const types = {
     normal: () => this.insertItem(pos, item.commandId, item.label),
     checkbox: () => this.insertCheckItem(pos, item.commandId, item.label),

@@ -90,6 +90,45 @@ declare namespace Electron {
     _sendInternalToAll(channel: string, ...args: any[]): void;
   }
 
+  interface Menu {
+    _init(): void;
+    _isCommandIdChecked(id: string): boolean;
+    _isCommandIdEnabled(id: string): boolean;
+    _shouldCommandIdWorkWhenHidden(id: string): boolean;
+    _isCommandIdVisible(id: string): boolean;
+    _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
+    _shouldRegisterAcceleratorForCommandId(id: string): boolean;
+    _callMenuWillShow(): void;
+    _executeCommand(event: any, id: number): void;
+    _menuWillShow(): void;
+    commandsMap: Record<string, MenuItem>;
+    groupsMap: Record<string, {
+      checked: boolean;
+    }[]>;
+    getItemCount(): number;
+    popupAt(window: BaseWindow, x: number, y: number, positioning: number, callback: () => void): void;
+    closePopupAt(id: number): void;
+    setSublabel(index: number, label: string): void;
+    setToolTip(index: number, tooltip: string): void;
+    setIcon(index: number, image: string | NativeImage): void;
+    setRole(index: number, role: string): void;
+    insertItem(index: number, commandId: number, label: string): void;
+    insertCheckItem(index: number, commandId: number, label: string): void;
+    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
+    insertSeparator(index: number): void;
+    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
+    delegate?: any;
+    getAcceleratorTextAt(index: number): string;
+  }
+
+  interface MenuItem {
+    overrideReadOnlyProperty(property: string, value: any): void;
+    groupId: number;
+    getDefaultRoleAccelerator(): Accelerator | undefined;
+    acceleratorWorksWhenHidden?: boolean;
+  }
+
+
   const deprecate: ElectronInternal.DeprecationUtil;
 
   namespace Main {
@@ -106,6 +145,7 @@ declare namespace Electron {
     static getAllWindows(): BaseWindow[];
     isFocused(): boolean;
     static getFocusedWindow(): BaseWindow | undefined;
+    setMenu(menu: Menu): void;
   }
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)
