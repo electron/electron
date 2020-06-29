@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261cb8a6f58 100644
+index 7b6f69e3dcceab02039aa08afd5f4d10b277864e..34ae6a515894c679f13663ce1ef608ec5429c5b6 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -111,6 +111,8 @@ viz_component("service") {
@@ -107,7 +107,7 @@ index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index b58099c6c1ad5727a806b81d674f4dac187da927..6d38e89500b6f3dd2b76fe3c7e67c568862aa4af 100644
+index da8936a87cfe156a90952c1ca79d9faf6ef2cd1f..6fd321aaf610ee985868af62b0e856f19e8be264 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -21,6 +21,7 @@
@@ -126,7 +126,7 @@ index b58099c6c1ad5727a806b81d674f4dac187da927..6d38e89500b6f3dd2b76fe3c7e67c568
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -218,6 +220,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -223,6 +225,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 0f99c9d78626ccc211236832e5df2008ce0df5f2..f1dfa72d21e93f5223cde8e2b34d5ed2a6c04209 100644
+index 438dd212d881abf70362f12391b6a85f697785d0..34bd0cbf18714ac24355e603806cc36986f24e30 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -74,6 +74,7 @@ class DisplayPrivate;
