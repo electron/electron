@@ -172,7 +172,8 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
 
 GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
     : window_(window),
-      xwindow_(window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget()) {
+      xwindow_(static_cast<x11::Window>(
+          window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget())) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xwindow_);

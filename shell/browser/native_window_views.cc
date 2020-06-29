@@ -242,12 +242,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   }
 
   if (!state_atom_list.empty())
-    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                             state_atom_list);
+    ui::SetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                             "_NET_WM_STATE", "ATOM", state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
   if (!window_type.empty())
-    SetWindowType(GetAcceleratedWidget(), window_type);
+    SetWindowType(static_cast<x11::Window>(GetAcceleratedWidget()),
+                  window_type);
 #endif
 
 #if defined(OS_WIN)
@@ -662,7 +663,7 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
   if (!IsWindowValid(static_cast<x11::Window>(id.id)))
     return false;
 
-  electron::MoveWindowAbove(GetAcceleratedWidget(),
+  electron::MoveWindowAbove(static_cast<x11::Window>(GetAcceleratedWidget()),
                             static_cast<x11::Window>(id.id));
 #endif
 
@@ -679,7 +680,8 @@ void NativeWindowViews::MoveTop() {
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
-  electron::MoveWindowToForeground(GetAcceleratedWidget());
+  electron::MoveWindowToForeground(
+      static_cast<x11::Window>(GetAcceleratedWidget()));
 #endif
 }
 
@@ -864,7 +866,7 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
 #elif defined(USE_X11)
-  SetWMSpecState(GetAcceleratedWidget(), skip,
+  SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
                  gfx::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
@@ -1074,8 +1076,9 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   XSetTransientForHint(
       xdisplay, static_cast<uint32_t>(GetAcceleratedWidget()),
-      static_cast<uint32_t>(parent ? parent->GetAcceleratedWidget()
-                                   : ui::GetX11RootWindow()));
+      static_cast<uint32_t>(
+          parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
+                 : ui::GetX11RootWindow()));
 #elif defined(OS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1153,7 +1156,8 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   // determine whether the current window is visible on all workspaces.
   x11::Atom sticky_atom = gfx::GetAtom("_NET_WM_STATE_STICKY");
   std::vector<x11::Atom> wm_states;
-  ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
+  ui::GetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                           "_NET_WM_STATE", &wm_states);
   return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
          wm_states.end();
 #endif
@@ -1281,11 +1285,11 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 #if defined(USE_X11)
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
   if (use_dark_theme) {
-    ui::SetStringProperty(GetAcceleratedWidget(),
+    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                           gfx::GetAtom("_GTK_THEME_VARIANT"),
                           gfx::GetAtom("UTF8_STRING"), "dark");
   } else {
-    ui::SetStringProperty(GetAcceleratedWidget(),
+    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                           gfx::GetAtom("_GTK_THEME_VARIANT"),
                           gfx::GetAtom("UTF8_STRING"), "light");
   }
