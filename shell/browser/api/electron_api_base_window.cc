@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/electron_api_top_level_window.h"
+#include "shell/browser/api/electron_api_base_window.h"
 
 #include <string>
 #include <utility>
@@ -74,11 +74,11 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 }  // namespace
 
-TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               const gin_helper::Dictionary& options)
+BaseWindow::BaseWindow(v8::Isolate* isolate,
+                       const gin_helper::Dictionary& options)
     : weak_factory_(this) {
   // The parent window.
-  gin::Handle<TopLevelWindow> parent;
+  gin::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
@@ -105,15 +105,15 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
 #endif
 }
 
-TopLevelWindow::TopLevelWindow(gin_helper::Arguments* args,
-                               const gin_helper::Dictionary& options)
-    : TopLevelWindow(args->isolate(), options) {
+BaseWindow::BaseWindow(gin_helper::Arguments* args,
+                       const gin_helper::Dictionary& options)
+    : BaseWindow(args->isolate(), options) {
   InitWithArgs(args);
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
 
-TopLevelWindow::~TopLevelWindow() {
+BaseWindow::~BaseWindow() {
   if (!window_->IsClosed())
     window_->CloseImmediately();
 
@@ -125,15 +125,14 @@ TopLevelWindow::~TopLevelWindow() {
   self_ref_.Reset();
 }
 
-void TopLevelWindow::InitWith(v8::Isolate* isolate,
-                              v8::Local<v8::Object> wrapper) {
+void BaseWindow::InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   AttachAsUserData(window_.get());
-  gin_helper::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
+  gin_helper::TrackableObject<BaseWindow>::InitWith(isolate, wrapper);
 
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.
   if (!parent_window_.IsEmpty()) {
-    gin::Handle<TopLevelWindow> parent;
+    gin::Handle<BaseWindow> parent;
     gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
@@ -143,13 +142,13 @@ void TopLevelWindow::InitWith(v8::Isolate* isolate,
   self_ref_.Reset(isolate, wrapper);
 }
 
-void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
+void BaseWindow::WillCloseWindow(bool* prevent_default) {
   if (Emit("close")) {
     *prevent_default = true;
   }
 }
 
-void TopLevelWindow::OnWindowClosed() {
+void BaseWindow::OnWindowClosed() {
   // Invalidate weak ptrs before the Javascript object is destroyed,
   // there might be some delayed emit events which shouldn't be
   // triggered after this.
@@ -165,136 +164,133 @@ void TopLevelWindow::OnWindowClosed() {
   Emit("closed");
 
   RemoveFromParentChildWindows();
-  TopLevelWindow::ResetBrowserViews();
+  BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
-void TopLevelWindow::OnWindowEndSession() {
+void BaseWindow::OnWindowEndSession() {
   Emit("session-end");
 }
 
-void TopLevelWindow::OnWindowBlur() {
+void BaseWindow::OnWindowBlur() {
   EmitEventSoon("blur");
 }
 
-void TopLevelWindow::OnWindowFocus() {
+void BaseWindow::OnWindowFocus() {
   EmitEventSoon("focus");
 }
 
-void TopLevelWindow::OnWindowShow() {
+void BaseWindow::OnWindowShow() {
   Emit("show");
 }
 
-void TopLevelWindow::OnWindowHide() {
+void BaseWindow::OnWindowHide() {
   Emit("hide");
 }
 
-void TopLevelWindow::OnWindowMaximize() {
+void BaseWindow::OnWindowMaximize() {
   Emit("maximize");
 }
 
-void TopLevelWindow::OnWindowUnmaximize() {
+void BaseWindow::OnWindowUnmaximize() {
   Emit("unmaximize");
 }
 
-void TopLevelWindow::OnWindowMinimize() {
+void BaseWindow::OnWindowMinimize() {
   Emit("minimize");
 }
 
-void TopLevelWindow::OnWindowRestore() {
+void BaseWindow::OnWindowRestore() {
   Emit("restore");
 }
 
-void TopLevelWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
-                                        bool* prevent_default) {
+void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
+                                    bool* prevent_default) {
   if (Emit("will-resize", new_bounds)) {
     *prevent_default = true;
   }
 }
 
-void TopLevelWindow::OnWindowResize() {
+void BaseWindow::OnWindowResize() {
   Emit("resize");
 }
 
-void TopLevelWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
-                                      bool* prevent_default) {
+void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
+                                  bool* prevent_default) {
   if (Emit("will-move", new_bounds)) {
     *prevent_default = true;
   }
 }
 
-void TopLevelWindow::OnWindowMove() {
+void BaseWindow::OnWindowMove() {
   Emit("move");
 }
 
-void TopLevelWindow::OnWindowMoved() {
+void BaseWindow::OnWindowMoved() {
   Emit("moved");
 }
 
-void TopLevelWindow::OnWindowEnterFullScreen() {
+void BaseWindow::OnWindowEnterFullScreen() {
   Emit("enter-full-screen");
 }
 
-void TopLevelWindow::OnWindowLeaveFullScreen() {
+void BaseWindow::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
-void TopLevelWindow::OnWindowScrollTouchBegin() {
+void BaseWindow::OnWindowScrollTouchBegin() {
   Emit("scroll-touch-begin");
 }
 
-void TopLevelWindow::OnWindowScrollTouchEnd() {
+void BaseWindow::OnWindowScrollTouchEnd() {
   Emit("scroll-touch-end");
 }
 
-void TopLevelWindow::OnWindowSwipe(const std::string& direction) {
+void BaseWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
-void TopLevelWindow::OnWindowRotateGesture(float rotation) {
+void BaseWindow::OnWindowRotateGesture(float rotation) {
   Emit("rotate-gesture", rotation);
 }
 
-void TopLevelWindow::OnWindowSheetBegin() {
+void BaseWindow::OnWindowSheetBegin() {
   Emit("sheet-begin");
 }
 
-void TopLevelWindow::OnWindowSheetEnd() {
+void BaseWindow::OnWindowSheetEnd() {
   Emit("sheet-end");
 }
 
-void TopLevelWindow::OnWindowEnterHtmlFullScreen() {
+void BaseWindow::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
 
-void TopLevelWindow::OnWindowLeaveHtmlFullScreen() {
+void BaseWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
-void TopLevelWindow::OnWindowAlwaysOnTopChanged() {
+void BaseWindow::OnWindowAlwaysOnTopChanged() {
   Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
-void TopLevelWindow::OnExecuteAppCommand(const std::string& command_name) {
+void BaseWindow::OnExecuteAppCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
-void TopLevelWindow::OnTouchBarItemResult(
-    const std::string& item_id,
-    const base::DictionaryValue& details) {
+void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
+                                      const base::DictionaryValue& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 
-void TopLevelWindow::OnNewWindowForTab() {
+void BaseWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
 
 #if defined(OS_WIN)
-void TopLevelWindow::OnWindowMessage(UINT message,
-                                     WPARAM w_param,
-                                     LPARAM l_param) {
+void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
     messages_callback_map_[message].Run(
         ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
@@ -303,120 +299,118 @@ void TopLevelWindow::OnWindowMessage(UINT message,
 }
 #endif
 
-void TopLevelWindow::SetContentView(gin::Handle<View> view) {
+void BaseWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
 
-void TopLevelWindow::Close() {
+void BaseWindow::Close() {
   window_->Close();
 }
 
-void TopLevelWindow::Focus() {
+void BaseWindow::Focus() {
   window_->Focus(true);
 }
 
-void TopLevelWindow::Blur() {
+void BaseWindow::Blur() {
   window_->Focus(false);
 }
 
-bool TopLevelWindow::IsFocused() {
+bool BaseWindow::IsFocused() {
   return window_->IsFocused();
 }
 
-void TopLevelWindow::Show() {
+void BaseWindow::Show() {
   window_->Show();
 }
 
-void TopLevelWindow::ShowInactive() {
+void BaseWindow::ShowInactive() {
   // This method doesn't make sense for modal window.
   if (IsModal())
     return;
   window_->ShowInactive();
 }
 
-void TopLevelWindow::Hide() {
+void BaseWindow::Hide() {
   window_->Hide();
 }
 
-bool TopLevelWindow::IsVisible() {
+bool BaseWindow::IsVisible() {
   return window_->IsVisible();
 }
 
-bool TopLevelWindow::IsEnabled() {
+bool BaseWindow::IsEnabled() {
   return window_->IsEnabled();
 }
 
-void TopLevelWindow::SetEnabled(bool enable) {
+void BaseWindow::SetEnabled(bool enable) {
   window_->SetEnabled(enable);
 }
 
-void TopLevelWindow::Maximize() {
+void BaseWindow::Maximize() {
   window_->Maximize();
 }
 
-void TopLevelWindow::Unmaximize() {
+void BaseWindow::Unmaximize() {
   window_->Unmaximize();
 }
 
-bool TopLevelWindow::IsMaximized() {
+bool BaseWindow::IsMaximized() {
   return window_->IsMaximized();
 }
 
-void TopLevelWindow::Minimize() {
+void BaseWindow::Minimize() {
   window_->Minimize();
 }
 
-void TopLevelWindow::Restore() {
+void BaseWindow::Restore() {
   window_->Restore();
 }
 
-bool TopLevelWindow::IsMinimized() {
+bool BaseWindow::IsMinimized() {
   return window_->IsMinimized();
 }
 
-void TopLevelWindow::SetFullScreen(bool fullscreen) {
+void BaseWindow::SetFullScreen(bool fullscreen) {
   window_->SetFullScreen(fullscreen);
 }
 
-bool TopLevelWindow::IsFullscreen() {
+bool BaseWindow::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void TopLevelWindow::SetBounds(const gfx::Rect& bounds,
-                               gin_helper::Arguments* args) {
+void BaseWindow::SetBounds(const gfx::Rect& bounds,
+                           gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetBounds(bounds, animate);
 }
 
-gfx::Rect TopLevelWindow::GetBounds() {
+gfx::Rect BaseWindow::GetBounds() {
   return window_->GetBounds();
 }
 
-bool TopLevelWindow::IsNormal() {
+bool BaseWindow::IsNormal() {
   return window_->IsNormal();
 }
 
-gfx::Rect TopLevelWindow::GetNormalBounds() {
+gfx::Rect BaseWindow::GetNormalBounds() {
   return window_->GetNormalBounds();
 }
 
-void TopLevelWindow::SetContentBounds(const gfx::Rect& bounds,
-                                      gin_helper::Arguments* args) {
+void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
+                                  gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
 }
 
-gfx::Rect TopLevelWindow::GetContentBounds() {
+gfx::Rect BaseWindow::GetContentBounds() {
   return window_->GetContentBounds();
 }
 
-void TopLevelWindow::SetSize(int width,
-                             int height,
-                             gin_helper::Arguments* args) {
+void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
   bool animate = false;
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
@@ -424,7 +418,7 @@ void TopLevelWindow::SetSize(int width,
   window_->SetSize(size, animate);
 }
 
-std::vector<int> TopLevelWindow::GetSize() {
+std::vector<int> BaseWindow::GetSize() {
   std::vector<int> result(2);
   gfx::Size size = window_->GetSize();
   result[0] = size.width();
@@ -432,15 +426,15 @@ std::vector<int> TopLevelWindow::GetSize() {
   return result;
 }
 
-void TopLevelWindow::SetContentSize(int width,
-                                    int height,
-                                    gin_helper::Arguments* args) {
+void BaseWindow::SetContentSize(int width,
+                                int height,
+                                gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
-std::vector<int> TopLevelWindow::GetContentSize() {
+std::vector<int> BaseWindow::GetContentSize() {
   std::vector<int> result(2);
   gfx::Size size = window_->GetContentSize();
   result[0] = size.width();
@@ -448,11 +442,11 @@ std::vector<int> TopLevelWindow::GetContentSize() {
   return result;
 }
 
-void TopLevelWindow::SetMinimumSize(int width, int height) {
+void BaseWindow::SetMinimumSize(int width, int height) {
   window_->SetMinimumSize(gfx::Size(width, height));
 }
 
-std::vector<int> TopLevelWindow::GetMinimumSize() {
+std::vector<int> BaseWindow::GetMinimumSize() {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMinimumSize();
   result[0] = size.width();
@@ -460,11 +454,11 @@ std::vector<int> TopLevelWindow::GetMinimumSize() {
   return result;
 }
 
-void TopLevelWindow::SetMaximumSize(int width, int height) {
+void BaseWindow::SetMaximumSize(int width, int height) {
   window_->SetMaximumSize(gfx::Size(width, height));
 }
 
-std::vector<int> TopLevelWindow::GetMaximumSize() {
+std::vector<int> BaseWindow::GetMaximumSize() {
   std::vector<int> result(2);
   gfx::Size size = window_->GetMaximumSize();
   result[0] = size.width();
@@ -472,62 +466,61 @@ std::vector<int> TopLevelWindow::GetMaximumSize() {
   return result;
 }
 
-void TopLevelWindow::SetSheetOffset(double offsetY,
-                                    gin_helper::Arguments* args) {
+void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
   double offsetX = 0.0;
   args->GetNext(&offsetX);
   window_->SetSheetOffset(offsetX, offsetY);
 }
 
-void TopLevelWindow::SetResizable(bool resizable) {
+void BaseWindow::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
 
-bool TopLevelWindow::IsResizable() {
+bool BaseWindow::IsResizable() {
   return window_->IsResizable();
 }
 
-void TopLevelWindow::SetMovable(bool movable) {
+void BaseWindow::SetMovable(bool movable) {
   window_->SetMovable(movable);
 }
 
-bool TopLevelWindow::IsMovable() {
+bool BaseWindow::IsMovable() {
   return window_->IsMovable();
 }
 
-void TopLevelWindow::SetMinimizable(bool minimizable) {
+void BaseWindow::SetMinimizable(bool minimizable) {
   window_->SetMinimizable(minimizable);
 }
 
-bool TopLevelWindow::IsMinimizable() {
+bool BaseWindow::IsMinimizable() {
   return window_->IsMinimizable();
 }
 
-void TopLevelWindow::SetMaximizable(bool maximizable) {
+void BaseWindow::SetMaximizable(bool maximizable) {
   window_->SetMaximizable(maximizable);
 }
 
-bool TopLevelWindow::IsMaximizable() {
+bool BaseWindow::IsMaximizable() {
   return window_->IsMaximizable();
 }
 
-void TopLevelWindow::SetFullScreenable(bool fullscreenable) {
+void BaseWindow::SetFullScreenable(bool fullscreenable) {
   window_->SetFullScreenable(fullscreenable);
 }
 
-bool TopLevelWindow::IsFullScreenable() {
+bool BaseWindow::IsFullScreenable() {
   return window_->IsFullScreenable();
 }
 
-void TopLevelWindow::SetClosable(bool closable) {
+void BaseWindow::SetClosable(bool closable) {
   window_->SetClosable(closable);
 }
 
-bool TopLevelWindow::IsClosable() {
+bool BaseWindow::IsClosable() {
   return window_->IsClosable();
 }
 
-void TopLevelWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
+void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
   args->GetNext(&level);
@@ -538,29 +531,29 @@ void TopLevelWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
   window_->SetAlwaysOnTop(z_order, level, relative_level);
 }
 
-bool TopLevelWindow::IsAlwaysOnTop() {
+bool BaseWindow::IsAlwaysOnTop() {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
-void TopLevelWindow::Center() {
+void BaseWindow::Center() {
   window_->Center();
 }
 
-void TopLevelWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
+void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 
-std::vector<int> TopLevelWindow::GetPosition() {
+std::vector<int> BaseWindow::GetPosition() {
   std::vector<int> result(2);
   gfx::Point pos = window_->GetPosition();
   result[0] = pos.x();
   result[1] = pos.y();
   return result;
 }
-void TopLevelWindow::MoveAbove(const std::string& sourceId,
-                               gin_helper::Arguments* args) {
+void BaseWindow::MoveAbove(const std::string& sourceId,
+                           gin_helper::Arguments* args) {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
@@ -569,120 +562,120 @@ void TopLevelWindow::MoveAbove(const std::string& sourceId,
 #endif
 }
 
-void TopLevelWindow::MoveTop() {
+void BaseWindow::MoveTop() {
   window_->MoveTop();
 }
 
-void TopLevelWindow::SetTitle(const std::string& title) {
+void BaseWindow::SetTitle(const std::string& title) {
   window_->SetTitle(title);
 }
 
-std::string TopLevelWindow::GetTitle() {
+std::string BaseWindow::GetTitle() {
   return window_->GetTitle();
 }
 
-void TopLevelWindow::SetAccessibleTitle(const std::string& title) {
+void BaseWindow::SetAccessibleTitle(const std::string& title) {
   window_->SetAccessibleTitle(title);
 }
 
-std::string TopLevelWindow::GetAccessibleTitle() {
+std::string BaseWindow::GetAccessibleTitle() {
   return window_->GetAccessibleTitle();
 }
 
-void TopLevelWindow::FlashFrame(bool flash) {
+void BaseWindow::FlashFrame(bool flash) {
   window_->FlashFrame(flash);
 }
 
-void TopLevelWindow::SetSkipTaskbar(bool skip) {
+void BaseWindow::SetSkipTaskbar(bool skip) {
   window_->SetSkipTaskbar(skip);
 }
 
-void TopLevelWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
+void BaseWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
   window_->SetExcludedFromShownWindowsMenu(excluded);
 }
 
-bool TopLevelWindow::IsExcludedFromShownWindowsMenu() {
+bool BaseWindow::IsExcludedFromShownWindowsMenu() {
   return window_->IsExcludedFromShownWindowsMenu();
 }
 
-void TopLevelWindow::SetSimpleFullScreen(bool simple_fullscreen) {
+void BaseWindow::SetSimpleFullScreen(bool simple_fullscreen) {
   window_->SetSimpleFullScreen(simple_fullscreen);
 }
 
-bool TopLevelWindow::IsSimpleFullScreen() {
+bool BaseWindow::IsSimpleFullScreen() {
   return window_->IsSimpleFullScreen();
 }
 
-void TopLevelWindow::SetKiosk(bool kiosk) {
+void BaseWindow::SetKiosk(bool kiosk) {
   window_->SetKiosk(kiosk);
 }
 
-bool TopLevelWindow::IsKiosk() {
+bool BaseWindow::IsKiosk() {
   return window_->IsKiosk();
 }
 
-void TopLevelWindow::SetBackgroundColor(const std::string& color_name) {
+void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseHexColor(color_name);
   window_->SetBackgroundColor(color);
 }
 
-std::string TopLevelWindow::GetBackgroundColor() {
+std::string BaseWindow::GetBackgroundColor() {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
-void TopLevelWindow::SetHasShadow(bool has_shadow) {
+void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
 
-bool TopLevelWindow::HasShadow() {
+bool BaseWindow::HasShadow() {
   return window_->HasShadow();
 }
 
-void TopLevelWindow::SetOpacity(const double opacity) {
+void BaseWindow::SetOpacity(const double opacity) {
   window_->SetOpacity(opacity);
 }
 
-double TopLevelWindow::GetOpacity() {
+double BaseWindow::GetOpacity() {
   return window_->GetOpacity();
 }
 
-void TopLevelWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+void BaseWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   window_->widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
 
-void TopLevelWindow::SetRepresentedFilename(const std::string& filename) {
+void BaseWindow::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
 
-std::string TopLevelWindow::GetRepresentedFilename() {
+std::string BaseWindow::GetRepresentedFilename() {
   return window_->GetRepresentedFilename();
 }
 
-void TopLevelWindow::SetDocumentEdited(bool edited) {
+void BaseWindow::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
 }
 
-bool TopLevelWindow::IsDocumentEdited() {
+bool BaseWindow::IsDocumentEdited() {
   return window_->IsDocumentEdited();
 }
 
-void TopLevelWindow::SetIgnoreMouseEvents(bool ignore,
-                                          gin_helper::Arguments* args) {
+void BaseWindow::SetIgnoreMouseEvents(bool ignore,
+                                      gin_helper::Arguments* args) {
   gin_helper::Dictionary options;
   bool forward = false;
   args->GetNext(&options) && options.Get("forward", &forward);
   return window_->SetIgnoreMouseEvents(ignore, forward);
 }
 
-void TopLevelWindow::SetContentProtection(bool enable) {
+void BaseWindow::SetContentProtection(bool enable) {
   return window_->SetContentProtection(enable);
 }
 
-void TopLevelWindow::SetFocusable(bool focusable) {
+void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
 
-void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   gin::Handle<Menu> menu;
   v8::Local<v8::Object> object;
@@ -705,19 +698,19 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   }
 }
 
-void TopLevelWindow::RemoveMenu() {
+void BaseWindow::RemoveMenu() {
   menu_.Reset();
   window_->SetMenu(nullptr);
 }
 
-void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
-                                     gin_helper::Arguments* args) {
+void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
+                                 gin_helper::Arguments* args) {
   if (IsModal()) {
     args->ThrowError("Can not be called for modal window");
     return;
   }
 
-  gin::Handle<TopLevelWindow> parent;
+  gin::Handle<BaseWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
@@ -728,16 +721,16 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
   } else {
-    args->ThrowError("Must pass TopLevelWindow instance or null");
+    args->ThrowError("Must pass BaseWindow instance or null");
   }
 }
 
-void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
+void BaseWindow::SetBrowserView(v8::Local<v8::Value> value) {
   ResetBrowserViews();
   AddBrowserView(value);
 }
 
-void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
+void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
@@ -750,7 +743,7 @@ void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
   }
 }
 
-void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
+void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
@@ -765,11 +758,11 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   }
 }
 
-std::string TopLevelWindow::GetMediaSourceId() const {
+std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
 
-v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
+v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
   // landed
@@ -777,8 +770,7 @@ v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   return ToBuffer(isolate(), &handle, sizeof(handle));
 }
 
-void TopLevelWindow::SetProgressBar(double progress,
-                                    gin_helper::Arguments* args) {
+void BaseWindow::SetProgressBar(double progress, gin_helper::Arguments* args) {
   gin_helper::Dictionary options;
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
@@ -796,140 +788,138 @@ void TopLevelWindow::SetProgressBar(double progress,
   window_->SetProgressBar(progress, state);
 }
 
-void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
-                                    const std::string& description) {
+void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
+                                const std::string& description) {
   window_->SetOverlayIcon(overlay, description);
 }
 
-void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible) {
+void BaseWindow::SetVisibleOnAllWorkspaces(bool visible) {
   return window_->SetVisibleOnAllWorkspaces(visible);
 }
 
-bool TopLevelWindow::IsVisibleOnAllWorkspaces() {
+bool BaseWindow::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void TopLevelWindow::SetAutoHideCursor(bool auto_hide) {
+void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
-                                 v8::Local<v8::Value> value) {
+void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   std::string type = gin::V8ToString(isolate, value);
   window_->SetVibrancy(type);
 }
 
 #if defined(OS_MACOSX)
-void TopLevelWindow::SetTrafficLightPosition(const gfx::Point& position) {
+void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
 
-gfx::Point TopLevelWindow::GetTrafficLightPosition() const {
+gfx::Point BaseWindow::GetTrafficLightPosition() const {
   return window_->GetTrafficLightPosition();
 }
 #endif
 
-void TopLevelWindow::SetTouchBar(
+void BaseWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
   window_->SetTouchBar(std::move(items));
 }
 
-void TopLevelWindow::RefreshTouchBarItem(const std::string& item_id) {
+void BaseWindow::RefreshTouchBarItem(const std::string& item_id) {
   window_->RefreshTouchBarItem(item_id);
 }
 
-void TopLevelWindow::SetEscapeTouchBarItem(
-    gin_helper::PersistentDictionary item) {
+void BaseWindow::SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) {
   window_->SetEscapeTouchBarItem(std::move(item));
 }
 
-void TopLevelWindow::SelectPreviousTab() {
+void BaseWindow::SelectPreviousTab() {
   window_->SelectPreviousTab();
 }
 
-void TopLevelWindow::SelectNextTab() {
+void BaseWindow::SelectNextTab() {
   window_->SelectNextTab();
 }
 
-void TopLevelWindow::MergeAllWindows() {
+void BaseWindow::MergeAllWindows() {
   window_->MergeAllWindows();
 }
 
-void TopLevelWindow::MoveTabToNewWindow() {
+void BaseWindow::MoveTabToNewWindow() {
   window_->MoveTabToNewWindow();
 }
 
-void TopLevelWindow::ToggleTabBar() {
+void BaseWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void TopLevelWindow::AddTabbedWindow(NativeWindow* window,
-                                     gin_helper::Arguments* args) {
+void BaseWindow::AddTabbedWindow(NativeWindow* window,
+                                 gin_helper::Arguments* args) {
   if (!window_->AddTabbedWindow(window))
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
 }
 
-void TopLevelWindow::SetWindowButtonVisibility(bool visible,
-                                               gin_helper::Arguments* args) {
+void BaseWindow::SetWindowButtonVisibility(bool visible,
+                                           gin_helper::Arguments* args) {
   if (!window_->SetWindowButtonVisibility(visible)) {
     args->ThrowError("Not supported for this window");
   }
 }
 
-void TopLevelWindow::SetAutoHideMenuBar(bool auto_hide) {
+void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
 
-bool TopLevelWindow::IsMenuBarAutoHide() {
+bool BaseWindow::IsMenuBarAutoHide() {
   return window_->IsMenuBarAutoHide();
 }
 
-void TopLevelWindow::SetMenuBarVisibility(bool visible) {
+void BaseWindow::SetMenuBarVisibility(bool visible) {
   window_->SetMenuBarVisibility(visible);
 }
 
-bool TopLevelWindow::IsMenuBarVisible() {
+bool BaseWindow::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
-void TopLevelWindow::SetAspectRatio(double aspect_ratio,
-                                    gin_helper::Arguments* args) {
+void BaseWindow::SetAspectRatio(double aspect_ratio,
+                                gin_helper::Arguments* args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
-void TopLevelWindow::PreviewFile(const std::string& path,
-                                 gin_helper::Arguments* args) {
+void BaseWindow::PreviewFile(const std::string& path,
+                             gin_helper::Arguments* args) {
   std::string display_name;
   if (!args->GetNext(&display_name))
     display_name = path;
   window_->PreviewFile(path, display_name);
 }
 
-void TopLevelWindow::CloseFilePreview() {
+void BaseWindow::CloseFilePreview() {
   window_->CloseFilePreview();
 }
 
-v8::Local<v8::Value> TopLevelWindow::GetContentView() const {
+v8::Local<v8::Value> BaseWindow::GetContentView() const {
   if (content_view_.IsEmpty())
     return v8::Null(isolate());
   else
     return v8::Local<v8::Value>::New(isolate(), content_view_);
 }
 
-v8::Local<v8::Value> TopLevelWindow::GetParentWindow() const {
+v8::Local<v8::Value> BaseWindow::GetParentWindow() const {
   if (parent_window_.IsEmpty())
     return v8::Null(isolate());
   else
     return v8::Local<v8::Value>::New(isolate(), parent_window_);
 }
 
-std::vector<v8::Local<v8::Object>> TopLevelWindow::GetChildWindows() const {
+std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
   return child_windows_.Values(isolate());
 }
 
-v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
+v8::Local<v8::Value> BaseWindow::GetBrowserView(
     gin_helper::Arguments* args) const {
   if (browser_views_.size() == 0) {
     return v8::Null(isolate());
@@ -944,7 +934,7 @@ v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
   }
 }
 
-std::vector<v8::Local<v8::Value>> TopLevelWindow::GetBrowserViews() const {
+std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
   std::vector<v8::Local<v8::Value>> ret;
 
   for (auto const& views_iter : browser_views_) {
@@ -954,11 +944,11 @@ std::vector<v8::Local<v8::Value>> TopLevelWindow::GetBrowserViews() const {
   return ret;
 }
 
-bool TopLevelWindow::IsModal() const {
+bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
 
-bool TopLevelWindow::SetThumbarButtons(gin_helper::Arguments* args) {
+bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 #if defined(OS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
@@ -974,7 +964,7 @@ bool TopLevelWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void TopLevelWindow::SetIcon(gin::Handle<NativeImage> icon) {
+void BaseWindow::SetIcon(gin::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
@@ -987,37 +977,37 @@ void TopLevelWindow::SetIcon(gin::Handle<NativeImage> icon) {
 #endif
 
 #if defined(OS_WIN)
-bool TopLevelWindow::HookWindowMessage(UINT message,
-                                       const MessageCallback& callback) {
+bool BaseWindow::HookWindowMessage(UINT message,
+                                   const MessageCallback& callback) {
   messages_callback_map_[message] = callback;
   return true;
 }
 
-void TopLevelWindow::UnhookWindowMessage(UINT message) {
+void BaseWindow::UnhookWindowMessage(UINT message) {
   messages_callback_map_.erase(message);
 }
 
-bool TopLevelWindow::IsWindowMessageHooked(UINT message) {
+bool BaseWindow::IsWindowMessageHooked(UINT message) {
   return base::Contains(messages_callback_map_, message);
 }
 
-void TopLevelWindow::UnhookAllWindowMessages() {
+void BaseWindow::UnhookAllWindowMessages() {
   messages_callback_map_.clear();
 }
 
-bool TopLevelWindow::SetThumbnailClip(const gfx::Rect& region) {
+bool BaseWindow::SetThumbnailClip(const gfx::Rect& region) {
   auto* window = static_cast<NativeWindowViews*>(window_.get());
   return window->taskbar_host().SetThumbnailClip(
       window_->GetAcceleratedWidget(), region);
 }
 
-bool TopLevelWindow::SetThumbnailToolTip(const std::string& tooltip) {
+bool BaseWindow::SetThumbnailToolTip(const std::string& tooltip) {
   auto* window = static_cast<NativeWindowViews*>(window_.get());
   return window->taskbar_host().SetThumbnailToolTip(
       window_->GetAcceleratedWidget(), tooltip);
 }
 
-void TopLevelWindow::SetAppDetails(const gin_helper::Dictionary& options) {
+void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
   base::string16 app_id;
   base::FilePath app_icon_path;
   int app_icon_index = 0;
@@ -1036,11 +1026,11 @@ void TopLevelWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 }
 #endif
 
-int32_t TopLevelWindow::GetID() const {
+int32_t BaseWindow::GetID() const {
   return weak_map_id();
 }
 
-void TopLevelWindow::ResetBrowserViews() {
+void BaseWindow::ResetBrowserViews() {
   for (auto& item : browser_views_) {
     gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),
@@ -1057,11 +1047,11 @@ void TopLevelWindow::ResetBrowserViews() {
   browser_views_.clear();
 }
 
-void TopLevelWindow::RemoveFromParentChildWindows() {
+void BaseWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;
 
-  gin::Handle<TopLevelWindow> parent;
+  gin::Handle<BaseWindow> parent;
   if (!gin::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
@@ -1071,170 +1061,165 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-gin_helper::WrappableBase* TopLevelWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new TopLevelWindow(args, options);
+  return new BaseWindow(args, options);
 }
 
 // static
-void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
-                                    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "TopLevelWindow"));
+void BaseWindow::BuildPrototype(v8::Isolate* isolate,
+                                v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setContentView", &TopLevelWindow::SetContentView)
-      .SetMethod("close", &TopLevelWindow::Close)
-      .SetMethod("focus", &TopLevelWindow::Focus)
-      .SetMethod("blur", &TopLevelWindow::Blur)
-      .SetMethod("isFocused", &TopLevelWindow::IsFocused)
-      .SetMethod("show", &TopLevelWindow::Show)
-      .SetMethod("showInactive", &TopLevelWindow::ShowInactive)
-      .SetMethod("hide", &TopLevelWindow::Hide)
-      .SetMethod("isVisible", &TopLevelWindow::IsVisible)
-      .SetMethod("isEnabled", &TopLevelWindow::IsEnabled)
-      .SetMethod("setEnabled", &TopLevelWindow::SetEnabled)
-      .SetMethod("maximize", &TopLevelWindow::Maximize)
-      .SetMethod("unmaximize", &TopLevelWindow::Unmaximize)
-      .SetMethod("isMaximized", &TopLevelWindow::IsMaximized)
-      .SetMethod("minimize", &TopLevelWindow::Minimize)
-      .SetMethod("restore", &TopLevelWindow::Restore)
-      .SetMethod("isMinimized", &TopLevelWindow::IsMinimized)
-      .SetMethod("setFullScreen", &TopLevelWindow::SetFullScreen)
-      .SetMethod("isFullScreen", &TopLevelWindow::IsFullscreen)
-      .SetMethod("setBounds", &TopLevelWindow::SetBounds)
-      .SetMethod("getBounds", &TopLevelWindow::GetBounds)
-      .SetMethod("isNormal", &TopLevelWindow::IsNormal)
-      .SetMethod("getNormalBounds", &TopLevelWindow::GetNormalBounds)
-      .SetMethod("setSize", &TopLevelWindow::SetSize)
-      .SetMethod("getSize", &TopLevelWindow::GetSize)
-      .SetMethod("setContentBounds", &TopLevelWindow::SetContentBounds)
-      .SetMethod("getContentBounds", &TopLevelWindow::GetContentBounds)
-      .SetMethod("setContentSize", &TopLevelWindow::SetContentSize)
-      .SetMethod("getContentSize", &TopLevelWindow::GetContentSize)
-      .SetMethod("setMinimumSize", &TopLevelWindow::SetMinimumSize)
-      .SetMethod("getMinimumSize", &TopLevelWindow::GetMinimumSize)
-      .SetMethod("setMaximumSize", &TopLevelWindow::SetMaximumSize)
-      .SetMethod("getMaximumSize", &TopLevelWindow::GetMaximumSize)
-      .SetMethod("setSheetOffset", &TopLevelWindow::SetSheetOffset)
-      .SetMethod("moveAbove", &TopLevelWindow::MoveAbove)
-      .SetMethod("moveTop", &TopLevelWindow::MoveTop)
-      .SetMethod("setResizable", &TopLevelWindow::SetResizable)
-      .SetMethod("isResizable", &TopLevelWindow::IsResizable)
-      .SetMethod("setMovable", &TopLevelWindow::SetMovable)
-      .SetMethod("isMovable", &TopLevelWindow::IsMovable)
-      .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
-      .SetMethod("isMinimizable", &TopLevelWindow::IsMinimizable)
-      .SetMethod("setMaximizable", &TopLevelWindow::SetMaximizable)
-      .SetMethod("isMaximizable", &TopLevelWindow::IsMaximizable)
-      .SetMethod("setFullScreenable", &TopLevelWindow::SetFullScreenable)
-      .SetMethod("isFullScreenable", &TopLevelWindow::IsFullScreenable)
-      .SetMethod("setClosable", &TopLevelWindow::SetClosable)
-      .SetMethod("isClosable", &TopLevelWindow::IsClosable)
-      .SetMethod("setAlwaysOnTop", &TopLevelWindow::SetAlwaysOnTop)
-      .SetMethod("isAlwaysOnTop", &TopLevelWindow::IsAlwaysOnTop)
-      .SetMethod("center", &TopLevelWindow::Center)
-      .SetMethod("setPosition", &TopLevelWindow::SetPosition)
-      .SetMethod("getPosition", &TopLevelWindow::GetPosition)
-      .SetMethod("setTitle", &TopLevelWindow::SetTitle)
-      .SetMethod("getTitle", &TopLevelWindow::GetTitle)
-      .SetProperty("accessibleTitle", &TopLevelWindow::GetAccessibleTitle,
-                   &TopLevelWindow::SetAccessibleTitle)
-      .SetMethod("flashFrame", &TopLevelWindow::FlashFrame)
-      .SetMethod("setSkipTaskbar", &TopLevelWindow::SetSkipTaskbar)
-      .SetMethod("setSimpleFullScreen", &TopLevelWindow::SetSimpleFullScreen)
-      .SetMethod("isSimpleFullScreen", &TopLevelWindow::IsSimpleFullScreen)
-      .SetMethod("setKiosk", &TopLevelWindow::SetKiosk)
-      .SetMethod("isKiosk", &TopLevelWindow::IsKiosk)
-      .SetMethod("setBackgroundColor", &TopLevelWindow::SetBackgroundColor)
-      .SetMethod("getBackgroundColor", &TopLevelWindow::GetBackgroundColor)
-      .SetMethod("setHasShadow", &TopLevelWindow::SetHasShadow)
-      .SetMethod("hasShadow", &TopLevelWindow::HasShadow)
-      .SetMethod("setOpacity", &TopLevelWindow::SetOpacity)
-      .SetMethod("getOpacity", &TopLevelWindow::GetOpacity)
-      .SetMethod("setShape", &TopLevelWindow::SetShape)
-      .SetMethod("setRepresentedFilename",
-                 &TopLevelWindow::SetRepresentedFilename)
-      .SetMethod("getRepresentedFilename",
-                 &TopLevelWindow::GetRepresentedFilename)
-      .SetMethod("setDocumentEdited", &TopLevelWindow::SetDocumentEdited)
-      .SetMethod("isDocumentEdited", &TopLevelWindow::IsDocumentEdited)
-      .SetMethod("setIgnoreMouseEvents", &TopLevelWindow::SetIgnoreMouseEvents)
-      .SetMethod("setContentProtection", &TopLevelWindow::SetContentProtection)
-      .SetMethod("setFocusable", &TopLevelWindow::SetFocusable)
-      .SetMethod("setMenu", &TopLevelWindow::SetMenu)
-      .SetMethod("removeMenu", &TopLevelWindow::RemoveMenu)
-      .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
-      .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
-      .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
-      .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
-      .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
-      .SetMethod("getNativeWindowHandle",
-                 &TopLevelWindow::GetNativeWindowHandle)
-      .SetMethod("setProgressBar", &TopLevelWindow::SetProgressBar)
-      .SetMethod("setOverlayIcon", &TopLevelWindow::SetOverlayIcon)
+      .SetMethod("setContentView", &BaseWindow::SetContentView)
+      .SetMethod("close", &BaseWindow::Close)
+      .SetMethod("focus", &BaseWindow::Focus)
+      .SetMethod("blur", &BaseWindow::Blur)
+      .SetMethod("isFocused", &BaseWindow::IsFocused)
+      .SetMethod("show", &BaseWindow::Show)
+      .SetMethod("showInactive", &BaseWindow::ShowInactive)
+      .SetMethod("hide", &BaseWindow::Hide)
+      .SetMethod("isVisible", &BaseWindow::IsVisible)
+      .SetMethod("isEnabled", &BaseWindow::IsEnabled)
+      .SetMethod("setEnabled", &BaseWindow::SetEnabled)
+      .SetMethod("maximize", &BaseWindow::Maximize)
+      .SetMethod("unmaximize", &BaseWindow::Unmaximize)
+      .SetMethod("isMaximized", &BaseWindow::IsMaximized)
+      .SetMethod("minimize", &BaseWindow::Minimize)
+      .SetMethod("restore", &BaseWindow::Restore)
+      .SetMethod("isMinimized", &BaseWindow::IsMinimized)
+      .SetMethod("setFullScreen", &BaseWindow::SetFullScreen)
+      .SetMethod("isFullScreen", &BaseWindow::IsFullscreen)
+      .SetMethod("setBounds", &BaseWindow::SetBounds)
+      .SetMethod("getBounds", &BaseWindow::GetBounds)
+      .SetMethod("isNormal", &BaseWindow::IsNormal)
+      .SetMethod("getNormalBounds", &BaseWindow::GetNormalBounds)
+      .SetMethod("setSize", &BaseWindow::SetSize)
+      .SetMethod("getSize", &BaseWindow::GetSize)
+      .SetMethod("setContentBounds", &BaseWindow::SetContentBounds)
+      .SetMethod("getContentBounds", &BaseWindow::GetContentBounds)
+      .SetMethod("setContentSize", &BaseWindow::SetContentSize)
+      .SetMethod("getContentSize", &BaseWindow::GetContentSize)
+      .SetMethod("setMinimumSize", &BaseWindow::SetMinimumSize)
+      .SetMethod("getMinimumSize", &BaseWindow::GetMinimumSize)
+      .SetMethod("setMaximumSize", &BaseWindow::SetMaximumSize)
+      .SetMethod("getMaximumSize", &BaseWindow::GetMaximumSize)
+      .SetMethod("setSheetOffset", &BaseWindow::SetSheetOffset)
+      .SetMethod("moveAbove", &BaseWindow::MoveAbove)
+      .SetMethod("moveTop", &BaseWindow::MoveTop)
+      .SetMethod("setResizable", &BaseWindow::SetResizable)
+      .SetMethod("isResizable", &BaseWindow::IsResizable)
+      .SetMethod("setMovable", &BaseWindow::SetMovable)
+      .SetMethod("isMovable", &BaseWindow::IsMovable)
+      .SetMethod("setMinimizable", &BaseWindow::SetMinimizable)
+      .SetMethod("isMinimizable", &BaseWindow::IsMinimizable)
+      .SetMethod("setMaximizable", &BaseWindow::SetMaximizable)
+      .SetMethod("isMaximizable", &BaseWindow::IsMaximizable)
+      .SetMethod("setFullScreenable", &BaseWindow::SetFullScreenable)
+      .SetMethod("isFullScreenable", &BaseWindow::IsFullScreenable)
+      .SetMethod("setClosable", &BaseWindow::SetClosable)
+      .SetMethod("isClosable", &BaseWindow::IsClosable)
+      .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
+      .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
+      .SetMethod("center", &BaseWindow::Center)
+      .SetMethod("setPosition", &BaseWindow::SetPosition)
+      .SetMethod("getPosition", &BaseWindow::GetPosition)
+      .SetMethod("setTitle", &BaseWindow::SetTitle)
+      .SetMethod("getTitle", &BaseWindow::GetTitle)
+      .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,
+                   &BaseWindow::SetAccessibleTitle)
+      .SetMethod("flashFrame", &BaseWindow::FlashFrame)
+      .SetMethod("setSkipTaskbar", &BaseWindow::SetSkipTaskbar)
+      .SetMethod("setSimpleFullScreen", &BaseWindow::SetSimpleFullScreen)
+      .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
+      .SetMethod("setKiosk", &BaseWindow::SetKiosk)
+      .SetMethod("isKiosk", &BaseWindow::IsKiosk)
+      .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
+      .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
+      .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
+      .SetMethod("hasShadow", &BaseWindow::HasShadow)
+      .SetMethod("setOpacity", &BaseWindow::SetOpacity)
+      .SetMethod("getOpacity", &BaseWindow::GetOpacity)
+      .SetMethod("setShape", &BaseWindow::SetShape)
+      .SetMethod("setRepresentedFilename", &BaseWindow::SetRepresentedFilename)
+      .SetMethod("getRepresentedFilename", &BaseWindow::GetRepresentedFilename)
+      .SetMethod("setDocumentEdited", &BaseWindow::SetDocumentEdited)
+      .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
+      .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
+      .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
+      .SetMethod("setFocusable", &BaseWindow::SetFocusable)
+      .SetMethod("setMenu", &BaseWindow::SetMenu)
+      .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
+      .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)
+      .SetMethod("setBrowserView", &BaseWindow::SetBrowserView)
+      .SetMethod("addBrowserView", &BaseWindow::AddBrowserView)
+      .SetMethod("removeBrowserView", &BaseWindow::RemoveBrowserView)
+      .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
+      .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
+      .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
+      .SetMethod("setOverlayIcon", &BaseWindow::SetOverlayIcon)
       .SetMethod("setVisibleOnAllWorkspaces",
-                 &TopLevelWindow::SetVisibleOnAllWorkspaces)
+                 &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
-                 &TopLevelWindow::IsVisibleOnAllWorkspaces)
+                 &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MACOSX)
-      .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
+      .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
-      .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
+      .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
 #if defined(OS_MACOSX)
       .SetMethod("setTrafficLightPosition",
-                 &TopLevelWindow::SetTrafficLightPosition)
+                 &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
-                 &TopLevelWindow::GetTrafficLightPosition)
+                 &BaseWindow::GetTrafficLightPosition)
 #endif
-      .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
-      .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
-      .SetMethod("_setEscapeTouchBarItem",
-                 &TopLevelWindow::SetEscapeTouchBarItem)
+      .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
+      .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
+      .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
 #if defined(OS_MACOSX)
-      .SetMethod("selectPreviousTab", &TopLevelWindow::SelectPreviousTab)
-      .SetMethod("selectNextTab", &TopLevelWindow::SelectNextTab)
-      .SetMethod("mergeAllWindows", &TopLevelWindow::MergeAllWindows)
-      .SetMethod("moveTabToNewWindow", &TopLevelWindow::MoveTabToNewWindow)
-      .SetMethod("toggleTabBar", &TopLevelWindow::ToggleTabBar)
-      .SetMethod("addTabbedWindow", &TopLevelWindow::AddTabbedWindow)
+      .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
+      .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
+      .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
+      .SetMethod("moveTabToNewWindow", &BaseWindow::MoveTabToNewWindow)
+      .SetMethod("toggleTabBar", &BaseWindow::ToggleTabBar)
+      .SetMethod("addTabbedWindow", &BaseWindow::AddTabbedWindow)
       .SetMethod("setWindowButtonVisibility",
-                 &TopLevelWindow::SetWindowButtonVisibility)
+                 &BaseWindow::SetWindowButtonVisibility)
       .SetProperty("excludedFromShownWindowsMenu",
-                   &TopLevelWindow::IsExcludedFromShownWindowsMenu,
-                   &TopLevelWindow::SetExcludedFromShownWindowsMenu)
+                   &BaseWindow::IsExcludedFromShownWindowsMenu,
+                   &BaseWindow::SetExcludedFromShownWindowsMenu)
 #endif
-      .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
-      .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
-      .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
-      .SetMethod("isMenuBarVisible", &TopLevelWindow::IsMenuBarVisible)
-      .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
-      .SetMethod("previewFile", &TopLevelWindow::PreviewFile)
-      .SetMethod("closeFilePreview", &TopLevelWindow::CloseFilePreview)
-      .SetMethod("getContentView", &TopLevelWindow::GetContentView)
-      .SetMethod("getParentWindow", &TopLevelWindow::GetParentWindow)
-      .SetMethod("getChildWindows", &TopLevelWindow::GetChildWindows)
-      .SetMethod("getBrowserView", &TopLevelWindow::GetBrowserView)
-      .SetMethod("getBrowserViews", &TopLevelWindow::GetBrowserViews)
-      .SetMethod("isModal", &TopLevelWindow::IsModal)
-      .SetMethod("setThumbarButtons", &TopLevelWindow::SetThumbarButtons)
+      .SetMethod("setAutoHideMenuBar", &BaseWindow::SetAutoHideMenuBar)
+      .SetMethod("isMenuBarAutoHide", &BaseWindow::IsMenuBarAutoHide)
+      .SetMethod("setMenuBarVisibility", &BaseWindow::SetMenuBarVisibility)
+      .SetMethod("isMenuBarVisible", &BaseWindow::IsMenuBarVisible)
+      .SetMethod("setAspectRatio", &BaseWindow::SetAspectRatio)
+      .SetMethod("previewFile", &BaseWindow::PreviewFile)
+      .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
+      .SetMethod("getContentView", &BaseWindow::GetContentView)
+      .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
+      .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
+      .SetMethod("getBrowserView", &BaseWindow::GetBrowserView)
+      .SetMethod("getBrowserViews", &BaseWindow::GetBrowserViews)
+      .SetMethod("isModal", &BaseWindow::IsModal)
+      .SetMethod("setThumbarButtons", &BaseWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)
-      .SetMethod("setIcon", &TopLevelWindow::SetIcon)
+      .SetMethod("setIcon", &BaseWindow::SetIcon)
 #endif
 #if defined(OS_WIN)
-      .SetMethod("hookWindowMessage", &TopLevelWindow::HookWindowMessage)
-      .SetMethod("isWindowMessageHooked",
-                 &TopLevelWindow::IsWindowMessageHooked)
-      .SetMethod("unhookWindowMessage", &TopLevelWindow::UnhookWindowMessage)
+      .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
+      .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
+      .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)
       .SetMethod("unhookAllWindowMessages",
-                 &TopLevelWindow::UnhookAllWindowMessages)
-      .SetMethod("setThumbnailClip", &TopLevelWindow::SetThumbnailClip)
-      .SetMethod("setThumbnailToolTip", &TopLevelWindow::SetThumbnailToolTip)
-      .SetMethod("setAppDetails", &TopLevelWindow::SetAppDetails)
+                 &BaseWindow::UnhookAllWindowMessages)
+      .SetMethod("setThumbnailClip", &BaseWindow::SetThumbnailClip)
+      .SetMethod("setThumbnailToolTip", &BaseWindow::SetThumbnailToolTip)
+      .SetMethod("setAppDetails", &BaseWindow::SetAppDetails)
 #endif
-      .SetProperty("id", &TopLevelWindow::GetID);
+      .SetProperty("id", &BaseWindow::GetID);
 }
 
 }  // namespace api
@@ -1243,27 +1228,26 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-using electron::api::TopLevelWindow;
+using electron::api::BaseWindow;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  TopLevelWindow::SetConstructor(isolate,
-                                 base::BindRepeating(&TopLevelWindow::New));
+  BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
 
   gin_helper::Dictionary constructor(isolate,
-                                     TopLevelWindow::GetConstructor(isolate)
+                                     BaseWindow::GetConstructor(isolate)
                                          ->GetFunction(context)
                                          .ToLocalChecked());
-  constructor.SetMethod("fromId", &TopLevelWindow::FromWeakMapID);
-  constructor.SetMethod("getAllWindows", &TopLevelWindow::GetAll);
+  constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
+  constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
 
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("TopLevelWindow", constructor);
+  dict.Set("BaseWindow", constructor);
 }
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_top_level_window, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_base_window, Initialize)

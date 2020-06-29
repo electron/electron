@@ -34,6 +34,7 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow;
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
+    equal(other: WebContents): boolean;
   }
 
   interface WebPreferences {
@@ -96,6 +97,41 @@ declare namespace Electron {
   }
 
   class View {}
+  
+  // Experimental views API
+  class BaseWindow {
+    constructor(args: {show: boolean})
+    setContentView(view: View): void
+    static fromId(id: number): BaseWindow;
+    static getAllWindows(): BaseWindow[];
+    isFocused(): boolean;
+    static getFocusedWindow(): BaseWindow | undefined;
+  }
+  class WebContentsView {
+    constructor(options: BrowserWindowConstructorOptions)
+  }
+
+  // Deprecated / undocumented BrowserWindow methods
+  interface BrowserWindow {
+    getURL(): string;
+    send(channel: string, ...args: any[]): void;
+    openDevTools(options?: Electron.OpenDevToolsOptions): void;
+    closeDevTools(): void;
+    isDevToolsOpened(): void;
+    isDevToolsFocused(): void;
+    toggleDevTools(): void;
+    inspectElement(x: number, y: number): void;
+    inspectSharedWorker(): void;
+    inspectServiceWorker(): void;
+    getBackgroundThrottling(): void;
+    setBackgroundThrottling(allowed: boolean): void;
+  }
+
+  namespace Main {
+    class BaseWindow extends Electron.BaseWindow {}
+    class View extends Electron.View {}
+    class WebContentsView extends Electron.WebContentsView {}
+  }
 }
 
 declare namespace ElectronInternal {
