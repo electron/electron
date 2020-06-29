@@ -97,6 +97,21 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->NotifyWindowBlur();
 }
 
+- (void)windowDidBecomeKey:(NSNotification*)notification {
+  shell_->NotifyWindowIsKeyChanged(true);
+}
+
+- (void)windowDidResignKey:(NSNotification*)notification {
+  // If our app is still active and we're still the key window, ignore this
+  // message, since it just means that a menu extra (on the "system status bar")
+  // was activated; we'll get another |-windowDidResignKey| if we ever really
+  // lose key window status.
+  if ([NSApp isActive] && ([NSApp keyWindow] == [notification object]))
+    return;
+
+  shell_->NotifyWindowIsKeyChanged(false);
+}
+
 - (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)frameSize {
   NSSize newSize = frameSize;
   double aspectRatio = shell_->GetAspectRatio();

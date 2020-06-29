@@ -57,6 +57,9 @@ class NativeWindowObserver : public base::CheckedObserver {
   // Called when window gains focus.
   virtual void OnWindowFocus() {}
 
+  // Called when window gained or lost key window status.
+  virtual void OnWindowIsKeyChanged(bool is_key) {}
+
   // Called when window is shown.
   virtual void OnWindowShow() {}
 
