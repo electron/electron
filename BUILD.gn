@@ -862,7 +862,7 @@ if (is_mac) {
     }
   }
 
-  template("striped_framework") {
+  template("stripped_framework") {
     action(target_name) {
       assert(defined(invoker.framework))
 
@@ -876,17 +876,17 @@ if (is_mac) {
     }
   }
 
-  striped_framework("stripped_mantle_framework") {
+  stripped_framework("stripped_mantle_framework") {
     framework = "Mantle.framework"
     deps = [ "//third_party/squirrel.mac:mantle_framework" ]
   }
 
-  striped_framework("stripped_reactiveobjc_framework") {
+  stripped_framework("stripped_reactiveobjc_framework") {
     framework = "ReactiveObjC.framework"
     deps = [ "//third_party/squirrel.mac:reactiveobjc_framework" ]
   }
 
-  striped_framework("stripped_squirrel_framework") {
+  stripped_framework("stripped_squirrel_framework") {
     framework = "Squirrel.framework"
     deps = [ "//third_party/squirrel.mac:squirrel_framework" ]
   }
