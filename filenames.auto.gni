@@ -223,7 +223,7 @@ auto_filenames = {
     "lib/browser/api/views/image-view.ts",
     "lib/browser/api/web-contents-view.ts",
     "lib/browser/api/web-contents.js",
-    "lib/browser/chrome-extension-shim.js",
+    "lib/browser/chrome-extension-shim.ts",
     "lib/browser/default-menu.ts",
     "lib/browser/desktop-capturer.ts",
     "lib/browser/devtools.ts",
