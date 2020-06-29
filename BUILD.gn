@@ -870,7 +870,7 @@ if (is_mac) {
 
       forward_variables_from(invoker, [ "deps" ])
       inputs = [ "$root_out_dir/" + invoker.framework ]
-      outputs = [ "$target_gen_dir/stripped_frameworks/" + invoker.framework ]
+      outputs = [ "$target_out_dir/stripped_frameworks/" + invoker.framework ]
 
       args = rebase_path(inputs) + rebase_path(outputs)
     }

@@ -23,10 +23,10 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..7b006f5863e0d3525173bdc4167f5cf15c02159f
+index 0000000000000000000000000000000000000000..8e512dd67433e07d92cfe8372d5c5adddfa418d8
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,225 @@
 +assert(is_mac)
 +
 +import("//build/config/mac/rules.gni")
@@ -54,6 +54,7 @@ index 0000000000000000000000000000000000000000..7b006f5863e0d3525173bdc4167f5cf1
 +    "//build/config/compiler:chromium_code",
 +    "//build/config/gcc:symbol_visibility_hidden",
 +  ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
 +  public_deps = [ ":mantle_headers" ]
 +  deps = []
 +  libs = [
@@ -118,12 +119,13 @@ index 0000000000000000000000000000000000000000..7b006f5863e0d3525173bdc4167f5cf1
 +    "//build/config/compiler:chromium_code",
 +    "//build/config/gcc:symbol_visibility_hidden",
 +  ]
-+  public_deps = [
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  deps = [
 +    ":reactiveobjc_disposableprovider_dtrace",
++    ":reactiveobjc_headers",
 +    ":reactiveobjc_headers",
 +    ":reactiveobjc_signalprovider_dtrace",
 +  ]
-+  deps = [ ":reactiveobjc_headers" ]
 +  libs = [
 +    "AppKit.framework",
 +    "Foundation.framework",
@@ -146,6 +148,7 @@ index 0000000000000000000000000000000000000000..7b006f5863e0d3525173bdc4167f5cf1
 +executable("squirrel_shipit") {
 +  output_name = "ShipIt"
 +  configs -= [ "//build/config/compiler:chromium_code" ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
 +  sources = [
 +    "Squirrel/NSBundle+SQRLVersionExtensions.h",
 +    "Squirrel/NSBundle+SQRLVersionExtensions.m",
@@ -225,6 +228,7 @@ index 0000000000000000000000000000000000000000..7b006f5863e0d3525173bdc4167f5cf1
 +    "//build/config/compiler:chromium_code",
 +    "//build/config/gcc:symbol_visibility_hidden",
 +  ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
 +  public_deps = [
 +    ":squirrel_framework_headers",
 +    ":squirrel_framework_shipit",
