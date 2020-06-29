@@ -5,7 +5,7 @@
 #ifndef SHELL_COMMON_NODE_INCLUDES_H_
 #define SHELL_COMMON_NODE_INCLUDES_H_
 
-#include "base/logging.h"
+#include "base/check.h"
 
 // Include common headers for using node APIs.
 
