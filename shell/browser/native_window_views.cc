@@ -957,16 +957,23 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #elif defined(USE_X11)
+  auto* connection = x11::Connection::Get();
   if (ignore) {
-    XRectangle r = {0, 0, 1, 1};
-    XShapeCombineRectangles(gfx::GetXDisplay(),
-                            static_cast<uint32_t>(GetAcceleratedWidget()),
-                            ShapeInput, 0, 0, &r, 1, ShapeSet,
-                            static_cast<int>(x11::ClipOrdering::YXBanded));
+    x11::Rectangle r{0, 0, 1, 1};
+    connection->shape().Rectangles({
+        .operation = x11::Shape::So::Set,
+        .destination_kind = x11::Shape::Sk::Input,
+        .ordering = x11::ClipOrdering::YXBanded,
+        .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+        .rectangles = {r},
+    });
   } else {
-    XShapeCombineMask(gfx::GetXDisplay(),
-                      static_cast<uint32_t>(GetAcceleratedWidget()), ShapeInput,
-                      0, 0, x11::None, ShapeSet);
+    connection->shape().Mask({
+        .operation = x11::Shape::So::Set,
+        .destination_kind = x11::Shape::Sk::Input,
+        .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+        .source_bitmap = x11::Pixmap::None,
+    });
   }
 #endif
 }
