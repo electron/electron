@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "chrome/common/chrome_switches.h"
-#include "components/federated_learning/floc_blocklist_service.h"
+#include "components/federated_learning/floc_blocklist_service.h"  // nogncheck
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
