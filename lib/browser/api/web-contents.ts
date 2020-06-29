@@ -9,6 +9,7 @@ import { ipcMainInternal } from '../ipc-main-internal';
 import * as ipcMainUtils from '../ipc-main-internal-utils';
 import { parseFeatures } from '../../common/parse-features-string';
 import { MessagePortMain } from '../message-port-main';
+import { EventEmitter } from 'events';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -110,7 +111,7 @@ const defaultPrintingSetting = {
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: WebContentsInternal } };
 
-Object.setPrototypeOf(WebContents.prototype, NavigationController.prototype);
+Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
@@ -432,7 +433,23 @@ const addReturnValueToEvent = (event: any) => {
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
-  Object.assign(this, new NavigationController(this));
+  const navigationController = new NavigationController(this);
+  this.loadURL = navigationController.loadURL.bind(navigationController);
+  this.getURL = navigationController.getURL.bind(navigationController);
+  this.stop = navigationController.stop.bind(navigationController);
+  this.reload = navigationController.reload.bind(navigationController);
+  this.reloadIgnoringCache = navigationController.reloadIgnoringCache.bind(navigationController);
+  this.canGoBack = navigationController.canGoBack.bind(navigationController);
+  this.canGoForward = navigationController.canGoForward.bind(navigationController);
+  this.canGoToIndex = navigationController.canGoToIndex.bind(navigationController);
+  this.canGoToOffset = navigationController.canGoToOffset.bind(navigationController);
+  this.clearHistory = navigationController.clearHistory.bind(navigationController);
+  this.goBack = navigationController.goBack.bind(navigationController);
+  this.goForward = navigationController.goForward.bind(navigationController);
+  this.goToIndex = navigationController.goToIndex.bind(navigationController);
+  this.goToOffset = navigationController.goToOffset.bind(navigationController);
+  this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
+  this.length = navigationController.length.bind(navigationController);
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.

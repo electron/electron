@@ -101,6 +101,9 @@ declare namespace Electron {
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
     _init(): void;
+    canGoToIndex(index: number): boolean;
+    getActiveIndex(): number;
+    length(): number;
   }
 
   const deprecate: ElectronInternal.DeprecationUtil;

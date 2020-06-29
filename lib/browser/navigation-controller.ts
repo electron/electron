@@ -64,11 +64,11 @@ export class NavigationController extends EventEmitter {
     });
   }
 
-  loadURL (url: string, options?: LoadURLOptions) {
+  loadURL (url: string, options?: LoadURLOptions): Promise<void> {
     if (options == null) {
       options = {};
     }
-    const p = new Promise((resolve, reject) => {
+    const p = new Promise<void>((resolve, reject) => {
       const resolveAndCleanup = () => {
         removeListeners();
         resolve();
