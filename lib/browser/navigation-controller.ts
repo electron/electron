@@ -1,5 +1,6 @@
 import { ipcMainInternal } from './ipc-main-internal';
 import type { WebContents, LoadURLOptions } from 'electron/main';
+import { EventEmitter } from 'events';
 
 // The history operation in renderer is redirected to browser.
 ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK', function (event) {
@@ -23,13 +24,14 @@ ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
 // control on user land, and only rely on WebContents.loadURL for navigation.
 // This helps us avoid Chromium's various optimizations so we can ensure renderer
 // process is restarted everytime.
-export class NavigationController {
+export class NavigationController extends EventEmitter {
   currentIndex: number = -1;
   inPageIndex: number = -1;
   pendingIndex: number = -1;
   history: string[] = [];
 
   constructor (private webContents: WebContents) {
+    super();
     this.clearHistory();
 
     // webContents may have already navigated to a page.

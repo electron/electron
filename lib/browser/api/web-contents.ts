@@ -1,8 +1,7 @@
-import { EventEmitter } from 'events';
-import { app, ipcMain, session, Menu, MenuItem, MenuItemConstructorOptions, deprecate, WebContentsInternal } from 'electron';
+import { app, ipcMain, session, deprecate } from 'electron';
+import type { MenuItem, MenuItemConstructorOptions, WebContentsInternal } from 'electron';
 
 import * as url from 'url';
-import type { WebContentsInternal as WCT } from 'electron';
 import * as path from 'path';
 import { internalWindowOpen } from '../guest-window-manager';
 import { NavigationController } from '../navigation-controller';
@@ -109,9 +108,8 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding as { WebContents: { prototype: WCT } };
+const { WebContents } = binding as { WebContents: { prototype: WebContentsInternal } };
 
-Object.setPrototypeOf(NavigationController.prototype, EventEmitter.prototype);
 Object.setPrototypeOf(WebContents.prototype, NavigationController.prototype);
 
 WebContents.prototype.send = function (channel, ...args) {
@@ -191,7 +189,7 @@ for (const method of webFrameMethods) {
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents: WCT) => {
+const waitTillCanExecuteJavaScript = async (webContents: WebContentsInternal) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -434,7 +432,7 @@ const addReturnValueToEvent = (event: any) => {
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
-  NavigationController.call(this as any, this);
+  Object.assign(this, new NavigationController(this));
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
@@ -486,7 +484,7 @@ WebContents.prototype._init = function () {
   // Handle context menu action request from pepper plugin.
   this.on('pepper-context-menu' as any, function (event: any, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
     // Access Menu via electron.Menu to prevent circular require.
-    const menu = Menu.buildFromTemplate(params.menu);
+    const menu = require('electron').Menu.buildFromTemplate(params.menu);
     menu.popup({
       window: event.sender.getOwnerBrowserWindow(),
       x: params.x,
@@ -527,7 +525,7 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: WCT, disposition: string,
+    this.on('-add-new-contents' as any, (event: any, webContents: WebContentsInternal, disposition: string,
       userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
       referrer: string, rawFeatures: string, postData: string) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
