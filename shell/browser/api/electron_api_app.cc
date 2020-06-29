@@ -790,7 +790,8 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetProcess().Handle());
+  ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
+                       base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
@@ -830,7 +831,9 @@ void App::RenderProcessDisconnected(base::ProcessId host_pid) {
   ChildProcessDisconnected(host_pid);
 }
 
-void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
+void App::ChildProcessLaunched(int process_type,
+                               base::ProcessHandle handle,
+                               const std::string& name) {
   auto pid = base::GetProcId(handle);
 
 #if defined(OS_MACOSX)
@@ -840,7 +843,7 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(handle);
 #endif
   app_metrics_[pid] = std::make_unique<electron::ProcessMetric>(
-      process_type, handle, std::move(metrics));
+      process_type, handle, std::move(metrics), name);
 }
 
 void App::ChildProcessDisconnected(base::ProcessId pid) {
@@ -1280,6 +1283,10 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
                              process_metric.second->type));
     pid_dict.Set("creationTime",
                  process_metric.second->process.CreationTime().ToJsTime());
+
+    if (!process_metric.second->name.empty()) {
+      pid_dict.Set("name", process_metric.second->name);
+    }
 
 #if !defined(OS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
