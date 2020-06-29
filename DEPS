@@ -19,7 +19,7 @@ vars = {
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
-    'adbe40a86a0164af5f68e2425c77054fbafd19a5',
+    '44468f858ce0d25c27bd5e674abfa104e0119738',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',

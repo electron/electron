@@ -23,10 +23,10 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e512dd67433e07d92cfe8372d5c5adddfa418d8
+index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c46d3a4704
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,225 @@
+@@ -0,0 +1,236 @@
 +assert(is_mac)
 +
 +import("//build/config/mac/rules.gni")
@@ -66,6 +66,11 @@ index 0000000000000000000000000000000000000000..8e512dd67433e07d92cfe8372d5c5add
 +  include_dirs = [
 +    "vendor/Mantle/Mantle",
 +    "vendor/Mantle/Mantle/extobjc",
++  ]
++
++  cflags_objc = [
++    "-fobjc-arc",
++    "-Wno-block-capture-autoreleasing",
 +  ]
 +
 +  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
@@ -185,6 +190,8 @@ index 0000000000000000000000000000000000000000..8e512dd67433e07d92cfe8372d5c5add
 +  cflags_objc = [
 +    "-fobjc-weak",
 +    "-Wno-unknown-warning-option",
++    "-Wno-block-capture-autoreleasing",
++    "-fobjc-arc",
 +  ]
 +
 +  ldflags = [
@@ -246,7 +253,11 @@ index 0000000000000000000000000000000000000000..8e512dd67433e07d92cfe8372d5c5add
 +  ]
 +  sources = squirrel_filenames.headers + squirrel_filenames.sources
 +
-+  cflags_objc = [ "-fobjc-weak" ]
++  cflags_objc = [
++    "-fobjc-weak",
++    "-fobjc-arc",
++    "-Wno-block-capture-autoreleasing",
++  ]
 +
 +  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
 +
@@ -320,7 +331,7 @@ index 43c64f14d4bcd1760b68ef307b90a0fac12a3c26..038b24c25f3fc90a77b7813c66064bb3
  @interface SQRLDownloadedUpdate ()
  
 diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
-index 2889af51a1b3faab07d4a4671d2fe8b23a5d65f2..57b9f596215fa5a6f1e538a2caf4f404ebf18606 100644
+index 9c4f6155fdc48e54190f189f005db25b34e8b5d4..7dd98ddee4ae0f4e01fd7aaa3486083bff7d0da1 100644
 --- a/Squirrel/SQRLInstaller.m
 +++ b/Squirrel/SQRLInstaller.m
 @@ -9,13 +9,13 @@
@@ -345,7 +356,7 @@ index 2889af51a1b3faab07d4a4671d2fe8b23a5d65f2..57b9f596215fa5a6f1e538a2caf4f404
  
  #import "NSBundle+SQRLVersionExtensions.h"
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
-index 529a508e1aaabfb40390b66e31f6ab67c18a0610..bb86ef4eb648953144c18fd0e3fe670fa2dfb607 100644
+index 2870f52510ec0993e84c6508f8e67912928b7e57..6a9151d92f399184fff9854eb00ea506165bbbe2 100644
 --- a/Squirrel/SQRLShipItLauncher.m
 +++ b/Squirrel/SQRLShipItLauncher.m
 @@ -7,9 +7,9 @@
@@ -438,7 +449,7 @@ index 85073b2f5d58d3e071fb6ef30598973b4d00eda8..c81c820d61da3c7d1cfd2c516147c954
  
  NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
-index 0c1395010abfe9f877520ffb202cf94ff66ece8a..ed9565b0f4cd2b16123785acb394cbcfd8f92869 100644
+index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a446957e6 100644
 --- a/Squirrel/SQRLZipArchiver.m
 +++ b/Squirrel/SQRLZipArchiver.m
 @@ -7,8 +7,8 @@
