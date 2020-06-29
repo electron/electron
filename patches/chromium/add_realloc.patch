@@ -39,7 +39,7 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index fa88b2bd0233a4c5ff35a26d10e20fa1b91e33b2..21504ce01403d20067c8439c0c61ee0d71de84a5 100644
+index 04f635ffba0393e80e793a526d9bb221df2ac648..2299a662b20abb4917a7128053bc060210d9d558 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -672,6 +672,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {

@@ -42,10 +42,10 @@ index 6b03c07316eaab83a50afc123fc9f17b1c1dfa3b..e821571731e4e1a93f873477c7410de7
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 1938d37051feb75e812c481ff6937581a95f5e3c..f1d9401376347311585b9e017fc4e78b9f722f22 100644
+index 6f13dd3aded702faa63bd8c092b3541349c538c0..09defb2502fce17775fe1e767291f3106adedb0a 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1408,6 +1408,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1410,6 +1410,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -67,7 +67,7 @@ index 1938d37051feb75e812c481ff6937581a95f5e3c..f1d9401376347311585b9e017fc4e78b
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4793,6 +4808,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4795,6 +4810,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 1938d37051feb75e812c481ff6937581a95f5e3c..f1d9401376347311585b9e017fc4e78b
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4806,10 +4822,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4808,10 +4824,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -229,10 +229,10 @@ index 571e6381f2456450a07b64c3a84d1f15f4cbbefa..cb342a6c4915c4b2cc7fe0c1b3c7219f
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 84ca4325a72a5c4267d43e5be9bfd7b73efa0b86..4af654e2a2dbb5450b3f8ca1d85b0e6c94825c42 100644
+index 8195149b963de0dcf7af993a3c43e53fb20d1df1..1cfea0d996fa90b2b1e6d28224a5841453fc1174 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -59,6 +59,21 @@
+@@ -63,6 +63,21 @@
  
  namespace content {
  
@@ -255,10 +255,10 @@ index 84ca4325a72a5c4267d43e5be9bfd7b73efa0b86..4af654e2a2dbb5450b3f8ca1d85b0e6c
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 00f3f557ccf69760c4e0ac7c9fcc7d048e21e8d8..d968ab756f8628a3e52b57c9cacb50dea7819157 100644
+index 9184695ea198b0e1b41c9bb456317ca2f5bc8886..265b2eee1aaef82850656aed8a6a7be92cc562f6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -240,8 +240,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -244,8 +244,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  
@@ -305,10 +305,10 @@ index 00f3f557ccf69760c4e0ac7c9fcc7d048e21e8d8..d968ab756f8628a3e52b57c9cacb50de
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
 diff --git a/content/public/browser/site_instance.h b/content/public/browser/site_instance.h
-index 82b5d4c25adc7071dfcfe56047520fa2fa7b72f2..8535ed4ab3ca5a90f3de7ab9e80159b2082e7dfa 100644
+index 0e6c3d076a02cd1b356745e514b9de9d32e4b00c..76647f1c5e9ee401fbf3def6ccfe73372f622548 100644
 --- a/content/public/browser/site_instance.h
 +++ b/content/public/browser/site_instance.h
-@@ -121,6 +121,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
+@@ -134,6 +134,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
    //   corresponds to a site URL with the host "example.com".
    virtual const GURL& GetSiteURL() = 0;
  
