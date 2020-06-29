@@ -6,7 +6,7 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed renderers to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index e63dfcf43147c7174942277b2c129675014c9e59..0f1c04b23d40977332182cb54219ba21afd4bc28 100644
+index e63dfcf43147c7174942277b2c129675014c9e59..7121ec638809c5964d22af496559cb7f46c794ef 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -53,6 +53,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -18,7 +18,7 @@ index e63dfcf43147c7174942277b2c129675014c9e59..0f1c04b23d40977332182cb54219ba21
 +    // launching an unsandboxed process (since all sandboxed processes are
 +    // forked from the zygote). Relax the allow_new_privs option to permit
 +    // launching suid processes from unsandboxed renderers.
-+    service_manager::ZygoteHandle zygote_handle =
++    ZygoteHandle zygote_handle =
 +        base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
 +            ? nullptr
 +            : delegate_->GetZygote();
