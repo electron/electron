@@ -1,12 +1,12 @@
-import { TopLevelWindow, WebContents, Event, BrowserView, TouchBar } from 'electron';
+import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron';
 import type { BrowserWindow as BWT } from 'electron';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
-Object.setPrototypeOf(BrowserWindow.prototype, TopLevelWindow.prototype);
+Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
 (BrowserWindow.prototype as any)._init = function (this: BWT) {
   // Call parent class's _init.
-  (TopLevelWindow.prototype as any)._init.call(this);
+  (BaseWindow.prototype as any)._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -74,12 +74,12 @@ const isBrowserWindow = (win: any) => {
 };
 
 BrowserWindow.fromId = (id: number) => {
-  const win = TopLevelWindow.fromId(id);
+  const win = BaseWindow.fromId(id);
   return isBrowserWindow(win) ? win as any as BWT : null;
 };
 
 BrowserWindow.getAllWindows = () => {
-  return TopLevelWindow.getAllWindows().filter(isBrowserWindow) as any[] as BWT[];
+  return BaseWindow.getAllWindows().filter(isBrowserWindow) as any[] as BWT[];
 };
 
 BrowserWindow.getFocusedWindow = () => {
