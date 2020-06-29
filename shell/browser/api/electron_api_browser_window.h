@@ -66,6 +66,7 @@ class BrowserWindow : public BaseWindow,
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
+  void OnWindowIsKeyChanged(bool is_key) override;
 
   // BaseWindow:
   void OnWindowClosed() override;
