@@ -99,13 +99,13 @@ declare namespace Electron {
   class View {}
   
   // Experimental views API
-  class TopLevelWindow {
+  class BaseWindow {
     constructor(args: {show: boolean})
     setContentView(view: View): void
-    static fromId(id: number): TopLevelWindow;
-    static getAllWindows(): TopLevelWindow[];
+    static fromId(id: number): BaseWindow;
+    static getAllWindows(): BaseWindow[];
     isFocused(): boolean;
-    static getFocusedWindow(): TopLevelWindow | undefined;
+    static getFocusedWindow(): BaseWindow | undefined;
   }
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)
@@ -128,7 +128,7 @@ declare namespace Electron {
   }
 
   namespace Main {
-    class TopLevelWindow extends Electron.TopLevelWindow {}
+    class BaseWindow extends Electron.BaseWindow {}
     class View extends Electron.View {}
     class WebContentsView extends Electron.WebContentsView {}
   }
