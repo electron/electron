@@ -439,6 +439,11 @@ void NativeWindow::NotifyWindowFocus() {
     observer.OnWindowFocus();
 }
 
+void NativeWindow::NotifyWindowIsKeyChanged(bool is_key) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowIsKeyChanged(is_key);
+}
+
 void NativeWindow::NotifyWindowShow() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowShow();
