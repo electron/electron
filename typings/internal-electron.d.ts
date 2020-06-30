@@ -147,7 +147,7 @@ declare namespace ElectronInternal {
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K, onlyForValues?: any[]): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
-    moveAPI(fn: Function, oldUsage: string, newUsage: string): Function;
+    moveAPI<T extends Function>(fn: T, oldUsage: string, newUsage: string): T;
   }
 
   interface DesktopCapturer {
