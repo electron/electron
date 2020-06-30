@@ -707,6 +707,7 @@ step-hunspell-store: &step-hunspell-store
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
+    no_output_timeout: 30m
     command: |
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
