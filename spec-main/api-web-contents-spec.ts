@@ -8,7 +8,7 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from '
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, delay } from './spec-helpers';
+import { ifdescribe, ifit, delay, defer } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -223,29 +223,23 @@ describe('webContents module', () => {
         server.close();
       });
 
-      it('works after page load and during subframe load', (done) => {
-        w.webContents.once('did-finish-load', () => {
-          // initiate a sub-frame load, then try and execute script during it
-          w.webContents.executeJavaScript(`
-            var iframe = document.createElement('iframe')
-            iframe.src = '${serverUrl}/slow'
-            document.body.appendChild(iframe)
-            null // don't return the iframe
-          `).then(() => {
-            w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
-              done();
-            });
-          });
-        });
-        w.loadURL(serverUrl);
+      it('works after page load and during subframe load', async () => {
+        await w.loadURL(serverUrl);
+        // initiate a sub-frame load, then try and execute script during it
+        await w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe')
+          iframe.src = '${serverUrl}/slow'
+          document.body.appendChild(iframe)
+          null // don't return the iframe
+        `);
+        await w.webContents.executeJavaScript('console.log(\'hello\')');
       });
 
-      it('executes after page load', (done) => {
-        w.webContents.executeJavaScript('(() => "test")()').then(result => {
-          expect(result).to.equal('test');
-          done();
-        });
+      it('executes after page load', async () => {
+        const executeJavaScript = w.webContents.executeJavaScript('(() => "test")()');
         w.loadURL(serverUrl);
+        const result = await executeJavaScript;
+        expect(result).to.equal('test');
       });
     });
   });
@@ -467,13 +461,11 @@ describe('webContents module', () => {
 
   describe('getWebPreferences() API', () => {
     afterEach(closeAllWindows);
-    it('should not crash when called for devTools webContents', (done) => {
+    it('should not crash when called for devTools webContents', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.openDevTools();
-      w.webContents.once('devtools-opened', () => {
-        expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
-        done();
-      });
+      await emittedOnce(w.webContents, 'devtools-opened');
+      expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
     });
   });
 
@@ -652,71 +644,66 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
 
-    it('can send keydown events', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('a');
-        expect(code).to.equal('KeyA');
-        expect(keyCode).to.equal(65);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send keydown events', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('a');
+      expect(code).to.equal('KeyA');
+      expect(keyCode).to.equal(65);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.false();
     });
 
-    it('can send keydown events with modifiers', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Z');
-        expect(code).to.equal('KeyZ');
-        expect(keyCode).to.equal(90);
-        expect(shiftKey).to.be.true();
-        expect(ctrlKey).to.be.true();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send keydown events with modifiers', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('Z');
+      expect(code).to.equal('KeyZ');
+      expect(keyCode).to.equal(90);
+      expect(shiftKey).to.be.true();
+      expect(ctrlKey).to.be.true();
+      expect(altKey).to.be.false();
     });
 
-    it('can send keydown events with special keys', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Tab');
-        expect(code).to.equal('Tab');
-        expect(keyCode).to.equal(9);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.true();
-        done();
-      });
+    it('can send keydown events with special keys', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab', modifiers: ['alt'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('Tab');
+      expect(code).to.equal('Tab');
+      expect(keyCode).to.equal(9);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.true();
     });
 
-    it('can send char events', (done) => {
-      ipcMain.once('keypress', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('a');
-        expect(code).to.equal('KeyA');
-        expect(keyCode).to.equal(65);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send char events', async () => {
+      const keypress = emittedOnce(ipcMain, 'keypress');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
       w.webContents.sendInputEvent({ type: 'char', keyCode: 'A' });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keypress;
+      expect(key).to.equal('a');
+      expect(code).to.equal('KeyA');
+      expect(keyCode).to.equal(65);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.false();
     });
 
-    it('can send char events with modifiers', (done) => {
-      ipcMain.once('keypress', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Z');
-        expect(code).to.equal('KeyZ');
-        expect(keyCode).to.equal(90);
-        expect(shiftKey).to.be.true();
-        expect(ctrlKey).to.be.true();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send char events with modifiers', async () => {
+      const keypress = emittedOnce(ipcMain, 'keypress');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z' });
       w.webContents.sendInputEvent({ type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keypress;
+      expect(key).to.equal('Z');
+      expect(code).to.equal('KeyZ');
+      expect(keyCode).to.equal(90);
+      expect(shiftKey).to.be.true();
+      expect(ctrlKey).to.be.true();
+      expect(altKey).to.be.false();
     });
   });
 
@@ -953,46 +940,54 @@ describe('webContents module', () => {
         e.sender.send(`${host}-zoom-set`);
       });
       ipcMain.on('host1-zoom-level', (e) => {
-        const zoomLevel = e.sender.getZoomLevel();
-        const expectedZoomLevel = hostZoomMap.host1;
-        expect(zoomLevel).to.equal(expectedZoomLevel);
-        if (finalNavigation) {
-          done();
-        } else {
-          w.loadURL(`${scheme}://host2`);
+        try {
+          const zoomLevel = e.sender.getZoomLevel();
+          const expectedZoomLevel = hostZoomMap.host1;
+          expect(zoomLevel).to.equal(expectedZoomLevel);
+          if (finalNavigation) {
+            done();
+          } else {
+            w.loadURL(`${scheme}://host2`);
+          }
+        } catch (e) {
+          done(e);
         }
       });
       ipcMain.once('host2-zoom-level', (e) => {
-        const zoomLevel = e.sender.getZoomLevel();
-        const expectedZoomLevel = hostZoomMap.host2;
-        expect(zoomLevel).to.equal(expectedZoomLevel);
-        finalNavigation = true;
-        w.webContents.goBack();
+        try {
+          const zoomLevel = e.sender.getZoomLevel();
+          const expectedZoomLevel = hostZoomMap.host2;
+          expect(zoomLevel).to.equal(expectedZoomLevel);
+          finalNavigation = true;
+          w.webContents.goBack();
+        } catch (e) {
+          done(e);
+        }
       });
       w.loadURL(`${scheme}://host1`);
     });
 
-    it('can propagate zoom level across same session', (done) => {
+    it('can propagate zoom level across same session', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({ show: false });
-      w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(hostZoomMap.host3);
 
-        const zoomLevel2 = w2.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(zoomLevel2);
+      defer(() => {
         w2.setClosable(true);
         w2.close();
-        done();
       });
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.zoomLevel = hostZoomMap.host3;
-        w2.loadURL(`${scheme}://host3`);
-      });
-      w.loadURL(`${scheme}://host3`);
+
+      await w.loadURL(`${scheme}://host3`);
+      w.webContents.zoomLevel = hostZoomMap.host3;
+
+      await w2.loadURL(`${scheme}://host3`);
+      const zoomLevel1 = w.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+      const zoomLevel2 = w2.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(zoomLevel2);
     });
 
-    it('cannot propagate zoom level across different session', (done) => {
+    it('cannot propagate zoom level across different session', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({
         show: false,
@@ -1004,24 +999,24 @@ describe('webContents module', () => {
       protocol.registerStringProtocol(scheme, (request, callback) => {
         callback('hello');
       });
-      w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(hostZoomMap.host3);
 
-        const zoomLevel2 = w2.webContents.zoomLevel;
-        expect(zoomLevel2).to.equal(0);
-        expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-        protocol.unregisterProtocol(scheme);
+      defer(() => {
         w2.setClosable(true);
         w2.close();
-        done();
       });
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.zoomLevel = hostZoomMap.host3;
-        w2.loadURL(`${scheme}://host3`);
-      });
-      w.loadURL(`${scheme}://host3`);
+
+      await w.loadURL(`${scheme}://host3`);
+      w.webContents.zoomLevel = hostZoomMap.host3;
+
+      await w2.loadURL(`${scheme}://host3`);
+      const zoomLevel1 = w.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+      const zoomLevel2 = w2.webContents.zoomLevel;
+      expect(zoomLevel2).to.equal(0);
+      expect(zoomLevel1).to.not.equal(zoomLevel2);
+
+      protocol.unregisterProtocol(scheme);
     });
 
     it('can persist when it contains iframe', (done) => {
@@ -1036,12 +1031,17 @@ describe('webContents module', () => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
           if (!isMainFrame) {
-            const zoomLevel = w.webContents.zoomLevel;
-            expect(zoomLevel).to.equal(2.0);
+            try {
+              const zoomLevel = w.webContents.zoomLevel;
+              expect(zoomLevel).to.equal(2.0);
 
-            w.webContents.zoomLevel = 0;
-            server.close();
-            done();
+              w.webContents.zoomLevel = 0;
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              server.close();
+            }
           }
         });
         w.webContents.on('dom-ready', () => {
@@ -1051,30 +1051,25 @@ describe('webContents module', () => {
       });
     });
 
-    it('cannot propagate when used with webframe', (done) => {
+    it('cannot propagate when used with webframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      let finalZoomLevel = 0;
-      const w2 = new BrowserWindow({
-        show: false
-      });
-      w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(finalZoomLevel);
+      const w2 = new BrowserWindow({ show: false });
 
-        const zoomLevel2 = w2.webContents.zoomLevel;
-        expect(zoomLevel2).to.equal(0);
-        expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-        w2.setClosable(true);
-        w2.close();
-        done();
-      });
-      ipcMain.once('temporary-zoom-set', (e) => {
-        const zoomLevel = e.sender.getZoomLevel();
-        w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
-        finalZoomLevel = zoomLevel;
-      });
+      const temporaryZoomSet = emittedOnce(ipcMain, 'temporary-zoom-set');
       w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'));
+      await temporaryZoomSet;
+
+      const finalZoomLevel = w.webContents.getZoomLevel();
+      await w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
+      const zoomLevel1 = w.webContents.zoomLevel;
+      const zoomLevel2 = w2.webContents.zoomLevel;
+
+      w2.setClosable(true);
+      w2.close();
+
+      expect(zoomLevel1).to.equal(finalZoomLevel);
+      expect(zoomLevel2).to.equal(0);
+      expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
     describe('with unique domains', () => {
@@ -1168,13 +1163,9 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows);
 
-    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
-      w.webContents.once('destroyed', () => {
-        expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
-        done();
-      });
       const renderViewDeletedHandler = () => {
         currentRenderViewDeletedEmitted = true;
       };
@@ -1183,40 +1174,41 @@ describe('webContents module', () => {
         w.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
 
-    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+    it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
-      w.webContents.once('destroyed', () => {
-        expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted');
-        done();
-      });
       w.webContents.on('current-render-view-deleted' as any, () => {
         currentRenderViewDeletedEmitted = true;
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted');
     });
 
-    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+    it('emits render-view-deleted if any RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let rvhDeletedCount = 0;
-      w.webContents.once('destroyed', () => {
-        const expectedRenderViewDeletedEventCount = 1;
-        expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times');
-        done();
-      });
       w.webContents.on('render-view-deleted' as any, () => {
         rvhDeletedCount++;
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      const expectedRenderViewDeletedEventCount = 1;
+      expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times');
     });
   });
 
@@ -1304,13 +1296,17 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: true });
       let count = 0;
       w.webContents.on('did-change-theme-color', (e, color) => {
-        if (count === 0) {
-          count += 1;
-          expect(color).to.equal('#FFEEDD');
-          w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-        } else if (count === 1) {
-          expect(color).to.be.null();
-          done();
+        try {
+          if (count === 0) {
+            count += 1;
+            expect(color).to.equal('#FFEEDD');
+            w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+          } else if (count === 1) {
+            expect(color).to.be.null();
+            done();
+          }
+        } catch (e) {
+          done(e);
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
@@ -1374,9 +1370,14 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
-          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-          server.close();
-          return done();
+          try {
+            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+            return done();
+          } catch (e) {
+            return done(e);
+          } finally {
+            server.close();
+          }
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
       });
@@ -1399,8 +1400,12 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
-          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-          return done();
+          try {
+            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+            return done();
+          } catch (e) {
+            return done(e);
+          }
         }
         res.end('');
       });
@@ -1640,8 +1645,7 @@ describe('webContents module', () => {
     });
 
     it('respects custom settings', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-      await emittedOnce(w.webContents, 'did-finish-load');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
 
       const data = await w.webContents.printToPDF({
         pageRanges: {
@@ -1676,15 +1680,12 @@ describe('webContents module', () => {
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', (done) => {
+    it('works as expected', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      w.webContents.once('did-finish-load', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `runTest(${features.isPictureInPictureEnabled()})`, true);
-        expect(result).to.be.true();
-        done();
-      });
-      w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+      await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+      const result = await w.webContents.executeJavaScript(
+        `runTest(${features.isPictureInPictureEnabled()})`, true);
+      expect(result).to.be.true();
     });
   });
 
