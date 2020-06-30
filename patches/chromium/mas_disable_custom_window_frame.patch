@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index b02eda676ce4fbab772206df46689803556edceb..4d87ca8f05fed639faeb0c72f666fb26074a3bbb 100644
+index 2cd283de6677f0c256940ab475eb6c58d8040f54..ad7f1f0c05b491977ccd5650c94248e876ad2b0e 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -18,7 +18,7 @@ index b02eda676ce4fbab772206df46689803556edceb..4d87ca8f05fed639faeb0c72f666fb26
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -63,6 +64,8 @@
+@@ -63,6 +64,8 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
  
  @end
  
@@ -27,7 +27,7 @@ index b02eda676ce4fbab772206df46689803556edceb..4d87ca8f05fed639faeb0c72f666fb26
  @implementation BrowserNativeWidgetWindow
  
  // Prevent detached tabs from glitching when the window is partially offscreen.
-@@ -84,6 +87,7 @@
+@@ -88,6 +91,7 @@ - (NSRect)constrainFrameRect:(NSRect)rect toScreen:(NSScreen*)screen {
  
  // NSWindow (PrivateAPI) overrides.
  
@@ -35,7 +35,7 @@ index b02eda676ce4fbab772206df46689803556edceb..4d87ca8f05fed639faeb0c72f666fb26
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -98,6 +102,8 @@
+@@ -102,6 +106,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -57,7 +57,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
  @interface NSWindow (PrivateAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -18,8 +20,12 @@
+@@ -18,8 +20,12 @@ - (CGFloat)_titlebarHeight {
  }
  @end
  
@@ -70,7 +70,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    if ([NativeWidgetMacFramelessNSWindowFrame class]) {
      return [NativeWidgetMacFramelessNSWindowFrame class];
-@@ -27,4 +33,6 @@
+@@ -27,4 +33,6 @@ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -111,7 +111,7 @@ index 757c72d98de11f611309f4f5af8d0d9aab639181..a6319a0760308df6bac6b39ad3500ad7
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -58,6 +60,8 @@
+@@ -58,6 +60,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -120,7 +120,7 @@ index 757c72d98de11f611309f4f5af8d0d9aab639181..a6319a0760308df6bac6b39ad3500ad7
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (base::mac::IsAtMostOS10_11() && self.window.isMovable)
-@@ -84,6 +88,8 @@
+@@ -84,6 +88,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -129,7 +129,7 @@ index 757c72d98de11f611309f4f5af8d0d9aab639181..a6319a0760308df6bac6b39ad3500ad7
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -165,6 +171,8 @@
+@@ -165,6 +171,8 @@ - (BOOL)hasViewsMenuActive {
  
  // NSWindow overrides.
  
@@ -138,7 +138,7 @@ index 757c72d98de11f611309f4f5af8d0d9aab639181..a6319a0760308df6bac6b39ad3500ad7
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -176,6 +184,8 @@
+@@ -176,6 +184,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

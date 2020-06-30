@@ -42,7 +42,7 @@ index 6b03c07316eaab83a50afc123fc9f17b1c1dfa3b..e821571731e4e1a93f873477c7410de7
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 6f13dd3aded702faa63bd8c092b3541349c538c0..09defb2502fce17775fe1e767291f3106adedb0a 100644
+index e148adae878dcf8b5f3bed031117d80ad9bc64de..5009db56748489e25c9e687b8e876821b4c85d8f 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1410,6 +1410,21 @@ void NavigationRequest::BeginNavigation() {
@@ -106,7 +106,7 @@ index 6941326796bb7e7b056ae0f83345edb2e4cb0479..8e8e1e6d994809159cf0433a4feeec85
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 4d39ae3c17ee807b744dc4e8406c55fc623a779d..28acc2401ec7fc035c2548e633847fd297fb88a4 100644
+index 0016807829602fc175cffe1c42760f5aa75f0232..7b29974edcb5c05ebb43b782c25f9e8312c47aba 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2304,6 +2304,16 @@ bool RenderFrameHostManager::InitRenderView(
