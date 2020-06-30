@@ -18,7 +18,6 @@
 #include "shell/common/gin_helper/promise.h"
 #include "v8/include/v8.h"
 
-struct PrintHostMsg_DidPreviewDocument_Params;
 struct PrintHostMsg_PreviewIds;
 
 namespace content {
@@ -50,9 +49,9 @@ class PrintPreviewMessageHandler
 
   void OnMetafileReadyForPrinting(
       content::RenderFrameHost* render_frame_host,
-      const PrintHostMsg_DidPreviewDocument_Params& params,
+      const printing::mojom::DidPreviewDocumentParams& params,
       const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(
+  void OnCompositeDocumentToPdfDone(
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);

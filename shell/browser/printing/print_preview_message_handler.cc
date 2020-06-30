@@ -74,14 +74,14 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     content::RenderFrameHost* render_frame_host,
-    const PrintHostMsg_DidPreviewDocument_Params& params,
+    const printing::mojom::DidPreviewDocumentParams& params,
     const PrintHostMsg_PreviewIds& ids) {
   // Always try to stop the worker.
   StopWorker(params.document_cookie);
 
-  const printing::mojom::DidPrintContentParams& content = params.content;
-  if (!content.metafile_data_region.IsValid() ||
-      params.expected_pages_count <= 0) {
+  const base::ReadOnlySharedMemoryRegion& metafile =
+      params.content->metafile_data_region;
+  if (!metafile.IsValid() || params.expected_pages_count <= 0) {
     RejectPromise(ids.request_id);
     return;
   }
@@ -91,23 +91,23 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
         printing::PrintCompositeClient::FromWebContents(web_contents());
     DCHECK(client);
 
-    auto callback =
-        base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
-                       weak_ptr_factory_.GetWeakPtr(), ids);
+    auto callback = base::BindOnce(
+        &PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone,
+        weak_ptr_factory_.GetWeakPtr(), ids);
     client->DoCompositeDocumentToPdf(
-        params.document_cookie, render_frame_host, content,
+        params.document_cookie, render_frame_host, *(params.content),
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
             std::move(callback),
             printing::mojom::PrintCompositor::Status::kCompositingFailure,
             base::ReadOnlySharedMemoryRegion()));
   } else {
-    ResolvePromise(ids.request_id,
-                   base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
-                       content.metafile_data_region));
+    ResolvePromise(
+        ids.request_id,
+        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(metafile));
   }
 }
 
-void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
+void PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone(
     const PrintHostMsg_PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {
