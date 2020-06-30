@@ -6,8 +6,9 @@ const ws = require('ws');
 const url = require('url');
 const ChildProcess = require('child_process');
 const { ipcRenderer } = require('electron');
-const { emittedOnce } = require('./events-helpers');
+const { emittedOnce, waitForEvent } = require('./events-helpers');
 const { resolveGetters } = require('./expect-helpers');
+const { ifdescribe, delay } = require('./spec-helpers');
 const features = process._linkedBinding('electron_common_features');
 
 /* Most of the APIs here don't use standard callbacks */
@@ -15,14 +16,6 @@ const features = process._linkedBinding('electron_common_features');
 
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
-  let listener = null;
-
-  afterEach(() => {
-    if (listener != null) {
-      window.removeEventListener('message', listener);
-    }
-    listener = null;
-  });
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
@@ -46,58 +39,34 @@ describe('chromium feature', () => {
     });
   });
 
-  describe('navigator.geolocation', () => {
-    before(function () {
-      if (!features.isFakeLocationProviderEnabled()) {
-        return this.skip();
-      }
-    });
-
-    it('returns position when permission is granted', (done) => {
-      navigator.geolocation.getCurrentPosition((position) => {
-        expect(position).to.have.a.property('coords');
-        expect(position).to.have.a.property('timestamp');
-        done();
-      }, (error) => {
-        done(error);
-      });
+  ifdescribe(features.isFakeLocationProviderEnabled())('navigator.geolocation', () => {
+    it('returns position when permission is granted', async () => {
+      const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject));
+      expect(position).to.have.a.property('coords');
+      expect(position).to.have.a.property('timestamp');
     });
   });
 
   describe('window.open', () => {
-    it('accepts "nodeIntegration" as feature', (done) => {
-      let b = null;
-      listener = (event) => {
-        expect(event.data.isProcessGlobalUndefined).to.be.true();
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-      b = window.open(`file://${fixtures}/pages/window-opener-node.html`, '', 'nodeIntegration=no,show=no');
+    it('accepts "nodeIntegration" as feature', async () => {
+      const message = waitForEvent(window, 'message');
+      const b = window.open(`file://${fixtures}/pages/window-opener-node.html`, '', 'nodeIntegration=no,show=no');
+      const event = await message;
+      b.close();
+      expect(event.data.isProcessGlobalUndefined).to.be.true();
     });
 
-    it('inherit options of parent window', (done) => {
-      let b = null;
-      listener = (event) => {
-        const width = outerWidth;
-        const height = outerHeight;
-        expect(event.data).to.equal(`size: ${width} ${height}`);
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-      b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no');
+    it('inherit options of parent window', async () => {
+      const message = waitForEvent(window, 'message');
+      const b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no');
+      const event = await message;
+      b.close();
+      const width = outerWidth;
+      const height = outerHeight;
+      expect(event.data).to.equal(`size: ${width} ${height}`);
     });
 
-    it('disables node integration when it is disabled on the parent window', (done) => {
-      let b = null;
-      listener = (event) => {
-        expect(event.data.isProcessGlobalUndefined).to.be.true();
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-
+    it('disables node integration when it is disabled on the parent window', async () => {
       const windowUrl = require('url').format({
         pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
         protocol: 'file',
@@ -106,18 +75,14 @@ describe('chromium feature', () => {
         },
         slashes: true
       });
-      b = window.open(windowUrl, '', 'nodeIntegration=no,show=no');
+      const message = waitForEvent(window, 'message');
+      const b = window.open(windowUrl, '', 'nodeIntegration=no,show=no');
+      const event = await message;
+      b.close();
+      expect(event.data.isProcessGlobalUndefined).to.be.true();
     });
 
-    it('disables the <webview> tag when it is disabled on the parent window', (done) => {
-      let b = null;
-      listener = (event) => {
-        expect(event.data.isWebViewGlobalUndefined).to.be.true();
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-
+    it('disables the <webview> tag when it is disabled on the parent window', async () => {
       const windowUrl = require('url').format({
         pathname: `${fixtures}/pages/window-opener-no-webview-tag.html`,
         protocol: 'file',
@@ -126,22 +91,23 @@ describe('chromium feature', () => {
         },
         slashes: true
       });
-      b = window.open(windowUrl, '', 'webviewTag=no,nodeIntegration=yes,show=no');
+      const message = waitForEvent(window, 'message');
+      const b = window.open(windowUrl, '', 'webviewTag=no,nodeIntegration=yes,show=no');
+      const event = await message;
+      b.close();
+      expect(event.data.isWebViewGlobalUndefined).to.be.true();
     });
 
-    it('does not override child options', (done) => {
-      let b = null;
+    it('does not override child options', async () => {
       const size = {
         width: 350,
         height: 450
       };
-      listener = (event) => {
-        expect(event.data).to.equal(`size: ${size.width} ${size.height}`);
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-      b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no,width=' + size.width + ',height=' + size.height);
+      const message = waitForEvent(window, 'message');
+      const b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no,width=' + size.width + ',height=' + size.height);
+      const event = await message;
+      b.close();
+      expect(event.data).to.equal(`size: ${size.width} ${size.height}`);
     });
 
     it('throws an exception when the arguments cannot be converted to strings', () => {
@@ -164,15 +130,12 @@ describe('chromium feature', () => {
   });
 
   describe('window.opener', () => {
-    it('is not null for window opened by window.open', (done) => {
-      let b = null;
-      listener = (event) => {
-        expect(event.data).to.equal('object');
-        b.close();
-        done();
-      };
-      window.addEventListener('message', listener);
-      b = window.open(`file://${fixtures}/pages/window-opener.html`, '', 'show=no');
+    it('is not null for window opened by window.open', async () => {
+      const message = waitForEvent(window, 'message');
+      const b = window.open(`file://${fixtures}/pages/window-opener.html`, '', 'show=no');
+      const event = await message;
+      b.close();
+      expect(event.data).to.equal('object');
     });
   });
 
@@ -187,26 +150,21 @@ describe('chromium feature', () => {
   });
 
   describe('window.opener.postMessage', () => {
-    it('sets source and origin correctly', (done) => {
-      let b = null;
-      listener = (event) => {
-        window.removeEventListener('message', listener);
+    it('sets source and origin correctly', async () => {
+      const message = waitForEvent(window, 'message');
+      const b = window.open(`file://${fixtures}/pages/window-opener-postMessage.html`, '', 'show=no');
+      const event = await message;
+      try {
         expect(event.source).to.deep.equal(b);
-        b.close();
         expect(event.origin).to.equal('file://');
-        done();
-      };
-      window.addEventListener('message', listener);
-      b = window.open(`file://${fixtures}/pages/window-opener-postMessage.html`, '', 'show=no');
+      } finally {
+        b.close();
+      }
     });
 
-    it('supports windows opened from a <webview>', (done) => {
+    it('supports windows opened from a <webview>', async () => {
       const webview = new WebView();
-      webview.addEventListener('console-message', (e) => {
-        webview.remove();
-        expect(e.message).to.equal('message');
-        done();
-      });
+      const consoleMessage = waitForEvent(webview, 'console-message');
       webview.allowpopups = true;
       webview.src = url.format({
         pathname: `${fixtures}/pages/webview-opener-postMessage.html`,
@@ -217,6 +175,9 @@ describe('chromium feature', () => {
         slashes: true
       });
       document.body.appendChild(webview);
+      const event = await consoleMessage;
+      webview.remove();
+      expect(event.message).to.equal('message');
     });
 
     describe('targetOrigin argument', () => {
@@ -239,16 +200,12 @@ describe('chromium feature', () => {
         server.close();
       });
 
-      it('delivers messages that match the origin', (done) => {
-        let b = null;
-        listener = (event) => {
-          window.removeEventListener('message', listener);
-          b.close();
-          expect(event.data).to.equal('deliver');
-          done();
-        };
-        window.addEventListener('message', listener);
-        b = window.open(serverURL, '', 'show=no');
+      it('delivers messages that match the origin', async () => {
+        const message = waitForEvent(window, 'message');
+        const b = window.open(serverURL, '', 'show=no');
+        const event = await message;
+        b.close();
+        expect(event.data).to.equal('deliver');
       });
     });
   });
@@ -273,71 +230,63 @@ describe('chromium feature', () => {
   });
 
   describe('web workers', () => {
-    it('Worker can work', (done) => {
+    it('Worker can work', async () => {
       const worker = new Worker('../fixtures/workers/worker.js');
       const message = 'ping';
-      worker.onmessage = (event) => {
-        expect(event.data).to.equal(message);
-        worker.terminate();
-        done();
-      };
+      const eventPromise = new Promise((resolve) => { worker.onmessage = resolve; });
       worker.postMessage(message);
+      const event = await eventPromise;
+      worker.terminate();
+      expect(event.data).to.equal(message);
     });
 
-    it('Worker has no node integration by default', (done) => {
+    it('Worker has no node integration by default', async () => {
       const worker = new Worker('../fixtures/workers/worker_node.js');
-      worker.onmessage = (event) => {
-        expect(event.data).to.equal('undefined undefined undefined undefined');
-        worker.terminate();
-        done();
-      };
+      const event = await new Promise((resolve) => { worker.onmessage = resolve; });
+      worker.terminate();
+      expect(event.data).to.equal('undefined undefined undefined undefined');
     });
 
-    it('Worker has node integration with nodeIntegrationInWorker', (done) => {
+    it('Worker has node integration with nodeIntegrationInWorker', async () => {
       const webview = new WebView();
-      webview.addEventListener('ipc-message', (e) => {
-        expect(e.channel).to.equal('object function object function');
-        webview.remove();
-        done();
-      });
+      const eventPromise = waitForEvent(webview, 'ipc-message');
       webview.src = `file://${fixtures}/pages/worker.html`;
       webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker');
       document.body.appendChild(webview);
+      const event = await eventPromise;
+      webview.remove();
+      expect(event.channel).to.equal('object function object function');
     });
 
-    // FIXME: disabled during chromium update due to crash in content::WorkerScriptFetchInitiator::CreateScriptLoaderOnIO
-    xdescribe('SharedWorker', () => {
-      it('can work', (done) => {
+    describe('SharedWorker', () => {
+      it('can work', async () => {
         const worker = new SharedWorker('../fixtures/workers/shared_worker.js');
         const message = 'ping';
-        worker.port.onmessage = (event) => {
-          expect(event.data).to.equal(message);
-          done();
-        };
+        const eventPromise = new Promise((resolve) => { worker.port.onmessage = resolve; });
         worker.port.postMessage(message);
+        const event = await eventPromise;
+        expect(event.data).to.equal(message);
       });
 
-      it('has no node integration by default', (done) => {
+      it('has no node integration by default', async () => {
         const worker = new SharedWorker('../fixtures/workers/shared_worker_node.js');
-        worker.port.onmessage = (event) => {
-          expect(event.data).to.equal('undefined undefined undefined undefined');
-          done();
-        };
+        const event = await new Promise((resolve) => { worker.port.onmessage = resolve; });
+        expect(event.data).to.equal('undefined undefined undefined undefined');
       });
 
-      it('has node integration with nodeIntegrationInWorker', (done) => {
+      // FIXME: disabled during chromium update due to crash in content::WorkerScriptFetchInitiator::CreateScriptLoaderOnIO
+      xit('has node integration with nodeIntegrationInWorker', async () => {
         const webview = new WebView();
         webview.addEventListener('console-message', (e) => {
           console.log(e);
         });
-        webview.addEventListener('ipc-message', (e) => {
-          expect(e.channel).to.equal('object function object function');
-          webview.remove();
-          done();
-        });
+        const eventPromise = waitForEvent(webview, 'ipc-message');
         webview.src = `file://${fixtures}/pages/shared_worker.html`;
         webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker');
         document.body.appendChild(webview);
+        const event = await eventPromise;
+        webview.remove();
+        expect(event.channel).to.equal('object function object function');
       });
     });
   });
@@ -353,13 +302,11 @@ describe('chromium feature', () => {
       document.body.removeChild(iframe);
     });
 
-    it('does not have node integration', (done) => {
+    it('does not have node integration', async () => {
       iframe.src = `file://${fixtures}/pages/set-global.html`;
       document.body.appendChild(iframe);
-      iframe.onload = () => {
-        expect(iframe.contentWindow.test).to.equal('undefined undefined undefined');
-        done();
-      };
+      await waitForEvent(iframe, 'load');
+      expect(iframe.contentWindow.test).to.equal('undefined undefined undefined');
     });
   });
 
@@ -367,7 +314,7 @@ describe('chromium feature', () => {
     describe('DOM storage quota increase', () => {
       ['localStorage', 'sessionStorage'].forEach((storageName) => {
         const storage = window[storageName];
-        it(`allows saving at least 40MiB in ${storageName}`, (done) => {
+        it(`allows saving at least 40MiB in ${storageName}`, async () => {
           // Although JavaScript strings use UTF-16, the underlying
           // storage provider may encode strings differently, muddling the
           // translation between character and byte counts. However,
@@ -384,11 +331,12 @@ describe('chromium feature', () => {
           // failed to detect a real problem (perhaps related to DOM storage data caching)
           // wherein calling `getItem` immediately after `setItem` would appear to work
           // but then later (e.g. next tick) it would not.
-          setTimeout(() => {
+          await delay(1);
+          try {
             expect(storage.getItem(testKeyName)).to.have.lengthOf(length);
+          } finally {
             storage.removeItem(testKeyName);
-            done();
-          }, 1);
+          }
         });
         it(`throws when attempting to use more than 128MiB in ${storageName}`, () => {
           expect(() => {
@@ -404,11 +352,11 @@ describe('chromium feature', () => {
       });
     });
 
-    it('requesting persitent quota works', (done) => {
-      navigator.webkitPersistentStorage.requestQuota(1024 * 1024, (grantedBytes) => {
-        expect(grantedBytes).to.equal(1048576);
-        done();
+    it('requesting persitent quota works', async () => {
+      const grantedBytes = await new Promise(resolve => {
+        navigator.webkitPersistentStorage.requestQuota(1024 * 1024, resolve);
       });
+      expect(grantedBytes).to.equal(1048576);
     });
   });
 

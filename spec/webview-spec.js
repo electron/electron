@@ -4,7 +4,7 @@ const http = require('http');
 const url = require('url');
 const { ipcRenderer } = require('electron');
 const { emittedOnce, waitForEvent } = require('./events-helpers');
-const { ifdescribe, ifit } = require('./spec-helpers');
+const { ifdescribe, ifit, delay } = require('./spec-helpers');
 
 const features = process._linkedBinding('electron_common_features');
 const nativeModulesEnabled = process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
@@ -284,10 +284,15 @@ describe('<webview> tag', function () {
     it('sets the referrer url', (done) => {
       const referrer = 'http://github.com/';
       const server = http.createServer((req, res) => {
-        res.end();
-        server.close();
-        expect(req.headers.referer).to.equal(referrer);
-        done();
+        try {
+          expect(req.headers.referer).to.equal(referrer);
+          done();
+        } catch (e) {
+          done(e);
+        } finally {
+          res.end();
+          server.close();
+        }
       }).listen(0, '127.0.0.1', () => {
         const port = server.address().port;
         loadWebView(webview, {
@@ -737,24 +742,28 @@ describe('<webview> tag', function () {
       };
 
       const loadListener = () => {
-        if (loadCount === 1) {
-          webview.src = `file://${fixtures}/pages/base-page.html`;
-        } else if (loadCount === 2) {
-          expect(webview.canGoBack()).to.be.true();
-          expect(webview.canGoForward()).to.be.false();
+        try {
+          if (loadCount === 1) {
+            webview.src = `file://${fixtures}/pages/base-page.html`;
+          } else if (loadCount === 2) {
+            expect(webview.canGoBack()).to.be.true();
+            expect(webview.canGoForward()).to.be.false();
 
-          webview.goBack();
-        } else if (loadCount === 3) {
-          webview.goForward();
-        } else if (loadCount === 4) {
-          expect(webview.canGoBack()).to.be.true();
-          expect(webview.canGoForward()).to.be.false();
+            webview.goBack();
+          } else if (loadCount === 3) {
+            webview.goForward();
+          } else if (loadCount === 4) {
+            expect(webview.canGoBack()).to.be.true();
+            expect(webview.canGoForward()).to.be.false();
 
-          webview.removeEventListener('did-finish-load', loadListener);
-          done();
+            webview.removeEventListener('did-finish-load', loadListener);
+            done();
+          }
+
+          loadCount += 1;
+        } catch (e) {
+          done(e);
         }
-
-        loadCount += 1;
       };
 
       webview.addEventListener('ipc-message', listener);
@@ -803,8 +812,12 @@ describe('<webview> tag', function () {
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port;
         webview.addEventListener('ipc-message', (e) => {
-          expect(e.channel).to.equal(message);
-          done();
+          try {
+            expect(e.channel).to.equal(message);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
         loadWebView(webview, {
           nodeintegration: 'on',
@@ -1042,15 +1055,14 @@ describe('<webview> tag', function () {
   });
 
   describe('will-attach-webview event', () => {
-    it('does not emit when src is not changed', (done) => {
+    it('does not emit when src is not changed', async () => {
+      console.log('loadWebView(webview)');
       loadWebView(webview);
-      setTimeout(() => {
-        const expectedErrorMessage =
-            'The WebView must be attached to the DOM ' +
-            'and the dom-ready event emitted before this method can be called.';
-        expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
-        done();
-      });
+      await delay();
+      const expectedErrorMessage =
+          'The WebView must be attached to the DOM ' +
+          'and the dom-ready event emitted before this method can be called.';
+      expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
     });
 
     it('supports changing the web preferences', async () => {
