@@ -7,25 +7,25 @@ const DialogType = {
   SAVE: 'SAVE' as 'SAVE'
 };
 
-const saveFileDialogProperties = {
-  createDirectory: 1 << 0,
-  showHiddenFiles: 1 << 1,
-  treatPackageAsDirectory: 1 << 2,
-  showOverwriteConfirmation: 1 << 3,
-  dontAddToRecent: 1 << 4
-};
+enum SaveFileDialogProperties {
+  createDirectory = 1 << 0,
+  showHiddenFiles = 1 << 1,
+  treatPackageAsDirectory = 1 << 2,
+  showOverwriteConfirmation = 1 << 3,
+  dontAddToRecent = 1 << 4
+}
 
-const openFileDialogProperties = {
-  openFile: 1 << 0,
-  openDirectory: 1 << 1,
-  multiSelections: 1 << 2,
-  createDirectory: 1 << 3, // macOS
-  showHiddenFiles: 1 << 4,
-  promptToCreate: 1 << 5, // Windows
-  noResolveAliases: 1 << 6, // macOS
-  treatPackageAsDirectory: 1 << 7, // macOS
-  dontAddToRecent: 1 << 8 // Windows
-};
+enum OpenFileDialogProperties {
+  openFile = 1 << 0,
+  openDirectory = 1 << 1,
+  multiSelections = 1 << 2,
+  createDirectory = 1 << 3, // macOS
+  showHiddenFiles = 1 << 4,
+  promptToCreate = 1 << 5, // Windows
+  noResolveAliases = 1 << 6, // macOS
+  treatPackageAsDirectory = 1 << 7, // macOS
+  dontAddToRecent = 1 << 8 // Windows
+}
 
 const normalizeAccessKey = (text: string) => {
   if (typeof text !== 'string') return text;
@@ -56,16 +56,30 @@ const checkAppInitialized = function () {
   }
 };
 
-const setupDialogProperties = (type: keyof typeof DialogType, properties: string[]): number => {
-  const dialogPropertiesTypes: Record<string, number> = (type === DialogType.OPEN) ? openFileDialogProperties : saveFileDialogProperties;
+const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogProperties)[]): number => {
   let dialogProperties = 0;
-  for (const prop in dialogPropertiesTypes) {
-    if (properties.includes(prop)) {
-      dialogProperties |= dialogPropertiesTypes[prop];
-    }
+  for (const property of properties) {
+    if (Object.prototype.hasOwnProperty.call(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
   }
-
   return dialogProperties;
+};
+
+const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogProperties)[]): number => {
+  let dialogProperties = 0;
+  for (const property of properties) {
+    if (Object.prototype.hasOwnProperty.call(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
+  }
+  return dialogProperties;
+};
+
+const setupDialogProperties = (type: keyof typeof DialogType, properties: string[]): number => {
+  if (type === DialogType.OPEN) {
+    return setupOpenDialogProperties(properties as (keyof typeof OpenFileDialogProperties)[]);
+  } else if (type === DialogType.SAVE) {
+    return setupSaveDialogProperties(properties as (keyof typeof SaveFileDialogProperties)[]);
+  } else {
+    return 0;
+  }
 };
 
 const saveDialog = (sync: boolean, window: BrowserWindow | null, options?: SaveDialogOptions) => {
