@@ -811,7 +811,7 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v7-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v8-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -890,7 +890,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v7-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v8-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 
 # Check for doc only change
