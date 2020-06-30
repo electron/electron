@@ -360,7 +360,7 @@ page.
 
 Emitted whenever there is a GPU info update.
 
-### Event: 'gpu-process-crashed'
+### Event: 'gpu-process-crashed' _Deprecated_
 
 Returns:
 
@@ -368,6 +368,11 @@ Returns:
 * `killed` Boolean
 
 Emitted when the GPU process crashes or is killed.
+
+**Deprecated:** This event is superceded by the `child-process-gone` event
+which contains more information about why the child process dissapeared. It
+isn't always because it crashed. The `killed` boolean can be replaced by
+checking `reason === 'killed'` when you switch to that event.
 
 ### Event: 'renderer-process-crashed' _Deprecated_
 
@@ -402,6 +407,36 @@ Returns:
 
 Emitted when the renderer process unexpectedly dissapears.  This is normally
 because it was crashed or killed.
+
+#### Event: 'child-process-gone'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `type` String - Process type. One of the following values:
+    * `Utility`
+    * `Zygote`
+    * `Sandbox helper`
+    * `GPU`
+    * `Pepper Plugin`
+    * `Pepper Plugin Broker`
+    * `Unknown`
+  * `reason` String - The reason the child process is gone. Possible values:
+    * `clean-exit` - Process exited with an exit code of zero
+    * `abnormal-exit` - Process exited with a non-zero exit code
+    * `killed` - Process was sent a SIGTERM or otherwise killed externally
+    * `crashed` - Process crashed
+    * `oom` - Process ran out of memory
+    * `launch-failure` - Process never successfully launched
+    * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Number - The exit code for the process
+      (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
+  * `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
+    Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
+
+Emitted when the child process unexpectedly dissapears. This is normally
+because it was crashed or killed. It does not include renderer processes.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
