@@ -1415,17 +1415,17 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView(widget, root_view_.get(), this);
 }
 
-views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
-    views::Widget* widget) {
+std::unique_ptr<views::NonClientFrameView>
+NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
 #if defined(OS_WIN)
-  WinFrameView* frame_view = new WinFrameView;
+  auto frame_view = std::make_unique<WinFrameView>();
   frame_view->Init(this, widget);
   return frame_view;
 #else
   if (has_frame()) {
-    return new NativeFrameView(this, widget);
+    return std::make_unique<NativeFrameView>(this, widget);
   } else {
-    FramelessView* frame_view = new FramelessView;
+    auto frame_view = std::make_unique<FramelessView>();
     frame_view->Init(this, widget);
     return frame_view;
   }
