@@ -8,7 +8,7 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from '
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, delay, defer } from './spec-helpers';
+import { ifdescribe, ifit, delay } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -971,19 +971,17 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({ show: false });
 
-      defer(() => {
-        w2.setClosable(true);
-        w2.close();
-      });
-
       await w.loadURL(`${scheme}://host3`);
       w.webContents.zoomLevel = hostZoomMap.host3;
 
       await w2.loadURL(`${scheme}://host3`);
       const zoomLevel1 = w.webContents.zoomLevel;
-      expect(zoomLevel1).to.equal(hostZoomMap.host3);
-
       const zoomLevel2 = w2.webContents.zoomLevel;
+
+      w2.setClosable(true);
+      w2.close();
+
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
       expect(zoomLevel1).to.equal(zoomLevel2);
     });
 
@@ -1000,23 +998,21 @@ describe('webContents module', () => {
         callback('hello');
       });
 
-      defer(() => {
-        w2.setClosable(true);
-        w2.close();
-      });
-
       await w.loadURL(`${scheme}://host3`);
       w.webContents.zoomLevel = hostZoomMap.host3;
 
       await w2.loadURL(`${scheme}://host3`);
       const zoomLevel1 = w.webContents.zoomLevel;
-      expect(zoomLevel1).to.equal(hostZoomMap.host3);
-
       const zoomLevel2 = w2.webContents.zoomLevel;
-      expect(zoomLevel2).to.equal(0);
-      expect(zoomLevel1).to.not.equal(zoomLevel2);
+
+      w2.setClosable(true);
+      w2.close();
 
       protocol.unregisterProtocol(scheme);
+
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
+      expect(zoomLevel2).to.equal(0);
+      expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
     it('can persist when it contains iframe', (done) => {
