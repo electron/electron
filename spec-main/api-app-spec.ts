@@ -973,6 +973,23 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+    it('returns promise rejection for a bogus protocol', async function () {
+      await expect(
+        app.getApplicationInfoForProtocol('bogus-protocol://')
+      ).to.eventually.be.rejectedWith(
+        'Unable to retrieve installation path to app'
+      );
+    });
+
+    it('returns resolved promise with appPath, displayName and icon', async function () {
+      const appInfo = await app.getApplicationInfoForProtocol('https://');
+      expect(appInfo.path).not.to.be.undefined();
+      expect(appInfo.name).not.to.be.undefined();
+      expect(appInfo.icon).not.to.be.undefined();
+    });
+  });
+
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
