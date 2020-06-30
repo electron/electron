@@ -5,6 +5,7 @@ import * as http from 'http';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
@@ -891,34 +892,24 @@ describe('app module', () => {
       expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
 
-    it('creates a registry entry for the protocol class', (done) => {
+    it('creates a registry entry for the protocol class', async () => {
       app.setAsDefaultProtocolClient(protocol);
 
-      classesKey.keys((error: Error, keys: any[]) => {
-        if (error) throw error;
-
-        const exists = !!keys.find(key => key.key.includes(protocol));
-        expect(exists).to.equal(true);
-
-        done();
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(true);
     });
 
-    it('completely removes a registry entry for the protocol class', (done) => {
+    it('completely removes a registry entry for the protocol class', async () => {
       app.setAsDefaultProtocolClient(protocol);
       app.removeAsDefaultProtocolClient(protocol);
 
-      classesKey.keys((error: Error, keys: any[]) => {
-        if (error) throw error;
-
-        const exists = !!keys.find(key => key.key.includes(protocol));
-        expect(exists).to.equal(false);
-
-        done();
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(false);
     });
 
-    it('only unsets a class registry key if it contains other data', (done) => {
+    it('only unsets a class registry key if it contains other data', async () => {
       app.setAsDefaultProtocolClient(protocol);
 
       const protocolKey = new Winreg({
@@ -926,18 +917,12 @@ describe('app module', () => {
         key: `\\Software\\Classes\\${protocol}`
       });
 
-      protocolKey.set('test-value', 'REG_BINARY', '123', () => {
-        app.removeAsDefaultProtocolClient(protocol);
+      await promisify(protocolKey.set).call(protocolKey, 'test-value', 'REG_BINARY', '123');
+      app.removeAsDefaultProtocolClient(protocol);
 
-        classesKey.keys((error: Error, keys: any[]) => {
-          if (error) throw error;
-
-          const exists = !!keys.find(key => key.key.includes(protocol));
-          expect(exists).to.equal(true);
-
-          done();
-        });
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(true);
     });
 
     it('sets the default client such that getApplicationNameForProtocol returns Electron', () => {
