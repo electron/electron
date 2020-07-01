@@ -108,10 +108,10 @@ index c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124..58f2372d664c4c6f8a513cb4206c2494
  void BaseObject::DeleteMe(void* data) {
    BaseObject* self = static_cast<BaseObject*>(data);
 diff --git a/src/env.h b/src/env.h
-index 12ba5b69369e858ee9e743ef06059d6cd5541078..b0b9b17dd6684c10139435b85e8724e31ad4d92c 100644
+index b6e02a2910cd8fe5ff3a17d6e1a98b937323ae3a..c1966a9f55126bdd65d8c9d529d934977bb4ad65 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1130,9 +1130,7 @@ class Environment : public MemoryRetainer {
+@@ -1132,9 +1132,7 @@ class Environment : public MemoryRetainer {
    void AtExit(void (*cb)(void* arg), void* arg);
    void RunAtExitCallbacks();
  
@@ -121,7 +121,7 @@ index 12ba5b69369e858ee9e743ef06059d6cd5541078..b0b9b17dd6684c10139435b85e8724e3
  
    // Strings and private symbols are shared across shared contexts
    // The getters simply proxy to the per-isolate primitive.
-@@ -1355,8 +1353,6 @@ class Environment : public MemoryRetainer {
+@@ -1357,8 +1355,6 @@ class Environment : public MemoryRetainer {
    uint64_t thread_id_;
    std::unordered_set<worker::Worker*> sub_worker_contexts_;
  
