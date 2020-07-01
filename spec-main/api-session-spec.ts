@@ -423,15 +423,23 @@ describe('session module', () => {
                        </html>`;
 
       protocol.registerStringProtocol(scheme, (request, callback) => {
-        if (request.method === 'GET') {
-          callback({ data: content, mimeType: 'text/html' });
-        } else if (request.method === 'POST') {
-          const uuid = request.uploadData![1].blobUUID;
-          expect(uuid).to.be.a('string');
-          session.defaultSession.getBlobData(uuid!).then(result => {
-            expect(result.toString()).to.equal(postData);
-            done();
-          });
+        try {
+          if (request.method === 'GET') {
+            callback({ data: content, mimeType: 'text/html' });
+          } else if (request.method === 'POST') {
+            const uuid = request.uploadData![1].blobUUID;
+            expect(uuid).to.be.a('string');
+            session.defaultSession.getBlobData(uuid!).then(result => {
+              try {
+                expect(result.toString()).to.equal(postData);
+                done();
+              } catch (e) {
+                done(e);
+              }
+            });
+          }
+        } catch (e) {
+          done(e);
         }
       });
       const w = new BrowserWindow({ show: false });
@@ -618,8 +626,12 @@ describe('session module', () => {
       session.defaultSession.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function (e, state) {
-          assertDownload(state, item);
-          done();
+          try {
+            assertDownload(state, item);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
       });
       session.defaultSession.downloadURL(`${url}:${port}`);
@@ -631,8 +643,12 @@ describe('session module', () => {
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function (e, state) {
-          assertDownload(state, item);
-          done();
+          try {
+            assertDownload(state, item);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
       });
       w.webContents.downloadURL(`${url}:${port}`);
@@ -649,8 +665,12 @@ describe('session module', () => {
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function (e, state) {
-          assertDownload(state, item, true);
-          done();
+          try {
+            assertDownload(state, item, true);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
       });
       w.webContents.downloadURL(`${protocolName}://item`);
@@ -687,13 +707,17 @@ describe('session module', () => {
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function (e, state) {
-          expect(state).to.equal('cancelled');
-          expect(item.getFilename()).to.equal('mock.pdf');
-          expect(item.getMimeType()).to.equal('application/pdf');
-          expect(item.getReceivedBytes()).to.equal(0);
-          expect(item.getTotalBytes()).to.equal(mockPDF.length);
-          expect(item.getContentDisposition()).to.equal(contentDisposition);
-          done();
+          try {
+            expect(state).to.equal('cancelled');
+            expect(item.getFilename()).to.equal('mock.pdf');
+            expect(item.getMimeType()).to.equal('application/pdf');
+            expect(item.getReceivedBytes()).to.equal(0);
+            expect(item.getTotalBytes()).to.equal(mockPDF.length);
+            expect(item.getContentDisposition()).to.equal(contentDisposition);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
         item.cancel();
       });
@@ -712,8 +736,12 @@ describe('session module', () => {
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function () {
-          expect(item.getFilename()).to.equal('download.pdf');
-          done();
+          try {
+            expect(item.getFilename()).to.equal('download.pdf');
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
         item.cancel();
       });
@@ -744,8 +772,12 @@ describe('session module', () => {
         item.setSavePath(filePath);
         item.setSaveDialogOptions(options);
         item.on('done', function () {
-          expect(item.getSaveDialogOptions()).to.deep.equal(options);
-          done();
+          try {
+            expect(item.getSaveDialogOptions()).to.deep.equal(options);
+            done();
+          } catch (e) {
+            done(e);
+          }
         });
         item.cancel();
       });
@@ -761,8 +793,12 @@ describe('session module', () => {
             item.resume();
           }
           item.on('done', function (e, state) {
-            expect(state).to.equal('interrupted');
-            done();
+            try {
+              expect(state).to.equal('interrupted');
+              done();
+            } catch (e) {
+              done(e);
+            }
           });
         });
         w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);

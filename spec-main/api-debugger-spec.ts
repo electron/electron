@@ -4,7 +4,7 @@ import * as path from 'path';
 import { AddressInfo } from 'net';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce, emittedUntil } from './events-helpers';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -21,18 +21,11 @@ describe('debugger module', () => {
   afterEach(closeAllWindows);
 
   describe('debugger.attach', () => {
-    it('succeeds when devtools is already open', done => {
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.openDevTools();
-        try {
-          w.webContents.debugger.attach();
-        } catch (err) {
-          done(`unexpected error : ${err}`);
-        }
-        expect(w.webContents.debugger.isAttached()).to.be.true();
-        done();
-      });
-      w.webContents.loadURL('about:blank');
+    it('succeeds when devtools is already open', async () => {
+      await w.webContents.loadURL('about:blank');
+      w.webContents.openDevTools();
+      w.webContents.debugger.attach();
+      expect(w.webContents.debugger.isAttached()).to.be.true();
     });
 
     it('fails when protocol version is not supported', done => {
@@ -44,49 +37,33 @@ describe('debugger module', () => {
       }
     });
 
-    it('attaches when no protocol version is specified', done => {
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        done(`unexpected error : ${err}`);
-      }
+    it('attaches when no protocol version is specified', async () => {
+      w.webContents.debugger.attach();
       expect(w.webContents.debugger.isAttached()).to.be.true();
-      done();
     });
   });
 
   describe('debugger.detach', () => {
-    it('fires detach event', (done) => {
-      w.webContents.debugger.on('detach', (e, reason) => {
-        expect(reason).to.equal('target closed');
-        expect(w.webContents.debugger.isAttached()).to.be.false();
-        done();
-      });
-
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        done(`unexpected error : ${err}`);
-      }
+    it('fires detach event', async () => {
+      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      w.webContents.debugger.attach();
       w.webContents.debugger.detach();
+      const [, reason] = await detach;
+      expect(reason).to.equal('target closed');
+      expect(w.webContents.debugger.isAttached()).to.be.false();
     });
 
-    it('doesn\'t disconnect an active devtools session', done => {
+    it('doesn\'t disconnect an active devtools session', async () => {
       w.webContents.loadURL('about:blank');
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        return done(`unexpected error : ${err}`);
-      }
+      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      w.webContents.debugger.attach();
       w.webContents.openDevTools();
       w.webContents.once('devtools-opened', () => {
         w.webContents.debugger.detach();
       });
-      w.webContents.debugger.on('detach', () => {
-        expect(w.webContents.debugger.isAttached()).to.be.false();
-        expect((w as any).devToolsWebContents.isDestroyed()).to.be.false();
-        done();
-      });
+      await detach;
+      expect(w.webContents.debugger.isAttached()).to.be.false();
+      expect((w as any).devToolsWebContents.isDestroyed()).to.be.false();
     });
   });
 
@@ -130,33 +107,20 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
-    it('fires message event', done => {
+    it('fires message event', async () => {
       const url = process.platform !== 'win32'
         ? `file://${path.join(fixtures, 'pages', 'a.html')}`
         : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`;
       w.webContents.loadURL(url);
-
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        done(`unexpected error : ${err}`);
-      }
-
-      w.webContents.debugger.on('message', (e, method, params) => {
-        if (method === 'Console.messageAdded') {
-          try {
-            expect(params.message.level).to.equal('log');
-            expect(params.message.url).to.equal(url);
-            expect(params.message.text).to.equal('a');
-            done();
-          } catch (e) {
-            done(e);
-          } finally {
-            w.webContents.debugger.detach();
-          }
-        }
-      });
+      w.webContents.debugger.attach();
+      const message = emittedUntil(w.webContents.debugger, 'message',
+        (event: Electron.Event, method: string) => method === 'Console.messageAdded');
       w.webContents.debugger.sendCommand('Console.enable');
+      const [,, params] = await message;
+      w.webContents.debugger.detach();
+      expect((params as any).message.level).to.equal('log');
+      expect((params as any).message.url).to.equal(url);
+      expect((params as any).message.text).to.equal('a');
     });
 
     it('returns error message when command fails', async () => {

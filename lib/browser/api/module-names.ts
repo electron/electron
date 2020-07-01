@@ -7,6 +7,7 @@
 export const browserModuleNames = [
   'app',
   'autoUpdater',
+  'BaseWindow',
   'BrowserView',
   'BrowserWindow',
   'contentTracing',
@@ -28,7 +29,6 @@ export const browserModuleNames = [
   'screen',
   'session',
   'systemPreferences',
-  'TopLevelWindow',
   'TouchBar',
   'Tray',
   'View',
