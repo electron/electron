@@ -1003,6 +1003,8 @@ describe('webContents module', () => {
       defer(() => {
         w2.setClosable(true);
         w2.close();
+
+        protocol.unregisterProtocol(scheme);
       });
 
       await w.loadURL(`${scheme}://host3`);
@@ -1015,8 +1017,6 @@ describe('webContents module', () => {
       const zoomLevel2 = w2.webContents.zoomLevel;
       expect(zoomLevel2).to.equal(0);
       expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-      protocol.unregisterProtocol(scheme);
     });
 
     it('can persist when it contains iframe', (done) => {

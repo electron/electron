@@ -450,7 +450,7 @@ describe('chromium features', () => {
       }
     });
 
-    it('returns error when permission is denied', (done) => {
+    it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -458,13 +458,7 @@ describe('chromium features', () => {
           partition: 'geolocation-spec'
         }
       });
-      w.webContents.on('ipc-message', (event, channel) => {
-        if (channel === 'success') {
-          done();
-        } else {
-          done('unexpected response from geolocation api');
-        }
-      });
+      const message = emittedOnce(w.webContents, 'ipc-message');
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
         if (permission === 'geolocation') {
           callback(false);
@@ -473,6 +467,8 @@ describe('chromium features', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
+      const [, channel] = await message;
+      expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
   });
 

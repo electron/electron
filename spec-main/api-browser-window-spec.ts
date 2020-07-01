@@ -311,13 +311,15 @@ describe('BrowserWindow module', () => {
       server.close();
     });
 
-    it('should emit did-start-loading event', (done) => {
-      w.webContents.on('did-start-loading', () => { done(); });
+    it('should emit did-start-loading event', async () => {
+      const didStartLoading = emittedOnce(w.webContents, 'did-start-loading');
       w.loadURL('about:blank');
+      await didStartLoading;
     });
-    it('should emit ready-to-show event', (done) => {
-      w.on('ready-to-show', () => { done(); });
+    it('should emit ready-to-show event', async () => {
+      const readyToShow = emittedOnce(w, 'ready-to-show');
       w.loadURL('about:blank');
+      await readyToShow;
     });
     // TODO(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
     // changed and adjust the test.
@@ -539,11 +541,10 @@ describe('BrowserWindow module', () => {
         after(() => {
           server.close();
         });
-        it('is emitted on redirects', (done) => {
-          w.webContents.on('will-redirect', () => {
-            done();
-          });
+        it('is emitted on redirects', async () => {
+          const willRedirect = emittedOnce(w.webContents, 'will-redirect');
           w.loadURL(`${url}/302`);
+          await willRedirect;
         });
 
         it('is emitted after will-navigate on redirects', async () => {
@@ -1986,15 +1987,6 @@ describe('BrowserWindow module', () => {
     });
 
     describe('"sandbox" option', () => {
-      function waitForEvents<T> (emitter: { once: Function }, events: string[], callback: () => void) {
-        let count = events.length;
-        for (const event of events) {
-          emitter.once(event, () => {
-            if (!--count) callback();
-          });
-        }
-      }
-
       const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
       let server: http.Server = null as unknown as http.Server;
@@ -2201,7 +2193,7 @@ describe('BrowserWindow module', () => {
         expect(webPreferences.foo).to.equal('bar');
       });
 
-      it('should set ipc event sender correctly', (done) => {
+      it('should set ipc event sender correctly', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2224,11 +2216,13 @@ describe('BrowserWindow module', () => {
           expect(event.sender).to.equal(childWc, 'sender should be the child');
           event.sender.send('verified');
         });
-        waitForEvents(ipcMain, [
+
+        const done = Promise.all([
           'parent-answer',
           'child-answer'
-        ], done);
+        ].map(name => emittedOnce(ipcMain, name)));
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
+        await done;
       });
 
       describe('event handling', () => {
@@ -2236,24 +2230,24 @@ describe('BrowserWindow module', () => {
         beforeEach(() => {
           w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         });
-        it('works for window events', (done) => {
-          waitForEvents(w, [
-            'page-title-updated'
-          ], done);
+        it('works for window events', async () => {
+          const pageTitleUpdated = emittedOnce(w, 'page-title-updated');
           w.loadURL('data:text/html,<script>document.title = \'changed\'</script>');
+          await pageTitleUpdated;
         });
 
-        it('works for stop events', (done) => {
-          waitForEvents(w.webContents, [
+        it('works for stop events', async () => {
+          const done = Promise.all([
             'did-navigate',
             'did-fail-load',
             'did-stop-loading'
-          ], done);
+          ].map(name => emittedOnce(w.webContents, name)));
           w.loadURL('data:text/html,<script>stop()</script>');
+          await done;
         });
 
-        it('works for web contents events', (done) => {
-          waitForEvents(w.webContents, [
+        it('works for web contents events', async () => {
+          const done = Promise.all([
             'did-finish-load',
             'did-frame-finish-load',
             'did-navigate-in-page',
@@ -2262,8 +2256,9 @@ describe('BrowserWindow module', () => {
             'did-stop-loading',
             'did-frame-finish-load',
             'dom-ready'
-          ], done);
+          ].map(name => emittedOnce(w.webContents, name)));
           w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
+          await done;
         });
       });
 
@@ -2929,26 +2924,29 @@ describe('BrowserWindow module', () => {
 
   ifdescribe(process.platform !== 'linux')('max/minimize events', () => {
     afterEach(closeAllWindows);
-    it('emits an event when window is maximized', (done) => {
+    it('emits an event when window is maximized', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('maximize', () => { done(); });
+      const maximize = emittedOnce(w, 'maximize');
       w.show();
       w.maximize();
+      await maximize;
     });
 
-    it('emits an event when window is unmaximized', (done) => {
+    it('emits an event when window is unmaximized', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('unmaximize', () => { done(); });
+      const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
       w.unmaximize();
+      await unmaximize;
     });
 
-    it('emits an event when window is minimized', (done) => {
+    it('emits an event when window is minimized', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('minimize', () => { done(); });
+      const minimize = emittedOnce(w, 'minimize');
       w.show();
       w.minimize();
+      await minimize;
     });
   });
 
@@ -3162,26 +3160,26 @@ describe('BrowserWindow module', () => {
   describe('parent window', () => {
     afterEach(closeAllWindows);
 
-    ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', (done) => {
+    ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', async () => {
       const w = new BrowserWindow();
-      w.once('sheet-begin', () => {
-        done();
-      });
+      const sheetBegin = emittedOnce(w, 'sheet-begin');
       // eslint-disable-next-line no-new
       new BrowserWindow({
         modal: true,
         parent: w
       });
+      await sheetBegin;
     });
 
-    ifit(process.platform === 'darwin')('sheet-end event emits when window has closed a sheet', (done) => {
+    ifit(process.platform === 'darwin')('sheet-end event emits when window has closed a sheet', async () => {
       const w = new BrowserWindow();
       const sheet = new BrowserWindow({
         modal: true,
         parent: w
       });
-      w.once('sheet-end', () => { done(); });
+      const sheetEnd = emittedOnce(w, 'sheet-end');
       sheet.close();
+      await sheetEnd;
     });
 
     describe('parent option', () => {
@@ -3872,24 +3870,22 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
-      it('does not crash when exiting simpleFullScreen (properties)', (done) => {
+      it('does not crash when exiting simpleFullScreen (properties)', async () => {
         const w = new BrowserWindow();
         w.setSimpleFullScreen(true);
 
-        setTimeout(() => {
-          w.setFullScreen(!w.isFullScreen());
-          done();
-        }, 1000);
+        await delay(1000);
+
+        w.setFullScreen(!w.isFullScreen());
       });
 
-      it('does not crash when exiting simpleFullScreen (functions)', (done) => {
+      it('does not crash when exiting simpleFullScreen (functions)', async () => {
         const w = new BrowserWindow();
         w.simpleFullScreen = true;
 
-        setTimeout(() => {
-          w.setFullScreen(!w.isFullScreen());
-          done();
-        }, 1000);
+        await delay(1000);
+
+        w.setFullScreen(!w.isFullScreen());
       });
 
       it('should not be changed by setKiosk method', async () => {

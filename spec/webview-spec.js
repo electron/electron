@@ -954,32 +954,35 @@ describe('<webview> tag', function () {
   });
 
   describe('found-in-page event', () => {
-    it('emits when a request is made', (done) => {
-      let requestId = null;
-      const activeMatchOrdinal = [];
-      const listener = (e) => {
-        expect(e.result.requestId).to.equal(requestId);
-        expect(e.result.matches).to.equal(3);
-        activeMatchOrdinal.push(e.result.activeMatchOrdinal);
-        if (e.result.activeMatchOrdinal === e.result.matches) {
-          expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
-          webview.stopFindInPage('clearSelection');
-          done();
-        } else {
-          listener2();
-        }
-      };
-      const listener2 = () => {
-        requestId = webview.findInPage('virtual');
-      };
-      webview.addEventListener('found-in-page', listener);
-      webview.addEventListener('did-finish-load', listener2);
+    it('emits when a request is made', async () => {
+      const didFinishLoad = waitForEvent(webview, 'did-finish-load');
       loadWebView(webview, { src: `file://${fixtures}/pages/content.html` });
       // TODO(deepak1556): With https://codereview.chromium.org/2836973002
       // focus of the webContents is required when triggering the api.
       // Remove this workaround after determining the cause for
       // incorrect focus.
       webview.focus();
+      await didFinishLoad;
+
+      const activeMatchOrdinal = [];
+
+      for (;;) {
+        const foundInPage = waitForEvent(webview, 'found-in-page');
+        const requestId = webview.findInPage('virtual');
+        const event = await foundInPage;
+
+        expect(event.result.requestId).to.equal(requestId);
+        expect(event.result.matches).to.equal(3);
+
+        activeMatchOrdinal.push(event.result.activeMatchOrdinal);
+
+        if (event.result.activeMatchOrdinal === event.result.matches) {
+          break;
+        }
+      }
+
+      expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
+      webview.stopFindInPage('clearSelection');
     });
   });
 
