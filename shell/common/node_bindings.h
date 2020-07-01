@@ -59,6 +59,8 @@ class NodeBindings {
 
   uv_loop_t* uv_loop() const { return uv_loop_; }
 
+  bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 

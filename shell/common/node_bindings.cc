@@ -101,25 +101,25 @@ ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
-  // Close any active handles
   uv_stop(loop);
-  uv_walk(
-      loop,
-      [](uv_handle_t* handle, void*) {
-        if (!uv_is_closing(handle)) {
-          uv_close(handle, nullptr);
-        }
-      },
-      nullptr);
+  int error = uv_loop_close(loop);
 
-  // Run the loop to let it finish all the closing handles
-  // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
-  for (;;)
-    if (!uv_run(loop, UV_RUN_DEFAULT))
-      break;
+  while (error) {
+    uv_run(loop, UV_RUN_DEFAULT);
+    uv_stop(loop);
+    uv_walk(
+        loop,
+        [](uv_handle_t* handle, void*) {
+          if (!uv_is_closing(handle)) {
+            uv_close(handle, nullptr);
+          }
+        },
+        nullptr);
+    uv_run(loop, UV_RUN_DEFAULT);
+    error = uv_loop_close(loop);
+  }
 
-  DCHECK(!uv_loop_alive(loop));
-  uv_loop_close(loop);
+  DCHECK(error == 0);
 }
 
 bool g_is_initialized = false;
@@ -226,6 +226,7 @@ NodeBindings::~NodeBindings() {
   // Quit the embed thread.
   embed_closed_ = true;
   uv_sem_post(&embed_sem_);
+
   WakeupEmbedThread();
 
   // Wait for everything to be done.
@@ -236,7 +237,7 @@ NodeBindings::~NodeBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
   // Clean up worker loop
-  if (uv_loop_ == &worker_loop_)
+  if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
 }
 
@@ -436,7 +437,8 @@ void NodeBindings::WakeupMainThread() {
 }
 
 void NodeBindings::WakeupEmbedThread() {
-  uv_async_send(&dummy_uv_handle_);
+  if (!in_worker_loop())
+    uv_async_send(&dummy_uv_handle_);
 }
 
 // static
