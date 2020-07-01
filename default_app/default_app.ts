@@ -1,5 +1,6 @@
 import { app, dialog, BrowserWindow, shell, ipcMain } from 'electron';
 import * as path from 'path';
+import * as url from 'url';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -29,12 +30,11 @@ function isTrustedSender (webContents: Electron.WebContents) {
     return false;
   }
 
-  const parsedUrl = new URL(webContents.getURL());
-  const urlPath = process.platform === 'win32'
-    // Strip the prefixed "/" that occurs on windows
-    ? path.resolve(parsedUrl.pathname.substr(1))
-    : parsedUrl.pathname;
-  return parsedUrl.protocol === 'file:' && urlPath === indexPath;
+  try {
+    return url.fileURLToPath(webContents.getURL()) === indexPath;
+  } catch {
+    return false;
+  }
 }
 
 ipcMain.handle('bootstrap', (event) => {

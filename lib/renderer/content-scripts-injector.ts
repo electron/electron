@@ -2,7 +2,7 @@ import { webFrame } from 'electron';
 
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const IsolatedWorldIDs = {
   /**

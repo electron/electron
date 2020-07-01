@@ -15,6 +15,7 @@
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -50,7 +51,7 @@ void LoginHandler::EmitEvent(
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
   auto api_web_contents = api::WebContents::From(isolate, web_contents());

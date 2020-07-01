@@ -26,6 +26,7 @@
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -57,7 +58,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
@@ -68,7 +69,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 

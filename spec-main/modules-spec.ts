@@ -4,11 +4,12 @@ import * as fs from 'fs';
 import { BrowserWindow } from 'electron/main';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './events-helpers';
 import * as childProcess from 'child_process';
 
 const Module = require('module');
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 describe('modules support', () => {
@@ -23,12 +24,10 @@ describe('modules support', () => {
         await expect(w.webContents.executeJavaScript('{ require(\'echo\'); null }')).to.be.fulfilled();
       });
 
-      ifit(features.isRunAsNodeEnabled())('can be required in node binary', function (done) {
+      ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
-        child.on('message', (msg) => {
-          expect(msg).to.equal('ok');
-          done();
-        });
+        const [msg] = await emittedOnce(child, 'message');
+        expect(msg).to.equal('ok');
       });
 
       ifit(process.platform === 'win32')('can be required if electron.exe is renamed', () => {

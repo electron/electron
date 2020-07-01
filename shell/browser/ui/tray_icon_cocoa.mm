@@ -130,27 +130,7 @@
   [statusItem_ setMenu:[menuController_ menu]];
 }
 
-- (void)mouseDown:(NSEvent*)event {
-  trayIcon_->NotifyMouseDown(
-      gfx::ScreenPointFromNSPoint([event locationInWindow]),
-      ui::EventFlagsFromModifiers([event modifierFlags]));
-
-  // Pass click to superclass to show menu. Custom mouseUp handler won't be
-  // invoked.
-  if (menuController_) {
-    [super mouseDown:event];
-  } else {
-    [[statusItem_ button] highlight:YES];
-  }
-}
-
-- (void)mouseUp:(NSEvent*)event {
-  [[statusItem_ button] highlight:NO];
-
-  trayIcon_->NotifyMouseUp(
-      gfx::ScreenPointFromNSPoint([event locationInWindow]),
-      ui::EventFlagsFromModifiers([event modifierFlags]));
-
+- (void)handleClickNotifications:(NSEvent*)event {
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
   BOOL shouldBeHandledAsASingleClick =
@@ -168,6 +148,31 @@
     trayIcon_->NotifyDoubleClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
+}
+
+- (void)mouseDown:(NSEvent*)event {
+  trayIcon_->NotifyMouseDown(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
+  // Pass click to superclass to show menu. Custom mouseUp handler won't be
+  // invoked.
+  if (menuController_) {
+    [self handleClickNotifications:event];
+    [super mouseDown:event];
+  } else {
+    [[statusItem_ button] highlight:YES];
+  }
+}
+
+- (void)mouseUp:(NSEvent*)event {
+  [[statusItem_ button] highlight:NO];
+
+  trayIcon_->NotifyMouseUp(
+      gfx::ScreenPointFromNSPoint([event locationInWindow]),
+      ui::EventFlagsFromModifiers([event modifierFlags]));
+
+  [self handleClickNotifications:event];
 }
 
 - (void)popUpContextMenu:(electron::ElectronMenuModel*)menu_model {

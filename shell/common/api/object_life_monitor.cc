@@ -6,7 +6,6 @@
 #include "shell/common/api/object_life_monitor.h"
 
 #include "base/bind.h"
-#include "base/message_loop/message_loop.h"
 
 namespace electron {
 

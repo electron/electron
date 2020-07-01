@@ -38,12 +38,10 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
-    createIDWeakMap<V>(): ElectronInternal.KeyWeakMap<number, V>;
-    createDoubleIDWeakMap<V>(): ElectronInternal.KeyWeakMap<[string, number], V>;
-    setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
+    addRemoteObjectRef(contextId: string, id: number): void;
   }
 
   type DataPipe = {
@@ -91,21 +89,17 @@ declare namespace NodeJS {
   }
 
   interface Process {
-    /**
-     * DO NOT USE DIRECTLY, USE process.electronBinding
-     */
     _linkedBinding(name: string): any;
-    electronBinding(name: string): any;
-    electronBinding(name: 'features'): FeaturesBinding;
-    electronBinding(name: 'ipc'): { ipc: IpcRendererBinding };
-    electronBinding(name: 'v8_util'): V8UtilBinding;
-    electronBinding(name: 'app'): { app: Electron.App, App: Function };
-    electronBinding(name: 'command_line'): Electron.CommandLine;
-    electronBinding(name: 'desktop_capturer'): {
+    _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
+    _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
+    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
+    _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
+    _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       getMediaSourceIdForWebContents(requestWebContentsId: number, webContentsId: number): string;
     };
-    electronBinding(name: 'net'): {
+    _linkedBinding(name: 'electron_browser_net'): {
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
       Net: any;

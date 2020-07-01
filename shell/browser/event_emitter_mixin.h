@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "gin/object_template_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
 namespace gin_helper {
@@ -22,7 +23,7 @@ class EventEmitterMixin {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
@@ -38,7 +39,7 @@ class EventEmitterMixin {
   bool EmitCustomEvent(base::StringPiece name,
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))

@@ -1,16 +1,16 @@
 import { autoUpdater } from 'electron/main';
 import { expect } from 'chai';
 import { ifit, ifdescribe } from './spec-helpers';
+import { emittedOnce } from './events-helpers';
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {
-    ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', function (done) {
-      autoUpdater.once('error', function (error) {
-        expect(error.message).to.equal('Update URL is not set');
-        done();
-      });
+    ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', async function () {
+      const errorEvent = emittedOnce(autoUpdater, 'error');
       autoUpdater.setFeedURL({ url: '' });
       autoUpdater.checkForUpdates();
+      const [error] = await errorEvent;
+      expect(error.message).to.equal('Update URL is not set');
     });
   });
 
@@ -19,11 +19,10 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       expect(autoUpdater.getFeedURL()).to.equal('');
     });
 
-    ifit(process.platform === 'win32')('correctly fetches the previously set FeedURL', function (done) {
+    ifit(process.platform === 'win32')('correctly fetches the previously set FeedURL', function () {
       const updateURL = 'https://fake-update.electron.io';
       autoUpdater.setFeedURL({ url: updateURL });
       expect(autoUpdater.getFeedURL()).to.equal(updateURL);
-      done();
     });
   });
 
@@ -56,12 +55,11 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
     });
 
     ifdescribe(process.platform === 'darwin')('on Mac', function () {
-      it('emits an error when the application is unsigned', done => {
-        autoUpdater.once('error', function (error) {
-          expect(error.message).equal('Could not get code signature for running application');
-          done();
-        });
+      it('emits an error when the application is unsigned', async () => {
+        const errorEvent = emittedOnce(autoUpdater, 'error');
         autoUpdater.setFeedURL({ url: '' });
+        const [error] = await errorEvent;
+        expect(error.message).equal('Could not get code signature for running application');
       });
 
       it('does not throw if default is the serverType', () => {
@@ -81,12 +79,11 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
   });
 
   describe('quitAndInstall', () => {
-    ifit(process.platform === 'win32')('emits an error on Windows when no update is available', function (done) {
-      autoUpdater.once('error', function (error) {
-        expect(error.message).to.equal('No update available, can\'t quit and install');
-        done();
-      });
+    ifit(process.platform === 'win32')('emits an error on Windows when no update is available', async function () {
+      const errorEvent = emittedOnce(autoUpdater, 'error');
       autoUpdater.quitAndInstall();
+      const [error] = await errorEvent;
+      expect(error.message).to.equal('No update available, can\'t quit and install');
     });
   });
 });

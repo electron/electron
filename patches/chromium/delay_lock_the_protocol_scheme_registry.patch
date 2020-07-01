@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 0d752de291c071e9a6054d7ced3ac1930fa38471..05e1e711e1a4abc1aab79fdbb4cda63cbf282e94 100644
+index 12055944205a9d8de54e6d3ff66e99b723fa5752..b46a9f4ad5f07c2a8e649edbfb52b52f9f6e9946 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -656,7 +656,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -663,7 +663,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -32,7 +32,7 @@ index 0d752de291c071e9a6054d7ced3ac1930fa38471..05e1e711e1a4abc1aab79fdbb4cda63c
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index c00901a2a4ef59a63033c6669171ec9e3ffd2686..d637b79d9df82ad44b1eed8529024a21e0b3555b 100644
+index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d4a00bde3 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
@@ -44,7 +44,7 @@ index c00901a2a4ef59a63033c6669171ec9e3ffd2686..d637b79d9df82ad44b1eed8529024a21
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -105,7 +105,8 @@ void RegisterContentSchemes() {
+@@ -106,7 +106,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.

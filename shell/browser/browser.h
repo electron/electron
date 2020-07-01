@@ -13,7 +13,9 @@
 #include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
+#include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
+#include "gin/dictionary.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/promise.h"
@@ -97,6 +99,12 @@ class Browser : public WindowListObserver {
                                gin_helper::Arguments* args);
 
   base::string16 GetApplicationNameForProtocol(const GURL& url);
+
+#if !defined(OS_LINUX)
+  // get the name, icon and path for an application
+  v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
+                                                       const GURL& url);
+#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);
@@ -240,6 +248,9 @@ class Browser : public WindowListObserver {
 #if defined(OS_MACOSX)
   // Tell the application to create a new window for a tab.
   void NewWindowForTab();
+
+  // Tell the application that application did become active
+  void DidBecomeActive();
 #endif  // defined(OS_MACOSX)
 
   // Tell the application that application is activated with visible/invisible
@@ -298,6 +309,9 @@ class Browser : public WindowListObserver {
 
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
+
+  // Tracks tasks requesting file icons.
+  base::CancelableTaskTracker cancelable_task_tracker_;
 
   // Whether `app.exit()` has been called
   bool is_exiting_ = false;

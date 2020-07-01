@@ -1,38 +1,60 @@
-'use strict';
-
 import * as electron from 'electron';
 import { EventEmitter } from 'events';
 import objectsRegistry from './objects-registry';
 import { ipcMainInternal } from '../ipc-main-internal';
-import { isPromise, isSerializableObject, deserialize, serialize } from '@electron/internal/common/type-utils';
-import { Size } from 'electron/main';
+import { isPromise, isSerializableObject, deserialize, serialize } from '../../common/type-utils';
+import type { MetaTypeFromRenderer, ObjectMember, MetaType, ObjProtoDescriptor } from '../../common/remote/types';
 
-const v8Util = process.electronBinding('v8_util');
-const eventBinding = process.electronBinding('event');
-const features = process.electronBinding('features');
-const { NativeImage } = process.electronBinding('native_image');
+const v8Util = process._linkedBinding('electron_common_v8_util');
+const eventBinding = process._linkedBinding('electron_browser_event');
+const features = process._linkedBinding('electron_common_features');
+const { NativeImage } = process._linkedBinding('electron_common_native_image');
 
 if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled');
 }
-
-const hasProp = {}.hasOwnProperty;
 
 // The internal properties of Function.
 const FUNCTION_PROPERTIES = [
   'length', 'name', 'arguments', 'caller', 'prototype'
 ];
 
-// The remote functions in renderer processes.
-// id => Function
-const rendererFunctions = v8Util.createDoubleIDWeakMap<(...args: any[]) => void>();
+type RendererFunctionId = [string, number] // [contextId, funcId]
+type FinalizerInfo = { id: RendererFunctionId, webContents: electron.WebContents, frameId: number };
+type WeakRef<T> = { deref(): T | undefined }
+type CallIntoRenderer = (...args: any[]) => void
 
-type ObjectMember = {
-  name: string,
-  value?: any,
-  enumerable?: boolean,
-  writable?: boolean,
-  type?: 'method' | 'get'
+// The remote functions in renderer processes.
+const rendererFunctionCache = new Map<string, WeakRef<CallIntoRenderer>>();
+// eslint-disable-next-line no-undef
+const finalizationRegistry = new (globalThis as any).FinalizationRegistry((fi: FinalizerInfo) => {
+  const mapKey = fi.id[0] + '~' + fi.id[1];
+  const ref = rendererFunctionCache.get(mapKey);
+  if (ref !== undefined && ref.deref() === undefined) {
+    rendererFunctionCache.delete(mapKey);
+    if (!fi.webContents.isDestroyed()) { fi.webContents.sendToFrame(fi.frameId, 'ELECTRON_RENDERER_RELEASE_CALLBACK', fi.id[0], fi.id[1]); }
+  }
+});
+
+function getCachedRendererFunction (id: RendererFunctionId): CallIntoRenderer | undefined {
+  const mapKey = id[0] + '~' + id[1];
+  const ref = rendererFunctionCache.get(mapKey);
+  if (ref !== undefined) {
+    const deref = ref.deref();
+    if (deref !== undefined) return deref;
+  }
+}
+function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebContents, frameId: number, value: CallIntoRenderer) {
+  // eslint-disable-next-line no-undef
+  const wr = new (globalThis as any).WeakRef(value) as WeakRef<CallIntoRenderer>;
+  const mapKey = id[0] + '~' + id[1];
+  rendererFunctionCache.set(mapKey, wr);
+  finalizationRegistry.register(value, {
+    id,
+    webContents: wc,
+    frameId
+  } as FinalizerInfo);
+  return value;
 }
 
 // Return the description of object's members:
@@ -60,11 +82,6 @@ const getObjectMembers = function (object: any): ObjectMember[] {
   });
 };
 
-type ObjProtoDescriptor = {
-  members: ObjectMember[],
-  proto: ObjProtoDescriptor
-} | null
-
 // Return the description of object's prototype.
 const getObjectPrototype = function (object: any): ObjProtoDescriptor {
   const proto = Object.getPrototypeOf(object);
@@ -75,76 +92,42 @@ const getObjectPrototype = function (object: any): ObjProtoDescriptor {
   };
 };
 
-type MetaType = {
-  type: 'number',
-  value: number
-} | {
-  type: 'boolean',
-  value: boolean
-} | {
-  type: 'string',
-  value: string
-} | {
-  type: 'bigint',
-  value: bigint
-} | {
-  type: 'symbol',
-  value: symbol
-} | {
-  type: 'undefined',
-  value: undefined
-} | {
-  type: 'object' | 'function',
-  name: string,
-  members: ObjectMember[],
-  proto: ObjProtoDescriptor,
-  id: number,
-} | {
-  type: 'value',
-  value: any,
-} | {
-  type: 'buffer',
-  value: Uint8Array,
-} | {
-  type: 'array',
-  members: MetaType[]
-} | {
-  type: 'error',
-  value: Error,
-  members: ObjectMember[]
-} | {
-  type: 'promise',
-  then: MetaType
-} | {
-  type: 'nativeimage'
-  value: electron.NativeImage
-}
-
 // Convert a real value into meta data.
 const valueToMeta = function (sender: electron.WebContents, contextId: string, value: any, optimizeSimpleObject = false): MetaType {
   // Determine the type of value.
-  let type: MetaType['type'] = typeof value;
-  if (type === 'object') {
-    // Recognize certain types of objects.
-    if (value instanceof Buffer) {
-      type = 'buffer';
-    } else if (value instanceof NativeImage) {
-      type = 'nativeimage';
-    } else if (Array.isArray(value)) {
-      type = 'array';
-    } else if (value instanceof Error) {
-      type = 'error';
-    } else if (isSerializableObject(value)) {
+  let type: MetaType['type'];
+
+  switch (typeof value) {
+    case 'object':
+      // Recognize certain types of objects.
+      if (value instanceof Buffer) {
+        type = 'buffer';
+      } else if (value instanceof NativeImage) {
+        type = 'nativeimage';
+      } else if (Array.isArray(value)) {
+        type = 'array';
+      } else if (value instanceof Error) {
+        type = 'error';
+      } else if (isSerializableObject(value)) {
+        type = 'value';
+      } else if (isPromise(value)) {
+        type = 'promise';
+      } else if (Object.prototype.hasOwnProperty.call(value, 'callee') && value.length != null) {
+        // Treat the arguments object as array.
+        type = 'array';
+      } else if (optimizeSimpleObject && v8Util.getHiddenValue(value, 'simple')) {
+        // Treat simple objects as value.
+        type = 'value';
+      } else {
+        type = 'object';
+      }
+      break;
+    case 'function':
+      type = 'function';
+      break;
+    default:
       type = 'value';
-    } else if (isPromise(value)) {
-      type = 'promise';
-    } else if (hasProp.call(value, 'callee') && value.length != null) {
-      // Treat the arguments object as array.
-      type = 'array';
-    } else if (optimizeSimpleObject && v8Util.getHiddenValue(value, 'simple')) {
-      // Treat simple objects as value.
-      type = 'value';
-    }
+      break;
   }
 
   // Fill the meta object according to value's type.
@@ -224,46 +207,6 @@ const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...a
   console.warn(message);
 };
 
-type MetaTypeFromRenderer = {
-  type: 'value',
-  value: any
-} | {
-  type: 'remote-object',
-  id: number
-} | {
-  type: 'array',
-  value: MetaTypeFromRenderer[]
-} | {
-  type: 'buffer',
-  value: Uint8Array
-} | {
-  type: 'promise',
-  then: MetaTypeFromRenderer
-} | {
-  type: 'object',
-  name: string,
-  members: {
-    name: string,
-    value: MetaTypeFromRenderer
-  }[]
-} | {
-  type: 'function-with-return-value',
-  value: MetaTypeFromRenderer
-} | {
-  type: 'function',
-  id: number,
-  location: string,
-  length: number
-} | {
-  type: 'nativeimage',
-  value: {
-    size: Size,
-    buffer: Buffer,
-    scaleFactor: number,
-    dataURL: string
-  }[]
-}
-
 const fakeConstructor = (constructor: Function, name: string) =>
   new Proxy(Object, {
     get (target, prop, receiver) {
@@ -315,9 +258,8 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         const objectId: [string, number] = [contextId, meta.id];
 
         // Cache the callbacks in renderer.
-        if (rendererFunctions.has(objectId)) {
-          return rendererFunctions.get(objectId);
-        }
+        const cachedFunction = getCachedRendererFunction(objectId);
+        if (cachedFunction !== undefined) { return cachedFunction; }
 
         const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false;
@@ -331,8 +273,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         v8Util.setHiddenValue(callIntoRenderer, 'location', meta.location);
         Object.defineProperty(callIntoRenderer, 'length', { value: meta.length });
 
-        v8Util.setRemoteCallbackFreer(callIntoRenderer, frameId, contextId, meta.id, sender);
-        rendererFunctions.set(objectId, callIntoRenderer);
+        setCachedRendererFunction(objectId, sender, frameId, callIntoRenderer);
         return callIntoRenderer;
       }
       default:
@@ -343,13 +284,13 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
 };
 
 const isRemoteModuleEnabledImpl = function (contents: electron.WebContents) {
-  const webPreferences = (contents as any).getLastWebPreferences() || {};
+  const webPreferences = contents.getLastWebPreferences() || {};
   return webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : false;
 };
 
 const isRemoteModuleEnabledCache = new WeakMap();
 
-const isRemoteModuleEnabled = function (contents: electron.WebContents) {
+export const isRemoteModuleEnabled = function (contents: electron.WebContents) {
   if (!isRemoteModuleEnabledCache.has(contents)) {
     isRemoteModuleEnabledCache.set(contents, isRemoteModuleEnabledImpl(contents));
   }
@@ -397,11 +338,12 @@ const logStack = function (contents: electron.WebContents, code: string, stack: 
 
 handleRemoteCommand('ELECTRON_BROWSER_WRONG_CONTEXT_ERROR', function (event, contextId, passedContextId, id) {
   const objectId: [string, number] = [passedContextId, id];
-  if (!rendererFunctions.has(objectId)) {
+  const cachedFunction = getCachedRendererFunction(objectId);
+  if (cachedFunction === undefined) {
     // Do nothing if the error has already been reported before.
     return;
   }
-  removeRemoteListenersAndLogWarning(event.sender, rendererFunctions.get(objectId)!);
+  removeRemoteListenersAndLogWarning(event.sender, cachedFunction);
 });
 
 handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, moduleName, stack) {
@@ -557,14 +499,10 @@ handleRemoteCommand('ELECTRON_BROWSER_MEMBER_GET', function (event, contextId, i
   return valueToMeta(event.sender, contextId, obj[name]);
 });
 
-handleRemoteCommand('ELECTRON_BROWSER_DEREFERENCE', function (event, contextId, id, rendererSideRefCount) {
-  objectsRegistry.remove(event.sender, contextId, id, rendererSideRefCount);
+handleRemoteCommand('ELECTRON_BROWSER_DEREFERENCE', function (event, contextId, id) {
+  objectsRegistry.remove(event.sender, contextId, id);
 });
 
 handleRemoteCommand('ELECTRON_BROWSER_CONTEXT_RELEASE', (event, contextId) => {
   objectsRegistry.clear(event.sender, contextId);
 });
-
-module.exports = {
-  isRemoteModuleEnabled
-};

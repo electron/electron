@@ -39,6 +39,7 @@
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
@@ -684,6 +685,10 @@ void App::OnUpdateUserActivityState(bool* prevent_default,
 void App::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
+
+void App::OnDidBecomeActive() {
+  Emit("did-become-active");
+}
 #endif
 
 bool App::CanCreateWindow(
@@ -815,7 +820,7 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   content::WebContents* web_contents =
       ElectronBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
   if (web_contents) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     WebContents::FromOrCreate(isolate, web_contents);
   }
@@ -1491,6 +1496,11 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+#if !defined(OS_LINUX)
+      .SetMethod(
+          "getApplicationInfoForProtocol",
+          base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
+#endif
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))

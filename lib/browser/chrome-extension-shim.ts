@@ -1,23 +1,21 @@
-'use strict';
-
 // This is a temporary shim to aid in transition from the old
 // BrowserWindow-based extensions stuff to the new native-backed extensions
 // API.
 
-const { app, session, BrowserWindow, deprecate } = require('electron');
+import { app, session, BrowserWindow, deprecate } from 'electron';
 
 app.whenReady().then(function () {
-  const addExtension = function (srcDirectory) {
+  const addExtension = function (srcDirectory: string) {
     return session.defaultSession.loadExtension(srcDirectory);
   };
 
-  const removeExtension = function (name) {
+  const removeExtension = function (name: string) {
     const extension = session.defaultSession.getAllExtensions().find(e => e.name === name);
     if (extension) { session.defaultSession.removeExtension(extension.id); }
   };
 
   const getExtensions = function () {
-    const extensions = {};
+    const extensions: Record<string, any> = {};
     session.defaultSession.getAllExtensions().forEach(e => {
       extensions[e.name] = e;
     });

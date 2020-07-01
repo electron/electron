@@ -11,7 +11,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -209,21 +209,17 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
-    it('prevents the second launch of app', function (done) {
+    it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
       const first = cp.spawn(process.execPath, [appPath]);
-      first.once('exit', code => {
-        expect(code).to.equal(0);
-      });
+      await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
-      first.stdout.once('data', () => {
-        const second = cp.spawn(process.execPath, [appPath]);
-        second.once('exit', code => {
-          expect(code).to.equal(1);
-          done();
-        });
-      });
+      const second = cp.spawn(process.execPath, [appPath]);
+      const [code2] = await emittedOnce(second, 'exit');
+      expect(code2).to.equal(1);
+      const [code1] = await emittedOnce(first, 'exit');
+      expect(code1).to.equal(0);
     });
 
     it('passes arguments to the second-instance event', async () => {
@@ -973,6 +969,23 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+    it('returns promise rejection for a bogus protocol', async function () {
+      await expect(
+        app.getApplicationInfoForProtocol('bogus-protocol://')
+      ).to.eventually.be.rejectedWith(
+        'Unable to retrieve installation path to app'
+      );
+    });
+
+    it('returns resolved promise with appPath, displayName and icon', async function () {
+      const appInfo = await app.getApplicationInfoForProtocol('https://');
+      expect(appInfo.path).not.to.be.undefined();
+      expect(appInfo.name).not.to.be.undefined();
+      expect(appInfo.icon).not.to.be.undefined();
+    });
+  });
+
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
@@ -986,34 +999,28 @@ describe('app module', () => {
       }
     });
 
-    it('does not launch for argument following a URL', done => {
+    it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
       const first = cp.spawn(process.execPath, [appPath, 'electron-test:?', 'abc']);
-      first.once('exit', code => {
-        expect(code).to.not.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.not.equal(123);
     });
 
-    it('launches successfully for argument following a file path', done => {
+    it('launches successfully for argument following a file path', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, 'e:\\abc', 'abc']);
-      first.once('exit', code => {
-        expect(code).to.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.equal(123);
     });
 
-    it('launches successfully for multiple URIs following --', done => {
+    it('launches successfully for multiple URIs following --', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata']);
-      first.once('exit', code => {
-        expect(code).to.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.equal(123);
     });
   });
 
@@ -1116,7 +1123,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getGPUInfo() API', () => {
+  // FIXME https://github.com/electron/electron/issues/24224
+  ifdescribe(process.platform !== 'linux')('getGPUInfo() API', () => {
     const appPath = path.join(fixturesPath, 'api', 'gpu-info.js');
 
     const getGPUInfo = async (type: string) => {
@@ -1297,7 +1305,7 @@ describe('app module', () => {
 
       it('keeps references to the menu', () => {
         app.dock.setMenu(new Menu());
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
     });

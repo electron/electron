@@ -112,16 +112,12 @@ void OffScreenVideoConsumer::OnFrameCaptured(
       new FramePinner{std::move(mapping), callbacks_remote.Unbind()});
   bitmap.setImmutable();
 
-  media::VideoFrameMetadata metadata;
-  metadata.MergeInternalValuesFrom(info->metadata);
-  gfx::Rect damage_rect;
-
-  auto UPDATE_RECT = media::VideoFrameMetadata::CAPTURE_UPDATE_RECT;
-  if (!metadata.GetRect(UPDATE_RECT, &damage_rect) || damage_rect.IsEmpty()) {
-    damage_rect = content_rect;
+  base::Optional<gfx::Rect> update_rect = info->metadata.capture_update_rect;
+  if (!update_rect.has_value() || update_rect->IsEmpty()) {
+    update_rect = content_rect;
   }
 
-  callback_.Run(damage_rect, bitmap);
+  callback_.Run(*update_rect, bitmap);
 }
 
 void OffScreenVideoConsumer::OnStopped() {}

@@ -8,7 +8,7 @@ node modules will have different (wrong) ideas about how v8 structs are laid
 out in memory on 64-bit machines, and will summarily fail to work.
 
 diff --git a/common.gypi b/common.gypi
-index 71b20b28d923c39f047bf57e05558879c9d002ec..0a10a734d48e0b45b0ed4502927616e46633dafb 100644
+index 572597ef60c13dfc332c7da49b606867f0561c54..db8dc7452552beb6a758d1b6175bd402b6a09d24 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -71,6 +71,9 @@
@@ -31,7 +31,7 @@ index 71b20b28d923c39f047bf57e05558879c9d002ec..0a10a734d48e0b45b0ed4502927616e4
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
        }],
-@@ -374,6 +380,12 @@
+@@ -378,6 +384,12 @@
            }],
          ],
        }],

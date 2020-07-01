@@ -8,7 +8,7 @@ import { syncMethods, asyncMethods, properties } from '@electron/internal/common
 import { deserialize } from '@electron/internal/common/type-utils';
 const { webFrame } = electron;
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // ID generator.
 let nextId = 0;
