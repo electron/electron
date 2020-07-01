@@ -1,13 +1,14 @@
-'use strict';
-
-const { app } = require('electron');
-const { EventEmitter } = require('events');
-const squirrelUpdate = require('@electron/internal/browser/api/auto-updater/squirrel-update-win');
+import { app } from 'electron';
+import { EventEmitter } from 'events';
+import * as squirrelUpdate from './squirrel-update-win';
 
 class AutoUpdater extends EventEmitter {
+  updateAvailable: boolean = false;
+  updateURL: string | null = null;
+
   quitAndInstall () {
     if (!this.updateAvailable) {
-      return this.emitError('No update available, can\'t quit and install');
+      return this.emitError(new Error('No update available, can\'t quit and install'));
     }
     squirrelUpdate.processStart();
     app.quit();
@@ -17,8 +18,8 @@ class AutoUpdater extends EventEmitter {
     return this.updateURL;
   }
 
-  setFeedURL (options) {
-    let updateURL;
+  setFeedURL (options: { url: string } | string) {
+    let updateURL: string;
     if (typeof options === 'object') {
       if (typeof options.url === 'string') {
         updateURL = options.url;
@@ -34,14 +35,15 @@ class AutoUpdater extends EventEmitter {
   }
 
   checkForUpdates () {
-    if (!this.updateURL) {
-      return this.emitError('Update URL is not set');
+    const url = this.updateURL;
+    if (!url) {
+      return this.emitError(new Error('Update URL is not set'));
     }
     if (!squirrelUpdate.supported()) {
-      return this.emitError('Can not find Squirrel');
+      return this.emitError(new Error('Can not find Squirrel'));
     }
     this.emit('checking-for-update');
-    squirrelUpdate.checkForUpdate(this.updateURL, (error, update) => {
+    squirrelUpdate.checkForUpdate(url, (error, update) => {
       if (error != null) {
         return this.emitError(error);
       }
@@ -50,7 +52,7 @@ class AutoUpdater extends EventEmitter {
       }
       this.updateAvailable = true;
       this.emit('update-available');
-      squirrelUpdate.update(this.updateURL, (error) => {
+      squirrelUpdate.update(url, (error) => {
         if (error != null) {
           return this.emitError(error);
         }
@@ -66,9 +68,9 @@ class AutoUpdater extends EventEmitter {
 
   // Private: Emit both error object and message, this is to keep compatibility
   // with Old APIs.
-  emitError (message) {
-    this.emit('error', new Error(message), message);
+  emitError (error: Error) {
+    this.emit('error', error, error.message);
   }
 }
 
-module.exports = new AutoUpdater();
+export default new AutoUpdater();

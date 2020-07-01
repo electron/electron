@@ -186,10 +186,10 @@ auto_filenames = {
 
   browser_bundle_deps = [
     "lib/browser/api/app.ts",
-    "lib/browser/api/auto-updater.js",
-    "lib/browser/api/auto-updater/auto-updater-native.js",
-    "lib/browser/api/auto-updater/auto-updater-win.js",
-    "lib/browser/api/auto-updater/squirrel-update-win.js",
+    "lib/browser/api/auto-updater.ts",
+    "lib/browser/api/auto-updater/auto-updater-native.ts",
+    "lib/browser/api/auto-updater/auto-updater-win.ts",
+    "lib/browser/api/auto-updater/squirrel-update-win.ts",
     "lib/browser/api/base-window.ts",
     "lib/browser/api/browser-view.ts",
     "lib/browser/api/browser-window.ts",
