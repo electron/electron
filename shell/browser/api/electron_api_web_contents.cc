@@ -1108,6 +1108,7 @@ void WebContents::OnElectronBrowserConnectionError() {
 void WebContents::Message(bool internal,
                           const std::string& channel,
                           blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", bindings_.dispatch_context(), base::nullopt,
@@ -1118,6 +1119,7 @@ void WebContents::Invoke(bool internal,
                          const std::string& channel,
                          blink::CloneableMessage arguments,
                          InvokeCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", bindings_.dispatch_context(),
                  std::move(callback), internal, channel, std::move(arguments));
@@ -1127,6 +1129,7 @@ void WebContents::MessageSync(bool internal,
                               const std::string& channel,
                               blink::CloneableMessage arguments,
                               MessageSyncCallback callback) {
+  TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", bindings_.dispatch_context(),
@@ -1138,6 +1141,7 @@ void WebContents::MessageTo(bool internal,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
 
@@ -1149,6 +1153,7 @@ void WebContents::MessageTo(bool internal,
 
 void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments) {
+  TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", bindings_.dispatch_context(),
                  base::nullopt, channel, std::move(arguments));
