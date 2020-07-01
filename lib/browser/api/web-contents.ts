@@ -124,11 +124,11 @@ WebContents.prototype.send = function (channel, ...args) {
   return this._send(internal, sendToAll, channel, args);
 };
 
-WebContents.prototype.postMessage = function (channel, message, transfer) {
-  if (Array.isArray(transfer)) {
-    transfer = transfer.map(o => o instanceof MessagePortMain ? o._internalPort : o);
+WebContents.prototype.postMessage = function (...args) {
+  if (Array.isArray(args[2])) {
+    args[2] = args[2].map(o => o instanceof MessagePortMain ? o._internalPort : o);
   }
-  this._postMessage(channel, message, transfer);
+  this._postMessage(...args);
 };
 
 WebContents.prototype._sendInternal = function (channel, ...args) {
