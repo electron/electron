@@ -7,6 +7,7 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
+#include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
@@ -143,7 +144,7 @@ void SystemPreferences::InitializeWindow() {
   // receive broadcast messages like "WM_DWMCOLORIZATIONCOLORCHANGED".
   window_ = CreateWindow(MAKEINTATOM(atom_), 0, WS_POPUP, 0, 0, 0, 0, 0, 0,
                          instance_, 0);
-  gfx::CheckWindowCreated(window_);
+  gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 }
 
