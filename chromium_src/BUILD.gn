@@ -93,6 +93,14 @@ static_library("chrome") {
     ]
   }
 
+  if (is_win) {
+    sources += [
+      "//chrome/browser/win/icon_reader_service.cc",
+      "//chrome/browser/win/icon_reader_service.h",
+    ]
+    public_deps += [ "//chrome/services/util_win:lib" ]
+  }
+
   if (enable_desktop_capturer) {
     sources += [
       "//chrome/browser/media/webrtc/desktop_media_list.h",
