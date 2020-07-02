@@ -47,7 +47,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
 
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
-                   std::unique_ptr<content::FileSelectListener> listener,
+                   scoped_refptr<content::FileSelectListener> listener,
                    blink::mojom::FileChooserParams::Mode mode)
       : render_frame_host_(render_frame_host),
         listener_(std::move(listener)),
@@ -218,7 +218,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void WebContentsDestroyed() override { render_frame_host_ = nullptr; }
 
   content::RenderFrameHost* render_frame_host_;
-  std::unique_ptr<content::FileSelectListener> listener_;
+  scoped_refptr<content::FileSelectListener> listener_;
   blink::mojom::FileChooserParams::Mode mode_;
 
   // DirectoryLister-specific members
@@ -304,7 +304,7 @@ WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   file_dialog::DialogSettings settings;
   settings.force_detached = offscreen_;
@@ -346,7 +346,7 @@ void WebDialogHelper::RunFileChooser(
 
 void WebDialogHelper::EnumerateDirectory(
     content::WebContents* web_contents,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& dir) {
   int types = base::FileEnumerator::FILES | base::FileEnumerator::DIRECTORIES |
               base::FileEnumerator::INCLUDE_DOT_DOT;
