@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "base/compiler_specific.h"
