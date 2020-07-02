@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/check.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/toast.h"
 
