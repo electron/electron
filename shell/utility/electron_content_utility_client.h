@@ -15,7 +15,7 @@
 #include "printing/buildflags/buildflags.h"
 
 namespace printing {
-class PrintHandler;
+class PrintingHandler;
 }
 
 namespace electron {
