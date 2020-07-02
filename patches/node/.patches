@@ -40,3 +40,4 @@ fix_don_t_preparemainexecution_twice.patch
 win_use_rtlgenrandom_from_advapi32_dll_directly.patch
 tools_update_certdata_txt.patch
 crypto_update_root_certificates.patch
+darwin_work_around_clock_jumping_back_in_time.patch
