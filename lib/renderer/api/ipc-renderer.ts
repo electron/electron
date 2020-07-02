@@ -31,4 +31,8 @@ if (!ipcRenderer.send) {
   };
 }
 
+ipcRenderer.postMessage = function (channel: string, message: any, transferables: any) {
+  return ipc.postMessage(channel, message, transferables);
+};
+
 export default ipcRenderer;
