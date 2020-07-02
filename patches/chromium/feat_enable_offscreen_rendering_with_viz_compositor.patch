@@ -107,10 +107,10 @@ index 0979770409131aed4bea76d33b2748c01dde9541..d256ec42bb2154628de7d8d08cc8cf4b
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index da8936a87cfe156a90952c1ca79d9faf6ef2cd1f..6fd321aaf610ee985868af62b0e856f19e8be264 100644
+index 08dc8bd190b1506b9ec1c8ae39bf3ee56a1203e2..5361890756fa39b825da4698725ce221e0ca2a26 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -21,6 +21,7 @@
+@@ -22,6 +22,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -118,7 +118,7 @@ index da8936a87cfe156a90952c1ca79d9faf6ef2cd1f..6fd321aaf610ee985868af62b0e856f1
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -34,6 +35,7 @@
+@@ -35,6 +36,7 @@
  #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
@@ -126,7 +126,7 @@ index da8936a87cfe156a90952c1ca79d9faf6ef2cd1f..6fd321aaf610ee985868af62b0e856f1
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -223,6 +225,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -224,6 +226,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

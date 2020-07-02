@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 2cf28550517cd4df7bd8a0cf8d954169acce5955..0c1358cc6ffb149ac640525a4e9383744b6e1ae8 100644
+index 1feca3a3d2d13278a8c11038177caa661cbab22c..1ca75dc4b5228077f6658919b36004bcac4103a5 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -15,6 +15,7 @@
@@ -30,10 +30,10 @@ index 2cf28550517cd4df7bd8a0cf8d954169acce5955..0c1358cc6ffb149ac640525a4e938374
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index bf6baff690af930acf19c2a544c8f00ab492bb8e..8d205a1b052c6d670c0c2e38852734c5320f62a8 100644
+index 44db58950f9c334aaea8a8fb1b076a53bbb53c97..74dcc48deeeaccf3b0e10fed894d29b322e40004 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1666,6 +1666,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1665,6 +1665,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,10 +43,10 @@ index bf6baff690af930acf19c2a544c8f00ab492bb8e..8d205a1b052c6d670c0c2e38852734c5
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b08fdaca5d59deb48d83b50d917c80908a2fa02f..e858b2fca4bb8fce0cf6dcb148c979ed96afdc7a 100644
+index 463503eaa057846790b1d9121ca7344cda44855c..d7fa11b23ab9ead3dd26b53a7ae865d6e35bfe44 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3588,6 +3588,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3583,6 +3583,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -59,7 +59,7 @@ index b08fdaca5d59deb48d83b50d917c80908a2fa02f..e858b2fca4bb8fce0cf6dcb148c979ed
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 353addcc1e7646e7ddc14a8d253d622ced94f34d..b62b7aafc2dcfa281cf82b9d8088b053db425417 100644
+index 6b36736a15d912941f55baf50eb493fdb2208169..c3552125187115bdfe9a98e24c6049930d21056f 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -920,6 +920,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
