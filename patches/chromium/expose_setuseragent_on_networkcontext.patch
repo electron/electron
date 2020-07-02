@@ -63,7 +63,7 @@ index 391a02c108debdd5e5572b4a666d30dc68ece76b..0d9c4cce09db485b5e750921eed703c7
    void SetEnableReferrers(bool enable_referrers) override;
  #if defined(OS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 577c2b431ae8026b34fa1d881b0b29db478dc213..6d15b6b5ff7b36b85f6b8200b76a32b285f0e675 100644
+index 73b790fab0f6c6377f8206960a478778ecf6e62c..ccac671f0e7e56c731cb9bd92bad788271419a7f 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1050,6 +1050,9 @@ interface NetworkContext {

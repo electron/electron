@@ -79,7 +79,7 @@ index 2c0252c1342e62a142558c4ec48829404b0428b4..c145ed92de9fab565bb10ee0f2d92c8c
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
-index 7529cea5e8ccb5d9dbf3d9bacd7f637716f84909..9ec24e7e9985ab481612c7679d2a24bccbfbb4d8 100644
+index c42ed24c2288675f88f0e6262524687f6f02a221..a594b717c1ee060ffafd79352d47d64e6bcb0703 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 @@ -362,6 +362,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(

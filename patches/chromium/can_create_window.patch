@@ -21,7 +21,7 @@ index 2b58ad65bf2d87fcbaf889c32a2d5efa86abff4a..29bc91a5f9fcddf246399afdeafdf307
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4f56a70f997e037e4aea33cae97a69655328a249..31398279fbddfdf5d789edee7924ab768a167801 100644
+index cf4d0c48945ecced5ecd9ef03a4f2b5eff844511..391b3d240c132ae321562f0d7850c44d1e950650 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3082,9 +3082,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -87,7 +87,7 @@ index 58367f4e696b29df1cab2336229bc408d3ba63e6..9184695ea198b0e1b41c9bb456317ca2
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 50936cd961bf4d0e026ee3d150a34892e94601dd..f62a39dc9904f4edd7cc4e407c3d1ec58c0853c8 100644
+index b30f242d2b61b10f68f016bc1e93419b520d3b06..bfbad0007797d9c3fff78fae121aa2546b22eb95 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,10 +109,10 @@ index 50936cd961bf4d0e026ee3d150a34892e94601dd..f62a39dc9904f4edd7cc4e407c3d1ec5
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3ad852e5d 100644
+index 39c834d95000ce5c189d810970fc85032c9509d2..8101442f9ad81fe84d9f0e8f302184349f522541 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -16,6 +16,7 @@
+@@ -17,6 +17,7 @@
  #include "base/strings/string16.h"
  #include "build/build_config.h"
  #include "content/common/content_export.h"
@@ -120,7 +120,7 @@ index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3
  #include "content/public/browser/bluetooth_chooser.h"
  #include "content/public/browser/bluetooth_scanning_prompt.h"
  #include "content/public/browser/eye_dropper.h"
-@@ -337,6 +338,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -338,6 +339,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const std::string& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 7cccc33174e66eb40fd87ad3c35248f557e928cb..69147d1b199d4e4e6b3a84bf21c686432ba45cbb 100644
+index e00ab34b1f114b0ecca066e01ed3a657977b411c..f198975f504aa086596a9a4f63841fe01aee78e8 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1973,6 +1973,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1970,6 +1970,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);

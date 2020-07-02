@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 6d15b6b5ff7b36b85f6b8200b76a32b285f0e675..c21234572976a6de7db5b0f2f7f44ec770832178 100644
+index ccac671f0e7e56c731cb9bd92bad788271419a7f..cfea0e5dbc28f1a4cdfea36372ce7f34f15c4de7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
@@ -128,7 +128,7 @@ index 1c8a9ce4ba5f41cb7a4d415337ff087894fee3df..1ea5d86177ff568a13e3d10767316ae4
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index c8f02a3760f938c772c9e81afff8b37e49a73cbd..7e5bb5d1384488de2dee3672f933eba643dc14f7 100644
+index 75ae8488efa7e5acfda0b21029657b525fa95f86..5dce71ee5efc97f9f63d0b5f236dccdfb05cfc79 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
 @@ -75,6 +75,7 @@ URLLoaderFactory::URLLoaderFactory(
@@ -139,7 +139,7 @@ index c8f02a3760f938c772c9e81afff8b37e49a73cbd..7e5bb5d1384488de2dee3672f933eba6
        cors_url_loader_factory_(cors_url_loader_factory),
        cookie_observer_(std::move(params_->cookie_observer)) {
    DCHECK(context);
-@@ -270,6 +271,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -254,6 +255,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        std::move(keepalive_statistics_recorder),
        std::move(network_usage_accumulator),
        header_client_.is_bound() ? header_client_.get() : nullptr,
