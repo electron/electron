@@ -97,15 +97,15 @@ void ElectronExtensionsClient::FilterHostPermissions(
   NOTIMPLEMENTED();
 }
 
-void ElectronExtensionsClient::SetScriptingWhitelist(
-    const ExtensionsClient::ScriptingWhitelist& whitelist) {
-  scripting_whitelist_ = whitelist;
+void ElectronExtensionsClient::SetScriptingAllowlist(
+    const ExtensionsClient::ScriptingAllowlist& allowlist) {
+  scripting_allowlist_ = allowlist;
 }
 
-const ExtensionsClient::ScriptingWhitelist&
-ElectronExtensionsClient::GetScriptingWhitelist() const {
+const ExtensionsClient::ScriptingAllowlist&
+ElectronExtensionsClient::GetScriptingAllowlist() const {
   // TODO(jamescook): Real whitelist.
-  return scripting_whitelist_;
+  return scripting_allowlist_;
 }
 
 extensions::URLPatternSet
