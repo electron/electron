@@ -14,9 +14,9 @@
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "printing/buildflags/buildflags.h"
 
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
-#include "chrome/utility/printing_handler.h"
-#endif
+namespace printing {
+class PrintHandler;
+}
 
 namespace electron {
 
@@ -31,7 +31,7 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
   mojo::ServiceFactory* GetIOThreadServiceFactory() override;
 
  private:
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
   std::unique_ptr<printing::PrintingHandler> printing_handler_;
 #endif
 
