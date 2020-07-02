@@ -193,5 +193,39 @@ describe('debugger module', () => {
         w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       });
     });
+
+    it('uses empty sessionId by default', async () => {
+      w.webContents.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      const onMessage = emittedOnce(w.webContents.debugger, 'message');
+      await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
+      const [, method, params, sessionId] = await onMessage;
+      expect(method).to.equal('Target.targetCreated');
+      expect(params.targetInfo.targetId).to.not.be.empty();
+      expect(sessionId).to.be.empty();
+      w.webContents.debugger.detach();
+    });
+
+    it('creates unique session id for each target', (done) => {
+      w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+      w.webContents.debugger.attach();
+      let session: String;
+
+      w.webContents.debugger.on('message', (event, ...args) => {
+        const [method, params, sessionId] = args;
+        if (method === 'Target.targetCreated') {
+          w.webContents.debugger.sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true }).then(result => {
+            session = result.sessionId;
+            w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
+          });
+        }
+        if (method === 'Debugger.scriptParsed') {
+          expect(sessionId).to.equal(session);
+          w.webContents.debugger.detach();
+          done();
+        }
+      });
+      w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
+    });
   });
 });
