@@ -4,7 +4,6 @@ Date: Fri, 3 Jul 2020 17:27:20 +0200
 Subject: Backport 1019161
  (https://chromium-review.googlesource.com/c/chromium/src/+/2125690)
 
-
 diff --git a/extensions/browser/service_worker_task_queue.cc b/extensions/browser/service_worker_task_queue.cc
 index dedb8c39f7db8c416540cdb930683778c2a9a5a5..3519926a06a35b375e13695d59fafce0c7f49c81 100644
 --- a/extensions/browser/service_worker_task_queue.cc

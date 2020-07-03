@@ -4,7 +4,6 @@ Date: Fri, 3 Jul 2020 17:05:10 +0200
 Subject: Backport 1063177
  (https://chromium-review.googlesource.com/c/chromium/src/+/2111393/)
 
-
 diff --git a/extensions/browser/api/declarative_net_request/file_sequence_helper.cc b/extensions/browser/api/declarative_net_request/file_sequence_helper.cc
 index b4e340f3a865b79a9c8a1aa38fd86eb4db043c3c..2579f39d4b2f10b665f95febe2c69409188529ff 100644
 --- a/extensions/browser/api/declarative_net_request/file_sequence_helper.cc
