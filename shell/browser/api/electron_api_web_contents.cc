@@ -982,6 +982,10 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+  v8::HandleScope handle_scope(isolate());
+  mate::Dictionary details = mate::Dictionary::CreateEmpty(isolate());
+  details.Set("reason", status);
+  Emit("render-process-gone", details);
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,

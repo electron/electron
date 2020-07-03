@@ -55,6 +55,42 @@ namespace network {
 class ResourceRequestBody;
 }
 
+namespace mate {
+
+template <>
+struct Converter<base::TerminationStatus> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::TerminationStatus& status) {
+    switch (status) {
+      case base::TERMINATION_STATUS_NORMAL_TERMINATION:
+        return mate::ConvertToV8(isolate, "clean-exit");
+      case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
+        return mate::ConvertToV8(isolate, "abnormal-exit");
+      case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
+        return mate::ConvertToV8(isolate, "killed");
+      case base::TERMINATION_STATUS_PROCESS_CRASHED:
+        return mate::ConvertToV8(isolate, "crashed");
+      case base::TERMINATION_STATUS_STILL_RUNNING:
+        return mate::ConvertToV8(isolate, "still-running");
+      case base::TERMINATION_STATUS_LAUNCH_FAILED:
+        return mate::ConvertToV8(isolate, "launch-failed");
+      case base::TERMINATION_STATUS_OOM:
+        return mate::ConvertToV8(isolate, "oom");
+#if defined(OS_WIN)
+      case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
+        return mate::ConvertToV8(isolate, "integrity-failure");
+#endif
+      case base::TERMINATION_STATUS_MAX_ENUM:
+        NOTREACHED();
+        return mate::ConvertToV8(isolate, "");
+    }
+    NOTREACHED();
+    return mate::ConvertToV8(isolate, "");
+  }
+};
+
+}  // namespace mate
+
 namespace electron {
 
 class ElectronBrowserContext;
