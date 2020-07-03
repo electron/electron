@@ -369,7 +369,7 @@ Returns:
 
 Emitted when the GPU process crashes or is killed.
 
-### Event: 'renderer-process-crashed'
+### Event: 'renderer-process-crashed' _Deprecated_
 
 Returns:
 
