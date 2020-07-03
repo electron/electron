@@ -497,16 +497,17 @@ source_set("electron_lib") {
     } else {
       libs += [
         "Squirrel.framework",
-        "ReactiveCocoa.framework",
+        "ReactiveObjC.framework",
         "Mantle.framework",
       ]
-      cflags_objcc = [
-        "-F",
-        rebase_path("external_binaries", root_build_dir),
+
+      deps += [
+        "//third_party/squirrel.mac:reactiveobjc_framework+link",
+        "//third_party/squirrel.mac:squirrel_framework+link",
       ]
 
-      # ReactiveCocoa which is used by Squirrel requires using __weak.
-      cflags_objcc += [ "-fobjc-weak" ]
+      # ReactiveObjC which is used by Squirrel requires using __weak.
+      cflags_objcc = [ "-fobjc-weak" ]
     }
   }
   if (is_linux) {
@@ -811,8 +812,6 @@ if (is_mac) {
     }
 
     ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
@@ -863,17 +862,49 @@ if (is_mac) {
     }
   }
 
+  template("stripped_framework") {
+    action(target_name) {
+      assert(defined(invoker.framework))
+
+      script = "//electron/build/strip_framework.py"
+
+      forward_variables_from(invoker, [ "deps" ])
+      inputs = [ "$root_out_dir/" + invoker.framework ]
+      outputs = [ "$target_out_dir/stripped_frameworks/" + invoker.framework ]
+
+      args = rebase_path(inputs) + rebase_path(outputs)
+    }
+  }
+
+  stripped_framework("stripped_mantle_framework") {
+    framework = "Mantle.framework"
+    deps = [ "//third_party/squirrel.mac:mantle_framework" ]
+  }
+
+  stripped_framework("stripped_reactiveobjc_framework") {
+    framework = "ReactiveObjC.framework"
+    deps = [ "//third_party/squirrel.mac:reactiveobjc_framework" ]
+  }
+
+  stripped_framework("stripped_squirrel_framework") {
+    framework = "Squirrel.framework"
+    deps = [ "//third_party/squirrel.mac:squirrel_framework" ]
+  }
+
   bundle_data("electron_app_framework_bundle_data") {
     sources = [ "$root_out_dir/$electron_framework_name.framework" ]
     if (!is_mas_build) {
-      sources += [
-        "external_binaries/Mantle.framework",
-        "external_binaries/ReactiveCocoa.framework",
-        "external_binaries/Squirrel.framework",
-      ]
+      sources += get_target_outputs(":stripped_mantle_framework") +
+                 get_target_outputs(":stripped_reactiveobjc_framework") +
+                 get_target_outputs(":stripped_squirrel_framework")
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
-    public_deps = [ ":electron_framework+link" ]
+    public_deps = [
+      ":electron_framework+link",
+      ":stripped_mantle_framework",
+      ":stripped_reactiveobjc_framework",
+      ":stripped_squirrel_framework",
+    ]
 
     foreach(helper_params, content_mac_helpers) {
       sources +=
@@ -1179,18 +1210,6 @@ test("shell_browser_ui_unittests") {
     "//ui/base",
     "//ui/strings",
   ]
-
-  if (is_mac) {
-    # Resolve paths owing to different test executable locations
-    ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
-      "-rpath",
-      "@loader_path",
-      "-rpath",
-      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
-    ]
-  }
 }
 
 template("dist_zip") {
