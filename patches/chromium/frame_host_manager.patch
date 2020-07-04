@@ -42,10 +42,10 @@ index 6b03c07316eaab83a50afc123fc9f17b1c1dfa3b..e821571731e4e1a93f873477c7410de7
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index f279669b0ef94c178ac6950748ddeb551a5c41e0..92926d8cb46f1643881b92b8b027811f38b923de 100644
+index 3292b11834007d061b14fb84f1191b635672ab4f..0b62a799ed77404f18a66108400a5a8e14c60136 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1415,6 +1415,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1411,6 +1411,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -67,7 +67,7 @@ index f279669b0ef94c178ac6950748ddeb551a5c41e0..92926d8cb46f1643881b92b8b027811f
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4823,6 +4838,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4812,6 +4827,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index f279669b0ef94c178ac6950748ddeb551a5c41e0..92926d8cb46f1643881b92b8b027811f
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4836,10 +4852,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4825,10 +4841,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
