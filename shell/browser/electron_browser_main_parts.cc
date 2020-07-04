@@ -251,7 +251,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
       browser_(new Browser),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
-      electron_bindings_(new ElectronBindings(uv_default_loop())) {
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
