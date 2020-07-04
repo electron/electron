@@ -10,6 +10,7 @@ import * as stream from 'stream';
 import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { delay } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -31,12 +32,6 @@ const postData = {
   name: 'post test',
   type: 'string'
 };
-
-function delay (ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
 
 function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
@@ -309,8 +304,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.registerHttpProtocol(protocolName, (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax(protocolName + '://fake-host');
     });
@@ -601,8 +600,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.interceptHttpProtocol('http', (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax('http://fake-host');
     });
