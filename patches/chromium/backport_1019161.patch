@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <anbelen@microsoft.com>
+Date: Fri, 3 Jul 2020 17:27:20 +0200
+Subject: Backport 1019161
+ (https://chromium-review.googlesource.com/c/chromium/src/+/2125690)
+
+diff --git a/extensions/browser/service_worker_task_queue.cc b/extensions/browser/service_worker_task_queue.cc
+index dedb8c39f7db8c416540cdb930683778c2a9a5a5..3519926a06a35b375e13695d59fafce0c7f49c81 100644
+--- a/extensions/browser/service_worker_task_queue.cc
++++ b/extensions/browser/service_worker_task_queue.cc
+@@ -170,8 +170,17 @@ void ServiceWorkerTaskQueue::DidStartWorkerFail(
+     DCHECK(!base::Contains(pending_tasks_, context_id));
+     return;
+   }
+-  // TODO(lazyboy): Handle failure cases.
+-  DCHECK(false) << "DidStartWorkerFail: " << context_id.first.extension_id();
++
++  if (g_test_observer) {
++    g_test_observer->DidStartWorkerFail(context_id.first.extension_id(),
++                                        pending_tasks_[context_id].size());
++  }
++
++  pending_tasks_.erase(context_id);
++  // TODO(https://crbug/1062936): Needs more thought: extension would be in
++  // perma-broken state after this as the registration wouldn't be stored if
++  // this happens.
++  LOG(ERROR) << "DidStartWorkerFail " << context_id.first.extension_id();
+ }
+ 
+ void ServiceWorkerTaskQueue::DidInitializeServiceWorkerContext(
+@@ -530,6 +539,16 @@ ServiceWorkerTaskQueue::GetOrCreateWorkerState(const WorkerKey& worker_key) {
+   return &(iter->second);
+ }
+ 
++size_t ServiceWorkerTaskQueue::GetNumPendingTasksForTest(
++    const LazyContextId& lazy_context_id) {
++  auto current_sequence = GetCurrentSequence(lazy_context_id.extension_id());
++  if (!current_sequence)
++    return 0u;
++  const SequencedContextId context_id(lazy_context_id, *current_sequence);
++  auto iter = pending_tasks_.find(context_id);
++  return iter == pending_tasks_.end() ? 0u : iter->second.size();
++}
++
+ ServiceWorkerTaskQueue::WorkerState* ServiceWorkerTaskQueue::GetWorkerState(
+     const WorkerKey& worker_key) {
+   auto iter = worker_state_map_.find(worker_key);
+diff --git a/extensions/browser/service_worker_task_queue.h b/extensions/browser/service_worker_task_queue.h
+index 2e5e215bd193098fe4b183a60df5d3c6d1dc8d19..953a72d3c4fe0ce396e0399c890518068f9dbde7 100644
+--- a/extensions/browser/service_worker_task_queue.h
++++ b/extensions/browser/service_worker_task_queue.h
+@@ -121,7 +121,9 @@ class ServiceWorkerTaskQueue : public KeyedService,
+     // |will_register_service_worker| is true if a Service Worker will be
+     // registered.
+     virtual void OnActivateExtension(const ExtensionId& extension_id,
+-                                     bool will_register_service_worker) = 0;
++                                     bool will_register_service_worker) {}
++    virtual void DidStartWorkerFail(const ExtensionId& extension_id,
++                                    size_t num_pending_tasks) {}
+ 
+    private:
+     DISALLOW_COPY_AND_ASSIGN(TestObserver);
+@@ -129,6 +131,8 @@ class ServiceWorkerTaskQueue : public KeyedService,
+ 
+   static void SetObserverForTest(TestObserver* observer);
+ 
++  size_t GetNumPendingTasksForTest(const LazyContextId& lazy_context_id);
++
+  private:
+   // Unique identifier for an extension's activation->deactivation span.
+   using ActivationSequence = int;
+diff --git a/extensions/browser/service_worker_task_queue_factory.cc b/extensions/browser/service_worker_task_queue_factory.cc
+index b62d2c1c1e31414a3b26160c95cfcc6996995dff..29ff874ef47be3f7172bda276a7dba519a2f1b9b 100644
+--- a/extensions/browser/service_worker_task_queue_factory.cc
++++ b/extensions/browser/service_worker_task_queue_factory.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "components/keyed_service/content/browser_context_dependency_manager.h"
+ #include "extensions/browser/extension_registry_factory.h"
++#include "extensions/browser/process_manager_factory.h"
+ #include "extensions/browser/service_worker_task_queue.h"
+ 
+ using content::BrowserContext;
+@@ -28,6 +29,7 @@ ServiceWorkerTaskQueueFactory::ServiceWorkerTaskQueueFactory()
+           "ServiceWorkerTaskQueue",
+           BrowserContextDependencyManager::GetInstance()) {
+   DependsOn(ExtensionRegistryFactory::GetInstance());
++  DependsOn(ProcessManagerFactory::GetInstance());
+ }
+ 
+ ServiceWorkerTaskQueueFactory::~ServiceWorkerTaskQueueFactory() {}
