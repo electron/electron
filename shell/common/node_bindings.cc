@@ -119,7 +119,7 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
     error = uv_loop_close(loop);
   }
 
-  DCHECK(error == 0);
+  DCHECK_EQ(error, 0);
 }
 
 bool g_is_initialized = false;
