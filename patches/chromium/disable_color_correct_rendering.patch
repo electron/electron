@@ -250,20 +250,6 @@ index e5a82f46cd58b0da9959930ee85303e4a1530425..753b926fbe0c6a3ef2b2e244d7f80f4f
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
      service_manager::switches::kDisableSeccompFilterSandbox,
-diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
-index 32d3c35466fc8210615cac02e12576903ce0abcc..34facef5e15d482e552f01612ad974471f9dc30c 100644
---- a/content/renderer/render_widget.cc
-+++ b/content/renderer/render_widget.cc
-@@ -1902,6 +1902,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
-   settings.main_frame_before_activation_enabled =
-       cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
- 
-+  settings.enable_color_correct_rendering =
-+    !cmd.HasSwitch(switches::kDisableColorCorrectRendering);
-+
-   // Checkerimaging is not supported for synchronous single-threaded mode, which
-   // is what the renderer uses if its not threaded.
-   settings.enable_checker_imaging =
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
@@ -308,6 +294,20 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
    return CanvasColorSpaceToGfxColorSpace(color_space_);
  }
  
+diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
+index 43f047ee98c482cde3e1ea503623ead0b0a78215..a2f391f66f59a6522da77ce32b0735c8f3cc90f5 100644
+--- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
++++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
+@@ -176,6 +176,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+   settings.main_frame_before_activation_enabled =
+       cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
+ 
++  settings.enable_color_correct_rendering =
++      !cmd.HasSwitch(cc::switches::kDisableColorCorrectRendering);
++
+   // Checkerimaging is not supported for synchronous single-threaded mode, which
+   // is what the renderer uses if its not threaded.
+   settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc

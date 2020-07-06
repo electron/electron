@@ -30,7 +30,7 @@ index 1feca3a3d2d13278a8c11038177caa661cbab22c..1ca75dc4b5228077f6658919b36004bc
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 44db58950f9c334aaea8a8fb1b076a53bbb53c97..74dcc48deeeaccf3b0e10fed894d29b322e40004 100644
+index 57b44076b0f387aa080963cceb57d678c151becb..db34c9c30a6501cf73c767bfd375f67a472b9fd8 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1665,6 +1665,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
