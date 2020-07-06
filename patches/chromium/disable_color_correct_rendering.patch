@@ -295,15 +295,23 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 43f047ee98c482cde3e1ea503623ead0b0a78215..a2f391f66f59a6522da77ce32b0735c8f3cc90f5 100644
+index 43f047ee98c482cde3e1ea503623ead0b0a78215..254fd8490e1d9b59c6b056066bcbb9c779e6b6ff 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-@@ -176,6 +176,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -23,6 +23,7 @@
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/base/ui_base_switches.h"
++#include "ui/gfx/switches.h"
+ #include "ui/native_theme/native_theme_features.h"
+ #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
+ 
+@@ -176,6 +177,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
 +  settings.enable_color_correct_rendering =
-+      !cmd.HasSwitch(cc::switches::kDisableColorCorrectRendering);
++      !cmd.HasSwitch(::switches::kDisableColorCorrectRendering);
 +
    // Checkerimaging is not supported for synchronous single-threaded mode, which
    // is what the renderer uses if its not threaded.
