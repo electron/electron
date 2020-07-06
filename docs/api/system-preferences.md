@@ -416,7 +416,7 @@ This API itself will not protect your user data; rather, it is a mechanism to al
 
 Returns `Boolean` - `true` if the current process is a trusted accessibility client and `false` if it is not.
 
-### `systemPreferences.getMediaAccessStatus(mediaType)` _macOS_
+### `systemPreferences.getMediaAccessStatus(mediaType)` _Windows_ _macOS_
 
 * `mediaType` String - Can be `microphone`, `camera` or `screen`.
 
@@ -425,6 +425,9 @@ Returns `String` - Can be `not-determined`, `granted`, `denied`, `restricted` or
 This user consent was not required on macOS 10.13 High Sierra or lower so this method will always return `granted`.
 macOS 10.14 Mojave or higher requires consent for `microphone` and `camera` access.
 macOS 10.15 Catalina or higher requires consent for `screen` access.
+
+Windows 10 has a global setting controlling `microphone` and `camera` access for all win32 applications.
+It will always return `granted` for `screen` and for all media types on older versions of Windows.
 
 ### `systemPreferences.askForMediaAccess(mediaType)` _macOS_
 

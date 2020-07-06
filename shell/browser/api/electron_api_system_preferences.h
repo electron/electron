@@ -49,6 +49,10 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
+  // TODO(codebytere): Write tests for these methods once we
+  // are running tests on a Mojave machine
+  std::string GetMediaAccessStatus(const std::string& media_type,
+                                   gin_helper::Arguments* args);
 #endif
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
@@ -99,10 +103,6 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 
   static bool IsTrustedAccessibilityClient(bool prompt);
 
-  // TODO(codebytere): Write tests for these methods once we
-  // are running tests on a Mojave machine
-  std::string GetMediaAccessStatus(const std::string& media_type,
-                                   gin_helper::Arguments* args);
   v8::Local<v8::Promise> AskForMediaAccess(v8::Isolate* isolate,
                                            const std::string& media_type);
 

@@ -73,6 +73,8 @@ void SystemPreferences::BuildPrototype(
 #if defined(OS_WIN) || defined(OS_MACOSX)
       .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
+      .SetMethod("getMediaAccessStatus",
+                 &SystemPreferences::GetMediaAccessStatus)
 #endif
 
 #if defined(OS_WIN)
@@ -112,8 +114,6 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
       .SetMethod("isTrustedAccessibilityClient",
                  &SystemPreferences::IsTrustedAccessibilityClient)
-      .SetMethod("getMediaAccessStatus",
-                 &SystemPreferences::GetMediaAccessStatus)
       .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
 #endif
       .SetMethod("isInvertedColorScheme",
