@@ -1,12 +1,9 @@
-'use strict';
-
-const roles = require('@electron/internal/browser/api/menu-item-roles');
+import * as roles from './menu-item-roles';
+import { Menu, Event, BrowserWindow, WebContents } from 'electron';
 
 let nextCommandId = 0;
 
-const MenuItem = function (options) {
-  const { Menu } = require('electron');
-
+const MenuItem = function (this: any, options: any) {
   // Preserve extra fields specified by user
   for (const key in options) {
     if (!(key in this)) this[key] = options[key];
@@ -47,7 +44,7 @@ const MenuItem = function (options) {
   this.overrideReadOnlyProperty('commandId', ++nextCommandId);
 
   const click = options.click;
-  this.click = (event, focusedWindow, focusedWebContents) => {
+  this.click = (event: Event, focusedWindow: BrowserWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.
     if (this.type === 'checkbox' || this.type === 'radio') {
       this.checked = !this.checked;
@@ -69,13 +66,13 @@ MenuItem.prototype.getDefaultRoleAccelerator = function () {
   return roles.getDefaultAccelerator(this.role);
 };
 
-MenuItem.prototype.overrideProperty = function (name, defaultValue = null) {
+MenuItem.prototype.overrideProperty = function (name: string, defaultValue: any = null) {
   if (this[name] == null) {
     this[name] = defaultValue;
   }
 };
 
-MenuItem.prototype.overrideReadOnlyProperty = function (name, defaultValue) {
+MenuItem.prototype.overrideReadOnlyProperty = function (name: string, defaultValue: any) {
   this.overrideProperty(name, defaultValue);
   Object.defineProperty(this, name, {
     enumerable: true,
