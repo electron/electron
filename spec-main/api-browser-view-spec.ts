@@ -188,7 +188,9 @@ describe('BrowserView module', () => {
       await rc.remotely(() => {
         const { BrowserView, app } = require('electron');
         new BrowserView({})  // eslint-disable-line
-        app.quit();
+        setTimeout(() => {
+          app.quit();
+        });
       });
       const [code] = await emittedOnce(rc.process, 'exit');
       expect(code).to.equal(0);
@@ -197,14 +199,14 @@ describe('BrowserView module', () => {
     it('does not crash on exit if added to a browser window', async () => {
       const rc = await startRemoteControlApp();
       await rc.remotely(() => {
-        const { BrowserView, BrowserWindow } = require('electron');
+        const { app, BrowserView, BrowserWindow } = require('electron');
         const bv = new BrowserView();
         bv.webContents.loadURL('about:blank');
         const bw = new BrowserWindow({ show: false });
         bw.addBrowserView(bv);
-      });
-      rc.remotely(() => {
-        require('electron').app.quit();
+        setTimeout(() => {
+          app.quit();
+        });
       });
       const [code] = await emittedOnce(rc.process, 'exit');
       expect(code).to.equal(0);
