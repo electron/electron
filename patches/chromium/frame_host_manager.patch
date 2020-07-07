@@ -106,7 +106,7 @@ index b3853fd23d7b8a2179c1c2c4931fc0a87fca2d5c..240df49b1e7ea8a20034d05991f28cda
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 0016807829602fc175cffe1c42760f5aa75f0232..7b29974edcb5c05ebb43b782c25f9e8312c47aba 100644
+index 1062c667963d1da6b5b91aec1b49b539f943703e..b5ebff7779b69e13034c61f552cb2d598569eb0a 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2304,6 +2304,16 @@ bool RenderFrameHostManager::InitRenderView(
