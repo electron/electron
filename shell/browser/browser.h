@@ -110,6 +110,18 @@ class Browser : public WindowListObserver {
   bool SetBadgeCount(int count);
   int GetBadgeCount();
 
+  struct LaunchItem {
+    base::string16 name;
+    base::string16 path;
+    std::vector<base::string16> args;
+    base::string16 scope;
+    bool enabled = true;
+
+    LaunchItem();
+    ~LaunchItem();
+    LaunchItem(const LaunchItem&);
+  };
+
   // Set/Get the login item settings of the app
   struct LoginItemSettings {
     bool open_at_login = false;
@@ -117,8 +129,11 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
+    bool executableLaunchAtLogin = false;
+    bool enabled = false;
     base::string16 path;
     std::vector<base::string16> args;
+    std::vector<LaunchItem> launchItems;
 
     LoginItemSettings();
     ~LoginItemSettings();

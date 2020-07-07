@@ -346,6 +346,7 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Get("openAsHidden", &(out->open_as_hidden));
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
+    dict.Get("enabled", &(out->enabled));
     return true;
   }
 

@@ -1191,6 +1191,8 @@ Returns `Object`:
   * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
     the executable. Defaults to an empty array. Take care to wrap paths in
     quotes.
+  * `enabled` Boolean (optional) _Windows_ - if the app registry key is startup approved.
+  Defaults to `true`.
 
 Set the app's login item settings.
 

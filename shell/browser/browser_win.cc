@@ -512,16 +512,47 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  base::string16 key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
+
+  base::string16 startup_approved_key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
+      L"\\Run";
+  base::win::RegKey startup_approved_key(
+      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+  PCWSTR app_user_model_id = GetAppUserModelID();
+
+  base::string16 keyVal;
 
   if (settings.open_at_login) {
+    LOG(ERROR) << settings.open_at_login << std::endl;
     base::string16 exe = settings.path;
     if (FormatCommandLineString(&exe, settings.args)) {
-      key.WriteValue(GetAppUserModelID(), exe.c_str());
+      key.WriteValue(app_user_model_id, exe.c_str());
+
+      // make sure startupApproved is enabled when passing true value to enabled
+      // else make sure startupApproved entry is disabled
+      if (settings.enabled == TRUE) {
+        LOG(ERROR) << settings.enabled << std::endl;
+        LOG(ERROR) << "settings enabled write value" << std::endl;
+        startup_approved_key.WriteValue(app_user_model_id, exe.c_str());
+      } else {
+        if (!FAILED(
+                startup_approved_key.ReadValue(app_user_model_id, &keyVal))) {
+          LOG(ERROR) << "delete startup approved key" << std::endl;
+          startup_approved_key.DeleteValue(app_user_model_id);
+        }
+      }
     }
+    // if open at login is false, delete both values
   } else {
-    key.DeleteValue(GetAppUserModelID());
+    LOG(ERROR) << "open at login false" << std::endl;
+    if (!FAILED(startup_approved_key.ReadValue(app_user_model_id, &keyVal))) {
+      LOG(ERROR) << "delete startup approved" << std::endl;
+      startup_approved_key.DeleteValue(app_user_model_id);
+    }
+    key.DeleteValue(app_user_model_id);
   }
 }
 
