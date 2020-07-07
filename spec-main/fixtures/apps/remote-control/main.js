@@ -1,4 +1,4 @@
-const app = require('electron');
+const { app } = require('electron');
 const http = require('http');
 const v8 = require('v8');
 
