@@ -98,10 +98,15 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
+  v8::TryCatch try_catch(isolate);
+
   // Sets the window icon.
   gin::Handle<NativeImage> icon;
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
+
+  if (try_catch.HasCaught())
+    LOG(ERROR) << "Failed to convert NativeImage";
 #endif
 }
 
