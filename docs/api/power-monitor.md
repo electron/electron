@@ -8,11 +8,11 @@ Process: [Main](../glossary.md#main-process)
 
 The `powerMonitor` module emits the following events:
 
-### Event: 'suspend'
+### Event: 'suspend' _Linux_ _Windows_
 
 Emitted when the system is suspending.
 
-### Event: 'resume'
+### Event: 'resume' _Linux_ _Windows_
 
 Emitted when system is resuming.
 

@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './events-helpers';
 
 describe('asar package', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
@@ -10,7 +11,7 @@ describe('asar package', () => {
   afterEach(closeAllWindows);
 
   describe('asar protocol', () => {
-    it('sets __dirname correctly', function (done) {
+    it('sets __dirname correctly', async function () {
       after(function () {
         ipcMain.removeAllListeners('dirname');
       });
@@ -24,14 +25,13 @@ describe('asar package', () => {
         }
       });
       const p = path.resolve(asarDir, 'web.asar', 'index.html');
-      ipcMain.once('dirname', function (event, dirname) {
-        expect(dirname).to.equal(path.dirname(p));
-        done();
-      });
+      const dirnameEvent = emittedOnce(ipcMain, 'dirname');
       w.loadFile(p);
+      const [, dirname] = await dirnameEvent;
+      expect(dirname).to.equal(path.dirname(p));
     });
 
-    it('loads script tag in html', function (done) {
+    it('loads script tag in html', async function () {
       after(function () {
         ipcMain.removeAllListeners('ping');
       });
@@ -45,14 +45,13 @@ describe('asar package', () => {
         }
       });
       const p = path.resolve(asarDir, 'script.asar', 'index.html');
+      const ping = emittedOnce(ipcMain, 'ping');
       w.loadFile(p);
-      ipcMain.once('ping', function (event, message) {
-        expect(message).to.equal('pong');
-        done();
-      });
+      const [, message] = await ping;
+      expect(message).to.equal('pong');
     });
 
-    it('loads video tag in html', function (done) {
+    it('loads video tag in html', async function () {
       this.timeout(60000);
 
       after(function () {
@@ -69,14 +68,12 @@ describe('asar package', () => {
       });
       const p = path.resolve(asarDir, 'video.asar', 'index.html');
       w.loadFile(p);
-      ipcMain.on('asar-video', function (event, message, error) {
-        if (message === 'ended') {
-          expect(error).to.be.null();
-          done();
-        } else if (message === 'error') {
-          done(error);
-        }
-      });
+      const [, message, error] = await emittedOnce(ipcMain, 'asar-video');
+      if (message === 'ended') {
+        expect(error).to.be.null();
+      } else if (message === 'error') {
+        throw new Error(error);
+      }
     });
   });
 });

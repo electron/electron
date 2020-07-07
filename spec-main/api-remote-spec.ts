@@ -344,7 +344,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   });
 
   describe('remote objects registry', () => {
-    it('does not dereference until the render view is deleted (regression)', (done) => {
+    it('does not dereference until the render view is deleted (regression)', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -353,12 +353,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         }
       });
 
-      ipcMain.once('error-message', (event, message) => {
-        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/);
-        done();
-      });
-
+      const message = emittedOnce(ipcMain, 'error-message');
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+      const [, msg] = await message;
+      expect(msg).to.match(/^Cannot call method 'getURL' on missing remote object/);
     });
   });
 

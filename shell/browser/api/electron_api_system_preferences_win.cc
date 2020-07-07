@@ -3,11 +3,14 @@
 // found in the LICENSE file.
 
 #include <dwmapi.h>
+#include <windows.devices.enumeration.h>
+#include <wrl/client.h>
 #include <iomanip>
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
 #include "base/win/windows_types.h"
+#include "base/win/core_winrt_util.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
@@ -20,6 +23,51 @@ namespace {
 
 const wchar_t kSystemPreferencesWindowClass[] =
     L"Electron_SystemPreferencesHostWindow";
+
+using ABI::Windows::Devices::Enumeration::DeviceAccessStatus;
+using ABI::Windows::Devices::Enumeration::DeviceClass;
+using ABI::Windows::Devices::Enumeration::IDeviceAccessInformation;
+using ABI::Windows::Devices::Enumeration::IDeviceAccessInformationStatics;
+using Microsoft::WRL::ComPtr;
+
+DeviceAccessStatus GetDeviceAccessStatus(DeviceClass device_class) {
+  ComPtr<IDeviceAccessInformationStatics> dev_access_info_statics;
+  HRESULT hr = base::win::GetActivationFactory<
+      IDeviceAccessInformationStatics,
+      RuntimeClass_Windows_Devices_Enumeration_DeviceAccessInformation>(
+      &dev_access_info_statics);
+  if (FAILED(hr)) {
+    VLOG(1) << "IDeviceAccessInformationStatics failed: " << hr;
+    return DeviceAccessStatus::DeviceAccessStatus_Allowed;
+  }
+
+  ComPtr<IDeviceAccessInformation> dev_access_info;
+  hr = dev_access_info_statics->CreateFromDeviceClass(device_class,
+                                                      &dev_access_info);
+  if (FAILED(hr)) {
+    VLOG(1) << "IDeviceAccessInformation failed: " << hr;
+    return DeviceAccessStatus::DeviceAccessStatus_Allowed;
+  }
+
+  auto status = DeviceAccessStatus::DeviceAccessStatus_Unspecified;
+  dev_access_info->get_CurrentStatus(&status);
+  return status;
+}
+
+std::string ConvertDeviceAccessStatus(DeviceAccessStatus value) {
+  switch (value) {
+    case DeviceAccessStatus::DeviceAccessStatus_Unspecified:
+      return "not-determined";
+    case DeviceAccessStatus::DeviceAccessStatus_Allowed:
+      return "granted";
+    case DeviceAccessStatus::DeviceAccessStatus_DeniedBySystem:
+      return "restricted";
+    case DeviceAccessStatus::DeviceAccessStatus_DeniedByUser:
+      return "denied";
+    default:
+      return "unknown";
+  }
+}
 
 }  // namespace
 
@@ -116,6 +164,24 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   return ToRGBHex(color_utils::GetSysSkColor(id));
+}
+
+std::string SystemPreferences::GetMediaAccessStatus(
+    const std::string& media_type,
+    gin_helper::Arguments* args) {
+  if (media_type == "camera") {
+    return ConvertDeviceAccessStatus(
+        GetDeviceAccessStatus(DeviceClass::DeviceClass_VideoCapture));
+  } else if (media_type == "microphone") {
+    return ConvertDeviceAccessStatus(
+        GetDeviceAccessStatus(DeviceClass::DeviceClass_AudioCapture));
+  } else if (media_type == "screen") {
+    return ConvertDeviceAccessStatus(
+        DeviceAccessStatus::DeviceAccessStatus_Allowed);
+  } else {
+    args->ThrowError("Invalid media type");
+    return std::string();
+  }
 }
 
 void SystemPreferences::InitializeWindow() {

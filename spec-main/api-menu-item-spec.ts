@@ -43,9 +43,13 @@ describe('MenuItems', () => {
       const menu = Menu.buildFromTemplate([{
         label: 'text',
         click: (item) => {
-          expect(item.constructor.name).to.equal('MenuItem');
-          expect(item.label).to.equal('text');
-          done();
+          try {
+            expect(item.constructor.name).to.equal('MenuItem');
+            expect(item.label).to.equal('text');
+            done();
+          } catch (e) {
+            done(e);
+          }
         }
       }]);
       menu._executeCommand({}, menu.items[0].commandId);
