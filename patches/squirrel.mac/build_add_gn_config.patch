@@ -1,0 +1,779 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 25 Jun 2020 14:39:52 -0700
+Subject: build: add GN config
+
+Adds BUILD.gn file and upgrades from ReactiveCocoa to ReactiveObjC
+
+diff --git a/.gitignore b/.gitignore
+index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db9a644a3a 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,6 +1,5 @@
+ # Xcode
+ .DS_Store
+-build/
+ *.pbxuser
+ !default.pbxuser
+ *.mode1v3
+@@ -16,3 +15,4 @@ profile
+ *.moved-aside
+ DerivedData
+ .idea/
++vendor
+diff --git a/BUILD.gn b/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c46d3a4704
+--- /dev/null
++++ b/BUILD.gn
+@@ -0,0 +1,236 @@
++assert(is_mac)
++
++import("//build/config/mac/rules.gni")
++import("build/xcrun.gni")
++import("filenames.gni")
++
++bundle_data("mantle_headers") {
++  sources = []
++  public_deps = []
++  sources += mantle_filenames.headers
++  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
++}
++
++mac_framework_bundle("mantle_framework") {
++  output_name = "Mantle"
++  framework_version = "A"
++  framework_contents = [
++    "Headers",
++    "Resources",
++  ]
++  info_plist = "vendor/Mantle/Mantle/Info.plist"
++  extra_substitutions = [ "CURRENT_PROJECT_VERSION=0.0.0" ]
++
++  configs -= [
++    "//build/config/compiler:chromium_code",
++    "//build/config/gcc:symbol_visibility_hidden",
++  ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  public_deps = [ ":mantle_headers" ]
++  deps = []
++  libs = [
++    "CoreData.framework",
++    "Foundation.framework",
++  ]
++  sources = mantle_filenames.headers + mantle_filenames.sources
++
++  include_dirs = [
++    "vendor/Mantle/Mantle",
++    "vendor/Mantle/Mantle/extobjc",
++  ]
++
++  cflags_objc = [
++    "-fobjc-arc",
++    "-Wno-block-capture-autoreleasing",
++  ]
++
++  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
++}
++
++dtrace_header_dir = "$target_gen_dir/dtrace"
++
++xcrun_action("reactiveobjc_signalprovider_dtrace") {
++  cmd = "dtrace"
++  inputs = [ "vendor/ReactiveObjC/ReactiveObjC/RACSignalProvider.d" ]
++  outputs = [ "$dtrace_header_dir/RACSignalProvider.h" ]
++  args = [
++           "-h",
++           "-s",
++         ] + rebase_path(inputs) + [ "-o" ] + rebase_path(outputs)
++}
++
++xcrun_action("reactiveobjc_disposableprovider_dtrace") {
++  cmd = "dtrace"
++  inputs =
++      [ "vendor/ReactiveObjC/ReactiveObjC/RACCompoundDisposableProvider.d" ]
++  outputs = [ "$dtrace_header_dir/RACCompoundDisposableProvider.h" ]
++  args = [
++           "-h",
++           "-s",
++         ] + rebase_path(inputs) + [ "-o" ] + rebase_path(outputs)
++}
++
++bundle_data("reactiveobjc_headers") {
++  sources = []
++  public_deps = []
++  sources += reactiveobjc_filenames.public_headers
++  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
++}
++
++mac_framework_bundle("reactiveobjc_framework") {
++  output_name = "ReactiveObjC"
++  framework_version = "A"
++  framework_contents = [
++    "Headers",
++    "Resources",
++  ]
++  info_plist = "vendor/ReactiveObjC/ReactiveObjC/Info.plist"
++  extra_substitutions = [
++    "CURRENT_PROJECT_VERSION=0.0.0",
++    "PRODUCT_BUNDLE_IDENTIFIER=com.electron.reactive",
++  ]
++  defines = [ "BUILDING_RAC_FRAMEWORK=1" ]
++
++  configs -= [
++    "//build/config/compiler:chromium_code",
++    "//build/config/gcc:symbol_visibility_hidden",
++  ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  deps = [
++    ":reactiveobjc_disposableprovider_dtrace",
++    ":reactiveobjc_headers",
++    ":reactiveobjc_headers",
++    ":reactiveobjc_signalprovider_dtrace",
++  ]
++  libs = [
++    "AppKit.framework",
++    "Foundation.framework",
++  ]
++  sources =
++      reactiveobjc_filenames.public_headers +
++      reactiveobjc_filenames.private_headers + reactiveobjc_filenames.sources
++
++  include_dirs = [
++    "vendor/ReactiveObjC/ReactiveObjC",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc",
++    "$dtrace_header_dir",
++  ]
++
++  cflags_objc = [ "-fobjc-arc" ]
++
++  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
++}
++
++executable("squirrel_shipit") {
++  output_name = "ShipIt"
++  configs -= [ "//build/config/compiler:chromium_code" ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  sources = [
++    "Squirrel/NSBundle+SQRLVersionExtensions.h",
++    "Squirrel/NSBundle+SQRLVersionExtensions.m",
++    "Squirrel/NSError+SQRLVerbosityExtensions.h",
++    "Squirrel/NSError+SQRLVerbosityExtensions.m",
++    "Squirrel/NSProcessInfo+SQRLVersionExtensions.h",
++    "Squirrel/NSProcessInfo+SQRLVersionExtensions.m",
++    "Squirrel/RACSignal+SQRLTransactionExtensions.h",
++    "Squirrel/RACSignal+SQRLTransactionExtensions.m",
++    "Squirrel/SQRLCodeSignature.h",
++    "Squirrel/SQRLCodeSignature.m",
++    "Squirrel/SQRLInstaller+Private.h",
++    "Squirrel/SQRLInstaller.h",
++    "Squirrel/SQRLInstaller.m",
++    "Squirrel/SQRLInstallerOwnedBundle.h",
++    "Squirrel/SQRLInstallerOwnedBundle.m",
++    "Squirrel/SQRLShipItRequest.h",
++    "Squirrel/SQRLShipItRequest.m",
++    "Squirrel/SQRLTerminationListener.h",
++    "Squirrel/SQRLTerminationListener.m",
++    "Squirrel/ShipIt-main.m",
++  ]
++  deps = [
++    ":mantle_framework+link",
++    ":reactiveobjc_framework+link",
++  ]
++  libs = [
++    "AppKit.framework",
++    "Foundation.framework",
++    "IOKit.framework",
++    "Security.framework",
++  ]
++
++  cflags_objc = [
++    "-fobjc-weak",
++    "-Wno-unknown-warning-option",
++    "-Wno-block-capture-autoreleasing",
++    "-fobjc-arc",
++  ]
++
++  ldflags = [
++    "-rpath",
++    "@executable_path/../..",
++    "-rpath",
++    "@executable_path/../../../..",
++  ]
++
++  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ]
++}
++
++bundle_data("squirrel_framework_shipit") {
++  sources = []
++  public_deps = [ ":squirrel_shipit" ]
++  sources += [ "$root_out_dir/ShipIt" ]
++  outputs = [ "{{bundle_contents_dir}}/Resources/{{source_file_part}}" ]
++}
++
++bundle_data("squirrel_framework_headers") {
++  sources = []
++  public_deps = []
++  sources += squirrel_filenames.headers
++  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
++}
++
++mac_framework_bundle("squirrel_framework") {
++  output_name = "Squirrel"
++  framework_version = "A"
++  framework_contents = [
++    "Headers",
++    "Resources",
++  ]
++  info_plist = "Squirrel/Squirrel-Info.plist"
++  extra_substitutions = [
++    "CURRENT_PROJECT_VERSION=0.0.0",
++    "PRODUCT_BUNDLE_IDENTIFIER=com.github.Squirrel",
++  ]
++
++  configs -= [
++    "//build/config/compiler:chromium_code",
++    "//build/config/gcc:symbol_visibility_hidden",
++  ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  public_deps = [
++    ":squirrel_framework_headers",
++    ":squirrel_framework_shipit",
++  ]
++  deps = [
++    ":mantle_framework+link",
++    ":reactiveobjc_framework+link",
++  ]
++  libs = [
++    "AppKit.framework",
++    "Foundation.framework",
++    "IOKit.framework",
++    "Security.framework",
++    "ServiceManagement.framework",
++  ]
++  sources = squirrel_filenames.headers + squirrel_filenames.sources
++
++  cflags_objc = [
++    "-fobjc-weak",
++    "-fobjc-arc",
++    "-Wno-block-capture-autoreleasing",
++  ]
++
++  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
++
++  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ]
++}
+diff --git a/Squirrel/RACSignal+SQRLTransactionExtensions.h b/Squirrel/RACSignal+SQRLTransactionExtensions.h
+index 6b98d968e794d7ef4fc08c898142e03dd08e33b3..63cdfeb963e57fe9c1c25b909e0d396f76143e52 100644
+--- a/Squirrel/RACSignal+SQRLTransactionExtensions.h
++++ b/Squirrel/RACSignal+SQRLTransactionExtensions.h
+@@ -6,7 +6,7 @@
+ //  Copyright (c) 2013 GitHub. All rights reserved.
+ //
+ 
+-#import <ReactiveCocoa/RACSignal.h>
++#import <ReactiveObjC/RACSignal.h>
+ 
+ @interface RACSignal (SQRLTransactionExtensions)
+ 
+diff --git a/Squirrel/RACSignal+SQRLTransactionExtensions.m b/Squirrel/RACSignal+SQRLTransactionExtensions.m
+index 8293acffd9215131839b82824c740d28c44cc995..4636e00cb6ccd6a200295f3bb2758e6f6e6bd2b0 100644
+--- a/Squirrel/RACSignal+SQRLTransactionExtensions.m
++++ b/Squirrel/RACSignal+SQRLTransactionExtensions.m
+@@ -8,7 +8,7 @@
+ 
+ #import "RACSignal+SQRLTransactionExtensions.h"
+ 
+-#import <ReactiveCocoa/RACDisposable.h>
++#import <ReactiveObjC/RACDisposable.h>
+ #import <IOKit/pwr_mgt/IOPMLib.h>
+ 
+ // How long before power assertions time out.
+diff --git a/Squirrel/SQRLCodeSignature.m b/Squirrel/SQRLCodeSignature.m
+index e42332ab13fb01000c73cf0b3b757d1f7141da6f..f8754dbd6a1490d2b50f1014e2daa5c1f71b2103 100644
+--- a/Squirrel/SQRLCodeSignature.m
++++ b/Squirrel/SQRLCodeSignature.m
+@@ -10,8 +10,8 @@
+ 
+ #import "EXTKeyPathCoding.h"
+ #import "EXTScope.h"
+-#import <ReactiveCocoa/RACSignal+Operations.h>
+-#import <ReactiveCocoa/RACSubscriber.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
++#import <ReactiveObjC/RACSubscriber.h>
+ #import <Security/Security.h>
+ 
+ NSString * const SQRLCodeSignatureErrorDomain = @"SQRLCodeSignatureErrorDomain";
+diff --git a/Squirrel/SQRLDirectoryManager.m b/Squirrel/SQRLDirectoryManager.m
+index 34f321077f0bf59de98a41dea2cea95eff72486d..200891ca73ac67754219204340881ef85aff4845 100644
+--- a/Squirrel/SQRLDirectoryManager.m
++++ b/Squirrel/SQRLDirectoryManager.m
+@@ -8,7 +8,7 @@
+ 
+ #import "SQRLDirectoryManager.h"
+ 
+-#import <ReactiveCocoa/RACSignal+Operations.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
+ 
+ @implementation SQRLDirectoryManager
+ 
+diff --git a/Squirrel/SQRLDownloadedUpdate.m b/Squirrel/SQRLDownloadedUpdate.m
+index 43c64f14d4bcd1760b68ef307b90a0fac12a3c26..038b24c25f3fc90a77b7813c66064bb3c605c6a2 100644
+--- a/Squirrel/SQRLDownloadedUpdate.m
++++ b/Squirrel/SQRLDownloadedUpdate.m
+@@ -7,7 +7,7 @@
+ //
+ 
+ #import "SQRLDownloadedUpdate.h"
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ 
+ @interface SQRLDownloadedUpdate ()
+ 
+diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
+index 9c4f6155fdc48e54190f189f005db25b34e8b5d4..7dd98ddee4ae0f4e01fd7aaa3486083bff7d0da1 100644
+--- a/Squirrel/SQRLInstaller.m
++++ b/Squirrel/SQRLInstaller.m
+@@ -9,13 +9,13 @@
+ #import "SQRLInstaller.h"
+ 
+ #import <libkern/OSAtomic.h>
+-#import "EXTScope.h"
+-#import <ReactiveCocoa/NSEnumerator+RACSequenceAdditions.h>
+-#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
+-#import <ReactiveCocoa/RACCommand.h>
+-#import <ReactiveCocoa/RACSequence.h>
+-#import <ReactiveCocoa/RACSignal+Operations.h>
+-#import <ReactiveCocoa/RACSubscriber.h>
++#import <ReactiveObjC/EXTScope.h>
++#import <ReactiveObjC/NSEnumerator+RACSequenceAdditions.h>
++#import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
++#import <ReactiveObjC/RACCommand.h>
++#import <ReactiveObjC/RACSequence.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
++#import <ReactiveObjC/RACSubscriber.h>
+ #import <sys/xattr.h>
+ 
+ #import "NSBundle+SQRLVersionExtensions.h"
+diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
+index 2870f52510ec0993e84c6508f8e67912928b7e57..6a9151d92f399184fff9854eb00ea506165bbbe2 100644
+--- a/Squirrel/SQRLShipItLauncher.m
++++ b/Squirrel/SQRLShipItLauncher.m
+@@ -7,9 +7,9 @@
+ //
+ 
+ #import "SQRLShipItLauncher.h"
+-#import "EXTScope.h"
++#import <ReactiveObjC/EXTScope.h>
+ #import "SQRLDirectoryManager.h"
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ #import <Security/Security.h>
+ #import <ServiceManagement/ServiceManagement.h>
+ #import <launch.h>
+diff --git a/Squirrel/SQRLShipItRequest.m b/Squirrel/SQRLShipItRequest.m
+index f6fd03cdbe2651c52db4cae05a442e4e53b837bf..726f91d01524e3812cb3a769db2416f6638dbca6 100644
+--- a/Squirrel/SQRLShipItRequest.m
++++ b/Squirrel/SQRLShipItRequest.m
+@@ -9,7 +9,7 @@
+ #import "SQRLShipItRequest.h"
+ 
+ #import "EXTKeyPathCoding.h"
+-#import <ReactiveCocoa/RACSignal+Operations.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
+ 
+ NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
+ 
+diff --git a/Squirrel/SQRLTerminationListener.m b/Squirrel/SQRLTerminationListener.m
+index d75970e19cdb661d359d077b657118da26bc336a..4ded7ebbd0cd63c1e3f319f23e0b51e03d4fd5ca 100644
+--- a/Squirrel/SQRLTerminationListener.m
++++ b/Squirrel/SQRLTerminationListener.m
+@@ -9,12 +9,12 @@
+ #import "SQRLTerminationListener.h"
+ 
+ #import "EXTKeyPathCoding.h"
+-#import <ReactiveCocoa/NSArray+RACSequenceAdditions.h>
+-#import <ReactiveCocoa/RACDisposable.h>
+-#import <ReactiveCocoa/RACScheduler.h>
+-#import <ReactiveCocoa/RACSequence.h>
+-#import <ReactiveCocoa/RACSignal+Operations.h>
+-#import <ReactiveCocoa/RACSubscriber.h>
++#import <ReactiveObjC/NSArray+RACSequenceAdditions.h>
++#import <ReactiveObjC/RACDisposable.h>
++#import <ReactiveObjC/RACScheduler.h>
++#import <ReactiveObjC/RACSequence.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
++#import <ReactiveObjC/RACSubscriber.h>
+ 
+ @interface SQRLTerminationListener ()
+ 
+diff --git a/Squirrel/SQRLUpdate.m b/Squirrel/SQRLUpdate.m
+index 16ad4b6ef995e918d301cb36eda5f1f3aed86105..72ad3a3dee50c2832dd0e6063767e2ffe3cd21f5 100644
+--- a/Squirrel/SQRLUpdate.m
++++ b/Squirrel/SQRLUpdate.m
+@@ -7,7 +7,7 @@
+ //
+ 
+ #import "SQRLUpdate.h"
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ 
+ NSString * const SQRLUpdateJSONURLKey = @"url";
+ NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";
+diff --git a/Squirrel/SQRLUpdater.h b/Squirrel/SQRLUpdater.h
+index 4ca4a1241e9e6fd027ed35ea147feb05b9e18914..b3526b246b3729a7556ca0ec348fdc08825c89ed 100644
+--- a/Squirrel/SQRLUpdater.h
++++ b/Squirrel/SQRLUpdater.h
+@@ -7,7 +7,7 @@
+ //
+ 
+ #import <Foundation/Foundation.h>
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ 
+ // Represents the current state of the updater.
+ //
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index 85073b2f5d58d3e071fb6ef30598973b4d00eda8..c81c820d61da3c7d1cfd2c516147c954a5773a0c 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -18,8 +18,8 @@
+ #import "SQRLUpdate.h"
+ #import "SQRLZipArchiver.h"
+ #import "SQRLShipItRequest.h"
+-#import <ReactiveCocoa/EXTScope.h>
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/EXTScope.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ #import <sys/mount.h>
+ 
+ NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
+diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
+index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a446957e6 100644
+--- a/Squirrel/SQRLZipArchiver.m
++++ b/Squirrel/SQRLZipArchiver.m
+@@ -7,8 +7,8 @@
+ //
+ 
+ #import "SQRLZipArchiver.h"
+-#import <ReactiveCocoa/EXTScope.h>
+-#import <ReactiveCocoa/ReactiveCocoa.h>
++#import <ReactiveObjC/EXTScope.h>
++#import <ReactiveObjC/ReactiveObjC.h>
+ 
+ NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
+ NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
+diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
+index 9db530f3642585154057143d590bb393b86dc063..b6047ea61a71b7f8c7b4d33e47adc23e2baadcee 100644
+--- a/Squirrel/ShipIt-main.m
++++ b/Squirrel/ShipIt-main.m
+@@ -8,10 +8,10 @@
+ 
+ #import <Foundation/Foundation.h>
+ 
+-#import "EXTScope.h"
+-#import <ReactiveCocoa/RACCommand.h>
+-#import <ReactiveCocoa/RACSignal+Operations.h>
+-#import <ReactiveCocoa/RACScheduler.h>
++#import <ReactiveObjC/EXTScope.h>
++#import <ReactiveObjC/RACCommand.h>
++#import <ReactiveObjC/RACSignal+Operations.h>
++#import <ReactiveObjC/RACScheduler.h>
+ 
+ #import "NSError+SQRLVerbosityExtensions.h"
+ #import "RACSignal+SQRLTransactionExtensions.h"
+diff --git a/build/xcrun.gni b/build/xcrun.gni
+new file mode 100644
+index 0000000000000000000000000000000000000000..bdfaf95f3eca65b3e0831db1b66f651dfb3c1c67
+--- /dev/null
++++ b/build/xcrun.gni
+@@ -0,0 +1,18 @@
++template("xcrun_action") {
++  assert(defined(invoker.cmd), "Need cmd name to run")
++  assert(defined(invoker.args), "Need cmd argumets")
++  assert(defined(invoker.inputs), "Need inputs")
++  assert(defined(invoker.outputs), "Need outputs")
++
++  action(target_name) {
++    forward_variables_from(invoker,
++                           [
++                             "deps",
++                             "public_deps",
++                             "inputs",
++                             "outputs",
++                           ])
++    script = "//third_party/squirrel.mac/build/xcrun.py"
++    args = [ invoker.cmd ] + invoker.args
++  }
++}
+diff --git a/build/xcrun.py b/build/xcrun.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..20d0cdb51cc933f56b7a7193c195457e82500870
+--- /dev/null
++++ b/build/xcrun.py
+@@ -0,0 +1,14 @@
++#!/usr/bin/env python
++from __future__ import print_function
++import os
++import subprocess
++import sys
++
++SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
++cmd = "xcrun"
++args = [cmd] + sys.argv[1:]
++try:
++    subprocess.check_output(args, stderr=subprocess.STDOUT)
++except subprocess.CalledProcessError as e:
++    print("xcrun script '" + sys.argv[2] + "' failed with code '" + str(e.returncode) + "':\n" + e.output)
++    sys.exit(e.returncode)
+diff --git a/filenames.gni b/filenames.gni
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c224342a31f52fa2ba432983291340767d60ff7
+--- /dev/null
++++ b/filenames.gni
+@@ -0,0 +1,245 @@
++squirrel_filenames = {
++  headers = [
++    "Squirrel/NSBundle+SQRLVersionExtensions.h",
++    "Squirrel/NSError+SQRLVerbosityExtensions.h",
++    "Squirrel/NSProcessInfo+SQRLVersionExtensions.h",
++    "Squirrel/RACSignal+SQRLTransactionExtensions.h",
++    "Squirrel/SQRLAuthorization.h",
++    "Squirrel/SQRLCodeSignature.h",
++    "Squirrel/SQRLDirectoryManager.h",
++    "Squirrel/SQRLDownloadedUpdate.h",
++    "Squirrel/SQRLShipItLauncher.h",
++    "Squirrel/SQRLShipItRequest.h",
++    "Squirrel/SQRLUpdate.h",
++    "Squirrel/SQRLUpdater.h",
++    "Squirrel/SQRLZipArchiver.h",
++    "Squirrel/Squirrel.h",
++  ]
++
++  sources = [
++    "Squirrel/NSBundle+SQRLVersionExtensions.m",
++    "Squirrel/NSError+SQRLVerbosityExtensions.m",
++    "Squirrel/NSProcessInfo+SQRLVersionExtensions.m",
++    "Squirrel/RACSignal+SQRLTransactionExtensions.m",
++    "Squirrel/SQRLAuthorization.m",
++    "Squirrel/SQRLCodeSignature.m",
++    "Squirrel/SQRLDirectoryManager.m",
++    "Squirrel/SQRLDownloadedUpdate.h",
++    "Squirrel/SQRLDownloadedUpdate.m",
++    "Squirrel/SQRLShipItLauncher.h",
++    "Squirrel/SQRLShipItLauncher.m",
++    "Squirrel/SQRLShipItRequest.h",
++    "Squirrel/SQRLShipItRequest.m",
++    "Squirrel/SQRLUpdate.h",
++    "Squirrel/SQRLUpdate.m",
++    "Squirrel/SQRLUpdater.h",
++    "Squirrel/SQRLUpdater.m",
++    "Squirrel/SQRLZipArchiver.h",
++    "Squirrel/SQRLZipArchiver.m",
++    "Squirrel/Squirrel.h",
++  ]
++}
++
++mantle_filenames = {
++  headers = [
++    "vendor/Mantle/Mantle/MTLJSONAdapter.h",
++    "vendor/Mantle/Mantle/MTLManagedObjectAdapter.h",
++    "vendor/Mantle/Mantle/MTLModel+NSCoding.h",
++    "vendor/Mantle/Mantle/MTLModel.h",
++    "vendor/Mantle/Mantle/MTLReflection.h",
++    "vendor/Mantle/Mantle/MTLValueTransformer.h",
++    "vendor/Mantle/Mantle/Mantle.h",
++    "vendor/Mantle/Mantle/NSArray+MTLManipulationAdditions.h",
++    "vendor/Mantle/Mantle/NSDictionary+MTLManipulationAdditions.h",
++    "vendor/Mantle/Mantle/NSError+MTLModelException.h",
++    "vendor/Mantle/Mantle/NSObject+MTLComparisonAdditions.h",
++    "vendor/Mantle/Mantle/NSValueTransformer+MTLInversionAdditions.h",
++    "vendor/Mantle/Mantle/NSValueTransformer+MTLPredefinedTransformerAdditions.h",
++    "vendor/Mantle/Mantle/extobjc/MTLEXTKeyPathCoding.h",
++    "vendor/Mantle/Mantle/extobjc/MTLEXTRuntimeExtensions.h",
++    "vendor/Mantle/Mantle/extobjc/MTLEXTScope.h",
++    "vendor/Mantle/Mantle/extobjc/metamacros.h",
++  ]
++
++  sources = [
++    "vendor/Mantle/Mantle/MTLJSONAdapter.m",
++    "vendor/Mantle/Mantle/MTLManagedObjectAdapter.m",
++    "vendor/Mantle/Mantle/MTLModel+NSCoding.m",
++    "vendor/Mantle/Mantle/MTLModel.m",
++    "vendor/Mantle/Mantle/MTLReflection.m",
++    "vendor/Mantle/Mantle/MTLValueTransformer.m",
++    "vendor/Mantle/Mantle/NSArray+MTLManipulationAdditions.m",
++    "vendor/Mantle/Mantle/NSDictionary+MTLManipulationAdditions.m",
++    "vendor/Mantle/Mantle/NSError+MTLModelException.m",
++    "vendor/Mantle/Mantle/NSObject+MTLComparisonAdditions.m",
++    "vendor/Mantle/Mantle/NSValueTransformer+MTLInversionAdditions.m",
++    "vendor/Mantle/Mantle/NSValueTransformer+MTLPredefinedTransformerAdditions.m",
++    "vendor/Mantle/Mantle/extobjc/MTLEXTRuntimeExtensions.m",
++    "vendor/Mantle/Mantle/extobjc/MTLEXTScope.m",
++  ]
++}
++
++reactiveobjc_filenames = {
++  public_headers = [
++    "vendor/ReactiveObjC/ReactiveObjC/NSArray+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSControl+RACCommandSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSControl+RACTextSignalSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSData+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSDictionary+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSEnumerator+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSFileHandle+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSIndexSet+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSInvocation+RACTypeParsing.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSNotificationCenter+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACAppKitBindings.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACDeallocating.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACDescription.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACKVOWrapper.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACLifting.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACPropertySubscribing.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACSelectorSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSOrderedSet+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSSet+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACKeyPathUtilities.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACSequenceAdditions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSText+RACSignalSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSURLConnection+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/NSUserDefaults+RACSupport.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACAnnotations.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACArraySequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACBehaviorSubject.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACBlockTrampoline.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACChannel.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACCommand.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACCompoundDisposable.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDelegateProxy.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDisposable.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDynamicSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDynamicSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEagerSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEmptySequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEmptySignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACErrorSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEvent.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACGroupedSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACImmediateScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACIndexSetSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOChannel.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOProxy.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOTrampoline.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACMulticastConnection+Private.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACMulticastConnection.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACPassthroughSubscriber.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACQueueScheduler+Subclass.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACQueueScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACReplaySubject.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACReturnSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScheduler+Private.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScheduler+Subclass.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScopedDisposable.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSerialDisposable.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignal+Operations.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignal.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignalSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACStream+Private.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACStream.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACStringSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubject.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriber+Private.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriber.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriptingAssignmentTrampoline.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriptionScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTargetQueueScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTestScheduler.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTuple.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTupleSequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACUnarySequence.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACUnit.h",
++    "vendor/ReactiveObjC/ReactiveObjC/RACValueTransformer.h",
++    "vendor/ReactiveObjC/ReactiveObjC/ReactiveObjC.h",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc/EXTKeyPathCoding.h",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc/EXTRuntimeExtensions.h",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc/EXTScope.h",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc/metamacros.h",
++  ]
++
++  private_headers = []
++
++  sources = [
++    "vendor/ReactiveObjC/ReactiveObjC/NSArray+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSControl+RACCommandSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSControl+RACTextSignalSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSData+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSDictionary+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSEnumerator+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSFileHandle+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSIndexSet+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSInvocation+RACTypeParsing.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSNotificationCenter+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACAppKitBindings.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACDeallocating.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACDescription.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACKVOWrapper.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACLifting.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACPropertySubscribing.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSObject+RACSelectorSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSOrderedSet+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSSet+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACKeyPathUtilities.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACSequenceAdditions.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSString+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSText+RACSignalSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSURLConnection+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/NSUserDefaults+RACSupport.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACArraySequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACBehaviorSubject.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACBlockTrampoline.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACChannel.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACCommand.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACCompoundDisposable.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDelegateProxy.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDisposable.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDynamicSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACDynamicSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEagerSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEmptySequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEmptySignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACErrorSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACEvent.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACGroupedSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACImmediateScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACIndexSetSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOChannel.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOProxy.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACKVOTrampoline.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACMulticastConnection.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACPassthroughSubscriber.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACQueueScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACReplaySubject.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACReturnSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACScopedDisposable.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSerialDisposable.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignal+Operations.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignal.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSignalSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACStream.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACStringSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubject.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriber.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriptingAssignmentTrampoline.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACSubscriptionScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTargetQueueScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTestScheduler.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTuple.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACTupleSequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACUnarySequence.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACUnit.m",
++    "vendor/ReactiveObjC/ReactiveObjC/RACValueTransformer.m",
++    "vendor/ReactiveObjC/ReactiveObjC/extobjc/EXTRuntimeExtensions.m",
++  ]
++}

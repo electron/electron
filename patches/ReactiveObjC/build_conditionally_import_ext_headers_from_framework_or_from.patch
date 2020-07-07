@@ -1,0 +1,533 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Fri, 26 Jun 2020 11:06:12 -0700
+Subject: build: conditionally import EXT headers from framework or from
+ relative path
+
+diff --git a/ReactiveObjC/NSControl+RACTextSignalSupport.m b/ReactiveObjC/NSControl+RACTextSignalSupport.m
+index 88da38f6e8117bbabdd898c8a1d4bde5e59deda7..483caea62eaaf26d9ad7d267a5c3e9aa44638ce7 100644
+--- a/ReactiveObjC/NSControl+RACTextSignalSupport.m
++++ b/ReactiveObjC/NSControl+RACTextSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSControl+RACTextSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDescription.h"
+ #import "RACDisposable.h"
+ #import "RACSignal.h"
+diff --git a/ReactiveObjC/NSNotificationCenter+RACSupport.m b/ReactiveObjC/NSNotificationCenter+RACSupport.m
+index 6d6f94384e0a85635c70f258020dd7ac7c78b3b1..1a364d16909c77654674b189cb9bc0861892e5aa 100644
+--- a/ReactiveObjC/NSNotificationCenter+RACSupport.m
++++ b/ReactiveObjC/NSNotificationCenter+RACSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSNotificationCenter+RACSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACSignal.h"
+ #import "RACSubscriber.h"
+ #import "RACDisposable.h"
+diff --git a/ReactiveObjC/NSObject+RACAppKitBindings.m b/ReactiveObjC/NSObject+RACAppKitBindings.m
+index 06fd5d011515680b460220d96ddd0e889b134416..4c69de773ab31711f151a81a81f2757adedbed21 100644
+--- a/ReactiveObjC/NSObject+RACAppKitBindings.m
++++ b/ReactiveObjC/NSObject+RACAppKitBindings.m
+@@ -7,8 +7,16 @@
+ //
+ 
+ #import "NSObject+RACAppKitBindings.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "RACChannel.h"
+ #import "RACCompoundDisposable.h"
+diff --git a/ReactiveObjC/NSObject+RACKVOWrapper.m b/ReactiveObjC/NSObject+RACKVOWrapper.m
+index 099dc773af172df8ddd8c62165e8c79589112857..aaf40f0b725b94aa49a448dce5c084f0dcc32e60 100644
+--- a/ReactiveObjC/NSObject+RACKVOWrapper.m
++++ b/ReactiveObjC/NSObject+RACKVOWrapper.m
+@@ -7,8 +7,16 @@
+ //
+ 
+ #import "NSObject+RACKVOWrapper.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTRuntimeExtensions.h"
++#else
+ #import <ReactiveObjC/EXTRuntimeExtensions.h>
++#endif
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSString+RACKeyPathUtilities.h"
+ #import "RACCompoundDisposable.h"
+diff --git a/ReactiveObjC/NSObject+RACLifting.m b/ReactiveObjC/NSObject+RACLifting.m
+index a0c09d5c08b6b35b411d305f17326268d41a30b6..e2b01c13a1e858378a4f2e983f2487ace6b5a445 100644
+--- a/ReactiveObjC/NSObject+RACLifting.m
++++ b/ReactiveObjC/NSObject+RACLifting.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSObject+RACLifting.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSInvocation+RACTypeParsing.h"
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+diff --git a/ReactiveObjC/NSObject+RACPropertySubscribing.h b/ReactiveObjC/NSObject+RACPropertySubscribing.h
+index 430c066d4e1f9110b60e877fbff2254de9f56d58..cbbaa5ac9cf1942eb460d172ef41eaa2d8c387ee 100644
+--- a/ReactiveObjC/NSObject+RACPropertySubscribing.h
++++ b/ReactiveObjC/NSObject+RACPropertySubscribing.h
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import <Foundation/Foundation.h>
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "metamacros.h"
+ 
+ /// Creates a signal which observes `KEYPATH` on `TARGET` for changes.
+diff --git a/ReactiveObjC/NSObject+RACPropertySubscribing.m b/ReactiveObjC/NSObject+RACPropertySubscribing.m
+index 29e3df89e47b4d28b1c789181b2a6993c56a0f88..61a5929aa892a948b24b9f4403cb71272a1ca071 100644
+--- a/ReactiveObjC/NSObject+RACPropertySubscribing.m
++++ b/ReactiveObjC/NSObject+RACPropertySubscribing.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSObject+RACPropertySubscribing.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+ #import "NSObject+RACKVOWrapper.h"
+diff --git a/ReactiveObjC/NSObject+RACSelectorSignal.m b/ReactiveObjC/NSObject+RACSelectorSignal.m
+index ed809e2efefbfd48754294bfe6dbb32b7e01c8c6..7e8a9522d449bba2b08b560782661b424bfd3417 100644
+--- a/ReactiveObjC/NSObject+RACSelectorSignal.m
++++ b/ReactiveObjC/NSObject+RACSelectorSignal.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSObject+RACSelectorSignal.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTRuntimeExtensions.h"
++#else
+ #import <ReactiveObjC/EXTRuntimeExtensions.h>
++#endif
+ #import "NSInvocation+RACTypeParsing.h"
+ #import "NSObject+RACDeallocating.h"
+ #import "RACCompoundDisposable.h"
+diff --git a/ReactiveObjC/NSText+RACSignalSupport.m b/ReactiveObjC/NSText+RACSignalSupport.m
+index dfeff1ee23c3d560581c8b66a1e52b87474e4c5d..a83d271234e1a66452588e48422f5ecca0b298c6 100644
+--- a/ReactiveObjC/NSText+RACSignalSupport.m
++++ b/ReactiveObjC/NSText+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSText+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDescription.h"
+ #import "RACDisposable.h"
+ #import "RACSignal.h"
+diff --git a/ReactiveObjC/NSUserDefaults+RACSupport.m b/ReactiveObjC/NSUserDefaults+RACSupport.m
+index 203d60ea44c5009bad48d6255f3bd6079b3c29d3..c55198bac675e7a5bd67ec3e0442cfef366a9db6 100644
+--- a/ReactiveObjC/NSUserDefaults+RACSupport.m
++++ b/ReactiveObjC/NSUserDefaults+RACSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "NSUserDefaults+RACSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSNotificationCenter+RACSupport.h"
+ #import "NSObject+RACDeallocating.h"
+ #import "RACChannel.h"
+diff --git a/ReactiveObjC/RACCommand.m b/ReactiveObjC/RACCommand.m
+index 4342f80ba8cc1afef7bed952551cbd93486cf2db..30c684fe9c07845cc695fd641133bb4d9c4954ba 100644
+--- a/ReactiveObjC/RACCommand.m
++++ b/ReactiveObjC/RACCommand.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACCommand.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSArray+RACSequenceAdditions.h"
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+diff --git a/ReactiveObjC/RACDynamicSignal.m b/ReactiveObjC/RACDynamicSignal.m
+index 3bee2f7c2b9f441f4dfa89e7c6e716e80b99f36e..6069b0b747f5742e196e464d4b32fa5ff4781126 100644
+--- a/ReactiveObjC/RACDynamicSignal.m
++++ b/ReactiveObjC/RACDynamicSignal.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACDynamicSignal.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACCompoundDisposable.h"
+ #import "RACPassthroughSubscriber.h"
+ #import "RACScheduler+Private.h"
+diff --git a/ReactiveObjC/RACKVOChannel.h b/ReactiveObjC/RACKVOChannel.h
+index f1bd971085d6f403d8d0d304666e91d5f4beba62..9d1b74df0432c0593d488936d74b920f4b6f1eec 100644
+--- a/ReactiveObjC/RACKVOChannel.h
++++ b/ReactiveObjC/RACKVOChannel.h
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACChannel.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "metamacros.h"
+ 
+ /// Creates a RACKVOChannel to the given key path. When the targeted object
+diff --git a/ReactiveObjC/RACKVOChannel.m b/ReactiveObjC/RACKVOChannel.m
+index c9e89d93472849917e21df0f8627300c216d494d..1df7ca105f77714b760294aacc5f8aaa279d30f8 100644
+--- a/ReactiveObjC/RACKVOChannel.m
++++ b/ReactiveObjC/RACKVOChannel.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACKVOChannel.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACKVOWrapper.h"
+ #import "NSString+RACKeyPathUtilities.h"
+diff --git a/ReactiveObjC/RACSubject.m b/ReactiveObjC/RACSubject.m
+index 8ea052fd27d554ef00b76f3a06e8091ecf26a0d3..3d5b038a37e03fe74427e6d6f8c5c428b23d2777 100644
+--- a/ReactiveObjC/RACSubject.m
++++ b/ReactiveObjC/RACSubject.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACSubject.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACCompoundDisposable.h"
+ #import "RACPassthroughSubscriber.h"
+ 
+diff --git a/ReactiveObjC/RACSubscriber.m b/ReactiveObjC/RACSubscriber.m
+index c0ee3021b3a84cbff2e2278e110fa2253eb9a6a7..89dca6ca5a4fa5d35657c417a2a232f3fe713c53 100644
+--- a/ReactiveObjC/RACSubscriber.m
++++ b/ReactiveObjC/RACSubscriber.m
+@@ -8,7 +8,11 @@
+ 
+ #import "RACSubscriber.h"
+ #import "RACSubscriber+Private.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACCompoundDisposable.h"
+ 
+ @interface RACSubscriber ()
+diff --git a/ReactiveObjC/RACSubscriptingAssignmentTrampoline.h b/ReactiveObjC/RACSubscriptingAssignmentTrampoline.h
+index 5242ea2d9c2f1e8395a4d5634ae5f67b29b93368..7d63975e2a14987ab52bcfdbaf6e5e42f44f31fa 100644
+--- a/ReactiveObjC/RACSubscriptingAssignmentTrampoline.h
++++ b/ReactiveObjC/RACSubscriptingAssignmentTrampoline.h
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import <Foundation/Foundation.h>
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ 
+ @class RACSignal<__covariant ValueType>;
+ 
+diff --git a/ReactiveObjC/RACTestScheduler.m b/ReactiveObjC/RACTestScheduler.m
+index 621f40e4f376bbf5e53ed9b55b7d1c46369aecbc..936bd6050ea1c46064c9f698ae2564cdfcc91c3b 100644
+--- a/ReactiveObjC/RACTestScheduler.m
++++ b/ReactiveObjC/RACTestScheduler.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACTestScheduler.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACCompoundDisposable.h"
+ #import "RACDisposable.h"
+ #import "RACScheduler+Private.h"
+diff --git a/ReactiveObjC/RACTuple.m b/ReactiveObjC/RACTuple.m
+index 7f67625c8466ececb2a305554a115460576d52fb..b2f7120d42f03f3933b79b474b240c0f2d9e11d3 100644
+--- a/ReactiveObjC/RACTuple.m
++++ b/ReactiveObjC/RACTuple.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACTuple.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "RACTupleSequence.h"
+ 
+ @implementation RACTupleNil
+diff --git a/ReactiveObjC/RACUnarySequence.m b/ReactiveObjC/RACUnarySequence.m
+index 76ce0bd29738a75f3f916b92a30f586d746132fd..5d54674ed63cc4235678379fb67b4fcf441bc78a 100644
+--- a/ReactiveObjC/RACUnarySequence.m
++++ b/ReactiveObjC/RACUnarySequence.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "RACUnarySequence.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "NSObject+RACDescription.h"
+ 
+ @interface RACUnarySequence ()
+diff --git a/ReactiveObjC/UIBarButtonItem+RACCommandSupport.m b/ReactiveObjC/UIBarButtonItem+RACCommandSupport.m
+index 225e8b751a52cfd35759536efd3b085dcafae84c..7f33a9f2fba8f2aab9abd948ebedce4184e65145 100644
+--- a/ReactiveObjC/UIBarButtonItem+RACCommandSupport.m
++++ b/ReactiveObjC/UIBarButtonItem+RACCommandSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIBarButtonItem+RACCommandSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "RACCommand.h"
+ #import "RACDisposable.h"
+ #import "RACSignal+Operations.h"
+diff --git a/ReactiveObjC/UIButton+RACCommandSupport.m b/ReactiveObjC/UIButton+RACCommandSupport.m
+index 6b11dad2766b525ca977a75daee3614d37afe872..1a4920721e8a7de078d2cb26382512021f306543 100644
+--- a/ReactiveObjC/UIButton+RACCommandSupport.m
++++ b/ReactiveObjC/UIButton+RACCommandSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIButton+RACCommandSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "RACCommand.h"
+ #import "RACDisposable.h"
+ #import "RACSignal+Operations.h"
+diff --git a/ReactiveObjC/UIControl+RACSignalSupport.m b/ReactiveObjC/UIControl+RACSignalSupport.m
+index df3108eb71cf0245ee5fddddfb667ee76e3dd05e..831036a1297fd1230b60195190f147b87cdc582c 100644
+--- a/ReactiveObjC/UIControl+RACSignalSupport.m
++++ b/ReactiveObjC/UIControl+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIControl+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "RACCompoundDisposable.h"
+ #import "RACDisposable.h"
+ #import "RACSignal.h"
+diff --git a/ReactiveObjC/UIDatePicker+RACSignalSupport.m b/ReactiveObjC/UIDatePicker+RACSignalSupport.m
+index 5c815c2f24756a95e6db6b30651d4860648fd497..dc06b2e7badade089477326d4677058b6c0e7d8e 100644
+--- a/ReactiveObjC/UIDatePicker+RACSignalSupport.m
++++ b/ReactiveObjC/UIDatePicker+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIDatePicker+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "UIControl+RACSignalSupportPrivate.h"
+ 
+ @implementation UIDatePicker (RACSignalSupport)
+diff --git a/ReactiveObjC/UIGestureRecognizer+RACSignalSupport.m b/ReactiveObjC/UIGestureRecognizer+RACSignalSupport.m
+index 4f816eb8e67115352eaa3fafd592d86fb09bf46b..bbbf22b54be5539397c549008631dcb56abbdbe9 100644
+--- a/ReactiveObjC/UIGestureRecognizer+RACSignalSupport.m
++++ b/ReactiveObjC/UIGestureRecognizer+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIGestureRecognizer+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+ #import "RACCompoundDisposable.h"
+diff --git a/ReactiveObjC/UIRefreshControl+RACCommandSupport.m b/ReactiveObjC/UIRefreshControl+RACCommandSupport.m
+index 3301ca194b7e0bc9bc5a05658487e1cf588c979e..53eec9931841a9be3baca6603181a88702ff2682 100644
+--- a/ReactiveObjC/UIRefreshControl+RACCommandSupport.m
++++ b/ReactiveObjC/UIRefreshControl+RACCommandSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIRefreshControl+RACCommandSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "RACCommand.h"
+ #import "RACCompoundDisposable.h"
+ #import "RACDisposable.h"
+diff --git a/ReactiveObjC/UISegmentedControl+RACSignalSupport.m b/ReactiveObjC/UISegmentedControl+RACSignalSupport.m
+index 782cabca08697062c72eea148f846add3fcea7c4..1aeddfc20fa09ef7744d400b496e0d3131271242 100644
+--- a/ReactiveObjC/UISegmentedControl+RACSignalSupport.m
++++ b/ReactiveObjC/UISegmentedControl+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UISegmentedControl+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "UIControl+RACSignalSupportPrivate.h"
+ 
+ @implementation UISegmentedControl (RACSignalSupport)
+diff --git a/ReactiveObjC/UISlider+RACSignalSupport.m b/ReactiveObjC/UISlider+RACSignalSupport.m
+index 3583d843c5732cdbcb37bdf888cfd59dcd075868..d27160043099339ac0d6a55cda57f01fc5533ed8 100644
+--- a/ReactiveObjC/UISlider+RACSignalSupport.m
++++ b/ReactiveObjC/UISlider+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UISlider+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "UIControl+RACSignalSupportPrivate.h"
+ 
+ @implementation UISlider (RACSignalSupport)
+diff --git a/ReactiveObjC/UIStepper+RACSignalSupport.m b/ReactiveObjC/UIStepper+RACSignalSupport.m
+index 5eee8f8534e9866e8082f24f23c4aa960b4235f7..a846cbf00a5d14a13aa5914cb0dc81596a44cdb5 100644
+--- a/ReactiveObjC/UIStepper+RACSignalSupport.m
++++ b/ReactiveObjC/UIStepper+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UIStepper+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "UIControl+RACSignalSupportPrivate.h"
+ 
+ @implementation UIStepper (RACSignalSupport)
+diff --git a/ReactiveObjC/UISwitch+RACSignalSupport.m b/ReactiveObjC/UISwitch+RACSignalSupport.m
+index a5f847d805aecebadf3b27991749fcc2e7c79fd8..df62bcdae01bc4c497e2021857428129b1b64515 100644
+--- a/ReactiveObjC/UISwitch+RACSignalSupport.m
++++ b/ReactiveObjC/UISwitch+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UISwitch+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
+ #import "UIControl+RACSignalSupportPrivate.h"
+ 
+ @implementation UISwitch (RACSignalSupport)
+diff --git a/ReactiveObjC/UITextField+RACSignalSupport.m b/ReactiveObjC/UITextField+RACSignalSupport.m
+index b02444858f7adc900d02efbeb49c6b9197a31adc..9da162b06d6541c1cb2ac1a8e4606b49df74c968 100644
+--- a/ReactiveObjC/UITextField+RACSignalSupport.m
++++ b/ReactiveObjC/UITextField+RACSignalSupport.m
+@@ -7,8 +7,16 @@
+ //
+ 
+ #import "UITextField+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTKeyPathCoding.h"
++#else
+ #import <ReactiveObjC/EXTKeyPathCoding.h>
++#endif
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+ #import "RACSignal+Operations.h"
+diff --git a/ReactiveObjC/UITextView+RACSignalSupport.m b/ReactiveObjC/UITextView+RACSignalSupport.m
+index d47f6e59c6b070f6b00de294f8dc455726b3a386..9c6c36c6ec9e0a1fcddd5db9ecf62565bb9c5724 100644
+--- a/ReactiveObjC/UITextView+RACSignalSupport.m
++++ b/ReactiveObjC/UITextView+RACSignalSupport.m
+@@ -7,7 +7,11 @@
+ //
+ 
+ #import "UITextView+RACSignalSupport.h"
++#if defined(BUILDING_RAC_FRAMEWORK)
++#import "extobjc/EXTScope.h"
++#else
+ #import <ReactiveObjC/EXTScope.h>
++#endif
+ #import "NSObject+RACDeallocating.h"
+ #import "NSObject+RACDescription.h"
+ #import "RACDelegateProxy.h"

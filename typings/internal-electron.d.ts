@@ -31,7 +31,13 @@ declare namespace Electron {
 
   interface WebContents {
     _getURL(): string;
+    _loadURL(url: string, options: Electron.LoadURLOptions): void;
+    _stop(): void;
+    _goBack(): void;
+    _goForward(): void;
+    _goToOffset(offset: number): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
+    getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
@@ -86,9 +92,59 @@ declare namespace Electron {
   }
 
   interface WebContentsInternal extends Electron.WebContents {
+    _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
+    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
+    _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
+    _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
+    _printToPDF(options: any): Promise<Buffer>;
+    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _getPrinters(): Electron.PrinterInfo[];
+    _init(): void;
+    canGoToIndex(index: number): boolean;
+    getActiveIndex(): number;
+    length(): number;
   }
+
+  interface Menu {
+    _init(): void;
+    _isCommandIdChecked(id: string): boolean;
+    _isCommandIdEnabled(id: string): boolean;
+    _shouldCommandIdWorkWhenHidden(id: string): boolean;
+    _isCommandIdVisible(id: string): boolean;
+    _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
+    _shouldRegisterAcceleratorForCommandId(id: string): boolean;
+    _callMenuWillShow(): void;
+    _executeCommand(event: any, id: number): void;
+    _menuWillShow(): void;
+    commandsMap: Record<string, MenuItem>;
+    groupsMap: Record<string, {
+      checked: boolean;
+    }[]>;
+    getItemCount(): number;
+    popupAt(window: BaseWindow, x: number, y: number, positioning: number, callback: () => void): void;
+    closePopupAt(id: number): void;
+    setSublabel(index: number, label: string): void;
+    setToolTip(index: number, tooltip: string): void;
+    setIcon(index: number, image: string | NativeImage): void;
+    setRole(index: number, role: string): void;
+    insertItem(index: number, commandId: number, label: string): void;
+    insertCheckItem(index: number, commandId: number, label: string): void;
+    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
+    insertSeparator(index: number): void;
+    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
+    delegate?: any;
+    getAcceleratorTextAt(index: number): string;
+  }
+
+  interface MenuItem {
+    overrideReadOnlyProperty(property: string, value: any): void;
+    groupId: number;
+    getDefaultRoleAccelerator(): Accelerator | undefined;
+    acceleratorWorksWhenHidden?: boolean;
+  }
+
 
   const deprecate: ElectronInternal.DeprecationUtil;
 
@@ -106,6 +162,7 @@ declare namespace Electron {
     static getAllWindows(): BaseWindow[];
     isFocused(): boolean;
     static getFocusedWindow(): BaseWindow | undefined;
+    setMenu(menu: Menu): void;
   }
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)

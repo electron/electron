@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Wed, 1 Jul 2020 10:32:57 +0200
+Subject: darwin: work around clock jumping back in time
+
+It was reported that mach_absolute_time() can jump backward in time when
+the machine is suspended. Use mach_continuous_time() when available to
+work around that (macOS 10.12 and up.)
+
+Fixes: https://github.com/libuv/libuv/issues/2891
+PR-URL: https://github.com/libuv/libuv/pull/2894
+Reviewed-By: Phil Willoughby <philwill@fb.com>
+Reviewed-By: Santiago Gimeno <santiago.gimeno@gmail.com>
+
+diff --git a/deps/uv/src/unix/darwin.c b/deps/uv/src/unix/darwin.c
+index 654aba26b1f9249e3e76b48ae1ad674d9fd12718..4f53ad1fc7f1907281013ca5dc4b251c692d3a7b 100644
+--- a/deps/uv/src/unix/darwin.c
++++ b/deps/uv/src/unix/darwin.c
+@@ -25,6 +25,7 @@
+ #include <stdint.h>
+ #include <errno.h>
+ 
++#include <dlfcn.h>
+ #include <mach/mach.h>
+ #include <mach/mach_time.h>
+ #include <mach-o/dyld.h> /* _NSGetExecutablePath */
+@@ -32,6 +33,10 @@
+ #include <sys/sysctl.h>
+ #include <unistd.h>  /* sysconf */
+ 
++static uv_once_t once = UV_ONCE_INIT;
++static uint64_t (*time_func)(void);
++static mach_timebase_info_data_t timebase;
++
+ 
+ int uv__platform_loop_init(uv_loop_t* loop) {
+   loop->cf_state = NULL;
+@@ -48,15 +53,19 @@ void uv__platform_loop_delete(uv_loop_t* loop) {
+ }
+ 
+ 
+-uint64_t uv__hrtime(uv_clocktype_t type) {
+-  static mach_timebase_info_data_t info;
+-
+-  if ((ACCESS_ONCE(uint32_t, info.numer) == 0 ||
+-       ACCESS_ONCE(uint32_t, info.denom) == 0) &&
+-      mach_timebase_info(&info) != KERN_SUCCESS)
++static void uv__hrtime_init_once(void) {
++  if (KERN_SUCCESS != mach_timebase_info(&timebase))
+     abort();
+ 
+-  return mach_absolute_time() * info.numer / info.denom;
++  time_func = (uint64_t (*)(void)) dlsym(RTLD_DEFAULT, "mach_continuous_time");
++  if (time_func == NULL)
++    time_func = mach_absolute_time;
++}
++
++
++uint64_t uv__hrtime(uv_clocktype_t type) {
++  uv_once(&once, uv__hrtime_init_once);
++  return time_func() * timebase.numer / timebase.denom;
+ }
+ 
+ 
