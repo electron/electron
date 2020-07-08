@@ -110,6 +110,9 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   if (extension) {
     extension_registrar_.AddExtension(extension);
   }
+  ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
+  extension_prefs->OnExtensionInstalled(extension.get(), Extension::ENABLED,
+                                        syncer::StringOrdinal(), std::string());
   std::move(cb).Run(extension.get(), result.second);
 }
 

@@ -130,9 +130,7 @@ const GURL& ElectronExtensionsClient::GetWebstoreUpdateURL() const {
 }
 
 bool ElectronExtensionsClient::IsBlacklistUpdateURL(const GURL& url) const {
-  // TODO(rockot): Maybe we want to do something else here. For now we accept
-  // any URL as a blacklist URL because we don't really care.
-  return true;
+  return false;
 }
 
 }  // namespace electron

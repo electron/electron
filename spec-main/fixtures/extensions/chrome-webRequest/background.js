@@ -2,7 +2,7 @@
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    return { cancel: false };
+    return { cancel: true };
   },
   { urls: ['*://127.0.0.1:*'] },
   ['blocking']

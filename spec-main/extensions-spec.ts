@@ -191,7 +191,7 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.webRequest', () => {
-    async function fetch (contents: WebContents, url: string) {
+    function fetch (contents: WebContents, url: string) {
       return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
     }
 
@@ -212,7 +212,7 @@ describe('chrome extensions', () => {
 
         w.loadURL(url);
         await emittedOnce(w.webContents, 'dom-ready');
-        await expect(fetch(w.webContents, url)).to.have.property('status', 200);
+        await expect(fetch(w.webContents, url)).to.not.be.rejectedWith(TypeError);
       });
     });
 
@@ -236,7 +236,7 @@ describe('chrome extensions', () => {
       w.loadURL(url);
       await emittedOnce(w.webContents, 'dom-ready');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com'] }, async (details, callback) => {
+      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com/*'] }, async (details, callback) => {
         callback({ cancel: true });
       });
       await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
@@ -266,7 +266,7 @@ describe('chrome extensions', () => {
       w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
       await emittedOnce(w.webContents, 'dom-ready');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com'] }, (details, callback) => {
+      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com/*'] }, (details, callback) => {
         callback({ cancel: true });
       });
       await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
