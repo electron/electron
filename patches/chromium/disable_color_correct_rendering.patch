@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index f8e2c6cabeb1c04cf1c460f8698aebd1ed551780..e0f636e86e1afc5b7272df16a19147e298b1095d 100644
+index 8fa1a1ce6a069423cd51bf27c8144cb2ae00e894..40ff36096a9de23e2c616142e74c741b4b1db67a 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1863,6 +1863,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,10 +35,10 @@ index f8e2c6cabeb1c04cf1c460f8698aebd1ed551780..e0f636e86e1afc5b7272df16a19147e2
  
    if (settings_.prefer_raster_in_srgb &&
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 446d46764c5d001df665fea8737a95b4243f8ac8..c9a0244a0027d8918960e6441b4a49af0b7e71af 100644
+index 4bb6d8a0364098a2c2634c78eadd701a78ddb91b..68ffba79e39198242a5ff3cc963944affe035679 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -100,6 +100,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -99,6 +99,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -81,7 +81,7 @@ index f28c3218baa08e7ae885567e0ede1d8108f8a373..a5f4a4a10a776fc92a5e9fbc9593563d
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 591e5c4e6f7291412a5f05c244d6256a4b4fd57d..2af556050b7fe4ce7404d0c5ce6f2328a1e863fd 100644
+index 3d7bffe61ee8d695df41ffd1ed3fdaff8155f8bf..89bacd9fc24d82da38990f68f7b9f022ab8e0bfe 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -231,7 +231,7 @@ index 9f9d3422ad128fe3bfc305baa57971bd03e1b676..02747c0d4d7f0bb7ba034f35bcce86a9
      service_manager::switches::kGpuSandboxAllowSysVShm,
      service_manager::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index e5a82f46cd58b0da9959930ee85303e4a1530425..753b926fbe0c6a3ef2b2e244d7f80f4f4574bc5c 100644
+index 634c318db970f5c80699217f5f99467f91747455..238b543a4df8dfdf5e35e5a5707a43caca55679c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -227,6 +227,7 @@
@@ -242,7 +242,7 @@ index e5a82f46cd58b0da9959930ee85303e4a1530425..753b926fbe0c6a3ef2b2e244d7f80f4f
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3279,6 +3280,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -295,7 +295,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 43f047ee98c482cde3e1ea503623ead0b0a78215..254fd8490e1d9b59c6b056066bcbb9c779e6b6ff 100644
+index 41430c3f85c0335066d51dfbb08465083adf92ab..6eec040e661258bb37ea0c4edacf1c4239706084 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -23,6 +23,7 @@

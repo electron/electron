@@ -116,8 +116,10 @@ void PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone(
     const PrintHostMsg_PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (status != printing::mojom::PrintCompositor::Status::kSuccess)
+  if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
+    LOG(ERROR) << "Compositing pdf failed with error " << status;
     RejectPromise(ids.request_id);
+  }
 }
 
 void PrintPreviewMessageHandler::OnDidPrepareForDocumentToPdf(
@@ -166,8 +168,10 @@ void PrintPreviewMessageHandler::OnCompositePdfPageDone(
     printing::mojom::PrintCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (status != printing::mojom::PrintCompositor::Status::kSuccess)
+  if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
+    LOG(ERROR) << "Compositing pdf failed with error " << status;
     RejectPromise(ids.request_id);
+  }
 }
 
 void PrintPreviewMessageHandler::OnDidPreviewPage(

@@ -71,7 +71,7 @@ index ef837fbb9dd65f84a2c43b5d8ec5b559e7ae2da6..1df6791b74b12377ae74ace5e9b8972c
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 0cab1ba9e1efa9695fb0a12d71b6e960356460a6..fa831aaf51ba4bc20e68d0541eb657444ef37ab5 100644
+index 0f63f2ede488d931b95b523fc505aa307bc95088..639ec61d05ee1f739304ddcca04a982daca2f558 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index 0cab1ba9e1efa9695fb0a12d71b6e960356460a6..fa831aaf51ba4bc20e68d0541eb65744
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -365,6 +366,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -372,6 +373,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  
