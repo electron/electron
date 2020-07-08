@@ -117,8 +117,7 @@ void PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone(
     printing::mojom::PrintCompositor::Status status) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
-    LOG(ERROR) << "Compositing pdf failed with error " << status;
-    RejectPromise(ids.request_id);
+    LOG(ERROR) << "Preparing document for pdf failed with error " << status;
   }
 }
 
@@ -169,8 +168,8 @@ void PrintPreviewMessageHandler::OnCompositePdfPageDone(
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
-    LOG(ERROR) << "Compositing pdf failed with error " << status;
-    RejectPromise(ids.request_id);
+    LOG(ERROR) << "Compositing pdf failed on page: " << page_number
+               << " with error: " << status;
   }
 }
 
