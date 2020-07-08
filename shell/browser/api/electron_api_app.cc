@@ -334,6 +334,35 @@ struct Converter<JumpListResult> {
 #endif
 
 template <>
+struct Converter<Browser::LaunchItem> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     Browser::LaunchItem* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    dict.Get("name", &(out->name));
+    dict.Get("path", &(out->path));
+    dict.Get("args", &(out->args));
+    dict.Get("scope", &(out->scope));
+    dict.Get("enabled", &(out->enabled));
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   Browser::LaunchItem val) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("name", val.name);
+    dict.Set("path", val.path);
+    dict.Set("args", val.args);
+    dict.Set("scope", val.scope);
+    dict.Set("enabled", val.enabled);
+    return dict.GetHandle();
+  }
+};
+
+template <>
 struct Converter<Browser::LoginItemSettings> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -358,6 +387,8 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Set("restoreState", val.restore_state);
     dict.Set("wasOpenedAtLogin", val.opened_at_login);
     dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
+    dict.Set("launchItems", val.launch_items);
+    dict.Set("executableLaunchAtLogin", val.executable_launch_at_login);
     return dict.GetHandle();
   }
 };
