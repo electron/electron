@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 8fa1a1ce6a069423cd51bf27c8144cb2ae00e894..40ff36096a9de23e2c616142e74c741b4b1db67a 100644
+index 3749862849ac066066236ca21be756bd6ce9a5c6..aa0e6ce8179150a4f830266b3fa4f960258ea2a4 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -48,7 +48,7 @@ index 4bb6d8a0364098a2c2634c78eadd701a78ddb91b..68ffba79e39198242a5ff3cc963944af
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 8bde4796ebcf40f7f10c62f4005eabb84af9de04..913ab005e582b3d1ab0df8f88ac1df6245fce34e 100644
+index 773a1c9fe580d406fe841087b79ecda5a67e1951..33935b240adc265457649d46073e2ddd4f626e32 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index 8bde4796ebcf40f7f10c62f4005eabb84af9de04..913ab005e582b3d1ab0df8f88ac1df62
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index f28c3218baa08e7ae885567e0ede1d8108f8a373..a5f4a4a10a776fc92a5e9fbc9593563d548ccbc8 100644
+index 263e8d9ad8dba0c690645d412567586246a38b9d..8f2f53867b15bc895aa105ed7ec59586abfa8c2f 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -14,6 +14,7 @@
@@ -81,7 +81,7 @@ index f28c3218baa08e7ae885567e0ede1d8108f8a373..a5f4a4a10a776fc92a5e9fbc9593563d
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 3d7bffe61ee8d695df41ffd1ed3fdaff8155f8bf..89bacd9fc24d82da38990f68f7b9f022ab8e0bfe 100644
+index ff4ccbbc0e24ea624f421e1a6e7d5b817106a292..269a4ac2f580f9d8858db84fe7d91c79d2cd4c50 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -219,10 +219,10 @@ index 3d7bffe61ee8d695df41ffd1ed3fdaff8155f8bf..89bacd9fc24d82da38990f68f7b9f022
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9f9d3422ad128fe3bfc305baa57971bd03e1b676..02747c0d4d7f0bb7ba034f35bcce86a91774bb36 100644
+index 9bb2839b9736afa6c3b22c38d46f9df07031a241..5b5873c6abcafb24beb74a13dfeeed868197f455 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -215,6 +215,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -220,6 +220,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {

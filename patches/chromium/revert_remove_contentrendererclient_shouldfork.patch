@@ -9,7 +9,7 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index c37c8d441cacd853b1e8572fb806f72004e2bcb8..de3e62cbdd1f69d89e31bb4d737dbbc0cfb6036d 100644
+index e21bb23491f1261788b77fb8fa33e8afa0f60d3f..310ba0f4c7407bb1bdead4d451c5a53e85e6c440 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
 @@ -1312,6 +1312,25 @@ bool ChromeContentRendererClient::AllowPopup() {
@@ -39,7 +39,7 @@ index c37c8d441cacd853b1e8572fb806f72004e2bcb8..de3e62cbdd1f69d89e31bb4d737dbbc0
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index ea214daadf1e5613ab2e402f5d3783b150c41ede..31513568737c0cb9639451b74b0172825f6e8fc4 100644
+index 066a1a0690c013ffdb8ee043f8489e250ac430f0..4a2f67ba8e0aab4c46413e2f1268af9495038139 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
 @@ -127,6 +127,11 @@ class ChromeContentRendererClient
@@ -55,7 +55,7 @@ index ea214daadf1e5613ab2e402f5d3783b150c41ede..31513568737c0cb9639451b74b017282
                         ui::PageTransition transition_type,
                         const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index 064d0a433dbe67cd24b92b78fab2f294ce5d320a..e38490b3cbfc62ed29ff93452814a9e65cd8bca6 100644
+index 6c7478594f980e3518fea2afc53d941b0f6c6a34..3b514f084ed16fc924f6a2909bd51056e5c58f6d 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
 @@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
@@ -74,10 +74,10 @@ index 064d0a433dbe67cd24b92b78fab2f294ce5d320a..e38490b3cbfc62ed29ff93452814a9e6
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index d57edc0cea54b9d78700c3b9acdcfcc5f17341dd..e56aae188d7d8f46a4438b8e99f7e9b714c5875a 100644
+index cc6101c82e659bbc5a8568c166d5a56fae0c8d64..8309bb7f3f284b0930c13a7e75a7f9de64fedb73 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -228,6 +228,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -227,6 +227,13 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
