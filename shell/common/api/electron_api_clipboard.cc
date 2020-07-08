@@ -71,9 +71,8 @@ void Clipboard::WriteBuffer(const std::string& format,
   base::span<const uint8_t> payload_span(
       reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
       node::Buffer::Length(buffer));
-  writer.WriteData(
-      base::UTF8ToUTF16(ui::ClipboardFormatType::GetType(format).Serialize()),
-      mojo_base::BigBuffer(payload_span));
+  writer.WriteData(base::UTF8ToUTF16(format),
+                   mojo_base::BigBuffer(payload_span));
 }
 
 void Clipboard::Write(const gin_helper::Dictionary& data,
