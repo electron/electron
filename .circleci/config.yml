@@ -1329,7 +1329,6 @@ commands:
             - *step-delete-git-directories
 
             # Electron app
-            - when:
             - *step-gn-gen-default
             - *step-electron-build
             - *step-ninja-summary
