@@ -1144,7 +1144,12 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
-      ldflags = [ "-pie" ]
+      ldflags = [
+        "-pie",
+        "-Wl,--whole-archive",
+        "obj/third_party/electron_node/deps/uv/libuv.a",
+        "-Wl,--no-whole-archive",
+      ]
 
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
