@@ -754,9 +754,13 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "$TARGET_ARCH" == "arm64" ]; then
           export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
         fi
-        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
-        cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default        
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
+        if [ "`uname`" == "Linux" ]; then
+          cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        elif [ "`uname`" == "Darwin" ]; then
+          cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.dylib" out/Default
+        fi
         python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
@@ -775,8 +779,13 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       # Only run for non-fork prs
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
-        echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
-        node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        if [ "`uname`" == "Darwin" ]; then
+          echo "Triggering electron-arm2-testing build on Azure DevOps"  
+          node electron/script/release/ci-release-build.js --job=electron-arm2-testing --ci=DevOps --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        else
+          echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"  
+          node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        fi
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
@@ -2005,6 +2014,7 @@ jobs:
       <<: *env-ninja-status
       <<: *env-macos-build
       <<: *env-apple-silicon
+      TRIGGER_ARM_TEST: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
