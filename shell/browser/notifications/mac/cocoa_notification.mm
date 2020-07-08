@@ -112,8 +112,6 @@ void CocoaNotification::Dismiss() {
 
   NotificationDismissed();
 
-  this->LogAction("dismissed");
-
   notification_.reset(nil);
 }
 
@@ -164,8 +162,9 @@ void CocoaNotification::NotificationDismissed() {
 }
 
 void CocoaNotification::LogAction(const char* action) {
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS") && notification_) {
     NSString* identifier = [notification_ valueForKey:@"identifier"];
+    DCHECK(identifier);
     LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String]
               << ")";
   }

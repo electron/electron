@@ -1,44 +1,56 @@
-'use strict';
-
-const { app } = require('electron');
+import { app, BrowserWindow, WebContents, MenuItemConstructorOptions } from 'electron';
 
 const isMac = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
 const isLinux = process.platform === 'linux';
 
-const roles = {
+type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
+  'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' | 'startspeaking' | 'stopspeaking' |
+  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu'
+interface Role {
+  label: string;
+  accelerator?: string;
+  windowMethod?: ((window: BrowserWindow) => void);
+  webContentsMethod?: ((webContents: WebContents) => void);
+  appMethod?: () => void;
+  registerAccelerator?: boolean;
+  nonNativeMacOSRole?: boolean;
+  submenu?: MenuItemConstructorOptions[];
+}
+
+export const roleList: Record<RoleId, Role> = {
   about: {
     get label () {
       return isLinux ? 'About' : `About ${app.name}`;
     },
-    ...(isWindows && { appMethod: 'showAboutPanel' })
+    ...(isWindows && { appMethod: () => app.showAboutPanel() })
   },
   close: {
     label: isMac ? 'Close Window' : 'Close',
     accelerator: 'CommandOrControl+W',
-    windowMethod: 'close'
+    windowMethod: w => w.close()
   },
   copy: {
     label: 'Copy',
     accelerator: 'CommandOrControl+C',
-    webContentsMethod: 'copy',
+    webContentsMethod: wc => wc.copy(),
     registerAccelerator: false
   },
   cut: {
     label: 'Cut',
     accelerator: 'CommandOrControl+X',
-    webContentsMethod: 'cut',
+    webContentsMethod: wc => wc.cut(),
     registerAccelerator: false
   },
   delete: {
     label: 'Delete',
-    webContentsMethod: 'delete'
+    webContentsMethod: wc => wc.delete()
   },
   forcereload: {
     label: 'Force Reload',
     accelerator: 'Shift+CmdOrCtrl+R',
     nonNativeMacOSRole: true,
-    windowMethod: (window) => {
+    windowMethod: (window: BrowserWindow) => {
       window.webContents.reloadIgnoringCache();
     }
   },
@@ -61,18 +73,18 @@ const roles = {
   minimize: {
     label: 'Minimize',
     accelerator: 'CommandOrControl+M',
-    windowMethod: 'minimize'
+    windowMethod: w => w.minimize()
   },
   paste: {
     label: 'Paste',
     accelerator: 'CommandOrControl+V',
-    webContentsMethod: 'paste',
+    webContentsMethod: wc => wc.paste(),
     registerAccelerator: false
   },
   pasteandmatchstyle: {
     label: 'Paste and Match Style',
     accelerator: isMac ? 'Cmd+Option+Shift+V' : 'Shift+CommandOrControl+V',
-    webContentsMethod: 'pasteAndMatchStyle',
+    webContentsMethod: wc => wc.pasteAndMatchStyle(),
     registerAccelerator: false
   },
   quit: {
@@ -84,31 +96,31 @@ const roles = {
       }
     },
     accelerator: isWindows ? undefined : 'CommandOrControl+Q',
-    appMethod: 'quit'
+    appMethod: () => app.quit()
   },
   redo: {
     label: 'Redo',
     accelerator: isWindows ? 'Control+Y' : 'Shift+CommandOrControl+Z',
-    webContentsMethod: 'redo'
+    webContentsMethod: wc => wc.redo()
   },
   reload: {
     label: 'Reload',
     accelerator: 'CmdOrCtrl+R',
     nonNativeMacOSRole: true,
-    windowMethod: 'reload'
+    windowMethod: w => w.reload()
   },
   resetzoom: {
     label: 'Actual Size',
     accelerator: 'CommandOrControl+0',
     nonNativeMacOSRole: true,
-    webContentsMethod: (webContents) => {
+    webContentsMethod: (webContents: WebContents) => {
       webContents.zoomLevel = 0;
     }
   },
   selectall: {
     label: 'Select All',
     accelerator: 'CommandOrControl+A',
-    webContentsMethod: 'selectAll'
+    webContentsMethod: wc => wc.selectAll()
   },
   services: {
     label: 'Services'
@@ -129,19 +141,19 @@ const roles = {
     label: 'Toggle Developer Tools',
     accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
     nonNativeMacOSRole: true,
-    windowMethod: 'toggleDevTools'
+    windowMethod: w => w.webContents.toggleDevTools()
   },
   togglefullscreen: {
     label: 'Toggle Full Screen',
     accelerator: isMac ? 'Control+Command+F' : 'F11',
-    windowMethod: (window) => {
+    windowMethod: (window: BrowserWindow) => {
       window.setFullScreen(!window.isFullScreen());
     }
   },
   undo: {
     label: 'Undo',
     accelerator: 'CommandOrControl+Z',
-    webContentsMethod: 'undo'
+    webContentsMethod: wc => wc.undo()
   },
   unhide: {
     label: 'Show All'
@@ -156,7 +168,7 @@ const roles = {
     label: 'Zoom In',
     accelerator: 'CommandOrControl+Plus',
     nonNativeMacOSRole: true,
-    webContentsMethod: (webContents) => {
+    webContentsMethod: (webContents: WebContents) => {
       webContents.zoomLevel += 0.5;
     }
   },
@@ -164,7 +176,7 @@ const roles = {
     label: 'Zoom Out',
     accelerator: 'CommandOrControl+-',
     nonNativeMacOSRole: true,
-    webContentsMethod: (webContents) => {
+    webContentsMethod: (webContents: WebContents) => {
       webContents.zoomLevel -= 0.5;
     }
   },
@@ -214,11 +226,11 @@ const roles = {
             { role: 'stopSpeaking' }
           ]
         }
-      ] : [
+      ] as MenuItemConstructorOptions[] : [
         { role: 'delete' },
         { type: 'separator' },
         { role: 'selectAll' }
-      ])
+      ] as MenuItemConstructorOptions[])
     ]
   },
   // View submenu
@@ -245,40 +257,38 @@ const roles = {
       ...(isMac ? [
         { type: 'separator' },
         { role: 'front' }
-      ] : [
+      ] as MenuItemConstructorOptions[] : [
         { role: 'close' }
-      ])
+      ] as MenuItemConstructorOptions[])
     ]
   }
 };
 
-exports.roleList = roles;
-
-const canExecuteRole = (role) => {
-  if (!Object.prototype.hasOwnProperty.call(roles, role)) return false;
+const canExecuteRole = (role: keyof typeof roleList) => {
+  if (!Object.prototype.hasOwnProperty.call(roleList, role)) return false;
   if (!isMac) return true;
 
   // macOS handles all roles natively except for a few
-  return roles[role].nonNativeMacOSRole;
+  return roleList[role].nonNativeMacOSRole;
 };
 
-exports.getDefaultLabel = (role) => {
-  return Object.prototype.hasOwnProperty.call(roles, role) ? roles[role].label : '';
-};
+export function getDefaultLabel (role: RoleId) {
+  return Object.prototype.hasOwnProperty.call(roleList, role) ? roleList[role].label : '';
+}
 
-exports.getDefaultAccelerator = (role) => {
-  if (Object.prototype.hasOwnProperty.call(roles, role)) return roles[role].accelerator;
-};
+export function getDefaultAccelerator (role: RoleId) {
+  if (Object.prototype.hasOwnProperty.call(roleList, role)) return roleList[role].accelerator;
+}
 
-exports.shouldRegisterAccelerator = (role) => {
-  const hasRoleRegister = Object.prototype.hasOwnProperty.call(roles, role) && roles[role].registerAccelerator !== undefined;
-  return hasRoleRegister ? roles[role].registerAccelerator : true;
-};
+export function shouldRegisterAccelerator (role: RoleId) {
+  const hasRoleRegister = Object.prototype.hasOwnProperty.call(roleList, role) && roleList[role].registerAccelerator !== undefined;
+  return hasRoleRegister ? roleList[role].registerAccelerator : true;
+}
 
-exports.getDefaultSubmenu = (role) => {
-  if (!Object.prototype.hasOwnProperty.call(roles, role)) return;
+export function getDefaultSubmenu (role: RoleId) {
+  if (!Object.prototype.hasOwnProperty.call(roleList, role)) return;
 
-  let { submenu } = roles[role];
+  let { submenu } = roleList[role];
 
   // remove null items from within the submenu
   if (Array.isArray(submenu)) {
@@ -286,35 +296,27 @@ exports.getDefaultSubmenu = (role) => {
   }
 
   return submenu;
-};
+}
 
-exports.execute = (role, focusedWindow, focusedWebContents) => {
+export function execute (role: RoleId, focusedWindow: BrowserWindow, focusedWebContents: WebContents) {
   if (!canExecuteRole(role)) return false;
 
-  const { appMethod, webContentsMethod, windowMethod } = roles[role];
+  const { appMethod, webContentsMethod, windowMethod } = roleList[role];
 
   if (appMethod) {
-    app[appMethod]();
+    appMethod();
     return true;
   }
 
   if (windowMethod && focusedWindow != null) {
-    if (typeof windowMethod === 'function') {
-      windowMethod(focusedWindow);
-    } else {
-      focusedWindow[windowMethod]();
-    }
+    windowMethod(focusedWindow);
     return true;
   }
 
   if (webContentsMethod && focusedWebContents != null) {
-    if (typeof webContentsMethod === 'function') {
-      webContentsMethod(focusedWebContents);
-    } else {
-      focusedWebContents[webContentsMethod]();
-    }
+    webContentsMethod(focusedWebContents);
     return true;
   }
 
   return false;
-};
+}

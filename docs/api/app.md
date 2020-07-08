@@ -369,7 +369,7 @@ Returns:
 
 Emitted when the GPU process crashes or is killed.
 
-### Event: 'renderer-process-crashed'
+### Event: 'renderer-process-crashed' _Deprecated_
 
 Returns:
 
@@ -813,6 +813,20 @@ Returns `String` - Name of the application handling the protocol, or an empty
   Expect a different format on Linux, possibly with a `.desktop` suffix.
 
 This method returns the application name of the default handler for the protocol
+(aka URI scheme) of a URL.
+
+### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
+
+* `url` String - a URL with the protocol name to check. Unlike the other
+  methods in this family, this accepts an entire URL, including `://` at a
+  minimum (e.g. `https://`).
+
+Returns `Promise<Object>` - Resolve with an object containing the following:
+  * `icon` NativeImage - the display icon of the app handling the protocol.
+  * `path` String  - installation path of the app handling the protocol.
+  * `name` String - display name of the app handling the protocol.
+
+This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
 
 ### `app.setUserTasks(tasks)` _Windows_

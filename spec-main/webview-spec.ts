@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifdescribe } from './spec-helpers';
 import { expect } from 'chai';
 
@@ -415,18 +415,17 @@ describe('<webview> tag', function () {
       await emittedOnce(app, 'browser-window-created');
     });
 
-    it('emits a web-contents-created event', (done) => {
-      app.on('web-contents-created', function listener (event, contents) {
-        if (contents.getType() === 'window') {
-          app.removeListener('web-contents-created', listener);
-          done();
-        }
-      });
+    it('emits a web-contents-created event', async () => {
+      const webContentsCreated = emittedUntil(app, 'web-contents-created',
+        (event: Electron.Event, contents: Electron.WebContents) => contents.getType() === 'window');
+
       loadWebView(w.webContents, {
         allowpopups: 'on',
         webpreferences: 'nativeWindowOpen=1',
         src: `file://${fixtures}/pages/window-open.html`
       });
+
+      await webContentsCreated;
     });
   });
 

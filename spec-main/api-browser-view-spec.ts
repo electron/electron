@@ -233,17 +233,16 @@ describe('BrowserView module', () => {
   });
 
   describe('window.open()', () => {
-    it('works in BrowserView', (done) => {
+    it('works in BrowserView', async () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      view.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
-        e.preventDefault();
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('host');
-        expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature');
-        done();
-      });
+      const newWindow = emittedOnce(view.webContents, 'new-window');
+      view.webContents.once('new-window', event => event.preventDefault());
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      const [, url, frameName,,, additionalFeatures] = await newWindow;
+      expect(url).to.equal('http://host/');
+      expect(frameName).to.equal('host');
+      expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature');
     });
   });
 });

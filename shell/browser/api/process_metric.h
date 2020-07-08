@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_API_PROCESS_METRIC_H_
 
 #include <memory>
+#include <string>
 
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
@@ -37,10 +38,12 @@ struct ProcessMetric {
   int type;
   base::Process process;
   std::unique_ptr<base::ProcessMetrics> metrics;
+  std::string name;
 
   ProcessMetric(int type,
                 base::ProcessHandle handle,
-                std::unique_ptr<base::ProcessMetrics> metrics);
+                std::unique_ptr<base::ProcessMetrics> metrics,
+                const std::string& name = std::string());
   ~ProcessMetric();
 
 #if !defined(OS_LINUX)

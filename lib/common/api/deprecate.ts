@@ -55,12 +55,12 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     };
   },
 
-  moveAPI: (fn: Function, oldUsage: string, newUsage: string) => {
+  moveAPI<T extends Function> (fn: T, oldUsage: string, newUsage: string): T {
     const warn = warnOnce(oldUsage, newUsage);
     return function (this: any) {
       warn();
       return fn.apply(this, arguments);
-    };
+    } as any;
   },
 
   // change the name of an event

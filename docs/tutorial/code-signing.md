@@ -100,6 +100,25 @@ To see all of this in action, check out Electron Fiddle's source code,
 [especially its `electron-forge` configuration
 file](https://github.com/electron/fiddle/blob/master/forge.config.js).
 
+If you plan to access the microphone or camera within your app using Electron's APIs, you'll also
+need to add the following entitlements:
+
+```xml
+<key>com.apple.security.device.audio-input</key>
+<true/>
+<key>com.apple.security.device.camera</key>
+<true/>
+```
+
+If these are not present in your app's entitlements when you invoke, for example:
+
+```js
+const { systemPreferences } = require('electron')
+
+const microphone = systemPreferences.askForMediaAccess('microphone')
+```
+
+Your app may crash. See the Resource Access section in [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime) for more information and entitlements you may need.
 
 ## `electron-builder`
 

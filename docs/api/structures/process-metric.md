@@ -11,6 +11,8 @@
   * `Pepper Plugin`
   * `Pepper Plugin Broker`
   * `Unknown`
+* `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
+    Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 * `cpu` [CPUUsage](cpu-usage.md) - CPU usage of the process.
 * `creationTime` Number - Creation time for this process.
     The time is represented as number of milliseconds since epoch.

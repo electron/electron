@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/cancelable_callback.h"
-#include "shell/browser/api/electron_api_top_level_window.h"
+#include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
@@ -18,7 +18,7 @@ namespace electron {
 
 namespace api {
 
-class BrowserWindow : public TopLevelWindow,
+class BrowserWindow : public BaseWindow,
                       public content::RenderWidgetHost::InputEventObserver,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
@@ -66,8 +66,9 @@ class BrowserWindow : public TopLevelWindow,
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
+  void OnWindowIsKeyChanged(bool is_key) override;
 
-  // TopLevelWindow:
+  // BaseWindow:
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;

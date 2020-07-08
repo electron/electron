@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#define SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
 #include <map>
 #include <memory>
@@ -25,27 +25,25 @@ namespace api {
 
 class View;
 
-class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
-                       public NativeWindowObserver {
+class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
+                   public NativeWindowObserver {
  public:
   static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  base::WeakPtr<TopLevelWindow> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
+  base::WeakPtr<BaseWindow> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   NativeWindow* window() const { return window_.get(); }
 
  protected:
   // Common constructor.
-  TopLevelWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
-  // Creating independent TopLevelWindow instance.
-  TopLevelWindow(gin_helper::Arguments* args,
-                 const gin_helper::Dictionary& options);
-  ~TopLevelWindow() override;
+  BaseWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
+  // Creating independent BaseWindow instance.
+  BaseWindow(gin_helper::Arguments* args,
+             const gin_helper::Dictionary& options);
+  ~BaseWindow() override;
 
   // TrackableObject:
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
@@ -247,7 +245,7 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   void EmitEventSoon(base::StringPiece eventName) {
     base::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
-        base::BindOnce(base::IgnoreResult(&TopLevelWindow::Emit<Args...>),
+        base::BindOnce(base::IgnoreResult(&BaseWindow::Emit<Args...>),
                        weak_factory_.GetWeakPtr(), eventName));
   }
 
@@ -267,11 +265,11 @@ class TopLevelWindow : public gin_helper::TrackableObject<TopLevelWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
-  base::WeakPtrFactory<TopLevelWindow> weak_factory_;
+  base::WeakPtrFactory<BaseWindow> weak_factory_;
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_TOP_LEVEL_WINDOW_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

@@ -4,6 +4,7 @@
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'app', loader: () => require('./app') },
   { name: 'autoUpdater', loader: () => require('./auto-updater') },
+  { name: 'BaseWindow', loader: () => require('./base-window') },
   { name: 'BrowserView', loader: () => require('./browser-view') },
   { name: 'BrowserWindow', loader: () => require('./browser-window') },
   { name: 'contentTracing', loader: () => require('./content-tracing') },
@@ -25,7 +26,6 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'screen', loader: () => require('./screen') },
   { name: 'session', loader: () => require('./session') },
   { name: 'systemPreferences', loader: () => require('./system-preferences') },
-  { name: 'TopLevelWindow', loader: () => require('./top-level-window') },
   { name: 'TouchBar', loader: () => require('./touch-bar') },
   { name: 'Tray', loader: () => require('./tray') },
   { name: 'View', loader: () => require('./view') },
