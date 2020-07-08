@@ -180,6 +180,46 @@ bool FormatCommandLineString(base::string16* exe,
   return true;
 }
 
+std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
+    base::win::RegistryValueIterator* it,
+    boolean* executable_launch_at_login,
+    base::string16 scope,
+    const Browser::LoginItemSettings& options) {
+  std::vector<Browser::LaunchItem> launch_items;
+  while (it->Valid()) {
+    base::string16 exe = options.path;
+    base::string16 startup_approved_key_path =
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApprov"
+        L"ed"
+        L"\\Run";
+    base::win::RegKey startup_approved_key(
+        HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+    base::string16 keyVal;
+    if (FormatCommandLineString(&exe, options.args)) {
+      if (it->Value() == exe) {
+        Browser::LaunchItem launch_item;
+        base::string16 startup_approved_keyVal;
+        launch_item.name = it->Name();
+        launch_item.path = options.path;
+        launch_item.args = options.args;
+        launch_item.scope = scope;
+
+        if (!FAILED(startup_approved_key.ReadValue(it->Name(),
+                                                   &startup_approved_keyVal))) {
+          launch_item.enabled = startup_approved_keyVal == exe;
+          *executable_launch_at_login =
+              executable_launch_at_login || launch_item.enabled;
+        } else {
+          launch_item.enabled = false;
+        }
+        launch_items.push_back(launch_item);
+      }
+    }
+    it->operator++();
+  }
+  return launch_items;
+}
+
 std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
   base::FilePath path;
 
@@ -526,7 +566,6 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::string16 keyVal;
 
   if (settings.open_at_login) {
-    LOG(ERROR) << settings.open_at_login << std::endl;
     base::string16 exe = settings.path;
     if (FormatCommandLineString(&exe, settings.args)) {
       key.WriteValue(app_user_model_id, exe.c_str());
@@ -556,11 +595,6 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   LoginItemSettings settings;
   base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
-  base::string16 startup_approved_key_path =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
-      L"\\Run";
-  base::win::RegKey startup_approved_key(
-      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
   // keep old openAtLogin behaviour
@@ -570,72 +604,23 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
       settings.open_at_login = keyVal == exe;
     }
   }
-  LOG(ERROR) << "*** STARTING MY CODE***";
+  // iterate over current user and machine registries and populate launch items
+  // if there exists a launch entry with property enabled=='true',
+  // set executable_launch_at_login to 'true'.
   boolean executable_launch_at_login = false;
   std::vector<Browser::LaunchItem> launch_items;
   base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
                                                  keyPath.c_str());
   base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
                                                  keyPath.c_str());
-  // duplicate code but is this more readable?
-  // tried to refactor, but you need to pass in so many variables that the
-  // function declaration is miles long trouble with copy/delete iterator, and
-  // the keys need to be remade as well
-  LOG(ERROR) << "*** iterators initialized***";
-  while (hkcu_iterator.Valid()) {
-    LOG(ERROR) << "*** HKCU ITERATOR***" << std::endl;
-    LOG(ERROR) << hkcu_iterator.Name();
-    LOG(ERROR) << hkcu_iterator.Value();
-    base::string16 exe = options.path;
-    if (FormatCommandLineString(&exe, options.args)) {
-      LOG(ERROR) << exe;
-      if (hkcu_iterator.Value() == exe) {
-        LOG(ERROR) << "*** MATCH FOUND! ***";
-        Browser::LaunchItem launch_item;
-        base::string16 startup_approved_keyVal;
-        launch_item.name = hkcu_iterator.Name();
-        launch_item.path = options.path;
-        launch_item.args = options.args;
-        launch_item.scope = L"user";
 
-        if (!FAILED(startup_approved_key.ReadValue(hkcu_iterator.Name(),
-                                                   &startup_approved_keyVal))) {
-          launch_item.enabled = startup_approved_keyVal == exe;
-          executable_launch_at_login =
-              executable_launch_at_login || launch_item.enabled;
-        } else {
-          launch_item.enabled = false;
-        }
-        launch_items.push_back(launch_item);
-      }
-    }
-    ++hkcu_iterator;
-  }
-
-  while (hklm_iterator.Valid()) {
-    base::string16 exe = options.path;
-    if (FormatCommandLineString(&exe, options.args)) {
-      if (hklm_iterator.Value() == exe) {
-        Browser::LaunchItem launch_item;
-        base::string16 startup_approved_keyVal;
-        launch_item.name = hkcu_iterator.Name();
-        launch_item.path = options.path;
-        launch_item.args = options.args;
-        launch_item.scope = L"machine";
-
-        if (!FAILED(startup_approved_key.ReadValue(hklm_iterator.Name(),
-                                                   &startup_approved_keyVal))) {
-          launch_item.enabled = startup_approved_keyVal == exe;
-          executable_launch_at_login =
-              executable_launch_at_login || launch_item.enabled;
-        } else {
-          launch_item.enabled = false;
-        }
-        launch_items.push_back(launch_item);
-      }
-    }
-    ++hklm_iterator;
-  }
+  launch_items = GetLoginItemSettingsHelper(
+      &hkcu_iterator, &executable_launch_at_login, L"user", options);
+  std::vector<Browser::LaunchItem> launch_items_hklm =
+      GetLoginItemSettingsHelper(&hklm_iterator, &executable_launch_at_login,
+                                 L"machine", options);
+  launch_items.insert(launch_items.end(), launch_items_hklm.begin(),
+                      launch_items_hklm.end());
 
   settings.executable_launch_at_login = executable_launch_at_login;
   settings.launch_items = launch_items;
