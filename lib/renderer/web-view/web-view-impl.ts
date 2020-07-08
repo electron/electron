@@ -196,8 +196,6 @@ export class WebViewImpl {
       this.internalElement.contentWindow!
     );
 
-    // ResizeObserver is a browser global not recognized by "standard".
-    /* globals ResizeObserver */
     // TODO(zcbenz): Should we deprecate the "resize" event? Wait, it is not
     // even documented.
     this.resizeObserver = new ResizeObserver(this.onElementResize.bind(this));
