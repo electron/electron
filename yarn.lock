@@ -122,10 +122,10 @@
     universal-user-agent "^2.0.0"
     url-template "^2.0.8"
 
-"@primer/octicons@^9.1.1":
-  version "9.1.1"
-  resolved "https://registry.yarnpkg.com/@primer/octicons/-/octicons-9.1.1.tgz#a72a59e8ec77521cc2eefb36c345f780a61c79fb"
-  integrity sha512-7EGM0+Kx39bIgaYr9bTCzFvBCxm+fqh/YJIoSns8zfCwss32ZJ2GDP3024UH709VQtM5cKFU4JcIYPHyGdSfIg==
+"@primer/octicons@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@primer/octicons/-/octicons-10.0.0.tgz#81e94ed32545dfd3472c8625a5b345f3ea4c153d"
+  integrity sha512-iuQubq62zXZjPmaqrsfsCZUqIJgZhmA6W0tKzIKGRbkoLnff4TFFCL87hfIRATZ5qZPM4m8ioT8/bXI7WVa9WQ==
   dependencies:
     object-assign "^4.1.1"
 
