@@ -339,12 +339,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   manager->SetCanonicalCookie(
       *canonical_cookie, url, options,
       base::BindOnce(
-          [](gin_helper::Promise<void> promise,
-             net::CookieInclusionStatus status) {
-            if (status.IsInclude()) {
+          [](gin_helper::Promise<void> promise, net::CookieAccessResult r) {
+            if (r.status.IsInclude()) {
               promise.Resolve();
             } else {
-              promise.RejectWithErrorMessage(InclusionStatusToString(status));
+              promise.RejectWithErrorMessage(InclusionStatusToString(r.status));
             }
           },
           std::move(promise)));
