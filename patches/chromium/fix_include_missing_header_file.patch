@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Kallai <kadam@inf.u-szeged.hu>
+Date: Thu, 2 Jul 2020 17:09:16 +0200
+Subject: fix: include missing header file
+
+Include the header from base/ where NOTREACHED is defined.
+This fixes a build failure on Windows on Arm.
+
+The patch was originally created by Richard Townsend <richard.townsend@arm.com>.
+
+Bug: 1100363
+Change-Id: Ic97f7c217f22e51f1d4c9bd87ae434e263975c6d
+Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/2279091
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+
+diff --git a/third_party/crashpad/crashpad/snapshot/win/system_snapshot_win.cc b/third_party/crashpad/crashpad/snapshot/win/system_snapshot_win.cc
+index 88cbc800de81de88d08c41e893ad4f64dc65ef47..778892c50be5e2acaaed3d47e45fb8a8261e695e 100644
+--- a/third_party/crashpad/crashpad/snapshot/win/system_snapshot_win.cc
++++ b/third_party/crashpad/crashpad/snapshot/win/system_snapshot_win.cc
+@@ -23,7 +23,9 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "base/check_op.h"
+ #include "base/logging.h"
++#include "base/notreached.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/strings/utf_string_conversions.h"
