@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sigurd Schneider <sigurds@chromium.org>
 Date: Mon, 3 Feb 2020 14:45:06 +0100
-Subject: [debugger] Allow termination-on-resume when paused at a breakpoint
+Subject: Allow termination-on-resume when paused at a breakpoint
 
 This CL implements functionality to allow an embedder to mark a
 debug scope as terminate-on-resume. This results in a termination
