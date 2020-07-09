@@ -2025,7 +2025,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::mojom::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode =
+      printing::mojom::DuplexMode::kSimplex;
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode,
                      static_cast<int>(duplex_mode));
