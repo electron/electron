@@ -134,6 +134,7 @@ class SlurpStream extends Writable {
     this._data = Buffer.concat([this._data, chunk]);
     callback();
   }
+
   data () { return this._data; }
 }
 

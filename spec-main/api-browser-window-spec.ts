@@ -1007,7 +1007,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
         it('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
@@ -1021,7 +1021,7 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             const enterFullScreen = emittedOnce(w, 'enter-full-screen');
             w.show();
@@ -1030,7 +1030,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
               w.fullScreen = false;
@@ -1056,7 +1056,7 @@ describe('BrowserWindow module', () => {
             expect(w.isFullScreen()).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -1067,7 +1067,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
