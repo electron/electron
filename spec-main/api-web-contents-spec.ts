@@ -1905,7 +1905,7 @@ describe('webContents module', () => {
       wasCalled = true;
     });
     await w.loadURL('about:blank');
-    await w.webContents.executeJavaScript(`window.open('about:blank')`);
+    await w.webContents.executeJavaScript('window.open(\'about:blank\')');
     await new Promise((resolve) => { process.nextTick(resolve); });
     expect(wasCalled).to.equal(false);
     await closeAllWindows();

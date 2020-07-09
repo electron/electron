@@ -523,7 +523,7 @@ describe('net module', () => {
         session: sess
       });
       const response = await getResponse(urlRequest);
-      expect(response.headers['x-cookie']).to.equal(`undefined`);
+      expect(response.headers['x-cookie']).to.equal('undefined');
     });
 
     it('should be able to use the sessions cookie store', async () => {

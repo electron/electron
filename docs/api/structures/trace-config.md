@@ -41,7 +41,7 @@ An example TraceConfig that roughly matches what Chrome DevTools records:
     'disabled-by-default-v8.cpu_profiler',
     'disabled-by-default-v8.cpu_profiler.hires'
   ],
-  excluded_categories: [ '*' ]
+  excluded_categories: ['*']
 }
 ```
 
