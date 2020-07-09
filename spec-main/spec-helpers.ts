@@ -53,6 +53,7 @@ class RemoteControlApp {
       req.end();
     });
   }
+
   remotely = (script: Function, ...args: any[]): Promise<any> => {
     return this.remoteEval(`(${script})(...${JSON.stringify(args)})`);
   }
