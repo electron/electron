@@ -101,7 +101,7 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
       // Recognize certain types of objects.
       if (value instanceof Buffer) {
         type = 'buffer';
-      } else if (value.constructor && value.constructor.name === 'NativeImage') {
+      } else if (value && value.constructor && value.constructor.name === 'NativeImage') {
         type = 'nativeimage';
       } else if (Array.isArray(value)) {
         type = 'array';
