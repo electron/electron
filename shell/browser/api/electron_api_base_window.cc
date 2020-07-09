@@ -280,6 +280,10 @@ void BaseWindow::OnWindowAlwaysOnTopChanged() {
   Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
+void BaseWindow::OnWindowVisibleOnAllWorkspacesChanged() {
+  Emit("visible-on-all-workspaces-changed", IsVisibleOnAllWorkspaces());
+}
+
 void BaseWindow::OnExecuteAppCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }

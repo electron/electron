@@ -556,6 +556,11 @@ void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
     observer.OnWindowAlwaysOnTopChanged();
 }
 
+void NativeWindow::NotifyWindowVisibleOnAllWorkspacesChanged() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowVisibleOnAllWorkspacesChanged();
+}
+
 void NativeWindow::NotifyWindowExecuteAppCommand(const std::string& command) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnExecuteAppCommand(command);

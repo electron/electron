@@ -3550,6 +3550,15 @@ describe('BrowserWindow module', () => {
           expect(w.isVisibleOnAllWorkspaces()).to.be.true();
         });
       });
+
+      ifit(process.platform !== 'win32')('emits an event when the visibleOnAllWorkspaces state changes', async () => {
+        const w = new BrowserWindow({ show: false });
+        const visibleOnAllWorkspacesEvent = emittedOnce(w, 'visible-on-all-workspaces-changed');
+        expect(w.visibleOnAllWorkspaces).to.be.false();
+        w.visibleOnAllWorkspaces = true;
+        const [, visibleOnAllWorkspaces] = await visibleOnAllWorkspacesEvent;
+        expect(visibleOnAllWorkspaces).to.be.true();
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('documentEdited state', () => {

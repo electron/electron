@@ -580,6 +580,15 @@ Returns:
 
 Emitted when the window is set or unset to show always on top of other windows.
 
+#### Event: 'visible-on-all-workspaces-changed'
+
+Returns:
+
+* `event` Event
+* `isVisibleOnAllWorkspaces` Boolean
+
+Emitted when a window is set or unset to be visible on all workspaces.
+
 #### Event: 'app-command' _Windows_ _Linux_
 
 Returns:
