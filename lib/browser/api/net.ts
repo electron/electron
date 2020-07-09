@@ -300,6 +300,10 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     this._redirectPolicy = redirectPolicy;
   }
 
+  get chunkedEncoding () {
+    return this._chunkedEncoding || false;
+  }
+
   set chunkedEncoding (value: boolean) {
     if (this._started) {
       throw new Error('chunkedEncoding can only be set before the request is started');
