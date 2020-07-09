@@ -453,12 +453,17 @@ function doubleToString (num) {
     .join(''); // join the bytes in holy matrimony as a string
 }
 
-function WhammyVideo (speed, quality) { // a more abstract-ish API
+function WhammyVideo (speed, quality = 0.8) { // a more abstract-ish API
   this.frames = [];
   this.duration = 1000 / speed;
-  this.quality = quality || 0.8;
+  this.quality = quality;
 }
 
+/**
+ *
+ * @param {string} frame
+ * @param {number} [duration]
+ */
 WhammyVideo.prototype.add = function (frame, duration) {
   if (typeof duration !== 'undefined' && this.duration) throw new Error("you can't pass a duration if the fps is set");
   if (typeof duration === 'undefined' && !this.duration) throw new Error("if you don't have the fps set, you need to have durations here.");
