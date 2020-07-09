@@ -3,8 +3,6 @@ import { Readable, Writable } from 'stream';
 import { app } from 'electron';
 import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 const {
-  net,
-  Net,
   isValidHeaderName,
   isValidHeaderValue,
   createURLLoader
@@ -271,7 +269,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   return urlLoaderOptions;
 }
 
-class ClientRequest extends Writable implements Electron.ClientRequest {
+export class ClientRequest extends Writable implements Electron.ClientRequest {
   _started: boolean = false;
   _firstWrite: boolean = false;
   _aborted: boolean = false;
@@ -494,10 +492,6 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 }
 
-Net.prototype.request = function (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
+export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   return new ClientRequest(options, callback);
-};
-
-net.ClientRequest = ClientRequest;
-
-module.exports = net;
+}
