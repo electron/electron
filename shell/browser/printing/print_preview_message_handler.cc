@@ -88,7 +88,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   }
 
   const base::ReadOnlySharedMemoryRegion& metafile =
-      params.content->metafile_data_region;
+      params.content.metafile_data_region;
 
   if (printing::IsOopifEnabled()) {
     auto* client =
@@ -106,9 +106,9 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
             printing::mojom::PrintCompositor::Status::kCompositingFailure,
             base::ReadOnlySharedMemoryRegion()));
   } else {
-    ResolvePromise(ids.request_id,
-                   base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
-                       content.metafile_data_region));
+    ResolvePromise(
+        ids.request_id,
+        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(metafile));
   }
 }
 
@@ -134,7 +134,7 @@ void PrintPreviewMessageHandler::OnDidPrepareForDocumentToPdf(
       return;
 
     client->DoPrepareForDocumentToPdf(
-        document_cookie, render_frame_host,
+        document_cookie,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
             base::BindOnce(
                 &PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone,
@@ -175,13 +175,10 @@ void PrintPreviewMessageHandler::OnCompositePdfPageDone(
 
 void PrintPreviewMessageHandler::OnDidPreviewPage(
     content::RenderFrameHost* render_frame_host,
-    const printing::mojom::DidPreviewPageParams& params,
+    const PrintHostMsg_DidPreviewPage_Params& params,
     const PrintHostMsg_PreviewIds& ids) {
-  int page_number = params.page_number;
-  const printing::mojom::DidPrintContentParams& content = *params.content;
-
-  if (page_number < printing::FIRST_PAGE_INDEX ||
-      !content.metafile_data_region.IsValid()) {
+  if (params.page_number < printing::FIRST_PAGE_INDEX ||
+      !params.content.metafile_data_region.IsValid()) {
     RejectPromise(ids.request_id);
     return;
   }
@@ -193,10 +190,10 @@ void PrintPreviewMessageHandler::OnDidPreviewPage(
 
     // Use utility process to convert skia metafile to pdf.
     client->DoCompositePageToPdf(
-        params.document_cookie, render_frame_host, content,
+        params.document_cookie, render_frame_host, params.content,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
             base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfPageDone,
-                           weak_ptr_factory_.GetWeakPtr(), page_number,
+                           weak_ptr_factory_.GetWeakPtr(), params.page_number,
                            params.document_cookie, ids),
             printing::mojom::PrintCompositor::Status::kCompositingFailure,
             base::ReadOnlySharedMemoryRegion()));

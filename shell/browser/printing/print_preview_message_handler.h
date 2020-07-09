@@ -53,7 +53,7 @@ class PrintPreviewMessageHandler
       content::RenderFrameHost* render_frame_host,
       const PrintHostMsg_DidPreviewDocument_Params& params,
       const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(
+  void OnCompositeDocumentToPdfDone(
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
@@ -69,7 +69,7 @@ class PrintPreviewMessageHandler
                               printing::mojom::PrintCompositor::Status status,
                               base::ReadOnlySharedMemoryRegion region);
   void OnDidPreviewPage(content::RenderFrameHost* render_frame_host,
-                        const printing::mojom::DidPreviewPageParams& params,
+                        const PrintHostMsg_DidPreviewPage_Params& params,
                         const PrintHostMsg_PreviewIds& ids);
 
   // printing::mojo::PrintPreviewUI:
