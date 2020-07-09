@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d864fa6d948e591b9e3cd6e79ed0ff35ae34932b..634c318db970f5c80699217f5f99467f91747455 100644
+index 210f216c3bd6ba4d3ef21f795f86f8c14dbb6a96..5cf4a3c571f94629d4ed5b7b44603d8fe7d49da1 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -413,6 +413,11 @@ class RendererSandboxedProcessLauncherDelegate
@@ -48,7 +48,7 @@ index d864fa6d948e591b9e3cd6e79ed0ff35ae34932b..634c318db970f5c80699217f5f99467f
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
 @@ -448,10 +456,13 @@ class RendererSandboxedProcessLauncherDelegate
-     return service_manager::SandboxType::kRenderer;
+     return sandbox::policy::SandboxType::kRenderer;
    }
  
 -#if defined(OS_WIN)

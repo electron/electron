@@ -219,7 +219,7 @@ index ff4ccbbc0e24ea624f421e1a6e7d5b817106a292..269a4ac2f580f9d8858db84fe7d91c79
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9bb2839b9736afa6c3b22c38d46f9df07031a241..5b5873c6abcafb24beb74a13dfeeed868197f455 100644
+index ac1bc8252f7c815d27f568df8fc3a8f7b08b55fe..9e58542edc52035174f4862f724ca22d32feca34 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -220,6 +220,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -227,11 +227,11 @@ index 9bb2839b9736afa6c3b22c38d46f9df07031a241..5b5873c6abcafb24beb74a13dfeeed86
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
 +    switches::kDisableColorCorrectRendering,
-     service_manager::switches::kDisableSeccompFilterSandbox,
-     service_manager::switches::kGpuSandboxAllowSysVShm,
-     service_manager::switches::kGpuSandboxFailuresFatal,
+     sandbox::policy::switches::kDisableSeccompFilterSandbox,
+     sandbox::policy::switches::kGpuSandboxAllowSysVShm,
+     sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 634c318db970f5c80699217f5f99467f91747455..238b543a4df8dfdf5e35e5a5707a43caca55679c 100644
+index 5cf4a3c571f94629d4ed5b7b44603d8fe7d49da1..d41d1e32a500dadd2cd3144f34dfc641303977aa 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -227,6 +227,7 @@
@@ -249,7 +249,7 @@ index 634c318db970f5c80699217f5f99467f91747455..238b543a4df8dfdf5e35e5a5707a43ca
 +    switches::kDisableColorCorrectRendering,
      network::switches::kExplicitlyAllowedPorts,
      service_manager::switches::kDisableInProcessStackTraces,
-     service_manager::switches::kDisableSeccompFilterSandbox,
+     sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc

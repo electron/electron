@@ -475,10 +475,10 @@ index 641a63e8c18e3e81acacb67a59b285dac44abbb1..72b74ec00402ff7b5b4853c08365eb2f
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
-index 599d24e260ae85a2f71054cc64f296875b97170d..70269ce3332edd07f1760476f3592d08c3dc3130 100644
+index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab1cacffef 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -33,6 +33,7 @@ class Compositor;
+@@ -29,6 +29,7 @@ class Compositor;
  
  namespace viz {
  class HostFrameSinkManager;
@@ -486,7 +486,7 @@ index 599d24e260ae85a2f71054cc64f296875b97170d..70269ce3332edd07f1760476f3592d08
  }
  
  namespace mojo {
-@@ -83,6 +84,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+@@ -78,6 +79,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
    // For destroying the GL context/surface that draw to a platform window before
    // the platform window is destroyed.
    friend class viz::HostFrameSinkManager;

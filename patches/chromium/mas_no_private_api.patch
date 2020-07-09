@@ -400,7 +400,7 @@ index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index b29b68be6fa6b0329ed03c2d9011690c5e6f83c5..3a8aca70701534d19cdf1655da18811473e42ea4 100644
+index 1ecb98346e11c14440b509ce62e12b0a426130fc..c0fab734ed37a67d5e1797bb2bd6df098acec530 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -36,6 +36,7 @@
@@ -430,7 +430,7 @@ index b29b68be6fa6b0329ed03c2d9011690c5e6f83c5..3a8aca70701534d19cdf1655da188114
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -304,8 +308,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
+@@ -307,8 +311,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
