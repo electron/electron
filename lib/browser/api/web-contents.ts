@@ -72,6 +72,19 @@ const PDFPageSizes: Record<string, MediaSize> = {
   }
 };
 
+// The minimum micron size Chromium accepts is that where:
+// Per printing/units.h:
+//  * kMicronsPerInch - Length of an inch in 0.001mm unit.
+//  * kPointsPerInch - Length of an inch in CSS's 1pt unit.
+//
+// Formula: (kPointsPerInch / kMicronsPerInch) * size >= 1
+//
+// Practically, this means microns need to be > 352 microns.
+// We therefore need to verify this or it will silently fail.
+const isValidCustomPageSize = (width: number, height: number) => {
+  return [width, height].every(x => x > 352);
+};
+
 // Default printing setting
 const defaultPrintingSetting = {
   // Customizable.
@@ -315,13 +328,20 @@ WebContents.prototype.printToPDF = function (options) {
         const error = new Error('height and width properties are required for pageSize');
         return Promise.reject(error);
       }
-      // Dimensions in Microns
-      // 1 meter = 10^6 microns
+
+      // Dimensions in Microns - 1 meter = 10^6 microns
+      const height = Math.ceil(pageSize.height);
+      const width = Math.ceil(pageSize.width);
+      if (!isValidCustomPageSize(width, height)) {
+        const error = new Error('height and width properties must be minimum 352 microns.');
+        return Promise.reject(error);
+      }
+
       printSettings.mediaSize = {
         name: 'CUSTOM',
         custom_display_name: 'Custom',
-        height_microns: Math.ceil(pageSize.height),
-        width_microns: Math.ceil(pageSize.width)
+        height_microns: height,
+        width_microns: width
       };
     } else if (Object.prototype.hasOwnProperty.call(PDFPageSizes, pageSize)) {
       printSettings.mediaSize = PDFPageSizes[pageSize];
@@ -356,12 +376,19 @@ WebContents.prototype.print = function (options = {}, callback) {
         if (!pageSize.height || !pageSize.width) {
           throw new Error('height and width properties are required for pageSize');
         }
+
         // Dimensions in Microns - 1 meter = 10^6 microns
+        const height = Math.ceil(pageSize.height);
+        const width = Math.ceil(pageSize.width);
+        if (!isValidCustomPageSize(width, height)) {
+          throw new Error('height and width properties must be minimum 352 microns.');
+        }
+
         (options as any).mediaSize = {
           name: 'CUSTOM',
           custom_display_name: 'Custom',
-          height_microns: Math.ceil(pageSize.height),
-          width_microns: Math.ceil(pageSize.width)
+          height_microns: height,
+          width_microns: width
         };
       } else if (PDFPageSizes[pageSize]) {
         (options as any).mediaSize = PDFPageSizes[pageSize];
