@@ -8,7 +8,6 @@ import { commonModuleList } from '@electron/internal/common/api/module-list';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const { NativeImage } = process._linkedBinding('electron_common_native_image');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();
@@ -59,7 +58,7 @@ function wrapArgs (args: any[], visited = new Set()): any {
       };
     }
 
-    if (value instanceof NativeImage) {
+    if (value && value.constructor && value.constructor.name === 'NativeImage') {
       return { type: 'nativeimage', value: serialize(value) };
     } else if (Array.isArray(value)) {
       visited.add(value);
