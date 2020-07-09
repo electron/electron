@@ -1311,6 +1311,8 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Error description called back if the print fails.
 
+When a custom `pageSize` is passed, Chromium attempts to validate platform specific minumum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
+
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
 
