@@ -276,6 +276,10 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 }
 
 void BrowserWindow::OnWindowClosed() {
+  // We need to reset the browser views before we call Cleanup, because the
+  // browser views are child views of the main web contents view, which will be
+  // deleted by Cleanup.
+  BaseWindow::ResetBrowserViews();
   Cleanup();
   // See BaseWindow::OnWindowClosed on why calling InvalidateWeakPtrs.
   weak_factory_.InvalidateWeakPtrs();
