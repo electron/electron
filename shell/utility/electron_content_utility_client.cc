@@ -11,10 +11,10 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
+#include "sandbox/policy/switches.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/public/cpp/service.h"
-#include "services/service_manager/sandbox/switches.h"
 
 #if defined(OS_WIN)
 #include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
@@ -94,7 +94,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
 #if defined(OS_WIN)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   utility_process_running_elevated_ = command_line->HasSwitch(
-      service_manager::switches::kNoSandboxAndElevatedPrivileges);
+      sandbox::policy::switches::kNoSandboxAndElevatedPrivileges);
 #endif
 
   // If our process runs with elevated privileges, only add elevated Mojo
