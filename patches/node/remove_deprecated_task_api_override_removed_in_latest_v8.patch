@@ -8,10 +8,10 @@ This is already present in Node.js v14 and can be removed when we upgrade.
 CL: https://chromium-review.googlesource.com/c/v8/v8/+/1868620
 
 diff --git a/src/node_platform.h b/src/node_platform.h
-index bebd61b0c22644881455105eeb795e4fdbcd5ae9..df7b764237ccad425d8833c9ca746170e2c838a9 100644
+index 533ae1bcca824837aca327d4ff8f122da12d94f0..3c855afeb4019adfb5389721357abe3cd620a01c 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
-@@ -147,14 +147,6 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -148,14 +148,6 @@ class NodePlatform : public MultiIsolatePlatform {
    void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
    void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task> task,
                                   double delay_in_seconds) override;

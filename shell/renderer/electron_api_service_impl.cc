@@ -209,33 +209,6 @@ void ElectronApiServiceImpl::ReceivePostMessage(
                0);
 }
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-void ElectronApiServiceImpl::DereferenceRemoteJSCallback(
-    const std::string& context_id,
-    int32_t object_id) {
-  const auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";
-  if (!document_created_)
-    return;
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (!frame)
-    return;
-
-  v8::Isolate* isolate = blink::MainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
-  v8::Context::Scope context_scope(context);
-
-  base::ListValue args;
-  args.AppendString(context_id);
-  args.AppendInteger(object_id);
-
-  v8::Local<v8::Value> v8_args = gin::ConvertToV8(isolate, args);
-  EmitIPCEvent(context, true /* internal */, channel, {}, v8_args,
-               0 /* sender_id */);
-}
-#endif
-
 void ElectronApiServiceImpl::NotifyUserActivation() {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (frame)

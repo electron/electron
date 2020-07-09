@@ -402,6 +402,7 @@ Returns:
   * `key` String - Equivalent to [KeyboardEvent.key][keyboardevent].
   * `code` String - Equivalent to [KeyboardEvent.code][keyboardevent].
   * `isAutoRepeat` Boolean - Equivalent to [KeyboardEvent.repeat][keyboardevent].
+  * `isComposing` Boolean - Equivalent to [KeyboardEvent.isComposing][keyboardevent].
   * `shift` Boolean - Equivalent to [KeyboardEvent.shiftKey][keyboardevent].
   * `control` Boolean - Equivalent to [KeyboardEvent.controlKey][keyboardevent].
   * `alt` Boolean - Equivalent to [KeyboardEvent.altKey][keyboardevent].

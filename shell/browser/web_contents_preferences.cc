@@ -26,6 +26,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 
 #if defined(OS_WIN)
@@ -126,6 +127,15 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  if (IsUndefined(options::kContextIsolation)) {
+    node::Environment* env = node::Environment::GetCurrent(isolate);
+    EmitWarning(env,
+                "The default of contextIsolation is deprecated and will be "
+                "changing from false to true in a future release of Electron.  "
+                "See https://github.com/electron/electron/issues/23506 for "
+                "more information",
+                "electron");
+  }
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -181,6 +191,10 @@ void WebContentsPreferences::SetDefaults() {
   }
 
   last_preference_ = preference_.Clone();
+}
+
+bool WebContentsPreferences::IsUndefined(base::StringPiece key) {
+  return !preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(base::StringPiece key,

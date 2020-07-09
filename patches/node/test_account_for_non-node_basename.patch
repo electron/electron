@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 18 Jun 2020 14:40:35 -0700
+Subject: test: account for non-node basename
+
+Refs https://github.com/nodejs/node/commit/edf75e4299219d57e53f98956b8e27e4945dd5d6.
+
+Because Electron smoketests with Node.js' own specs, it's the case for us that the basename is
+`Electron`. These tests were failing as they're hardcoded to assume it's `node` so this makes
+them more flexible for embedders.
+
+Upstreamed at https://github.com/nodejs/node/pull/33952.
+
+diff --git a/test/message/eval_messages.out b/test/message/eval_messages.out
+index 8840633959a18baf9b40305d73511d47ae213978..64743d4ae67acf1f8cb28b832b1f7204ace48952 100644
+--- a/test/message/eval_messages.out
++++ b/test/message/eval_messages.out
+@@ -55,11 +55,11 @@ ReferenceError: y is not defined
+ var ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ [eval]:1
+ var ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ done
+diff --git a/test/message/stdin_messages.out b/test/message/stdin_messages.out
+index 72edb0b00b28cd6cf6bac51519be4fde4708b161..3c71c5683b7d949bc7b1a46e7cbd4473c40cf871 100644
+--- a/test/message/stdin_messages.out
++++ b/test/message/stdin_messages.out
+@@ -67,11 +67,11 @@ ReferenceError: y is not defined
+ let ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ [stdin]:1
+ let ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ done
+diff --git a/test/message/throw_error_with_getter_throw.out b/test/message/throw_error_with_getter_throw.out
+index 5daf35aad44ce37e3681d73d19c7e0eb7e7c3439..2162185e7845fcc5f716aa652e253db95462a622 100644
+--- a/test/message/throw_error_with_getter_throw.out
++++ b/test/message/throw_error_with_getter_throw.out
+@@ -3,4 +3,4 @@
+ throw {  // eslint-disable-line no-throw-literal
+ ^
+ [object Object]
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+diff --git a/test/message/throw_null.out b/test/message/throw_null.out
+index db6cc3edf583eff7c815ea4fe24c3ecc60b03888..c97dcbfe134a22721d68f2bb5570d8e59450c3bb 100644
+--- a/test/message/throw_null.out
++++ b/test/message/throw_null.out
+@@ -3,4 +3,4 @@
+ throw null;
+ ^
+ null
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+diff --git a/test/message/throw_undefined.out b/test/message/throw_undefined.out
+index 016eb8ffd95e3389c93e24912d71ccb152fd99d7..4b2bfdbc5907085b19f43ba1306aaa6efc41beee 100644
+--- a/test/message/throw_undefined.out
++++ b/test/message/throw_undefined.out
+@@ -3,4 +3,4 @@
+ throw undefined;
+ ^
+ undefined
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)

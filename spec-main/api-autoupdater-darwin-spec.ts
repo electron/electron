@@ -7,7 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

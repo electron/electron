@@ -55,6 +55,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_permission_manager.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/session_preferences.h"
@@ -300,7 +301,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (item->IsSavePackageDownload())
     return;
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   auto handle = DownloadItem::FromOrCreate(isolate, item);
@@ -346,7 +347,7 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
 }
 
 v8::Local<v8::Promise> Session::GetCacheSize() {
-  auto* isolate = v8::Isolate::GetCurrent();
+  auto* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<int64_t> promise(isolate);
   auto handle = promise.GetHandle();
 
@@ -370,7 +371,7 @@ v8::Local<v8::Promise> Session::GetCacheSize() {
 }
 
 v8::Local<v8::Promise> Session::ClearCache() {
-  auto* isolate = v8::Isolate::GetCurrent();
+  auto* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<void> promise(isolate);
   auto handle = promise.GetHandle();
 
@@ -562,7 +563,7 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
 }
 
 v8::Local<v8::Promise> Session::ClearAuthCache() {
-  auto* isolate = v8::Isolate::GetCurrent();
+  auto* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -646,7 +647,7 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   options.Get("lastModified", &last_modified);
   options.Get("eTag", &etag);
   options.Get("startTime", &start_time);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   if (path.empty() || url_chain.empty() || length == 0) {
     isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
         isolate, "Must pass non-empty path, urlChain and length.")));
@@ -680,7 +681,7 @@ std::vector<base::FilePath::StringType> Session::GetPreloads() const {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 v8::Local<v8::Promise> Session::LoadExtension(
     const base::FilePath& extension_path) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<const extensions::Extension*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (browser_context()->IsOffTheRecord()) {
@@ -723,7 +724,7 @@ v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
   const extensions::Extension* extension =
       registry->GetInstalledExtension(extension_id);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   if (extension) {
     return gin::ConvertToV8(isolate, extension);
   } else {
@@ -854,7 +855,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<std::set<std::string>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "shell/browser/api/ui_event.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -37,7 +38,7 @@ bool InvokeBoolMethod(const Menu* menu,
                       const char* method,
                       int command_id,
                       bool default_value = false) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   // We need to cast off const here because GetWrapper() is non-const, but
   // ui::SimpleMenuModel::Delegate's methods are const.
@@ -67,7 +68,7 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
     int command_id,
     bool use_default_accelerator,
     ui::Accelerator* accelerator) const {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Value> val = gin_helper::CallMethod(
       isolate, const_cast<Menu*>(this), "_getAcceleratorForCommandId",
@@ -81,21 +82,21 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
 }
 
 void Menu::ExecuteCommand(int command_id, int flags) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_executeCommand",
                          CreateEventFromFlags(flags), command_id);
 }
 
 void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_menuWillShow");
 }
 
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
   // return ((callback, ref) => { callback() }).bind(null, callback, this)
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;

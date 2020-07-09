@@ -1,8 +1,9 @@
-import { app, dialog } from 'electron';
+import * as electron from 'electron';
 
 import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
+const { app, dialog } = electron;
 
 type DefaultAppOptions = {
   file: null | string;
@@ -145,13 +146,90 @@ function startRepl () {
     process.exit(1);
   }
 
-  // prevent quitting
+  // Prevent quitting.
   app.on('window-all-closed', () => {});
 
-  const repl = require('repl');
-  repl.start('> ').on('exit', () => {
+  const GREEN = '32';
+  const colorize = (color: string, s: string) => `\x1b[${color}m${s}\x1b[0m`;
+  const electronVersion = colorize(GREEN, `v${process.versions.electron}`);
+  const nodeVersion = colorize(GREEN, `v${process.versions.node}`);
+
+  console.info(`
+    Welcome to the Electron.js REPL \\[._.]/
+
+    You can access all Electron.js modules here as well as Node.js modules.
+    Using: Node.js ${nodeVersion} and Electron.js ${electronVersion}
+  `);
+
+  const { REPLServer } = require('repl');
+  const repl = new REPLServer({
+    prompt: '> '
+  }).on('exit', () => {
     process.exit(0);
   });
+
+  function defineBuiltin (context: any, name: string, getter: Function) {
+    const setReal = (val: any) => {
+      // Deleting the property before re-assigning it disables the
+      // getter/setter mechanism.
+      delete context[name];
+      context[name] = val;
+    };
+
+    Object.defineProperty(context, name, {
+      get: () => {
+        const lib = getter();
+
+        delete context[name];
+        Object.defineProperty(context, name, {
+          get: () => lib,
+          set: setReal,
+          configurable: true,
+          enumerable: false
+        });
+
+        return lib;
+      },
+      set: setReal,
+      configurable: true,
+      enumerable: false
+    });
+  }
+
+  defineBuiltin(repl.context, 'electron', () => electron);
+  for (const api of Object.keys(electron) as (keyof typeof electron)[]) {
+    defineBuiltin(repl.context, api, () => electron[api]);
+  }
+
+  // Copied from node/lib/repl.js. For better DX, we don't want to
+  // show e.g 'contentTracing' at a higher priority than 'const', so
+  // we only trigger custom tab-completion when no common words are
+  // potentially matches.
+  const commonWords = [
+    'async', 'await', 'break', 'case', 'catch', 'const', 'continue',
+    'debugger', 'default', 'delete', 'do', 'else', 'export', 'false',
+    'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let',
+    'new', 'null', 'return', 'switch', 'this', 'throw', 'true', 'try',
+    'typeof', 'var', 'void', 'while', 'with', 'yield'
+  ];
+
+  const electronBuiltins = [...Object.keys(electron), 'original-fs', 'electron'];
+
+  const defaultComplete = repl.completer;
+  repl.completer = (line: string, callback: Function) => {
+    const lastSpace = line.lastIndexOf(' ');
+    const currentSymbol = line.substring(lastSpace + 1, repl.cursor);
+
+    const filterFn = (c: string) => c.startsWith(currentSymbol);
+    const ignores = commonWords.filter(filterFn);
+    const hits = electronBuiltins.filter(filterFn);
+
+    if (!ignores.length && hits.length) {
+      callback(null, [hits, currentSymbol]);
+    } else {
+      defaultComplete.apply(repl, [line, callback]);
+    }
+  };
 }
 
 // Start the specified app if there is one specified in command line, otherwise

@@ -9,7 +9,7 @@ import { NativeImage } from 'electron/common';
 import { serialize, deserialize } from '../lib/common/type-utils';
 import { nativeImage } from 'electron';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const expectPathsEqual = (path1: string, path2: string) => {
   if (process.platform === 'win32') {
@@ -344,7 +344,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   });
 
   describe('remote objects registry', () => {
-    it('does not dereference until the render view is deleted (regression)', (done) => {
+    it('does not dereference until the render view is deleted (regression)', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -353,12 +353,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         }
       });
 
-      ipcMain.once('error-message', (event, message) => {
-        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/);
-        done();
-      });
-
+      const message = emittedOnce(ipcMain, 'error-message');
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+      const [, msg] = await message;
+      expect(msg).to.match(/^Cannot call method 'getURL' on missing remote object/);
     });
   });
 
@@ -1004,6 +1002,31 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         expect(e.message).to.match(/Could not call remote function/);
         expect(e.cause.message).to.equal('error from main');
       }
+    });
+  });
+
+  describe('gc behavior', () => {
+    const win = makeWindow();
+    const remotely = makeRemotely(win);
+    it('is resilient to gc happening between request and response', async () => {
+      const obj = { x: 'y' };
+      win().webContents.on('remote-get-global', (event) => {
+        event.returnValue = obj;
+      });
+      await remotely(() => {
+        const { ipc } = process._linkedBinding('electron_renderer_ipc');
+        const originalSendSync = ipc.sendSync.bind(ipc) as any;
+        ipc.sendSync = (...args: any[]): any => {
+          const ret = originalSendSync(...args);
+          (window as any).gc();
+          return ret;
+        };
+
+        for (let i = 0; i < 100; i++) {
+          // eslint-disable-next-line
+          require('electron').remote.getGlobal('test').x;
+        }
+      });
     });
   });
 });

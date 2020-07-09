@@ -326,7 +326,6 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
-    "//components/crash/core/app",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
@@ -348,6 +347,7 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//gin",
+    "//media/blink:blink",
     "//media/capture/mojom:video_capture",
     "//media/mojo/mojom",
     "//net:extras",
@@ -433,6 +433,9 @@ source_set("electron_lib") {
       "*\bviews/*",
     ]
   }
+  if (!is_mas_build) {
+    deps += [ "//components/crash/core/app" ]
+  }
 
   set_sources_assignment_filter(
       sources_assignment_filter + extra_source_filters)
@@ -458,9 +461,12 @@ source_set("electron_lib") {
     deps += [
       "//components/remote_cocoa/app_shim",
       "//content/common:mac_helpers",
-      "//third_party/crashpad/crashpad/client",
       "//ui/accelerated_widget_mac",
     ]
+
+    if (!is_mas_build) {
+      deps += [ "//third_party/crashpad/crashpad/client" ]
+    }
 
     libs = [
       "AVFoundation.framework",
@@ -482,19 +488,26 @@ source_set("electron_lib") {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [ "shell/browser/auto_updater_mac.mm" ]
       defines += [ "MAS_BUILD" ]
+      sources -= [
+        "shell/app/electron_crash_reporter_client.cc",
+        "shell/app/electron_crash_reporter_client.h",
+        "shell/common/crash_keys.cc",
+        "shell/common/crash_keys.h",
+      ]
     } else {
       libs += [
         "Squirrel.framework",
-        "ReactiveCocoa.framework",
+        "ReactiveObjC.framework",
         "Mantle.framework",
       ]
-      cflags_objcc = [
-        "-F",
-        rebase_path("external_binaries", root_build_dir),
+
+      deps += [
+        "//third_party/squirrel.mac:reactiveobjc_framework+link",
+        "//third_party/squirrel.mac:squirrel_framework+link",
       ]
 
-      # ReactiveCocoa which is used by Squirrel requires using __weak.
-      cflags_objcc += [ "-fobjc-weak" ]
+      # ReactiveObjC which is used by Squirrel requires using __weak.
+      cflags_objcc = [ "-fobjc-weak" ]
     }
   }
   if (is_linux) {
@@ -587,15 +600,6 @@ source_set("electron_lib") {
       "//components/viz/service",
       "//services/viz/public/mojom",
       "//ui/compositor",
-    ]
-  }
-
-  if (enable_remote_module) {
-    sources += [
-      "shell/common/api/remote/remote_callback_freer.cc",
-      "shell/common/api/remote/remote_callback_freer.h",
-      "shell/common/api/remote/remote_object_freer.cc",
-      "shell/common/api/remote/remote_object_freer.h",
     ]
   }
 
@@ -774,8 +778,10 @@ if (is_mac) {
     framework_contents = [
       "Resources",
       "Libraries",
-      "Helpers",
     ]
+    if (!is_mas_build) {
+      framework_contents += [ "Helpers" ]
+    }
     public_deps = [
       ":electron_framework_libraries",
       ":electron_lib",
@@ -806,8 +812,6 @@ if (is_mac) {
     }
 
     ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
@@ -858,17 +862,49 @@ if (is_mac) {
     }
   }
 
+  template("stripped_framework") {
+    action(target_name) {
+      assert(defined(invoker.framework))
+
+      script = "//electron/build/strip_framework.py"
+
+      forward_variables_from(invoker, [ "deps" ])
+      inputs = [ "$root_out_dir/" + invoker.framework ]
+      outputs = [ "$target_out_dir/stripped_frameworks/" + invoker.framework ]
+
+      args = rebase_path(inputs) + rebase_path(outputs)
+    }
+  }
+
+  stripped_framework("stripped_mantle_framework") {
+    framework = "Mantle.framework"
+    deps = [ "//third_party/squirrel.mac:mantle_framework" ]
+  }
+
+  stripped_framework("stripped_reactiveobjc_framework") {
+    framework = "ReactiveObjC.framework"
+    deps = [ "//third_party/squirrel.mac:reactiveobjc_framework" ]
+  }
+
+  stripped_framework("stripped_squirrel_framework") {
+    framework = "Squirrel.framework"
+    deps = [ "//third_party/squirrel.mac:squirrel_framework" ]
+  }
+
   bundle_data("electron_app_framework_bundle_data") {
     sources = [ "$root_out_dir/$electron_framework_name.framework" ]
     if (!is_mas_build) {
-      sources += [
-        "external_binaries/Mantle.framework",
-        "external_binaries/ReactiveCocoa.framework",
-        "external_binaries/Squirrel.framework",
-      ]
+      sources += get_target_outputs(":stripped_mantle_framework") +
+                 get_target_outputs(":stripped_reactiveobjc_framework") +
+                 get_target_outputs(":stripped_squirrel_framework")
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
-    public_deps = [ ":electron_framework+link" ]
+    public_deps = [
+      ":electron_framework+link",
+      ":stripped_mantle_framework",
+      ":stripped_reactiveobjc_framework",
+      ":stripped_squirrel_framework",
+    ]
 
     foreach(helper_params, content_mac_helpers) {
       sources +=
@@ -1006,12 +1042,15 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
-        ":crashpad_handler_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
         ":swiftshader_egl_syms",
         ":swiftshader_gles_syms",
       ]
+
+      if (!is_mas_build) {
+        deps += [ ":crashpad_handler_syms" ]
+      }
 
       foreach(helper_params, content_mac_helpers) {
         _helper_target = helper_params[0]
@@ -1063,7 +1102,9 @@ if (is_mac) {
       data += [ "$root_out_dir/resources/default_app.asar" ]
     }
 
-    public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    if (use_v8_context_snapshot) {
+      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    }
 
     if (is_win) {
       sources += [
@@ -1171,18 +1212,6 @@ test("shell_browser_ui_unittests") {
     "//ui/base",
     "//ui/strings",
   ]
-
-  if (is_mac) {
-    # Resolve paths owing to different test executable locations
-    ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
-      "-rpath",
-      "@loader_path",
-      "-rpath",
-      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
-    ]
-  }
 }
 
 template("dist_zip") {
@@ -1280,9 +1309,12 @@ dist_zip("electron_chromedriver_zip") {
 
 mksnapshot_deps = [
   ":licenses",
-  "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)",
   "//v8:mksnapshot($v8_snapshot_toolchain)",
 ]
+
+if (use_v8_context_snapshot) {
+  mksnapshot_deps += [ "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)" ]
+}
 
 group("electron_mksnapshot") {
   public_deps = mksnapshot_deps

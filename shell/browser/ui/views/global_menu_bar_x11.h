@@ -40,8 +40,8 @@ class GlobalMenuBarX11 {
   explicit GlobalMenuBarX11(NativeWindowViews* window);
   virtual ~GlobalMenuBarX11();
 
-  // Creates the object path for DbusmenuServer which is attached to |xid|.
-  static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
+  // Creates the object path for DbusmenuServer which is attached to |window|.
+  static std::string GetPathForWindow(x11::Window window);
 
   void SetMenu(ElectronMenuModel* menu_model);
   bool IsServerStarted() const;
@@ -52,7 +52,7 @@ class GlobalMenuBarX11 {
 
  private:
   // Creates a DbusmenuServer.
-  void InitServer(gfx::AcceleratedWidget xid);
+  void InitServer(x11::Window window);
 
   // Create a menu from menu model.
   void BuildMenuFromModel(ElectronMenuModel* model, DbusmenuMenuitem* parent);
@@ -69,7 +69,7 @@ class GlobalMenuBarX11 {
   CHROMEG_CALLBACK_0(GlobalMenuBarX11, void, OnSubMenuShow, DbusmenuMenuitem*);
 
   NativeWindowViews* window_;
-  gfx::AcceleratedWidget xid_;
+  x11::Window xwindow_;
 
   DbusmenuServer* server_ = nullptr;
 

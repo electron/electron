@@ -18,7 +18,6 @@ const { ELECTRON_VERSION, SRC_DIR } = require('../../lib/utils');
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
 
-const CACHE_DIR = path.resolve(__dirname, '.cache');
 const NO_NOTES = 'No notes';
 const FOLLOW_REPOS = ['electron/electron', 'electron/node'];
 
@@ -27,6 +26,8 @@ const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
 const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci']);
 const knownTypes = new Set([...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
+
+const getCacheDir = () => process.env.NOTES_CACHE_PATH || path.resolve(__dirname, '.cache');
 
 /**
 ***
@@ -53,9 +54,7 @@ class Commit {
     this.owner = owner; // string
     this.repo = repo; // string
 
-    this.body = null; // string
     this.isBreakingChange = false;
-    this.issueNumber = null; // number
     this.note = null; // string
     this.prKeys = new Set(); // GHKey
     this.revertHash = null; // string
@@ -129,41 +128,11 @@ const OMIT_FROM_RELEASE_NOTES_KEYS = [
   'blank'
 ];
 
-const getNoteFromBody = body => {
-  if (!body) {
-    return null;
-  }
-
-  const NOTE_PREFIX = 'Notes: ';
-  const NOTE_HEADER = '#### Release Notes';
-
-  let note = body
-    .split(/\r?\n\r?\n/) // split into paragraphs
-    .map(paragraph => paragraph.trim())
-    .map(paragraph => paragraph.startsWith(NOTE_HEADER) ? paragraph.slice(NOTE_HEADER.length).trim() : paragraph)
-    .find(paragraph => paragraph.startsWith(NOTE_PREFIX));
-
-  if (note) {
-    note = note
-      .slice(NOTE_PREFIX.length)
-      .replace(/<!--.*-->/, '') // '<!-- change summary here-->'
-      .replace(/\r?\n/, ' ') // remove newlines
-      .trim();
-  }
-
-  if (note && OMIT_FROM_RELEASE_NOTES_KEYS.includes(note.toLowerCase())) {
-    return NO_NOTES;
-  }
-
-  return note;
-};
-
 /**
  * Looks for our project's conventions in the commit message:
  *
  * 'semantic: some description' -- sets semanticType, subject
  * 'some description (#99999)' -- sets subject, pr
- * 'Fixes #3333' -- sets issueNumber
  * 'Merge pull request #99999 from ${branchname}' -- sets pr
  * 'This reverts commit ${sha}' -- sets revertHash
  * line starting with 'BREAKING CHANGE' in body -- sets isBreakingChange
@@ -179,13 +148,6 @@ const parseCommitMessage = (commitMessage, commit) => {
   if (pos !== -1) {
     body = subject.slice(pos).trim();
     subject = subject.slice(0, pos).trim();
-  }
-
-  if (body) {
-    commit.body = body;
-
-    const note = getNoteFromBody(body);
-    if (note) { commit.note = note; }
   }
 
   // if the subject ends in ' (#dddd)', treat it as a pull request id
@@ -219,7 +181,6 @@ const parseCommitMessage = (commitMessage, commit) => {
 
   // https://help.github.com/articles/closing-issues-using-keywords/
   if ((match = body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i))) {
-    commit.issueNumber = parseInt(match[1]);
     commit.semanticType = commit.semanticType || 'fix';
   }
 
@@ -243,32 +204,32 @@ const parseCommitMessage = (commitMessage, commit) => {
 const parsePullText = (pull, commit) => parseCommitMessage(`${pull.data.title}\n\n${pull.data.body}`, commit);
 
 const getLocalCommitHashes = async (dir, ref) => {
-  const args = ['log', '-z', '--format=%H', ref];
-  return (await runGit(dir, args)).split('\0').map(hash => hash.trim());
+  const args = ['log', '--format=%H', ref];
+  return (await runGit(dir, args)).split(/[\r\n]+/).map(hash => hash.trim());
 };
 
 // return an array of Commits
 const getLocalCommits = async (module, point1, point2) => {
   const { owner, repo, dir } = module;
 
-  const fieldSep = '||';
-  const format = ['%H', '%B'].join(fieldSep);
-  const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
-  const logs = (await runGit(dir, args)).split('\0').map(field => field.trim());
+  const fieldSep = ',';
+  const format = ['%H', '%s'].join(fieldSep);
+  const args = ['log', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
+  const logs = (await runGit(dir, args)).split(/[\r\n]+/).map(field => field.trim());
 
   const commits = [];
   for (const log of logs) {
     if (!log) {
       continue;
     }
-    const [hash, message] = log.split(fieldSep, 2).map(field => field.trim());
-    commits.push(parseCommitMessage(message, new Commit(hash, owner, repo)));
+    const [hash, subject] = log.split(fieldSep, 2).map(field => field.trim());
+    commits.push(parseCommitMessage(subject, new Commit(hash, owner, repo)));
   }
   return commits;
 };
 
 const checkCache = async (name, operation) => {
-  const filename = path.resolve(CACHE_DIR, name);
+  const filename = path.resolve(getCacheDir(), name);
   if (fs.existsSync(filename)) {
     return JSON.parse(fs.readFileSync(filename, 'utf8'));
   }
@@ -292,7 +253,8 @@ async function runRetryable (fn, maxRetries) {
     }
   }
   // Silently eat 404s.
-  if (lastError.status !== 404) throw lastError;
+  // Silently eat 422s, which come from "No commit found for SHA"
+  if (lastError.status !== 404 && lastError.status !== 422) throw lastError;
 }
 
 const getPullCacheFilename = ghKey => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey.number}`;
@@ -300,7 +262,7 @@ const getPullCacheFilename = ghKey => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey
 const getCommitPulls = async (owner, repo, hash) => {
   const name = `${owner}-${repo}-commit-${hash}`;
   const retryableFunc = () => octokit.repos.listPullRequestsAssociatedWithCommit({ owner, repo, commit_sha: hash });
-  const ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
+  let ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
 
   // only merged pulls belong in release notes
   if (ret && ret.data) {
@@ -314,6 +276,11 @@ const getCommitPulls = async (owner, repo, hash) => {
       const payload = { ...ret, data: pull };
       await checkCache(cachefile, () => payload);
     }
+  }
+
+  // ensure the return value has the expected structure, even on failure
+  if (!ret || !ret.data) {
+    ret = { data: [] };
   }
 
   return ret;
@@ -447,19 +414,25 @@ function getOldestMajorBranchOfCommit (commit, pool) {
     .shift();
 }
 
+function commitExistsBeforeMajor (commit, pool, major) {
+  const firstAppearance = getOldestMajorBranchOfCommit(commit, pool);
+  return firstAppearance && (firstAppearance < major);
+}
+
 /***
 ****  Main
 ***/
 
 const getNotes = async (fromRef, toRef, newVersion) => {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR);
+  const cacheDir = getCacheDir();
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir);
   }
 
   const pool = new Pool();
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_VERSION };
+  const electron = { owner: 'electron', repo: 'electron', dir: path.resolve(SRC_DIR, 'electron') };
   await addRepoToPool(pool, electron, fromRef, toRef);
 
   // Don't include submodules if comparing across major versions;
@@ -496,27 +469,24 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // ensure the commit has a note
   for (const commit of pool.commits) {
     for (const prKey of commit.prKeys.values()) {
-      commit.note = commit.note || await getNoteFromClerk(prKey);
       if (commit.note) {
         break;
       }
+      commit.note = await getNoteFromClerk(prKey);
     }
-    // use a fallback note in case someone missed a 'Notes' comment
-    commit.note = commit.note || commit.subject;
   }
 
   // remove non-user-facing commits
   pool.commits = pool.commits
-    .filter(commit => commit.note !== NO_NOTES)
+    .filter(commit => commit.note && (commit.note !== NO_NOTES))
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)));
 
   if (!shouldIncludeMultibranchChanges(newVersion)) {
-    const currentMajor = semver.parse(newVersion).major;
-    pool.commits = pool.commits
-      .filter(commit => getOldestMajorBranchOfCommit(commit, pool) >= currentMajor);
+    const { major } = semver.parse(newVersion);
+    pool.commits = pool.commits.filter(commit => !commitExistsBeforeMajor(commit, pool, major));
   }
 
-  pool.commits = removeSupercededChromiumUpdates(pool.commits);
+  pool.commits = removeSupercededStackUpdates(pool.commits);
 
   const notes = {
     breaking: [],
@@ -550,18 +520,24 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   return notes;
 };
 
-const removeSupercededChromiumUpdates = (commits) => {
-  const chromiumRegex = /^Updated Chromium to \d+\.\d+\.\d+\.\d+/;
-  const updates = commits.filter(commit => (commit.note || commit.subject).match(chromiumRegex));
-  const keepers = commits.filter(commit => !updates.includes(commit));
+const removeSupercededStackUpdates = (commits) => {
+  const updateRegex = /^Updated ([a-zA-Z.]+) to v?([\d.]+)/;
+  const notupdates = [];
 
-  // keep the newest update.
-  if (updates.length) {
-    const compare = (a, b) => (a.note || a.subject).localeCompare(b.note || b.subject);
-    keepers.push(updates.sort(compare).pop());
+  const newest = {};
+  for (const commit of commits) {
+    const match = (commit.note || commit.subject).match(updateRegex);
+    if (!match) {
+      notupdates.push(commit);
+      continue;
+    }
+    const [ , dep, version ] = match;
+    if (!newest[dep] || newest[dep].version < version) {
+      newest[dep] = { commit, version };
+    }
   }
 
-  return keepers;
+  return [ ...notupdates, ...Object.values(newest).map(o => o.commit) ];
 };
 
 /***

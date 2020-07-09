@@ -10,6 +10,10 @@ Check the build prerequisites for your platform before proceeding
   * [Linux](build-instructions-linux.md#prerequisites)
   * [Windows](build-instructions-windows.md#prerequisites)
 
+## Build Tools
+
+[Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
+
 ## GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset

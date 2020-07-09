@@ -106,6 +106,7 @@ class App : public ElectronBrowserClient::Delegate,
       const std::string& type,
       const base::DictionaryValue& user_info) override;
   void OnNewWindowForTab() override;
+  void OnDidBecomeActive() override;
 #endif
 
   // content::ContentBrowserClient:
@@ -157,7 +158,9 @@ class App : public ElectronBrowserClient::Delegate,
 
  private:
   void SetAppPath(const base::FilePath& app_path);
-  void ChildProcessLaunched(int process_type, base::ProcessHandle handle);
+  void ChildProcessLaunched(int process_type,
+                            base::ProcessHandle handle,
+                            const std::string& name = std::string());
   void ChildProcessDisconnected(base::ProcessId pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
