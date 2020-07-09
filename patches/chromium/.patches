@@ -113,3 +113,4 @@ cherry-pick-eac3d9283d11.patch
 remove_menu_window_task_item.patch
 backport_1063177.patch
 backport_1019161.patch
+avoid_using_x11_shm_for_remote_connections.patch
