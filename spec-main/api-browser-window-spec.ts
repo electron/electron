@@ -1266,7 +1266,7 @@ describe('BrowserWindow module', () => {
     let w = null as unknown as BrowserWindow;
 
     beforeEach(() => {
-      w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({ show: true });
     });
 
     afterEach(async () => {
