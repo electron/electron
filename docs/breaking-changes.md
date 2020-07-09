@@ -322,7 +322,7 @@ powerMonitor.querySystemIdleState(threshold, callback)
 const idleState = powerMonitor.getSystemIdleState(threshold)
 ```
 
-### API Changed: `powerMonitor.querySystemIdleTime` is now `powerMonitor.getSystemIdleState`
+### API Changed: `powerMonitor.querySystemIdleTime` is now `powerMonitor.getSystemIdleTime`
 
 ```js
 // Removed in Electron 7.0
