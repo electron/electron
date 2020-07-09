@@ -213,7 +213,7 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 
 // Translate the options of printToPDF.
 
-let pendingPromise;
+let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const printSettings = {
     ...defaultPrintingSetting,
