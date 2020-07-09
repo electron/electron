@@ -13,7 +13,7 @@ index 4bb529bb574baf54f6e2e0feeb3d95cfebbc2bb2..c5bcbb2fce2ca9d9e4acc7c298b2bfe0
    ZygoteHandle GetZygote() override {
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
-+    if (browser_command_line.HasSwitch(service_manager::switches::kNoSandbox)) {
++    if (browser_command_line.HasSwitch(sandbox::policy::switches::kNoSandbox)) {
 +      return nullptr;
 +    }
      base::CommandLine::StringType plugin_launcher = browser_command_line
