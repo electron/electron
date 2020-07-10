@@ -856,10 +856,12 @@ describe('chromium features', () => {
         for (const sandboxPopup of [false, true]) {
           const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
-            const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
-            w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-              options!.webPreferences!.sandbox = sandboxPopup;
-            });
+            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+            w.webContents.setWindowOpenOverride(() => ({
+              webPreferences: {
+                sandbox: sandboxPopup
+              }
+            }));
             await w.loadURL(parent);
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {

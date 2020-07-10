@@ -114,7 +114,7 @@ describe('BrowserWindow with affinity module', () => {
       ]);
       await closeWindow(w, { assertNotWindows: false });
     });
-    it('disables node integration when first window is false', async () => {
+    it('allows nodeIntegration to enable in second window with the same affinity', async () => {
       const [, w1] = await Promise.all([
         testNodeIntegration(false),
         createWindowWithWebPrefs({
@@ -124,7 +124,7 @@ describe('BrowserWindow with affinity module', () => {
         })
       ]);
       const [, w2] = await Promise.all([
-        testNodeIntegration(false),
+        testNodeIntegration(true),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeTrue,
           preload,
@@ -149,7 +149,7 @@ describe('BrowserWindow with affinity module', () => {
       await closeWindow(w, { assertNotWindows: false });
     });
 
-    it('enables node integration when first window is true', async () => {
+    it('allows nodeIntegration to disable in second window with the same affinity', async () => {
       const [, w1] = await Promise.all([
         testNodeIntegration(true),
         createWindowWithWebPrefs({
@@ -159,7 +159,7 @@ describe('BrowserWindow with affinity module', () => {
         })
       ]);
       const [, w2] = await Promise.all([
-        testNodeIntegration(true),
+        testNodeIntegration(false),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
           preload,

@@ -4,7 +4,9 @@
   const {ipcRenderer} = require('electron')
   ipcRenderer.send('pong', document.visibilityState, document.hidden)
   document.addEventListener('visibilitychange', function () {
-    ipcRenderer.send('pong', document.visibilityState, document.hidden)
+    setTimeout(() => {
+      ipcRenderer.send('pong', document.visibilityState, document.hidden)
+    }, 500);
   })
 </script>
 </body>

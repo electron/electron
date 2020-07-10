@@ -1,5 +1,6 @@
-let var internalBinding: any;
-let var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+/* eslint-disable no-var */
+declare var internalBinding: any;
+declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -42,6 +43,7 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+    isSameOrigin(a: string, b: string): boolean;
   }
 
   type DataPipe = {
@@ -58,7 +60,7 @@ declare namespace NodeJS {
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
-  }
+  };
   type ResponseHead = {
     statusCode: number;
     statusMessage: string;

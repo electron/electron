@@ -53,7 +53,7 @@ describe('new-window event', () => {
       beforeEach((done) => {
         browserWindow = new BrowserWindow(browserWindowOptions);
         browserWindow.loadURL('about:blank');
-        browserWindow.on('ready-to-show', () => { browserWindow.show(); done(); });
+        browserWindow.on('ready-to-show', () => { done(); });
       });
 
       afterEach(closeAllWindows);

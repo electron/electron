@@ -2070,20 +2070,22 @@ describe('BrowserWindow module', () => {
 
       it('should open windows in same domain with cross-scripting enabled', async () => {
         const w = new BrowserWindow({
-          show: false,
+          show: true,
           webPreferences: {
             sandbox: true,
             preload
           }
         });
-        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences!.preload = preload;
-        });
+
+        w.webContents.setWindowOpenOverride(() => ({
+          preload
+        }));
+
         const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open');
         const pageUrl = 'file://' + htmlPath;
         const answer = emittedOnce(ipcMain, 'answer');
         w.loadURL(pageUrl);
-        const [, url, frameName, , options] = await emittedOnce(w.webContents, 'new-window');
+        const [, { url, frameName, options }] = await emittedOnce(w.webContents, 'did-create-window');
         const expectedUrl = process.platform === 'win32'
           ? 'file:///' + htmlPath.replace(/\\/g, '/')
           : pageUrl;
@@ -2097,16 +2099,17 @@ describe('BrowserWindow module', () => {
 
       it('should open windows in another domain with cross-scripting disabled', async () => {
         const w = new BrowserWindow({
-          show: false,
+          show: true,
           webPreferences: {
             sandbox: true,
             preload
           }
         });
 
-        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.webPreferences!.preload = preload;
-        });
+        w.webContents.setWindowOpenOverride(() => ({
+          preload
+        }));
+
         w.loadFile(
           path.join(__dirname, 'fixtures', 'api', 'sandbox.html'),
           { search: 'window-open-external' }
@@ -2166,8 +2169,8 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preloadPath;
         });
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
-        const [, args] = await emittedOnce(ipcMain, 'answer');
-        expect(args).to.include('--enable-sandbox');
+        const [, { argv }] = await emittedOnce(ipcMain, 'answer');
+        expect(argv).to.include('--enable-sandbox');
       });
 
       it('should open windows with the options configured via new-window event listeners', async () => {
@@ -2501,8 +2504,8 @@ describe('BrowserWindow module', () => {
           options.webPreferences!.preload = preloadPath;
         });
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
-        const [, args] = await emittedOnce(ipcMain, 'answer');
-        expect(args).to.include('--native-window-open');
+        const [, { nativeWindowOpen }] = await emittedOnce(ipcMain, 'answer');
+        expect(nativeWindowOpen).to.be.true();
       });
       it('should open windows with the options configured via new-window event listeners', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
@@ -2554,9 +2557,9 @@ describe('BrowserWindow module', () => {
             options.webPreferences!.preload = path.join(fixtures, 'api', 'window-open-preload.js');
           });
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
-          const [, args, typeofProcess] = await emittedOnce(ipcMain, 'answer');
-          expect(args).not.to.include('--node-integration');
-          expect(args).to.include('--native-window-open');
+          const [, { nodeIntegration, nativeWindowOpen, typeofProcess }] = await emittedOnce(ipcMain, 'answer');
+          expect(nodeIntegration).to.be.false();
+          expect(nativeWindowOpen).to.be.true();
           expect(typeofProcess).to.eql('undefined');
         });
 
@@ -2574,7 +2577,7 @@ describe('BrowserWindow module', () => {
             options.webPreferences!.preload = path.join(fixtures, 'api', 'window-open-preload.js');
           });
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
-          const [, , , windowOpenerIsNull] = await emittedOnce(ipcMain, 'answer');
+          const [, { windowOpenerIsNull }] = await emittedOnce(ipcMain, 'answer');
           expect(windowOpenerIsNull).to.be.false('window.opener is null');
         });
       });
@@ -2813,7 +2816,8 @@ describe('BrowserWindow module', () => {
         width: 100,
         height: 100,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          sandbox: true
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));

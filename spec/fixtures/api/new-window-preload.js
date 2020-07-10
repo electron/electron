@@ -1,4 +1,7 @@
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, webFrame } = require('electron');
 
-ipcRenderer.send('answer', process.argv);
+ipcRenderer.send('answer', {
+  nativeWindowOpen: webFrame.getWebPreference('nativeWindowOpen'),
+  argv: process.argv
+});
 window.close();
