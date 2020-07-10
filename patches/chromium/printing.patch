@@ -167,7 +167,19 @@ index 3378f34bd8e3b1cf8156e86d0e9bea97120c101e..c7c611486b158095c10db7d8e425635e
  #endif
  
    ReleasePrinterQuery();
-@@ -461,9 +474,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -463,9 +476,13 @@ void PrintViewManagerBase::OnScriptedPrint(
+ }
+ 
+ void PrintViewManagerBase::OnShowInvalidPrinterSettingsError() {
++  if (!callback_.is_null()) {
++    std::string cb_str = "Invalid printer settings";
++    std::move(callback_).Run(printing_succeeded_, cb_str);
++  }
++
+   base::ThreadTaskRunnerHandle::Get()->PostTask(
+       FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
+                                 l10n_util::GetStringUTF16(
+@@ -463,9 +481,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
