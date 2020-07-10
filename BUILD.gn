@@ -158,7 +158,7 @@ action("electron_js2c") {
     ":electron_worker_bundle",
   ]
 
-  webpack_sources = [
+  sources = [
     "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
@@ -166,8 +166,6 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
-
-  sources = webpack_sources
 
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]

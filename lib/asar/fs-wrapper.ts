@@ -22,7 +22,7 @@ const nextTick = (functionToCall: Function, args: any[] = []) => {
 };
 
 // Cache asar archive objects.
-const cachedArchives = new Map();
+const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 
 const getOrCreateArchive = (archivePath: string) => {
   const isCached = cachedArchives.has(archivePath);
@@ -40,14 +40,14 @@ const getOrCreateArchive = (archivePath: string) => {
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer) => {
   // Shortcut for disabled asar.
-  if (isAsarDisabled()) return { isAsar: false };
+  if (isAsarDisabled()) return { isAsar: <const>false };
 
   // Check for a bad argument type.
   let archivePath = archivePathOrBuffer;
   if (Buffer.isBuffer(archivePathOrBuffer)) {
     archivePath = archivePathOrBuffer.toString();
   }
-  if (typeof archivePath !== 'string') return { isAsar: false };
+  if (typeof archivePath !== 'string') return { isAsar: <const>false };
 
   return asar.splitPath(path.normalize(archivePath));
 };
@@ -59,9 +59,8 @@ const uid = process.getuid != null ? process.getuid() : 0;
 const gid = process.getgid != null ? process.getgid() : 0;
 
 const fakeTime = new Date();
-const msec = (date: Date) => (date || fakeTime).getTime();
 
-const asarStatsToFsStats = function (stats: any) {
+const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
   const { Stats, constants } = require('fs');
 
   let mode = constants.S_IROTH ^ constants.S_IRGRP ^ constants.S_IRUSR ^ constants.S_IWUSR;
@@ -85,10 +84,10 @@ const asarStatsToFsStats = function (stats: any) {
     ++nextInode, // ino
     stats.size,
     undefined, // blocks,
-    msec(stats.atime), // atim_msec
-    msec(stats.mtime), // mtim_msec
-    msec(stats.ctime), // ctim_msec
-    msec(stats.birthtime) // birthtim_msec
+    fakeTime.getTime(), // atim_msec
+    fakeTime.getTime(), // mtim_msec
+    fakeTime.getTime(), // ctim_msec
+    fakeTime.getTime() // birthtim_msec
   );
 };
 
@@ -133,8 +132,9 @@ const overrideAPISync = function (module: Record<string, any>, name: string, pat
   const old = module[name];
   const func = function (this: any, ...args: any[]) {
     const pathArgument = args[pathArgumentIndex!];
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return old.apply(this, args);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return old.apply(this, args);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
@@ -156,8 +156,9 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
   const old = module[name];
   module[name] = function (this: any, ...args: any[]) {
     const pathArgument = args[pathArgumentIndex!];
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return old.apply(this, args);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return old.apply(this, args);
+    const { asarPath, filePath } = pathInfo;
 
     const callback = args[args.length - 1];
     if (typeof callback !== 'function') {
@@ -194,8 +195,9 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
 const makePromiseFunction = function (orig: Function, pathArgumentIndex: number) {
   return function (this: any, ...args: any[]) {
     const pathArgument = args[pathArgumentIndex];
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return orig.apply(this, args);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return orig.apply(this, args);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -228,8 +230,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { lstatSync } = fs;
   fs.lstatSync = (pathArgument: string, options: any) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return lstatSync(pathArgument, options);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return lstatSync(pathArgument, options);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
@@ -242,12 +245,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { lstat } = fs;
   fs.lstat = function (pathArgument: string, options: any, callback: any) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
+    const pathInfo = splitPath(pathArgument);
     if (typeof options === 'function') {
       callback = options;
       options = {};
     }
-    if (!isAsar) return lstat(pathArgument, options, callback);
+    if (!pathInfo.isAsar) return lstat(pathArgument, options, callback);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -295,8 +299,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const wrapRealpathSync = function (realpathSync: Function) {
     return function (this: any, pathArgument: string, options: any) {
-      const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-      if (!isAsar) return realpathSync.apply(this, arguments);
+      const pathInfo = splitPath(pathArgument);
+      if (!pathInfo.isAsar) return realpathSync.apply(this, arguments);
+      const { asarPath, filePath } = pathInfo;
 
       const archive = getOrCreateArchive(asarPath);
       if (!archive) {
@@ -318,8 +323,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const wrapRealpath = function (realpath: Function) {
     return function (this: any, pathArgument: string, options: any, callback: any) {
-      const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-      if (!isAsar) return realpath.apply(this, arguments);
+      const pathInfo = splitPath(pathArgument);
+      if (!pathInfo.isAsar) return realpath.apply(this, arguments);
+      const { asarPath, filePath } = pathInfo;
 
       if (arguments.length < 3) {
         callback = options;
@@ -359,8 +365,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { exists } = fs;
   fs.exists = (pathArgument: string, callback: any) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return exists(pathArgument, callback);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return exists(pathArgument, callback);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -374,8 +381,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   fs.exists[util.promisify.custom] = (pathArgument: string) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return exists[util.promisify.custom](pathArgument);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return exists[util.promisify.custom](pathArgument);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -388,8 +396,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { existsSync } = fs;
   fs.existsSync = (pathArgument: string) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return existsSync(pathArgument);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return existsSync(pathArgument);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) return false;
@@ -399,8 +408,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { access } = fs;
   fs.access = function (pathArgument: string, mode: any, callback: any) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return access.apply(this, arguments);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return access.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     if (typeof mode === 'function') {
       callback = mode;
@@ -446,8 +456,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { accessSync } = fs;
   fs.accessSync = function (pathArgument: string, mode: any) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return accessSync.apply(this, arguments);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return accessSync.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     if (mode == null) mode = fs.constants.F_OK;
 
@@ -478,8 +489,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { readFile } = fs;
   fs.readFile = function (pathArgument: string, options: any, callback: any) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return readFile.apply(this, arguments);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return readFile.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     if (typeof options === 'function') {
       callback = options;
@@ -535,8 +547,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { readFileSync } = fs;
   fs.readFileSync = function (pathArgument: string, options: any) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return readFileSync.apply(this, arguments);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return readFileSync.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
@@ -570,12 +583,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { readdir } = fs;
   fs.readdir = function (pathArgument: string, options: { encoding?: string | null; withFileTypes?: boolean } = {}, callback?: Function) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
+    const pathInfo = splitPath(pathArgument);
     if (typeof options === 'function') {
       callback = options;
       options = {};
     }
-    if (!isAsar) return readdir.apply(this, arguments);
+    if (!pathInfo.isAsar) return readdir.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -595,6 +609,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const dirents = [];
       for (const file of files) {
         const stats = archive.stat(file);
+        if (!stats) {
+          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath: file });
+          nextTick(callback!, [error]);
+          return;
+        }
         if (stats.isFile) {
           dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_FILE));
         } else if (stats.isDirectory) {
@@ -614,8 +633,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { readdirSync } = fs;
   fs.readdirSync = function (pathArgument: string, options: { encoding: BufferEncoding | null; withFileTypes?: false } | BufferEncoding | null) {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return readdirSync.apply(this, arguments);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return readdirSync.apply(this, arguments);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
@@ -631,6 +651,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const dirents = [];
       for (const file of files) {
         const stats = archive.stat(file);
+        if (!stats) {
+          throw createError(AsarError.NOT_FOUND, { asarPath, filePath: file });
+        }
         if (stats.isFile) {
           dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_FILE));
         } else if (stats.isDirectory) {
@@ -647,8 +670,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { internalModuleReadJSON } = internalBinding('fs');
   internalBinding('fs').internalModuleReadJSON = (pathArgument: string) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return internalModuleReadJSON(pathArgument);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return internalModuleReadJSON(pathArgument);
+    const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) return;
@@ -672,8 +696,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { internalModuleStat } = internalBinding('fs');
   internalBinding('fs').internalModuleStat = (pathArgument: string) => {
-    const { isAsar, asarPath, filePath } = splitPath(pathArgument);
-    if (!isAsar) return internalModuleStat(pathArgument);
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
+    const { asarPath, filePath } = pathInfo;
 
     // -ENOENT
     const archive = getOrCreateArchive(asarPath);
@@ -696,8 +721,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         options = {};
       }
 
-      const { isAsar, filePath } = splitPath(pathArgument);
-      if (isAsar && filePath.length > 0) {
+      const pathInfo = splitPath(pathArgument);
+      if (pathInfo.isAsar && pathInfo.filePath.length > 0) {
         const error = createError(AsarError.NOT_DIR);
         nextTick(callback, [error]);
         return;
@@ -710,8 +735,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const { mkdirSync } = fs;
     fs.mkdirSync = function (pathArgument: string, options: any) {
-      const { isAsar, filePath } = splitPath(pathArgument);
-      if (isAsar && filePath.length) throw createError(AsarError.NOT_DIR);
+      const pathInfo = splitPath(pathArgument);
+      if (pathInfo.isAsar && pathInfo.filePath.length) throw createError(AsarError.NOT_DIR);
       return mkdirSync(pathArgument, options);
     };
   }
