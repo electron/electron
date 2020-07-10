@@ -196,7 +196,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
         HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
     base::string16 keyVal;
     if (FormatCommandLineString(&exe, options.args)) {
-      if (it->Value() == exe) {
+      if (it->Value() == exe && options.path.size() > 0) {
         Browser::LaunchItem launch_item;
         base::string16 startup_approved_keyVal;
         launch_item.name = it->Name();
@@ -207,11 +207,11 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
         if (!FAILED(startup_approved_key.ReadValue(it->Name(),
                                                    &startup_approved_keyVal))) {
           launch_item.enabled = startup_approved_keyVal == exe;
-          *executable_launch_at_login =
-              executable_launch_at_login || launch_item.enabled;
         } else {
           launch_item.enabled = false;
         }
+        *executable_launch_at_login =
+            *executable_launch_at_login || launch_item.enabled;
         launch_items.push_back(launch_item);
       }
     }
@@ -575,17 +575,12 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
       if (settings.enabled) {
         startup_approved_key.WriteValue(app_user_model_id, exe.c_str());
       } else {
-        if (!FAILED(
-                startup_approved_key.ReadValue(app_user_model_id, &keyVal))) {
-          startup_approved_key.DeleteValue(app_user_model_id);
-        }
+        startup_approved_key.DeleteValue(app_user_model_id);
       }
     }
     // if open at login is false, delete both values
   } else {
-    if (!FAILED(startup_approved_key.ReadValue(app_user_model_id, &keyVal))) {
-      startup_approved_key.DeleteValue(app_user_model_id);
-    }
+    startup_approved_key.DeleteValue(app_user_model_id);
     key.DeleteValue(app_user_model_id);
   }
 }

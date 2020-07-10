@@ -1176,6 +1176,9 @@ Returns `Object`:
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed. This setting is not available on [MAS builds][mas-builds].
+* `executableLaunchAtLogin` Boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated.
+
+* `launchItems` Object[] _Windows_ - an array of launch items populated from the user's key registry
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 

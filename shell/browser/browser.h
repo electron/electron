@@ -130,7 +130,7 @@ class Browser : public WindowListObserver {
     bool opened_at_login = false;
     bool opened_as_hidden = false;
     bool executable_launch_at_login = false;
-    bool enabled = false;
+    bool enabled = true;
     base::string16 path;
     std::vector<base::string16> args;
     std::vector<LaunchItem> launch_items;

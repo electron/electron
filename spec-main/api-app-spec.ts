@@ -614,28 +614,45 @@ describe('app module', () => {
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
-      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs});
     });
 
     afterEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
-      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs});
     });
 
-    it('sets and returns the app as a login item', done => {
+    it('sets and returns the app as a login item', function() {
+      if (process.platform === 'win32') this.skip();
+
       app.setLoginItemSettings({ openAtLogin: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: false,
         wasOpenedAtLogin: false,
         wasOpenedAsHidden: false,
-        restoreState: false
+        restoreState: false,
       });
-      done();
     });
 
-    it('adds a login item that loads in hidden mode', done => {
+    it('sets and returns the app as a login item (windows)', function() {
+      if (process.platform !== 'win32') this.skip();
+      app.setLoginItemSettings({ openAtLogin: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableLaunchAtLogin: false,
+        launchItems : [],
+      });
+    });
+
+    it('adds a login item that loads in hidden mode', function() {
+      if (process.platform === 'win32') this.skip();
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+      console.log(app.getLoginItemSettings());
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
@@ -643,7 +660,20 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       });
-      done();
+    });
+
+    it('adds a login item that loads in hidden mode (windows)', function() {
+      if (process.platform !== 'win32') this.skip();
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableLaunchAtLogin: false,
+        launchItems: [],
+      });
     });
 
     it('correctly sets and unsets the LoginItem', function () {
@@ -674,13 +704,37 @@ describe('app module', () => {
     it('allows you to pass a custom executable and arguments', function () {
       if (process.platform !== 'win32') this.skip();
 
-      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: true });
 
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
-      expect(app.getLoginItemSettings({
+      const openAtLoginTrueEnabledTrue = app.getLoginItemSettings({ 
         path: updateExe,
         args: processStartArgs
-      }).openAtLogin).to.equal(true);
+      });
+      console.log('** TRUE< TRUE**');
+      console.log(openAtLoginTrueEnabledTrue);
+      expect(openAtLoginTrueEnabledTrue.openAtLogin).to.equal(true);
+    expect(openAtLoginTrueEnabledTrue.executableLaunchAtLogin).to.equal(true);
+
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginTrueEnabledFalse = app.getLoginItemSettings({ 
+        path: updateExe,
+        args: processStartArgs
+      });
+      console.log('** TRUE< FALSE**');
+      console.log(openAtLoginTrueEnabledFalse);
+      expect(openAtLoginTrueEnabledFalse.openAtLogin).to.equal(true);
+      expect(openAtLoginTrueEnabledFalse.executableLaunchAtLogin).to.equal(false);
+
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginFalseEnabledFalse = app.getLoginItemSettings({ 
+        path: updateExe,
+        args: processStartArgs
+      });
+      console.log('** F< F**');
+      console.log(openAtLoginFalseEnabledFalse);
+      expect(openAtLoginFalseEnabledFalse.openAtLogin).to.equal(false);
+      expect(openAtLoginFalseEnabledFalse.executableLaunchAtLogin).to.equal(false);
     });
   });
 
