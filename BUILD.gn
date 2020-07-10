@@ -1102,7 +1102,9 @@ if (is_mac) {
       data += [ "$root_out_dir/resources/default_app.asar" ]
     }
 
-    public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    if (use_v8_context_snapshot) {
+      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    }
 
     if (is_win) {
       sources += [
@@ -1307,9 +1309,12 @@ dist_zip("electron_chromedriver_zip") {
 
 mksnapshot_deps = [
   ":licenses",
-  "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)",
   "//v8:mksnapshot($v8_snapshot_toolchain)",
 ]
+
+if (use_v8_context_snapshot) {
+  mksnapshot_deps += [ "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)" ]
+}
 
 group("electron_mksnapshot") {
   public_deps = mksnapshot_deps

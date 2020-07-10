@@ -141,6 +141,17 @@ describe('webContents module', () => {
       }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize');
     });
 
+    it('throws when an invalid custom pageSize is passed', () => {
+      expect(() => {
+        w.webContents.print({
+          pageSize: {
+            width: 100,
+            height: 200
+          }
+        });
+      }).to.throw('height and width properties must be minimum 352 microns.');
+    });
+
     it('does not crash with custom margins', () => {
       expect(() => {
         w.webContents.print({
@@ -1905,7 +1916,7 @@ describe('webContents module', () => {
       wasCalled = true;
     });
     await w.loadURL('about:blank');
-    await w.webContents.executeJavaScript(`window.open('about:blank')`);
+    await w.webContents.executeJavaScript('window.open(\'about:blank\')');
     await new Promise((resolve) => { process.nextTick(resolve); });
     expect(wasCalled).to.equal(false);
     await closeAllWindows();

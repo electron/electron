@@ -134,6 +134,7 @@ class SlurpStream extends Writable {
     this._data = Buffer.concat([this._data, chunk]);
     callback();
   }
+
   data () { return this._data; }
 }
 
@@ -298,6 +299,10 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
+  }
+
+  get chunkedEncoding () {
+    return this._chunkedEncoding || false;
   }
 
   set chunkedEncoding (value: boolean) {

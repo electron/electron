@@ -107,7 +107,7 @@ To solve this, you can turn off node integration in Electron:
 ```javascript
 // In the main process.
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({
+const win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
   }
@@ -155,7 +155,7 @@ To achieve this goal, set the background in the constructor for [BrowserWindow][
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({
+const win = new BrowserWindow({
   backgroundColor: '#fff'
 })
 ```

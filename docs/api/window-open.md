@@ -130,7 +130,7 @@ mainWindow.webContents.setWindowOpenOverride(({ url }) => {
 ```
 
 ```javascript
-// renderer.js
-const childWindow = window.open('about:blank')
-childWindow.document.write('hello world')
+// renderer process (mainWindow)
+const childWindow = window.open('', 'modal')
+childWindow.document.write('<h1>Hello</h1>')
 ```

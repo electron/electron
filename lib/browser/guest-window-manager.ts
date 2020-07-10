@@ -36,7 +36,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   referrer: Referrer,
   disposition: string,
   postData?: PostData,
-  overrideBrowserWindowOptions: BrowserWindowConstructorOptions,
+  overrideBrowserWindowOptions?: BrowserWindowConstructorOptions,
   windowOpenArgs: WindowOpenArgs,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;

@@ -1,6 +1,4 @@
-'use strict';
-
-function splitArray (arr, predicate) {
+function splitArray<T> (arr: T[], predicate: (x: T) => boolean) {
   const result = arr.reduce((multi, item) => {
     const current = multi[multi.length - 1];
     if (predicate(item)) {
@@ -9,7 +7,7 @@ function splitArray (arr, predicate) {
       current.push(item);
     }
     return multi;
-  }, [[]]);
+  }, [[]] as T[][]);
 
   if (result[result.length - 1].length === 0) {
     return result.slice(0, result.length - 1);
@@ -17,7 +15,7 @@ function splitArray (arr, predicate) {
   return result;
 }
 
-function joinArrays (arrays, joinIDs) {
+function joinArrays (arrays: any[][], joinIDs: any[]) {
   return arrays.reduce((joined, arr, i) => {
     if (i > 0 && arr.length) {
       if (joinIDs.length > 0) {
@@ -31,14 +29,14 @@ function joinArrays (arrays, joinIDs) {
   }, []);
 }
 
-function pushOntoMultiMap (map, key, value) {
+function pushOntoMultiMap<K, V> (map: Map<K, V[]>, key: K, value: V) {
   if (!map.has(key)) {
     map.set(key, []);
   }
-  map.get(key).push(value);
+  map.get(key)!.push(value);
 }
 
-function indexOfGroupContainingID (groups, id, ignoreGroup) {
+function indexOfGroupContainingID<T> (groups: {id?: T}[][], id: T, ignoreGroup: {id?: T}[]) {
   return groups.findIndex(
     candidateGroup =>
       candidateGroup !== ignoreGroup &&
@@ -50,11 +48,11 @@ function indexOfGroupContainingID (groups, id, ignoreGroup) {
 
 // Sort nodes topologically using a depth-first approach. Encountered cycles
 // are broken.
-function sortTopologically (originalOrder, edgesById) {
-  const sorted = [];
-  const marked = new Set();
+function sortTopologically<T> (originalOrder: T[], edgesById: Map<T, T[]>) {
+  const sorted = [] as T[];
+  const marked = new Set<T>();
 
-  const visit = (mark) => {
+  const visit = (mark: T) => {
     if (marked.has(mark)) return;
     marked.add(mark);
     const edges = edgesById.get(mark);
@@ -68,7 +66,7 @@ function sortTopologically (originalOrder, edgesById) {
   return sorted;
 }
 
-function attemptToMergeAGroup (groups) {
+function attemptToMergeAGroup<T> (groups: {before?: T[], after?: T[], id?: T}[][]) {
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
     for (const item of group) {
@@ -87,7 +85,7 @@ function attemptToMergeAGroup (groups) {
   return false;
 }
 
-function mergeGroups (groups) {
+function mergeGroups<T> (groups: {before?: T[], after?: T[], id?: T}[][]) {
   let merged = true;
   while (merged) {
     merged = attemptToMergeAGroup(groups);
@@ -95,7 +93,7 @@ function mergeGroups (groups) {
   return groups;
 }
 
-function sortItemsInGroup (group) {
+function sortItemsInGroup<T> (group: {before?: T[], after?: T[], id?: T}[]) {
   const originalOrder = group.map((node, i) => i);
   const edges = new Map();
   const idToIndex = new Map(group.map((item, i) => [item.id, i]));
@@ -123,7 +121,7 @@ function sortItemsInGroup (group) {
   return sortedNodes.map(i => group[i]);
 }
 
-function findEdgesInGroup (groups, i, edges) {
+function findEdgesInGroup<T> (groups: {beforeGroupContaining?: T[], afterGroupContaining?: T[], id?: T}[][], i: number, edges: Map<any, any>) {
   const group = groups[i];
   for (const item of group) {
     if (item.beforeGroupContaining) {
@@ -147,7 +145,7 @@ function findEdgesInGroup (groups, i, edges) {
   }
 }
 
-function sortGroups (groups) {
+function sortGroups<T> (groups: {id?: T}[][]) {
   const originalOrder = groups.map((item, i) => i);
   const edges = new Map();
 
@@ -159,8 +157,8 @@ function sortGroups (groups) {
   return sortedGroupIndexes.map(i => groups[i]);
 }
 
-function sortMenuItems (menuItems) {
-  const isSeparator = (item) => item.type === 'separator';
+export function sortMenuItems (menuItems: {type?: string, id?: string}[]) {
+  const isSeparator = (item: {type?: string}) => item.type === 'separator';
   const separators = menuItems.filter(i => i.type === 'separator');
 
   // Split the items into their implicit groups based upon separators.
@@ -172,5 +170,3 @@ function sortMenuItems (menuItems) {
   const joined = joinArrays(sortedGroups, separators);
   return joined;
 }
-
-module.exports = { sortMenuItems };

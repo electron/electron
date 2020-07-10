@@ -1,9 +1,9 @@
 import { expect } from 'chai';
-import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow } from 'electron/main';
+import { BrowserView, BrowserWindow, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
+import { defer, startRemoteControlApp } from './spec-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -12,6 +12,7 @@ describe('BrowserView module', () => {
   let view: BrowserView;
 
   beforeEach(() => {
+    expect(webContents.getAllWebContents()).to.have.length(0);
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -23,27 +24,19 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
+    const p = emittedOnce(w.webContents, 'destroyed');
     await closeWindow(w);
+    w = null as any;
+    await p;
 
     if (view) {
-      view.destroy();
+      const p = emittedOnce(view.webContents, 'destroyed');
+      (view.webContents as any).destroy();
+      view = null as any;
+      await p;
     }
-  });
 
-  describe('BrowserView.destroy()', () => {
-    it('does not throw', () => {
-      view = new BrowserView();
-      view.destroy();
-    });
-  });
-
-  describe('BrowserView.isDestroyed()', () => {
-    it('returns correct value', () => {
-      view = new BrowserView();
-      expect(view.isDestroyed()).to.be.false('view is destroyed');
-      view.destroy();
-      expect(view.isDestroyed()).to.be.true('view is destroyed');
-    });
+    expect(webContents.getAllWebContents()).to.have.length(0);
   });
 
   describe('BrowserView.setBackgroundColor()', () => {
@@ -119,7 +112,6 @@ describe('BrowserView module', () => {
     it('returns the set view', () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
 
       const view2 = w.getBrowserView();
       expect(view2!.webContents.id).to.equal(view.webContents.id);
@@ -134,11 +126,13 @@ describe('BrowserView module', () => {
   describe('BrowserWindow.addBrowserView()', () => {
     it('does not throw for valid args', () => {
       const view1 = new BrowserView();
+      defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
+      defer(() => w.removeBrowserView(view1));
       const view2 = new BrowserView();
+      defer(() => (view2.webContents as any).destroy());
       w.addBrowserView(view2);
-      view1.destroy();
-      view2.destroy();
+      defer(() => w.removeBrowserView(view2));
     });
     it('does not throw if called multiple times with same view', () => {
       view = new BrowserView();
@@ -160,18 +154,18 @@ describe('BrowserView module', () => {
   describe('BrowserWindow.getBrowserViews()', () => {
     it('returns same views as was added', () => {
       const view1 = new BrowserView();
+      defer(() => (view1.webContents as any).destroy());
       w.addBrowserView(view1);
+      defer(() => w.removeBrowserView(view1));
       const view2 = new BrowserView();
+      defer(() => (view2.webContents as any).destroy());
       w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
 
-      expect(view1.id).to.be.not.null('view id');
       const views = w.getBrowserViews();
       expect(views).to.have.lengthOf(2);
       expect(views[0].webContents.id).to.equal(view1.webContents.id);
       expect(views[1].webContents.id).to.equal(view2.webContents.id);
-
-      view1.destroy();
-      view2.destroy();
     });
   });
 
@@ -188,46 +182,33 @@ describe('BrowserView module', () => {
     });
   });
 
-  describe('BrowserView.fromId()', () => {
-    it('returns the view with given id', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const view2 = BrowserView.fromId(view.id);
-      expect(view2.webContents.id).to.equal(view.webContents.id);
-    });
-  });
-
-  describe('BrowserView.fromWebContents()', () => {
-    it('returns the view with given id', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const view2 = BrowserView.fromWebContents(view.webContents);
-      expect(view2!.webContents.id).to.equal(view.webContents.id);
-    });
-  });
-
-  describe('BrowserView.getAllViews()', () => {
-    it('returns all views', () => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      expect(view.id).to.not.be.null('view id');
-
-      const views = BrowserView.getAllViews();
-      expect(views).to.be.an('array').that.has.lengthOf(1);
-      expect(views[0].webContents.id).to.equal(view.webContents.id);
-    });
-  });
-
-  describe('new BrowserView()', () => {
+  describe('shutdown behavior', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-browserview.js');
-      const electronPath = process.execPath;
-      const appProcess = ChildProcess.spawn(electronPath, [appPath]);
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const rc = await startRemoteControlApp();
+      await rc.remotely(() => {
+        const { BrowserView, app } = require('electron');
+        new BrowserView({})  // eslint-disable-line
+        setTimeout(() => {
+          app.quit();
+        });
+      });
+      const [code] = await emittedOnce(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('does not crash on exit if added to a browser window', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(() => {
+        const { app, BrowserView, BrowserWindow } = require('electron');
+        const bv = new BrowserView();
+        bv.webContents.loadURL('about:blank');
+        const bw = new BrowserWindow({ show: false });
+        bw.addBrowserView(bv);
+        setTimeout(() => {
+          app.quit();
+        });
+      });
+      const [code] = await emittedOnce(rc.process, 'exit');
       expect(code).to.equal(0);
     });
   });

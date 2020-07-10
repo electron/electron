@@ -81,7 +81,7 @@ type AllowedWebPreference = (typeof allowedWebPreferences)[number];
 /**
  * Parses a feature string that has the format used in window.open().
  *
- * `useSoonToBeDeprecatedBehaviorForBareKeys` — In the html spec, windowFeatures keys
+ * `useSoonToBeDeprecatedBehaviorForBareKeys` - In the html spec, windowFeatures keys
  * without values are interpreted as `true`. Previous versions of Electron did
  * not respect this. In order to not break any applications, this will be
  * flipped in the next major version.

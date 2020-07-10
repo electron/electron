@@ -274,7 +274,7 @@ describe('chrome extensions', () => {
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
     const promise = emittedOnce(app, 'web-contents-created');
-    await w.loadURL(`about:blank`);
+    await w.loadURL('about:blank');
     const [, bgPageContents] = await promise;
     expect(bgPageContents.session).to.not.equal(undefined);
   });

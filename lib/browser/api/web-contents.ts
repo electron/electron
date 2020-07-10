@@ -1,16 +1,15 @@
-'use strict';
+import { app, ipcMain, session, deprecate } from 'electron';
+import type { MenuItem, MenuItemConstructorOptions, WebContentsInternal } from 'electron';
 
-const { EventEmitter } = require('events');
-const electron = require('electron');
-const path = require('path');
-const url = require('url');
-const { app, ipcMain, session } = electron;
-
-const NavigationController = require('@electron/internal/browser/navigation-controller');
-const { openGuestWindow } = require('@electron/internal/browser/guest-window-manager');
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal');
-const ipcMainUtils = require('@electron/internal/browser/ipc-main-internal-utils');
-const { MessagePortMain } = require('@electron/internal/browser/message-port-main');
+import * as url from 'url';
+import * as path from 'path';
+import { NavigationController } from '../navigation-controller';
+import { openGuestWindow } from '../guest-window-manager';
+import { ipcMainInternal } from '../ipc-main-internal';
+import * as ipcMainUtils from '../ipc-main-internal-utils';
+import { MessagePortMain } from '../message-port-main';
+import { EventEmitter } from 'events';
+import { BrowserWindowConstructorOptions } from 'electron/main';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -22,8 +21,18 @@ const getNextId = function () {
   return ++nextId;
 };
 
+/* eslint-disable camelcase */
+type MediaSize = {
+  name: string,
+  custom_display_name: string,
+  height_microns: number,
+  width_microns: number,
+  is_default?: 'true',
+}
+/* eslint-enable camelcase */
+
 // Stock page sizes
-const PDFPageSizes = {
+const PDFPageSizes: Record<string, MediaSize> = {
   A5: {
     custom_display_name: 'A5',
     height_microns: 210000,
@@ -63,11 +72,24 @@ const PDFPageSizes = {
   }
 };
 
+// The minimum micron size Chromium accepts is that where:
+// Per printing/units.h:
+//  * kMicronsPerInch - Length of an inch in 0.001mm unit.
+//  * kPointsPerInch - Length of an inch in CSS's 1pt unit.
+//
+// Formula: (kPointsPerInch / kMicronsPerInch) * size >= 1
+//
+// Practically, this means microns need to be > 352 microns.
+// We therefore need to verify this or it will silently fail.
+const isValidCustomPageSize = (width: number, height: number) => {
+  return [width, height].every(x => x > 352);
+};
+
 // Default printing setting
 const defaultPrintingSetting = {
   // Customizable.
-  pageRange: [],
-  mediaSize: {},
+  pageRange: [] as {from: number, to: number}[],
+  mediaSize: {} as MediaSize,
   landscape: false,
   headerFooterEnabled: false,
   marginsType: 0,
@@ -92,18 +114,18 @@ const defaultPrintingSetting = {
   copies: 1,
   // 2 = color - see ColorModel in //printing/print_job_constants.h
   color: 2,
-  collate: true
+  collate: true,
+  printerType: 2,
+  title: undefined as string | undefined,
+  url: undefined as string | undefined
 };
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding;
+const { WebContents } = binding as { WebContents: { prototype: WebContentsInternal } };
 
-Object.setPrototypeOf(NavigationController.prototype, EventEmitter.prototype);
-Object.setPrototypeOf(WebContents.prototype, NavigationController.prototype);
+Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
-// WebContents::send(channel, args..)
-// WebContents::sendToAll(channel, args..)
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
@@ -120,17 +142,6 @@ WebContents.prototype.postMessage = function (...args) {
     args[2] = args[2].map(o => o instanceof MessagePortMain ? o._internalPort : o);
   }
   this._postMessage(...args);
-};
-
-WebContents.prototype.sendToAll = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  }
-
-  const internal = false;
-  const sendToAll = true;
-
-  return this._send(internal, sendToAll, channel, args);
 };
 
 WebContents.prototype._sendInternal = function (channel, ...args) {
@@ -184,15 +195,15 @@ const webFrameMethods = [
   'insertText',
   'removeInsertedCSS',
   'setVisualZoomLevelLimits'
-];
+] as ('insertCSS' | 'insertText' | 'removeInsertedCSS' | 'setVisualZoomLevelLimits')[];
 
 for (const method of webFrameMethods) {
-  WebContents.prototype[method] = function (...args) {
+  WebContents.prototype[method] = function (...args: any[]): Promise<any> {
     return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', method, ...args);
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents) => {
+const waitTillCanExecuteJavaScript = async (webContents: WebContentsInternal) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -206,11 +217,11 @@ const waitTillCanExecuteJavaScript = async (webContents) => {
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScript', code, hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScript', String(code), !!hasUserGesture);
 };
-WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (code, hasUserGesture) {
+WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScriptInIsolatedWorld', code, hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
 };
 
 // Translate the options of printToPDF.
@@ -317,15 +328,22 @@ WebContents.prototype.printToPDF = function (options) {
         const error = new Error('height and width properties are required for pageSize');
         return Promise.reject(error);
       }
-      // Dimensions in Microns
-      // 1 meter = 10^6 microns
+
+      // Dimensions in Microns - 1 meter = 10^6 microns
+      const height = Math.ceil(pageSize.height);
+      const width = Math.ceil(pageSize.width);
+      if (!isValidCustomPageSize(width, height)) {
+        const error = new Error('height and width properties must be minimum 352 microns.');
+        return Promise.reject(error);
+      }
+
       printSettings.mediaSize = {
         name: 'CUSTOM',
         custom_display_name: 'Custom',
-        height_microns: Math.ceil(pageSize.height),
-        width_microns: Math.ceil(pageSize.width)
+        height_microns: height,
+        width_microns: width
       };
-    } else if (PDFPageSizes[pageSize]) {
+    } else if (Object.prototype.hasOwnProperty.call(PDFPageSizes, pageSize)) {
       printSettings.mediaSize = PDFPageSizes[pageSize];
     } else {
       const error = new Error(`Unsupported pageSize: ${pageSize}`);
@@ -358,15 +376,22 @@ WebContents.prototype.print = function (options = {}, callback) {
         if (!pageSize.height || !pageSize.width) {
           throw new Error('height and width properties are required for pageSize');
         }
+
         // Dimensions in Microns - 1 meter = 10^6 microns
-        options.mediaSize = {
+        const height = Math.ceil(pageSize.height);
+        const width = Math.ceil(pageSize.width);
+        if (!isValidCustomPageSize(width, height)) {
+          throw new Error('height and width properties must be minimum 352 microns.');
+        }
+
+        (options as any).mediaSize = {
           name: 'CUSTOM',
           custom_display_name: 'Custom',
-          height_microns: Math.ceil(pageSize.height),
-          width_microns: Math.ceil(pageSize.width)
+          height_microns: height,
+          width_microns: width
         };
       } else if (PDFPageSizes[pageSize]) {
-        options.mediaSize = PDFPageSizes[pageSize];
+        (options as any).mediaSize = PDFPageSizes[pageSize];
       } else {
         throw new Error(`Unsupported pageSize: ${pageSize}`);
       }
@@ -409,11 +434,11 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
-WebContents.prototype.setWindowOpenOverride = function (handler) {
+WebContents.prototype.setWindowOpenOverride = function (handler: (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean) {
   this.windowOpenOverrideHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenOverride = function (event, url, frameName) {
+WebContents.prototype._callWindowOpenOverride = function (event: any, url: string, frameName: string) {
   if (this.windowOpenOverrideHandler) {
     const response = this.windowOpenOverrideHandler({ url, frameName });
 
@@ -431,23 +456,23 @@ WebContents.prototype._callWindowOpenOverride = function (event, url, frameName)
   }
 };
 
-const addReplyToEvent = (event) => {
-  event.reply = (...args) => {
+const addReplyToEvent = (event: any) => {
+  event.reply = (...args: any[]) => {
     event.sender.sendToFrame(event.frameId, ...args);
   };
 };
 
-const addReplyInternalToEvent = (event) => {
+const addReplyInternalToEvent = (event: any) => {
   Object.defineProperty(event, '_replyInternal', {
     configurable: false,
     enumerable: false,
-    value: (...args) => {
+    value: (...args: any[]) => {
       event.sender._sendToFrameInternal(event.frameId, ...args);
     }
   });
 };
 
-const addReturnValueToEvent = (event) => {
+const addReturnValueToEvent = (event: any) => {
   Object.defineProperty(event, 'returnValue', {
     set: (value) => event.sendReply([value]),
     get: () => {}
@@ -457,7 +482,23 @@ const addReturnValueToEvent = (event) => {
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
-  NavigationController.call(this, this);
+  const navigationController = new NavigationController(this);
+  this.loadURL = navigationController.loadURL.bind(navigationController);
+  this.getURL = navigationController.getURL.bind(navigationController);
+  this.stop = navigationController.stop.bind(navigationController);
+  this.reload = navigationController.reload.bind(navigationController);
+  this.reloadIgnoringCache = navigationController.reloadIgnoringCache.bind(navigationController);
+  this.canGoBack = navigationController.canGoBack.bind(navigationController);
+  this.canGoForward = navigationController.canGoForward.bind(navigationController);
+  this.canGoToIndex = navigationController.canGoToIndex.bind(navigationController);
+  this.canGoToOffset = navigationController.canGoToOffset.bind(navigationController);
+  this.clearHistory = navigationController.clearHistory.bind(navigationController);
+  this.goBack = navigationController.goBack.bind(navigationController);
+  this.goForward = navigationController.goForward.bind(navigationController);
+  this.goToIndex = navigationController.goToIndex.bind(navigationController);
+  this.goToOffset = navigationController.goToOffset.bind(navigationController);
+  this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
+  this.length = navigationController.length.bind(navigationController);
 
   this.windowOpenOverrideHandler = null;
 
@@ -466,7 +507,7 @@ WebContents.prototype._init = function () {
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message', function (event, internal, channel, args) {
+  this.on('-ipc-message' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
       addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
@@ -477,21 +518,21 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke', function (event, internal, channel, args) {
-    event._reply = (result) => event.sendReply({ result });
-    event._throw = (error) => {
+  this.on('-ipc-invoke' as any, function (event: any, internal: boolean, channel: string, args: any[]) {
+    event._reply = (result: any) => event.sendReply({ result });
+    event._throw = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event.sendReply({ error: error.toString() });
     };
     const target = internal ? ipcMainInternal : ipcMain;
-    if (target._invokeHandlers.has(channel)) {
-      target._invokeHandlers.get(channel)(event, ...args);
+    if ((target as any)._invokeHandlers.has(channel)) {
+      (target as any)._invokeHandlers.get(channel)(event, ...args);
     } else {
       event._throw(`No handler registered for '${channel}'`);
     }
   });
 
-  this.on('-ipc-message-sync', function (event, internal, channel, args) {
+  this.on('-ipc-message-sync' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
       addReplyInternalToEvent(event);
@@ -503,15 +544,15 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-ports', function (event, internal, channel, message, ports) {
+  this.on('-ipc-ports' as any, function (event: any, internal: boolean, channel: string, message: any, ports: any[]) {
     event.ports = ports.map(p => new MessagePortMain(p));
     ipcMain.emit(channel, event, message);
   });
 
   // Handle context menu action request from pepper plugin.
-  this.on('pepper-context-menu', function (event, params, callback) {
+  this.on('pepper-context-menu' as any, function (event: any, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
     // Access Menu via electron.Menu to prevent circular require.
-    const menu = electron.Menu.buildFromTemplate(params.menu);
+    const menu = require('electron').Menu.buildFromTemplate(params.menu);
     menu.popup({
       window: event.sender.getOwnerBrowserWindow(),
       x: params.x,
@@ -529,20 +570,21 @@ WebContents.prototype._init = function () {
   });
 
   // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function () {
+  this.on('devtools-reload-page', function (this: WebContentsInternal) {
     this.reload();
   });
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window', (event, url, frameName, disposition,
-      rawFeatures, referrer, postData) => {
+    this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
+      rawFeatures: string, referrer: any, postData: any) => {
       openGuestWindow({
         event,
         embedder: event.sender,
         disposition,
         referrer,
         postData,
+        overrideBrowserWindowOptions: {},
         windowOpenArgs: {
           url,
           frameName,
@@ -551,8 +593,8 @@ WebContents.prototype._init = function () {
       });
     });
 
-    let windowOpenOverriddenOptions = null;
-    this.on('-will-add-new-contents', (event, url, frameName) => {
+    let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
+    this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string) => {
       process.stdout.write('test\ntest\nhere\ncool\n');
       windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName);
       if (!event.defaultPrevented && windowOpenOverriddenOptions) {
@@ -565,20 +607,20 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents', (event, webContents, disposition,
-      userGesture, left, top, width, height, url, frameName,
-      referrer, rawFeatures, postData) => {
+    this.on('-add-new-contents' as any, (event: any, webContents: WebContentsInternal, disposition: string,
+      _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
+      referrer: any, rawFeatures: string) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
         return;
       }
 
-      const window = openGuestWindow({
+      openGuestWindow({
         event,
         embedder: event.sender,
         guest: webContents,
-        overrideBrowserWindowOptions: windowOpenOverriddenOptions,
+        overrideBrowserWindowOptions: windowOpenOverriddenOptions || undefined,
         disposition,
         referrer,
         windowOpenArgs: {
@@ -593,7 +635,7 @@ WebContents.prototype._init = function () {
 
     const prefs = this.getWebPreferences() || {};
     if (prefs.webviewTag && prefs.contextIsolation) {
-      electron.deprecate.log('Security Warning: A WebContents was just created with both webviewTag and contextIsolation enabled.  This combination is fundamentally less secure and effectively bypasses the protections of contextIsolation.  We strongly recommend you move away from webviews to OOPIF or BrowserView in order for your app to be more secure');
+      deprecate.log('Security Warning: A WebContents was just created with both webviewTag and contextIsolation enabled.  This combination is fundamentally less secure and effectively bypasses the protections of contextIsolation.  We strongly recommend you move away from webviews to OOPIF or BrowserView in order for your app to be more secure');
     }
   }
 
@@ -638,28 +680,25 @@ WebContents.prototype._init = function () {
 };
 
 // Public APIs.
-module.exports = {
-  create (options = {}) {
-    return binding.create(options);
-  },
+export function create (options = {}) {
+  return binding.create(options);
+}
 
-  fromId (id) {
-    return binding.fromId(id);
-  },
+export function fromId (id: string) {
+  return binding.fromId(id);
+}
 
-  getFocusedWebContents () {
-    let focused = null;
-    for (const contents of binding.getAllWebContents()) {
-      if (!contents.isFocused()) continue;
-      if (focused == null) focused = contents;
-      // Return webview web contents which may be embedded inside another
-      // web contents that is also reporting as focused
-      if (contents.getType() === 'webview') return contents;
-    }
-    return focused;
-  },
-
-  getAllWebContents () {
-    return binding.getAllWebContents();
+export function getFocusedWebContents () {
+  let focused = null;
+  for (const contents of binding.getAllWebContents()) {
+    if (!contents.isFocused()) continue;
+    if (focused == null) focused = contents;
+    // Return webview web contents which may be embedded inside another
+    // web contents that is also reporting as focused
+    if (contents.getType() === 'webview') return contents;
   }
-};
+  return focused;
+}
+export function getAllWebContents () {
+  return binding.getAllWebContents();
+}

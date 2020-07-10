@@ -266,7 +266,7 @@ const getGuestForWebContents = (webContentsId, contents) => {
     throw new Error(`Invalid webContentsId: ${webContentsId}`)
   }
   if (guest.hostWebContents !== contents) {
-    throw new Error(`Access denied to webContents`)
+    throw new Error('Access denied to webContents')
   }
   return guest
 }
@@ -610,11 +610,11 @@ const { memory } = metrics[0] // Deprecated property
 
 ```js
 // Deprecated
-let optionsA = { webPreferences: { blinkFeatures: '' } }
-let windowA = new BrowserWindow(optionsA)
+const optionsA = { webPreferences: { blinkFeatures: '' } }
+const windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = { webPreferences: { enableBlinkFeatures: '' } }
-let windowB = new BrowserWindow(optionsB)
+const optionsB = { webPreferences: { enableBlinkFeatures: '' } }
+const windowB = new BrowserWindow(optionsB)
 
 // Deprecated
 window.on('app-command', (e, cmd) => {
@@ -785,11 +785,11 @@ The following list includes the breaking API changes made in Electron 2.0.
 
 ```js
 // Deprecated
-let optionsA = { titleBarStyle: 'hidden-inset' }
-let windowA = new BrowserWindow(optionsA)
+const optionsA = { titleBarStyle: 'hidden-inset' }
+const windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = { titleBarStyle: 'hiddenInset' }
-let windowB = new BrowserWindow(optionsB)
+const optionsB = { titleBarStyle: 'hiddenInset' }
+const windowB = new BrowserWindow(optionsB)
 ```
 
 ### `menu`

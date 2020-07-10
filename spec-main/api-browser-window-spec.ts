@@ -9,7 +9,7 @@ import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, ifdescribe, delay } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
@@ -1007,7 +1007,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
         it('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
@@ -1021,7 +1021,7 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             const enterFullScreen = emittedOnce(w, 'enter-full-screen');
             w.show();
@@ -1030,7 +1030,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
               w.fullScreen = false;
@@ -1056,7 +1056,7 @@ describe('BrowserWindow module', () => {
             expect(w.isFullScreen()).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -1067,7 +1067,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -1518,16 +1518,19 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       const bv = new BrowserView();
       w.setBrowserView(bv);
+      defer(() => {
+        w.removeBrowserView(bv);
+        (bv.webContents as any).destroy();
+      });
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id);
-      // if BrowserView isn't explicitly destroyed, it will crash in GC later
-      bv.destroy();
     });
 
     it('returns undefined if not attached', () => {
       const bv = new BrowserView();
+      defer(() => {
+        (bv.webContents as any).destroy();
+      });
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv');
-      // if BrowserView isn't explicitly destroyed, it will crash in GC later
-      bv.destroy();
     });
   });
 

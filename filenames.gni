@@ -14,11 +14,11 @@ filenames = {
 
   default_app_octicon_sources = [
     "node_modules/@primer/octicons/build/build.css",
-    "node_modules/@primer/octicons/build/svg/gear.svg",
-    "node_modules/@primer/octicons/build/svg/gift.svg",
-    "node_modules/@primer/octicons/build/svg/gist.svg",
-    "node_modules/@primer/octicons/build/svg/mark-github.svg",
-    "node_modules/@primer/octicons/build/svg/star.svg",
+    "node_modules/@primer/octicons/build/svg/book-24.svg",
+    "node_modules/@primer/octicons/build/svg/code-square-24.svg",
+    "node_modules/@primer/octicons/build/svg/gift-24.svg",
+    "node_modules/@primer/octicons/build/svg/mark-github-16.svg",
+    "node_modules/@primer/octicons/build/svg/star-fill-24.svg",
   ]
 
   lib_sources = [

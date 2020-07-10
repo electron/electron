@@ -124,7 +124,7 @@ hooks = [
     'condition': '(checkout_chromium and apply_patches) and process_deps',
     'pattern': 'src/electron',
     'action': [
-      'python',
+      'python3',
       'src/electron/script/apply_all_patches.py',
       'src/electron/patches/config.json',
     ],
@@ -142,7 +142,7 @@ hooks = [
     'name': 'electron_npm_deps',
     'pattern': 'src/electron/package.json',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
     ],
@@ -152,7 +152,7 @@ hooks = [
     'pattern': 'src/electron',
     'condition': 'checkout_boto and process_deps',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "boto")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
@@ -162,7 +162,7 @@ hooks = [
     'pattern': 'src/electron',
     'condition': 'checkout_requests and process_deps',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "requests")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],

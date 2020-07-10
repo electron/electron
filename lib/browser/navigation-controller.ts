@@ -1,6 +1,6 @@
-'use strict';
-
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal');
+import { ipcMainInternal } from './ipc-main-internal';
+import type { WebContents, LoadURLOptions } from 'electron/main';
+import { EventEmitter } from 'events';
 
 // The history operation in renderer is redirected to browser.
 ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK', function (event) {
@@ -16,7 +16,7 @@ ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', function (even
 });
 
 ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
-  event.returnValue = event.sender.length();
+  event.returnValue = (event.sender as any).length();
 });
 
 // JavaScript implementation of Chromium's NavigationController.
@@ -24,9 +24,14 @@ ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
 // control on user land, and only rely on WebContents.loadURL for navigation.
 // This helps us avoid Chromium's various optimizations so we can ensure renderer
 // process is restarted everytime.
-const NavigationController = (function () {
-  function NavigationController (webContents) {
-    this.webContents = webContents;
+export class NavigationController extends EventEmitter {
+  currentIndex: number = -1;
+  inPageIndex: number = -1;
+  pendingIndex: number = -1;
+  history: string[] = [];
+
+  constructor (private webContents: WebContents) {
+    super();
     this.clearHistory();
 
     // webContents may have already navigated to a page.
@@ -34,7 +39,7 @@ const NavigationController = (function () {
       this.currentIndex++;
       this.history.push(this.webContents._getURL());
     }
-    this.webContents.on('navigation-entry-committed', (event, url, inPage, replaceEntry) => {
+    this.webContents.on('navigation-entry-committed' as any, (event: any, url: string, inPage: boolean, replaceEntry: boolean) => {
       if (this.inPageIndex > -1 && !inPage) {
         // Navigated to a new page, clear in-page mark.
         this.inPageIndex = -1;
@@ -59,16 +64,16 @@ const NavigationController = (function () {
     });
   }
 
-  NavigationController.prototype.loadURL = function (url, options) {
+  loadURL (url: string, options?: LoadURLOptions): Promise<void> {
     if (options == null) {
       options = {};
     }
-    const p = new Promise((resolve, reject) => {
+    const p = new Promise<void>((resolve, reject) => {
       const resolveAndCleanup = () => {
         removeListeners();
         resolve();
       };
-      const rejectAndCleanup = (errorCode, errorDescription, url) => {
+      const rejectAndCleanup = (errorCode: number, errorDescription: string, url: string) => {
         const err = new Error(`${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`);
         Object.assign(err, { errno: errorCode, code: errorDescription, url });
         removeListeners();
@@ -77,14 +82,14 @@ const NavigationController = (function () {
       const finishListener = () => {
         resolveAndCleanup();
       };
-      const failListener = (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {
+      const failListener = (event: any, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
         if (isMainFrame) {
           rejectAndCleanup(errorCode, errorDescription, validatedURL);
         }
       };
 
       let navigationStarted = false;
-      const navigationListener = (event, url, isSameDocument, isMainFrame, frameProcessId, frameRoutingId, navigationId) => {
+      const navigationListener = (event: any, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
         if (isMainFrame) {
           if (navigationStarted && !isSameDocument) {
             // the webcontents has started another unrelated navigation in the
@@ -129,58 +134,58 @@ const NavigationController = (function () {
     this.webContents._loadURL(url, options);
     this.webContents.emit('load-url', url, options);
     return p;
-  };
+  }
 
-  NavigationController.prototype.getURL = function () {
+  getURL () {
     if (this.currentIndex === -1) {
       return '';
     } else {
       return this.history[this.currentIndex];
     }
-  };
+  }
 
-  NavigationController.prototype.stop = function () {
+  stop () {
     this.pendingIndex = -1;
     return this.webContents._stop();
-  };
+  }
 
-  NavigationController.prototype.reload = function () {
+  reload () {
     this.pendingIndex = this.currentIndex;
     return this.webContents._loadURL(this.getURL(), {});
-  };
+  }
 
-  NavigationController.prototype.reloadIgnoringCache = function () {
+  reloadIgnoringCache () {
     this.pendingIndex = this.currentIndex;
     return this.webContents._loadURL(this.getURL(), {
       extraHeaders: 'pragma: no-cache\n',
       reloadIgnoringCache: true
-    });
-  };
+    } as any);
+  }
 
-  NavigationController.prototype.canGoBack = function () {
+  canGoBack () {
     return this.getActiveIndex() > 0;
-  };
+  }
 
-  NavigationController.prototype.canGoForward = function () {
+  canGoForward () {
     return this.getActiveIndex() < this.history.length - 1;
-  };
+  }
 
-  NavigationController.prototype.canGoToIndex = function (index) {
+  canGoToIndex (index: number) {
     return index >= 0 && index < this.history.length;
-  };
+  }
 
-  NavigationController.prototype.canGoToOffset = function (offset) {
+  canGoToOffset (offset: number) {
     return this.canGoToIndex(this.currentIndex + offset);
-  };
+  }
 
-  NavigationController.prototype.clearHistory = function () {
+  clearHistory () {
     this.history = [];
     this.currentIndex = -1;
     this.pendingIndex = -1;
     this.inPageIndex = -1;
-  };
+  }
 
-  NavigationController.prototype.goBack = function () {
+  goBack () {
     if (!this.canGoBack()) {
       return;
     }
@@ -190,9 +195,9 @@ const NavigationController = (function () {
     } else {
       return this.webContents._loadURL(this.history[this.pendingIndex], {});
     }
-  };
+  }
 
-  NavigationController.prototype.goForward = function () {
+  goForward () {
     if (!this.canGoForward()) {
       return;
     }
@@ -202,17 +207,17 @@ const NavigationController = (function () {
     } else {
       return this.webContents._loadURL(this.history[this.pendingIndex], {});
     }
-  };
+  }
 
-  NavigationController.prototype.goToIndex = function (index) {
+  goToIndex (index: number) {
     if (!this.canGoToIndex(index)) {
       return;
     }
     this.pendingIndex = index;
     return this.webContents._loadURL(this.history[this.pendingIndex], {});
-  };
+  }
 
-  NavigationController.prototype.goToOffset = function (offset) {
+  goToOffset (offset: number) {
     if (!this.canGoToOffset(offset)) {
       return;
     }
@@ -223,21 +228,17 @@ const NavigationController = (function () {
     } else {
       return this.goToIndex(pendingIndex);
     }
-  };
+  }
 
-  NavigationController.prototype.getActiveIndex = function () {
+  getActiveIndex () {
     if (this.pendingIndex === -1) {
       return this.currentIndex;
     } else {
       return this.pendingIndex;
     }
-  };
+  }
 
-  NavigationController.prototype.length = function () {
+  length () {
     return this.history.length;
-  };
-
-  return NavigationController;
-})();
-
-module.exports = NavigationController;
+  }
+}

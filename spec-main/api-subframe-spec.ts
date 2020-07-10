@@ -84,7 +84,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const details = await detailsPromise;
         const senders = details.map(event => event[0].sender);
-        const isolatedGlobals = await Promise.all(senders.map(sender => sender.webContents.executeJavaScript('window.isolatedGlobal')));
+        const isolatedGlobals = await Promise.all(senders.map(sender => sender.executeJavaScript('window.isolatedGlobal')));
         for (const result of isolatedGlobals) {
           if (webPreferences.contextIsolation) {
             expect(result).to.be.undefined();

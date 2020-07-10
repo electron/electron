@@ -98,10 +98,14 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
-  // Sets the window icon.
-  gin::Handle<NativeImage> icon;
-  if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
-    SetIcon(icon);
+  {
+    v8::TryCatch try_catch(isolate);
+    gin::Handle<NativeImage> icon;
+    if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
+      SetIcon(icon);
+    if (try_catch.HasCaught())
+      LOG(ERROR) << "Failed to convert NativeImage";
+  }
 #endif
 }
 
@@ -734,11 +738,11 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(window_.get());
-      browser_views_[browser_view->weak_map_id()].Reset(isolate(), value);
+      browser_views_[browser_view->ID()].Reset(isolate(), value);
     }
   }
 }
@@ -747,7 +751,7 @@ void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(nullptr);

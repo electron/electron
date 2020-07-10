@@ -1,5 +1,5 @@
 /* eslint no-eval: "off" */
-/* global binding, Buffer */
+/* global binding */
 import * as events from 'events';
 
 const { EventEmitter } = events;
