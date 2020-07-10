@@ -327,7 +327,7 @@ auto_filenames = {
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/renderer/remote/callbacks-registry.ts",
     "lib/renderer/webpack-provider.ts",
-    "lib/worker/init.js",
+    "lib/worker/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
