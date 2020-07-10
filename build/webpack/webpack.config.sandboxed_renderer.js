@@ -1,5 +1,5 @@
 module.exports = require('./webpack.config.base')({
   target: 'sandboxed_renderer',
   alwaysHasNode: false,
-  wrapInitWithProfilingTimeout: true,
-})
+  wrapInitWithProfilingTimeout: true
+});
