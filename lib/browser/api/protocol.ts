@@ -1,4 +1,4 @@
-import { app, session } from 'electron';
+import { app, session } from 'electron/main';
 
 // Global protocol APIs.
 const protocol = process._linkedBinding('electron_browser_protocol');

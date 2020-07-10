@@ -1,5 +1,5 @@
-import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron';
-import type { BrowserWindow as BWT } from 'electron';
+import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron/main';
+import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);

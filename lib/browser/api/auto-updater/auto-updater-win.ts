@@ -1,6 +1,6 @@
-import { app } from 'electron';
+import { app } from 'electron/main';
 import { EventEmitter } from 'events';
-import * as squirrelUpdate from './squirrel-update-win';
+import * as squirrelUpdate from '@electron/internal/browser/api/auto-updater/squirrel-update-win';
 
 class AutoUpdater extends EventEmitter {
   updateAvailable: boolean = false;

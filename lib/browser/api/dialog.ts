@@ -1,5 +1,5 @@
-import { app, BrowserWindow } from 'electron';
-import { OpenDialogOptions, OpenDialogReturnValue, MessageBoxOptions, SaveDialogOptions, SaveDialogReturnValue, MessageBoxReturnValue, CertificateTrustDialogOptions } from 'electron/main';
+import { app, BrowserWindow } from 'electron/main';
+import type { OpenDialogOptions, OpenDialogReturnValue, MessageBoxOptions, SaveDialogOptions, SaveDialogReturnValue, MessageBoxReturnValue, CertificateTrustDialogOptions } from 'electron/main';
 const dialogBinding = process._linkedBinding('electron_browser_dialog');
 
 const DialogType = {

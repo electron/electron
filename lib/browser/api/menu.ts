@@ -1,5 +1,5 @@
-import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron';
-import { sortMenuItems } from './menu-utils';
+import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron/main';
+import { sortMenuItems } from '@electron/internal/browser/api/menu-utils';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const bindings = process._linkedBinding('electron_browser_menu');
