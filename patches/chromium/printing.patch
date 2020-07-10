@@ -90,7 +90,7 @@ index adb208ba3589e32536527219aaf4e89e3ee3311a..301f6416898445eed814d67901254ef8
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc473bbd0da 100644
+index 8a743d0dd74b087059ff812019ae568a22c5fa01..551dbc7b0bfdbf4ca549278bb3dfc4e3abb5cf0f 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -194,7 +194,19 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc4
  #endif
  
    ReleasePrinterQuery();
-@@ -463,9 +476,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -382,6 +395,11 @@ void PrintViewManagerBase::OnScriptedPrint(
+ }
+ 
+ void PrintViewManagerBase::OnShowInvalidPrinterSettingsError() {
++  if (!callback_.is_null()) {
++    std::string cb_str = "Invalid printer settings";
++    std::move(callback_).Run(printing_succeeded_, cb_str);
++  }
++
+   base::ThreadTaskRunnerHandle::Get()->PostTask(
+       FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
+                                 l10n_util::GetStringUTF16(
+@@ -463,9 +481,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -210,7 +222,7 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc4
        NOTREACHED();
        break;
      }
-@@ -560,8 +577,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -560,8 +582,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -223,7 +235,7 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc4
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -582,8 +601,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -582,8 +606,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
  
@@ -232,7 +244,7 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc4
    printing_succeeded_ = false;
    return true;
  }
-@@ -632,14 +649,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -632,14 +654,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -257,7 +269,7 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..20c43be03706617a276d210190897dc4
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -675,7 +700,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -675,7 +705,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
