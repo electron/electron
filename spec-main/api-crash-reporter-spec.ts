@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay } from './spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
@@ -203,7 +203,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
           ignoreSystemCrashHandler: true,
-          extra: { 'longParam': 'a'.repeat(130) }
+          extra: { longParam: 'a'.repeat(130) }
         });
         setTimeout(() => process.crash());
       }, port);
@@ -281,7 +281,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     waitForCrash().then(() => expect.fail('expected not to receive a dump'));
     await runCrashApp('renderer', port, ['--no-upload']);
     // wait a sec in case the crash reporter is about to upload a crash
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await delay(1000);
     expect(getCrashes()).to.have.length(0);
   });
 
@@ -381,7 +381,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       await remotely(() => {
         require('electron').crashReporter.start({
           submitURL: 'http://127.0.0.1',
-          extra: { 'extra1': 'hi' }
+          extra: { extra1: 'hi' }
         });
       });
       const parameters = await remotely(() => require('electron').crashReporter.getParameters());
@@ -414,8 +414,8 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         crashReporter.start({ submitURL: 'http://' });
         const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
         bw.loadURL('about:blank');
-        await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
-        return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
+        await bw.webContents.executeJavaScript('require(\'electron\').crashReporter.addExtraParameter(\'hello\', \'world\')');
+        return bw.webContents.executeJavaScript('require(\'electron\').crashReporter.getParameters()');
       });
       if (process.platform === 'linux') {
         // On Linux, 'getParameters' will also include the global parameters,

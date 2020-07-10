@@ -251,9 +251,8 @@ int NodeMain(int argc, char* argv[]) {
     {
       v8::HandleScope scope(isolate);
       node::InternalCallbackScope callback_scope(
-          env, v8::Local<v8::Object>(), {1, 0},
-          node::InternalCallbackScope::kAllowEmptyResource |
-              node::InternalCallbackScope::kSkipAsyncHooks);
+          env, v8::Object::New(isolate), {1, 0},
+          node::InternalCallbackScope::kSkipAsyncHooks);
       node::LoadEnvironment(env);
     }
 

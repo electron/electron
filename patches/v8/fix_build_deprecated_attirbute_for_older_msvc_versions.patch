@@ -9,7 +9,7 @@ higher versions, but native module compiling with this version
 will have an issue.
 
 diff --git a/include/v8config.h b/include/v8config.h
-index 9825232d6a10acfe3856402e858730e372e936e5..cfad8676f4142ee300f8273b17dc868f79a7fc8f 100644
+index bbd1d6ce978e6c967a0e6190f345f81b38d1d5e8..9fca659632cd949dc5a93b2a8a3904dd48bca60c 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
 @@ -388,10 +388,13 @@

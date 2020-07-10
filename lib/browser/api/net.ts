@@ -2,7 +2,13 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron';
 import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
-const { net, Net, isValidHeaderName, isValidHeaderValue, createURLLoader } = process.electronBinding('net');
+const {
+  net,
+  Net,
+  isValidHeaderName,
+  isValidHeaderValue,
+  createURLLoader
+} = process._linkedBinding('electron_browser_net');
 
 const kSupportedProtocols = new Set(['http:', 'https:']);
 
@@ -128,6 +134,7 @@ class SlurpStream extends Writable {
     this._data = Buffer.concat([this._data, chunk]);
     callback();
   }
+
   data () { return this._data; }
 }
 
@@ -292,6 +299,10 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
+  }
+
+  get chunkedEncoding () {
+    return this._chunkedEncoding || false;
   }
 
   set chunkedEncoding (value: boolean) {

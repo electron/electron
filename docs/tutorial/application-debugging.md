@@ -15,7 +15,7 @@ can open them programmatically by calling the `openDevTools()` API on the
 ```javascript
 const { BrowserWindow } = require('electron')
 
-let win = new BrowserWindow()
+const win = new BrowserWindow()
 win.webContents.openDevTools()
 ```
 

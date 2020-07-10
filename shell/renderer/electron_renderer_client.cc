@@ -37,7 +37,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
-      electron_bindings_(new ElectronBindings(uv_default_loop())) {}
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();

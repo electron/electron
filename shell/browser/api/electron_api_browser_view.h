@@ -10,9 +10,11 @@
 
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "shell/browser/native_browser_view.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/trackable_object.h"
+#include "shell/common/gin_helper/pinnable.h"
 
 namespace gfx {
 class Rect;
@@ -30,19 +32,25 @@ namespace api {
 
 class WebContents;
 
-class BrowserView : public gin_helper::TrackableObject<BrowserView>,
+class BrowserView : public gin::Wrappable<BrowserView>,
+                    public gin_helper::Constructible<BrowserView>,
+                    public gin_helper::Pinnable<BrowserView>,
                     public content::WebContentsObserver {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args);
+  // gin_helper::Constructible
+  static gin::Handle<BrowserView> New(gin_helper::ErrorThrower thrower,
+                                      gin::Arguments* args);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
 
   WebContents* web_contents() const { return api_web_contents_; }
   NativeBrowserView* view() const { return view_.get(); }
 
-  int32_t ID() const;
+  int32_t ID() const { return id_; }
 
  protected:
   BrowserView(gin::Arguments* args, const gin_helper::Dictionary& options);
@@ -56,12 +64,14 @@ class BrowserView : public gin_helper::TrackableObject<BrowserView>,
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();
   void SetBackgroundColor(const std::string& color_name);
-  v8::Local<v8::Value> GetWebContents();
+  v8::Local<v8::Value> GetWebContents(v8::Isolate*);
 
   v8::Global<v8::Value> web_contents_;
   class WebContents* api_web_contents_ = nullptr;
 
   std::unique_ptr<NativeBrowserView> view_;
+
+  int32_t id_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserView);
 };

@@ -6,9 +6,9 @@ import type { BrowserWindow, WebContents } from 'electron/main';
 import { browserModuleNames } from '@electron/internal/browser/api/module-names';
 import { commonModuleList } from '@electron/internal/common/api/module-list';
 
-const v8Util = process.electronBinding('v8_util');
-const { hasSwitch } = process.electronBinding('command_line');
-const { NativeImage } = process.electronBinding('native_image');
+const v8Util = process._linkedBinding('electron_common_v8_util');
+const { hasSwitch } = process._linkedBinding('electron_common_command_line');
+const { NativeImage } = process._linkedBinding('electron_common_native_image');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();

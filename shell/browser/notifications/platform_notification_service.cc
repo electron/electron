@@ -86,8 +86,19 @@ void PlatformNotificationService::DisplayNotification(
   auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
+
+  // If a new notification is created with the same tag as an
+  // existing one, replace the old notification with the new one.
+  // The notification_id is generated from the tag, so the only way a
+  // notification will be closed as a result of this call is if one with
+  // the same tag is already extant.
+  //
+  // See: https://notifications.spec.whatwg.org/#showing-a-notification
+  presenter->CloseNotificationWithId(notification_id);
+
   NotificationDelegateImpl* delegate =
       new NotificationDelegateImpl(notification_id);
+
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
     browser_client_->WebNotificationAllowed(

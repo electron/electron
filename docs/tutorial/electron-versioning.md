@@ -87,7 +87,7 @@ e.g. `2.0.1`.
 
 Specifically, the above means:
 
-1. Admitting non-breaking-API changes before Week 3 in the beta cycle is okay, even if those changes have the potential to cause moderate side-affects
+1. Admitting non-breaking-API changes before Week 3 in the beta cycle is okay, even if those changes have the potential to cause moderate side-effects
 2. Admitting feature-flagged changes, that do not otherwise alter existing code paths, at most points in the beta cycle is okay. Users can explicitly enable those flags in their apps.
 3. Admitting features of any sort after Week 3 in the beta cycle is 👎 without a very good reason.
 
@@ -139,7 +139,7 @@ We seek to increase clarity at all levels of the update and releases process. St
 * Commits that would result in a semver **minor** bump must start with `feat:`.
 * Commits that would result in a semver **patch** bump must start with `fix:`.
 
-* We allow squashing of commits, provided that the squashed message adheres the the above message format.
+* We allow squashing of commits, provided that the squashed message adheres to the above message format.
 * It is acceptable for some commits in a pull request to not include a semantic prefix, as long as the pull request title contains a meaningful encompassing semantic message.
 
 # Versioned `master`

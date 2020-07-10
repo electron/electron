@@ -14,6 +14,7 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -87,7 +88,7 @@ ServiceWorkerContext::~ServiceWorkerContext() {
 void ServiceWorkerContext::OnReportConsoleMessage(
     int64_t version_id,
     const content::ConsoleMessage& message) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   Emit("console-message",
        gin::DataObjectBuilder(isolate)

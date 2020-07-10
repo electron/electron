@@ -96,7 +96,7 @@ Appends the `menuItem` to the menu.
 
 * `id` String
 
-Returns `MenuItem` the item with the specified `id`
+Returns `MenuItem | null` the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 

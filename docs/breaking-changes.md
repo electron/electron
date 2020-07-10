@@ -14,6 +14,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (12.0)
 
+### Default Changed: `contextIsolation` defaults to `true`
+
+In Electron 12, `contextIsolation` will be enabled by default.  To restore
+the previous behavior, `contextIsolation: false` must be specified in WebPreferences.
+
+We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
+
+For more details see: https://github.com/electron/electron/issues/23506
+
 ### Removed: `crashReporter` methods in the renderer process
 
 The following `crashReporter` methods are no longer available in the renderer
@@ -257,7 +266,7 @@ const getGuestForWebContents = (webContentsId, contents) => {
     throw new Error(`Invalid webContentsId: ${webContentsId}`)
   }
   if (guest.hostWebContents !== contents) {
-    throw new Error(`Access denied to webContents`)
+    throw new Error('Access denied to webContents')
   }
   return guest
 }
@@ -601,11 +610,11 @@ const { memory } = metrics[0] // Deprecated property
 
 ```js
 // Deprecated
-let optionsA = { webPreferences: { blinkFeatures: '' } }
-let windowA = new BrowserWindow(optionsA)
+const optionsA = { webPreferences: { blinkFeatures: '' } }
+const windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = { webPreferences: { enableBlinkFeatures: '' } }
-let windowB = new BrowserWindow(optionsB)
+const optionsB = { webPreferences: { enableBlinkFeatures: '' } }
+const windowB = new BrowserWindow(optionsB)
 
 // Deprecated
 window.on('app-command', (e, cmd) => {
@@ -776,11 +785,11 @@ The following list includes the breaking API changes made in Electron 2.0.
 
 ```js
 // Deprecated
-let optionsA = { titleBarStyle: 'hidden-inset' }
-let windowA = new BrowserWindow(optionsA)
+const optionsA = { titleBarStyle: 'hidden-inset' }
+const windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = { titleBarStyle: 'hiddenInset' }
-let windowB = new BrowserWindow(optionsB)
+const optionsB = { titleBarStyle: 'hiddenInset' }
+const windowB = new BrowserWindow(optionsB)
 ```
 
 ### `menu`

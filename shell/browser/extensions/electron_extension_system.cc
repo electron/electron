@@ -185,6 +185,10 @@ const base::OneShotEvent& ElectronExtensionSystem::ready() const {
   return ready_;
 }
 
+bool ElectronExtensionSystem::is_ready() const {
+  return ready_.is_signaled();
+}
+
 ContentVerifier* ElectronExtensionSystem::content_verifier() {
   return nullptr;
 }

@@ -36,7 +36,7 @@ class ElectronBindings {
   explicit ElectronBindings(uv_loop_t* loop);
   virtual ~ElectronBindings();
 
-  // Add process.electronBinding function, which behaves like process.binding
+  // Add process._linkedBinding function, which behaves like process.binding
   // but load native code from Electron instead.
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 

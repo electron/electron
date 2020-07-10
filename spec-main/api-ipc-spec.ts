@@ -4,7 +4,7 @@ import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from '
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -307,7 +307,7 @@ describe('ipc module', () => {
             await new Promise(resolve => {
               port2.start();
               (port2 as any).onclose = resolve;
-              process.electronBinding('v8_util').requestGarbageCollectionForTesting();
+              process._linkedBinding('electron_common_v8_util').requestGarbageCollectionForTesting();
             });
           }})()`);
         });

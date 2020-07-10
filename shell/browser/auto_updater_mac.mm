@@ -6,9 +6,9 @@
 
 #include <string>
 
-#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
-#import <ReactiveCocoa/RACCommand.h>
-#import <ReactiveCocoa/RACSignal.h>
+#import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
+#import <ReactiveObjC/RACCommand.h>
+#import <ReactiveObjC/RACSignal.h>
 #import <Squirrel/Squirrel.h>
 
 #include "base/bind.h"
