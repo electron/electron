@@ -1,25 +1,25 @@
 const fs = require('fs');
-const path = require('path')
-const webpack = require('webpack')
+const path = require('path');
+const webpack = require('webpack');
 
-const configPath = process.argv[2]
-const outPath = path.resolve(process.argv[3])
-const config = require(configPath)
+const configPath = process.argv[2];
+const outPath = path.resolve(process.argv[3]);
+const config = require(configPath);
 config.output = {
   path: path.dirname(outPath),
   filename: path.basename(outPath)
-}
+};
 
 const { wrapInitWithProfilingTimeout } = config;
 delete config.wrapInitWithProfilingTimeout;
 
 webpack(config, (err, stats) => {
   if (err) {
-    console.error(err)
-    process.exit(1)
+    console.error(err);
+    process.exit(1);
   } else if (stats.hasErrors()) {
-    console.error(stats.toString('normal'))
-    process.exit(1)
+    console.error(stats.toString('normal'));
+    process.exit(1);
   } else {
     if (wrapInitWithProfilingTimeout) {
       const contents = fs.readFileSync(outPath, 'utf8');
@@ -33,6 +33,6 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
 }`;
       fs.writeFileSync(outPath, newContents);
     }
-    process.exit(0)
+    process.exit(0);
   }
-})
+});
