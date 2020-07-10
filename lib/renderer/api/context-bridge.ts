@@ -1,7 +1,7 @@
-const { hasSwitch } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 const binding = process._linkedBinding('electron_renderer_context_bridge');
 
-const contextIsolationEnabled = hasSwitch('context-isolation');
+const contextIsolationEnabled = getWebPreference(window, 'contextIsolation');
 
 const checkContextIsolationEnabled = () => {
   if (!contextIsolationEnabled) throw new Error('contextBridge API can only be used when contextIsolation is enabled');

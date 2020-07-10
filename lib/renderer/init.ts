@@ -54,31 +54,33 @@ webFrameInit();
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 
-const parseOption = function<T> (
-  name: string, defaultValue: T, converter?: (value: string) => T
+const parseOption = function<TDefault> (
+  name: string, defaultValue: TDefault, converter?: (value: string) => any
 ) {
-  return hasSwitch(name)
+  const value = getWebPreference(window, name);
+  return value
     ? (
       converter
-        ? converter(getSwitchValue(name))
-        : getSwitchValue(name)
+        ? converter(value)
+        : value
     )
     : defaultValue;
 };
 
-const contextIsolation = hasSwitch('context-isolation');
-const nodeIntegration = hasSwitch('node-integration');
-const webviewTag = hasSwitch('webview-tag');
-const isHiddenPage = hasSwitch('hidden-page');
-const usesNativeWindowOpen = hasSwitch('native-window-open');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
+const contextIsolation = getWebPreference(window, 'contextIsolation');
+const nodeIntegration = getWebPreference(window, 'nodeIntegration');
+const webviewTag = getWebPreference(window, 'webviewTag');
+const isHiddenPage = getWebPreference(window, 'hiddenPage');
+const usesNativeWindowOpen = getWebPreference(window, 'nativeWindowOpen');
+const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
 
 const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[];
-const appPath = parseOption('app-path', null);
-const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
-const openerId = parseOption('opener-id', null, value => parseInt(value));
+const preloadScripts = parseOption('preloadScripts', [], value => value.split(path.delimiter)) as string[];
+const guestInstanceId = parseOption('guestInstanceId', null, value => parseInt(value));
+const openerId = parseOption('openerId', null, value => parseInt(value));
+const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {

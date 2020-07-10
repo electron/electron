@@ -575,7 +575,9 @@ void WebContents::InitWithSessionAndOptions(
     prefs->caret_blink_interval = *interval;
 
   // Save the preferences in C++.
-  new WebContentsPreferences(web_contents(), options);
+  if (!WebContentsPreferences::From(web_contents())) {
+    new WebContentsPreferences(web_contents(), options);
+  }
 
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   SecurityStateTabHelper::CreateForWebContents(web_contents());
@@ -684,6 +686,15 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->referrer = params.referrer.To<content::Referrer>();
   tracker->raw_features = params.raw_features;
   tracker->body = params.body;
+
+  v8::HandleScope scope(isolate());
+  v8::Local<v8::Value> val =
+      gin::ConvertToV8(isolate(), pending_child_web_preferences_);
+  gin_helper::Dictionary dict;
+  gin::ConvertFromV8(isolate(), val, &dict);
+  pending_child_web_preferences_.DictEmpty();
+
+  new WebContentsPreferences(new_contents, dict);
 }
 
 bool WebContents::IsWebContentsCreationOverridden(
@@ -696,6 +707,12 @@ bool WebContents::IsWebContentsCreationOverridden(
     return true;
   }
   return false;
+}
+
+void WebContents::SetNextChildWebPreferences(
+    const gin_helper::Dictionary preferences) {
+  gin::ConvertFromV8(isolate(), preferences.GetHandle(),
+                     &pending_child_web_preferences_);
 }
 
 content::WebContents* WebContents::CreateCustomWebContents(
@@ -994,7 +1011,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
-    // Currently tracked by guest-window-manager.js to destroy the
+    // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
     Emit("current-render-view-deleted",
          render_view_host->GetProcess()->GetID());
@@ -2816,6 +2833,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
 #endif
+      .SetMethod("_setNextChildWebPreferences",
+                 &WebContents::SetNextChildWebPreferences)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",

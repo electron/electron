@@ -16,6 +16,7 @@
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
@@ -113,8 +114,6 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
     media::AddStreamingScheme(scheme.c_str());
-  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,
@@ -136,9 +135,8 @@ void RendererClientBase::DidCreateScriptContext(
   global.SetHidden("contextId", context_id);
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
   bool enableRemoteModule =
-      command_line->HasSwitch(switches::kEnableRemoteModule);
+      render_frame->GetWebkitPreferences().enable_remote_module;
   global.SetHidden("enableRemoteModule", enableRemoteModule);
 #endif
 }
@@ -154,6 +152,8 @@ void RendererClientBase::RenderThreadStarted() {
   // On macOS, popup menus are rendered by the main process by default.
   // This causes problems in OSR, since when the popup is rendered separately,
   // it won't be captured in the rendered image.
+  // TODO(loc): This will be wrong for in-process child windows, as this
+  // function won't run again for them.
   if (command_line->HasSwitch(options::kOffscreen)) {
     blink::WebView::SetUseExternalPopupMenus(false);
   }
@@ -177,8 +177,7 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (command_line->HasSwitch(switches::kEnableSpellcheck))
-    spellcheck_ = std::make_unique<SpellCheck>(this);
+  spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
@@ -274,11 +273,11 @@ void RendererClientBase::RenderFrameCreated(
   if (render_frame->IsMainFrame() && render_view) {
     blink::WebView* webview = render_view->GetWebView();
     if (webview) {
-      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+      auto prefs = render_frame->GetWebkitPreferences();
+      if (prefs.guest_instance_id) {  // webview.
         webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
       } else {  // normal window.
-        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+        std::string name = prefs.background_color;
         SkColor color =
             name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
         webview->SetBaseBackgroundColor(color);
@@ -300,8 +299,7 @@ void RendererClientBase::RenderFrameCreated(
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+  if (render_frame->GetWebkitPreferences().enable_spellcheck)
     new SpellCheckProvider(render_frame, spellcheck_.get(), this);
 #endif
 }
@@ -330,12 +328,11 @@ bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-      command_line->HasSwitch(switches::kEnablePlugins))
+      render_frame->GetWebkitPreferences().enable_plugins)
     return false;
 
   *plugin = nullptr;
@@ -444,7 +441,9 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
-  if (isolated_world())
+  auto* render_frame = content::RenderFrame::FromWebFrame(frame);
+  DCHECK(render_frame);
+  if (render_frame && render_frame->GetWebkitPreferences().context_isolation)
     return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();

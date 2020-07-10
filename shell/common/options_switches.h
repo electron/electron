@@ -59,6 +59,7 @@ extern const char kTrafficLightPosition[];
 // WebPreferences.
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
+extern const char kPreloadScripts[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
@@ -86,6 +87,10 @@ extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
 extern const char kEnableWebSQL[];
 
+extern const char kDisableElectronSiteInstanceOverrides[];
+extern const char kEnableNodeLeakageInRenderers[];
+extern const char kHiddenPage[];
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 extern const char kSpellcheck[];
 #endif
@@ -101,7 +106,6 @@ extern const char kEnableRemoteModule[];
 namespace switches {
 
 extern const char kEnableSandbox[];
-extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
 extern const char kDisableHttpCache[];
@@ -116,22 +120,8 @@ extern const char kAppUserModelId[];
 extern const char kAppPath[];
 extern const char kEnableApiFilteringLogging[];
 
-extern const char kBackgroundColor[];
-extern const char kPreloadScript[];
-extern const char kPreloadScripts[];
-extern const char kNodeIntegration[];
-extern const char kContextIsolation[];
-extern const char kGuestInstanceID[];
-extern const char kOpenerID[];
 extern const char kScrollBounce[];
-extern const char kHiddenPage[];
-extern const char kNativeWindowOpen[];
 extern const char kNodeIntegrationInWorker[];
-extern const char kWebviewTag[];
-extern const char kNodeIntegrationInSubFrames[];
-extern const char kDisableElectronSiteInstanceOverrides[];
-extern const char kEnableNodeLeakageInRenderers[];
-extern const char kEnableWebSQL[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
@@ -143,16 +133,7 @@ extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kEnableAuthNegotiatePort[];
 extern const char kDisableNTLMv2[];
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-extern const char kEnableSpellcheck[];
-#endif
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-extern const char kEnableRemoteModule[];
-#endif
-
 extern const char kGlobalCrashKeys[];
-
 }  // namespace switches
 
 }  // namespace electron

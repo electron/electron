@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
@@ -64,21 +65,18 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  bool use_context_isolation = renderer_client_->isolated_world();
+  auto prefs = render_frame_->GetWebkitPreferences();
+  bool use_context_isolation = prefs.context_isolation;
   // This logic matches the EXPLAINED logic in electron_renderer_client.cc
   // to avoid explaining it twice go check that implementation in
   // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
   bool reuse_renderer_processes_enabled =
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
-  bool is_not_opened =
-      !render_frame_->GetWebFrame()->Opener() ||
-      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
-  bool allow_node_in_sub_frames =
-      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
+      prefs.disable_electron_site_instance_overrides;
+  bool is_not_opened = !render_frame_->GetWebFrame()->Opener() ||
+                       prefs.node_leakage_in_renderers;
+  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
       (is_main_frame || allow_node_in_sub_frames) &&
@@ -153,10 +151,9 @@ bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
-  if (renderer_client_->isolated_world() &&
+  auto prefs = render_frame_->GetWebkitPreferences();
+  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
+  if (prefs.context_isolation &&
       (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
     return IsIsolatedWorld(world_id);
   else

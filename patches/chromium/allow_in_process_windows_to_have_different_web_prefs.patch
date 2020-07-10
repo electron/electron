@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Wed, 6 May 2020 16:37:54 -0700
+Subject: allow in-process windows to have different web prefs
+
+Allow earlier access to newly created WebContents so that we can change
+WebPreferences of in-process child windows, rather than relying on
+process-level command line switches, as before.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index a4f2947ea70dd7135cccefee5214ca7586f4cf31..ecf5ef4fb2acbbbf47d24a80aca4d60c56ecd456 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3053,6 +3053,10 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+   }
+   auto* new_contents_impl = new_contents.get();
+ 
++  if (delegate_) {
++    delegate_->WebContentsCreatedWithFullParams(this, render_process_id, opener->GetRoutingID(), params, new_contents_impl);
++  }
++
+   new_contents_impl->GetController().SetSessionStorageNamespace(
+       partition_id, session_storage_namespace);
+ 
+@@ -3094,12 +3098,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+     AddDestructionObserver(new_contents_impl);
+   }
+ 
+-  if (delegate_) {
+-    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
+-                                                opener->GetRoutingID(),
+-                                                params, new_contents_impl);
+-  }
+-
+   for (auto& observer : observers_) {
+     observer.DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
+                                  params.referrer.To<Referrer>(),
+diff --git a/content/public/common/common_param_traits_macros.h b/content/public/common/common_param_traits_macros.h
+index 5ec7bb1d1abc12b957690c04046cafbf4989000c..2019e1daf4d30eb40439d738934f6a567acd0c50 100644
+--- a/content/public/common/common_param_traits_macros.h
++++ b/content/public/common/common_param_traits_macros.h
+@@ -132,6 +132,27 @@ IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
+   IPC_STRUCT_TRAITS_MEMBER(webgl2_enabled)
+   IPC_STRUCT_TRAITS_MEMBER(pepper_3d_enabled)
+   IPC_STRUCT_TRAITS_MEMBER(record_whole_document)
++
++  IPC_STRUCT_TRAITS_MEMBER(preloads)
++  IPC_STRUCT_TRAITS_MEMBER(disable_electron_site_instance_overrides)
++  IPC_STRUCT_TRAITS_MEMBER(background_color)
++  IPC_STRUCT_TRAITS_MEMBER(opener_id)
++  IPC_STRUCT_TRAITS_MEMBER(context_isolation)
++  IPC_STRUCT_TRAITS_MEMBER(enable_remote_module)
++  IPC_STRUCT_TRAITS_MEMBER(guest_instance_id)
++  IPC_STRUCT_TRAITS_MEMBER(hidden_page)
++  IPC_STRUCT_TRAITS_MEMBER(offscreen)
++  IPC_STRUCT_TRAITS_MEMBER(preload)
++  IPC_STRUCT_TRAITS_MEMBER(native_window_open)
++  IPC_STRUCT_TRAITS_MEMBER(node_integration)
++  IPC_STRUCT_TRAITS_MEMBER(node_integration_in_worker)
++  IPC_STRUCT_TRAITS_MEMBER(node_leakage_in_renderers)
++  IPC_STRUCT_TRAITS_MEMBER(node_integration_in_sub_frames)
++  IPC_STRUCT_TRAITS_MEMBER(enable_spellcheck)
++  IPC_STRUCT_TRAITS_MEMBER(enable_plugins)
++  IPC_STRUCT_TRAITS_MEMBER(enable_websql)
++  IPC_STRUCT_TRAITS_MEMBER(webview_tag)
++
+   IPC_STRUCT_TRAITS_MEMBER(flash_3d_enabled)
+   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_enabled)
+   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_baseline_enabled)
+diff --git a/content/public/common/web_preferences.cc b/content/public/common/web_preferences.cc
+index b543f98a34266efdb771482c5717042700a47ed0..4ab4ae9855ad470fe8c79de7a294b6630a5f60f6 100644
+--- a/content/public/common/web_preferences.cc
++++ b/content/public/common/web_preferences.cc
+@@ -166,6 +166,27 @@ WebPreferences::WebPreferences()
+       navigate_on_drag_drop(true),
+       v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
+       record_whole_document(false),
++
++      preloads(base::EmptyString()),
++      disable_electron_site_instance_overrides(),
++      background_color(base::EmptyString()),
++      opener_id(0),
++      context_isolation(false),
++      enable_remote_module(false),
++      guest_instance_id(0),
++      hidden_page(false),
++      offscreen(false),
++      preload(base::EmptyString()),
++      native_window_open(false),
++      node_integration(false),
++      node_integration_in_worker(false),
++      node_leakage_in_renderers(false),
++      node_integration_in_sub_frames(false),
++      enable_spellcheck(false),
++      enable_plugins(false),
++      enable_websql(false),
++      webview_tag(false),
++
+       cookie_enabled(true),
+       accelerated_video_decode_enabled(false),
+       animation_policy(IMAGE_ANIMATION_POLICY_ALLOWED),
+diff --git a/content/public/common/web_preferences.h b/content/public/common/web_preferences.h
+index 744aa96ce2ffab9e10d4858eb93b9882753466f5..4b8d9b1275ef7f79a9c9298fd0e66032a5d7db3b 100644
+--- a/content/public/common/web_preferences.h
++++ b/content/public/common/web_preferences.h
+@@ -184,6 +184,26 @@ struct CONTENT_EXPORT WebPreferences {
+   blink::mojom::V8CacheOptions v8_cache_options;
+   bool record_whole_document;
+ 
++  std::string preloads;
++  bool disable_electron_site_instance_overrides;
++  std::string background_color;
++  int opener_id;
++  bool context_isolation;
++  bool enable_remote_module;
++  int guest_instance_id;
++  bool hidden_page;
++  bool offscreen;
++  std::string preload;
++  bool native_window_open;
++  bool node_integration;
++  bool node_integration_in_worker;
++  bool node_leakage_in_renderers;
++  bool node_integration_in_sub_frames;
++  bool enable_spellcheck;
++  bool enable_plugins;
++  bool enable_websql;
++  bool webview_tag;
++
+   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
+   // only controls whether or not the "document.cookie" field is properly
+   // connected to the backing store, for instance if you wanted to be able to

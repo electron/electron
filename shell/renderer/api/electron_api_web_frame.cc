@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/memory/memory_pressure_listener.h"
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
@@ -21,6 +22,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
@@ -309,6 +311,59 @@ double GetZoomFactor(gin_helper::ErrorThrower thrower,
                      v8::Local<v8::Value> window) {
   double zoom_level = GetZoomLevel(thrower, window);
   return blink::PageZoomLevelToZoomFactor(zoom_level);
+}
+
+v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
+                                      v8::Local<v8::Value> window,
+                                      std::string pref_name) {
+  content::RenderFrame* render_frame = GetRenderFrame(window);
+  const content::WebPreferences& prefs = render_frame->GetWebkitPreferences();
+
+  if (pref_name == options::kPreloadScripts) {
+    return gin::ConvertToV8(isolate, prefs.preloads);
+  } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
+    return gin::ConvertToV8(isolate,
+                            prefs.disable_electron_site_instance_overrides);
+  } else if (pref_name == options::kBackgroundColor) {
+    return gin::ConvertToV8(isolate, prefs.background_color);
+  } else if (pref_name == options::kOpenerID) {
+    return gin::ConvertToV8(isolate, prefs.opener_id);
+  } else if (pref_name == options::kContextIsolation) {
+    return gin::ConvertToV8(isolate, prefs.context_isolation);
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  } else if (pref_name == options::kEnableRemoteModule) {
+    return gin::ConvertToV8(isolate, prefs.enable_remote_module);
+#endif
+  } else if (pref_name == options::kGuestInstanceID) {
+    return gin::ConvertToV8(isolate, prefs.guest_instance_id);
+  } else if (pref_name == options::kHiddenPage) {
+    return gin::ConvertToV8(isolate, prefs.hidden_page);
+  } else if (pref_name == options::kOffscreen) {
+    return gin::ConvertToV8(isolate, prefs.offscreen);
+  } else if (pref_name == options::kPreloadScript) {
+    return gin::ConvertToV8(isolate, prefs.preload);
+  } else if (pref_name == options::kNativeWindowOpen) {
+    return gin::ConvertToV8(isolate, prefs.native_window_open);
+  } else if (pref_name == options::kNodeIntegration) {
+    return gin::ConvertToV8(isolate, prefs.node_integration);
+  } else if (pref_name == options::kNodeIntegrationInWorker) {
+    return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
+  } else if (pref_name == options::kEnableNodeLeakageInRenderers) {
+    return gin::ConvertToV8(isolate, prefs.node_leakage_in_renderers);
+  } else if (pref_name == options::kNodeIntegrationInSubFrames) {
+    return gin::ConvertToV8(isolate, true);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  } else if (pref_name == options::kSpellcheck) {
+    return gin::ConvertToV8(isolate, prefs.enable_spellcheck);
+#endif
+  } else if (pref_name == options::kPlugins) {
+    return gin::ConvertToV8(isolate, prefs.enable_plugins);
+  } else if (pref_name == options::kEnableWebSQL) {
+    return gin::ConvertToV8(isolate, prefs.enable_websql);
+  } else if (pref_name == options::kWebviewTag) {
+    return gin::ConvertToV8(isolate, prefs.webview_tag);
+  }
+  return v8::Null(isolate);
 }
 
 void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
@@ -749,6 +804,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("allowGuestViewElementDefinition",
                  &AllowGuestViewElementDefinition);
   dict.SetMethod("getWebFrameId", &GetWebFrameId);
+  dict.SetMethod("getWebPreference", &GetWebPreference);
   dict.SetMethod("setSpellCheckProvider", &SetSpellCheckProvider);
   dict.SetMethod("insertText", &InsertText);
   dict.SetMethod("insertCSS", &InsertCSS);

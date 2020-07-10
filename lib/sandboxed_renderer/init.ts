@@ -113,6 +113,7 @@ function preloadRequire (module: string) {
 
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 
 // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
@@ -120,9 +121,9 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
 
-const contextIsolation = hasSwitch('context-isolation');
-const isHiddenPage = hasSwitch('hidden-page');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
+const contextIsolation = getWebPreference(window, 'contextIsolation');
+const isHiddenPage = getWebPreference(window, 'hiddenPage');
+const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
 const usesNativeWindowOpen = true;
 
 switch (window.location.protocol) {

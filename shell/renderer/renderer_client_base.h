@@ -67,7 +67,6 @@ class RendererClientBase : public content::ContentRendererClient
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
-  bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
@@ -131,7 +130,6 @@ class RendererClientBase : public content::ContentRendererClient
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
-  bool isolated_world_;
   std::string renderer_client_id_;
   // An increasing ID used for indentifying an V8 context in this process.
   int64_t next_context_id_ = 0;

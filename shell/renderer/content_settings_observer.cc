@@ -4,6 +4,7 @@
 
 #include "shell/renderer/content_settings_observer.h"
 
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/platform/url_conversion.h"
@@ -21,8 +22,8 @@ ContentSettingsObserver::ContentSettingsObserver(
 ContentSettingsObserver::~ContentSettingsObserver() = default;
 
 bool ContentSettingsObserver::AllowDatabase() {
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableWebSQL)) {
+  auto prefs = render_frame()->GetWebkitPreferences();
+  if (!prefs.enable_websql) {
     return false;
   }
 

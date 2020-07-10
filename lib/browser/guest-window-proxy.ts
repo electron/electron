@@ -1,17 +1,15 @@
-import {
-  webContents,
-  BrowserWindow,
-  WebContentsInternal,
-  Referrer,
-  BrowserWindowConstructorOptions,
-  WebContents
-} from 'electron';
+/**
+ * Manage guest windows when using the default BrowserWindowProxy version of the
+ * renderer's window.open (i.e. nativeWindowOpen off). This module mostly
+ * consists of marshaling IPC requests from the BrowserWindowProxy to the
+ * WebContents.
+ */
+import { webContents, BrowserWindow, WebContentsInternal, WebContents } from 'electron';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
-import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { internalWindowOpen } from './guest-window-manager';
+import { openGuestWindow } from '@electron/internal/browser/guest-window-manager';
 
-const { isSameOrigin } = process.electronBinding('v8_util');
+const { isSameOrigin } = process._linkedBinding('electron_common_v8_util');
 
 const getGuestWindow = function (guestContents: WebContents) {
   let guestWindow = BrowserWindow.fromWebContents(guestContents);
@@ -59,7 +57,7 @@ const canAccessWindow = function (sender: WebContents, target: WebContents) {
 ipcMainInternal.on(
   'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN',
   (
-    event: ElectronInternal.IpcMainInternalEvent,
+    event: Electron.IpcMainInvokeEvent,
     url: string,
     frameName: string,
     features: string
@@ -67,33 +65,30 @@ ipcMainInternal.on(
     // This should only be allowed for senders that have nativeWindowOpen: false
     const lastWebPreferences = (event.sender as any).getLastWebPreferences();
     if (lastWebPreferences.nativeWindowOpen || lastWebPreferences.sandbox) {
-      event.returnValue = null;
+      (event as any).returnValue = null;
       throw new Error(
         'GUEST_WINDOW_MANAGER_WINDOW_OPEN denied: expected native window.open'
       );
     }
-    if (url == null || url === '') url = 'about:blank';
-    if (frameName == null) frameName = '';
-    if (features == null) features = '';
 
-    const disposition = 'new-window';
-    const { options, webPreferences, additionalFeatures } = parseFeatures(
-      features
-    );
-    if (!options.title) options.title = frameName;
-    (options as BrowserWindowConstructorOptions).webPreferences = webPreferences;
+    const browserWindowOptions = (event.sender as any)._callWindowOpenOverride(event, url, frameName);
+    if (event.defaultPrevented) {
+      return;
+    }
+    const guest = openGuestWindow({
+      event: event as Electron.IpcMainEvent,
+      embedder: event.sender,
+      referrer: { url: '', policy: 'default' },
+      disposition: 'new-window',
+      overrideBrowserWindowOptions: browserWindowOptions,
+      windowOpenArgs: {
+        url: url || 'about:blank',
+        frameName: frameName || '',
+        features: features || ''
+      }
+    });
 
-    const referrer: Referrer = { url: '', policy: 'default' };
-    internalWindowOpen(
-      event,
-      url,
-      referrer,
-      frameName,
-      disposition,
-      options,
-      additionalFeatures,
-      null
-    );
+    if (guest) (event as any).returnValue = guest.webContents.id;
   }
 );
 
