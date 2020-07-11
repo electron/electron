@@ -90,7 +90,7 @@ module.exports = ({
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
-        'electron$': electronAPIFile,
+        electron$: electronAPIFile,
         'electron/main$': electronAPIFile,
         'electron/renderer$': electronAPIFile,
         'electron/common$': electronAPIFile,
