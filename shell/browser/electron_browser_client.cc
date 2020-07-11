@@ -1420,6 +1420,9 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
     return false;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  if (!frame) {
+    return;
+  }
   const auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
@@ -1444,6 +1447,9 @@ void ElectronBrowserClient::CreateWebSocket(
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  if (!frame) {
+    return;
+  }
   auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
