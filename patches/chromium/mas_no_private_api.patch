@@ -348,10 +348,10 @@ index 474ae88c323e9a10bd8486482507f0d749214963..090c8fdc3b374ed937d3e04ccd5d9177
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 83d0106f0f237dea75dfafe011bf527d97240d0d..462577a0dbd0fcc1baf17acd9678317cb27503fa 100644
+index 04bbb885b29cd2038f11214d0bec40a2b691f5e1..abfdcfbe576dbddc42090818cc2bc13da4b453e9 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -525,6 +525,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
+@@ -526,6 +526,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -359,7 +359,7 @@ index 83d0106f0f237dea75dfafe011bf527d97240d0d..462577a0dbd0fcc1baf17acd9678317c
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -532,6 +533,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
+@@ -533,6 +534,7 @@ NSDictionary* BrowserAccessibilityManagerMac::
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -400,7 +400,7 @@ index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a
  
  }  // namespace
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 1ecb98346e11c14440b509ce62e12b0a426130fc..c0fab734ed37a67d5e1797bb2bd6df098acec530 100644
+index 05bf0aab2ceef177ca9e2233407946efba971b8e..fdfd84d856ddbbe95d9f4e0f6e790546d5aa8e08 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -36,6 +36,7 @@
@@ -430,7 +430,7 @@ index 1ecb98346e11c14440b509ce62e12b0a426130fc..c0fab734ed37a67d5e1797bb2bd6df09
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -307,8 +311,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
+@@ -306,8 +310,12 @@ base::WeakPtr<BluetoothAdapter> BluetoothAdapterMac::GetWeakPtr() {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
