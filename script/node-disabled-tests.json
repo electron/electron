@@ -81,7 +81,6 @@
   "parallel/test-signal-handler",
   "parallel/test-source-map",
   "parallel/test-stdout-close-catch",
-  "parallel/test-sync-io-option",
   "parallel/test-tls-cert-chains-concat",
   "parallel/test-tls-cert-chains-in-ca",
   "parallel/test-tls-cli-max-version-1.2",
