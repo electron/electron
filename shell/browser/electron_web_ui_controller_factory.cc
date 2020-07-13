@@ -6,8 +6,7 @@
 
 #include <string>
 
-#include "chrome/common/webui_url_constants.h"
-#include "chrome/browser/accessibility/accessibility_ui.h"
+#include "chrome/browser/accessibility_ui.h"
 #include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
@@ -55,7 +54,7 @@ ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return std::make_unique<DevToolsUI>(browser_context, web_ui);
   } else if (url.host() == chrome::kChromeUIAccessibilityHost) {
-    return std::make_unique<AccessibilityUI>(web_ui);
+    return std::make_unique<ElectronAccessibilityUI>(web_ui);
   }
 
   return std::unique_ptr<content::WebUIController>();

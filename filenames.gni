@@ -22,6 +22,8 @@ filenames = {
   ]
 
   lib_sources = [
+    "chromium_src/chrome/browser/accessibility_ui.cc",
+    "chromium_src/chrome/browser/accessibility_ui.h",
     "chromium_src/chrome/browser/process_singleton.h",
     "chromium_src/chrome/browser/process_singleton_posix.cc",
     "chromium_src/chrome/browser/process_singleton_win.cc",

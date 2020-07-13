@@ -36,6 +36,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   base::WeakPtr<BaseWindow> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   NativeWindow* window() const { return window_.get(); }
+  int32_t GetID() const;
+  std::string GetTitle();
 
  protected:
   // Common constructor.
@@ -141,7 +143,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetPosition(int x, int y, gin_helper::Arguments* args);
   std::vector<int> GetPosition();
   void SetTitle(const std::string& title);
-  std::string GetTitle();
   void SetAccessibleTitle(const std::string& title);
   std::string GetAccessibleTitle();
   void FlashFrame(bool flash);
@@ -231,7 +232,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
 #endif
-  int32_t GetID() const;
 
   // Helpers.
 
