@@ -151,7 +151,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     }
     if (!success) {
       // Failed convert so we send undefined everywhere
-      if (!callback_.is_null())
+      if (callback_)
         std::move(callback_).Run(
             v8::Undefined(isolate),
             v8::Exception::Error(
@@ -162,7 +162,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
       v8::Local<v8::Context> context = promise_.GetContext();
       v8::Context::Scope context_scope(context);
       v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
-      if (!callback_.is_null())
+      if (callback_)
         std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
       promise_.Resolve(cloned_value);
     }
@@ -173,20 +173,23 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
+        v8::Local<v8::Value> value = reuslt[0];
         // Either world safe results are disabled or the result was created in
         // the same world as the caller or the result is not an object and
         // therefore does not have a prototype chain to protect
-        if (!world_safe_result_ ||
-            (result[0]->IsObject() &&
+        bool should_send_directly =
+            !world_safe_result_ ||
+            (value->IsObject() &&
              promise_.GetContext() ==
-                 result[0].As<v8::Object>()->CreationContext()) ||
-            !result[0]->IsObject()) {
+                 value.As<v8::Object>()->CreationContext()) ||
+            !value->IsObject();
+        if (should_send_directly) {
           // Right now only single results per frame is supported.
-          if (!callback_.is_null())
-            std::move(callback_).Run(result[0], v8::Undefined(isolate));
-          promise_.Resolve(result[0]);
+          if (callback_)
+            std::move(callback_).Run(value, v8::Undefined(isolate));
+          promise_.Resolve(value);
         } else {
-          CopyResultToCallingContextAndFinalize(isolate, result[0]);
+          CopyResultToCallingContextAndFinalize(isolate, value);
         }
       } else {
         const char* error_message =
