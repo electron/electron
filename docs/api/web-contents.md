@@ -1311,6 +1311,8 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Error description called back if the print fails.
 
+When a custom `pageSize` is passed, Chromium attempts to validate platform specific minumum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
+
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
 
@@ -1334,13 +1336,12 @@ win.webContents.print(options, (success, errorType) => {
   * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
   * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
-    and `width` in microns.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
   * `pageRanges` Record<string, number> (optional) - The page range to print.
     * `from` Number - the first page to print.
     * `to` Number - the last page to print (inclusive).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
+  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width` in microns.
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
 
