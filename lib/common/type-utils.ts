@@ -1,4 +1,4 @@
-const { nativeImage, NativeImage } = process._linkedBinding('electron_common_native_image');
+const { nativeImage } = process._linkedBinding('electron_common_native_image');
 
 export function isPromise (val: any) {
   return (
@@ -80,7 +80,7 @@ function deserializeNativeImage (value: any) {
 }
 
 export function serialize (value: any): any {
-  if (value instanceof NativeImage) {
+  if (value && value.constructor && value.constructor.name === 'NativeImage') {
     return serializeNativeImage(value);
   } if (Array.isArray(value)) {
     return value.map(serialize);
