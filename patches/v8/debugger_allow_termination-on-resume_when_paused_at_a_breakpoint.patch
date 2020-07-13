@@ -1,0 +1,883 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sigurd Schneider <sigurds@chromium.org>
+Date: Mon, 3 Feb 2020 14:45:06 +0100
+Subject: Allow termination-on-resume when paused at a breakpoint
+
+This CL implements functionality to allow an embedder to mark a
+debug scope as terminate-on-resume. This results in a termination
+exception when that debug scope is left and execution is resumed.
+Execution of JavaScript remains possible after a debug scope is
+marked as terminate-on-resume (but before execution of the paused
+code resumes).
+This is used by blink to correctly prevent resuming JavaScript
+execution upon reload while being paused at a breakpoint.
+
+This is important for handling reloads while paused at a breakpoint
+in blink. The resume command terminates blink's nested message loop
+that is used while to keep the frame responsive while the debugger
+is paused. But if a reload is triggered while execution is paused
+on a breakpoint, but before execution is actually resumed from the
+ breakpoint (that means before returning into the V8 JavaScript
+frames that are paused on the stack below the C++ frames that belong
+to the nested message loop), we re-enter V8 to do tear-down actions
+of the old frame. In this case Runtime.terminateExecution() cannot be
+used before Debugger.resume(), because the tear-down actions that
+re-enter V8 would trigger the termination exception and crash the
+browser (because the browser expected the tear-down to succeed).
+
+Hence we introduce this flag on V8 that says: It is OK if someone
+re-enters V8 (to execute JS), but upon resuming from the breakpoint
+(i.e. returning to the paused frames that are on the stack below),
+generate a termination exception.
+
+We deliberated adding a corresponding logic on the blink side (instead
+of V8) but we think this is the simplest solution.
+
+More details in the design doc:
+
+https://docs.google.com/document/d/1aO9v0YhoKNqKleqfACGUpwrBUayLFGqktz9ltdgKHMk
+
+Bug: chromium:1004038, chromium:1014415
+
+Change-Id: I896692d4c21cb0acae89c1d783d37ce45b73c113
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/1924366
+Commit-Queue: Sigurd Schneider <sigurds@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#66084}
+
+diff --git a/include/js_protocol.pdl b/include/js_protocol.pdl
+index 427d654cac786b303755d1a805d12e928a454bdc..35b260ab753b429313faa1312644d8e43e32dd40 100644
+--- a/include/js_protocol.pdl
++++ b/include/js_protocol.pdl
+@@ -273,6 +273,13 @@ domain Debugger
+ 
+   # Resumes JavaScript execution.
+   command resume
++    parameters
++      # Set to true to terminate execution upon resuming execution. In contrast
++      # to Runtime.terminateExecution, this will allows to execute further
++      # JavaScript (i.e. via evaluation) until execution of the paused code
++      # is actually resumed, at which point termination is triggered.
++      # If execution is currently not paused, this parameter has no effect.
++      optional boolean terminateOnResume
+ 
+   # Searches for given string in script content.
+   command searchInContent
+diff --git a/include/v8-inspector.h b/include/v8-inspector.h
+index 3ec1325613a1ae2eb53fe10b139e667149dacc8c..6131042024b7622c5578f6944d97bc53a25b5596 100644
+--- a/include/v8-inspector.h
++++ b/include/v8-inspector.h
+@@ -145,7 +145,7 @@ class V8_EXPORT V8InspectorSession {
+   virtual void breakProgram(const StringView& breakReason,
+                             const StringView& breakDetails) = 0;
+   virtual void setSkipAllPauses(bool) = 0;
+-  virtual void resume() = 0;
++  virtual void resume(bool setTerminateOnResume = false) = 0;
+   virtual void stepOver() = 0;
+   virtual std::vector<std::unique_ptr<protocol::Debugger::API::SearchMatch>>
+   searchInTextByLines(const StringView& text, const StringView& query,
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 6228b23b890af55de1c5053d5b3b7b0d5142fa9a..d67366746fed63201a73d159fc759fcb269d5d5d 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -9396,6 +9396,12 @@ void debug::BreakRightNow(Isolate* v8_isolate) {
+   isolate->debug()->HandleDebugBreak(i::kIgnoreIfAllFramesBlackboxed);
+ }
+ 
++void debug::SetTerminateOnResume(Isolate* v8_isolate) {
++  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
++  ENTER_V8_NO_SCRIPT_NO_EXCEPTION(isolate);
++  isolate->debug()->SetTerminateOnResume();
++}
++
+ bool debug::AllFramesOnStackAreBlackboxed(Isolate* v8_isolate) {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+   ENTER_V8_DO_NOT_USE(isolate);
+diff --git a/src/debug/debug-interface.h b/src/debug/debug-interface.h
+index ac8888b5703c335dc6773b885fe0bb16088ce741..a8c85c185952c6544dd670bd3b61e6893375d0fa 100644
+--- a/src/debug/debug-interface.h
++++ b/src/debug/debug-interface.h
+@@ -93,6 +93,13 @@ void PrepareStep(Isolate* isolate, StepAction action);
+ void ClearStepping(Isolate* isolate);
+ V8_EXPORT_PRIVATE void BreakRightNow(Isolate* isolate);
+ 
++// Use `SetTerminateOnResume` to indicate that an TerminateExecution interrupt
++// should be set shortly before resuming, i.e. shortly before returning into
++// the JavaScript stack frames on the stack. In contrast to setting the
++// interrupt with `RequestTerminateExecution` directly, this flag allows
++// the isolate to be entered for further JavaScript execution.
++V8_EXPORT_PRIVATE void SetTerminateOnResume(Isolate* isolate);
++
+ bool AllFramesOnStackAreBlackboxed(Isolate* isolate);
+ 
+ class Script;
+diff --git a/src/debug/debug.cc b/src/debug/debug.cc
+index b31e305a02bc531c1facade1d47c12dea993e178..547decf42ba17e4ac3be081a1186b70cc2dc3cfe 100644
+--- a/src/debug/debug.cc
++++ b/src/debug/debug.cc
+@@ -1718,8 +1718,8 @@ Handle<FixedArray> Debug::GetLoadedScripts() {
+   return FixedArray::ShrinkOrEmpty(isolate_, results, length);
+ }
+ 
+-void Debug::OnThrow(Handle<Object> exception) {
+-  if (in_debug_scope() || ignore_events()) return;
++base::Optional<Object> Debug::OnThrow(Handle<Object> exception) {
++  if (in_debug_scope() || ignore_events()) return {};
+   // Temporarily clear any scheduled_exception to allow evaluating
+   // JavaScript from the debug event handler.
+   HandleScope scope(isolate_);
+@@ -1736,6 +1736,14 @@ void Debug::OnThrow(Handle<Object> exception) {
+     isolate_->thread_local_top()->scheduled_exception_ = *scheduled_exception;
+   }
+   PrepareStepOnThrow();
++  // If the OnException handler requested termination, then indicated this to
++  // our caller Isolate::Throw so it can deal with it immediatelly instead of
++  // throwing the original exception.
++  if (isolate_->stack_guard()->CheckTerminateExecution()) {
++    isolate_->stack_guard()->ClearTerminateExecution();
++    return isolate_->TerminateExecution();
++  }
++  return {};
+ }
+ 
+ void Debug::OnPromiseReject(Handle<Object> promise, Handle<Object> value) {
+@@ -2091,7 +2099,6 @@ DebugScope::DebugScope(Debug* debug)
+   // Link recursive debugger entry.
+   base::Relaxed_Store(&debug_->thread_local_.current_debug_scope_,
+                       reinterpret_cast<base::AtomicWord>(this));
+-
+   // Store the previous frame id and return value.
+   break_frame_id_ = debug_->break_frame_id();
+ 
+@@ -2105,8 +2112,18 @@ DebugScope::DebugScope(Debug* debug)
+   debug_->UpdateState();
+ }
+ 
++void DebugScope::set_terminate_on_resume() { terminate_on_resume_ = true; }
+ 
+ DebugScope::~DebugScope() {
++  // Terminate on resume must have been handled by retrieving it, if this is
++  // the outer scope.
++  if (terminate_on_resume_) {
++    if (!prev_) {
++      debug_->isolate_->stack_guard()->RequestTerminateExecution();
++    } else {
++      prev_->set_terminate_on_resume();
++    }
++  }
+   // Leaving this debugger entry.
+   base::Relaxed_Store(&debug_->thread_local_.current_debug_scope_,
+                       reinterpret_cast<base::AtomicWord>(prev_));
+@@ -2146,6 +2163,13 @@ void Debug::UpdateDebugInfosForExecutionMode() {
+   }
+ }
+ 
++void Debug::SetTerminateOnResume() {
++  DebugScope* scope = reinterpret_cast<DebugScope*>(
++      base::Acquire_Load(&thread_local_.current_debug_scope_));
++  CHECK_NOT_NULL(scope);
++  scope->set_terminate_on_resume();
++}
++
+ void Debug::StartSideEffectCheckMode() {
+   DCHECK(isolate_->debug_execution_mode() != DebugInfo::kSideEffects);
+   isolate_->set_debug_execution_mode(DebugInfo::kSideEffects);
+diff --git a/src/debug/debug.h b/src/debug/debug.h
+index 9100dad871060365232b7219f625aca3d63764d0..3444b39f4241d61f4e6716bfab5fafc195b12ec6 100644
+--- a/src/debug/debug.h
++++ b/src/debug/debug.h
+@@ -217,7 +217,8 @@ class V8_EXPORT_PRIVATE Debug {
+   // Debug event triggers.
+   void OnDebugBreak(Handle<FixedArray> break_points_hit);
+ 
+-  void OnThrow(Handle<Object> exception);
++  base::Optional<Object> OnThrow(Handle<Object> exception)
++      V8_WARN_UNUSED_RESULT;
+   void OnPromiseReject(Handle<Object> promise, Handle<Object> value);
+   void OnCompileError(Handle<Script> script);
+   void OnAfterCompile(Handle<Script> script);
+@@ -238,6 +239,8 @@ class V8_EXPORT_PRIVATE Debug {
+   void ChangeBreakOnException(ExceptionBreakType type, bool enable);
+   bool IsBreakOnException(ExceptionBreakType type);
+ 
++  void SetTerminateOnResume();
++
+   bool SetBreakPointForScript(Handle<Script> script, Handle<String> condition,
+                               int* source_position, int* id);
+   bool SetBreakpointForFunction(Handle<SharedFunctionInfo> shared,
+@@ -565,6 +568,8 @@ class DebugScope {
+   explicit DebugScope(Debug* debug);
+   ~DebugScope();
+ 
++  void set_terminate_on_resume();
++
+  private:
+   Isolate* isolate() { return debug_->isolate_; }
+ 
+@@ -572,6 +577,8 @@ class DebugScope {
+   DebugScope* prev_;               // Previous scope if entered recursively.
+   StackFrameId break_frame_id_;    // Previous break frame id.
+   PostponeInterruptsScope no_interrupts_;
++  // This is used as a boolean.
++  bool terminate_on_resume_ = false;
+ };
+ 
+ // This scope is used to handle return values in nested debug break points.
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index ef11e5ad53b357ce2ac7613a08d3a8195d3241e4..17113e7ec11024f42a6b616c3ffcb9f85bc96c63 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -1563,7 +1563,10 @@ Object Isolate::Throw(Object raw_exception, MessageLocation* location) {
+ 
+   // Notify debugger of exception.
+   if (is_catchable_by_javascript(raw_exception)) {
+-    debug()->OnThrow(exception);
++    base::Optional<Object> maybe_exception = debug()->OnThrow(exception);
++    if (maybe_exception.has_value()) {
++      return *maybe_exception;
++    }
+   }
+ 
+   // Generate the message if required.
+diff --git a/src/inspector/v8-debugger-agent-impl.cc b/src/inspector/v8-debugger-agent-impl.cc
+index eda3297922e2e6660ad5436b02a989e0371f9339..9c6e7bea24fdfd7c8a74089d0a6b97fb50abafc8 100644
+--- a/src/inspector/v8-debugger-agent-impl.cc
++++ b/src/inspector/v8-debugger-agent-impl.cc
+@@ -1029,10 +1029,11 @@ Response V8DebuggerAgentImpl::pause() {
+   return Response::OK();
+ }
+ 
+-Response V8DebuggerAgentImpl::resume() {
++Response V8DebuggerAgentImpl::resume(Maybe<bool> terminateOnResume) {
+   if (!isPaused()) return Response::Error(kDebuggerNotPaused);
+   m_session->releaseObjectGroup(kBacktraceObjectGroup);
+-  m_debugger->continueProgram(m_session->contextGroupId());
++  m_debugger->continueProgram(m_session->contextGroupId(),
++                              terminateOnResume.fromMaybe(false));
+   return Response::OK();
+ }
+ 
+diff --git a/src/inspector/v8-debugger-agent-impl.h b/src/inspector/v8-debugger-agent-impl.h
+index 5b1c7fcdbc333876d0c752edb304475fd01c57af..b7e87a91b0f253ce0cc19e9496c2e2952753b095 100644
+--- a/src/inspector/v8-debugger-agent-impl.h
++++ b/src/inspector/v8-debugger-agent-impl.h
+@@ -98,7 +98,7 @@ class V8DebuggerAgentImpl : public protocol::Debugger::Backend {
+   Response getWasmBytecode(const String16& scriptId,
+                            protocol::Binary* bytecode) override;
+   Response pause() override;
+-  Response resume() override;
++  Response resume(Maybe<bool> terminateOnResume) override;
+   Response stepOver() override;
+   Response stepInto(Maybe<bool> inBreakOnAsyncCall) override;
+   Response stepOut() override;
+diff --git a/src/inspector/v8-debugger.cc b/src/inspector/v8-debugger.cc
+index e3ed733003d1c4b6ab0598cf8af285c03924ca71..5d37fb4ea708d62c212ce6d41dda018d478c771b 100644
+--- a/src/inspector/v8-debugger.cc
++++ b/src/inspector/v8-debugger.cc
+@@ -247,9 +247,15 @@ void V8Debugger::interruptAndBreak(int targetContextGroupId) {
+       nullptr);
+ }
+ 
+-void V8Debugger::continueProgram(int targetContextGroupId) {
++void V8Debugger::continueProgram(int targetContextGroupId,
++                                 bool terminateOnResume) {
+   if (m_pausedContextGroupId != targetContextGroupId) return;
+-  if (isPaused()) m_inspector->client()->quitMessageLoopOnPause();
++  if (isPaused()) {
++    if (terminateOnResume) {
++      v8::debug::SetTerminateOnResume(m_isolate);
++    }
++    m_inspector->client()->quitMessageLoopOnPause();
++  }
+ }
+ 
+ void V8Debugger::breakProgramOnAssert(int targetContextGroupId) {
+diff --git a/src/inspector/v8-debugger.h b/src/inspector/v8-debugger.h
+index a078d14f3d21137e82ea0a3cef7ba0196876b2d8..2df1f5132a9eabf2696457a864a24ae22a568b1d 100644
+--- a/src/inspector/v8-debugger.h
++++ b/src/inspector/v8-debugger.h
+@@ -78,7 +78,8 @@ class V8Debugger : public v8::debug::DebugDelegate,
+   bool canBreakProgram();
+   void breakProgram(int targetContextGroupId);
+   void interruptAndBreak(int targetContextGroupId);
+-  void continueProgram(int targetContextGroupId);
++  void continueProgram(int targetContextGroupId,
++                       bool terminateOnResume = false);
+   void breakProgramOnAssert(int targetContextGroupId);
+ 
+   void setPauseOnNextCall(bool, int targetContextGroupId);
+diff --git a/src/inspector/v8-inspector-session-impl.cc b/src/inspector/v8-inspector-session-impl.cc
+index ccc587ccb739b85880ad160806a5c0d249066143..be7b57b710274c5e24324c773176efa6bf221ebf 100644
+--- a/src/inspector/v8-inspector-session-impl.cc
++++ b/src/inspector/v8-inspector-session-impl.cc
+@@ -445,7 +445,9 @@ void V8InspectorSessionImpl::setSkipAllPauses(bool skip) {
+   m_debuggerAgent->setSkipAllPauses(skip);
+ }
+ 
+-void V8InspectorSessionImpl::resume() { m_debuggerAgent->resume(); }
++void V8InspectorSessionImpl::resume(bool terminateOnResume) {
++  m_debuggerAgent->resume(terminateOnResume);
++}
+ 
+ void V8InspectorSessionImpl::stepOver() { m_debuggerAgent->stepOver(); }
+ 
+diff --git a/src/inspector/v8-inspector-session-impl.h b/src/inspector/v8-inspector-session-impl.h
+index 786dc2a048b512cf9d57bcd7935d50ee36df1d51..9b9b1dd2d7cf2f01162bdadeac46b916abccb6f3 100644
+--- a/src/inspector/v8-inspector-session-impl.h
++++ b/src/inspector/v8-inspector-session-impl.h
+@@ -76,7 +76,7 @@ class V8InspectorSessionImpl : public V8InspectorSession,
+   void breakProgram(const StringView& breakReason,
+                     const StringView& breakDetails) override;
+   void setSkipAllPauses(bool) override;
+-  void resume() override;
++  void resume(bool terminateOnResume = false) override;
+   void stepOver() override;
+   std::vector<std::unique_ptr<protocol::Debugger::API::SearchMatch>>
+   searchInTextByLines(const StringView& text, const StringView& query,
+diff --git a/test/cctest/test-debug.cc b/test/cctest/test-debug.cc
+index 93a47216f3f9a094c941f0e669548ca264c11392..8cab704e872155c56ee59460fce20d40eda8cc41 100644
+--- a/test/cctest/test-debug.cc
++++ b/test/cctest/test-debug.cc
+@@ -35,6 +35,7 @@
+ #include "src/debug/debug.h"
+ #include "src/deoptimizer/deoptimizer.h"
+ #include "src/execution/frames.h"
++#include "src/execution/microtask-queue.h"
+ #include "src/objects/objects-inl.h"
+ #include "src/snapshot/snapshot.h"
+ #include "src/utils/utils.h"
+@@ -2932,9 +2933,11 @@ TEST(DebugBreak) {
+ 
+ class DebugScopingListener : public v8::debug::DebugDelegate {
+  public:
+-  void BreakProgramRequested(
+-      v8::Local<v8::Context>,
+-      const std::vector<v8::debug::BreakpointId>&) override {
++  void ExceptionThrown(v8::Local<v8::Context> paused_context,
++                       v8::Local<v8::Value> exception,
++                       v8::Local<v8::Value> promise, bool is_uncaught,
++                       v8::debug::ExceptionType exception_type) override {
++    break_count_++;
+     auto stack_traces =
+         v8::debug::StackTraceIterator::Create(CcTest::isolate());
+     v8::debug::Location location = stack_traces->GetSourceLocation();
+@@ -2957,6 +2960,10 @@ class DebugScopingListener : public v8::debug::DebugDelegate {
+     scopes->Advance();
+     CHECK(scopes->Done());
+   }
++  unsigned break_count() const { return break_count_; }
++
++ private:
++  unsigned break_count_ = 0;
+ };
+ 
+ TEST(DebugBreakInWrappedScript) {
+@@ -2996,6 +3003,7 @@ TEST(DebugBreakInWrappedScript) {
+ 
+   // Get rid of the debug event listener.
+   v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CHECK_EQ(1, delegate.break_count());
+   CheckDebuggerUnloaded();
+ }
+ 
+@@ -4803,3 +4811,498 @@ TEST(GetPrivateFields) {
+     CHECK(priv_symbol->is_private_name());
+   }
+ }
++
++namespace {
++class SetTerminateOnResumeDelegate : public v8::debug::DebugDelegate {
++ public:
++  enum Options {
++    kNone,
++    kPerformMicrotaskCheckpointAtBreakpoint,
++    kRunJavaScriptAtBreakpoint
++  };
++  explicit SetTerminateOnResumeDelegate(Options options = kNone)
++      : options_(options) {}
++  void BreakProgramRequested(v8::Local<v8::Context> paused_context,
++                             const std::vector<v8::debug::BreakpointId>&
++                                 inspector_break_points_hit) override {
++    break_count_++;
++    v8::Isolate* isolate = paused_context->GetIsolate();
++    v8::debug::SetTerminateOnResume(isolate);
++    if (options_ == kPerformMicrotaskCheckpointAtBreakpoint) {
++      v8::MicrotasksScope::PerformCheckpoint(isolate);
++    }
++    if (options_ == kRunJavaScriptAtBreakpoint) {
++      CompileRun("globalVariable = globalVariable + 1");
++    }
++  }
++
++  void ExceptionThrown(v8::Local<v8::Context> paused_context,
++                       v8::Local<v8::Value> exception,
++                       v8::Local<v8::Value> promise, bool is_uncaught,
++                       v8::debug::ExceptionType exception_type) override {
++    exception_thrown_count_++;
++    v8::debug::SetTerminateOnResume(paused_context->GetIsolate());
++  }
++
++  int break_count() const { return break_count_; }
++  int exception_thrown_count() const { return exception_thrown_count_; }
++
++ private:
++  int break_count_ = 0;
++  int exception_thrown_count_ = 0;
++  Options options_;
++};
++}  // anonymous namespace
++
++TEST(TerminateOnResumeAtBreakpoint) {
++  break_point_hit_count = 0;
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    // If the delegate doesn't request termination on resume from breakpoint,
++    // foo diverges.
++    v8::Script::Compile(
++        context,
++        v8_str(env->GetIsolate(), "function foo(){debugger; while(true){}}"))
++        .ToLocalChecked()
++        ->Run(context)
++        .ToLocalChecked();
++    v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
++        env->Global()
++            ->Get(context, v8_str(env->GetIsolate(), "foo"))
++            .ToLocalChecked());
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++namespace {
++bool microtask_one_ran = false;
++static void MicrotaskOne(const v8::FunctionCallbackInfo<v8::Value>& info) {
++  CHECK(v8::MicrotasksScope::IsRunningMicrotasks(info.GetIsolate()));
++  v8::HandleScope scope(info.GetIsolate());
++  v8::MicrotasksScope microtasks(info.GetIsolate(),
++                                 v8::MicrotasksScope::kDoNotRunMicrotasks);
++  ExpectInt32("1 + 1", 2);
++  microtask_one_ran = true;
++}
++}  // namespace
++
++TEST(TerminateOnResumeRunMicrotaskAtBreakpoint) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  SetTerminateOnResumeDelegate delegate(
++      SetTerminateOnResumeDelegate::kPerformMicrotaskCheckpointAtBreakpoint);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    // Enqueue a microtask that gets run while we are paused at the breakpoint.
++    env->GetIsolate()->EnqueueMicrotask(
++        v8::Function::New(env.local(), MicrotaskOne).ToLocalChecked());
++
++    // If the delegate doesn't request termination on resume from breakpoint,
++    // foo diverges.
++    v8::Script::Compile(
++        context,
++        v8_str(env->GetIsolate(), "function foo(){debugger; while(true){}}"))
++        .ToLocalChecked()
++        ->Run(context)
++        .ToLocalChecked();
++    v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
++        env->Global()
++            ->Get(context, v8_str(env->GetIsolate(), "foo"))
++            .ToLocalChecked());
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 1);
++    CHECK(microtask_one_ran);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++TEST(TerminateOnResumeRunJavaScriptAtBreakpoint) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  CompileRun("var globalVariable = 0;");
++  SetTerminateOnResumeDelegate delegate(
++      SetTerminateOnResumeDelegate::kRunJavaScriptAtBreakpoint);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    // If the delegate doesn't request termination on resume from breakpoint,
++    // foo diverges.
++    v8::Script::Compile(
++        context,
++        v8_str(env->GetIsolate(), "function foo(){debugger; while(true){}}"))
++        .ToLocalChecked()
++        ->Run(context)
++        .ToLocalChecked();
++    v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
++        env->Global()
++            ->Get(context, v8_str(env->GetIsolate(), "foo"))
++            .ToLocalChecked());
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  ExpectInt32("globalVariable", 1);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++TEST(TerminateOnResumeAtException) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  ChangeBreakOnException(true, true);
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    const char* source = "throw new Error(); while(true){};";
++
++    v8::ScriptCompiler::Source script_source(v8_str(source));
++    v8::Local<v8::Function> foo =
++        v8::ScriptCompiler::CompileFunctionInContext(
++            env.local(), &script_source, 0, nullptr, 0, nullptr)
++            .ToLocalChecked();
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 0);
++    CHECK_EQ(delegate.exception_thrown_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++TEST(TerminateOnResumeAtBreakOnEntry) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    v8::Local<v8::Function> builtin =
++        CompileRun("String.prototype.repeat").As<v8::Function>();
++    SetBreakPoint(builtin, 0);
++    v8::Local<v8::Value> val = CompileRun("'b'.repeat(10)");
++    CHECK_EQ(delegate.break_count(), 1);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.exception_thrown_count(), 0);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++TEST(TerminateOnResumeAtBreakOnEntryUserDefinedFunction) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    v8::Local<v8::Function> foo =
++        CompileFunction(&env, "function foo(b) { while (b > 0) {} }", "foo");
++
++    // Run without breakpoints to compile source to bytecode.
++    CompileRun("foo(-1)");
++    CHECK_EQ(delegate.break_count(), 0);
++
++    SetBreakPoint(foo, 0);
++    v8::Local<v8::Value> val = CompileRun("foo(1)");
++    CHECK_EQ(delegate.break_count(), 1);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.exception_thrown_count(), 0);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++TEST(TerminateOnResumeAtUnhandledRejection) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  ChangeBreakOnException(true, true);
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    v8::Local<v8::Function> foo = CompileFunction(
++        &env, "async function foo() { Promise.reject(); while(true) {} }",
++        "foo");
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 0);
++    CHECK_EQ(delegate.exception_thrown_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++namespace {
++void RejectPromiseThroughCpp(const v8::FunctionCallbackInfo<v8::Value>& info) {
++  auto data = reinterpret_cast<std::pair<v8::Isolate*, LocalContext*>*>(
++      info.Data().As<v8::External>()->Value());
++
++  v8::Local<v8::String> value1 =
++      v8::String::NewFromUtf8(data->first, "foo", v8::NewStringType::kNormal)
++          .ToLocalChecked();
++
++  v8::Local<v8::Promise::Resolver> resolver =
++      v8::Promise::Resolver::New(data->second->local()).ToLocalChecked();
++  v8::Local<v8::Promise> promise = resolver->GetPromise();
++  CHECK_EQ(promise->State(), v8::Promise::PromiseState::kPending);
++
++  resolver->Reject(data->second->local(), value1).ToChecked();
++  CHECK_EQ(promise->State(), v8::Promise::PromiseState::kRejected);
++  // CHECK_EQ(*v8::Utils::OpenHandle(*promise->Result()),
++  //         i::ReadOnlyRoots(CcTest::i_isolate()).exception());
++}
++}  // namespace
++
++TEST(TerminateOnResumeAtUnhandledRejectionCppImpl) {
++  LocalContext env;
++  v8::Isolate* isolate = env->GetIsolate();
++  v8::HandleScope scope(env->GetIsolate());
++  ChangeBreakOnException(true, true);
++  SetTerminateOnResumeDelegate delegate;
++  auto data = std::make_pair(isolate, &env);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  {
++    // We want to trigger a breapoint upon Promise rejection, but we will only
++    // get the callback if there is at least one JavaScript frame in the stack.
++    v8::Local<v8::Function> func =
++        v8::Function::New(env.local(), RejectPromiseThroughCpp,
++                          v8::External::New(isolate, &data))
++            .ToLocalChecked();
++    CHECK(env->Global()
++              ->Set(env.local(), v8_str("RejectPromiseThroughCpp"), func)
++              .FromJust());
++
++    CompileRun("RejectPromiseThroughCpp(); while (true) {}");
++    CHECK_EQ(delegate.break_count(), 0);
++    CHECK_EQ(delegate.exception_thrown_count(), 1);
++  }
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++namespace {
++static void UnreachableMicrotask(
++    const v8::FunctionCallbackInfo<v8::Value>& info) {
++  UNREACHABLE();
++}
++}  // namespace
++
++TEST(TerminateOnResumeFromMicrotask) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  SetTerminateOnResumeDelegate delegate(
++      SetTerminateOnResumeDelegate::kPerformMicrotaskCheckpointAtBreakpoint);
++  ChangeBreakOnException(true, true);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    // Enqueue a microtask that gets run while we are paused at the breakpoint.
++    v8::Local<v8::Function> foo = CompileFunction(
++        &env, "function foo(){ Promise.reject(); while (true) {} }", "foo");
++    env->GetIsolate()->EnqueueMicrotask(foo);
++    env->GetIsolate()->EnqueueMicrotask(
++        v8::Function::New(env.local(), UnreachableMicrotask).ToLocalChecked());
++
++    CHECK_EQ(2,
++             CcTest::i_isolate()->native_context()->microtask_queue()->size());
++
++    v8::MicrotasksScope::PerformCheckpoint(env->GetIsolate());
++
++    CHECK_EQ(0,
++             CcTest::i_isolate()->native_context()->microtask_queue()->size());
++
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 0);
++    CHECK_EQ(delegate.exception_thrown_count(), 1);
++  }
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++class FutexInterruptionThread : public v8::base::Thread {
++ public:
++  FutexInterruptionThread(v8::Isolate* isolate, v8::base::Semaphore* sem)
++      : Thread(Options("FutexInterruptionThread")),
++        isolate_(isolate),
++        sem_(sem) {}
++
++  void Run() override {
++    // Wait a bit before terminating.
++    v8::base::OS::Sleep(v8::base::TimeDelta::FromMilliseconds(100));
++    sem_->Wait();
++    v8::debug::SetTerminateOnResume(isolate_);
++  }
++
++ private:
++  v8::Isolate* isolate_;
++  v8::base::Semaphore* sem_;
++};
++
++namespace {
++class SemaphoreTriggerOnBreak : public v8::debug::DebugDelegate {
++ public:
++  SemaphoreTriggerOnBreak() : sem_(0) {}
++  void BreakProgramRequested(v8::Local<v8::Context> paused_context,
++                             const std::vector<v8::debug::BreakpointId>&
++                                 inspector_break_points_hit) override {
++    break_count_++;
++    sem_.Signal();
++  }
++
++  v8::base::Semaphore* semaphore() { return &sem_; }
++  int break_count() const { return break_count_; }
++
++ private:
++  v8::base::Semaphore sem_;
++  int break_count_ = 0;
++};
++}  // anonymous namespace
++
++TEST(TerminateOnResumeFromOtherThread) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  ChangeBreakOnException(true, true);
++
++  SemaphoreTriggerOnBreak delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++
++  FutexInterruptionThread timeout_thread(env->GetIsolate(),
++                                         delegate.semaphore());
++  CHECK(timeout_thread.Start());
++
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    const char* source = "debugger; while(true){};";
++
++    v8::ScriptCompiler::Source script_source(v8_str(source));
++    v8::Local<v8::Function> foo =
++        v8::ScriptCompiler::CompileFunctionInContext(
++            env.local(), &script_source, 0, nullptr, 0, nullptr)
++            .ToLocalChecked();
++
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
++
++namespace {
++class InterruptionBreakRightNow : public v8::base::Thread {
++ public:
++  explicit InterruptionBreakRightNow(v8::Isolate* isolate)
++      : Thread(Options("FutexInterruptionThread")), isolate_(isolate) {}
++
++  void Run() override {
++    // Wait a bit before terminating.
++    v8::base::OS::Sleep(v8::base::TimeDelta::FromMilliseconds(100));
++    isolate_->RequestInterrupt(BreakRightNow, nullptr);
++  }
++
++ private:
++  static void BreakRightNow(v8::Isolate* isolate, void* data) {
++    v8::debug::BreakRightNow(isolate);
++  }
++  v8::Isolate* isolate_;
++};
++
++}  // anonymous namespace
++
++TEST(TerminateOnResumeAtInterruptFromOtherThread) {
++  LocalContext env;
++  v8::HandleScope scope(env->GetIsolate());
++  ChangeBreakOnException(true, true);
++
++  SetTerminateOnResumeDelegate delegate;
++  v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
++
++  InterruptionBreakRightNow timeout_thread(env->GetIsolate());
++
++  v8::Local<v8::Context> context = env.local();
++  {
++    v8::TryCatch try_catch(env->GetIsolate());
++    const char* source = "while(true){}";
++
++    v8::ScriptCompiler::Source script_source(v8_str(source));
++    v8::Local<v8::Function> foo =
++        v8::ScriptCompiler::CompileFunctionInContext(
++            env.local(), &script_source, 0, nullptr, 0, nullptr)
++            .ToLocalChecked();
++
++    CHECK(timeout_thread.Start());
++    v8::MaybeLocal<v8::Value> val =
++        foo->Call(context, env->Global(), 0, nullptr);
++    CHECK(val.IsEmpty());
++    CHECK(try_catch.HasTerminated());
++    CHECK_EQ(delegate.break_count(), 1);
++  }
++  // Exiting the TryCatch brought the isolate back to a state where JavaScript
++  // can be executed.
++  ExpectInt32("1 + 1", 2);
++  v8::debug::SetDebugDelegate(env->GetIsolate(), nullptr);
++  CheckDebuggerUnloaded();
++}
