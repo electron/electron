@@ -1,4 +1,5 @@
-import { shell, Menu } from 'electron';
+import { Menu } from 'electron/main';
+import { shell } from 'electron/common';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 

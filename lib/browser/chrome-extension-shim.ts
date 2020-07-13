@@ -2,7 +2,7 @@
 // BrowserWindow-based extensions stuff to the new native-backed extensions
 // API.
 
-import { app, session, BrowserWindow, deprecate } from 'electron';
+import { app, session, BrowserWindow, deprecate } from 'electron/main';
 
 app.whenReady().then(function () {
   const addExtension = function (srcDirectory: string) {

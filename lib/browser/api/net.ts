@@ -1,7 +1,7 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
-import { app } from 'electron';
-import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+import { app } from 'electron/main';
+import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 const {
   isValidHeaderName,
   isValidHeaderValue,

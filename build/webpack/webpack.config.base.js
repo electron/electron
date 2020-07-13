@@ -76,6 +76,8 @@ module.exports = ({
     entry = path.resolve(electronRoot, 'lib', target, 'init.js');
   }
 
+  const electronAPIFile = path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts');
+
   return ({
     mode: 'development',
     devtool: false,
@@ -88,7 +90,10 @@ module.exports = ({
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
-        electron: path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts'),
+        electron$: electronAPIFile,
+        'electron/main$': electronAPIFile,
+        'electron/renderer$': electronAPIFile,
+        'electron/common$': electronAPIFile,
         // Force timers to resolve to our dependency that doesn't use window.postMessage
         timers: path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
       },

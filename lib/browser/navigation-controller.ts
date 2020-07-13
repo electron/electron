@@ -1,4 +1,4 @@
-import { ipcMainInternal } from './ipc-main-internal';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import type { WebContents, LoadURLOptions } from 'electron/main';
 import { EventEmitter } from 'events';
 

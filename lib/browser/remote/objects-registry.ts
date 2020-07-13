@@ -1,6 +1,6 @@
 'use strict';
 
-import { WebContents } from 'electron';
+import { WebContents } from 'electron/main';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 

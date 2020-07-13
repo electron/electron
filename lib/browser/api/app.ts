@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { deprecate, Menu } from 'electron';
+import { deprecate, Menu } from 'electron/main';
 import { EventEmitter } from 'events';
 
 const bindings = process._linkedBinding('electron_browser_app');

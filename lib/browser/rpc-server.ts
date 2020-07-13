@@ -1,24 +1,24 @@
-import * as electron from 'electron';
+import { app } from 'electron/main';
+import type { IpcMainInvokeEvent, WebContents } from 'electron/main';
+import { clipboard, crashReporter } from 'electron/common';
 import * as fs from 'fs';
-import { ipcMainInternal } from './ipc-main-internal';
-import * as ipcMainUtils from './ipc-main-internal-utils';
-import * as guestViewManager from './guest-view-manager';
-import * as typeUtils from '../common/type-utils';
-import { IpcMainInvokeEvent } from 'electron/main';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import * as guestViewManager from '@electron/internal/browser/guest-view-manager';
+import * as typeUtils from '@electron/internal/common/type-utils';
 
 const eventBinding = process._linkedBinding('electron_browser_event');
-const clipboard = process._linkedBinding('electron_common_clipboard');
 
-const emitCustomEvent = function (contents: electron.WebContents, eventName: string, ...args: any[]) {
+const emitCustomEvent = function (contents: WebContents, eventName: string, ...args: any[]) {
   const event = eventBinding.createWithSender(contents);
 
-  electron.app.emit(eventName, event, contents, ...args);
+  app.emit(eventName, event, contents, ...args);
   contents.emit(eventName, event, ...args);
 
   return event;
 };
 
-const logStack = function (contents: electron.WebContents, code: string, stack: string) {
+const logStack = function (contents: WebContents, code: string, stack: string) {
   if (stack) {
     console.warn(`WebContents (${contents.id}): ${code}`, stack);
   }
@@ -54,7 +54,7 @@ ipcMainUtils.handleSync('ELECTRON_BROWSER_CLIPBOARD_SYNC', function (event: IpcM
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return typeUtils.serialize((electron.clipboard as any)[method](...typeUtils.deserialize(args)));
+  return typeUtils.serialize((clipboard as any)[method](...typeUtils.deserialize(args)));
 });
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
@@ -118,21 +118,21 @@ ipcMainInternal.on('ELECTRON_BROWSER_PRELOAD_ERROR', function (event: ElectronIn
 });
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_LAST_CRASH_REPORT', () => {
-  return electron.crashReporter.getLastCrashReport();
+  return crashReporter.getLastCrashReport();
 });
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_UPLOADED_REPORTS', () => {
-  return electron.crashReporter.getUploadedReports();
+  return crashReporter.getUploadedReports();
 });
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_UPLOAD_TO_SERVER', () => {
-  return electron.crashReporter.getUploadToServer();
+  return crashReporter.getUploadToServer();
 });
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_SET_UPLOAD_TO_SERVER', (event: IpcMainInvokeEvent, uploadToServer: boolean) => {
-  return electron.crashReporter.setUploadToServer(uploadToServer);
+  return crashReporter.setUploadToServer(uploadToServer);
 });
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_CRASHES_DIRECTORY', () => {
-  return electron.crashReporter.getCrashesDirectory();
+  return crashReporter.getCrashesDirectory();
 });
