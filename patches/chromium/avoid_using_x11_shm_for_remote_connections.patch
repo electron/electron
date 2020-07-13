@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 6 Jan 2020 18:05:20 +0000
+Subject: Avoid using X11 SHM for remote connections
+
+For remote connections, SHM doesn't work, but the MIT-SHM extension may
+still be available, so we need to do an explicit check before trying to
+use SHM.
+
+BUG=1035803
+
+Change-Id: I189ab94b82922572e52b717dc2043b8404745dec
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/1980971
+Commit-Queue: Sadrul Chowdhury <sadrul@chromium.org>
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#728564}
+
+diff --git a/ui/base/x/BUILD.gn b/ui/base/x/BUILD.gn
+index 7b8a4f8a6126cd9516cbef7ed7d1aca57839d632..5269237d5872120cb520b1f0518ee037f7accfa2 100644
+--- a/ui/base/x/BUILD.gn
++++ b/ui/base/x/BUILD.gn
+@@ -53,6 +53,7 @@ jumbo_component("x") {
+   deps = [
+     "//base",
+     "//base:i18n",
++    "//net",
+     "//skia",
+     "//ui/base:hit_test",
+     "//ui/display/util",
+diff --git a/ui/base/x/x11_shm_image_pool_base.cc b/ui/base/x/x11_shm_image_pool_base.cc
+index 8505b6297f67cea7f8bf36c89414fad9c3108190..486762aa01d56b51864f418ccf68b77d7610fe23 100644
+--- a/ui/base/x/x11_shm_image_pool_base.cc
++++ b/ui/base/x/x11_shm_image_pool_base.cc
+@@ -18,6 +18,7 @@
+ #include "base/strings/string_util.h"
+ #include "base/threading/thread_task_runner_handle.h"
+ #include "build/build_config.h"
++#include "net/base/url_util.h"
+ #include "ui/events/platform/platform_event_dispatcher.h"
+ #include "ui/events/platform/platform_event_source.h"
+ #include "ui/gfx/geometry/rect.h"
+@@ -54,8 +55,31 @@ std::size_t MaxShmSegmentSize() {
+   return max_size;
+ }
+ 
++bool IsRemoteHost(const std::string& name) {
++  if (name.empty())
++    return false;
++
++  return !net::HostStringIsLocalhost(name);
++}
++
++bool ShouldUseMitShm(XDisplay* display) {
++  // MIT-SHM may be available on remote connetions, but it will be unusable.  Do
++  // a best-effort check to see if the host is remote to disable the SHM
++  // codepath.  It may be possible in contrived cases for there to be a
++  // false-positive, but in that case we'll just fallback to the non-SHM
++  // codepath.
++  char* display_string = DisplayString(display);
++  char* host = nullptr;
++  int display_id = 0;
++  int screen = 0;
++  if (xcb_parse_display(display_string, &host, &display_id, &screen)) {
++    std::string name = host;
++    free(host);
++    if (IsRemoteHost(name))
++      return false;
++  }
++
+ #if !defined(OS_CHROMEOS)
+-bool ShouldUseMitShm() {
+   std::unique_ptr<base::Environment> env = base::Environment::Create();
+ 
+   // Used by QT.
+@@ -73,10 +97,10 @@ bool ShouldUseMitShm() {
+   // Used by GTK.
+   if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoXshm))
+     return false;
++#endif
+ 
+   return true;
+ }
+-#endif
+ 
+ }  // namespace
+ 
+@@ -118,10 +142,8 @@ bool XShmImagePoolBase::Resize(const gfx::Size& pixel_size) {
+   if (!event_task_runner_)
+     return false;
+ 
+-#if !defined(OS_CHROMEOS)
+-  if (!ShouldUseMitShm())
++  if (!ShouldUseMitShm(display_))
+     return false;
+-#endif
+ 
+   if (!ui::QueryShmSupport())
+     return false;
