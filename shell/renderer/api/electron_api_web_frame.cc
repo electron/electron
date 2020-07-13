@@ -174,11 +174,13 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
         // Either world safe results are disabled or the result was created in
-        // the same world as the caller
+        // the same world as the caller or the result is not an object and
+        // therefore does not have a prototype chain to protect
         if (!world_safe_result_ ||
             (result[0]->IsObject() &&
              promise_.GetContext() ==
-                 result[0].As<v8::Object>()->CreationContext())) {
+                 result[0].As<v8::Object>()->CreationContext()) ||
+            !result[0]->IsObject()) {
           // Right now only single results per frame is supported.
           if (!callback_.is_null())
             std::move(callback_).Run(result[0], v8::Undefined(isolate));
