@@ -2020,7 +2020,7 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::DuplexMode duplex_mode;
+  printing::DuplexMode duplex_mode = printing::SIMPLEX;
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode, duplex_mode);
 
