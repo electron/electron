@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 842a4d27ee7a27a4e5c6d60033cee6526aac1bee..07682bd496e0872498f1fd404466408ebf21583c 100644
+index ccac671f0e7e56c731cb9bd92bad788271419a7f..cfea0e5dbc28f1a4cdfea36372ce7f34f15c4de7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
@@ -49,10 +49,10 @@ index 842a4d27ee7a27a4e5c6d60033cee6526aac1bee..07682bd496e0872498f1fd404466408e
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 80dc1f91fd4051dc054f1c9e9a5ab0087c4d66fd..4eec90182ae4944f219e12ff2673d0fbd24e112d 100644
+index 1fa9021a62385fd5c0dadbb8a4a046cd72039915..2b0e4841d009df2f7bb310efca74d2ff79d29b36 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -437,6 +437,7 @@ URLLoader::URLLoader(
+@@ -471,6 +471,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index 80dc1f91fd4051dc054f1c9e9a5ab0087c4d66fd..4eec90182ae4944f219e12ff2673d0fb
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -497,6 +498,11 @@ URLLoader::URLLoader(
+@@ -534,6 +535,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index 80dc1f91fd4051dc054f1c9e9a5ab0087c4d66fd..4eec90182ae4944f219e12ff2673d0fb
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1016,7 +1022,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1061,7 +1067,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index 80dc1f91fd4051dc054f1c9e9a5ab0087c4d66fd..4eec90182ae4944f219e12ff2673d0fb
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1032,11 +1038,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1077,11 +1083,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index 80dc1f91fd4051dc054f1c9e9a5ab0087c4d66fd..4eec90182ae4944f219e12ff2673d0fb
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index f5436f10a312c713e95fac4670eab3edf048a742..02212de14459ee6cd15492e7b35cd2791f48205c 100644
+index 1c8a9ce4ba5f41cb7a4d415337ff087894fee3df..1ea5d86177ff568a13e3d10767316ae496298d10 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -115,6 +115,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
@@ -128,7 +128,7 @@ index f5436f10a312c713e95fac4670eab3edf048a742..02212de14459ee6cd15492e7b35cd279
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index c8f02a3760f938c772c9e81afff8b37e49a73cbd..7e5bb5d1384488de2dee3672f933eba643dc14f7 100644
+index 75ae8488efa7e5acfda0b21029657b525fa95f86..5dce71ee5efc97f9f63d0b5f236dccdfb05cfc79 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
 @@ -75,6 +75,7 @@ URLLoaderFactory::URLLoaderFactory(
@@ -139,7 +139,7 @@ index c8f02a3760f938c772c9e81afff8b37e49a73cbd..7e5bb5d1384488de2dee3672f933eba6
        cors_url_loader_factory_(cors_url_loader_factory),
        cookie_observer_(std::move(params_->cookie_observer)) {
    DCHECK(context);
-@@ -270,6 +271,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -254,6 +255,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        std::move(keepalive_statistics_recorder),
        std::move(network_usage_accumulator),
        header_client_.is_bound() ? header_client_.get() : nullptr,

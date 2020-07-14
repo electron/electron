@@ -6,12 +6,12 @@ Subject: fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 Disable usage of abort_report_np in MAS builds.
 
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index 4eebcea13d17093a685cc79b8a8f61fb3894c71b..d704dced154f1d5db097e566a9c681438f94475d 100644
+index 7f30c2c3e5b75a5e3c1cec6d5eda8acded9a3f25..d291c1f0799ea03183a7003c4d63203def9233ac 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
-@@ -22,9 +22,11 @@
-     __builtin_unreachable();                                                   \
+@@ -32,9 +32,11 @@
    }
+ #endif
  
 +#if !defined(MAS_BUILD)
  extern "C" {
@@ -21,7 +21,7 @@ index 4eebcea13d17093a685cc79b8a8f61fb3894c71b..d704dced154f1d5db097e566a9c68143
  
  namespace sandbox {
  
-@@ -94,11 +96,13 @@ void SendAslLog(Level level, const char* message) {
+@@ -104,11 +106,13 @@ void SendAslLog(Level level, const char* message) {
    asl_set(asl_message.get(), ASL_KEY_MSG, message);
    asl_send(asl_client.get(), asl_message.get());
  

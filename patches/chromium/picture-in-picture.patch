@@ -35,7 +35,7 @@ index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 46cb8b1319cdd4baf729c86ecaafe418bb687921..fcb46c349abdb41e74c56b614d490b032949f332 100644
+index 31ea06a7cee464ee4074c80279f5bb2a02aef21c..4ee4be3ba12f7cd18b62fe72c00be10d382a4caa 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -19,7 +19,7 @@

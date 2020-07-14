@@ -11,6 +11,7 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/logging.h"
 #include "device/bluetooth/dbus/bluez_dbus_thread_manager.h"
 
 namespace {

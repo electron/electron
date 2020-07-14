@@ -138,7 +138,7 @@ class ElectronDelegatedFrameHostClient
 
   SkColor DelegatedFrameHostGetGutterColor() const override {
     if (view_->render_widget_host()->delegate() &&
-        view_->render_widget_host()->delegate()->IsFullscreenForCurrentTab()) {
+        view_->render_widget_host()->delegate()->IsFullscreen()) {
       return SK_ColorWHITE;
     }
     return *view_->GetBackgroundColor();

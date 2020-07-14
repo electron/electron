@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 13fb888b94aff3846576e304cccfecd3b9fdac5d..11ecafa48f08ac5cfa1f841b7346cdacc62444fb 100644
+index 16d1ca932afddc1f2502e99384141b0814beb75c..8c91f5943228083f375d1e668acb9e5b75230232 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,22 +13,26 @@
@@ -25,7 +25,7 @@ index 13fb888b94aff3846576e304cccfecd3b9fdac5d..11ecafa48f08ac5cfa1f841b7346cdac
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/chrome_switches.h"
  #include "chrome/common/pref_names.h"
- #include "chrome/common/secure_origin_whitelist.h"
+ #include "chrome/common/secure_origin_allowlist.h"
 +#if 0
  #include "components/omnibox/browser/omnibox_field_trial.h"
  #include "components/omnibox/common/omnibox_features.h"

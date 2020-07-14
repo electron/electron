@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261cb8a6f58 100644
+index 31edc0dfc191b82b8f1bff5fcfd95c9cec5ea2b1..d59e0c156c5e02ac37d6aa233cf4cac836152d7c 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -111,6 +111,8 @@ viz_component("service") {
@@ -107,10 +107,10 @@ index 8c4f933b32420d2cfc40d5bc5883fda61636b52a..6f2322736e570b1e994a4f0c39396261
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index c5bd0c657501cf7fc7e746c79b8661df7fbe8d5e..6abf07975a263e8aa51ecba5a829cf0268d5c192 100644
+index 08dc8bd190b1506b9ec1c8ae39bf3ee56a1203e2..5361890756fa39b825da4698725ce221e0ca2a26 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -21,6 +21,7 @@
+@@ -22,6 +22,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -118,7 +118,7 @@ index c5bd0c657501cf7fc7e746c79b8661df7fbe8d5e..6abf07975a263e8aa51ecba5a829cf02
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -34,6 +35,7 @@
+@@ -35,6 +36,7 @@
  #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
@@ -126,7 +126,7 @@ index c5bd0c657501cf7fc7e746c79b8661df7fbe8d5e..6abf07975a263e8aa51ecba5a829cf02
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -238,6 +240,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -224,6 +226,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -475,10 +475,10 @@ index 641a63e8c18e3e81acacb67a59b285dac44abbb1..72b74ec00402ff7b5b4853c08365eb2f
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
-index 599d24e260ae85a2f71054cc64f296875b97170d..70269ce3332edd07f1760476f3592d08c3dc3130 100644
+index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab1cacffef 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -33,6 +33,7 @@ class Compositor;
+@@ -29,6 +29,7 @@ class Compositor;
  
  namespace viz {
  class HostFrameSinkManager;
@@ -486,7 +486,7 @@ index 599d24e260ae85a2f71054cc64f296875b97170d..70269ce3332edd07f1760476f3592d08
  }
  
  namespace mojo {
-@@ -83,6 +84,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+@@ -78,6 +79,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
    // For destroying the GL context/surface that draw to a platform window before
    // the platform window is destroyed.
    friend class viz::HostFrameSinkManager;
@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 0f99c9d78626ccc211236832e5df2008ce0df5f2..f1dfa72d21e93f5223cde8e2b34d5ed2a6c04209 100644
+index 438dd212d881abf70362f12391b6a85f697785d0..34bd0cbf18714ac24355e603806cc36986f24e30 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -74,6 +74,7 @@ class DisplayPrivate;

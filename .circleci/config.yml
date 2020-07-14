@@ -77,12 +77,12 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "11.1.0"
+    xcode: "11.5.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "11.1.0"
+    xcode: "11.5.0"
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -812,7 +812,7 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v7-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v8-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -890,8 +890,8 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
 step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
-      - /portal
-    key: v7-src-cache-{{ checksum "/portal/src/electron/.depshash" }}
+      - /var/portal
+    key: v8-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 
 # Check for doc only change
@@ -1019,9 +1019,9 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - run:
         name: Move src folder to the cross-OS portal
         command: |
-          sudo mkdir -p /portal
-          sudo chown -R $(id -u):$(id -g) /portal
-          mv ./src /portal
+          sudo mkdir -p /var/portal
+          sudo chown -R $(id -u):$(id -g) /var/portal
+          mv ./src /var/portal
     - *step-save-src-cache
 
 steps-electron-gn-check: &steps-electron-gn-check
@@ -1230,16 +1230,16 @@ commands:
       - run:
           name: Prepare for cross-OS sync restore
           command: |
-            sudo mkdir -p /portal
-            sudo chown -R $(id -u):$(id -g) /portal
+            sudo mkdir -p /var/portal
+            sudo chown -R $(id -u):$(id -g) /var/portal
       - *step-maybe-restore-src-cache
       - run:
           name: Fix the src cache restore point on macOS
           command: |
-            if [ -d "/portal/src" ]; then
+            if [ -d "/var/portal/src" ]; then
               echo Relocating Cache
               rm -rf src
-              mv /portal/src ./
+              mv /var/portal/src ./
             fi
   checkout-from-cache:
     steps:

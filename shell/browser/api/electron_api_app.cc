@@ -32,7 +32,7 @@
 #include "media/audio/audio_manager.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
-#include "services/service_manager/sandbox/switches.h"
+#include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -1360,7 +1360,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 }
 
 static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
-  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
+  if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox)) {
     const base::CommandLine::CharType* noSandboxArg =
         FILE_PATH_LITERAL("--no-sandbox");
     base::CommandLine::StringVector modified_command_line;

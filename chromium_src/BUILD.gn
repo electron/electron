@@ -93,6 +93,14 @@ static_library("chrome") {
     ]
   }
 
+  if (is_win) {
+    sources += [
+      "//chrome/browser/win/icon_reader_service.cc",
+      "//chrome/browser/win/icon_reader_service.h",
+    ]
+    public_deps += [ "//chrome/services/util_win:lib" ]
+  }
+
   if (enable_desktop_capturer) {
     sources += [
       "//chrome/browser/media/webrtc/desktop_media_list.h",
@@ -151,13 +159,6 @@ static_library("chrome") {
     if (is_linux) {
       sources += [ "//chrome/browser/media/webrtc/window_icon_util_x11.cc" ]
     }
-  }
-
-  if (enable_tts) {
-    sources += [
-      "//chrome/browser/speech/tts_controller_delegate_impl.cc",
-      "//chrome/browser/speech/tts_controller_delegate_impl.h",
-    ]
   }
 
   if (enable_widevine) {
@@ -364,8 +365,8 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_factory.h",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
-      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
-      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
+      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.cc",
+      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
       "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_service.cc",

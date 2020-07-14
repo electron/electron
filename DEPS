@@ -8,12 +8,13 @@ gclient_gn_args = [
   'checkout_pgo_profiles',
   'checkout_oculus_sdk',
   'checkout_openxr',
-  'checkout_google_benchmark'
+  'checkout_google_benchmark',
+  'mac_xcode_version',
 ]
 
 vars = {
   'chromium_version':
-    '9ae03ef8f7d4f6ac663f725bcfe70311987652f3',
+    '17d931b6d2190fac716f92a66c7578fa4db6501a',
   'node_version':
     'v12.18.2',
   'nan_version':
@@ -53,6 +54,8 @@ vars = {
 
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
+
+  'mac_xcode_version': 'default',
 
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,

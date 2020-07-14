@@ -225,7 +225,9 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 };
 
 // Translate the options of printToPDF.
-WebContents.prototype.printToPDF = function (options) {
+
+let pendingPromise: Promise<any> | undefined;
+WebContents.prototype.printToPDF = async function (options) {
   const printSettings = {
     ...defaultPrintingSetting,
     requestID: getNextId()
@@ -358,7 +360,12 @@ WebContents.prototype.printToPDF = function (options) {
   // PrinterType enum from //printing/print_job_constants.h
   printSettings.printerType = 2;
   if (this._printToPDF) {
-    return this._printToPDF(printSettings);
+    if (pendingPromise) {
+      pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
+    } else {
+      pendingPromise = this._printToPDF(printSettings);
+    }
+    return pendingPromise;
   } else {
     const error = new Error('Printing feature is disabled');
     return Promise.reject(error);

@@ -992,7 +992,7 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
 
 void InspectableWebContentsImpl::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
@@ -1001,7 +1001,7 @@ void InspectableWebContentsImpl::RunFileChooser(
 
 void InspectableWebContentsImpl::EnumerateDirectory(
     content::WebContents* source,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)

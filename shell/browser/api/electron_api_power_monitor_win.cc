@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
@@ -34,7 +35,7 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   // session lock and unlock events.
   window_ = CreateWindow(MAKEINTATOM(atom_), 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0,
                          instance_, 0);
-  gfx::CheckWindowCreated(window_);
+  gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 
   // Tel windows we want to be notified with session events

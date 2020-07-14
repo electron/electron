@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 368cc231bf07bba071500373805a481074aac711..e2d433bd4bf58a6d04d2b525ccedf77fcee02b09 100644
+index bd3c6c1724bee8f06544a2aece0ae5e45c145e4d..d84160a3ce7d08e64053b4634f490669507cf7a9 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -226,6 +226,11 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -35,7 +35,7 @@ index 368cc231bf07bba071500373805a481074aac711..e2d433bd4bf58a6d04d2b525ccedf77f
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -1072,6 +1080,10 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -1078,6 +1086,10 @@ void ExtractUnderlines(NSAttributedString* string,
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -46,7 +46,7 @@ index 368cc231bf07bba071500373805a481074aac711..e2d433bd4bf58a6d04d2b525ccedf77f
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1848,9 +1860,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -1854,9 +1866,11 @@ void ExtractUnderlines(NSAttributedString* string,
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -58,7 +58,7 @@ index 368cc231bf07bba071500373805a481074aac711..e2d433bd4bf58a6d04d2b525ccedf77f
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1859,7 +1873,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
+@@ -1865,7 +1879,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,

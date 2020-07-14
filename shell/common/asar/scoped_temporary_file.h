@@ -20,6 +20,8 @@ namespace asar {
 class ScopedTemporaryFile {
  public:
   ScopedTemporaryFile();
+  ScopedTemporaryFile(const ScopedTemporaryFile&) = delete;
+  ScopedTemporaryFile& operator=(const ScopedTemporaryFile&) = delete;
   virtual ~ScopedTemporaryFile();
 
   // Init an empty temporary file with a certain extension.
@@ -35,8 +37,6 @@ class ScopedTemporaryFile {
 
  private:
   base::FilePath path_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedTemporaryFile);
 };
 
 }  // namespace asar

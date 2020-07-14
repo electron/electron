@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 80b6c97c7301eaf432e3dbfd547e0d6763eedb52..15e50bde0419718f52ddd6ed439e45e6b33d3260 100644
+index e21bb23491f1261788b77fb8fa33e8afa0f60d3f..310ba0f4c7407bb1bdead4d451c5a53e85e6c440 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1296,6 +1296,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1312,6 +1312,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
@@ -39,7 +39,7 @@ index 80b6c97c7301eaf432e3dbfd547e0d6763eedb52..15e50bde0419718f52ddd6ed439e45e6
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 416b7a8f3ba1b6941761c1df4ea108219c415489..2733d0dbbc10c5465a319b080d9b079258ba896d 100644
+index 066a1a0690c013ffdb8ee043f8489e250ac430f0..4a2f67ba8e0aab4c46413e2f1268af9495038139 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
 @@ -127,6 +127,11 @@ class ChromeContentRendererClient
@@ -55,7 +55,7 @@ index 416b7a8f3ba1b6941761c1df4ea108219c415489..2733d0dbbc10c5465a319b080d9b0792
                         ui::PageTransition transition_type,
                         const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index ea6d8e6357233f519c3cf41a96d8453993a9ce71..c513aff3e1c3da45e45954bc0beb80469de6a450 100644
+index 6c7478594f980e3518fea2afc53d941b0f6c6a34..3b514f084ed16fc924f6a2909bd51056e5c58f6d 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
 @@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
@@ -74,10 +74,10 @@ index ea6d8e6357233f519c3cf41a96d8453993a9ce71..c513aff3e1c3da45e45954bc0beb8046
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 9d321040de33acac09e83cc582f685740f425009..8f328979cc232c4f81a7f040e2424273a8248015 100644
+index cc6101c82e659bbc5a8568c166d5a56fae0c8d64..8309bb7f3f284b0930c13a7e75a7f9de64fedb73 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -228,6 +228,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -227,6 +227,13 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
@@ -92,10 +92,10 @@ index 9d321040de33acac09e83cc582f685740f425009..8f328979cc232c4f81a7f040e2424273
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 010ed22b5da75c445b777bd0db503b268c7a767f..848fc0f31e2cf6795e88040c34b41647ca1256f6 100644
+index 1df3376ca5a8fefc926634c197a8bf043a4f3897..ad6c4fcca39d020fd2043c712a65b36346e06c82 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5488,6 +5488,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5539,6 +5539,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);
