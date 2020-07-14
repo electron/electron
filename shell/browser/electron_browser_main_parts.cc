@@ -325,6 +325,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_debugger_ = std::make_unique<NodeDebugger>(env);
   node_debugger_->Start();
 
+  env->set_trace_sync_io(env->options()->trace_sync_io);
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
@@ -547,6 +549,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
+  node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
   node_env_.reset();
 
