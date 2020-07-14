@@ -53,7 +53,7 @@ static const char kFaviconUrlField[] = "faviconUrl";
 static const char kNameField[] = "name";
 static const char kPagesField[] = "pages";
 static const char kPidField[] = "pid";
-static const char kIdField[] = "id";
+static const char kSessionIdField[] = "sessionId";
 static const char kProcessIdField[] = "processId";
 static const char kRequestTypeField[] = "requestType";
 static const char kRoutingIdField[] = "routingId";
@@ -134,7 +134,7 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
     electron::api::BaseWindow* window) {
   std::unique_ptr<base::DictionaryValue> target_data(
       new base::DictionaryValue());
-  target_data->SetInteger(kIdField, window->GetID());
+  target_data->SetInteger(kSessionIdField, window->GetID());
   target_data->SetString(kNameField, window->GetTitle());
   target_data->SetString(kTypeField, kBrowser);
   return target_data;
@@ -345,7 +345,7 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
   const base::DictionaryValue* data;
   CHECK(args->GetDictionary(0, &data));
 
-  int window_id = *data->FindIntPath(kIdField);
+  int window_id = *data->FindIntPath(kSessionIdField);
   const std::string* request_type_p = data->FindStringPath(kRequestTypeField);
   CHECK(IsValidJSValue(request_type_p));
   std::string request_type = *request_type_p;
@@ -400,7 +400,7 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 
   // No browser with the specified |id| was found.
   std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
-  result->SetInteger(kIdField, window_id);
+  result->SetInteger(kSessionIdField, window_id);
   result->SetString(kTypeField, kBrowser);
   result->SetString(kErrorField, "Window no longer exists.");
   CallJavascriptFunction(request_type, *(result.get()));
