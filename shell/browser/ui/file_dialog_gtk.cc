@@ -92,7 +92,8 @@ class FileChooserDialog {
         }
 
         gtk_file_chooser_set_current_name(
-            GTK_FILE_CHOOSER(dialog_), settings.default_path.BaseName().value().c_str());
+            GTK_FILE_CHOOSER(dialog_),
+            settings.default_path.BaseName().value().c_str());
       }
     }
 
@@ -207,8 +208,8 @@ class FileChooserDialog {
     if (!parent || !parent->GetHost())
       return;
 
-    gtk_native_dialog_set_transient_for(
-        dialog_, reinterpret_cast<GtkWindow*>(parent));
+    gtk_native_dialog_set_transient_for(dialog_,
+                                        reinterpret_cast<GtkWindow*>(parent));
     g_object_set_data(G_OBJECT(dialog_), kAuraTransientParent, parent);
   }
 
