@@ -6,7 +6,7 @@ Subject: chore: disable failing blink font DCHECK on Big Sur
 Once these are available upstream we can remove this patch.
 
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
-index 51944698e70413e2ac58c05610ed05c79a7a3e7b..7289f2145ca11ec940e8d53d3bf1c339e21a2988 100644
+index d6abddab51bc95768467b3d84a55e07dec262f26..0678c9d30e162beb9fec6f98ae82e31b042723cf 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
 @@ -59,10 +59,10 @@ bool VariableAxisChangeEffective(SkTypeface* typeface,

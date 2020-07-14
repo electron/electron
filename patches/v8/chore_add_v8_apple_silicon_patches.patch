@@ -66,7 +66,7 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index f234d7799e73facdb3a49b20fa63f27d2750c2f3..5b2d25700a1ce1d5044a7ee7f035fd9b70476352 100644
+index 1737c7f8e121c967de6da8bfd17dcebd121d9dd5..58ec3108a8ea5888ba31f4b5c7c4939e1c1718ea 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
 @@ -1864,6 +1864,7 @@ void InstructionSelector::EmitPrepareArguments(
@@ -78,7 +78,7 @@ index f234d7799e73facdb3a49b20fa63f27d2750c2f3..5b2d25700a1ce1d5044a7ee7f035fd9b
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index a33a793235c603b709b31216c9dd6304167d2e64..99cce6ea629c026032e6fa89a412daab4e351a75 100644
+index d4a1ad0920a45e0d704e4ed8a01fdad59fcde6e1..32c25712c6490984bd59cf4125feec98050cc61d 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -710,7 +710,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
@@ -95,18 +95,6 @@ index a33a793235c603b709b31216c9dd6304167d2e64..99cce6ea629c026032e6fa89a412daab
              "write protect code memory on the wasm native heap")
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
-diff --git a/src/heap/base/asm/arm64/push_registers_asm.cc b/src/heap/base/asm/arm64/push_registers_asm.cc
-index 30d4de1f3083d4fea8386d5ed5836670bab0db58..d0d3450ddb7ddee4222688beaef43e25ef9fe2ee 100644
---- a/src/heap/base/asm/arm64/push_registers_asm.cc
-+++ b/src/heap/base/asm/arm64/push_registers_asm.cc
-@@ -21,6 +21,7 @@ asm(
-     ".globl _PushAllRegistersAndIterateStack            \n"
-     ".private_extern _PushAllRegistersAndIterateStack   \n"
-     "_PushAllRegistersAndIterateStack:                  \n"
-+    ".align 2                                           \n"
- #else  // !defined(__APPLE__)
-     ".globl PushAllRegistersAndIterateStack             \n"
- #if !defined(_WIN64)
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
 index e268667d2870a0f8fc370e14d3a846b623dae197..95d4318cf9baf895bea58991d4c2f58e4f07e23d 100644
 --- a/src/wasm/function-compiler.cc
@@ -133,7 +121,7 @@ index d76adccad7667665da2723dac1b30e4956dfd98a..1b802d7e4382f61c8a622234c6d1314e
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index f4a897ae3d5a7b5aff9c0a858d760ee58176b24a..db01de270da7fc510ab809f7efdd66a84509023f 100644
+index 1d85bb3ff79557442dc416587769b5f8fcfa77fb..bdd7ef4c45a3908ff234ecf136e153c31dbc2ba9 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
 @@ -1447,6 +1447,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(

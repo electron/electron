@@ -120,7 +120,7 @@ index d1d406e383d80cf7bc233c87d383084f130f73d5..f56a191cb01fbcf91f60abc312ee5277
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 17293aef7e5e2bc9165808b91ea54ff6c75cd067..2c6e8bf696a8b7100045465e938ecabe91289c3e 100644
+index 474ae88c323e9a10bd8486482507f0d749214963..090c8fdc3b374ed937d3e04ccd5d91772acc7d9d 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -208,6 +208,7 @@
@@ -302,7 +302,7 @@ index 17293aef7e5e2bc9165808b91ea54ff6c75cd067..2c6e8bf696a8b7100045465e938ecabe
        [[[NSMutableAttributedString alloc]
            initWithString:base::SysUTF16ToNSString(innerText)] autorelease];
 +#ifndef MAS_BUILD
-   if (!_owner->IsTextOnlyObject()) {
+   if (!_owner->IsText()) {
      AXPlatformRange ax_range(_owner->CreatePositionAt(0),
                               _owner->CreatePositionAt(int{innerText.length()}));
      AddMisspelledTextAttributes(ax_range, attributedInnerText);
@@ -348,10 +348,10 @@ index 17293aef7e5e2bc9165808b91ea54ff6c75cd067..2c6e8bf696a8b7100045465e938ecabe
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 83d0106f0f237dea75dfafe011bf527d97240d0d..462577a0dbd0fcc1baf17acd9678317cb27503fa 100644
+index 04bbb885b29cd2038f11214d0bec40a2b691f5e1..abfdcfbe576dbddc42090818cc2bc13da4b453e9 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -525,6 +525,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -526,6 +526,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -359,7 +359,7 @@ index 83d0106f0f237dea75dfafe011bf527d97240d0d..462577a0dbd0fcc1baf17acd9678317c
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -532,6 +533,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -533,6 +534,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -430,7 +430,7 @@ index 3aec8bc1fe1a619f2c4ec42ef438ae49fe0f5812..76dc23dfa26beb3b92bd87eb60fe3868
        should_update_name_(true),
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-@@ -304,8 +308,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -306,8 +310,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -444,22 +444,24 @@ index 3aec8bc1fe1a619f2c4ec42ef438ae49fe0f5812..76dc23dfa26beb3b92bd87eb60fe3868
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 5acdb011a1f232569b43ba2f08a21f44b3c40151..9fca5b2e8c714308a404750cc9fc64dcaffa91cc 100644
+index bf4b736b05f38fb7022d0d15860d88672bd6def5..e58ce75f0ddbe1e86cffd32f2f395e498a9d656e 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -171,6 +171,12 @@ source_set("audio") {
+@@ -171,7 +171,13 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
+-    frameworks = [
 +    if (is_mas_build) {
 +      sources -= [
 +        "mac/coreaudio_dispatch_override.cc",
 +        "mac/coreaudio_dispatch_override.h",
 +      ]
 +    }
-     libs += [
++    frameworks += [
        "AudioToolbox.framework",
        "AudioUnit.framework",
+       "CoreAudio.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
 index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022eca52d258 100644
 --- a/media/audio/mac/audio_manager_mac.cc
