@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:50:27 -0700
+Subject: chore: add media patches for apple silicon
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/media/audio/mac/coreaudio_dispatch_override.cc b/media/audio/mac/coreaudio_dispatch_override.cc
+index 68a9618819c5e6cdc8d1d75bfa65d6f9e57f1b39..4156152936691c22ffc4a38533e5ce4c6a18be6b 100644
+--- a/media/audio/mac/coreaudio_dispatch_override.cc
++++ b/media/audio/mac/coreaudio_dispatch_override.cc
+@@ -60,16 +60,19 @@ enum CallsiteLookupEvent {
+   LOOKUP_MAX = LOOKUP_PAUSEIO_CALLSITE_FOUND
+ };
+ 
++#if __x86_64__
+ void LogCallsiteLookupEvent(CallsiteLookupEvent event) {
+   UMA_HISTOGRAM_ENUMERATION("Media.Audio.CoreAudioDispatchOverrideLookupEvent",
+                             event, LOOKUP_MAX + 1);
+ }
++#endif
+ 
+ const char kCoreAudioPath[] =
+     "/System/Library/Frameworks/CoreAudio.framework/Versions/A/CoreAudio";
+ 
+ dispatch_queue_t g_pause_resume_queue = nullptr;
+ bool g_dispatch_override_installed = false;
++#if __x86_64__
+ base::subtle::AtomicWord g_resumeio_callsite = 0;
+ base::subtle::AtomicWord g_pauseio_callsite = 0;
+ 
+@@ -139,6 +142,7 @@ dispatch_queue_t GetGlobalQueueOverride(long identifier, unsigned long flags) {
+ 
+   return dispatch_get_global_queue(identifier, flags);
+ }
++#endif
+ 
+ }  // namespace
+ 
+@@ -178,6 +182,7 @@ bool InitializeCoreAudioDispatchOverride() {
+     LogInitResult(RESULT_COREAUDIO_MACH_HEADER_NOT_FOUND);
+     return false;
+   }
++#if __x86_64__
+   const auto* header = reinterpret_cast<const mach_header*>(info.dli_fbase);
+   g_pause_resume_queue =
+       dispatch_queue_create("org.chromium.CoreAudioPauseResumeQueue", nullptr);
+@@ -188,7 +193,9 @@ bool InitializeCoreAudioDispatchOverride() {
+   dyld_interpose_tuple interposition(
+       &GetGlobalQueueOverride,
+       reinterpret_cast<DispatchGetGlobalQueueFunc>(&dispatch_get_global_queue));
++
+   dyld_dynamic_interpose(header, &interposition, 1);
++#endif
+   g_dispatch_override_installed = true;
+   LogInitResult(RESULT_INITIALIZED);
+   return true;

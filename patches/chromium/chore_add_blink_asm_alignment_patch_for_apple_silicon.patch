@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:51:12 -0700
+Subject: chore: add blink ASM alignment patch for apple silicon
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/third_party/blink/renderer/platform/heap/asm/SaveRegisters_arm64.S b/third_party/blink/renderer/platform/heap/asm/SaveRegisters_arm64.S
+index ab6c6ffecb8c134644b73cdce153177438ca2d24..7ce5448b256701eed2f0f0ea950287d2b7f9c572 100644
+--- a/third_party/blink/renderer/platform/heap/asm/SaveRegisters_arm64.S
++++ b/third_party/blink/renderer/platform/heap/asm/SaveRegisters_arm64.S
+@@ -50,6 +50,7 @@ _\fname:
+ .endm
+ 
+ asm_function PushAllRegisters
++	.align 2
+         /* Save return address. */
+         sub sp, sp, #96
+         stp x19, x20, [sp, #80]

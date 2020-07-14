@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:49:19 -0700
+Subject: chore: add allocator patches for apple silicon
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/base/allocator/partition_allocator/page_allocator_constants.h b/base/allocator/partition_allocator/page_allocator_constants.h
+index 555700a7d0c4cd4e365ebdd2a169b8303bde09cc..ca455676c3774d112ef6b0676ba7d60683e14384 100644
+--- a/base/allocator/partition_allocator/page_allocator_constants.h
++++ b/base/allocator/partition_allocator/page_allocator_constants.h
+@@ -14,6 +14,8 @@ namespace base {
+ static constexpr size_t kPageAllocationGranularityShift = 16;  // 64KB
+ #elif defined(_MIPS_ARCH_LOONGSON)
+ static constexpr size_t kPageAllocationGranularityShift = 14;  // 16KB
++#elif defined(OS_MACOSX) && defined(ARCH_CPU_ARM64)
++static constexpr size_t kPageAllocationGranularityShift = 14;  // 16KB
+ #else
+ static constexpr size_t kPageAllocationGranularityShift = 12;  // 4KB
+ #endif
+@@ -32,6 +34,8 @@ static constexpr size_t kSystemPageSize = 16384;
+ // and binaries compiled for 64KB are likely to work on 4KB systems,
+ // 64KB is a good choice here.
+ static constexpr size_t kSystemPageSize = 65536;
++#elif defined(OS_MACOSX) && defined(ARCH_CPU_ARM64)
++static constexpr size_t kSystemPageSize = 16384;
+ #else
+ static constexpr size_t kSystemPageSize = 4096;
+ #endif
+diff --git a/base/allocator/partition_allocator/partition_alloc_constants.h b/base/allocator/partition_allocator/partition_alloc_constants.h
+index ab001f168c86a090f4bbb74a78491e6d536cd9fa..855b8138dc746d1fcce663408f5cc707da27c427 100644
+--- a/base/allocator/partition_allocator/partition_alloc_constants.h
++++ b/base/allocator/partition_allocator/partition_alloc_constants.h
+@@ -34,6 +34,8 @@ namespace base {
+ static const size_t kPartitionPageShift = 16;  // 64 KiB
+ #elif defined(ARCH_CPU_PPC64)
+ static const size_t kPartitionPageShift = 18;  // 256 KiB
++#elif defined (OS_MACOSX) && defined(ARCH_CPU_ARM64)
++static const size_t kPartitionPageShift = 16;  // 64 KiB
+ #else
+ static const size_t kPartitionPageShift = 14;  // 16 KiB
+ #endif
+diff --git a/base/mac/mac_util.h b/base/mac/mac_util.h
+index e24439cee6c81afc74bfcb557cbdab6785a32794..f84128e76f380a86b74d354787c741c2217b6b69 100644
+--- a/base/mac/mac_util.h
++++ b/base/mac/mac_util.h
+@@ -132,6 +132,12 @@ DEFINE_IS_OS_FUNCS(15, TEST_DEPLOYMENT_TARGET)
+ DEFINE_IS_OS_FUNCS(15, IGNORE_DEPLOYMENT_TARGET)
+ #endif
+ 
++#ifdef MAC_OS_X_VERSION_10_16
++DEFINE_IS_OS_FUNCS(16, TEST_DEPLOYMENT_TARGET)
++#else
++DEFINE_IS_OS_FUNCS(16, IGNORE_DEPLOYMENT_TARGET)
++#endif
++
+ #undef IGNORE_DEPLOYMENT_TARGET
+ #undef TEST_DEPLOYMENT_TARGET
+ #undef DEFINE_IS_OS_FUNCS_CR_MIN_REQUIRED

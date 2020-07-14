@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:50:43 -0700
+Subject: chore: add dav1d patches for apple silicon
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/third_party/dav1d/BUILD.gn b/third_party/dav1d/BUILD.gn
+index 788dc6cff9dae9210451a7b404af28634242d417..818cc51465ec18f749ccbedff391536608846e6e 100644
+--- a/third_party/dav1d/BUILD.gn
++++ b/third_party/dav1d/BUILD.gn
+@@ -256,6 +256,10 @@ if (current_cpu == "x86" || current_cpu == "x64") {
+       ":dav1d_config",
+     ]
+ 
++    if (is_mac) {
++      defines = [ "PREFIX" ]
++    }
++
+     cflags = dav1d_copts
+   }
+ }
