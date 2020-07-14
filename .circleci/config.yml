@@ -313,12 +313,15 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo rm -rf /Library/Developer/CoreSimulator
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVOS.platform
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/AppleTVSimulator.platform
-        sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/AppleTVOS.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/iPhoneOS.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/WatchOS.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/WatchSimulator.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/AppleTVSimulator.platform
+        sudo rm -rf $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        sudo rm -rf ~/.rubies
+        sudo rm -rf ~/Library/Caches/Homebrew
+        sudo rm -rf /usr/local/Homebrew
       fi
 
 # On macOS delete all .git directories under src/ expect for
@@ -1043,8 +1046,8 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
+    - *step-get-more-space-on-mac
     - *step-generate-deps-hash
     - *step-touch-sync-done
     - maybe-restore-portaled-src-cache
