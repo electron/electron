@@ -107,7 +107,7 @@ index 31edc0dfc191b82b8f1bff5fcfd95c9cec5ea2b1..d59e0c156c5e02ac37d6aa233cf4cac8
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 08dc8bd190b1506b9ec1c8ae39bf3ee56a1203e2..5361890756fa39b825da4698725ce221e0ca2a26 100644
+index 0b2971f1d77d00c37894230c6ae487b0f88a397e..09de8f413d8b03f0f5da3182bbf7753867776d24 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -22,6 +22,7 @@
@@ -126,7 +126,7 @@ index 08dc8bd190b1506b9ec1c8ae39bf3ee56a1203e2..5361890756fa39b825da4698725ce221
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -224,6 +226,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -225,6 +227,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -455,10 +455,10 @@ index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c0
    waiting_on_draw_ack_ = true;
  
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 641a63e8c18e3e81acacb67a59b285dac44abbb1..72b74ec00402ff7b5b4853c08365eb2f69d62713 100644
+index 858d6f4a7428a081cb0f47a1d49b70e489d2d834..dedb7d158cef10f76a38fdb4df9a379997d7c3c3 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -403,8 +403,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -407,8 +407,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
