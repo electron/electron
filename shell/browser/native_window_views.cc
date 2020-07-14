@@ -55,9 +55,10 @@
 #include "shell/browser/ui/x/window_state_watcher.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/x11_types.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "shell/browser/ui/views/win_frame_view.h"
