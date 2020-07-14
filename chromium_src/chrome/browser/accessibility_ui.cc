@@ -247,8 +247,14 @@ void HandleAccessibilityRequestCallback(
                  is_web_enabled ? (screenreader ? kOn : kOff) : kDisabled);
   data.SetString(kHTML, is_web_enabled ? (html ? kOn : kOff) : kDisabled);
 
-  bool label_images = mode.has_mode(ui::AXMode::kLabelImages);
-  data.SetString(kLabelImages, label_images ? kOn : kOff);
+  // TODO(codebytere): enable use of this flag.
+  //
+  // The "labelImages" flag works only if "web" is enabled, the current profile
+  // has the kAccessibilityImageLabelsEnabled preference set and the appropriate
+  // command line switch has been used. Since this is so closely tied into user
+  // prefs and causes bugs, we're disabling it for now.
+  bool are_accessibility_image_labels_enabled = is_web_enabled;
+  data.SetString(kLabelImages, kDisabled);
 
   // The "pdf" flag is independent of the others.
   data.SetString(kPDF, pdf ? kOn : kOff);
@@ -283,7 +289,8 @@ void HandleAccessibilityRequestCallback(
         BuildTargetDescriptor(rvh);
     descriptor->SetBoolean(kNative, is_native_enabled);
     descriptor->SetBoolean(kWeb, is_web_enabled);
-    descriptor->SetBoolean(kLabelImages, true);
+    descriptor->SetBoolean(kLabelImages,
+                           are_accessibility_image_labels_enabled);
     rvh_list->Append(std::move(descriptor));
   }
 
