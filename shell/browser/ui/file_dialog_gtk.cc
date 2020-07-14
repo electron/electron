@@ -250,6 +250,8 @@ class FileChooserDialog {
   // Sets |dialog| as transient for |parent|, which will keep it on top and
   // center it above |parent|. Do nothing if |parent| is nullptr.
   void SetGtkTransientForAura(aura::Window* parent) {
+    static const char kAuraTransientParent[] = "aura-transient-parent";
+
     if (!parent || !parent->GetHost())
       return;
 
@@ -259,6 +261,7 @@ class FileChooserDialog {
         reinterpret_cast<void**>(&dl_gtk_native_dialog_set_transient_for));
     dl_gtk_native_dialog_set_transient_for(
         dialog_, reinterpret_cast<GtkWindow*>(parent));
+    g_object_set_data(G_OBJECT(dialog_), kAuraTransientParent, parent);
   }
 
   // Callback for when we update the preview for the selection.
