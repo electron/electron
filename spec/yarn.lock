@@ -229,7 +229,7 @@ dashdash@^1.12.0:
     safe-buffer "^5.1.1"
     xml2js "^0.4.17"
   optionalDependencies:
-    abstract-socket "github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528"
+    abstract-socket "^2.0.0"
 
 debug@2.6.9, debug@^2.2.0:
   version "2.6.9"
