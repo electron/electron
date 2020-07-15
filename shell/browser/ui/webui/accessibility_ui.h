@@ -26,7 +26,7 @@ class ElectronAccessibilityUI : public content::WebUIController {
 class ElectronAccessibilityUIMessageHandler
     : public AccessibilityUIMessageHandler {
  public:
-  explicit ElectronAccessibilityUIMessageHandler();
+  ElectronAccessibilityUIMessageHandler();
 
   void RegisterMessages() final;
 
