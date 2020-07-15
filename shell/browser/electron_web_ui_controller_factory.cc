@@ -6,11 +6,11 @@
 
 #include <string>
 
-#include "chrome/browser/accessibility_ui.h"
 #include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/devtools_ui.h"
+#include "shell/browser/ui/webui/accessibility_ui.h"
 
 namespace electron {
 

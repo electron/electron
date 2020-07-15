@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/accessibility_ui.h"
+#include "shell/browser/ui/webui/accessibility_ui.h"
 
 #include "base/bind.h"
 #include "base/bind_helpers.h"
