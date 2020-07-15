@@ -129,3 +129,4 @@ fix_handling_non_client_pointer_events_from_pen_on_windows_10.patch
 backport_1063177.patch
 backport_1065122.patch
 backport_1074317.patch
+backport_1090543.patch
