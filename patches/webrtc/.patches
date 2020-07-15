@@ -1,2 +1,3 @@
 fix_vector_allocation_for_raw_data_handling.patch
 acm_corrected_temporary_buffer_size.patch
+backport_1076703.patch
