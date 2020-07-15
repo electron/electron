@@ -661,6 +661,7 @@ source_set("electron_lib") {
     deps += [
       "//components/pdf/browser",
       "//components/pdf/renderer",
+      "//pdf:pdf_ppapi",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
