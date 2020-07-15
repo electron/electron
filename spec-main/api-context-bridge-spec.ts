@@ -313,6 +313,20 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal(['null', 'undefined']);
       });
 
+      it('should proxy symbols such that symbol equality works', async () => {
+        await makeBindingWindow(() => {
+          const mySymbol = Symbol('unique');
+          contextBridge.exposeInMainWorld('example', {
+            getSymbol: () => mySymbol,
+            isSymbol: (s: Symbol) => s === mySymbol
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.isSymbol(root.example.getSymbol());
+        });
+        expect(result).to.equal(true, 'symbols should be equal across contexts');
+      });
+
       it('should proxy typed arrays and regexps through the serializer', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
@@ -479,6 +493,8 @@ describe('contextBridge', () => {
             string: 'string',
             boolean: true,
             arr: [123, 'string', true, ['foo']],
+            symbol: Symbol('foo'),
+            bigInt: 10n,
             getObject: () => ({ thing: 123 }),
             getNumber: () => 123,
             getString: () => 'string',
@@ -511,6 +527,8 @@ describe('contextBridge', () => {
             [example.arr[2], Boolean],
             [example.arr[3], Array],
             [example.arr[3][0], String],
+            [example.symbol, Symbol],
+            [example.bigInt, BigInt],
             [example.getNumber, Function],
             [example.getNumber(), Number],
             [example.getObject(), Object],
