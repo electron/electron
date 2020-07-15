@@ -123,7 +123,7 @@ index 582599e9f62ec3197b95deaa183449858169e8a2..febc1cce64dc3a9facbfc9a72be913fc
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index f08d47d43de96e4541172fe620cf318e6ba3321f..5d5141bd74dd012ad2a84ddaf2b105b5582e3155 100644
+index 36a26e351baa1c4fc68ad03055fe7ad9df99a4bd..dc11d515a0bf2031f625b0cd18b02f2ec36a898a 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -333,6 +333,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

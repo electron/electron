@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index b2c0baa4659ffca5ef49723fe908d8f1e4919239..fbe00464174000e3d852f38141e2951842830627 100644
+index 85afa767ff8074c1e995c4d14a420ffde388aee3..436aed37a5c6c67cdb14f18b0a33dd63eda9ac49 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -33,7 +33,7 @@ index b2c0baa4659ffca5ef49723fe908d8f1e4919239..fbe00464174000e3d852f38141e29518
 +
    constexpr gfx::ColorSpace srgb = gfx::ColorSpace::CreateSRGB();
  
-   if (settings_.prefer_raster_in_srgb &&
+   // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index eaff59cabf659c0d3ffe46c394c51b6d30c05806..899be4f3d9cdb82e03d34ee940f26af89235dd31 100644
 --- a/cc/trees/layer_tree_settings.h
@@ -231,7 +231,7 @@ index b8032917cce5224403304c5f41674533e3d59528..2e871204e8dc9bf13315ba9a1448ab7c
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0cd572d4793ebe72ce576000ffbc302aa703b58c..2f6f7cd0bdab9136dd166a191c01f4e83f15de65 100644
+index c1499348b27e31460e81929b9772fceaa5795c52..35bd01ee02a31be1696eabe49c9c2c03474ca67b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -227,6 +227,7 @@
@@ -242,7 +242,7 @@ index 0cd572d4793ebe72ce576000ffbc302aa703b58c..2f6f7cd0bdab9136dd166a191c01f4e8
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3279,6 +3280,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3277,6 +3278,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

@@ -38,7 +38,7 @@ index 3b9a026151e9ec9080e2e32365990e319cbc0556..c25aa04ddd24c73c86992e5148b39da8
    return BindingSecurity::ShouldAllowAccessToFrame(
        CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 380964de98121d1372bacafdc68de08e16362fac..f2f759fe7797087bfb962080539a5bc78108484d 100644
+index 670dff25cf9d4b50a07b756f1cfe19897cc37fa9..d942da352e9efb792879617fb5be78b96c399c34 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -166,6 +166,8 @@ class CORE_EXPORT WebLocalFrameImpl final

@@ -24,7 +24,7 @@ index 85b265f70047f90ebb8a4a2ef2487adc62f0ade9..b41d39c8ced77266955e301af19dcac9
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 8188ba42eb88ea8faf3fa3d03a3018e966880bf6..2d710bb3f712b5d93ea95e93be34f91e9b730387 100644
+index 6a17e529a0fcc4436b02085dd730d6a7a479e47e..9de5d46b2cfdaa2c3977ffe1a9bf59bdd76dc871 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,9 +25,11 @@
@@ -39,7 +39,7 @@ index 8188ba42eb88ea8faf3fa3d03a3018e966880bf6..2d710bb3f712b5d93ea95e93be34f91e
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/screen_info.h"
  #include "content/public/common/widget_type.h"
-@@ -67,9 +69,11 @@ class CursorManager;
+@@ -66,9 +68,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -51,7 +51,7 @@ index 8188ba42eb88ea8faf3fa3d03a3018e966880bf6..2d710bb3f712b5d93ea95e93be34f91e
  class WebCursor;
  class DelegatedFrameHost;
  struct DisplayFeature;
-@@ -127,6 +131,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -126,6 +130,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        bool show_reason_unoccluded,
        bool show_reason_bfcache_restore) final;
  
@@ -61,7 +61,7 @@ index 8188ba42eb88ea8faf3fa3d03a3018e966880bf6..2d710bb3f712b5d93ea95e93be34f91e
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -311,6 +318,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -310,6 +317,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  
