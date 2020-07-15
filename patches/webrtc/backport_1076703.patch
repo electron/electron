@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: prevent pointer from being sent in the clear over SCTP
+
+[1076703] [High] [CVE-2020-6514]: Security: WebRTC: usrsctp is called with pointer as network address
+Backport https://webrtc.googlesource.com/src/+/963cc1ef1336b52ca27742beb28bfbc211ed54d0
+
+diff --git a/media/sctp/sctp_transport.cc b/media/sctp/sctp_transport.cc
+index 9f1e8626501d4e15ce2acbfd6a7759c98801c1c1..e788d89bd64f912c54c6e8a6f0804860d683870d 100644
+--- a/media/sctp/sctp_transport.cc
++++ b/media/sctp/sctp_transport.cc
+@@ -22,6 +22,7 @@ enum PreservedErrno {
+ #include <stdio.h>
+ 
+ #include <memory>
++#include <unordered_map>
+ 
+ #include "absl/algorithm/container.h"
+ #include "absl/base/attributes.h"
+@@ -39,6 +40,7 @@ enum PreservedErrno {
+ #include "rtc_base/logging.h"
+ #include "rtc_base/numerics/safe_conversions.h"
+ #include "rtc_base/string_utils.h"
++#include "rtc_base/thread_annotations.h"
+ #include "rtc_base/thread_checker.h"
+ #include "rtc_base/trace_event.h"
+ #include "usrsctplib/usrsctp.h"
+@@ -72,6 +74,59 @@ enum PayloadProtocolIdentifier {
+   PPID_TEXT_LAST = 51
+ };
+ 
++// Maps SCTP transport ID to SctpTransport object, necessary in send threshold
++// callback and outgoing packet callback.
++// TODO(crbug.com/1076703): Remove once the underlying problem is fixed or
++// workaround is provided in usrsctp.
++class SctpTransportMap {
++ public:
++  SctpTransportMap() = default;
++
++  // Assigns a new unused ID to the following transport.
++  uintptr_t Register(cricket::SctpTransport* transport) {
++    rtc::CritScope cs(&lock_);
++    // usrsctp_connect fails with a value of 0...
++    if (next_id_ == 0) {
++      ++next_id_;
++    }
++    // In case we've wrapped around and need to find an empty spot from a
++    // removed transport. Assumes we'll never be full.
++    while (map_.find(next_id_) != map_.end()) {
++      ++next_id_;
++      if (next_id_ == 0) {
++        ++next_id_;
++      }
++    };
++    map_[next_id_] = transport;
++    return next_id_++;
++  }
++
++  // Returns true if found.
++  bool Deregister(uintptr_t id) {
++    rtc::CritScope cs(&lock_);
++    return map_.erase(id) > 0;
++  }
++
++  cricket::SctpTransport* Retrieve(uintptr_t id) const {
++    rtc::CritScope cs(&lock_);
++    auto it = map_.find(id);
++    if (it == map_.end()) {
++      return nullptr;
++    }
++    return it->second;
++  }
++
++ private:
++  rtc::CriticalSection lock_;
++
++  uintptr_t next_id_ RTC_GUARDED_BY(lock_) = 0;
++  std::unordered_map<uintptr_t, cricket::SctpTransport*> map_
++      RTC_GUARDED_BY(lock_);
++};
++
++// Should only be modified by UsrSctpWrapper.
++ABSL_CONST_INIT SctpTransportMap* g_transport_map_ = nullptr;
++
+ // Helper for logging SCTP messages.
+ #if defined(__GNUC__)
+ __attribute__((__format__(__printf__, 1, 2)))
+@@ -242,9 +297,12 @@ class SctpTransport::UsrSctpWrapper {
+     // Set the number of default outgoing streams. This is the number we'll
+     // send in the SCTP INIT message.
+     usrsctp_sysctl_set_sctp_nr_outgoing_streams_default(kMaxSctpStreams);
++
++    g_transport_map_ = new SctpTransportMap();
+   }
+ 
+   static void UninitializeUsrSctp() {
++    delete g_transport_map_;
+     RTC_LOG(LS_INFO) << __FUNCTION__;
+     // usrsctp_finish() may fail if it's called too soon after the transports
+     // are
+@@ -282,7 +340,14 @@ class SctpTransport::UsrSctpWrapper {
+                                   size_t length,
+                                   uint8_t tos,
+                                   uint8_t set_df) {
+-    SctpTransport* transport = static_cast<SctpTransport*>(addr);
++    SctpTransport* transport =
++        g_transport_map_->Retrieve(reinterpret_cast<uintptr_t>(addr));
++    if (!transport) {
++      RTC_LOG(LS_ERROR)
++          << "OnSctpOutboundPacket: Failed to get transport for socket ID "
++          << addr;
++      return EINVAL;
++    }
+     RTC_LOG(LS_VERBOSE) << "global OnSctpOutboundPacket():"
+                         << "addr: " << addr << "; length: " << length
+                         << "; tos: " << rtc::ToHex(tos)
+@@ -391,14 +456,14 @@ class SctpTransport::UsrSctpWrapper {
+       return nullptr;
+     }
+     // usrsctp_getladdrs() returns the addresses bound to this socket, which
+-    // contains the SctpTransport* as sconn_addr.  Read the pointer,
++    // contains the SctpTransport id as sconn_addr.  Read the id,
+     // then free the list of addresses once we have the pointer.  We only open
+     // AF_CONN sockets, and they should all have the sconn_addr set to the
+-    // pointer that created them, so [0] is as good as any other.
++    // id of the transport that created them, so [0] is as good as any other.
+     struct sockaddr_conn* sconn =
+         reinterpret_cast<struct sockaddr_conn*>(&addrs[0]);
+-    SctpTransport* transport =
+-        reinterpret_cast<SctpTransport*>(sconn->sconn_addr);
++    SctpTransport* transport = g_transport_map_->Retrieve(
++        reinterpret_cast<uintptr_t>(sconn->sconn_addr));
+     usrsctp_freeladdrs(addrs);
+ 
+     return transport;
+@@ -765,9 +830,10 @@ bool SctpTransport::OpenSctpSocket() {
+     UsrSctpWrapper::DecrementUsrSctpUsageCount();
+     return false;
+   }
+-  // Register this class as an address for usrsctp. This is used by SCTP to
++  id_ = g_transport_map_->Register(this);
++  // Register our id as an address for usrsctp. This is used by SCTP to
+   // direct the packets received (by the created socket) to this class.
+-  usrsctp_register_address(this);
++  usrsctp_register_address(reinterpret_cast<void*>(id_));
+   return true;
+ }
+ 
+@@ -854,7 +920,8 @@ void SctpTransport::CloseSctpSocket() {
+     // discarded instead of being sent.
+     usrsctp_close(sock_);
+     sock_ = nullptr;
+-    usrsctp_deregister_address(this);
++    usrsctp_deregister_address(reinterpret_cast<void*>(id_));
++    RTC_CHECK(g_transport_map_->Deregister(id_));
+     UsrSctpWrapper::DecrementUsrSctpUsageCount();
+     ready_to_send_data_ = false;
+   }
+@@ -983,7 +1050,7 @@ void SctpTransport::OnPacketRead(rtc::PacketTransportInternal* transport,
+     // will be will be given to the global OnSctpInboundData, and then,
+     // marshalled by the AsyncInvoker.
+     VerboseLogPacket(data, len, SCTP_DUMP_INBOUND);
+-    usrsctp_conninput(this, data, len, 0);
++    usrsctp_conninput(reinterpret_cast<void*>(id_), data, len, 0);
+   } else {
+     // TODO(ldixon): Consider caching the packet for very slightly better
+     // reliability.
+@@ -1009,7 +1076,7 @@ sockaddr_conn SctpTransport::GetSctpSockAddr(int port) {
+ #endif
+   // Note: conversion from int to uint16_t happens here.
+   sconn.sconn_port = rtc::HostToNetwork16(port);
+-  sconn.sconn_addr = this;
++  sconn.sconn_addr = reinterpret_cast<void*>(id_);
+   return sconn;
+ }
+ 
+diff --git a/media/sctp/sctp_transport.h b/media/sctp/sctp_transport.h
+index 7337f0103309bbd00d57e805449585ec48720c75..63d8a036deed2057cb367b01418bf1229f851dcb 100644
+--- a/media/sctp/sctp_transport.h
++++ b/media/sctp/sctp_transport.h
+@@ -13,6 +13,7 @@
+ 
+ #include <errno.h>
+ 
++#include <cstdint>
+ #include <map>
+ #include <memory>
+ #include <set>
+@@ -266,6 +267,10 @@ class SctpTransport : public SctpTransportInternal,
+   absl::optional<int> max_outbound_streams_;
+   absl::optional<int> max_inbound_streams_;
+ 
++  // Used for associating this transport with the underlying sctp socket in
++  // various callbacks.
++  uintptr_t id_ = 0;
++
+   RTC_DISALLOW_COPY_AND_ASSIGN(SctpTransport);
+ };
+ 
