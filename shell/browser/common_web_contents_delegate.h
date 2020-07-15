@@ -14,8 +14,8 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
 namespace base {
