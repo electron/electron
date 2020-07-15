@@ -2089,6 +2089,23 @@ jobs:
           attach: true
           checkout: false
 
+  mas-testing-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large
+      <<: *env-mas
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      <<: *env-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: false
+
   # Layer 3: Tests.
   linux-x64-unittests:
     <<: *machine-linux-2xlarge
@@ -2462,6 +2479,10 @@ workflows:
       - mas-testing-x64-tests:
           requires:
             - mas-testing-x64
+
+      - mas-testing-arm64:
+          requires:
+            - mac-checkout-and-save-cache
 
   nightly-linux-release-test:
     triggers:
