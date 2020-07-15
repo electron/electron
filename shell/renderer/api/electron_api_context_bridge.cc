@@ -146,6 +146,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                         "deeper than 1000 are not supported.")));
     return v8::MaybeLocal<v8::Value>();
   }
+
+  // Certain primitives always use the current contexts prototype and we can
+  // pass these through directly which is significantly more performant than
+  // copying them. This list of primitives is based on the classification of
+  // "primitive value" as defined in the ECMA262 spec
+  // https://tc39.es/ecma262/#sec-primitive-value
+  if (value->IsString() || value->IsNumber() || value->IsNullOrUndefined() ||
+      value->IsBoolean() || value->IsSymbol() || value->IsBigInt()) {
+    return v8::MaybeLocal<v8::Value>(value);
+  }
+
   // Check Cache
   auto cached_value = object_cache->GetCachedProxiedObject(value);
   if (!cached_value.IsEmpty()) {

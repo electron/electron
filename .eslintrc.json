@@ -31,7 +31,8 @@
     "BUILDFLAG": "readonly",
     "ENABLE_DESKTOP_CAPTURER": "readonly",
     "ENABLE_REMOTE_MODULE": "readonly",
-    "ENABLE_VIEWS_API": "readonly"
+    "ENABLE_VIEWS_API": "readonly",
+    "BigInt": "readonly"
   },
   "overrides": [
     {
