@@ -493,7 +493,7 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(
   screen_info->orientation_angle = 0;
   screen_info->device_scale_factor = current_device_scale_factor_;
   screen_info->orientation_type =
-      content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
+      blink::mojom::ScreenOrientation::kLandscapePrimary;
   screen_info->rect = gfx::Rect(size_);
   screen_info->available_rect = gfx::Rect(size_);
 }
