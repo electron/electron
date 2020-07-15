@@ -289,7 +289,7 @@ describe('contextBridge', () => {
           contextBridge.exposeInMainWorld('example', {
             1: 123,
             2: 456,
-            '3': 789
+            3: 789
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -310,6 +310,20 @@ describe('contextBridge', () => {
           return root.example.values.map((val: any) => `${val}`);
         });
         expect(result).to.deep.equal(['null', 'undefined']);
+      });
+
+      it('should proxy symbols such that symbol equality works', async () => {
+        await makeBindingWindow(() => {
+          const mySymbol = Symbol('unique');
+          contextBridge.exposeInMainWorld('example', {
+            getSymbol: () => mySymbol,
+            isSymbol: (s: Symbol) => s === mySymbol
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.isSymbol(root.example.getSymbol());
+        });
+        expect(result).to.equal(true, 'symbols should be equal across contexts');
       });
 
       it('should proxy typed arrays and regexps through the serializer', async () => {
@@ -447,7 +461,7 @@ describe('contextBridge', () => {
           try {
             let a: any = [];
             for (let i = 0; i < 999; i++) {
-              a = [ a ];
+              a = [a];
             }
             root.example.doThing(a);
             return false;
@@ -460,7 +474,7 @@ describe('contextBridge', () => {
           try {
             let a: any = [];
             for (let i = 0; i < 1000; i++) {
-              a = [ a ];
+              a = [a];
             }
             root.example.doThing(a);
             return false;
@@ -478,6 +492,7 @@ describe('contextBridge', () => {
             string: 'string',
             boolean: true,
             arr: [123, 'string', true, ['foo']],
+            symbol: Symbol('foo'),
             getObject: () => ({ thing: 123 }),
             getNumber: () => 123,
             getString: () => 'string',
@@ -510,6 +525,7 @@ describe('contextBridge', () => {
             [example.arr[2], Boolean],
             [example.arr[3], Array],
             [example.arr[3][0], String],
+            [example.symbol, Symbol],
             [example.getNumber, Function],
             [example.getNumber(), Number],
             [example.getObject(), Object],
