@@ -177,19 +177,19 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         // Either world safe results are disabled or the result was created in
         // the same world as the caller or the result is not an object and
         // therefore does not have a prototype chain to protect
-        bool should_send_directly =
-            !world_safe_result_ ||
-            (value->IsObject() &&
-             promise_.GetContext() ==
-                 value.As<v8::Object>()->CreationContext()) ||
-            !value->IsObject();
-        if (should_send_directly) {
+        bool should_clone_value =
+            world_safe_result_ &&
+            !(value->IsObject() &&
+              promise_.GetContext() ==
+                  value.As<v8::Object>()->CreationContext()) &&
+            value->IsObject() if (should_clone_value) {
+          CopyResultToCallingContextAndFinalize(isolate, value);
+        }
+        else {
           // Right now only single results per frame is supported.
           if (callback_)
             std::move(callback_).Run(value, v8::Undefined(isolate));
           promise_.Resolve(value);
-        } else {
-          CopyResultToCallingContextAndFinalize(isolate, value);
         }
       } else {
         const char* error_message =
