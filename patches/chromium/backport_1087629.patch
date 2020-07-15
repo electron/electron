@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: update sqlite to v3.32.1
+
+[1087629] [High]: Upgrade SQLite to 3.32.1
+Backport https://chromium.googlesource.com/chromium/src/+/fd7b2899867a6acbe0721be9321a6555e39be70c
+
+diff --git a/DEPS b/DEPS
+index 530e4a466615dbb648543212498db0245a8f36fb..738bdc51dc20b9358cdaefb54c40f2f913d8ecd7 100644
+--- a/DEPS
++++ b/DEPS
+@@ -1381,7 +1381,7 @@ deps = {
+     Var('chromium_git') + '/external/github.com/google/snappy.git' + '@' + 'f5acee902c4d2110f671455460172cb6d3bf5b73',
+ 
+   'src/third_party/sqlite/src':
+-    Var('chromium_git') + '/chromium/deps/sqlite.git' + '@' + '15401f78a1078345251d13469ac56cc607f825db',
++    Var('chromium_git') + '/chromium/deps/sqlite.git' + '@' + 'b5399f70d4778fa2f0f0ada1bb5910e14c096be9',
+ 
+   'src/third_party/sqlite4java': {
+       'packages': [
+diff --git a/sql/recover_module/module_unittest.cc b/sql/recover_module/module_unittest.cc
+index ef3e3e2b7b4b04d0abcf1d93275537803b6ce455..ba620b7fda684af09bce36b806b4051345775fbf 100644
+--- a/sql/recover_module/module_unittest.cc
++++ b/sql/recover_module/module_unittest.cc
+@@ -534,7 +534,7 @@ TEST_F(RecoverModuleTest, Floats) {
+   ASSERT_TRUE(statement.Step());
+   EXPECT_EQ(2, statement.ColumnInt(0));
+   EXPECT_EQ("INTEGER", statement.ColumnString(1));
+-  EXPECT_EQ(sql::ColumnType::kFloat, statement.GetColumnType(2));
++  EXPECT_EQ(sql::ColumnType::kInteger, statement.GetColumnType(2));
+   EXPECT_EQ(17, statement.ColumnInt(2));
+   ASSERT_TRUE(statement.Step());
+   EXPECT_EQ(3, statement.ColumnInt(0));
+@@ -556,7 +556,7 @@ TEST_F(RecoverModuleTest, NonNullFloats) {
+   ASSERT_TRUE(statement.Step());
+   EXPECT_EQ(2, statement.ColumnInt(0));
+   EXPECT_EQ("INTEGER", statement.ColumnString(1));
+-  EXPECT_EQ(sql::ColumnType::kFloat, statement.GetColumnType(2));
++  EXPECT_EQ(sql::ColumnType::kInteger, statement.GetColumnType(2));
+   EXPECT_EQ(17, statement.ColumnInt(2));
+   ASSERT_TRUE(statement.Step());
+   EXPECT_EQ(3, statement.ColumnInt(0));
