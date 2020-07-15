@@ -115,7 +115,7 @@ base::string16 Clipboard::ReadText(gin_helper::Arguments* args) {
             ui::ClipboardFormatType::GetPlainTextAType(), type,
             /* data_dst = */ nullptr)) {
       std::string result;
-      clipboard->ReadAsciiText(type, &result);
+      clipboard->ReadAsciiText(type, /* data_dst = */ nullptr, &result);
       data = base::ASCIIToUTF16(result);
     }
 #endif
