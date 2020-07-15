@@ -28,7 +28,7 @@ class ElectronAccessibilityUIMessageHandler
  public:
   explicit ElectronAccessibilityUIMessageHandler();
 
-  void RegisterMessages() override;
+  void RegisterMessages() final;
 
  private:
   void RequestNativeUITree(const base::ListValue* args);
