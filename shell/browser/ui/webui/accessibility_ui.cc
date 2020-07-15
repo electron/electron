@@ -34,7 +34,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_ui_data_source.h"
 #include "net/base/escape.h"
-#include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -131,10 +130,10 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
 }
 
 std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
-    electron::api::BaseWindow* window) {
+    electron::NativeWindow* window) {
   std::unique_ptr<base::DictionaryValue> target_data(
       new base::DictionaryValue());
-  target_data->SetInteger(kSessionIdField, window->GetID());
+  target_data->SetInteger(kSessionIdField, window->window_id());
   target_data->SetString(kNameField, window->GetTitle());
   target_data->SetString(kTypeField, kBrowser);
   return target_data;
@@ -300,12 +299,8 @@ void HandleAccessibilityRequestCallback(
   v8::HandleScope handle_scope(isolate);
 
   std::unique_ptr<base::ListValue> window_list(new base::ListValue());
-  for (auto val : electron::api::BaseWindow::GetAll(isolate)) {
-    electron::api::BaseWindow* base_window;
-    if (!gin::Converter<electron::api::BaseWindow*>::FromV8(isolate, val,
-                                                            &base_window))
-      return;
-    window_list->Append(BuildTargetDescriptor(base_window));
+  for (auto* window : electron::WindowList::GetWindows()) {
+    window_list->Append(BuildTargetDescriptor(window));
   }
 
   data.Set(kBrowsersField, std::move(window_list));
@@ -385,16 +380,11 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  for (auto val : electron::api::BaseWindow::GetAll(isolate)) {
-    electron::api::BaseWindow* base_window;
-    if (!gin::Converter<electron::api::BaseWindow*>::FromV8(isolate, val,
-                                                            &base_window))
-      return;
-    if (base_window->GetID() == window_id) {
+  for (auto* window : electron::WindowList::GetWindows()) {
+    if (window->window_id() == window_id) {
       std::unique_ptr<base::DictionaryValue> result(
-          BuildTargetDescriptor(base_window));
-      gfx::NativeWindow native_window =
-          base_window->window()->GetNativeWindow();
+          BuildTargetDescriptor(window));
+      gfx::NativeWindow native_window = window->GetNativeWindow();
       ui::AXPlatformNode* node =
           ui::AXPlatformNode::FromNativeWindow(native_window);
       result->SetKey(kTreeField,
