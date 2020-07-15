@@ -36,7 +36,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_ui_data_source.h"
 #include "net/base/escape.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "ui/accessibility/platform/ax_platform_node.h"
@@ -297,9 +296,6 @@ void HandleAccessibilityRequestCallback(
 
   data.Set(kPagesField, std::move(rvh_list));
 
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-
   std::unique_ptr<base::ListValue> window_list(new base::ListValue());
   for (auto* window : electron::WindowList::GetWindows()) {
     window_list->Append(BuildTargetDescriptor(window));
@@ -378,9 +374,6 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
       content::AccessibilityTreeFormatter::PropertyFilter::ALLOW_EMPTY);
   AddPropertyFilters(property_filters, deny,
                      content::AccessibilityTreeFormatter::PropertyFilter::DENY);
-
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {

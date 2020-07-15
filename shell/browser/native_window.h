@@ -308,7 +308,7 @@ class NativeWindow : public base::SupportsUserData,
 
   std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
-  int32_t window_id() const { return id_; }
+  int32_t window_id() const { return next_id_; }
 
  protected:
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
@@ -330,8 +330,6 @@ class NativeWindow : public base::SupportsUserData,
 
  private:
   std::unique_ptr<views::Widget> widget_;
-
-  int32_t id_ = 0;
 
   static int32_t next_id_;
 
