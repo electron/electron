@@ -47,6 +47,7 @@
 #include "content/public/common/referrer_type_converters.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -1643,8 +1644,7 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent,
-                               gin_helper::Arguments* args) {
+void WebContents::SetUserAgent(const std::string& user_agent) {
   web_contents()->SetUserAgentOverride(
       blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 }
@@ -1665,7 +1665,7 @@ v8::Local<v8::Promise> WebContents::SavePage(
   return handle;
 }
 
-void WebContents::OpenDevTools(gin_helper::Arguments* args) {
+void WebContents::OpenDevTools(gin::Arguments* args) {
   if (type_ == Type::REMOTE)
     return;
 
@@ -1888,20 +1888,21 @@ void WebContents::OnGetDefaultPrinter(
                                std::move(print_callback));
 }
 
-void WebContents::Print(gin_helper::Arguments* args) {
+void WebContents::Print(gin::Arguments* args) {
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
   base::Value settings(base::Value::Type::DICTIONARY);
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("webContents.print(): Invalid print settings specified.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid print settings specified.");
     return;
   }
 
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError(
-        "webContents.print(): Invalid optional callback provided.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid optional callback provided.");
     return;
   }
 
@@ -1961,7 +1962,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
-    args->ThrowError("webContents.print(): Invalid deviceName provided.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid deviceName provided.");
     return;
   }
 
@@ -2082,19 +2084,21 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
 }
 #endif
 
-void WebContents::AddWorkSpace(gin_helper::Arguments* args,
+void WebContents::AddWorkSpace(gin::Arguments* args,
                                const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
 }
 
-void WebContents::RemoveWorkSpace(gin_helper::Arguments* args,
+void WebContents::RemoveWorkSpace(gin::Arguments* args,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -2144,10 +2148,11 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32_t WebContents::FindInPage(gin_helper::Arguments* args) {
+uint32_t WebContents::FindInPage(gin::Arguments* args) {
   base::string16 search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
-    args->ThrowError("Must provide a non-empty search content");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must provide a non-empty search content");
     return 0;
   }
 
@@ -2341,7 +2346,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       v8::Exception::Error(gin::StringToV8(isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(gin_helper::Arguments* args) {
+void WebContents::BeginFrameSubscription(gin::Arguments* args) {
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
@@ -2360,7 +2365,7 @@ void WebContents::EndFrameSubscription() {
 }
 
 void WebContents::StartDrag(const gin_helper::Dictionary& item,
-                            gin_helper::Arguments* args) {
+                            gin::Arguments* args) {
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -2369,7 +2374,8 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   gin::Handle<NativeImage> icon;
   if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
-    args->ThrowError("Must specify non-empty 'icon' option");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must specify non-empty 'icon' option");
     return;
   }
 
@@ -2378,11 +2384,12 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    args->ThrowError("Must specify either 'file' or 'files' option");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must specify either 'file' or 'files' option");
   }
 }
 
-v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
+v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   gfx::Rect rect;
   gin_helper::Promise<gfx::Image> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -2416,7 +2423,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   return handle;
 }
 
-void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
+void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   gfx::Size size;
   bool stay_hidden = false;
 
@@ -2428,7 +2435,7 @@ void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
   web_contents()->IncrementCapturerCount(size, stay_hidden);
 }
 
-void WebContents::DecrementCapturerCount(gin_helper::Arguments* args) {
+void WebContents::DecrementCapturerCount(gin::Arguments* args) {
   bool stay_hidden = false;
 
   // get stayHidden arguments if they exist
