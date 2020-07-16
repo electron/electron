@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
+#include "base/no_destructor.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
