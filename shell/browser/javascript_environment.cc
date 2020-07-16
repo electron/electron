@@ -46,7 +46,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   {
     v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
-    gin_helper::CleanedUpAtExit::DoCleanup();
     context_.Get(isolate_)->Exit();
   }
   isolate_->Exit();
@@ -100,6 +99,11 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
   base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
   platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
+  {
+    v8::Locker locker(isolate_);
+    v8::HandleScope scope(isolate_);
+    gin_helper::CleanedUpAtExit::DoCleanup();
+  }
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}

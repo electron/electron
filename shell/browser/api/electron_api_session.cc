@@ -942,8 +942,6 @@ gin::Handle<Session> Session::CreateFrom(
   // The Sessions should never be garbage collected, since the common pattern is
   // to use partition strings, instead of using the Session object directly.
   handle->Pin(isolate);
-  ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
-      base::BindOnce([](Session* session) { delete session; }, handle.get()));
 
   App::Get()->EmitCustomEvent("session-created",
                               handle.ToV8().As<v8::Object>());
