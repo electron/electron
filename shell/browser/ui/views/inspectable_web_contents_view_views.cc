@@ -9,8 +9,8 @@
 #include <utility>
 
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/webview/webview.h"
@@ -74,12 +74,12 @@ class DevToolsWindowDelegate : public views::ClientView,
 }  // namespace
 
 InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContentsImpl* inspectable_web_contents) {
+    InspectableWebContents* inspectable_web_contents) {
   return new InspectableWebContentsViewViews(inspectable_web_contents);
 }
 
 InspectableWebContentsViewViews::InspectableWebContentsViewViews(
-    InspectableWebContentsImpl* inspectable_web_contents)
+    InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
       devtools_window_web_view_(nullptr),
       contents_web_view_(nullptr),

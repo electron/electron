@@ -235,7 +235,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   bool IsCurrentlyAudible();
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
-  v8::Local<v8::Value> GetNativeView() const;
+  v8::Local<v8::Value> GetNativeView(v8::Isolate* isolate) const;
   void IncrementCapturerCount(gin::Arguments* args);
   void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
@@ -361,7 +361,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
   // Returns the owner window.
-  v8::Local<v8::Value> GetOwnerBrowserWindow() const;
+  v8::Local<v8::Value> GetOwnerBrowserWindow(v8::Isolate* isolate) const;
 
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.
@@ -370,7 +370,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
-  v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
+  v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
+                                          const base::FilePath& file_path);
 
   // Properties.
   int32_t ID() const;
