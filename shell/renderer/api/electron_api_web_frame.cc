@@ -173,7 +173,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
-        v8::Local<v8::Value> value = reuslt[0];
+        v8::Local<v8::Value> value = result[0];
         // Either world safe results are disabled or the result was created in
         // the same world as the caller or the result is not an object and
         // therefore does not have a prototype chain to protect
