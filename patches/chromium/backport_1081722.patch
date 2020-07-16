@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: replace memcopy with memmove for overlapping copies
+
+[1081722] [Medium] [CVE-2020-6524]: Security: memcpy-param-overlap in AudioBuffer::copyFromChannel
+Backport https://chromium.googlesource.com/chromium/src/+/2be9b1c27fb97e8a82e068794fc0fba555182c03
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+index f173f1bbf32d5ba09d16b5c3f5e7755a2023f240..45fcdb53d9fe92b7256e7ac915a0fae3f23a58b5 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+@@ -255,7 +255,7 @@ void AudioBuffer::copyFromChannel(NotShared<DOMFloat32Array> destination,
+   DCHECK_LE(count, channel_data->deprecatedLengthAsUnsigned());
+   DCHECK_LE(buffer_offset + count, channel_data->deprecatedLengthAsUnsigned());
+ 
+-  memcpy(dst, src + buffer_offset, count * sizeof(*src));
++  memmove(dst, src + buffer_offset, count * sizeof(*src));
+ }
+ 
+ void AudioBuffer::copyToChannel(NotShared<DOMFloat32Array> source,
+@@ -299,7 +299,7 @@ void AudioBuffer::copyToChannel(NotShared<DOMFloat32Array> source,
+   DCHECK_LE(buffer_offset + count, channel_data->deprecatedLengthAsUnsigned());
+   DCHECK_LE(count, source.View()->deprecatedLengthAsUnsigned());
+ 
+-  memcpy(dst + buffer_offset, src, count * sizeof(*dst));
++  memmove(dst + buffer_offset, src, count * sizeof(*dst));
+ }
+ 
+ void AudioBuffer::Zero() {
