@@ -19,7 +19,7 @@ class WebContents;
 class ElectronJavaScriptDialogManager
     : public content::JavaScriptDialogManager {
  public:
-  explicit ElectronJavaScriptDialogManager();
+  ElectronJavaScriptDialogManager();
   ~ElectronJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
