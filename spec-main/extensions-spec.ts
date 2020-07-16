@@ -32,6 +32,19 @@ describe('chrome extensions', () => {
     });
   });
 
+  function fetch (contents: WebContents, url: string) {
+    return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
+  }
+
+  it('bypasses CORS in requests made from extensions', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
+    w.loadURL(`chrome-extension://${id}/bare-page.html`);
+    await emittedOnce(w.webContents, 'dom-ready');
+    await expect(fetch(w.webContents, 'https://google.com')).to.not.be.rejected;
+  });
+
   it('loads an extension', async () => {
     // NB. we have to use a persist: session (i.e. non-OTR) because the
     // extension registry is redirected to the main session. so installing an
