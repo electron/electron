@@ -182,10 +182,10 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
             !(value->IsObject() &&
               promise_.GetContext() ==
                   value.As<v8::Object>()->CreationContext()) &&
-            value->IsObject() if (should_clone_value) {
+            value->IsObject();
+        if (should_clone_value) {
           CopyResultToCallingContextAndFinalize(isolate, value);
-        }
-        else {
+        } else {
           // Right now only single results per frame is supported.
           if (callback_)
             std::move(callback_).Run(value, v8::Undefined(isolate));
@@ -196,6 +196,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
+          v8::Local<v8::Context> context = promise_.GetContext();
+          v8::Context::Scope context_scope(context);
           std::move(callback_).Run(
               v8::Undefined(isolate),
               v8::Exception::Error(
@@ -209,6 +211,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
+        v8::Local<v8::Context> context = promise_.GetContext();
+        v8::Context::Scope context_scope(context);
         std::move(callback_).Run(
             v8::Undefined(isolate),
             v8::Exception::Error(v8::String::NewFromUtf8(isolate, error_message)
