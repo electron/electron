@@ -2350,7 +2350,12 @@ void WebContents::BeginFrameSubscription(gin::Arguments* args) {
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
-  args->GetNext(&only_dirty);
+  if (args->Length() > 1) {
+    if (!args->GetNext(&only_dirty)) {
+      args->ThrowError();
+      return;
+    }
+  }
   if (!args->GetNext(&callback)) {
     args->ThrowError();
     return;
