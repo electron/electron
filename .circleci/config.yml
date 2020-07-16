@@ -1,5 +1,6 @@
 version: 2.1
-
+ test version aka edited for assignment purposes.
+ 
 parameters:
   upload-to-s3:
     type: string
@@ -139,7 +140,7 @@ env-enable-sccache: &env-enable-sccache
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
-  
+
 env-global: &env-global
   ELECTRON_OUT_DIR: Default
 
@@ -1485,7 +1486,7 @@ commands:
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
-      - *step-fix-sync-on-mac            
+      - *step-fix-sync-on-mac
       - *step-setup-env-for-build
       - *step-gn-gen-default
 
@@ -1525,7 +1526,7 @@ commands:
       - *step-maybe-generate-typescript-defs
 
       # Publish
-      - *step-electron-publish      
+      - *step-electron-publish
 
 # List of all jobs.
 jobs:
@@ -1705,7 +1706,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1717,7 +1718,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1769,7 +1770,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1783,7 +1784,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1836,7 +1837,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1850,7 +1851,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1910,7 +1911,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1923,7 +1924,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1980,7 +1981,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1992,7 +1993,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -2034,7 +2035,7 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           attach: false
-  
+
   mas-publish:
     <<: *machine-mac-large
     environment:
@@ -2045,7 +2046,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -2058,7 +2059,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
