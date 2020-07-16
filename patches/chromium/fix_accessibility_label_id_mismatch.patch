@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 14 Jul 2020 09:54:17 -0700
+Subject: Fix accessibility label ID mismatch
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/2231678.
+
+When the label was updated to use underscores, the associated jQuery
+call in accessibility.js was not likewise updated, so it would error
+with:
+
+"Uncaught TypeError: Cannot read property 'value' of null"
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2296883
+
+diff --git a/chrome/browser/resources/accessibility/accessibility.js b/chrome/browser/resources/accessibility/accessibility.js
+index d0b0b7f9b922f9c5af180e1bfb22b886b51f90f7..bfa746233310a1150382750030f565fa81e93361 100644
+--- a/chrome/browser/resources/accessibility/accessibility.js
++++ b/chrome/browser/resources/accessibility/accessibility.js
+@@ -80,7 +80,7 @@ cr.define('accessibility', function() {
+     // function with the result.
+     const requestType = element.id.split(':')[1];
+     if (data.type == 'browser') {
+-      const delay = $('native_ui_delay').value;
++      const delay = $('native-ui-delay').value;
+       setTimeout(() => {
+         chrome.send(
+             'requestNativeUITree', [{

@@ -12,6 +12,8 @@ import("//third_party/widevine/cdm/widevine.gni")
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/accessibility/accessibility_ui.cc",
+    "//chrome/browser/accessibility/accessibility_ui.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
     "//chrome/browser/crash_upload_list/crash_upload_list_crashpad.cc",
@@ -66,6 +68,7 @@ static_library("chrome") {
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
+    "//components/paint_preview/buildflags",
     "//components/proxy_config",
     "//components/security_state/content",
     "//content/public/browser",
