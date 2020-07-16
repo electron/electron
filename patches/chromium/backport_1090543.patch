@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: guard against UaF in NavigationRequest
+
+[1090543] [High]: heap-use-after-free : content::NavigationRequest::OnWillProcessResponseProcessed
+Backport https://chromium.googlesource.com/chromium/src/+/8a7c8c1affd3b03a41c6f79afa8ebce4168ded5b
+
+diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
+index 35381afde314edfad67ad6da4fe7e32111402adf..3e8b68211a3ac2042222b7bcc76ed93db4a909f5 100644
+--- a/content/browser/frame_host/navigation_request.cc
++++ b/content/browser/frame_host/navigation_request.cc
+@@ -2828,12 +2828,21 @@ void NavigationRequest::OnWillProcessResponseProcessed(
+   DCHECK_NE(NavigationThrottle::BLOCK_REQUEST, result.action());
+   DCHECK_NE(NavigationThrottle::BLOCK_REQUEST_AND_COLLAPSE, result.action());
+   if (result.action() == NavigationThrottle::PROCEED) {
++    base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
++
+     handle_state_ = WILL_PROCESS_RESPONSE;
++
+     // If the navigation is done processing the response, then it's ready to
+     // commit. Inform observers that the navigation is now ready to commit,
+     // unless it is not set to commit (204/205s/downloads).
+     if (render_frame_host_)
+       ReadyToCommitNavigation(false);
++
++    // The call above might block on showing a user dialog. The interaction of
++    // the user with this dialog might result in the WebContents owning this
++    // NavigationRequest to be destroyed. Return if this is the case.
++    if (!weak_self)
++      return;
+   } else {
+     handle_state_ = NavigationRequest::CANCELING;
+   }
