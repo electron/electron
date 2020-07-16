@@ -142,6 +142,10 @@ env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
   MAS_BUILD: 'true'
 
+env-mas-apple-silicon: &env-mas-apple-silicon
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
+  MAS_BUILD: 'true'
+
 # Misc build configuration options.
 env-enable-sccache: &env-enable-sccache
   USE_SCCACHE: true
@@ -2092,11 +2096,10 @@ jobs:
     <<: *machine-mac-large-arm
     environment:
       <<: *env-mac-large
-      <<: *env-mas
       <<: *env-testing-build
       <<: *env-ninja-status
       <<: *env-macos-build
-      <<: *env-apple-silicon
+      <<: *env-mas-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
