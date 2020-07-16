@@ -817,6 +817,11 @@ step-maybe-restore-src-cache: &step-maybe-restore-src-cache
     keys:
       - v8-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
+step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
+  restore_cache:
+    keys:
+      - v1-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+    name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will match an empty cache
@@ -896,6 +901,15 @@ step-save-src-cache: &step-save-src-cache
       - /var/portal
     key: v8-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
+step-make-src-cache-marker: &step-make-src-cache-marker
+  run:
+    name: Making src cache marker
+    command: touch .src-cache-marker
+step-save-src-cache-marker: &step-save-src-cache-marker
+  save_cache:
+    paths:
+      - .src-cache-marker
+    key: v1-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 # Check for doc only change
 step-check-for-doc-only-change: &step-check-for-doc-only-change
@@ -1001,7 +1015,8 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
 
     - *step-generate-deps-hash
     - *step-touch-sync-done
-    - maybe-restore-portaled-src-cache
+    - maybe-restore-portaled-src-cache:
+        halt-if-successful: true
     - *step-maybe-restore-git-cache
     - *step-set-git-cache-path
     # This sync call only runs if .circle-sync-done is an EMPTY file
@@ -1026,6 +1041,8 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
           sudo chown -R $(id -u):$(id -g) /var/portal
           mv ./src /var/portal
     - *step-save-src-cache
+    - *step-make-src-cache-marker
+    - *step-save-src-cache-marker
 
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
@@ -1229,12 +1246,26 @@ chromium-upgrade-branches: &chromium-upgrade-branches
 # Command Aliases
 commands:
   maybe-restore-portaled-src-cache:
+    parameters:
+      halt-if-successful:
+        type: boolean
+        default: false
     steps:
       - run:
           name: Prepare for cross-OS sync restore
           command: |
             sudo mkdir -p /var/portal
             sudo chown -R $(id -u):$(id -g) /var/portal
+      - when:
+          condition: << parameters.halt-if-successful >>
+          steps:
+            - *step-maybe-restore-src-cache-marker
+            - run:
+                name: Halt the job early if the src cache exists
+                command: |
+                  if [ -f ".src-cache-marker" ]; then
+                    circleci-agent step halt
+                  fi
       - *step-maybe-restore-src-cache
       - run:
           name: Fix the src cache restore point on macOS
