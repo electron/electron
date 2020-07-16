@@ -19,6 +19,17 @@ declare namespace Electron {
     setAppPath(path: string | null): void;
   }
 
+  type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
+
+  interface BrowserWindow {
+    _touchBar: Electron.TouchBar | null;
+    _setTouchBarItems: (items: TouchBarItemType[]) => void;
+    _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
+    _refreshTouchBarItem: (itemID: string) => void;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+  }
+
   interface ContextBridge {
     internalContextBridge: {
       contextIsolationEnabled: boolean;
@@ -27,6 +38,10 @@ declare namespace Electron {
       overrideGlobalPropertyFromIsolatedWorld(keys: string[], getter: Function, setter?: Function): void;
       isInMainWorld(): boolean;
     }
+  }
+
+  interface TouchBar {
+    _removeFromWindow: (win: BrowserWindow) => void;
   }
 
   interface WebContents {

@@ -41,6 +41,10 @@ the button in the touch bar.
 A `NativeImage` representing the button's current icon. Changing this value immediately updates the button
 in the touch bar.
 
+#### `touchBarButton.iconPosition`
+
+A `String` - Can be `left`, `right` or `overlay`.  Defaults to `overlay`.
+
 #### `touchBarButton.enabled`
 
 A `Boolean` representing whether the button is in an enabled state.
