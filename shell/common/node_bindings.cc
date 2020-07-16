@@ -221,13 +221,6 @@ void SetNodeOptions(base::Environment* env) {
   }
 }
 
-bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
-}
-
 }  // namespace
 
 namespace electron {
@@ -403,28 +396,31 @@ node::Environment* NodeBindings::CreateEnvironment(
     global.Delete("_noBrowserGlobals");
   }
 
+  node::IsolateSettings is;
+
+  // We do not want to use Node.js' message listener as it interferes with
+  // Blink's.
+  is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+  // We do not want to use the promise rejection callback that Node.js uses,
+  // because it does not send PromiseRejectionEvents to the global script
+  // context. We need to use the one Blink already provides.
+  is.flags &=
+      ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
+
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // This policy requires that microtask checkpoints be explicitly invoked.
-    // Node.js requires this.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+    // Node.js requires that microtask checkpoints be explicitly invoked.
+    is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+    is.policy = v8::MicrotasksPolicy::kScoped;
   }
 
   // This needs to be called before the inspector is initialized.
   env->InitializeDiagnostics();
 
-  // Set the callback to invoke to check if wasm code generation should be
-  // allowed.
-  context->GetIsolate()->SetAllowWasmCodeGenerationCallback(
-      AllowWasmCodeGenerationCallback);
-
-  // Generate more detailed source positions to code objects. This results in
-  // better results when mapping profiling samples to script source.
-  v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(
-      context->GetIsolate());
+  node::SetIsolateUpForNode(context->GetIsolate(), is);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
