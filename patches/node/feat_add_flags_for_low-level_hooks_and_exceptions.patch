@@ -23,52 +23,20 @@ Environment on the V8 context of blink, so no new V8 context is created.
 
 As a result, a renderer process may have multiple Node Environments in it.
 
-diff --git a/src/env.cc b/src/env.cc
-index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124 100644
---- a/src/env.cc
-+++ b/src/env.cc
-@@ -410,6 +410,12 @@ Environment::Environment(IsolateData* isolate_data,
-   // TODO(joyeecheung): deserialize when the snapshot covers the environment
-   // properties.
-   CreateProperties();
-+
-+  // TODO(addaleax): the per-isolate state should not be controlled by
-+  // a single Environment.
-+  if (g_standalone_mode) {
-+    isolate()->SetPromiseRejectCallback(task_queue::PromiseRejectCallback);
-+  }
- }
- 
- Environment::~Environment() {
 diff --git a/src/node.cc b/src/node.cc
-index 4ff7824b0011685289716d61b02427c3e264965d..2a21c6dfe74b97c0d4ca8608486f8f35c77cc831 100644
+index 4ff7824b0011685289716d61b02427c3e264965d..f2b0b1585a14eaf6ffdb69a28888b42a4928f36b 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -122,6 +122,9 @@ using v8::Undefined;
+@@ -122,6 +122,8 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
-+bool g_standalone_mode = true;
 +bool g_upstream_node_mode = true;
 +
  namespace per_process {
  
  // node_revert.h
-@@ -337,6 +340,13 @@ MaybeLocal<Value> Environment::RunBootstrapping() {
- 
-   CHECK(!has_run_bootstrapping_code());
- 
-+  if (g_standalone_mode) {
-+    isolate()->AddMessageListener(errors::PerIsolateMessageListener);
-+  }
-+  if (g_upstream_node_mode) {
-+    isolate()->SetFatalErrorHandler(OnFatalError);
-+  }
-+
-   if (BootstrapInternalLoaders().IsEmpty()) {
-     return MaybeLocal<Value>();
-   }
-@@ -733,7 +743,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -733,7 +735,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -79,7 +47,7 @@ index 4ff7824b0011685289716d61b02427c3e264965d..2a21c6dfe74b97c0d4ca8608486f8f35
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -767,6 +779,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -767,6 +771,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -88,7 +56,7 @@ index 4ff7824b0011685289716d61b02427c3e264965d..2a21c6dfe74b97c0d4ca8608486f8f35
  
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -811,6 +825,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -811,6 +817,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
@@ -97,15 +65,14 @@ index 4ff7824b0011685289716d61b02427c3e264965d..2a21c6dfe74b97c0d4ca8608486f8f35
    NativeModuleEnv::InitializeCodeCache();
  
 diff --git a/src/node.h b/src/node.h
-index 886216e2cb533e7337bc4f6816e2de796f64f81e..19d5eff164a543a38b4c77f99c2f15c30a226f77 100644
+index 886216e2cb533e7337bc4f6816e2de796f64f81e..8378553f28671e4685b4ed20279b2be5d202e527 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -211,6 +211,9 @@ namespace node {
+@@ -211,6 +211,8 @@ namespace node {
  
  class IsolateData;
  class Environment;
 +// Whether node should open some low level hooks.
-+NODE_EXTERN extern bool g_standalone_mode;
 +NODE_EXTERN extern bool g_upstream_node_mode;
  
  // TODO(addaleax): Officially deprecate this and replace it with something
