@@ -312,17 +312,23 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     name: Free up space on MacOS
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        sudo rm -rf /Library/Developer/CoreSimulator
-        sudo rm -rf $(xcode-select -p)/Platforms/AppleTVOS.platform
-        sudo rm -rf $(xcode-select -p)/Platforms/iPhoneOS.platform
-        sudo rm -rf $(xcode-select -p)/Platforms/WatchOS.platform
-        sudo rm -rf $(xcode-select -p)/Platforms/WatchSimulator.platform
-        sudo rm -rf $(xcode-select -p)/Platforms/AppleTVSimulator.platform
-        sudo rm -rf $(xcode-select -p)/Platforms/iPhoneSimulator.platform
-        sudo rm -rf ~/.rubies
-        sudo rm -rf ~/Library/Caches/Homebrew
-        sudo rm -rf /usr/local/Homebrew
+        sudo mkdir -p $TMPDIR/del-target
+        tmpify() {
+          sudo mv $1 $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
+        }
+        tmpify /Library/Developer/CoreSimulator
+        tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
+        tmpify $(xcode-select -p)/Platforms/iPhoneOS.platform
+        tmpify $(xcode-select -p)/Platforms/WatchOS.platform
+        tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
+        tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
+        tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        tmpify ~/.rubies
+        tmpify ~/Library/Caches/Homebrew
+        tmpify /usr/local/Homebrew
+        sudo rm -rf $TMPDIR/del-target
       fi
+    background: true
 
 # On macOS delete all .git directories under src/ expect for
 # third_party/angle/ because of build time generation of file
