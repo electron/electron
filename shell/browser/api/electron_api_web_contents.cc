@@ -947,7 +947,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>(this);
+    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>();
 
   return dialog_manager_.get();
 }
@@ -2878,24 +2878,25 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
 }
 
 // static
-gin::Handle<WebContents> WebContents::From(v8::Isolate* isolate,
-                                           content::WebContents* web_contents) {
+WebContents* WebContents::From(content::WebContents* web_contents) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
-  if (existing)
-    return gin::CreateHandle(isolate, static_cast<WebContents*>(existing));
-  else
-    return gin::Handle<WebContents>();
+  return static_cast<WebContents*>(existing);
 }
 
 // static
 gin::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  auto existing = From(isolate, web_contents);
-  if (!existing.IsEmpty())
-    return existing;
-  else
-    return gin::CreateHandle(isolate, new WebContents(isolate, web_contents));
+  WebContents* api_web_contents = From(web_contents);
+  if (!api_web_contents)
+    api_web_contents = new WebContents(isolate, web_contents);
+  return gin::CreateHandle(isolate, api_web_contents);
+}
+
+// static
+WebContents* WebContents::FromID(int32_t id) {
+  return FromWeakMapID(JavascriptEnvironment::GetIsolate(), id);
 }
 
 }  // namespace api

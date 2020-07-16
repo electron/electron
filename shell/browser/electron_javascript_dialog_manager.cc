@@ -27,9 +27,7 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 
 }  // namespace
 
-ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager(
-    api::WebContents* api_web_contents)
-    : api_web_contents_(api_web_contents) {}
+ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() {}
 ElectronJavaScriptDialogManager::~ElectronJavaScriptDialogManager() = default;
 
 void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
@@ -115,9 +113,11 @@ void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::RenderFrameHost* rfh,
     bool is_reload,
     DialogClosedCallback callback) {
-  bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
-  std::move(callback).Run(default_prevented, base::string16());
-  return;
+  auto* api_web_contents = api::WebContents::From(web_contents);
+  if (api_web_contents) {
+    bool default_prevented = api_web_contents->Emit("will-prevent-unload");
+    std::move(callback).Run(default_prevented, base::string16());
+  }
 }
 
 void ElectronJavaScriptDialogManager::CancelDialogs(

@@ -154,9 +154,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
 
-  // Get the V8 wrapper of |web_content|, return empty handle if not wrapped.
-  static gin::Handle<WebContents> From(v8::Isolate* isolate,
-                                       content::WebContents* web_content);
+  // Get the api::WebContents associated with |web_contents|. Returns nullptr
+  // if there is no associated wrapper.
+  static WebContents* From(content::WebContents* web_contents);
+  static WebContents* FromID(int32_t id);
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //

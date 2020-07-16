@@ -215,8 +215,7 @@ std::string DesktopCapturer::GetMediaSourceIdForWebContents(
     int32_t request_web_contents_id,
     int32_t web_contents_id) {
   std::string id;
-  auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
-      isolate, web_contents_id);
+  auto* web_contents = WebContents::FromID(web_contents_id);
 
   if (!web_contents) {
     thrower.ThrowError("Failed to find WebContents with id " +
@@ -232,9 +231,7 @@ std::string DesktopCapturer::GetMediaSourceIdForWebContents(
       content::WebContentsMediaCaptureId(main_frame->GetProcess()->GetID(),
                                          main_frame->GetRoutingID()));
 
-  auto* request_web_contents =
-      gin_helper::TrackableObject<WebContents>::FromWeakMapID(
-          isolate, request_web_contents_id);
+  auto* request_web_contents = WebContents::FromID(request_web_contents_id);
   if (request_web_contents) {
     // comment copied from
     // chrome/browser/extensions/api/desktop_capture/desktop_capture_base.cc
