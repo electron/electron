@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: update LLVMFuzzerTestOneInput() declaration in xmlparser_fuzzer
+
+[1072165] [Medium]: libjingle_xmpp_xmlparser_fuzzer: Incorrect-function-pointer-type with empty stacktrace
+Backport https://chromium.googlesource.com/chromium/src/+/34f7d701cd3a21f455a6fbccff366b6eb184fb7c
+
+diff --git a/third_party/libjingle_xmpp/xmllite/xmlparser_fuzzer.cc b/third_party/libjingle_xmpp/xmllite/xmlparser_fuzzer.cc
+index eb5ec2fe8373de6ee9f5ace8dc42463520153276..25b3950cc0b61bcf7c4f9e8a4387f32a0c56f215 100644
+--- a/third_party/libjingle_xmpp/xmllite/xmlparser_fuzzer.cc
++++ b/third_party/libjingle_xmpp/xmllite/xmlparser_fuzzer.cc
+@@ -20,7 +20,7 @@ using jingle_xmpp::XmlPrinter;
+ XmlBuilder builder;
+ XmlParser parser(&builder);
+ 
+-extern "C" int LLVMFuzzerTestOneInput(uint8_t* data, size_t size) {
++extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+   if (size < 1)
+     return 0;
+ 
