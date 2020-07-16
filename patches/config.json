@@ -9,5 +9,7 @@
 
   "src/electron/patches/node": "src/third_party/electron_node",
 
-  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
+  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib",
+
+  "src/electron/patches/pdfium": "src/third_party/pdfium"
 }
