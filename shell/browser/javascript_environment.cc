@@ -96,14 +96,14 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
-  base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
-  platform_->DrainTasks(isolate_);
-  platform_->UnregisterIsolate(isolate_);
   {
     v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
+  base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  platform_->DrainTasks(isolate_);
+  platform_->UnregisterIsolate(isolate_);
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
