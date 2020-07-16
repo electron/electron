@@ -712,9 +712,9 @@ bool App::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
-    auto api_web_contents = WebContents::From(isolate(), web_contents);
+    WebContents* api_web_contents = WebContents::From(web_contents);
     // No need to emit any event if the WebContents is not available in JS.
-    if (!api_web_contents.IsEmpty()) {
+    if (api_web_contents) {
       api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
                                        disposition, raw_features, body);
     }

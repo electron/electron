@@ -143,10 +143,9 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   auto* web_contents = content::WebContents::FromRenderFrameHost(
       content::RenderFrameHost::FromID(info->render_process_id,
                                        info->frame_id));
-  int32_t id = api::WebContents::GetIDFromWrappedClass(web_contents);
-  // id must be greater than zero.
-  if (id > 0)
-    details->Set("webContentsId", id);
+  auto* api_web_contents = WebContents::From(web_contents);
+  if (api_web_contents)
+    details->Set("webContentsId", api_web_contents->ID());
 }
 
 void ToDictionary(gin::Dictionary* details,
