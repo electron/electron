@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Thu, 16 Jul 2020 17:23:26 -0400
+Subject: Fix MIDL cross-compilation for ARM64 Win32 targets
+
+A change in dependencies means that a component with a MIDL dependency
+(third_party/iacccessible2) is now compiled for the x64 host and arm64.
+This caused problems because the host win_clang_x64 generated files
+live typically in out/<t>/win_clang_x64/gen/third_party/iaccessible2
+whereas the arm64 files lived in out/<t>/gen/third_party/iaccessible2,
+meaning that (when the path is rebased) the midl action tried to copy
+files from a missing win_clang_x64 directory in iaccessible2. Using the
+root_gen_dir instead fixes this depth mismatch.
+
+From: https://chromium-review.googlesource.com/c/chromium/src/+/2302054
+
+diff --git a/build/toolchain/win/midl.gni b/build/toolchain/win/midl.gni
+index 72e79ebaa35941b1e539d89cffdf2fea2637c8d9..9c107dbce1d79c165ab985c232e3f513559775ce 100644
+--- a/build/toolchain/win/midl.gni
++++ b/build/toolchain/win/midl.gni
+@@ -55,7 +55,7 @@ template("midl") {
+   } else {
+     # midl.py expects 'gen' to be replaced with 'midl'.
+     generated_dir = rebase_path("//third_party/win_build_output") + "/midl/" +
+-                    rebase_path(rebase_path(out_dir, root_build_dir), "gen")
++                    rebase_path(out_dir, root_gen_dir)
+   }
+ 
+   if (defined(invoker.dynamic_guid)) {
