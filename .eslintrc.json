@@ -28,6 +28,7 @@
   },
   "globals": {
     "standardScheme": "readonly",
+    "globalThis": "readonly",
     "BUILDFLAG": "readonly",
     "ENABLE_DESKTOP_CAPTURER": "readonly",
     "ENABLE_REMOTE_MODULE": "readonly",

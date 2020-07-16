@@ -138,9 +138,9 @@ module.exports = ({
       new AccessDependenciesPlugin(),
       ...(targetDeletesNodeGlobals ? [
         new webpack.ProvidePlugin({
-          process: ['@electron/internal/renderer/webpack-provider', 'process'],
-          global: ['@electron/internal/renderer/webpack-provider', '_global'],
-          Buffer: ['@electron/internal/renderer/webpack-provider', 'Buffer']
+          process: ['@electron/internal/common/webpack-provider', 'process'],
+          global: ['@electron/internal/common/webpack-provider', '_global'],
+          Buffer: ['@electron/internal/common/webpack-provider', 'Buffer']
         })
       ] : []),
       new webpack.ProvidePlugin({
