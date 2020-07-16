@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: adding a new MSAN check to validate if the skImage is
+ initialized
+
+[1052492] [Medium]: Use-of-uninitialized-value in blink::ImageDataBuffer::ImageDataBuffer
+Backport https://chromium.googlesource.com/chromium/src/+/bad271a777cf623ddcd6908e9de6ec5bbcd51f6a
+
+diff --git a/third_party/blink/renderer/platform/graphics/image_data_buffer.cc b/third_party/blink/renderer/platform/graphics/image_data_buffer.cc
+index 8e1255ce43b4ea1d717dae8c790e2c4286505a6e..525ee3ad4ab6e9bb0b3f8615c12a00fde70905d3 100644
+--- a/third_party/blink/renderer/platform/graphics/image_data_buffer.cc
++++ b/third_party/blink/renderer/platform/graphics/image_data_buffer.cc
+@@ -53,6 +53,13 @@ ImageDataBuffer::ImageDataBuffer(scoped_refptr<StaticBitmapImage> image) {
+   retained_image_ = image->PaintImageForCurrentFrame().GetSkImage();
+   if (!retained_image_)
+     return;
++#if defined(MEMORY_SANITIZER)
++  // Test if retained_image has an initialized pixmap.
++  SkPixmap pixmap;
++  if (retained_image_->peekPixels(&pixmap))
++    MSAN_CHECK_MEM_IS_INITIALIZED(pixmap.addr(), pixmap.computeByteSize());
++#endif
++
+   if (retained_image_->isTextureBacked() ||
+       retained_image_->isLazyGenerated() ||
+       retained_image_->alphaType() != kUnpremul_SkAlphaType) {
