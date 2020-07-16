@@ -301,7 +301,6 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
@@ -398,16 +397,6 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   node::IsolateSettings is;
 
-  // We do not want to use Node.js' message listener as it interferes with
-  // Blink's.
-  is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
-
-  // We do not want to use the promise rejection callback that Node.js uses,
-  // because it does not send PromiseRejectionEvents to the global script
-  // context. We need to use the one Blink already provides.
-  is.flags &=
-      ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
-
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
@@ -415,6 +404,16 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
     is.policy = v8::MicrotasksPolicy::kScoped;
+
+    // We do not want to use Node.js' message listener as it interferes with
+    // Blink's.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+    // We do not want to use the promise rejection callback that Node.js uses,
+    // because it does not send PromiseRejectionEvents to the global script
+    // context. We need to use the one Blink already provides.
+    is.flags &=
+        ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
   }
 
   // This needs to be called before the inspector is initialized.
