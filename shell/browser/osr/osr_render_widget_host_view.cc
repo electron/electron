@@ -487,7 +487,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
 }
 
 void OffScreenRenderWidgetHostView::GetScreenInfo(
-    content::ScreenInfo* screen_info) {
+    blink::ScreenInfo* screen_info) {
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
