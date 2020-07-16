@@ -594,7 +594,7 @@ void SetIsolatedWorldInfo(v8::Local<v8::Value> window,
       blink::WebString::FromUTF8(origin_url));
   info.content_security_policy = blink::WebString::FromUTF8(security_policy);
   info.human_readable_name = blink::WebString::FromUTF8(name);
-  render_frame->GetWebFrame()->SetIsolatedWorldInfo(world_id, info);
+  blink::SetIsolatedWorldInfo(world_id, info);
 }
 
 blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
