@@ -49,10 +49,10 @@ index ccac671f0e7e56c731cb9bd92bad788271419a7f..cfea0e5dbc28f1a4cdfea36372ce7f34
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ce02ee0dba24c4b0e75a1420a3bde7e4693bca60..cf30c66d675beaa88ab42157bc1b4c0568e1a291 100644
+index a5c25e290ef79c33117e14c02c05c86ebd558527..b21b39385ba3a15546eb38a26cb14a317bb64227 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -471,6 +471,7 @@ URLLoader::URLLoader(
+@@ -472,6 +472,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index ce02ee0dba24c4b0e75a1420a3bde7e4693bca60..cf30c66d675beaa88ab42157bc1b4c05
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -534,6 +535,11 @@ URLLoader::URLLoader(
+@@ -535,6 +536,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index ce02ee0dba24c4b0e75a1420a3bde7e4693bca60..cf30c66d675beaa88ab42157bc1b4c05
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1061,7 +1067,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1062,7 +1068,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index ce02ee0dba24c4b0e75a1420a3bde7e4693bca60..cf30c66d675beaa88ab42157bc1b4c05
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1077,11 +1083,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1078,11 +1084,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,10 +108,10 @@ index ce02ee0dba24c4b0e75a1420a3bde7e4693bca60..cf30c66d675beaa88ab42157bc1b4c05
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 1c8a9ce4ba5f41cb7a4d415337ff087894fee3df..1ea5d86177ff568a13e3d10767316ae496298d10 100644
+index 9f4d85ca7913c8de998e18560c6755cec51135d8..04748acc74ce55a335abb1865bb9bef9ae7a33c6 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -115,6 +115,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -116,6 +116,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
        base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
        base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
        mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -119,7 +119,7 @@ index 1c8a9ce4ba5f41cb7a4d415337ff087894fee3df..1ea5d86177ff568a13e3d10767316ae4
        mojom::OriginPolicyManager* origin_policy_manager,
        std::unique_ptr<TrustTokenRequestHelperFactory>
            trust_token_helper_factory,
-@@ -456,6 +457,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -457,6 +458,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
    mojo::Remote<mojom::TrustedHeaderClient> header_client_;

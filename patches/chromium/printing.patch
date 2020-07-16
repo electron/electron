@@ -445,7 +445,7 @@ index 8159a61d2707082461a419a344487bbd460a1d29..d5ef9c6a7064885deb7d27518448cc67
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 2a97938d20b69760b48c51a6712d646cd47339d7..fc39f8874402904021e804a5b7fc754709f25353 100644
+index 3fe2858af7b1f5c3ca45b9a421393dea31ca25a2..3d2938b8fe8552054684e9cc467ac5022d3ef83d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -41,6 +41,7 @@

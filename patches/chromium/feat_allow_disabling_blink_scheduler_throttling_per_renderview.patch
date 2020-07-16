@@ -6,10 +6,10 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index ac344bb71b434861b4b800e5a36622f073e500b6..53806f887ee62b4c08a1b542c0e3aa4e65a812dd 100644
+index d34b836b842cb5c82f79bf2aa9d8334077422cbf..c56d26581500de448ded221a7b872b1d7d365aac 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -512,6 +512,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -511,6 +511,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -61,10 +61,10 @@ index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f8
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 272b613f658ef4bfa3869cbd17d342ceef665142..461310b69c823546f99d99b087b9ea005167a883 100644
+index 062744e27fcf6c54539cc8849a7a40510da4c7a7..5a54ce805a1953957bba378e586d359306fcb9b9 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1170,6 +1170,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1169,6 +1169,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -73,7 +73,7 @@ index 272b613f658ef4bfa3869cbd17d342ceef665142..461310b69c823546f99d99b087b9ea00
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1666,6 +1668,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1665,6 +1667,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  
