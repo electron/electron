@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:52:09 -0700
+Subject: chore: disable failing blink font DCHECK on Big Sur
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
+index d6abddab51bc95768467b3d84a55e07dec262f26..0678c9d30e162beb9fec6f98ae82e31b042723cf 100644
+--- a/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
++++ b/third_party/blink/renderer/platform/fonts/mac/font_platform_data_mac.mm
+@@ -59,10 +59,10 @@ bool VariableAxisChangeEffective(SkTypeface* typeface,
+     return false;
+ 
+   SkFontParameters::Variation::Axis axes_parameters[num_axes];
+-  int returned_axes =
+-      typeface->getVariationDesignParameters(axes_parameters, num_axes);
+-  DCHECK_EQ(num_axes, returned_axes);
+-  DCHECK_GE(num_axes, 0);
++  // int returned_axes =
++  //     typeface->getVariationDesignParameters(axes_parameters, num_axes);
++  // DCHECK_EQ(num_axes, returned_axes);
++  // DCHECK_GE(num_axes, 0);
+ 
+   float clamped_new_value = new_value;
+   for (auto& axis_parameters : axes_parameters) {

@@ -84,6 +84,11 @@ machine-mac-large: &machine-mac-large
   macos:
     xcode: "11.5.0"
 
+machine-mac-large-arm: &machine-mac-large-arm
+  resource_class: large
+  macos:
+    xcode: "12.0.0-UA"
+
 # Build configurations options.
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
@@ -123,6 +128,10 @@ env-arm: &env-arm
   BUILD_NATIVE_MKSNAPSHOT: 1
   TARGET_ARCH: arm
 
+env-apple-silicon: &env-apple-silicon
+  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
+  TARGET_ARCH: arm64
+
 env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
@@ -131,6 +140,10 @@ env-arm64: &env-arm64
 
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
+  MAS_BUILD: 'true'
+
+env-mas-apple-silicon: &env-mas-apple-silicon
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
   MAS_BUILD: 'true'
 
 # Misc build configuration options.
@@ -751,9 +764,13 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "$TARGET_ARCH" == "arm64" ]; then
           export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
         fi
-        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
-        cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default        
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
+        if [ "`uname`" == "Linux" ]; then
+          cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
+        elif [ "`uname`" == "Darwin" ]; then
+          cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.dylib" out/Default
+        fi
         python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
@@ -772,8 +789,13 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       # Only run for non-fork prs
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
-        echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
-        node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        if [ "`uname`" == "Darwin" ]; then
+          echo "Triggering electron-arm2-testing build on Azure DevOps"  
+          node electron/script/release/ci-release-build.js --job=electron-arm2-testing --ci=DevOps --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        else
+          echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"  
+          node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+        fi
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
@@ -1964,7 +1986,7 @@ jobs:
           attach: true
           checkout: false
 
-  osx-testing:
+  osx-testing-x64:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -1979,22 +2001,14 @@ jobs:
           checkout-and-assume-cache: true
           attach: false
 
-  osx-testing-gn-check:
+  osx-testing-x64-gn-check:
     <<: *machine-mac
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
-  osx-chromedriver:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
-
-  osx-release:
+  osx-release-x64:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -2008,7 +2022,7 @@ jobs:
           checkout-and-assume-cache: true
           attach: false
 
-  osx-publish:
+  osx-publish-x64:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
@@ -2021,7 +2035,7 @@ jobs:
           attach: false
           checkout: true
 
-  osx-publish-skip-checkout:
+  osx-publish-x64-skip-checkout:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
@@ -2033,7 +2047,23 @@ jobs:
           attach: true
           checkout: false
 
-  mas-testing:
+  osx-testing-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      <<: *env-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: false
+
+  mas-testing-x64:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -2049,7 +2079,7 @@ jobs:
           checkout-and-assume-cache: true
           attach: false
 
-  mas-testing-gn-check:
+  mas-testing-x64-gn-check:
     <<: *machine-mac
     environment:
       <<: *env-machine-mac
@@ -2098,6 +2128,22 @@ jobs:
       - electron-publish:  
           attach: true
           checkout: false
+
+  mas-testing-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      <<: *env-mas-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: false
 
   # Layer 3: Tests.
   linux-x64-unittests:
@@ -2222,7 +2268,7 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  osx-testing-tests:
+  osx-testing-x64-tests:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -2230,7 +2276,7 @@ jobs:
     parallelism: 2
     <<: *steps-tests
 
-  osx-release-tests:
+  osx-release-x64-tests:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -2245,7 +2291,7 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  mas-testing-tests:
+  mas-testing-x64-tests:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large
@@ -2309,7 +2355,7 @@ jobs:
     steps:
       - *step-maybe-notify-slack-success
 
-  osx-release-summary:
+  osx-release-x64-summary:
     <<: *machine-mac
     environment:
       <<: *env-machine-mac
@@ -2374,7 +2420,7 @@ workflows:
   publish-osx:
     when: << pipeline.parameters.run-osx-publish >>
     jobs:
-    - osx-publish:
+    - osx-publish-x64:
         context: release-env
 
   publish-mas:
@@ -2387,7 +2433,7 @@ workflows:
     when: << pipeline.parameters.run-macos-publish >>
     jobs:
     - mac-checkout
-    - osx-publish-skip-checkout:
+    - osx-publish-x64-skip-checkout:
         requires:
           - mac-checkout
     - mas-publish-skip-checkout:
@@ -2445,29 +2491,37 @@ workflows:
       - mac-checkout-fast
       - mac-checkout-and-save-cache
 
-      - osx-testing:
+      - osx-testing-x64:
           requires:
             - mac-checkout-and-save-cache
 
-      - osx-testing-gn-check:
+      - osx-testing-x64-gn-check:
           requires:
             - mac-checkout-fast
 
-      - osx-testing-tests:
+      - osx-testing-x64-tests:
           requires:
-            - osx-testing
+            - osx-testing-x64
 
-      - mas-testing:
+      - osx-testing-arm64:
           requires:
             - mac-checkout-and-save-cache
 
-      - mas-testing-gn-check:
+      - mas-testing-x64:
+          requires:
+            - mac-checkout-and-save-cache
+
+      - mas-testing-x64-gn-check:
           requires:
             - mac-checkout-fast
 
-      - mas-testing-tests:
+      - mas-testing-x64-tests:
           requires:
-            - mas-testing
+            - mas-testing-x64
+
+      - mas-testing-arm64:
+          requires:
+            - mac-checkout-and-save-cache
 
   nightly-linux-release-test:
     triggers:
@@ -2531,19 +2585,19 @@ workflows:
       - mac-checkout-fast
       - mac-checkout-and-save-cache
 
-      - osx-release:
+      - osx-release-x64:
           requires:
             - mac-checkout-and-save-cache
-      - osx-release-tests:
+      - osx-release-x64-tests:
           requires:
-            - osx-release
+            - osx-release-x64
       - osx-verify-ffmpeg:
           requires:
-            - osx-release
-      - osx-release-summary:
+            - osx-release-x64
+      - osx-release-x64-summary:
           requires:
-          - osx-release
-          - osx-release-tests
+          - osx-release-x64
+          - osx-release-x64-tests
           - osx-verify-ffmpeg
 
       - mas-release:
