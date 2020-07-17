@@ -1,0 +1,218 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: guard against missing CommandLineAPIScope
+
+[986051] [Medium] [CVE-2020-6518]: Security: Use-after-free of CommandLineAPIScope object
+Backport https://chromium.googlesource.com/v8/v8.git/+/3b60af8669916f3b019745f19144392f6b4f6b12
+
+diff --git a/src/inspector/v8-console.cc b/src/inspector/v8-console.cc
+index f4d0ffa0550a941e318ec595a74403e2e78d5396..da93cbedae708c48149ef8ae3354f5c7b872ef0b 100644
+--- a/src/inspector/v8-console.cc
++++ b/src/inspector/v8-console.cc
+@@ -783,15 +783,11 @@ static bool isCommandLineAPIGetter(const String16& name) {
+ 
+ void V8Console::CommandLineAPIScope::accessorGetterCallback(
+     v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
+-  CommandLineAPIScope* scope = static_cast<CommandLineAPIScope*>(
+-      info.Data().As<v8::External>()->Value());
+-  DCHECK(scope);
+-
++  CommandLineAPIScope* scope = *static_cast<CommandLineAPIScope**>(
++      info.Data().As<v8::ArrayBuffer>()->GetBackingStore()->Data());
+   v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+-  if (scope->m_cleanup) {
+-    bool removed = info.Holder()->Delete(context, name).FromMaybe(false);
+-    DCHECK(removed);
+-    USE(removed);
++  if (scope == nullptr) {
++    USE(info.Holder()->Delete(context, name).FromMaybe(false));
+     return;
+   }
+   v8::Local<v8::Object> commandLineAPI = scope->m_commandLineAPI;
+@@ -815,16 +811,14 @@ void V8Console::CommandLineAPIScope::accessorGetterCallback(
+ void V8Console::CommandLineAPIScope::accessorSetterCallback(
+     v8::Local<v8::Name> name, v8::Local<v8::Value> value,
+     const v8::PropertyCallbackInfo<void>& info) {
+-  CommandLineAPIScope* scope = static_cast<CommandLineAPIScope*>(
+-      info.Data().As<v8::External>()->Value());
++  CommandLineAPIScope* scope = *static_cast<CommandLineAPIScope**>(
++      info.Data().As<v8::ArrayBuffer>()->GetBackingStore()->Data());
++  if (scope == nullptr) return;
+   v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+   if (!info.Holder()->Delete(context, name).FromMaybe(false)) return;
+   if (!info.Holder()->CreateDataProperty(context, name, value).FromMaybe(false))
+     return;
+-  bool removed =
+-      scope->m_installedMethods->Delete(context, name).FromMaybe(false);
+-  DCHECK(removed);
+-  USE(removed);
++  USE(scope->m_installedMethods->Delete(context, name).FromMaybe(false));
+ }
+ 
+ V8Console::CommandLineAPIScope::CommandLineAPIScope(
+@@ -833,14 +827,15 @@ V8Console::CommandLineAPIScope::CommandLineAPIScope(
+     : m_context(context),
+       m_commandLineAPI(commandLineAPI),
+       m_global(global),
+-      m_installedMethods(v8::Set::New(context->GetIsolate())),
+-      m_cleanup(false) {
++      m_installedMethods(v8::Set::New(context->GetIsolate())) {
+   v8::MicrotasksScope microtasksScope(context->GetIsolate(),
+                                       v8::MicrotasksScope::kDoNotRunMicrotasks);
+   v8::Local<v8::Array> names;
+   if (!m_commandLineAPI->GetOwnPropertyNames(context).ToLocal(&names)) return;
+-  v8::Local<v8::External> externalThis =
+-      v8::External::New(context->GetIsolate(), this);
++  m_thisReference =
++      v8::ArrayBuffer::New(context->GetIsolate(), sizeof(CommandLineAPIScope*));
++  *static_cast<CommandLineAPIScope**>(
++      m_thisReference->GetBackingStore()->Data()) = this;
+   for (uint32_t i = 0; i < names->Length(); ++i) {
+     v8::Local<v8::Value> name;
+     if (!names->Get(context, i).ToLocal(&name) || !name->IsName()) continue;
+@@ -851,7 +846,7 @@ V8Console::CommandLineAPIScope::CommandLineAPIScope(
+              ->SetAccessor(context, v8::Local<v8::Name>::Cast(name),
+                            CommandLineAPIScope::accessorGetterCallback,
+                            CommandLineAPIScope::accessorSetterCallback,
+-                           externalThis, v8::DEFAULT, v8::DontEnum,
++                           m_thisReference, v8::DEFAULT, v8::DontEnum,
+                            v8::SideEffectType::kHasNoSideEffect)
+              .FromMaybe(false)) {
+       bool removed = m_installedMethods->Delete(context, name).FromMaybe(false);
+@@ -865,7 +860,8 @@ V8Console::CommandLineAPIScope::CommandLineAPIScope(
+ V8Console::CommandLineAPIScope::~CommandLineAPIScope() {
+   v8::MicrotasksScope microtasksScope(m_context->GetIsolate(),
+                                       v8::MicrotasksScope::kDoNotRunMicrotasks);
+-  m_cleanup = true;
++  *static_cast<CommandLineAPIScope**>(
++      m_thisReference->GetBackingStore()->Data()) = nullptr;
+   v8::Local<v8::Array> names = m_installedMethods->AsArray();
+   for (uint32_t i = 0; i < names->Length(); ++i) {
+     v8::Local<v8::Value> name;
+diff --git a/src/inspector/v8-console.h b/src/inspector/v8-console.h
+index 4d38c51a2a28d6871ab00b21bde0dfb2c0605357..5875164595f78992d50c23fe90884269178ab986 100644
+--- a/src/inspector/v8-console.h
++++ b/src/inspector/v8-console.h
+@@ -42,7 +42,7 @@ class V8Console : public v8::debug::ConsoleDelegate {
+     v8::Local<v8::Object> m_commandLineAPI;
+     v8::Local<v8::Object> m_global;
+     v8::Local<v8::Set> m_installedMethods;
+-    bool m_cleanup;
++    v8::Local<v8::ArrayBuffer> m_thisReference;
+ 
+     DISALLOW_COPY_AND_ASSIGN(CommandLineAPIScope);
+   };
+diff --git a/test/inspector/runtime/regress-986051-expected.txt b/test/inspector/runtime/regress-986051-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad2f3d8209532a03acf39974faca6c36adf4b78c
+--- /dev/null
++++ b/test/inspector/runtime/regress-986051-expected.txt
+@@ -0,0 +1,76 @@
++Regression test for 986051
++Regression test
++{
++    id : <messageId>
++    result : {
++        result : {
++            description : 1
++            type : number
++            value : 1
++        }
++    }
++}
++{
++    id : <messageId>
++    result : {
++        exceptionDetails : {
++            columnNumber : 1
++            exception : {
++                className : ReferenceError
++                description : ReferenceError: $0 is not defined     at <anonymous>:1:1
++                objectId : <objectId>
++                subtype : error
++                type : object
++            }
++            exceptionId : <exceptionId>
++            lineNumber : 1
++            scriptId : <scriptId>
++            stackTrace : {
++                callFrames : [
++                    [0] : {
++                        columnNumber : 0
++                        functionName : 
++                        lineNumber : 0
++                        scriptId : <scriptId>
++                        url : 
++                    }
++                ]
++            }
++            text : Uncaught
++        }
++        result : {
++            className : ReferenceError
++            description : ReferenceError: $0 is not defined     at <anonymous>:1:1
++            objectId : <objectId>
++            subtype : error
++            type : object
++        }
++    }
++}
++{
++    id : <messageId>
++    result : {
++        result : {
++            className : global
++            description : global
++            objectId : <objectId>
++            type : object
++        }
++    }
++}
++{
++    id : <messageId>
++    result : {
++        result : {
++            type : undefined
++        }
++    }
++}
++{
++    id : <messageId>
++    result : {
++        result : {
++            type : undefined
++        }
++    }
++}
+diff --git a/test/inspector/runtime/regress-986051.js b/test/inspector/runtime/regress-986051.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7c6842a36cf23185178ec99d97a488e88ca30910
+--- /dev/null
++++ b/test/inspector/runtime/regress-986051.js
+@@ -0,0 +1,25 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let {Protocol} = InspectorTest.start(
++  "Regression test for 986051");
++
++Protocol.Runtime.enable();
++(async function() {
++  InspectorTest.log("Regression test");
++  evaluateRepl('1', true);
++  evaluateRepl('$0', false);
++  evaluateRepl('Object.defineProperty(globalThis, "$0", {configurable: false});', true);
++  evaluateRepl('$0', true);
++  evaluateRepl('$0', false);
++  InspectorTest.completeTest();
++})();
++
++async function evaluateRepl(expression, includeCommandLineAPI) {
++  InspectorTest.logMessage(await Protocol.Runtime.evaluate({
++    expression,
++    includeCommandLineAPI,
++    replMode: true,
++  }));
++}
