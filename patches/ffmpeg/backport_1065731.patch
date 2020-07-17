@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: check return value from avio_read()
+
+[1065731] [Medium]: audio_decoder_fuzzer: Use-of-uninitialized-value in amr_read_header
+Backport https://chromium.googlesource.com/chromium/third_party/ffmpeg.git/+/5b967f56b6d85f62446836fc8ef64d0dcfcbda17
+
+diff --git a/libavformat/amr.c b/libavformat/amr.c
+index 42840a50a300ff23d6ddfa56a1410770f0fdbd59..a963eb3ded78671e48d5bc36397c39281f431d21 100644
+--- a/libavformat/amr.c
++++ b/libavformat/amr.c
+@@ -90,13 +90,15 @@ static int amr_read_header(AVFormatContext *s)
+     AVStream *st;
+     uint8_t header[9];
+ 
+-    avio_read(pb, header, 6);
++    if (avio_read(pb, header, 6) != 6)
++        return AVERROR_INVALIDDATA;
+ 
+     st = avformat_new_stream(s, NULL);
+     if (!st)
+         return AVERROR(ENOMEM);
+     if (memcmp(header, AMR_header, 6)) {
+-        avio_read(pb, header + 6, 3);
++        if (avio_read(pb, header + 6, 3) != 3)
++            return AVERROR_INVALIDDATA;
+         if (memcmp(header, AMRWB_header, 9)) {
+             return -1;
+         }
