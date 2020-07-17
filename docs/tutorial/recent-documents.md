@@ -47,7 +47,6 @@ You can add menu items to access and clear recent documents by adding the follow
 
 ```javascript
 {
-{
    "submenu":[
       {
          "label":"Open Recent",
