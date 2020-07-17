@@ -94,12 +94,14 @@ describeFn('autoUpdater behavior', function () {
     return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
   };
 
-  const withTempDirectory = async (fn: (dir: string) => Promise<void>) => {
+  const withTempDirectory = async (fn: (dir: string) => Promise<void>, autoCleanUp = true) => {
     const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-'));
     try {
       await fn(dir);
     } finally {
-      cp.spawnSync('rm', ['-r', dir]);
+      if (autoCleanUp) {
+        cp.spawnSync('rm', ['-r', dir]);
+      }
     }
   };
 
@@ -111,6 +113,36 @@ describeFn('autoUpdater behavior', function () {
       throw err;
     }
   };
+
+  const cachedZips: Record<string, string> = {};
+
+  const getOrCreateUpdateZipPath = async (version: string, fixture: string) => {
+    const key = `${version}-${fixture}`;
+    if (!cachedZips[key]) {
+      let updateZipPath: string;
+      await withTempDirectory(async (dir) => {
+        const secondAppPath = await copyApp(dir, fixture);
+        const appPJPath = path.resolve(secondAppPath, 'Contents', 'Resources', 'app', 'package.json');
+        await fs.writeFile(
+          appPJPath,
+          (await fs.readFile(appPJPath, 'utf8')).replace('1.0.0', version)
+        );
+        await signApp(secondAppPath);
+        updateZipPath = path.resolve(dir, 'update.zip');
+        await spawn('zip', ['-r', '--symlinks', updateZipPath, './'], {
+          cwd: dir
+        });
+      }, false);
+      cachedZips[key] = updateZipPath!;
+    }
+    return cachedZips[key];
+  };
+
+  after(() => {
+    for (const version of Object.keys(cachedZips)) {
+      cp.spawnSync('rm', ['-r', path.dirname(cachedZips[version])]);
+    }
+  });
 
   it('should fail to set the feed URL when the app is not signed', async () => {
     await withTempDirectory(async (dir) => {
@@ -150,12 +182,14 @@ describeFn('autoUpdater behavior', function () {
       });
     });
 
-    afterEach((done) => {
+    afterEach(async () => {
       if (httpServer) {
-        httpServer.close(() => {
-          httpServer = null as any;
-          server = null as any;
-          done();
+        await new Promise(resolve => {
+          httpServer.close(() => {
+            httpServer = null as any;
+            server = null as any;
+            resolve();
+          });
         });
       }
     });
@@ -173,6 +207,23 @@ describeFn('autoUpdater behavior', function () {
           expect(requests).to.have.lengthOf(1);
           expect(requests[0]).to.have.property('url', '/update-check');
           expect(requests[0].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should hit the update endpoint with customer headers when checkForUpdates is called', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copyApp(dir, 'check-with-headers');
+        await signApp(appPath);
+        server.get('/update-check', (req, res) => {
+          res.status(204).send();
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult.code).to.equal(0);
+          expect(requests).to.have.lengthOf(1);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[0].header('x-test')).to.equal('this-is-a-test');
         });
       });
     });
@@ -205,57 +256,145 @@ describeFn('autoUpdater behavior', function () {
       });
     });
 
-    it('should hit the download endpoint when an update is available and update successfully when the zip is provided', async () => {
+    const withUpdatableApp = async (opts: {
+      nextVersion: string;
+      startFixture: string;
+      endFixture: string;
+    }, fn: (appPath: string, zipPath: string) => Promise<void>) => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyApp(dir, 'update');
+        const appPath = await copyApp(dir, opts.startFixture);
         await signApp(appPath);
 
-        // Prepare update
-        await withTempDirectory(async (dir2) => {
-          const secondAppPath = await copyApp(dir2, 'update');
-          const appPJPath = path.resolve(secondAppPath, 'Contents', 'Resources', 'app', 'package.json');
-          await fs.writeFile(
-            appPJPath,
-            (await fs.readFile(appPJPath, 'utf8')).replace('1.0.0', '2.0.0')
-          );
-          await signApp(secondAppPath);
-          const updateZipPath = path.resolve(dir2, 'update.zip');
-          await spawn('zip', ['-r', '--symlinks', updateZipPath, './'], {
-            cwd: dir2
-          });
+        const updateZipPath = await getOrCreateUpdateZipPath(opts.nextVersion, opts.endFixture);
 
-          server.get('/update-file', (req, res) => {
-            res.download(updateZipPath);
-          });
-          server.get('/update-check', (req, res) => {
-            res.json({
-              url: `http://localhost:${port}/update-file`,
-              name: 'My Release Name',
-              notes: 'Theses are some release notes innit',
-              pub_date: (new Date()).toString()
-            });
-          });
-          const relaunchPromise = new Promise((resolve) => {
-            server.get('/update-check/updated/:version', (req, res) => {
-              res.status(204).send();
-              resolve();
-            });
-          });
-          const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
-          logOnError(launchResult, () => {
-            expect(launchResult).to.have.property('code', 0);
-            expect(launchResult.out).to.include('Update Downloaded');
-            expect(requests).to.have.lengthOf(2);
-            expect(requests[0]).to.have.property('url', '/update-check');
-            expect(requests[1]).to.have.property('url', '/update-file');
-            expect(requests[0].header('user-agent')).to.include('Electron/');
-            expect(requests[1].header('user-agent')).to.include('Electron/');
-          });
+        await fn(appPath, updateZipPath);
+      });
+    };
 
-          await relaunchPromise;
-          expect(requests).to.have.lengthOf(3);
-          expect(requests[2]).to.have.property('url', '/update-check/updated/2.0.0');
-          expect(requests[2].header('user-agent')).to.include('Electron/');
+    it('should hit the download endpoint when an update is available and update successfully when the zip is provided', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const relaunchPromise = new Promise((resolve) => {
+          server.get('/update-check/updated/:version', (req, res) => {
+            res.status(204).send();
+            resolve();
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 0);
+          expect(launchResult.out).to.include('Update Downloaded');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+
+        await relaunchPromise;
+        expect(requests).to.have.lengthOf(3);
+        expect(requests[2]).to.have.property('url', '/update-check/updated/2.0.0');
+        expect(requests[2].header('user-agent')).to.include('Electron/');
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and update successfully when the zip is provided with JSON update mode', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update-json',
+        endFixture: 'update-json'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            currentRelease: '2.0.0',
+            releases: [
+              {
+                version: '2.0.0',
+                updateTo: {
+                  version: '2.0.0',
+                  url: `http://localhost:${port}/update-file`,
+                  name: 'My Release Name',
+                  notes: 'Theses are some release notes innit',
+                  pub_date: (new Date()).toString()
+                }
+              }
+            ]
+          });
+        });
+        const relaunchPromise = new Promise((resolve) => {
+          server.get('/update-check/updated/:version', (req, res) => {
+            res.status(204).send();
+            resolve();
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 0);
+          expect(launchResult.out).to.include('Update Downloaded');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+
+        await relaunchPromise;
+        expect(requests).to.have.lengthOf(3);
+        expect(requests[2]).to.have.property('url', '/update-check/updated/2.0.0');
+        expect(requests[2].header('user-agent')).to.include('Electron/');
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and not update in JSON update mode when the currentRelease is older than the current version', async () => {
+      await withUpdatableApp({
+        nextVersion: '0.1.0',
+        startFixture: 'update-json',
+        endFixture: 'update-json'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            currentRelease: '0.1.0',
+            releases: [
+              {
+                version: '0.1.0',
+                updateTo: {
+                  version: '0.1.0',
+                  url: `http://localhost:${port}/update-file`,
+                  name: 'My Release Name',
+                  notes: 'Theses are some release notes innit',
+                  pub_date: (new Date()).toString()
+                }
+              }
+            ]
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('No update available');
+          expect(requests).to.have.lengthOf(1);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
         });
       });
     });
