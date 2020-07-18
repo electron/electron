@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: use parseHTMLSubset() in chrome://histograms.
+
+[1073409] [Low] [CVE-2020-6535]: XSS on chrome://histograms/ with a compromised renderer
+Backport https://chromium.googlesource.com/chromium/src/+/9a31a7ea51e0c7548f4ed77f5007e4a924ef0fbb
+
+diff --git a/content/browser/resources/histograms/BUILD.gn b/content/browser/resources/histograms/BUILD.gn
+index 9b67dcd52b2599855eb21b86b29a294094b22003..08c7f14373fa097bf540c60301d3802685affe0e 100644
+--- a/content/browser/resources/histograms/BUILD.gn
++++ b/content/browser/resources/histograms/BUILD.gn
+@@ -13,6 +13,7 @@ js_type_check("closure_compile") {
+ js_library("histograms_internals") {
+   deps = [
+     "//ui/webui/resources/js:cr",
++    "//ui/webui/resources/js:parse_html_subset",
+     "//ui/webui/resources/js:util",
+   ]
+ }
+diff --git a/content/browser/resources/histograms/histograms_internals.html b/content/browser/resources/histograms/histograms_internals.html
+index 7a9c448ce124b87fe1e2b17834ea527a3f89a18d..7a102ab0b07e396c2fc79ae0c061cb6e7e81daac 100644
+--- a/content/browser/resources/histograms/histograms_internals.html
++++ b/content/browser/resources/histograms/histograms_internals.html
+@@ -8,6 +8,7 @@
+   <script src="chrome://resources/js/cr.js"></script>
+   <script src="chrome://resources/js/promise_resolver.js"></script>
+   <script src="chrome://resources/js/util.js"></script>
++  <script src="chrome://resources/js/parse_html_subset.js"></script>
+   <script src="histograms_internals.js"></script>
+   <title>Histograms</title>
+ </head>
+diff --git a/content/browser/resources/histograms/histograms_internals.js b/content/browser/resources/histograms/histograms_internals.js
+index 24c55fb23c9f390a484572fe098e0cdcc79bc4ac..b70641ed43512391e4b75383b68196ba99590638 100644
+--- a/content/browser/resources/histograms/histograms_internals.js
++++ b/content/browser/resources/histograms/histograms_internals.js
+@@ -24,9 +24,12 @@ function addHistograms(histograms) {
+     htmlOutput += histogram;
+   }
+ 
+-  // NOTE: This is generally unsafe due to XSS attacks. Make sure |htmlOutput|
+-  // cannot be modified by an external party.
+-  $('histograms').innerHTML = htmlOutput;
++  // The following HTML tags are coming from
++  // |HistogramsMessageHandler::HandleRequestHistograms|.
++  const sanitizedHTML = parseHtmlSubset(`<span>${htmlOutput}</span>`, [
++                          'PRE', 'H4', 'BR', 'HR'
++                        ]).firstChild.innerHTML;
++  $('histograms').innerHTML = sanitizedHTML;
+ }
+ 
+ /**
