@@ -18,6 +18,8 @@ const { ELECTRON_VERSION, SRC_DIR } = require('../../lib/utils');
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
 
+const TROP_LOGIN = 'trop[bot]';
+
 const NO_NOTES = 'No notes';
 const FOLLOW_REPOS = ['electron/electron', 'electron/node'];
 
@@ -57,6 +59,11 @@ class Commit {
 
     this.isBreakingChange = false;
     this.note = null; // string
+
+    // A set of branches to which this change has been merged.
+    // '8-x-y' => GHKey { owner: 'electron', repo: 'electron', number: 23714 }
+    this.family = new Map(); // Map<string,GHKey>
+
     this.prKeys = new Set(); // GHKey
     this.revertHash = null; // string
     this.semanticType = null; // string
@@ -373,51 +380,43 @@ const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
   }
 };
 
-// Changes are interesting if they make a change relative to a previous
-// release in the same series. For example if you fix a Y.0.0 bug, that
-// should be included in the Y.0.1 notes even if it's also tropped back
-// to X.0.1.
-//
-// The phrase 'previous release' is important: if this is the first
-// prerelease or first stable release in a series, we omit previous
-// branches' changes. Otherwise we will have an overwhelmingly long
-// list of mostly-irrelevant changes.
-const shouldIncludeMultibranchChanges = (version) => {
-  let show = true;
+// returns Map<string,GHKey>
+// where the key is a branch name (e.g. '7-1-x' or '8-x-y')
+// and the value is a GHKey to the PR
+async function getBranchesOfCommit (commit, pool) {
+  const branches = new Map();
 
-  if (semver.valid(version)) {
-    const prerelease = semver.prerelease(version);
-    show = prerelease
-      ? parseInt(prerelease.pop()) > 1
-      : semver.patch(version) > 0;
+  for (const prKey of commit.prKeys.values()) {
+    console.log(prKey);
+    const pull = pool.pulls[prKey.number];
+    const mergedBranches = new Set((pull?.data?.labels || [])
+      .map(label => (label?.name || '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
+      .filter(match => match)
+      .map(match => match[1])
+      .filter(branch => branch)
+    );
+
+    if (mergedBranches.size > 0) {
+      const isTropComment = (comment) => (comment?.user?.login ?? '') === TROP_LOGIN;
+
+      const ghKey = GHKey.NewFromPull(pull.data);
+      const backportRegex = /backported this PR to "(.*)",\s+please check out #(\d+)/;
+      const getBranchNameAndPullKey = (comment) => {
+        const match = (comment?.body ?? '').match(backportRegex);
+        return match ? [match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))] : null;
+      };
+
+      ((await getComments(ghKey))?.data ?? [])
+        .filter(isTropComment)
+        .map(getBranchNameAndPullKey)
+        .filter(pair => pair)
+        .filter(([branch]) => mergedBranches.has(branch))
+        .forEach(([branch, key]) => branches.set(branch, key));
+    }
   }
 
-  return show;
-};
-
-function getOldestMajorBranchOfPull (pull) {
-  return pull.data.labels
-    .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/) || label.name.match(/merged\/(\d+)-x-y/))
-    .filter(label => !!label)
-    .map(label => parseInt(label[1]))
-    .filter(major => !!major)
-    .sort()
-    .shift();
-}
-
-function getOldestMajorBranchOfCommit (commit, pool) {
-  return [...commit.prKeys.values()]
-    .map(prKey => pool.pulls[prKey.number])
-    .filter(pull => !!pull)
-    .map(pull => getOldestMajorBranchOfPull(pull))
-    .filter(major => !!major)
-    .sort()
-    .shift();
-}
-
-function commitExistsBeforeMajor (commit, pool, major) {
-  const firstAppearance = getOldestMajorBranchOfCommit(commit, pool);
-  return firstAppearance && (firstAppearance < major);
+  console.log(branches);
+  return branches;
 }
 
 /***
@@ -482,9 +481,8 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     .filter(commit => commit.note && (commit.note !== NO_NOTES))
     .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)));
 
-  if (!shouldIncludeMultibranchChanges(newVersion)) {
-    const { major } = semver.parse(newVersion);
-    pool.commits = pool.commits.filter(commit => !commitExistsBeforeMajor(commit, pool, major));
+  for (const commit of pool.commits) {
+    commit.family = await getBranchesOfCommit(commit, pool);
   }
 
   pool.commits = removeSupercededStackUpdates(pool.commits);
