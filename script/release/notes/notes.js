@@ -21,7 +21,6 @@ const CHECK_INTERVAL = 5000;
 const TROP_LOGIN = 'trop[bot]';
 
 const NO_NOTES = 'No notes';
-const FOLLOW_REPOS = ['electron/electron', 'electron/node'];
 
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
@@ -339,47 +338,6 @@ const addRepoToPool = async (pool, repo, from, to) => {
   }
 };
 
-/***
-****  Other Repos
-***/
-
-// other repos - gn
-
-const getDepsVariable = async (ref, key) => {
-  // get a copy of that reference point's DEPS file
-  const deps = await runGit(ELECTRON_VERSION, ['show', `${ref}:DEPS`]);
-  const filename = path.resolve(os.tmpdir(), 'DEPS');
-  fs.writeFileSync(filename, deps);
-
-  // query the DEPS file
-  const response = childProcess.spawnSync(
-    'gclient',
-    ['getdep', '--deps-file', filename, '--var', key],
-    { encoding: 'utf8' }
-  );
-
-  // cleanup
-  fs.unlinkSync(filename);
-  return response.stdout.trim();
-};
-
-const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
-  const repos = [{ // just node
-    owner: 'electron',
-    repo: 'node',
-    dir: path.resolve(SRC_DIR, 'third_party', 'electron_node'),
-    deps_variable_name: 'node_version'
-  }];
-
-  for (const repo of repos) {
-    // the 'DEPS' file holds the dependency reference point
-    const key = repo.deps_variable_name;
-    const from = await getDepsVariable(fromRef, key);
-    const to = await getDepsVariable(toRef, key);
-    await addRepoToPool(pool, repo, from, to);
-  }
-};
-
 // returns Map<string,GHKey>
 // where the key is a branch name (e.g. '7-1-x' or '8-x-y')
 // and the value is a GHKey to the PR
@@ -434,16 +392,6 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // get the electron/electron commits
   const electron = { owner: 'electron', repo: 'electron', dir: path.resolve(SRC_DIR, 'electron') };
   await addRepoToPool(pool, electron, fromRef, toRef);
-
-  // Don't include submodules if comparing across major versions;
-  // there's just too much churn otherwise.
-  const includeDeps = semver.valid(fromRef) &&
-                      semver.valid(toRef) &&
-                      semver.major(fromRef) === semver.major(toRef);
-
-  if (includeDeps) {
-    await getDependencyCommitsGN(pool, fromRef, toRef);
-  }
 
   // remove any old commits
   pool.commits = pool.commits.filter(commit => !pool.processedHashes.has(commit.hash));
