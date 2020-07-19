@@ -1473,7 +1473,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [maskImage setResizingMode:NSImageResizingModeStretch];
 
       [effect_view setMaskImage:maskImage];
-      [window_ setCornerMask:maskImage];
     }
 
     [[window_ contentView] addSubview:effect_view
