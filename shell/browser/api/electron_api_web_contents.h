@@ -28,6 +28,7 @@
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/common_web_contents_delegate.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "ui/gfx/image/image.h"
 
@@ -61,6 +62,8 @@ class ResourceRequestBody;
 }
 
 namespace gin {
+
+class Arguments;
 
 template <>
 struct Converter<base::TerminationStatus> {
@@ -210,12 +213,12 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;
-  void SetUserAgent(const std::string& user_agent, gin_helper::Arguments* args);
+  void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
                                   const content::SavePageType& save_type);
-  void OpenDevTools(gin_helper::Arguments* args);
+  void OpenDevTools(gin::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
   bool IsDevToolsFocused();
@@ -234,8 +237,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView(v8::Isolate* isolate) const;
-  void IncrementCapturerCount(gin_helper::Arguments* args);
-  void DecrementCapturerCount(gin_helper::Arguments* args);
+  void IncrementCapturerCount(gin::Arguments* args);
+  void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -244,15 +247,15 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
                            base::string16 device_name,
                            bool silent,
                            base::string16 default_printer);
-  void Print(gin_helper::Arguments* args);
+  void Print(gin::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
 
   // DevTools workspace api.
-  void AddWorkSpace(gin_helper::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(gin_helper::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -266,7 +269,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
-  uint32_t FindInPage(gin_helper::Arguments* args);
+  uint32_t FindInPage(gin::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
@@ -302,16 +305,15 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
   // Subscribe to the frame updates.
-  void BeginFrameSubscription(gin_helper::Arguments* args);
+  void BeginFrameSubscription(gin::Arguments* args);
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const gin_helper::Dictionary& item,
-                 gin_helper::Arguments* args);
+  void StartDrag(const gin_helper::Dictionary& item, gin::Arguments* args);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
-  v8::Local<v8::Promise> CapturePage(gin_helper::Arguments* args);
+  v8::Local<v8::Promise> CapturePage(gin::Arguments* args);
 
   // Methods for creating <webview>.
   bool IsGuest() const;
