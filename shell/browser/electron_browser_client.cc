@@ -1414,7 +1414,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!frame) {
-    return;
+    return false;
   }
   const auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
