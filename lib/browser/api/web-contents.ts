@@ -449,7 +449,7 @@ WebContents.prototype._callWindowOpenOverride = function (event: any, url: strin
       case 'object':
         return response;
       default:
-        throw new TypeError(
+        console.error(
           'The window.open override response must be a boolean or an object of BrowserWindow options.'
         );
     }
@@ -595,7 +595,6 @@ WebContents.prototype._init = function () {
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string) => {
-      process.stdout.write('test\ntest\nhere\ncool\n');
       windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName);
       if (!event.defaultPrevented && windowOpenOverriddenOptions) {
         this._setNextChildWebPreferences({

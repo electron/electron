@@ -15,8 +15,8 @@ export type WindowOpenArgs = {
   features: string,
 }
 
-const frameNamesToWindow = new Map();
-const registerFrameNameToGuestWindow = (name: String, win: BrowserWindow) => frameNamesToWindow.set(name, win);
+const frameNamesToWindow = new Map<string, BrowserWindow>();
+const registerFrameNameToGuestWindow = (name: string, win: BrowserWindow) => frameNamesToWindow.set(name, win);
 const unregisterFrameName = (name: string) => frameNamesToWindow.delete(name);
 const getGuestWindowByFrameName = (name: string) => frameNamesToWindow.get(name);
 

@@ -10,13 +10,12 @@ By default, this results in the creation of a
 [`BrowserWindowProxy`](browser-window-proxy.md), a light wrapper around
 `BrowserWindow`.
 
-However, when the `contextIsolation` or `sandbox` (or directly,
-`nativeWindowOpen`) options are set, a `Window` instance is created, as you'd
-expect in the browser. For same-origin content, the new window is created
-within the same process, enabling the parent to affect the DOM directly. This
-can be very useful for app sub-windows that act as preference panels, or
-similar, as the parent can render to the sub-window directly, as if it were a
-`div` in the parent.
+However, when the `sandbox` (or directly, `nativeWindowOpen`) option is set, a
+`Window` instance is created, as you'd expect in the browser. For same-origin
+content, the new window is created within the same process, enabling the parent
+to affect the DOM directly. This can be very useful for app sub-windows that act
+as preference panels, or similar, as the parent can render to the sub-window
+directly, as if it were a `div` in the parent.
 
 Electron pairs this native Chrome `Window` with a BrowserWindow under the hood.
 You can take advantage of all the customization available when creating a
