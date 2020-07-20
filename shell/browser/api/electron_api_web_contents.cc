@@ -2947,8 +2947,10 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
     Type type) {
-  return gin::CreateHandle(
+  gin::Handle<WebContents> handle = gin::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  return handle;
 }
 
 // static
@@ -2965,8 +2967,10 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
   WebContents* api_web_contents = From(web_contents);
-  if (!api_web_contents)
+  if (!api_web_contents) {
     api_web_contents = new WebContents(isolate, web_contents);
+    gin_helper::CallMethod(isolate, api_web_contents, "_init");
+  }
   return gin::CreateHandle(isolate, api_web_contents);
 }
 
