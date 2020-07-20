@@ -395,7 +395,7 @@ base::string16 GetDefaultPrinterAsync() {
 }
 #endif
 
-struct UserDataLink : base::SupportsUserData::Data {
+struct UserDataLink : public base::SupportsUserData::Data {
   explicit UserDataLink(base::WeakPtr<WebContents> contents)
       : web_contents(contents) {}
 
@@ -2953,6 +2953,8 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
 
 // static
 WebContents* WebContents::From(content::WebContents* web_contents) {
+  if (!web_contents)
+    return nullptr;
   UserDataLink* data = static_cast<UserDataLink*>(
       web_contents->GetUserData(kElectronApiWebContentsKey));
   return data ? data->web_contents.get() : nullptr;
