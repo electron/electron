@@ -33,7 +33,8 @@ const circleCIJobs = circleCIPublishWorkflows.concat([
 
 const vstsArmJobs = [
   'electron-arm-testing',
-  'electron-arm2-testing',
+  'electron-osx-arm64-testing',
+  'electron-mas-arm64-testing',
   'electron-arm64-testing',
   'electron-woa-testing'
 ];

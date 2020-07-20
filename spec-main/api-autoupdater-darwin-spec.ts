@@ -6,15 +6,14 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
+import { ifdescribe } from './spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
-const describeFn = (process.platform === 'darwin' && !process.mas && !features.isComponentBuild() ? describe : describe.skip);
-
-describeFn('autoUpdater behavior', function () {
+ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
