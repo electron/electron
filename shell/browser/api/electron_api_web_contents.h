@@ -154,9 +154,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
 
-  // Get the V8 wrapper of |web_content|, return empty handle if not wrapped.
-  static gin::Handle<WebContents> From(v8::Isolate* isolate,
-                                       content::WebContents* web_content);
+  // Get the api::WebContents associated with |web_contents|. Returns nullptr
+  // if there is no associated wrapper.
+  static WebContents* From(content::WebContents* web_contents);
+  static WebContents* FromID(int32_t id);
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
@@ -232,7 +233,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   bool IsCurrentlyAudible();
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
-  v8::Local<v8::Value> GetNativeView() const;
+  v8::Local<v8::Value> GetNativeView(v8::Isolate* isolate) const;
   void IncrementCapturerCount(gin_helper::Arguments* args);
   void DecrementCapturerCount(gin_helper::Arguments* args);
   bool IsBeingCaptured();
@@ -359,7 +360,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
   // Returns the owner window.
-  v8::Local<v8::Value> GetOwnerBrowserWindow() const;
+  v8::Local<v8::Value> GetOwnerBrowserWindow(v8::Isolate* isolate) const;
 
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.
@@ -368,7 +369,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
-  v8::Local<v8::Promise> TakeHeapSnapshot(const base::FilePath& file_path);
+  v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
+                                          const base::FilePath& file_path);
 
   // Properties.
   int32_t ID() const;

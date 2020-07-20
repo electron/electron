@@ -215,7 +215,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(InspectableWebContents::Create(
+  web_contents_.reset(new InspectableWebContents(
       web_contents, browser_context->prefs(), is_guest));
   web_contents_->SetDelegate(this);
 }
@@ -330,7 +330,7 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
 
 void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   if (!web_dialog_helper_)
     web_dialog_helper_ =
@@ -341,7 +341,7 @@ void CommonWebContentsDelegate::RunFileChooser(
 
 void CommonWebContentsDelegate::EnumerateDirectory(
     content::WebContents* guest,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   if (!web_dialog_helper_)
     web_dialog_helper_ =

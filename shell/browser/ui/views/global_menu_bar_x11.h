@@ -12,6 +12,7 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/x/xproto.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
 typedef struct _DbusmenuServer DbusmenuServer;

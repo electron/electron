@@ -6,19 +6,19 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed renderers to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index e53e60ef146f8024e503f9ffad663a4d2dbc4f80..cee204cf6447c4b2a8cfd9c4ca257fe46af3e2e9 100644
+index c1b5d30fd927feaeb3e068adc72edafa871ae8cd..7534eef2cfe57044be038632ab040b4df1e7ef9e 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -54,6 +54,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -53,6 +53,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+   if (GetProcessType() == switches::kRendererProcess) {
      const int sandbox_fd = SandboxHostLinux::GetInstance()->GetChildSocket();
-     options->fds_to_remap.push_back(
-         std::make_pair(sandbox_fd, service_manager::GetSandboxFD()));
+     options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
 +
 +    // (For Electron), if we're launching without zygote, that means we're
 +    // launching an unsandboxed process (since all sandboxed processes are
 +    // forked from the zygote). Relax the allow_new_privs option to permit
 +    // launching suid processes from unsandboxed renderers.
-+    service_manager::ZygoteHandle zygote_handle =
++    ZygoteHandle zygote_handle =
 +        base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
 +            ? nullptr
 +            : delegate_->GetZygote();

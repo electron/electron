@@ -3,4 +3,4 @@ module.exports = require('./webpack.config.base')({
   loadElectronFromAlternateTarget: 'renderer',
   alwaysHasNode: true,
   targetDeletesNodeGlobals: true
-})
+});

@@ -1,4 +1,6 @@
 declare var internalBinding: any;
+declare var nodeProcess: any;
+declare var isolatedWorld: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
@@ -42,6 +44,42 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+  }
+
+  type AsarFileInfo = {
+    size: number;
+    unpacked: boolean;
+    offset: number;
+  };
+
+  type AsarFileStat = {
+    size: number;
+    offset: number;
+    isFile: boolean;
+    isDirectory: boolean;
+    isLink: boolean;
+  }
+
+  interface AsarArchive {
+    readonly path: string;
+    getFileInfo(path: string): AsarFileInfo | false;
+    stat(path: string): AsarFileStat | false;
+    readdir(path: string): string[] | false;
+    realpath(path: string): string | false;
+    copyFileOut(path: string): string | false;
+    getFd(): number | -1;
+  }
+
+  interface AsarBinding {
+    createArchive(path: string): AsarArchive;
+    splitPath(path: string): {
+      isAsar: false;
+    } | {
+      isAsar: true;
+      asarPath: string;
+      filePath: string;
+    };
+    initAsarSupport(require: NodeJS.Require): void;
   }
 
   type DataPipe = {
@@ -106,6 +144,7 @@ declare namespace NodeJS {
       net: any;
       createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     };
+    _linkedBinding(name: 'electron_common_asar'): AsarBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 

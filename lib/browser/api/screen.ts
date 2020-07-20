@@ -1,6 +1,6 @@
 'use strict';
 
-import { createLazyInstance } from '../utils';
+import { createLazyInstance } from '@electron/internal/browser/utils';
 const { EventEmitter } = require('events');
 const { Screen, createScreen } = process._linkedBinding('electron_common_screen');
 

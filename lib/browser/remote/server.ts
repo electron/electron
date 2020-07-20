@@ -1,14 +1,13 @@
-import * as electron from 'electron';
+import * as electron from 'electron/main';
 import { EventEmitter } from 'events';
-import objectsRegistry from './objects-registry';
-import { ipcMainInternal } from '../ipc-main-internal';
-import { isPromise, isSerializableObject, deserialize, serialize } from '../../common/type-utils';
-import type { MetaTypeFromRenderer, ObjectMember, MetaType, ObjProtoDescriptor } from '../../common/remote/types';
+import objectsRegistry from '@electron/internal/browser/remote/objects-registry';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import { isPromise, isSerializableObject, deserialize, serialize } from '@electron/internal/common/type-utils';
+import type { MetaTypeFromRenderer, ObjectMember, MetaType, ObjProtoDescriptor } from '@electron/internal/common/remote/types';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const eventBinding = process._linkedBinding('electron_browser_event');
 const features = process._linkedBinding('electron_common_features');
-const { NativeImage } = process._linkedBinding('electron_common_native_image');
 
 if (!features.isRemoteModuleEnabled()) {
   throw new Error('remote module is disabled');
@@ -102,7 +101,7 @@ const valueToMeta = function (sender: electron.WebContents, contextId: string, v
       // Recognize certain types of objects.
       if (value instanceof Buffer) {
         type = 'buffer';
-      } else if (value instanceof NativeImage) {
+      } else if (value && value.constructor && value.constructor.name === 'NativeImage') {
         type = 'nativeimage';
       } else if (Array.isArray(value)) {
         type = 'array';

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 14 Jul 2020 14:51:31 -0700
+Subject: fix: compare page size to ulong not int
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2298340
+
+diff --git a/base/process/process_metrics_mac.cc b/base/process/process_metrics_mac.cc
+index 6d05c82369f792f5f396dfc4f2c61f49b6585390..8f80975763e8a2e04dbe5864d7d4eaf7460cd119 100644
+--- a/base/process/process_metrics_mac.cc
++++ b/base/process/process_metrics_mac.cc
+@@ -298,7 +298,7 @@ bool GetSystemMemoryInfo(SystemMemoryInfoKB* meminfo) {
+ 
+ #if defined(ARCH_CPU_ARM64)
+   // PAGE_SIZE is vm_page_size on arm, which isn't constexpr.
+-  DCHECK_EQ(PAGE_SIZE % 1024, 0) << "Invalid page size";
++  DCHECK_EQ(PAGE_SIZE % 1024, static_cast<uint64_t>(0)) << "Invalid page size";
+ #else
+   static_assert(PAGE_SIZE % 1024 == 0, "Invalid page size");
+ #endif

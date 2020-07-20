@@ -1,14 +1,14 @@
-import { app, ipcMain, session, deprecate } from 'electron';
-import type { MenuItem, MenuItemConstructorOptions, WebContentsInternal } from 'electron';
+import { app, ipcMain, session, deprecate } from 'electron/main';
+import type { MenuItem, MenuItemConstructorOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
-import { internalWindowOpen } from '../guest-window-manager';
-import { NavigationController } from '../navigation-controller';
-import { ipcMainInternal } from '../ipc-main-internal';
-import * as ipcMainUtils from '../ipc-main-internal-utils';
-import { parseFeatures } from '../../common/parse-features-string';
-import { MessagePortMain } from '../message-port-main';
+import { internalWindowOpen } from '@electron/internal/browser/guest-window-manager';
+import { NavigationController } from '@electron/internal/browser/navigation-controller';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { parseFeatures } from '@electron/internal/common/parse-features-string';
+import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { EventEmitter } from 'events';
 
 // session is not used here, the purpose is to make sure session is initalized
@@ -72,6 +72,19 @@ const PDFPageSizes: Record<string, MediaSize> = {
   }
 };
 
+// The minimum micron size Chromium accepts is that where:
+// Per printing/units.h:
+//  * kMicronsPerInch - Length of an inch in 0.001mm unit.
+//  * kPointsPerInch - Length of an inch in CSS's 1pt unit.
+//
+// Formula: (kPointsPerInch / kMicronsPerInch) * size >= 1
+//
+// Practically, this means microns need to be > 352 microns.
+// We therefore need to verify this or it will silently fail.
+const isValidCustomPageSize = (width: number, height: number) => {
+  return [width, height].every(x => x > 352);
+};
+
 // Default printing setting
 const defaultPrintingSetting = {
   // Customizable.
@@ -109,7 +122,7 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding as { WebContents: { prototype: WebContentsInternal } };
+const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
 
 Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
@@ -190,7 +203,7 @@ for (const method of webFrameMethods) {
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents: WebContentsInternal) => {
+const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContentsInternal) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -212,7 +225,9 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 };
 
 // Translate the options of printToPDF.
-WebContents.prototype.printToPDF = function (options) {
+
+let pendingPromise: Promise<any> | undefined;
+WebContents.prototype.printToPDF = async function (options) {
   const printSettings = {
     ...defaultPrintingSetting,
     requestID: getNextId()
@@ -315,13 +330,20 @@ WebContents.prototype.printToPDF = function (options) {
         const error = new Error('height and width properties are required for pageSize');
         return Promise.reject(error);
       }
-      // Dimensions in Microns
-      // 1 meter = 10^6 microns
+
+      // Dimensions in Microns - 1 meter = 10^6 microns
+      const height = Math.ceil(pageSize.height);
+      const width = Math.ceil(pageSize.width);
+      if (!isValidCustomPageSize(width, height)) {
+        const error = new Error('height and width properties must be minimum 352 microns.');
+        return Promise.reject(error);
+      }
+
       printSettings.mediaSize = {
         name: 'CUSTOM',
         custom_display_name: 'Custom',
-        height_microns: Math.ceil(pageSize.height),
-        width_microns: Math.ceil(pageSize.width)
+        height_microns: height,
+        width_microns: width
       };
     } else if (Object.prototype.hasOwnProperty.call(PDFPageSizes, pageSize)) {
       printSettings.mediaSize = PDFPageSizes[pageSize];
@@ -338,7 +360,12 @@ WebContents.prototype.printToPDF = function (options) {
   // PrinterType enum from //printing/print_job_constants.h
   printSettings.printerType = 2;
   if (this._printToPDF) {
-    return this._printToPDF(printSettings);
+    if (pendingPromise) {
+      pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
+    } else {
+      pendingPromise = this._printToPDF(printSettings);
+    }
+    return pendingPromise;
   } else {
     const error = new Error('Printing feature is disabled');
     return Promise.reject(error);
@@ -356,12 +383,19 @@ WebContents.prototype.print = function (options = {}, callback) {
         if (!pageSize.height || !pageSize.width) {
           throw new Error('height and width properties are required for pageSize');
         }
+
         // Dimensions in Microns - 1 meter = 10^6 microns
+        const height = Math.ceil(pageSize.height);
+        const width = Math.ceil(pageSize.width);
+        if (!isValidCustomPageSize(width, height)) {
+          throw new Error('height and width properties must be minimum 352 microns.');
+        }
+
         (options as any).mediaSize = {
           name: 'CUSTOM',
           custom_display_name: 'Custom',
-          height_microns: Math.ceil(pageSize.height),
-          width_microns: Math.ceil(pageSize.width)
+          height_microns: height,
+          width_microns: width
         };
       } else if (PDFPageSizes[pageSize]) {
         (options as any).mediaSize = PDFPageSizes[pageSize];
@@ -456,7 +490,7 @@ WebContents.prototype._init = function () {
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
       addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
@@ -481,7 +515,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
       addReplyInternalToEvent(event);
@@ -519,7 +553,7 @@ WebContents.prototype._init = function () {
   });
 
   // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: WebContentsInternal) {
+  this.on('devtools-reload-page', function (this: Electron.WebContentsInternal) {
     this.reload();
   });
 
@@ -542,7 +576,7 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: WebContentsInternal, disposition: string,
+    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContentsInternal, disposition: string,
       userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
       referrer: string, rawFeatures: string, postData: string) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&

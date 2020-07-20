@@ -40,6 +40,7 @@ class GHKey {
     this.repo = repo;
     this.number = number;
   }
+
   static NewFromPull (pull) {
     const owner = pull.base.repo.owner.login;
     const repo = pull.base.repo.name;
@@ -405,7 +406,7 @@ function getOldestMajorBranchOfPull (pull) {
 }
 
 function getOldestMajorBranchOfCommit (commit, pool) {
-  return [ ...commit.prKeys.values() ]
+  return [...commit.prKeys.values()]
     .map(prKey => pool.pulls[prKey.number])
     .filter(pull => !!pull)
     .map(pull => getOldestMajorBranchOfPull(pull))
@@ -531,13 +532,13 @@ const removeSupercededStackUpdates = (commits) => {
       notupdates.push(commit);
       continue;
     }
-    const [ , dep, version ] = match;
+    const [, dep, version] = match;
     if (!newest[dep] || newest[dep].version < version) {
       newest[dep] = { commit, version };
     }
   }
 
-  return [ ...notupdates, ...Object.values(newest).map(o => o.commit) ];
+  return [...notupdates, ...Object.values(newest).map(o => o.commit)];
 };
 
 /***

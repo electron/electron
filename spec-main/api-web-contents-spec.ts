@@ -141,6 +141,17 @@ describe('webContents module', () => {
       }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize');
     });
 
+    it('throws when an invalid custom pageSize is passed', () => {
+      expect(() => {
+        w.webContents.print({
+          pageSize: {
+            width: 100,
+            height: 200
+          }
+        });
+      }).to.throw('height and width properties must be minimum 352 microns.');
+    });
+
     it('does not crash with custom margins', () => {
       expect(() => {
         w.webContents.print({
@@ -1666,12 +1677,25 @@ describe('webContents module', () => {
       expect(width).to.be.greaterThan(height);
     });
 
-    it('does not crash when called multiple times', async () => {
+    it('does not crash when called multiple times in parallel', async () => {
       const promises = [];
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         promises.push(w.webContents.printToPDF({}));
       }
+
       const results = await Promise.all(promises);
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      }
+    });
+
+    it('does not crash when called multiple times in sequence', async () => {
+      const results = [];
+      for (let i = 0; i < 3; i++) {
+        const result = await w.webContents.printToPDF({});
+        results.push(result);
+      }
+
       for (const data of results) {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
@@ -1905,7 +1929,7 @@ describe('webContents module', () => {
       wasCalled = true;
     });
     await w.loadURL('about:blank');
-    await w.webContents.executeJavaScript(`window.open('about:blank')`);
+    await w.webContents.executeJavaScript('window.open(\'about:blank\')');
     await new Promise((resolve) => { process.nextTick(resolve); });
     expect(wasCalled).to.equal(false);
     await closeAllWindows();

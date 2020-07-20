@@ -1,6 +1,5 @@
-'use strict';
+import * as path from 'path';
 
-const path = require('path');
 const Module = require('module');
 
 // We modified the original process.argv to let node.js load the

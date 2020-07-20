@@ -54,8 +54,8 @@ void LoginHandler::EmitEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
-  auto api_web_contents = api::WebContents::From(isolate, web_contents());
-  if (api_web_contents.IsEmpty()) {
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (!api_web_contents) {
     std::move(auth_required_callback_).Run(base::nullopt);
     return;
   }

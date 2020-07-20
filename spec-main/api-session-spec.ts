@@ -105,7 +105,7 @@ describe('session module', () => {
       });
     }
 
-    it(`fails to set cookies with samesite=garbage`, async () => {
+    it('fails to set cookies with samesite=garbage', async () => {
       const { cookies } = session.defaultSession;
       const value = 'hithere';
       await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).to.eventually.be.rejectedWith('Failed to convert \'garbage\' to an appropriate cookie same site value');

@@ -10,6 +10,7 @@ hunspell_dictionaries = [
   "//third_party/hunspell_dictionaries/en-AU-9-0.bdic",
   "//third_party/hunspell_dictionaries/en-CA-9-0.bdic",
   "//third_party/hunspell_dictionaries/en-GB-9-0.bdic",
+  "//third_party/hunspell_dictionaries/en-GB-oxendict-9-0.bdic",
   "//third_party/hunspell_dictionaries/en-US-9-0.bdic",
   "//third_party/hunspell_dictionaries/es-ES-3-0.bdic",
   "//third_party/hunspell_dictionaries/et-EE-3-0.bdic",

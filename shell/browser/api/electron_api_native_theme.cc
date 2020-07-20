@@ -89,8 +89,8 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->GetHighContrastColorScheme() ==
-         ui::NativeTheme::HighContrastColorScheme::kDark;
+  return ui_theme_->GetPlatformHighContrastColorScheme() ==
+         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
 #endif
 }
 

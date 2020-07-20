@@ -32,7 +32,7 @@
 #include "media/audio/audio_manager.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
-#include "services/service_manager/sandbox/switches.h"
+#include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -712,9 +712,9 @@ bool App::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
-    auto api_web_contents = WebContents::From(isolate(), web_contents);
+    WebContents* api_web_contents = WebContents::From(web_contents);
     // No need to emit any event if the WebContents is not available in JS.
-    if (!api_web_contents.IsEmpty()) {
+    if (api_web_contents) {
       api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
                                        disposition, raw_features, body);
     }
@@ -1360,7 +1360,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 }
 
 static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
-  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
+  if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox)) {
     const base::CommandLine::CharType* noSandboxArg =
         FILE_PATH_LITERAL("--no-sandbox");
     base::CommandLine::StringVector modified_command_line;
