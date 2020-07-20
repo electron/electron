@@ -7,7 +7,7 @@ This exposes a method for obtaining a reference to an isolated world, which is
 otherwise not available in the Blink API.
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index be5efdc896fd9318b50c9e5ad02ec404ba7be23d..79234d0def2d4e97e05a03ecb1dbd7b077bc44b2 100644
+index 89e4c4992db428ad9025350293855f038c840fe8..9463160d2087181ad3740ea5d7f284d49b396571 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -354,6 +354,8 @@ class WebLocalFrame : public WebFrame {
@@ -20,10 +20,10 @@ index be5efdc896fd9318b50c9e5ad02ec404ba7be23d..79234d0def2d4e97e05a03ecb1dbd7b0
    // Executes script in the context of the current page and returns the value
    // that the script evaluated to with callback. Script execution can be
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index b94a424b644e5ccb2214499e708187427e80c701..9460471d34336f7b33c2e368f0da393d2a180edf 100644
+index fa177e082870222a27067b7ca5e12ffe9bf65767..27eae64c3293dd03ab6166f2bc2446bccbbaf330 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -967,6 +967,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -971,6 +971,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  
@@ -38,7 +38,7 @@ index b94a424b644e5ccb2214499e708187427e80c701..9460471d34336f7b33c2e368f0da393d
    return BindingSecurity::ShouldAllowAccessToFrame(
        CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index d3dbe21b34cafa395706320bde5b7b11c1b84b4e..bc00e411e3ea6e08909d004de1a01cc548ec700d 100644
+index 8de9c4ccca25c3b707419334e2d67ba6ed1ddbe2..d6d1732d4c415760a7e2d3a44334ef3e105e8150 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -166,6 +166,8 @@ class CORE_EXPORT WebLocalFrameImpl final
