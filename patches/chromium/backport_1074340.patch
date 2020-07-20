@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: uninitialized frame policy issue in javascript url
+
+[1074340] [Low] [CVE-2020-6526]: Security: javascript URI sandbox flags aren't propagated in a blank string case
+Backport https://chromium.googlesource.com/chromium/src/+/45bcb4d547a5efecae80f4c9a48cef854af91d7f
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_controller.cc b/third_party/blink/renderer/bindings/core/v8/script_controller.cc
+index 363375fe3150b8ab55a3ce8c32b2511b24c34135..6311d5262d994d725078eafbbdeb23c0c186c37f 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_controller.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_controller.cc
+@@ -297,6 +297,8 @@ void ScriptController::ExecuteJavaScriptURL(
+                     WebFeature::kReplaceDocumentViaJavaScriptURL);
+   auto params = std::make_unique<WebNavigationParams>();
+   params->url = GetFrame()->GetDocument()->Url();
++  if (auto* owner = GetFrame()->Owner())
++    params->frame_policy = owner->GetFramePolicy();
+ 
+   String result = ToCoreString(v8::Local<v8::String>::Cast(v8_result));
+   WebNavigationParams::FillStaticResponse(params.get(), "text/html", "UTF-8",
