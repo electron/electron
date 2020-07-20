@@ -2,18 +2,15 @@
 
 'use strict';
 
-const childProcess = require('child_process');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const { GitProcess } = require('dugite');
 const octokit = require('@octokit/rest')({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
-const semver = require('semver');
 
-const { ELECTRON_VERSION, SRC_DIR } = require('../../lib/utils');
+const { SRC_DIR } = require('../../lib/utils');
 
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
@@ -339,7 +336,7 @@ async function getBranchesOfCommit (commit, pool) {
   for (const prKey of commit.prKeys.values()) {
     const pull = pool.pulls[prKey.number];
     const mergedBranches = new Set((pull?.data?.labels || [])
-      .map(label => (label?.name || '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
+      .map(label => (label?.name ?? '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
       .filter(match => match)
       .map(match => match[1])
     );
@@ -495,15 +492,10 @@ const removeSupercededStackUpdates = (commits) => {
 ****  Render
 ***/
 
-// @return a terser branch name, e.g. '7-2-x' -> '7.2'
-const renderBranchName = name => name.replace(/-[a-zA-Z]/g, '').replace('-', '.');
-
 // @return the pull request's GitHub URL
 const buildPullURL = ghKey => `https://github.com/${ghKey.owner}/${ghKey.repo}/pull/${ghKey.number}`;
 
 const renderPull = ghKey => `[#${ghKey.number}](${buildPullURL(ghKey)})`;
-
-const renderTrop = (branch, ghKey) => `[${renderBranchName(branch)}](${buildPullURL(ghKey)})`;
 
 // @return the commit's GitHub URL
 const buildCommitURL = commit => `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`;
@@ -514,6 +506,23 @@ const renderCommit = commit => `[${commit.hash.slice(0, 8)}](${buildCommitURL(co
 function renderLink (commit) {
   const maybePull = commit.prKeys.values().next();
   return maybePull.value ? renderPull(maybePull.value) : renderCommit(commit);
+}
+
+// @return a terser branch name,
+//   e.g. '7-2-x' -> '7.2' and '8-x-y' -> '8'
+const renderBranchName = name => name.replace(/-[a-zA-Z]/g, '').replace('-', '.');
+
+const renderTrop = (branch, ghKey) => `[${renderBranchName(branch)}](${buildPullURL(ghKey)})`;
+
+// @return markdown-formatted links to other branches' trops,
+//   e.g. "(Also in 7.2, 8, 9)"
+function renderTrops (commit, excludeBranch) {
+  const body = [...commit.trops.entries()]
+    .filter(([branch]) => branch !== excludeBranch)
+    .sort(([branchA], [branchB]) => parseInt(branchA) - parseInt(branchB)) // sort by semver major
+    .map(([branch, key]) => renderTrop(branch, key))
+    .join(', ');
+  return body ? `<span style="font-size:small;">(Also in ${body})</span>` : body;
 }
 
 // @return a slightly cleaned-up human-readable change description
@@ -558,19 +567,8 @@ function renderDescription (commit) {
   return note;
 }
 
-// @return markdown-formatted links to other branches' trops,
-//   e.g. "(Also in 7.2, 8, 9)"
-function renderTrops (commit, excludeBranch) {
-  const body = [...commit.trops.entries()]
-    .filter(([branch]) => branch !== excludeBranch)
-    .sort(([branchA], [branchB]) => parseInt(branchA) - parseInt(branchB)) // sort by semver major
-    .map(([branch, key]) => renderTrop(branch, key))
-    .join(', ');
-  return body ? `<span style="font-size:small;">(Also in ${body})</span>` : body;
-}
-
 // @return markdown-formatted release note line item,
-//   e.g. "* Fixed a foo. #12345 (Also in 7.2, 8, 9)"
+//   e.g. '* Fixed a foo. #12345 (Also in 7.2, 8, 9)'
 const renderNote = (commit, excludeBranch) =>
   `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(commit, excludeBranch)}\n`;
 
