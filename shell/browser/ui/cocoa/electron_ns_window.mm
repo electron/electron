@@ -130,7 +130,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // the window title instead of using Cmd+C to get the selected text.
   NSPredicate* predicate = [NSPredicate
       predicateWithFormat:@"(self isKindOfClass: %@) OR (self.className == %@)",
-                          [NSButtonCell class], @"ElectronAdaptedContentView"];
+                          [NSButtonCell class], @"BrowserAccessibilityCocoa"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
   NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
