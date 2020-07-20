@@ -929,13 +929,6 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
     extensions::ProcessMap::Get(browser_context)
         ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -1014,13 +1007,6 @@ void ElectronBrowserClient::SiteInstanceDeleting(
     extensions::ProcessMap::Get(browser_context)
         ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif
 }
