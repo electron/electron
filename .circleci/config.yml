@@ -2036,6 +2036,20 @@ jobs:
           attach: false
           checkout: true
 
+  osx-publish-arm64:
+     <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
+          attach: false
+          checkout: true
+
   osx-publish-x64-skip-checkout:
     <<: *machine-mac-large
     environment:
@@ -2129,6 +2143,20 @@ jobs:
       - electron-publish:
           attach: false
           checkout: true
+
+  mas-publish-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas-apple-silicon
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
+          attach: false
+          checkout: true          
 
   mas-publish-x64-skip-checkout:
     <<: *machine-mac-large
@@ -2455,6 +2483,18 @@ workflows:
     jobs:
     - mas-publish:
         context: release-env
+
+  publish-osx-arm64:
+    when: << pipeline.parameters.run-osx-publish-arm64 >>
+    jobs:
+    - osx-publish-arm64:
+        context: release-env
+
+  publish-mas-arm64:
+    when: << pipeline.parameters.run-mas-publish-arm64 >>
+    jobs:
+    - mas-publish-arm64:
+        context: release-env        
 
   publish-macos:
     when: << pipeline.parameters.run-macos-publish >>
