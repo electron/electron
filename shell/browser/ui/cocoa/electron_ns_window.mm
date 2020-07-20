@@ -130,19 +130,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   // the window title instead of using Cmd+C to get the selected text.
   NSPredicate* predicate = [NSPredicate
       predicateWithFormat:@"(self isKindOfClass: %@) OR (self.className == %@)",
-                          [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
+                          [NSButtonCell class], @"ElectronAdaptedContentView"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
   NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
   [mutableChildren filterUsingPredicate:predicate];
-
-  // We need to add the web contents: Without us doing so, VoiceOver
-  // users will be able to navigate up the a11y tree, but not back down.
-  // The content view contains the "web contents", which VoiceOver
-  // immediately understands.
-  NSView* contentView =
-      [shell_->GetNativeWindow().GetNativeNSWindow() contentView];
-  [mutableChildren addObject:contentView];
 
   return mutableChildren;
 }
