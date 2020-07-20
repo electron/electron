@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index c70aa902c4ec91b368536ad2c3b3c6390525d994..efd4a7ddeda0de7e8c36e55b940376a056959a78 100644
+index 5361f0731c530fb20b969fd272f8dcd2bddbce20..e3c377b12e5cadda86407e72d474975e6ccc3de2 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -231,10 +231,10 @@ index b8032917cce5224403304c5f41674533e3d59528..2e871204e8dc9bf13315ba9a1448ab7c
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 4ad928081501116bdd8e1a14be240997d83a97cf..935adfbc2f35f94ee5e1272a224d5a97bf6b968b 100644
+index f3b77a295f334ffa696f1085a4ca5c0c86479987..872f9d0ac32970950c9a552431c7613e87f1ad94 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -226,6 +226,7 @@
+@@ -225,6 +225,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -242,7 +242,7 @@ index 4ad928081501116bdd8e1a14be240997d83a97cf..935adfbc2f35f94ee5e1272a224d5a97
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3276,6 +3277,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3271,6 +3272,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -295,7 +295,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 309cd8b300ba9eb3c85a324475aba35b9eb28068..8c53d6ebdeae529854982075bb3ecec47169d606 100644
+index d8a737f5008f3b60f4ac74592cb23f8b04c4577a..178b84bccb6ad131391dbb6c856df2e766b0d221 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -23,6 +23,7 @@
