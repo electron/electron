@@ -73,7 +73,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       });
 
       it('does throw if an unknown string is the serverType', () => {
-        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'weow' })).to.throw('Expected serverType to be \'default\' or \'json\'');
+        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'weow' as any })).to.throw('Expected serverType to be \'default\' or \'json\'');
       });
     });
   });
