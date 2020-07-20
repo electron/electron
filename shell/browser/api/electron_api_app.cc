@@ -803,12 +803,28 @@ void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  BrowserChildProcessCrashedOrKilled(data, info);
+}
+
+void App::BrowserChildProcessCrashedOrKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  v8::HandleScope handle_scope(isolate());
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate());
+  details.Set("type", content::GetProcessTypeNameInEnglish(data.process_type));
+  details.Set("reason", info.status);
+  details.Set("exitCode", info.exit_code);
+  if (!data.name.empty()) {
+    details.Set("name", data.name);
+  }
+  Emit("child-process-gone", details);
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
