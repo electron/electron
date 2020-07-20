@@ -40,6 +40,7 @@ describe('webFrame module', () => {
     const execError = emittedOnce(ipcMain, 'executejs-safe');
     w.loadURL('about:blank');
     const [, error] = await execError;
+    expect(error).to.not.equal(null, 'Error should not be null');
     expect(error).to.have.property('message', 'Uncaught Error: An object could not be cloned.');
   });
 
