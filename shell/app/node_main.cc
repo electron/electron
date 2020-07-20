@@ -130,6 +130,8 @@ int NodeMain(int argc, char* argv[]) {
 
     node::LoadEnvironment(env);
 
+    env->set_trace_sync_io(env->options()->trace_sync_io);
+
     bool more;
     do {
       more = uv_run(env->event_loop(), UV_RUN_ONCE);
@@ -146,6 +148,9 @@ int NodeMain(int argc, char* argv[]) {
     } while (more == true);
 
     node_debugger.Stop();
+
+    env->set_trace_sync_io(false);
+
     exit_code = node::EmitExit(env);
     env->set_can_call_into_js(false);
     node::RunAtExit(env);
