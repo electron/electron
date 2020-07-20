@@ -20,7 +20,7 @@ index 09d71b34581268bfe17c3182029cb3949d857d48..60d30b7eff7329c4235024c315251072
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 19d5eff164a543a38b4c77f99c2f15c30a226f77..709d03145e3d5acdb67502110917e8147c275c60 100644
+index 8378553f28671e4685b4ed20279b2be5d202e527..638a1a85b046ce4db303d532f7cf36cca2271db5 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -116,6 +116,7 @@ namespace node {
@@ -31,7 +31,7 @@ index 19d5eff164a543a38b4c77f99c2f15c30a226f77..709d03145e3d5acdb67502110917e814
  class TracingController;
  
  }
-@@ -387,6 +388,8 @@ NODE_EXTERN Environment* GetCurrentEnvironment(v8::Local<v8::Context> context);
+@@ -386,6 +387,8 @@ NODE_EXTERN Environment* GetCurrentEnvironment(v8::Local<v8::Context> context);
  // it returns nullptr.
  NODE_EXTERN MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform();
  
