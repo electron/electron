@@ -37,7 +37,15 @@ parameters:
     type: boolean
     default: false
 
+  run-osx-publish-arm64:
+    type: boolean
+    default: false
+
   run-mas-publish:
+    type: boolean
+    default: false
+
+  run-mas-publish-arm64:
     type: boolean
     default: false
 
@@ -2037,7 +2045,7 @@ jobs:
           checkout: true
 
   osx-publish-arm64:
-     <<: *machine-mac-large-arm
+    <<: *machine-mac-large-arm
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
