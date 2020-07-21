@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 5361f0731c530fb20b969fd272f8dcd2bddbce20..e3c377b12e5cadda86407e72d474975e6ccc3de2 100644
+index c389d38fbf98374a2c7677a95624eb87c1466b3f..e90709822d6d0462931efc979c00586749c01a3c 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,7 +81,7 @@ index 02a2c735ff694c4890b5fb6a148724b3650c7346..817a7e1a6a5c244d744c56baa1062946
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_MACOSX)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 1e5395559fa823b348903d92bd8dff54b3ac1c54..cab37c06bcd82eb05b425395bbbaa004fc693856 100644
+index a87c1992018071ecce8e4a640abebfeaf4e742eb..80ac0ab3b0edb12ca1846b8960143659775dbfa1 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -212,7 +212,7 @@ index 1e5395559fa823b348903d92bd8dff54b3ac1c54..cab37c06bcd82eb05b425395bbbaa004
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4089,3 +4089,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4089,3 +4101,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
