@@ -72,7 +72,7 @@ void Browser::Quit() {
     electron::WindowList::CloseAllWindows();
 }
 
-void Browser::Exit(gin_helper::Arguments* args) {
+void Browser::Exit(gin::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
 
