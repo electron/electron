@@ -1234,9 +1234,7 @@ void WebContents::MessageTo(bool internal,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
-      isolate, web_contents_id);
+  auto* web_contents = FromID(web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
