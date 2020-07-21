@@ -238,7 +238,6 @@ auto_filenames = {
     "lib/browser/remote/objects-registry.ts",
     "lib/browser/remote/server.ts",
     "lib/browser/rpc-server.ts",
-    "lib/browser/utils.ts",
     "lib/common/api/clipboard.ts",
     "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
