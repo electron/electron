@@ -5,8 +5,9 @@
  * nativeWindowOpen) and out-of-process (cross-origin nativeWindowOpen and
  * BrowserWindowProxy) are created here. "Embedder" roughly means "parent."
  */
-import { BrowserWindow, BrowserWindowConstructorOptions, Referrer, WebContents, IpcMainEvent, LoadURLOptions } from 'electron';
-import { parseFeatures } from '../common/parse-features-string';
+import { BrowserWindow } from 'electron/main';
+import type { BrowserWindowConstructorOptions, Referrer, WebContents, IpcMainEvent, LoadURLOptions } from 'electron/main';
+import { parseFeatures } from '@electron/internal/common/parse-features-string';
 
 type PostData = LoadURLOptions['postData']
 export type WindowOpenArgs = {

@@ -4,7 +4,8 @@
  * consists of marshaling IPC requests from the BrowserWindowProxy to the
  * WebContents.
  */
-import { webContents, BrowserWindow, WebContentsInternal, WebContents } from 'electron';
+import { webContents, BrowserWindow } from 'electron/main';
+import type { WebContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { openGuestWindow } from '@electron/internal/browser/guest-window-manager';
@@ -92,7 +93,7 @@ ipcMainInternal.on(
   }
 );
 
-type IpcHandler = (event: Electron.IpcMainInvokeEvent, guestContents: WebContentsInternal, ...args: any[]) => void;
+type IpcHandler = (event: Electron.IpcMainInvokeEvent, guestContents: Electron.WebContentsInternal, ...args: any[]) => void;
 const makeSafeHandler = function (handler: IpcHandler) {
   return (event: Electron.IpcMainInvokeEvent, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
@@ -101,7 +102,7 @@ const makeSafeHandler = function (handler: IpcHandler) {
       throw new Error(`Invalid guestId: ${guestId}`);
     }
 
-    return handler(event, guestContents as WebContentsInternal, ...args);
+    return handler(event, guestContents as Electron.WebContentsInternal, ...args);
   };
 };
 

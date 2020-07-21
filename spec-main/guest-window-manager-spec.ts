@@ -130,7 +130,7 @@ describe('webContents.setWindowOpenOverride', () => {
           assert.fail('did-create-window should not to be called with an overridden window.open');
         });
 
-        browserWindow.webContents.executeJavaScript(`window.open('about:blank') && true`);
+        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
 
         setTimeout(() => {
           done();
@@ -154,7 +154,7 @@ describe('webContents.setWindowOpenOverride', () => {
         browserWindow.webContents.setWindowOpenOverride(() => true);
 
         setImmediate(() => {
-          browserWindow.webContents.executeJavaScript(`window.open('about:blank') && true`);
+          browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
         });
 
         await Promise.all([
@@ -167,13 +167,13 @@ describe('webContents.setWindowOpenOverride', () => {
         browserWindow.webContents.setWindowOpenOverride(() => ({ webPreferences: { defaultFontSize: 30 } }));
 
         browserWindow.webContents.on('did-create-window', async (childWindow) => {
-          await childWindow.webContents.executeJavaScript(`document.write('hello')`);
-          const size = await childWindow.webContents.executeJavaScript(`getComputedStyle(document.querySelector('body')).fontSize`);
+          await childWindow.webContents.executeJavaScript("document.write('hello')");
+          const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
           expect(size).to.equal('30px');
           done();
         });
 
-        browserWindow.webContents.executeJavaScript(`window.open('about:blank') && true`);
+        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
       });
     });
   }

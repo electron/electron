@@ -326,8 +326,8 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
                             prefs.disable_electron_site_instance_overrides);
   } else if (pref_name == options::kBackgroundColor) {
     return gin::ConvertToV8(isolate, prefs.background_color);
-  // NOTE: openerId is internal-only.
   } else if (pref_name == options::kOpenerID) {
+    // NOTE: openerId is internal-only.
     return gin::ConvertToV8(isolate, prefs.opener_id);
   } else if (pref_name == options::kContextIsolation) {
     return gin::ConvertToV8(isolate, prefs.context_isolation);
@@ -335,11 +335,11 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
   } else if (pref_name == options::kEnableRemoteModule) {
     return gin::ConvertToV8(isolate, prefs.enable_remote_module);
 #endif
-  // NOTE: guestInstanceId is internal-only.
   } else if (pref_name == options::kGuestInstanceID) {
+    // NOTE: guestInstanceId is internal-only.
     return gin::ConvertToV8(isolate, prefs.guest_instance_id);
   } else if (pref_name == options::kHiddenPage) {
-  // NOTE: hiddenPage is internal-only.
+    // NOTE: hiddenPage is internal-only.
     return gin::ConvertToV8(isolate, prefs.hidden_page);
   } else if (pref_name == options::kOffscreen) {
     return gin::ConvertToV8(isolate, prefs.offscreen);
@@ -351,8 +351,8 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
     return gin::ConvertToV8(isolate, prefs.node_integration);
   } else if (pref_name == options::kNodeIntegrationInWorker) {
     return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
-  // NOTE: enableNodeLeakageInRenderers is internal-only.
   } else if (pref_name == options::kEnableNodeLeakageInRenderers) {
+    // NOTE: enableNodeLeakageInRenderers is internal-only.
     return gin::ConvertToV8(isolate, prefs.node_leakage_in_renderers);
   } else if (pref_name == options::kNodeIntegrationInSubFrames) {
     return gin::ConvertToV8(isolate, true);
