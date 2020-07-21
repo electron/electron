@@ -212,8 +212,8 @@ index 1e5395559fa823b348903d92bd8dff54b3ac1c54..cab37c06bcd82eb05b425395bbbaa004
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4086,3 +4098,5 @@ gfx::Size GLRenderer::GetRenderPassBackingPixelSize(
- }
+@@ -4089,3 +4089,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+ GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
 +
