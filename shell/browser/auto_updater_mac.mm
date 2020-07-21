@@ -41,7 +41,7 @@ std::string AutoUpdater::GetFeedURL() {
 }
 
 // static
-void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
+void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   gin_helper::ErrorThrower thrower(args->isolate());
   gin_helper::Dictionary opts;
 
