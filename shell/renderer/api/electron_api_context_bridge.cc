@@ -470,7 +470,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 
             v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
             ignore_result(proxy.GetHandle()->DefineProperty(
-                destination_context, v8::Local<v8::Name>::Cast(key), desc));
+                destination_context, key.As<v8::Name>(), desc));
           }
           continue;
         }
