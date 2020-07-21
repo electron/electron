@@ -33,8 +33,8 @@ index afe86b55d2b244bbcf856b8fad719a170a1d074f..cac59859a47251e4ce741b676a4c9c50
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling SwiftShader
    # and whatever else without interference from each other.
--  'swiftshader_revision': 'ea6f21a052c97dbfa4890e1d6840db2fe64ba1d8',
-+  'swiftshader_revision': 'a8b8ef775c7539254541c5a1070ce2948ae7be5c',
+-  'swiftshader_revision': '97f9923235cf5a24d8ce49f93bd22429d2a68548',
++  'swiftshader_revision': 'e8dd233c7a85f3c689caf06c226a7f8405a480d3',
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling PDFium
    # and whatever else without interference from each other.
