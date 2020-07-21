@@ -26,8 +26,8 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/service_manager/embedder/switches.h"
-#include "services/service_manager/sandbox/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
@@ -80,7 +80,7 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
 
 bool IsSandboxEnabled(base::CommandLine* command_line) {
   return command_line->HasSwitch(switches::kEnableSandbox) ||
-         !command_line->HasSwitch(service_manager::switches::kNoSandbox);
+         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
@@ -228,7 +228,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
     base::debug::EnableInProcessStackDumping();
 
   if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
@@ -262,7 +262,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Check for --no-sandbox parameter when running as root.
   if (getuid() == 0 && IsSandboxEnabled(command_line))
     LOG(FATAL) << "Running as root without --"
-               << service_manager::switches::kNoSandbox
+               << sandbox::policy::switches::kNoSandbox
                << " is not supported. See https://crbug.com/638180.";
 #endif
 

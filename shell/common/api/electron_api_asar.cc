@@ -117,13 +117,13 @@ class Archive : public gin_helper::Wrappable<Archive> {
 };
 
 void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
-  // Evaluate asar_init.js.
-  std::vector<v8::Local<v8::String>> asar_init_params = {
+  // Evaluate asar_bundle.js.
+  std::vector<v8::Local<v8::String>> asar_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "require")};
-  std::vector<v8::Local<v8::Value>> asar_init_args = {require};
-  electron::util::CompileAndCall(isolate->GetCurrentContext(),
-                                 "electron/js2c/asar_init", &asar_init_params,
-                                 &asar_init_args, nullptr);
+  std::vector<v8::Local<v8::Value>> asar_bundle_args = {require};
+  electron::util::CompileAndCall(
+      isolate->GetCurrentContext(), "electron/js2c/asar_bundle",
+      &asar_bundle_params, &asar_bundle_args, nullptr);
 }
 
 v8::Local<v8::Value> SplitPath(v8::Isolate* isolate,

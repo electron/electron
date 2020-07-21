@@ -1266,7 +1266,7 @@ describe('BrowserWindow module', () => {
     let w = null as unknown as BrowserWindow;
 
     beforeEach(() => {
-      w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({ show: true });
     });
 
     afterEach(async () => {
@@ -2081,7 +2081,9 @@ describe('BrowserWindow module', () => {
         });
 
         w.webContents.setWindowOpenOverride(() => ({
-          preload
+          webPreferences: {
+            preload
+          }
         }));
 
         const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open');
@@ -2110,7 +2112,9 @@ describe('BrowserWindow module', () => {
         });
 
         w.webContents.setWindowOpenOverride(() => ({
-          preload
+          webPreferences: {
+            preload
+          }
         }));
 
         w.loadFile(

@@ -31,10 +31,8 @@ void AutofillDriver::ShowAutofillPopup(
     const std::vector<base::string16>& labels) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto* web_contents =
-      api::WebContents::From(isolate, content::WebContents::FromRenderFrameHost(
-                                          render_frame_host_))
-          .get();
+  auto* web_contents = api::WebContents::From(
+      content::WebContents::FromRenderFrameHost(render_frame_host_));
   if (!web_contents || !web_contents->owner_window())
     return;
 

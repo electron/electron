@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { app } from 'electron';
+import { app } from 'electron/main';
 
 const {
   createPowerMonitor,

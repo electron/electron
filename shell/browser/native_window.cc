@@ -49,6 +49,8 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
+  ++next_id_;
+
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -605,6 +607,9 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
 std::string NativeWindow::GetAccessibleTitle() {
   return base::UTF16ToUTF8(accessible_title_);
 }
+
+// static
+int32_t NativeWindow::next_id_ = 0;
 
 // static
 void NativeWindowRelay::CreateForWebContents(

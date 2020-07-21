@@ -1,15 +1,14 @@
-import { app, ipcMain, session, deprecate } from 'electron';
-import type { MenuItem, MenuItemConstructorOptions, WebContentsInternal } from 'electron';
+import { app, ipcMain, session, deprecate, BrowserWindowConstructorOptions } from 'electron/main';
+import type { MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
-import { NavigationController } from '../navigation-controller';
-import { openGuestWindow } from '../guest-window-manager';
-import { ipcMainInternal } from '../ipc-main-internal';
-import * as ipcMainUtils from '../ipc-main-internal-utils';
-import { MessagePortMain } from '../message-port-main';
+import { openGuestWindow } from '@electron/internal/browser/guest-window-manager';
+import { NavigationController } from '@electron/internal/browser/navigation-controller';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { EventEmitter } from 'events';
-import { BrowserWindowConstructorOptions } from 'electron/main';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -20,6 +19,8 @@ let nextId = 0;
 const getNextId = function () {
   return ++nextId;
 };
+
+type PostData = LoadURLOptions['postData']
 
 /* eslint-disable camelcase */
 type MediaSize = {
@@ -122,7 +123,7 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding as { WebContents: { prototype: WebContentsInternal } };
+const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
 
 Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
@@ -203,7 +204,7 @@ for (const method of webFrameMethods) {
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents: WebContentsInternal) => {
+const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContentsInternal) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -225,7 +226,9 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 };
 
 // Translate the options of printToPDF.
-WebContents.prototype.printToPDF = function (options) {
+
+let pendingPromise: Promise<any> | undefined;
+WebContents.prototype.printToPDF = async function (options) {
   const printSettings = {
     ...defaultPrintingSetting,
     requestID: getNextId()
@@ -358,7 +361,12 @@ WebContents.prototype.printToPDF = function (options) {
   // PrinterType enum from //printing/print_job_constants.h
   printSettings.printerType = 2;
   if (this._printToPDF) {
-    return this._printToPDF(printSettings);
+    if (pendingPromise) {
+      pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
+    } else {
+      pendingPromise = this._printToPDF(printSettings);
+    }
+    return pendingPromise;
   } else {
     const error = new Error('Printing feature is disabled');
     return Promise.reject(error);
@@ -435,23 +443,25 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 };
 
 WebContents.prototype.setWindowOpenOverride = function (handler: (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean) {
-  this.windowOpenOverrideHandler = handler;
+  this._windowOpenOverrideHandler = handler;
 };
 
 WebContents.prototype._callWindowOpenOverride = function (event: any, url: string, frameName: string) {
-  if (this.windowOpenOverrideHandler) {
-    const response = this.windowOpenOverrideHandler({ url, frameName });
+  if (this._windowOpenOverrideHandler) {
+    const response = this._windowOpenOverrideHandler({ url, frameName });
 
     switch (typeof response) {
       case 'boolean':
         if (response === false) event.preventDefault();
-        return;
+        return null;
       case 'object':
         return response;
       default:
         console.error(
           'The window.open override response must be a boolean or an object of BrowserWindow options.'
         );
+        event.preventDefault();
+        return null;
     }
   }
 };
@@ -500,14 +510,14 @@ WebContents.prototype._init = function () {
   this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
   this.length = navigationController.length.bind(navigationController);
 
-  this.windowOpenOverrideHandler = null;
+  this._windowOpenOverrideHandler = null;
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
       addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
@@ -532,7 +542,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
       addReplyInternalToEvent(event);
@@ -570,14 +580,14 @@ WebContents.prototype._init = function () {
   });
 
   // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: WebContentsInternal) {
+  this.on('devtools-reload-page', function (this: Electron.WebContentsInternal) {
     this.reload();
   });
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: any, postData: any) => {
+      rawFeatures: string, referrer: any, postData: PostData) => {
       openGuestWindow({
         event,
         embedder: event.sender,
@@ -598,6 +608,9 @@ WebContents.prototype._init = function () {
       windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName);
       if (!event.defaultPrevented && windowOpenOverriddenOptions) {
         this._setNextChildWebPreferences({
+          // Allow setting of backgroundColor as a webPreference even though
+          // it's technically a BrowserWindowConstructorOptions option because
+          // we need to access it in the renderer at init time.
           backgroundColor: windowOpenOverriddenOptions.backgroundColor,
           ...windowOpenOverriddenOptions.webPreferences
         });
@@ -606,9 +619,9 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: WebContentsInternal, disposition: string,
+    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContentsInternal, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
-      referrer: any, rawFeatures: string) => {
+      referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
@@ -622,6 +635,7 @@ WebContents.prototype._init = function () {
         overrideBrowserWindowOptions: windowOpenOverriddenOptions || undefined,
         disposition,
         referrer,
+        postData,
         windowOpenArgs: {
           url,
           frameName,

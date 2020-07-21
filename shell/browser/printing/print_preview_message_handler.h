@@ -19,6 +19,7 @@
 #include "v8/include/v8.h"
 
 struct PrintHostMsg_DidPreviewDocument_Params;
+struct PrintHostMsg_DidPreviewPage_Params;
 struct PrintHostMsg_PreviewIds;
 
 namespace content {
@@ -50,12 +51,26 @@ class PrintPreviewMessageHandler
 
   void OnMetafileReadyForPrinting(
       content::RenderFrameHost* render_frame_host,
-      const PrintHostMsg_DidPreviewDocument_Params& params,
+      const printing::mojom::DidPreviewDocumentParams& params,
       const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(
+  void OnCompositeDocumentToPdfDone(
       const PrintHostMsg_PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
+  void OnPrepareForDocumentToPdfDone(
+      const PrintHostMsg_PreviewIds& ids,
+      printing::mojom::PrintCompositor::Status status);
+  void OnDidPrepareForDocumentToPdf(content::RenderFrameHost* render_frame_host,
+                                    int document_cookie,
+                                    const PrintHostMsg_PreviewIds& ids);
+  void OnCompositePdfPageDone(int page_number,
+                              int document_cookie,
+                              const PrintHostMsg_PreviewIds& ids,
+                              printing::mojom::PrintCompositor::Status status,
+                              base::ReadOnlySharedMemoryRegion region);
+  void OnDidPreviewPage(content::RenderFrameHost* render_frame_host,
+                        const printing::mojom::DidPreviewPageParams& params,
+                        const PrintHostMsg_PreviewIds& ids);
 
   // printing::mojo::PrintPreviewUI:
   void SetOptionsFromDocument(

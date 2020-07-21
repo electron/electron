@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:47:43 -0700
+Subject: chore: add v8 apple silicon patches
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02e5549e87 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -2973,6 +2973,35 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+ 
+   int arg_count = kPrintfMaxArgCount;
+ 
++#if V8_OS_MACOSX && !USE_SIMULATOR
++  CPURegList tmp_list = kCallerSaved;
++  tmp_list.Remove(x0);      // Used to pass the format string.
++  tmp_list.Remove(arg0, arg1, arg2, arg3);
++
++  // Override the MacroAssembler's scratch register list. The lists will be
++  // reset automatically at the end of the UseScratchRegisterScope.
++  UseScratchRegisterScope temps(this);
++  TmpList()->set_list(tmp_list.list());
++
++  VRegister temp_D = temps.AcquireD();
++
++  // https://developer.apple.com/library/archive/documentation/Xcode/Conceptual/iPhoneOSABIReference/Articles/ARM64FunctionCallingConventions.html#//apple_ref/doc/uid/TP40013702-SW1
++  Claim(kPrintfMaxArgCount, 8);
++  int64_t offset = 0;
++  for (unsigned i = 0; i < kPrintfMaxArgCount; i++) {
++    CPURegister arg = args[i];
++    if (arg.IsNone()) {
++      break;
++    }
++    if (arg.IsS()) {
++      fcvt(temp_D, arg.S());
++      arg = temp_D;
++    }
++    // FIXME: Use stp.
++    str(arg, MemOperand(sp, offset, Offset));
++    offset += 8;
++  }
++#else
+   // The PCS varargs registers for printf. Note that x0 is used for the printf
+   // format string.
+   static const CPURegList kPCSVarargs =
+@@ -3083,7 +3112,7 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+     }
+ #endif
+   }
+-
++#endif
+   // Load the format string into x0, as per the procedure-call standard.
+   //
+   // To make the code as portable as possible, the format string is encoded
+@@ -3105,6 +3134,10 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+   }
+ 
+   CallPrintf(arg_count, pcs);
++
++#if V8_OS_MACOSX && !USE_SIMULATOR
++  Drop(kPrintfMaxArgCount, 8);
++#endif
+ }
+ 
+ void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
+diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+index 1737c7f8e121c967de6da8bfd17dcebd121d9dd5..58ec3108a8ea5888ba31f4b5c7c4939e1c1718ea 100644
+--- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
++++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+@@ -1864,6 +1864,7 @@ void InstructionSelector::EmitPrepareArguments(
+ 
+   // Poke the arguments into the stack.
+   while (slot >= 0) {
++    // FIXME: In the Apple ARM64 ABI parameters should be packed on the stack.
+     PushParameter input0 = (*arguments)[slot];
+     PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
+     // Emit a poke-pair if consecutive parameters have the same type.
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index d4a1ad0920a45e0d704e4ed8a01fdad59fcde6e1..32c25712c6490984bd59cf4125feec98050cc61d 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -710,7 +710,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+            "maximum number of parallel compilation tasks for wasm")
+ DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
+                   "trace wasm native heap events")
+-DEFINE_BOOL(wasm_write_protect_code_memory, false,
++#if V8_OS_MACOSX && V8_TARGET_ARCH_ARM64
++#define V8_DEFAULT_WASM_WRITE_PROTECT_CODE_MEMORY true
++#else
++#define V8_DEFAULT_WASM_WRITE_PROTECT_CODE_MEMORY false
++#endif
++DEFINE_BOOL(wasm_write_protect_code_memory, V8_DEFAULT_WASM_WRITE_PROTECT_CODE_MEMORY,
+             "write protect code memory on the wasm native heap")
+ DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
+                   "trace serialization/deserialization")
+diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
+index e268667d2870a0f8fc370e14d3a846b623dae197..95d4318cf9baf895bea58991d4c2f58e4f07e23d 100644
+--- a/src/wasm/function-compiler.cc
++++ b/src/wasm/function-compiler.cc
+@@ -260,6 +260,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
+       isolate->counters(), detected);
+   if (result.succeeded()) {
+     WasmCodeRefScope code_ref_scope;
++    NativeModuleModificationScope native_module_modification_scope(native_module);
+     native_module->PublishCode(
+         native_module->AddCompiledCode(std::move(result)));
+   } else {
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index d76adccad7667665da2723dac1b30e4956dfd98a..1b802d7e4382f61c8a622234c6d1314e8fcbac96 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -851,7 +851,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+ //    and even if we did, the resulting set of pages may be fragmented.
+ //    Currently, we try and keep the number of syscalls low.
+ // -  similar argument for debug time.
+-class NativeModuleModificationScope final {
++class V8_EXPORT_PRIVATE NativeModuleModificationScope final {
+  public:
+   explicit NativeModuleModificationScope(NativeModule* native_module);
+   ~NativeModuleModificationScope();
+diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
+index 1d85bb3ff79557442dc416587769b5f8fcfa77fb..bdd7ef4c45a3908ff234ecf136e153c31dbc2ba9 100644
+--- a/src/wasm/wasm-objects.cc
++++ b/src/wasm/wasm-objects.cc
+@@ -1447,6 +1447,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
+     wasm::CompilationEnv env = native_module->CreateCompilationEnv();
+     wasm::WasmCompilationResult result = compiler::CompileWasmImportCallWrapper(
+         isolate->wasm_engine(), &env, kind, sig, false);
++    wasm::NativeModuleModificationScope native_module_modification_scope(native_module);
+     std::unique_ptr<wasm::WasmCode> wasm_code = native_module->AddCode(
+         result.func_index, result.code_desc, result.frame_slot_count,
+         result.tagged_parameter_slots,
