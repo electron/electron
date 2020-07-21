@@ -270,7 +270,7 @@ static_library("chrome") {
 source_set("plugins") {
   sources = []
   deps = []
-  libs = []
+  frameworks = []
 
   # browser side
   sources += [
@@ -304,7 +304,7 @@ source_set("plugins") {
         "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
         "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
       ]
-      libs += [ "CoreGraphics.framework" ]
+      frameworks += [ "CoreGraphics.framework" ]
     }
     if (is_linux) {
       deps += [ "//components/services/font/public/cpp" ]

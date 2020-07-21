@@ -465,7 +465,7 @@ source_set("electron_lib") {
       deps += [ "//third_party/crashpad/crashpad/client" ]
     }
 
-    libs = [
+    frameworks = [
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",
@@ -492,7 +492,7 @@ source_set("electron_lib") {
         "shell/common/crash_keys.h",
       ]
     } else {
-      libs += [
+      frameworks += [
         "Squirrel.framework",
         "ReactiveObjC.framework",
         "Mantle.framework",
@@ -803,10 +803,10 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-    libs = []
+    frameworks = []
 
     if (enable_osr) {
-      libs += [ "IOSurface.framework" ]
+      frameworks += [ "IOSurface.framework" ]
     }
 
     ldflags = [
@@ -915,7 +915,7 @@ if (is_mac) {
     output_name = electron_login_helper_name
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
-    libs = [ "AppKit.framework" ]
+    frameworks = [ "AppKit.framework" ]
     info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
         [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]

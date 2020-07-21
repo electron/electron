@@ -57,7 +57,7 @@ index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c4
 +  configs += [ "//build/config/compiler:no_chromium_code" ]
 +  public_deps = [ ":mantle_headers" ]
 +  deps = []
-+  libs = [
++  frameworks = [
 +    "CoreData.framework",
 +    "Foundation.framework",
 +  ]
@@ -131,7 +131,7 @@ index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c4
 +    ":reactiveobjc_headers",
 +    ":reactiveobjc_signalprovider_dtrace",
 +  ]
-+  libs = [
++  frameworks = [
 +    "AppKit.framework",
 +    "Foundation.framework",
 +  ]
@@ -180,7 +180,7 @@ index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c4
 +    ":mantle_framework+link",
 +    ":reactiveobjc_framework+link",
 +  ]
-+  libs = [
++  frameworks = [
 +    "AppKit.framework",
 +    "Foundation.framework",
 +    "IOKit.framework",
@@ -244,7 +244,7 @@ index 0000000000000000000000000000000000000000..a259f5d9a70686f01b32e08c1d8337c4
 +    ":mantle_framework+link",
 +    ":reactiveobjc_framework+link",
 +  ]
-+  libs = [
++  frameworks = [
 +    "AppKit.framework",
 +    "Foundation.framework",
 +    "IOKit.framework",
