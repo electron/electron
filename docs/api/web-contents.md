@@ -1118,9 +1118,9 @@ Ignore application menu shortcuts while this web contents is focused.
 
 * `handler` Function<Boolean | BrowserWindowConstructorOptions>
   * `details` Object
-    * `url` String - URL passed to `window.open()`
+    * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
-  Returns `Boolean | BrowserWindowConstructorOptions` - `false` cancels the creation of the new window. `true` or `undefined` result in the default behavior; a window is created. Returning `BrowserWindowConstructorOptions` allows customization of the created window.
+  Returns `Boolean | BrowserWindowConstructorOptions` - `false` cancels the creation of the new window. `true` results in the default behavior: a window is created. Returning `BrowserWindowConstructorOptions` allows customization of the created window. Returning `undefined` will result in a console error and cancellation of the window.
 
 Called before creating a window when `window.open()` is called from the
 renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
