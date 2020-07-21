@@ -8,7 +8,7 @@ const semver = require('semver');
 const { ELECTRON_DIR } = require('../../lib/utils');
 const notesGenerator = require('./notes.js');
 
-const semverify = version => version.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.');
+const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
   const response = await GitProcess.exec(args, ELECTRON_DIR);
@@ -60,7 +60,7 @@ const getAllBranches = async () => {
 
 const getStabilizationBranches = async () => {
   return (await getAllBranches())
-    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch));
+    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch) || /^origin\/\d+-x-y$/.test(branch));
 };
 
 const getPreviousStabilizationBranch = async (current) => {
@@ -144,8 +144,8 @@ async function getReleaseNotes (range, newVersion, explicitLinks) {
 
 async function main () {
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'explicit-links', 'help' ],
-    string: [ 'version' ]
+    boolean: ['explicit-links', 'help'],
+    string: ['version']
   });
   opts.range = opts._.shift();
   if (opts.help || !opts.range) {
