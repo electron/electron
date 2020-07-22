@@ -29,9 +29,9 @@ index e00204b089349c6356acaac6a8918c8b74936486..b77b8028772f9e1afdc62606094defbe
    bool IsRenderViewLive() override;
    void NotifyMoveOrResizeStarted() override;
 +  void SetSchedulerThrottling(bool allowed) override;
-   WebPreferences GetWebkitPreferences() override;
-   void UpdateWebkitPreferences(const WebPreferences& prefs) override;
    void OnWebkitPreferencesChanged() override;
+ 
+   void SendWebPreferencesToRenderer();
 diff --git a/content/common/view_messages.h b/content/common/view_messages.h
 index 19fa7ac26926231b01fe19f7adf62dd0e08edb1b..d4d3b97811a656d40884d7e4b872fdf72dfb11fa 100644
 --- a/content/common/view_messages.h
@@ -50,16 +50,16 @@ diff --git a/content/public/browser/render_view_host.h b/content/public/browser/
 index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f806da68f0 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -96,6 +96,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
+@@ -95,6 +95,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
    // started.
    virtual void NotifyMoveOrResizeStarted() = 0;
  
 +  // Disable/Enable scheduler throttling.
 +  virtual void SetSchedulerThrottling(bool allowed) = 0;
 +
-   // TODO(mustaq): Replace "Webkit" from the following three method names.
-   //
-   // Returns the current WebKit preferences. Note: WebPreferences is cached, so
+   // TODO(mustaq): Replace "Webkit" from this method name.
+   // Passes current web preferences to all renderers in the WebContents
+   // associated with this RenderViewHost, after possibly recomputing
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
 index d9792ba47cf8621549676564ef4c162b0714d45d..d57a8432e8638036f309f317e6f857757ed54549 100644
 --- a/content/renderer/render_view_impl.cc
