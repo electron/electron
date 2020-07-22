@@ -2823,8 +2823,7 @@ describe('BrowserWindow module', () => {
         width: 100,
         height: 100,
         webPreferences: {
-          nodeIntegration: true,
-          sandbox: true
+          nodeIntegration: true
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));

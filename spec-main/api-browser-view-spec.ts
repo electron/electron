@@ -214,15 +214,16 @@ describe('BrowserView module', () => {
   });
 
   describe('window.open()', () => {
-    it('works in BrowserView', async () => {
+    it('works in BrowserView', (done) => {
       view = new BrowserView();
       w.setBrowserView(view);
-      const newWindow = emittedOnce(view.webContents, 'did-create-window');
+      view.webContents.setWindowOpenOverride(({ url, frameName }) => {
+        expect(url).to.equal('http://host/');
+        expect(frameName).to.equal('host');
+        done();
+        return false;
+      });
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-      const [, { url, frameName, additionalFeatures }] = await newWindow;
-      expect(url).to.equal('http://host/');
-      expect(frameName).to.equal('host');
-      expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature');
     });
   });
 });

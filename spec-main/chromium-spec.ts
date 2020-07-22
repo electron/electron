@@ -551,7 +551,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, async () => {
+      it(`shows the child regardless of parent visibility when parent {show=${show}}`, async () => {
         const w = new BrowserWindow({ show });
 
         // toggle visibility
@@ -566,7 +566,7 @@ describe('chromium features', () => {
         const newWindow = emittedOnce(w.webContents, 'new-window');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
         const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(w.isVisible());
+        expect(options.show).to.equal(true);
       });
     }
 
@@ -600,35 +600,6 @@ describe('chromium features', () => {
       const [, window] = await emittedOnce(app, 'browser-window-created');
       const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
-    });
-
-    it('handles cycles when merging the parent options into the child options', async () => {
-      const foo = {} as any;
-      foo.bar = foo;
-      foo.baz = {
-        hello: {
-          world: true
-        }
-      };
-      foo.baz2 = foo.baz;
-      const w = new BrowserWindow({ show: false, foo: foo } as any);
-
-      w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-      const [,,,, options] = await emittedOnce(w.webContents, 'new-window');
-      expect(options.show).to.be.false();
-      expect((options as any).foo).to.deep.equal({
-        bar: undefined,
-        baz: {
-          hello: {
-            world: true
-          }
-        },
-        baz2: {
-          hello: {
-            world: true
-          }
-        }
-      });
     });
 
     it('defines a window.location getter', async () => {
