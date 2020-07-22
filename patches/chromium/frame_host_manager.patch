@@ -42,10 +42,10 @@ index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 2cf0ea5f20c09a6bc9948b4485f3f023c5c53b59..81f95e2ad9d0200c779f277d190ad870ebf91d3f 100644
+index 947652acf1445122d51d300dd6c70c37742a342d..502c9ced4a22b1694e6533423578c0ae25e7e29e 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1447,6 +1447,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1454,6 +1454,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -67,7 +67,7 @@ index 2cf0ea5f20c09a6bc9948b4485f3f023c5c53b59..81f95e2ad9d0200c779f277d190ad870
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4893,6 +4908,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4915,6 +4930,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 2cf0ea5f20c09a6bc9948b4485f3f023c5c53b59..81f95e2ad9d0200c779f277d190ad870
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4906,10 +4922,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4928,10 +4944,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,10 +91,10 @@ index 2cf0ea5f20c09a6bc9948b4485f3f023c5c53b59..81f95e2ad9d0200c779f277d190ad870
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index ccaa4324303df603bb7bc24077f58920420e0dae..8af5643e2105c8e307b7b736b72807e5aa9085b9 100644
+index 31e631e3a4d425c9f77fc7ef25725ef61d1f60e1..f57463bc606506aa0e5e13d013021ddd351303f2 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -142,6 +142,10 @@ class CONTENT_EXPORT NavigationRequest
+@@ -148,6 +148,10 @@ class CONTENT_EXPORT NavigationRequest
      // asynchronous.
      WILL_PROCESS_RESPONSE,
  
@@ -229,7 +229,7 @@ index e5d26881312d422ef34b8d769528a7ad4e5c8dd4..48bf203e49584b337dc5cca99339f741
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2e1b2be0a96ef14e0d5d0cec0ce114ad97b4bf37..b8c89b77f1e0f5e78c7ca8f55eb5f4547fc40f54 100644
+index 389c264cb71f972648b5e3eb9716a207e26d7125..acb84b416496a71b46f996b78ac1f5e0e6966b93 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -61,6 +61,21 @@
@@ -255,10 +255,10 @@ index 2e1b2be0a96ef14e0d5d0cec0ce114ad97b4bf37..b8c89b77f1e0f5e78c7ca8f55eb5f454
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f2b64eb90f80c94a9b8a7374b5733a609446346b..28f170b9455835f0c90af3411538b098e4fe75e9 100644
+index 1c35815fe2116dfe20c1bba529da8ada135b7f6e..cf3ca2cb9ff700d2629b7f24adb10aff22c0b042 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -247,8 +247,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -248,8 +248,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  

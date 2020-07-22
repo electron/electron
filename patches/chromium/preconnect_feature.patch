@@ -8,7 +8,7 @@ this patch removes that dependency so we can reuse it.
 Ideally we would change this class in upstream to not depend on Profile.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index d7e470bbb181b2274584ffc14f2c26625b1d5794..78216f0083281b4f1e0209f766753d0dc9c796c4 100644
+index 3f363b51a751cd1766786b71d82d3760d51510c9..bd81f631b15cc4cb8c54afd51bd8739f4256ae33 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -68,7 +68,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
@@ -20,7 +20,7 @@ index d7e470bbb181b2274584ffc14f2c26625b1d5794..78216f0083281b4f1e0209f766753d0d
      : delegate_(std::move(delegate)),
        profile_(profile),
        inflight_preresolves_count_(0) {
-@@ -327,11 +327,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
+@@ -328,11 +328,13 @@ network::mojom::NetworkContext* PreconnectManager::GetNetworkContext() const {
    if (network_context_)
      return network_context_;
  
