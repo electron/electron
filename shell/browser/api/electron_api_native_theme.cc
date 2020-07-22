@@ -23,12 +23,13 @@ namespace electron {
 
 namespace api {
 
+gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* ui_theme,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
-  Init(isolate);
 }
 
 NativeTheme::~NativeTheme() {
@@ -95,19 +96,17 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 }
 
 // static
-v8::Local<v8::Value> NativeTheme::Create(v8::Isolate* isolate) {
+gin::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
   ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
   return gin::CreateHandle(isolate,
-                           new NativeTheme(isolate, ui_theme, web_theme))
-      .ToV8();
+                           new NativeTheme(isolate, ui_theme, web_theme));
 }
 
-// static
-void NativeTheme::BuildPrototype(v8::Isolate* isolate,
-                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "NativeTheme"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<NativeTheme>::GetObjectTemplateBuilder(
+             isolate)
       .SetProperty("shouldUseDarkColors", &NativeTheme::ShouldUseDarkColors)
       .SetProperty("themeSource", &NativeTheme::GetThemeSource,
                    &NativeTheme::SetThemeSource)
@@ -117,11 +116,17 @@ void NativeTheme::BuildPrototype(v8::Isolate* isolate,
                    &NativeTheme::ShouldUseInvertedColorScheme);
 }
 
+const char* NativeTheme::GetTypeName() {
+  return "NativeTheme";
+}
+
 }  // namespace api
 
 }  // namespace electron
 
 namespace {
+
+using electron::api::NativeTheme;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -129,10 +134,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
-  dict.Set("nativeTheme", electron::api::NativeTheme::Create(isolate));
-  dict.Set("NativeTheme", electron::api::NativeTheme::GetConstructor(isolate)
-                              ->GetFunction(context)
-                              .ToLocalChecked());
+  dict.Set("nativeTheme", NativeTheme::Create(isolate));
 }
 
 }  // namespace
