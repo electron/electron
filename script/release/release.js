@@ -173,18 +173,18 @@ function assetsForVersion (version, validatingRelease) {
 }
 
 function s3UrlsForVersion (version) {
-  const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/';
+  const bucket = 'https://electronjs-artifacts.s3.amazonaws.com/';
   const patterns = [
-    `${bucket}atom-shell/dist/${version}/iojs-${version}-headers.tar.gz`,
-    `${bucket}atom-shell/dist/${version}/iojs-${version}.tar.gz`,
-    `${bucket}atom-shell/dist/${version}/node-${version}.tar.gz`,
-    `${bucket}atom-shell/dist/${version}/node.lib`,
-    `${bucket}atom-shell/dist/${version}/win-x64/iojs.lib`,
-    `${bucket}atom-shell/dist/${version}/win-x86/iojs.lib`,
-    `${bucket}atom-shell/dist/${version}/x64/node.lib`,
-    `${bucket}atom-shell/dist/${version}/SHASUMS.txt`,
-    `${bucket}atom-shell/dist/${version}/SHASUMS256.txt`,
-    `${bucket}atom-shell/dist/index.json`
+    `${bucket}dist/${version}/iojs-${version}-headers.tar.gz`,
+    `${bucket}dist/${version}/iojs-${version}.tar.gz`,
+    `${bucket}dist/${version}/node-${version}.tar.gz`,
+    `${bucket}dist/${version}/node.lib`,
+    `${bucket}dist/${version}/win-x64/iojs.lib`,
+    `${bucket}dist/${version}/win-x86/iojs.lib`,
+    `${bucket}dist/${version}/x64/node.lib`,
+    `${bucket}dist/${version}/SHASUMS.txt`,
+    `${bucket}dist/${version}/SHASUMS256.txt`,
+    `${bucket}dist/index.json`
   ];
   return patterns;
 }
@@ -404,7 +404,7 @@ async function verifyShasums (urls, isS3) {
         return path.basename(currentUrl.pathname);
       }).filter(file => file.indexOf('SHASUMS') === -1);
     } else {
-      const s3VersionPath = `/atom-shell/dist/${pkgVersion}/`;
+      const s3VersionPath = `/dist/${pkgVersion}/`;
       await Promise.all(urls.map(async (url) => {
         const currentUrl = new URL(url);
         const dirname = path.dirname(currentUrl.pathname);

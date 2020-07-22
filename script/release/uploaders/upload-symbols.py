@@ -32,7 +32,7 @@ def main():
   else:
     files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym') + glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
-  # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
+  # The file upload needs to be symbols/:symbol_name/:hash/:symbol
   os.chdir(SYMBOLS_DIR)
   files = [os.path.relpath(f, os.getcwd()) for f in files]
 
@@ -49,7 +49,7 @@ def run_symstore(pdb, dest, product):
 
 
 def upload_symbols(bucket, access_key, secret_key, files):
-  s3put(bucket, access_key, secret_key, SYMBOLS_DIR, 'atom-shell/symbols',
+  s3put(bucket, access_key, secret_key, SYMBOLS_DIR, 'symbols',
         files)
 
 

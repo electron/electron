@@ -46,9 +46,9 @@ def upload_node(bucket, access_key, secret_key, version):
       shutil.copy2(generated_tar, os.path.join(GEN_DIR, versioned_header_tar))
 
     s3put(bucket, access_key, secret_key, GEN_DIR,
-          'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
+          'dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
     s3put(bucket, access_key, secret_key, GEN_DIR,
-          'atom-shell/dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
+          'dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
     if get_target_arch() == 'ia32':
@@ -74,15 +74,15 @@ def upload_node(bucket, access_key, secret_key, version):
 
     # Upload the node.lib.
     s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [node_lib])
+          'dist/{0}'.format(version), [node_lib])
 
     # Upload the iojs.lib.
     s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [iojs_lib])
+          'dist/{0}'.format(version), [iojs_lib])
 
     # Upload the v4 node.lib.
     s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [v4_node_lib])
+          'dist/{0}'.format(version), [v4_node_lib])
 
 
 if __name__ == '__main__':

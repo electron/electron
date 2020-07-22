@@ -32,7 +32,7 @@ def main():
   if args.target_dir is None:
     bucket, access_key, secret_key = s3_config()
     s3put(bucket, access_key, secret_key, directory,
-          'atom-shell/dist/{0}'.format(args.version), checksums)
+          'dist/{0}'.format(args.version), checksums)
   else:
     copy_files(checksums, args.target_dir)
 

@@ -315,7 +315,7 @@ def upload_electron(release, file_path, args):
     s3put(bucket, access_key, secret_key, os.path.dirname(file_path),
           key_prefix, [file_path])
     upload_sha256_checksum(args.version, file_path, key_prefix)
-    s3url = 'https://gh-contractor-zcbenz.s3.amazonaws.com'
+    s3url = 'https://electronjs-artifacts.s3.amazonaws.com'
     print('{0} uploaded to {1}/{2}/{0}'.format(filename, s3url, key_prefix))
     return
 
@@ -339,7 +339,7 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
   bucket, access_key, secret_key = s3_config()
   checksum_path = '{}.sha256sum'.format(file_path)
   if key_prefix is None:
-    key_prefix = 'atom-shell/tmp/{0}'.format(version)
+    key_prefix = '_tmp/{0}'.format(version)
   sha256 = hashlib.sha256()
   with open(file_path, 'rb') as f:
     sha256.update(f.read())

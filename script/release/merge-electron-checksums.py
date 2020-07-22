@@ -28,7 +28,7 @@ def main():
     print('S3 bucket "{}" does not exist!'.format(bucket_name), file=sys.stderr)
     return 1
 
-  prefix = 'atom-shell/tmp/{0}/'.format(args.version)
+  prefix = '_tmp/{0}/'.format(args.version)
   shasums = [s3_object.get_contents_as_string().strip()
              for s3_object in bucket.list(prefix, delimiter='/')
              if s3_object.key.endswith('.sha256sum')]

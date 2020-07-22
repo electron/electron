@@ -60,7 +60,7 @@ def main():
       f.write(new_content)
 
     bucket, access_key, secret_key = s3_config()
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
+    s3put(bucket, access_key, secret_key, OUT_DIR, 'dist',
           [index_json])
 
 
