@@ -166,28 +166,28 @@ index a87c1992018071ecce8e4a640abebfeaf4e742eb..80ac0ab3b0edb12ca1846b8960143659
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2617,8 +2627,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2621,8 +2621,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
 -  SetUseProgram(draw_cache_.program_key, locked_quad.color_space(),
--                CurrentRenderPassColorSpace());
+-                CurrentRenderPassColorSpace(),
 +  SetUseProgram(draw_cache_.program_key, PATCH_CS(locked_quad.color_space()),
-+                PATCH_CS(CurrentRenderPassColorSpace()));
++                PATCH_CS(CurrentRenderPassColorSpace()),
+                 /*adjust_src_white_level=*/draw_cache_.is_video_frame);
  
    if (current_program_->rounded_corner_rect_location() != -1) {
-     SetShaderRoundedCorner(
-@@ -3363,7 +3373,9 @@ void GLRenderer::PrepareGeometry(BoundGeometry binding) {
- void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3375,7 +3375,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
-                                const gfx::ColorSpace& dst_color_space) {
+                                const gfx::ColorSpace& dst_color_space,
+                                bool adjust_src_white_level) {
 -  DCHECK(dst_color_space.IsValid());
 +  if (settings_->enable_color_correct_rendering) {
 +    DCHECK(dst_color_space.IsValid());
 +  }
- 
-   // If the input color space is PQ, and it did not specify a white level,
-   // override it with the frame's white level.
+   gfx::ColorSpace adjusted_src_color_space = src_color_space;
+   if (adjust_src_white_level) {
+     // If the input color space is HDR, and it did not specify a white level,
 @@ -3745,9 +3757,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
