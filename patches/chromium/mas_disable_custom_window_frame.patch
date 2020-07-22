@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 2cd283de6677f0c256940ab475eb6c58d8040f54..ad7f1f0c05b491977ccd5650c94248e876ad2b0e 100644
+index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b5222c2d5 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -27,7 +27,7 @@ index 2cd283de6677f0c256940ab475eb6c58d8040f54..ad7f1f0c05b491977ccd5650c94248e8
  @implementation BrowserNativeWidgetWindow
  
  // Prevent detached tabs from glitching when the window is partially offscreen.
-@@ -88,6 +91,7 @@
+@@ -84,6 +87,7 @@
  
  // NSWindow (PrivateAPI) overrides.
  
@@ -35,7 +35,7 @@ index 2cd283de6677f0c256940ab475eb6c58d8040f54..ad7f1f0c05b491977ccd5650c94248e8
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -102,6 +106,8 @@
+@@ -98,6 +102,8 @@
    return NO;
  }
  

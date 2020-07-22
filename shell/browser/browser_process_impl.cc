@@ -8,6 +8,7 @@
 
 #include <utility>
 
+#include "base/command_line.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/federated_learning/floc_blocklist_service.h"  // nogncheck
 #include "components/prefs/in_memory_pref_store.h"

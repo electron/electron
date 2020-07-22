@@ -64,6 +64,7 @@ static_library("chrome") {
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
+
   public_deps = [
     "//chrome/common",
     "//chrome/common:version_header",
@@ -73,10 +74,10 @@ static_library("chrome") {
     "//components/security_state/content",
     "//content/public/browser",
   ]
+
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//chrome/services/speech:buildflags",
-    "//components/feature_engagement:buildflags",
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
@@ -270,7 +271,7 @@ static_library("chrome") {
 source_set("plugins") {
   sources = []
   deps = []
-  libs = []
+  frameworks = []
 
   # browser side
   sources += [
@@ -304,7 +305,7 @@ source_set("plugins") {
         "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
         "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
       ]
-      libs += [ "CoreGraphics.framework" ]
+      frameworks += [ "CoreGraphics.framework" ]
     }
     if (is_linux) {
       deps += [ "//components/services/font/public/cpp" ]
