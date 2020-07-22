@@ -327,6 +327,20 @@ describe('contextBridge', () => {
         expect(result).to.equal(true, 'symbols should be equal across contexts');
       });
 
+      it('should proxy symbols such that symbol key lookup works', async () => {
+        await makeBindingWindow(() => {
+          const mySymbol = Symbol('unique');
+          contextBridge.exposeInMainWorld('example', {
+            getSymbol: () => mySymbol,
+            getObject: () => ({ [mySymbol]: 123 })
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getObject()[root.example.getSymbol()];
+        });
+        expect(result).to.equal(123, 'symbols key lookup should work across contexts');
+      });
+
       it('should proxy typed arrays and regexps through the serializer', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
@@ -509,7 +523,10 @@ describe('contextBridge', () => {
               arr: [123, 'string', true, ['foo']],
               getPromise: async () => ({ number: 123, string: 'string', boolean: true, fn: () => 'string', arr: [123, 'string', true, ['foo']] })
             },
-            receiveArguments: (fn: any) => fn({ key: 'value' })
+            receiveArguments: (fn: any) => fn({ key: 'value' }),
+            symbolKeyed: {
+              [Symbol('foo')]: 123
+            }
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -517,6 +534,8 @@ describe('contextBridge', () => {
           let arg: any;
           example.receiveArguments((o: any) => { arg = o; });
           const protoChecks = [
+            ...Object.keys(example).map(key => [key, String]),
+            ...Object.getOwnPropertySymbols(example.symbolKeyed).map(key => [key, Symbol]),
             [example, Object],
             [example.number, Number],
             [example.string, String],

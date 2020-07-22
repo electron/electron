@@ -37,7 +37,15 @@ parameters:
     type: boolean
     default: false
 
+  run-osx-publish-arm64:
+    type: boolean
+    default: false
+
   run-mas-publish:
+    type: boolean
+    default: false
+
+  run-mas-publish-arm64:
     type: boolean
     default: false
 
@@ -145,6 +153,7 @@ env-mas: &env-mas
 env-mas-apple-silicon: &env-mas-apple-silicon
   GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
   MAS_BUILD: 'true'
+  TARGET_ARCH: arm64
 
 # Misc build configuration options.
 env-enable-sccache: &env-enable-sccache
@@ -1764,7 +1773,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1776,7 +1785,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1828,7 +1837,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1842,7 +1851,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1895,7 +1904,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1909,7 +1918,7 @@ jobs:
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -1969,7 +1978,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -1982,7 +1991,7 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -2031,7 +2040,21 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
+          attach: false
+          checkout: true
+
+  osx-publish-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
           attach: false
           checkout: true
 
@@ -2043,7 +2066,20 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
+          attach: true
+          checkout: false
+
+  osx-publish-arm64-skip-checkout:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-apple-silicon
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -2112,11 +2148,25 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
           attach: false
           checkout: true
 
-  mas-publish-skip-checkout:
+  mas-publish-arm64:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas-apple-silicon
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
+          attach: false
+          checkout: true          
+
+  mas-publish-x64-skip-checkout:
     <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
@@ -2125,7 +2175,20 @@ jobs:
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:  
+      - electron-publish:
+          attach: true
+          checkout: false
+
+  mas-publish-arm64-skip-checkout:
+    <<: *machine-mac-large-arm
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas-apple-silicon
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - electron-publish:
           attach: true
           checkout: false
 
@@ -2429,6 +2492,18 @@ workflows:
     - mas-publish:
         context: release-env
 
+  publish-osx-arm64:
+    when: << pipeline.parameters.run-osx-publish-arm64 >>
+    jobs:
+    - osx-publish-arm64:
+        context: release-env
+
+  publish-mas-arm64:
+    when: << pipeline.parameters.run-mas-publish-arm64 >>
+    jobs:
+    - mas-publish-arm64:
+        context: release-env        
+
   publish-macos:
     when: << pipeline.parameters.run-macos-publish >>
     jobs:
@@ -2436,7 +2511,13 @@ workflows:
     - osx-publish-x64-skip-checkout:
         requires:
           - mac-checkout
-    - mas-publish-skip-checkout:
+    - mas-publish-x64-skip-checkout:
+        requires:
+          - mac-checkout
+    - osx-publish-arm64-skip-checkout:
+        requires:
+          - mac-checkout
+    - mas-publish-arm64-skip-checkout:
         requires:
           - mac-checkout
 

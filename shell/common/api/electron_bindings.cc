@@ -33,17 +33,6 @@
 
 namespace electron {
 
-namespace {
-
-// Called when there is a fatal error in V8, we just crash the process here so
-// we can get the stack trace.
-void FatalErrorCallback(const char* location, const char* message) {
-  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  ElectronBindings::Crash();
-}
-
-}  // namespace
-
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
   uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
   call_next_tick_async_.data = this;
@@ -86,8 +75,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
 
 void ElectronBindings::BindTo(v8::Isolate* isolate,
                               v8::Local<v8::Object> process) {
-  isolate->SetFatalErrorHandler(FatalErrorCallback);
-
   gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
 

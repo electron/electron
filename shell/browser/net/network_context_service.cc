@@ -6,6 +6,7 @@
 
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
+#include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"

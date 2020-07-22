@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 15 Jul 2020 18:43:32 -0700
+Subject: fix: allow preventing SetPromiseRejectCallback
+
+We do not want to use the promise rejection callback that Node.js uses,
+because it does not send PromiseRejectionEvents to the global script context.
+We need to use the one Blink already provides, and so we need to
+slightly augment IsolateSettings to allow for that.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 21980987644c6e83029157785dea463070456c77..20d9f91dcf6b5def05a706cf3389d64e9edbcf3e 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -241,9 +241,11 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+     s.allow_wasm_code_generation_callback : AllowWasmCodeGenerationCallback;
+   isolate->SetAllowWasmCodeGenerationCallback(allow_wasm_codegen_cb);
+ 
+-  auto* promise_reject_cb = s.promise_reject_callback ?
+-    s.promise_reject_callback : task_queue::PromiseRejectCallback;
+-  isolate->SetPromiseRejectCallback(promise_reject_cb);
++  if (s.flags & SHOULD_SET_PROMISE_REJECTION_CALLBACK) {
++    auto* promise_reject_cb = s.promise_reject_callback ?
++      s.promise_reject_callback : task_queue::PromiseRejectCallback;
++    isolate->SetPromiseRejectCallback(promise_reject_cb);
++  }
+ 
+   if (s.flags & DETAILED_SOURCE_POSITIONS_FOR_PROFILING)
+     v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(isolate);
+diff --git a/src/node.h b/src/node.h
+index b9b11b4331bd3ae4a87f65758ee09af25222e19a..60ecc3bd3499c23b297bc11e7f052aede20520c2 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -304,12 +304,14 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
+ 
+ enum IsolateSettingsFlags {
+   MESSAGE_LISTENER_WITH_ERROR_LEVEL = 1 << 0,
+-  DETAILED_SOURCE_POSITIONS_FOR_PROFILING = 1 << 1
++  DETAILED_SOURCE_POSITIONS_FOR_PROFILING = 1 << 1,
++  SHOULD_SET_PROMISE_REJECTION_CALLBACK = 1 << 2
+ };
+ 
+ struct IsolateSettings {
+   uint64_t flags = MESSAGE_LISTENER_WITH_ERROR_LEVEL |
+-      DETAILED_SOURCE_POSITIONS_FOR_PROFILING;
++      DETAILED_SOURCE_POSITIONS_FOR_PROFILING | 
++      SHOULD_SET_PROMISE_REJECTION_CALLBACK;
+   v8::MicrotasksPolicy policy = v8::MicrotasksPolicy::kExplicit;
+ 
+   // Error handling callbacks

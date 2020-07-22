@@ -15,19 +15,21 @@ const appVeyorJobs = {
   'electron-woa': 'electron-woa-release'
 };
 
-const circleCIJobs = [
+const circleCIPublishWorkflows = [
+  'linux-publish',
+  'macos-publish'
+];
+
+const circleCIJobs = circleCIPublishWorkflows.concat([
   'linux-arm-publish',
   'linux-arm64-publish',
   'linux-ia32-publish',
   'linux-x64-publish',
   'mas-publish',
-  'osx-publish'
-];
-
-const circleCIPublishWorkflows = [
-  'linux-publish',
-  'macos-publish'
-];
+  'mas-publish-arm64',
+  'osx-publish',
+  'osx-publish-arm64'
+]);
 
 const vstsArmJobs = [
   'electron-arm-testing',
