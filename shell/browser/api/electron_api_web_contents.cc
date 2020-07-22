@@ -1755,7 +1755,7 @@ bool WebContents::IsDevToolsFocused() {
 }
 
 void WebContents::EnableDeviceEmulation(
-    const blink::WebDeviceEmulationParams& params) {
+    const blink::DeviceEmulationParams& params) {
   if (type_ == Type::REMOTE)
     return;
 
