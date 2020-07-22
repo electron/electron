@@ -223,11 +223,11 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOpti
   return {
     additionalFeatures,
     options: {
+      ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       show: true,
       title: frameName,
       width: 800,
       height: 600,
-      ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       ...parsedOptions,
       ...overrideOptions,
       webPreferences: {
