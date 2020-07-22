@@ -91,7 +91,7 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::OnMessageLoopCreated() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
-  base::CurrentUIThread::Get()->AddTaskObserver(microtasks_runner_.get());
+  base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::OnMessageLoopDestroying() {
@@ -101,7 +101,7 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
-  base::CurrentUIThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
