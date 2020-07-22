@@ -301,13 +301,13 @@ bool Converter<blink::DeviceEmulationParams>::FromV8(
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
-  std::string screen_position;
-  if (dict.Get("screenPosition", &screen_position)) {
-    screen_position = base::ToLowerASCII(screen_position);
-    if (screen_position == "mobile")
-      out->screen_position = blink::DeviceEmulationParams::kMobile;
-    else if (screen_position == "desktop")
-      out->screen_position = blink::DeviceEmulationParams::kDesktop;
+  std::string screen_type;
+  if (dict.Get("screenPosition", &screen_type)) {
+    screen_type = base::ToLowerASCII(screen_type);
+    if (screen_type == "mobile")
+      out->screen_type = blink::mojom::EmulatedScreenType::kMobile;
+    else if (screen_type == "desktop")
+      out->screen_type = blink::mojom::EmulatedScreenType::kDesktop;
     else
       return false;
   }
