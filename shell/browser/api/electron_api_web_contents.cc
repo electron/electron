@@ -1763,10 +1763,13 @@ void WebContents::EnableDeviceEmulation(
   if (frame_host) {
     auto* widget_host =
         frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(new WidgetMsg_EnableDeviceEmulation(
-        widget_host->GetRoutingID(), params));
+    if (widget_host) {
+      auto* impl = content::RenderWidgetHostImpl::FromID(
+          widget_host->GetProcess()->GetID(), widget_host->GetRoutingID());
+
+      auto& frame_widget = impl->GetAssociatedFrameWidget();
+      frame_widget->EnableDeviceEmulation(params);
+    }
   }
 }
 
@@ -1778,10 +1781,13 @@ void WebContents::DisableDeviceEmulation() {
   if (frame_host) {
     auto* widget_host =
         frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(
-        new WidgetMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+    if (widget_host) {
+      auto* impl = content::RenderWidgetHostImpl::FromID(
+          widget_host->GetProcess()->GetID(), widget_host->GetRoutingID());
+
+      auto& frame_widget = impl->GetAssociatedFrameWidget();
+      frame_widget->DisableDeviceEmulation();
+    }
   }
 }
 
