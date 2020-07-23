@@ -34,7 +34,7 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
   NSError* error = nil;
   NSURL* bookmarkUrl =
       [NSURL URLByResolvingBookmarkData:bookmarkData
-                                options:NSURLBookmarkResolutionWithSecurityScope
+                                options:NSURLBookmarkResolutionWithSecurityScope|NSURLBookmarkResolutionWithoutUI|NSURLBookmarkResolutionWithoutMounting
                           relativeToURL:nil
                     bookmarkDataIsStale:&isStale
                                   error:&error];
