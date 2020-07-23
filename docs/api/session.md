@@ -348,8 +348,16 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 * `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
-    'pointerLock', 'fullscreen', 'openExternal'.
+  * `permission` String - The type of requested permission.
+    * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `mediaKeySystem` - Request access to DRM protected content.
+    * `geolocation` - Request access to user's current location.
+    * `notifications` - Request notification creation and the ability to display them in the user's system tray.
+    * `midi` - Request MIDI access in the `webmidi` API.
+    * `midiSysex` - Request the use of system exclusive messages in the `webmidi` API.
+    * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more.
+    * `fullscreen` - Request for the app to enter fullscreen mode.
+    * `openExternal` - Request to open links in external applications.
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.

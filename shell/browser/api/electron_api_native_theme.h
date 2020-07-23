@@ -5,7 +5,9 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 #define SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
-#include "shell/common/gin_helper/event_emitter.h"
+#include "gin/handle.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
@@ -13,13 +15,17 @@ namespace electron {
 
 namespace api {
 
-class NativeTheme : public gin_helper::EventEmitter<NativeTheme>,
+class NativeTheme : public gin::Wrappable<NativeTheme>,
+                    public gin_helper::EventEmitterMixin<NativeTheme>,
                     public ui::NativeThemeObserver {
  public:
-  static v8::Local<v8::Value> Create(v8::Isolate* isolate);
+  static gin::Handle<NativeTheme> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   NativeTheme(v8::Isolate* isolate,

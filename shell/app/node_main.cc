@@ -167,10 +167,6 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    // We do not want to double-set the error level and promise rejection
-    // callback.
-    node::g_standalone_mode = false;
-
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 

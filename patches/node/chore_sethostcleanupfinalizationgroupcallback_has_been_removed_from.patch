@@ -62,7 +62,7 @@ index c6ef9dc13ab6f1d1a778871a62a0a98a01d84ec6..222555831aa1bf0b7b29b4b46e235c98
      const CleanupHookCallback& cb) const {
    return std::hash<void*>()(cb.arg_);
 diff --git a/src/env.cc b/src/env.cc
-index c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124..58f2372d664c4c6f8a513cb4206c24940891aa6d 100644
+index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..02c5ba259c94bb160972005998007d66731d9dde 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -30,7 +30,6 @@ using v8::ArrayBuffer;
@@ -73,7 +73,7 @@ index c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124..58f2372d664c4c6f8a513cb4206c2494
  using v8::Function;
  using v8::FunctionTemplate;
  using v8::HandleScope;
-@@ -500,7 +499,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
+@@ -494,7 +493,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
        [](uv_async_t* async) {
          Environment* env = ContainerOf(
              &Environment::task_queues_async_, async);
@@ -81,7 +81,7 @@ index c56a25f31e42aaf8bcbc0e3bb3db4f7aad0cf124..58f2372d664c4c6f8a513cb4206c2494
          env->RunAndClearNativeImmediates();
        });
    uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
-@@ -1127,25 +1125,6 @@ void Environment::RunWeakRefCleanup() {
+@@ -1121,25 +1119,6 @@ void Environment::RunWeakRefCleanup() {
    isolate()->ClearKeptObjects();
  }
  
@@ -131,10 +131,10 @@ index b6e02a2910cd8fe5ff3a17d6e1a98b937323ae3a..c1966a9f55126bdd65d8c9d529d93497
    static int const kNodeContextTag;
  
 diff --git a/src/node.h b/src/node.h
-index 709d03145e3d5acdb67502110917e8147c275c60..a279cc7cc6205907eb5f9c3f6237513b2354f6be 100644
+index 638a1a85b046ce4db303d532f7cf36cca2271db5..b9b11b4331bd3ae4a87f65758ee09af25222e19a 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -323,8 +323,6 @@ struct IsolateSettings {
+@@ -322,8 +322,6 @@ struct IsolateSettings {
    v8::PromiseRejectCallback promise_reject_callback = nullptr;
    v8::AllowWasmCodeGenerationCallback
        allow_wasm_code_generation_callback = nullptr;

@@ -137,7 +137,7 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
       blink::WebString::FromUTF8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
   info.security_origin = frame->GetDocument().GetSecurityOrigin();
-  frame->SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);
+  blink::SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");

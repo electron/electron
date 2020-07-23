@@ -211,12 +211,12 @@ const template = [
     label: 'View',
     submenu: [
       { role: 'reload' },
-      { role: 'forcereload' },
-      { role: 'toggledevtools' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
       { type: 'separator' },
-      { role: 'resetzoom' },
-      { role: 'zoomin' },
-      { role: 'zoomout' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
       { type: 'separator' },
       { role: 'togglefullscreen' }
     ]

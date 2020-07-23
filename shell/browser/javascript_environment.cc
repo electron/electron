@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/command_line.h"
-#include "base/message_loop/message_loop_current.h"
+#include "base/task/current_thread.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
@@ -91,7 +91,7 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::OnMessageLoopCreated() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
-  base::MessageLoopCurrent::Get()->AddTaskObserver(microtasks_runner_.get());
+  base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::OnMessageLoopDestroying() {
@@ -101,7 +101,7 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
-  base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   platform_->DrainTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }

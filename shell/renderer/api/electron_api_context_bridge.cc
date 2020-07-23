@@ -427,22 +427,16 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
     object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
     auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
-        source_context,
-        static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
-        v8::KeyConversionMode::kConvertToString);
+        source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));
     if (maybe_keys.IsEmpty())
       return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
     auto keys = maybe_keys.ToLocalChecked();
 
     uint32_t length = keys->Length();
-    std::string key_str;
     for (uint32_t i = 0; i < length; i++) {
       v8::Local<v8::Value> key =
           keys->Get(destination_context, i).ToLocalChecked();
-      // Try get the key as a string
-      if (!gin::ConvertFromV8(api.isolate(), key, &key_str)) {
-        continue;
-      }
+
       if (support_dynamic_properties) {
         v8::Context::Scope source_context_scope(source_context);
         auto maybe_desc = api.GetHandle()->GetOwnPropertyDescriptor(
@@ -476,14 +470,13 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 
             v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
             ignore_result(proxy.GetHandle()->DefineProperty(
-                destination_context, gin::StringToV8(api.isolate(), key_str),
-                desc));
+                destination_context, key.As<v8::Name>(), desc));
           }
           continue;
         }
       }
       v8::Local<v8::Value> value;
-      if (!api.Get(key_str, &value))
+      if (!api.Get(key, &value))
         continue;
 
       auto passed_value = PassValueToOtherContext(
@@ -491,7 +484,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           support_dynamic_properties, recursion_depth + 1);
       if (passed_value.IsEmpty())
         return v8::MaybeLocal<v8::Object>();
-      proxy.Set(key_str, passed_value.ToLocalChecked());
+      proxy.Set(key, passed_value.ToLocalChecked());
     }
 
     return proxy.GetHandle();

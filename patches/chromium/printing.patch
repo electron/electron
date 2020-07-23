@@ -90,7 +90,7 @@ index bee0596550b52abd3fe233f779247256d4ad5123..43542c1a910830b0d610c27f269add66
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 8a743d0dd74b087059ff812019ae568a22c5fa01..551dbc7b0bfdbf4ca549278bb3dfc4e3abb5cf0f 100644
+index 37bdfd96667f1484bb1bec4057e544d263afb06d..73d96f066863b77f92f6232ce2d7b8ddd30fa6d2 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -432,10 +432,10 @@ index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 033bd41f2ae9c4d072f951ba0d930adf69114176..21ad6a9c39e89f5cae83357c48a358e266e48306 100644
+index 8159a61d2707082461a419a344487bbd460a1d29..d5ef9c6a7064885deb7d27518448cc67b21f0b4a 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -119,7 +119,7 @@ interface PrintPreviewUI {
+@@ -121,7 +121,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -445,7 +445,7 @@ index 033bd41f2ae9c4d072f951ba0d930adf69114176..21ad6a9c39e89f5cae83357c48a358e2
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 2a97938d20b69760b48c51a6712d646cd47339d7..fc39f8874402904021e804a5b7fc754709f25353 100644
+index 3fe2858af7b1f5c3ca45b9a421393dea31ca25a2..3d2938b8fe8552054684e9cc467ac5022d3ef83d 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -41,6 +41,7 @@

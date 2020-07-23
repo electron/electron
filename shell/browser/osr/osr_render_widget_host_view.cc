@@ -487,13 +487,13 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
 }
 
 void OffScreenRenderWidgetHostView::GetScreenInfo(
-    content::ScreenInfo* screen_info) {
+    blink::ScreenInfo* screen_info) {
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
   screen_info->device_scale_factor = current_device_scale_factor_;
   screen_info->orientation_type =
-      content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
+      blink::mojom::ScreenOrientation::kLandscapePrimary;
   screen_info->rect = gfx::Rect(size_);
   screen_info->available_rect = gfx::Rect(size_);
 }

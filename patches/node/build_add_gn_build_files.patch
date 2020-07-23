@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b5ea846fd9fd46f34dd4260b67282186fddbc0be
+index 0000000000000000000000000000000000000000..99192976f2bdfd900240aa58b8989fe2c9d8c771
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,361 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -223,6 +223,7 @@ index 0000000000000000000000000000000000000000..b5ea846fd9fd46f34dd4260b67282186
 +  public_configs = [ ":node_lib_config" ]
 +  include_dirs = [ "src" ]
 +  libs = []
++  frameworks = []
 +  cflags_cc = [
 +    "-Wno-deprecated-declarations",
 +    "-Wno-implicit-fallthrough",
@@ -251,7 +252,7 @@ index 0000000000000000000000000000000000000000..b5ea846fd9fd46f34dd4260b67282186
 +    libs += [ "psapi.lib" ]
 +  }
 +  if (is_mac) {
-+    libs += [ "CoreFoundation.framework" ]
++    frameworks += [ "CoreFoundation.framework" ]
 +  }
 +
 +  if (node_enable_inspector) {

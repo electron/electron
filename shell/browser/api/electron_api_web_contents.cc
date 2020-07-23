@@ -13,10 +13,10 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
-#include "base/message_loop/message_loop_current.h"
 #include "base/no_destructor.h"
 #include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/current_thread.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
@@ -2430,7 +2430,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
-    base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+    base::CurrentThread::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     gin_helper::ErrorThrower(args->isolate())

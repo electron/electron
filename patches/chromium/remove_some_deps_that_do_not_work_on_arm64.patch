@@ -6,7 +6,7 @@ Subject: remove some deps that do not work on arm64
 Once these deps have been fixed upstream we can remove this patch.
 
 diff --git a/.vpython b/.vpython
-index 0a28e76064296edea609eb52e57555689c23c0a3..bea6a9b7ee4b64dcc44b6f345a83e28d1d22649c 100644
+index 27117b1372b9a002672161f9c1fe3c1a14448c7d..5d330c75ca24863c0aa0e596ab66c48f65541c34 100644
 --- a/.vpython
 +++ b/.vpython
 @@ -53,10 +53,10 @@ wheel: <
@@ -23,8 +23,8 @@ index 0a28e76064296edea609eb52e57555689c23c0a3..bea6a9b7ee4b64dcc44b6f345a83e28d
 +#>
  
  # Used by:
- #   third_party/catapult
-@@ -67,37 +67,37 @@ wheel: <
+ #   build/lacros/test_runner.py
+@@ -74,37 +74,37 @@ wheel: <
  # This version must also be compatible with the "numpy" version, as "cv2"
  # depends on "numpy". In this case, OpenCV@2.4.13.2 has been built against
  # numpy@1.11.3.
@@ -87,7 +87,7 @@ index 0a28e76064296edea609eb52e57555689c23c0a3..bea6a9b7ee4b64dcc44b6f345a83e28d
  
  # Used by:
  #   third_party/catapult
-@@ -132,10 +132,10 @@ wheel: <
+@@ -139,10 +139,10 @@ wheel: <
  
  # Used by:
  #   testing/buildbot/generate_buildbot_json_coveragetest.py
@@ -102,7 +102,7 @@ index 0a28e76064296edea609eb52e57555689c23c0a3..bea6a9b7ee4b64dcc44b6f345a83e28d
  
  # Used by:
  #   build/android/pylib/local/emulator/avd.py
-@@ -166,27 +166,27 @@ wheel: <
+@@ -173,27 +173,27 @@ wheel: <
  
  # Used by:
  #   tools/perf/flakiness_cli
@@ -151,7 +151,7 @@ index 0a28e76064296edea609eb52e57555689c23c0a3..bea6a9b7ee4b64dcc44b6f345a83e28d
  wheel: <
    name: "infra/python/wheels/pytz-py2_py3"
    version: "version:2018.4"
-@@ -268,10 +268,10 @@ wheel <
+@@ -275,10 +275,10 @@ wheel <
    name: "infra/python/wheels/funcsigs-py2_py3"
    version: "version:1.0.2"
  >
