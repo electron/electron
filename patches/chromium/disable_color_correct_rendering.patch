@@ -320,14 +320,14 @@ diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -16,6 +16,7 @@
+@@ -18,6 +18,7 @@
  #include "base/trace_event/trace_event.h"
  #include "ui/gfx/buffer_format_util.h"
  #include "ui/gfx/icc_profile.h"
 +#include "ui/gfx/switches.h"
  
- namespace gfx {
- 
+ #if defined(__MAC_11_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_16
+ // https://crbug.com/1108561: This is supposed to be deprecated (but available)
 @@ -119,6 +120,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
