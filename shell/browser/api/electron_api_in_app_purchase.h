@@ -33,7 +33,7 @@ class InAppPurchase : public gin::Wrappable<InAppPurchase>,
   const char* GetTypeName() override;
 
  protected:
-  explicit InAppPurchase();
+  InAppPurchase();
   ~InAppPurchase() override;
 
   v8::Local<v8::Promise> PurchaseProduct(const std::string& product_id,
