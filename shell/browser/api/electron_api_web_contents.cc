@@ -1422,7 +1422,6 @@ void WebContents::MarkDestroyed() {
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return;
   wrapper->SetAlignedPointerInInternalField(0, nullptr);
-  // gin_helper::WrappableBase::wrapper_.ClearWeak();
 }
 
 // There are three ways of destroying a webContents:
