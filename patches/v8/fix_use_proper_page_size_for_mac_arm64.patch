@@ -41,25 +41,3 @@ index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d3
    // On EABI ARM targets this is required for fp correctness in the
    // runtime system.
    return 8;
-@@ -226,13 +238,21 @@ int OS::ActivationFrameAlignment() {
- 
- // static
- size_t OS::AllocatePageSize() {
-+#if defined(__APPLE__) && V8_TARGET_ARCH_ARM64 && defined(__x86_64__)
-+  return 16384;
-+#else
-   return static_cast<size_t>(sysconf(_SC_PAGESIZE));
-+#endif
- }
- 
- // static
- size_t OS::CommitPageSize() {
-+#if defined(__APPLE__) && V8_TARGET_ARCH_ARM64 && defined(__x86_64__)
-+  return 16384;
-+#else
-   static size_t page_size = getpagesize();
-   return page_size;
-+#endif
- }
- 
- // static
