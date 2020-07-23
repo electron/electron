@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 21f7e1227017397fcd74152f45a7b99348675109..e4d92e5fe7c8a0adaa9852631554878b9c7aa541 100644
+index 24bbd948dfb2b460dfb8c92bdab160c76bee99a0..0891dcc5304f38e03e8a887af5e1946ac5b78280 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -115,6 +115,11 @@
@@ -116,7 +116,7 @@ index 21f7e1227017397fcd74152f45a7b99348675109..e4d92e5fe7c8a0adaa9852631554878b
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1815,8 +1900,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1819,8 +1904,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
           "NetworkContext should pass CertVerifierServiceRemoteParams.";
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -127,7 +127,7 @@ index 21f7e1227017397fcd74152f45a7b99348675109..e4d92e5fe7c8a0adaa9852631554878b
    } else {
      if (params_->cert_verifier_params &&
          params_->cert_verifier_params->is_remote_params()) {
-@@ -1844,14 +1930,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1848,14 +1934,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          cert_net_fetcher_ =
              base::MakeRefCounted<net::CertNetFetcherURLRequest>();
  
@@ -145,7 +145,7 @@ index 21f7e1227017397fcd74152f45a7b99348675109..e4d92e5fe7c8a0adaa9852631554878b
  
  #if defined(OS_CHROMEOS)
      cert_verifier_with_trust_anchors_ =
-@@ -1860,13 +1946,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1864,13 +1950,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      UpdateAdditionalCertificates(
          std::move(params_->initial_additional_certificates));
      cert_verifier_with_trust_anchors_->InitializeOnIOThread(
@@ -178,7 +178,7 @@ index 21f7e1227017397fcd74152f45a7b99348675109..e4d92e5fe7c8a0adaa9852631554878b
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 411d99eafbd1bf8f713493630cf8e2fe2c8e062b..4a06b262f880e6f15516e62960191dc1cdc829b9 100644
+index 75a4ff5c1a45cb8a36f6b2979fc9a12a68e23953..75531d963c4ee8bb4197b30c93623e556f404155 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -87,6 +87,7 @@ class DomainReliabilityMonitor;
@@ -198,7 +198,7 @@ index 411d99eafbd1bf8f713493630cf8e2fe2c8e062b..4a06b262f880e6f15516e62960191dc1
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -675,6 +678,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -676,6 +679,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  
@@ -208,7 +208,7 @@ index 411d99eafbd1bf8f713493630cf8e2fe2c8e062b..4a06b262f880e6f15516e62960191dc1
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e0aab3e9ca6b7aad18d9e9c0f1df34f99fe4b7bc..64b71f2bce79b52c81717e8f5ce87d7b7aa86242 100644
+index 1b6a9ace62421ea3e72f7fadc6b9b73441576e51..199f14f42bbad4ac6ae12eee59da9c0200c7b8d6 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,17 @@ struct CTPolicy {
@@ -229,7 +229,7 @@ index e0aab3e9ca6b7aad18d9e9c0f1df34f99fe4b7bc..64b71f2bce79b52c81717e8f5ce87d7b
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -856,6 +867,9 @@ interface NetworkContext {
+@@ -860,6 +871,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

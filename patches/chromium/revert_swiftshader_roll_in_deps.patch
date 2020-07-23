@@ -26,7 +26,7 @@ ld: symbol(s) not found for architecture arm64
 Tracking bug at: crbug.com/1107706
 
 diff --git a/DEPS b/DEPS
-index 7e42015401c88701a495bd741a93533a796c29ac..f70e44cfbcc48dc602e83ac313c0204565e98214 100644
+index 89634987e9827167218c9ac1f58f98f7281e5b82..b9b075c5d4e4475b078c5bfbdc53b6fa5ecb3d95 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -211,7 +211,7 @@ vars = {

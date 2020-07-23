@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2e88af9e9f8386504b7cb928349a79b6e4187588..499276e22db78f89fc6265f999f64f42bc7f1628 100644
+index 915ee6cefd1b1b0526500de20cdbc14bc7708e7e..57f17cfe48799b381827623a27aa363ed63195a0 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -723,6 +723,9 @@ void RenderWidgetHostImpl::WasHidden() {

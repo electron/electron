@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index a2cd59f7c648c4d0d6531d26171602ad2f0a1f4c..20eb09acc542b2576650e31f95ee0830e57976ca 100644
+index 56a2f8e88bd4f350faa7bbc697c8ba3d764bb80a..09ac01381bc239429da25697bb2be31bf598ae6e 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4664,6 +4664,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4671,6 +4671,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,7 +66,7 @@ index ca75eaa073cfd2f946ee396046456205ff3d3c4f..389c264cb71f972648b5e3eb9716a207
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 22262ddd04580aef9a54cc59f137b78ccc8105f4..1c35815fe2116dfe20c1bba529da8ada135b7f6e 100644
+index 2bdaf671dbfb2c4dd1071c75e82e6215b7634067..90cc31a20d49b755e0cc5bcb75cfd6ed426cee27 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -148,6 +148,7 @@ class NetworkService;
@@ -77,7 +77,7 @@ index 22262ddd04580aef9a54cc59f137b78ccc8105f4..1c35815fe2116dfe20c1bba529da8ada
  }  // namespace network
  
  namespace sandbox {
-@@ -863,6 +864,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -868,6 +869,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -87,7 +87,7 @@ index 22262ddd04580aef9a54cc59f137b78ccc8105f4..1c35815fe2116dfe20c1bba529da8ada
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index b30f242d2b61b10f68f016bc1e93419b520d3b06..bfbad0007797d9c3fff78fae121aa2546b22eb95 100644
+index 5631ce92ac15737d4aff4d08e4a285bc507b6d47..04428e426ff43570deb01edf33400824f9a5206c 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,7 +109,7 @@ index b30f242d2b61b10f68f016bc1e93419b520d3b06..bfbad0007797d9c3fff78fae121aa254
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index cca58342b48bb6b139b177954eee400ccd4951d8..a43cdce2859c25d0749a9ad87e54f19f0ae7b023 100644
+index 91c0ec6a5976e297d0a1b482f3a64fbb0ae268a6..53b3d8b48b8bd8a52862e8842a000239a7085c2b 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@

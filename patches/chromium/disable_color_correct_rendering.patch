@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index c389d38fbf98374a2c7677a95624eb87c1466b3f..e90709822d6d0462931efc979c00586749c01a3c 100644
+index 4b3db49d4dffc2e3139582e83eb738e9148dc00c..df3fcede987d4e8a77e55f6b76d444a3c80a9383 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -231,7 +231,7 @@ index b8032917cce5224403304c5f41674533e3d59528..2e871204e8dc9bf13315ba9a1448ab7c
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f3b77a295f334ffa696f1085a4ca5c0c86479987..872f9d0ac32970950c9a552431c7613e87f1ad94 100644
+index 940e06b47f104b3af98a9e7e155590a82cfd372d..47e8e35d30be7f34dec026cd7d16975d679e6423 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -225,6 +225,7 @@
@@ -242,7 +242,7 @@ index f3b77a295f334ffa696f1085a4ca5c0c86479987..872f9d0ac32970950c9a552431c7613e
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3271,6 +3272,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3269,6 +3270,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -317,7 +317,7 @@ index d8a737f5008f3b60f4ac74592cb23f8b04c4577a..178b84bccb6ad131391dbb6c856df2e7
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a13f45830 100644
+index 8e8d7638a22c1874b6245d4a232cafb296023b26..5e06d0b7804e90cd044c64188ed113c9593dd8be 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
@@ -328,7 +328,7 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a
  
  #if defined(__MAC_11_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_16
  // https://crbug.com/1108561: This is supposed to be deprecated (but available)
-@@ -119,6 +120,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -134,6 +135,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -343,7 +343,7 @@ index 2674784dca1ed12b2f5afc7b728e0c6e8cd6ca4a..93a9652b71d86441e15b87aafd7a6b1a
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -253,6 +262,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -268,6 +277,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

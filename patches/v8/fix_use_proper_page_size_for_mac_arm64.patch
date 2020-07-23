@@ -7,10 +7,10 @@ This fix temporarily sets page size to 16k for mac arm64 so that mksnapshot can 
 and generate a mac arm64 snapshot
 
 diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
-index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d381804e50 100644
+index f834ea164984c28bb58d7f8f31aa23a791bfd1b3..389885bf660a1041cb4942767b3f00ad11c09ae0 100644
 --- a/src/base/platform/platform-posix.cc
 +++ b/src/base/platform/platform-posix.cc
-@@ -147,9 +147,19 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access) {
+@@ -154,9 +154,19 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access) {
  void* Allocate(void* hint, size_t size, OS::MemoryPermission access) {
    int prot = GetProtectionFromMemoryPermission(access);
    int flags = GetFlagsForMemoryPermission(access);
@@ -30,7 +30,7 @@ index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d3
  }
  
  #endif  // !V8_OS_FUCHSIA
-@@ -206,7 +216,9 @@ void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
+@@ -213,7 +223,9 @@ void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
  }
  
  int OS::ActivationFrameAlignment() {

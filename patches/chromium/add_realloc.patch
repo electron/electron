@@ -54,10 +54,10 @@ index 77724df403e7ec9f1995e62b8737cb1d46ce20b1..244412c9a52ba701b161d1391e5f3cfb
      ArrayBufferContents::FreeMemory(data);
    }
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index 5026ce05c5eb0be037ce4085488eb473828175a5..639173c18ddb743a4abe650cefdd94d257437262 100644
+index 686806bcafa0939d29bbc6775748a115130feb96..20f7a9a594cf379b2dac6970bc8c02aebc3be360 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -128,6 +128,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -127,6 +127,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  

@@ -66,10 +66,10 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 1737c7f8e121c967de6da8bfd17dcebd121d9dd5..58ec3108a8ea5888ba31f4b5c7c4939e1c1718ea 100644
+index af28af2236f470c0d90cf09a9f9313dc8d45c43f..56eef9c76bf403a197548310962ed1a03bd585ee 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1864,6 +1864,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1884,6 +1884,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index 1737c7f8e121c967de6da8bfd17dcebd121d9dd5..58ec3108a8ea5888ba31f4b5c7c4939e
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index f2fec6c21e8cacd016ce8a7dad7ef2a7ecade7d2..3616beca39bc40fd7ef09df1bf393e2b2c109e72 100644
+index a2edd204e28836877d3501a4ae66979349369c0c..1e73e18956815e5d777d38256841bf24912f7183 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -712,7 +712,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -708,7 +708,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -108,10 +108,10 @@ index e268667d2870a0f8fc370e14d3a846b623dae197..95d4318cf9baf895bea58991d4c2f58e
          native_module->AddCompiledCode(std::move(result)));
    } else {
 diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
-index d76adccad7667665da2723dac1b30e4956dfd98a..1b802d7e4382f61c8a622234c6d1314e8fcbac96 100644
+index 6da473ae5ee4556105aaaa01751ec8edea8f574a..1abc0a9a5038b1c667a01c993250690b18319e38 100644
 --- a/src/wasm/wasm-code-manager.h
 +++ b/src/wasm/wasm-code-manager.h
-@@ -851,7 +851,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+@@ -859,7 +859,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
  //    and even if we did, the resulting set of pages may be fragmented.
  //    Currently, we try and keep the number of syscalls low.
  // -  similar argument for debug time.
@@ -121,10 +121,10 @@ index d76adccad7667665da2723dac1b30e4956dfd98a..1b802d7e4382f61c8a622234c6d1314e
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index 1d85bb3ff79557442dc416587769b5f8fcfa77fb..bdd7ef4c45a3908ff234ecf136e153c31dbc2ba9 100644
+index a7fde586402fcd7d4e4f889945208819004be969..21feda7a7c0f6b2d950c2800b14f595c52c94de1 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
-@@ -1447,6 +1447,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
+@@ -1449,6 +1449,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
      wasm::CompilationEnv env = native_module->CreateCompilationEnv();
      wasm::WasmCompilationResult result = compiler::CompileWasmImportCallWrapper(
          isolate->wasm_engine(), &env, kind, sig, false);
