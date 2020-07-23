@@ -322,7 +322,8 @@ void SystemPreferences::SetUserDefault(const std::string& name,
     }
   } else if (type == "boolean") {
     bool value;
-    if (args->GetNext(&value)) {
+    v8::Local<v8::Value> next = args->PeekNext();
+    if (!next.IsEmpty() && next->IsBoolean() && args->GetNext(&value)) {
       [defaults setBool:value forKey:key];
       return;
     }
