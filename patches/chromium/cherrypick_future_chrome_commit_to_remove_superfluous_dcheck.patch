@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Wed, 22 Jul 2020 11:33:03 -0400
+Subject: cherrypick future chrome commit to remove superfluous DCHECK
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2273957
+
+diff --git a/third_party/blink/renderer/core/html/canvas/text_metrics.cc b/third_party/blink/renderer/core/html/canvas/text_metrics.cc
+index d3fadad089cce5ce653264d1e219c979d2038688..f1ad599a020dd207651a9d9eb809f39f956a8911 100644
+--- a/third_party/blink/renderer/core/html/canvas/text_metrics.cc
++++ b/third_party/blink/renderer/core/html/canvas/text_metrics.cc
+@@ -100,19 +100,6 @@ void TextMetrics::Update(const Font& font,
+     xpos += run_width;
+   }
+   double real_width = xpos;
+-#if DCHECK_IS_ON()
+-  // This DCHECK is for limited time only; to use |glyph_bounds| instead of
+-  // |BoundingBox| and make sure they are compatible.
+-  if (runs.size() == 1 && direction == runs[0].Direction()) {
+-    FloatRect bbox = font.BoundingBox(text_run);
+-    // |GetCharacterRange|, the underlying function of |BoundingBox|, clamps
+-    // negative |MaxY| to 0. This is unintentional, and that we are not copying
+-    // the behavior.
+-    DCHECK_EQ(bbox.Y(), std::min(glyph_bounds.Y(), .0f));
+-    DCHECK_EQ(bbox.MaxY(), std::max(glyph_bounds.MaxY(), .0f));
+-    DCHECK_EQ(bbox.Width(), real_width);
+-  }
+-#endif
+   width_ = real_width;
+ 
+   float dx = 0.0f;
+diff --git a/third_party/blink/renderer/platform/fonts/font.cc b/third_party/blink/renderer/platform/fonts/font.cc
+index 2cb10421dcc44d17add0e813cf6847d8efe1905d..7d9f98145237c94e6136eddbd60ad6804eb3ad45 100644
+--- a/third_party/blink/renderer/platform/fonts/font.cc
++++ b/third_party/blink/renderer/platform/fonts/font.cc
+@@ -484,14 +484,6 @@ FloatRect Font::SelectionRectForText(const TextRun& run,
+       FloatRect(point.X() + range.start, point.Y(), range.Width(), height));
+ }
+ 
+-FloatRect Font::BoundingBox(const TextRun& run, int from, int to) const {
+-  to = (to == -1 ? run.length() : to);
+-  FontCachePurgePreventer purge_preventer;
+-  CachingWordShaper shaper(*this);
+-  CharacterRange range = shaper.GetCharacterRange(run, from, to);
+-  return FloatRect(range.start, -range.ascent, range.Width(), range.Height());
+-}
+-
+ int Font::OffsetForPosition(const TextRun& run,
+                             float x_float,
+                             IncludePartialGlyphsOption partial_glyphs,
+diff --git a/third_party/blink/renderer/platform/fonts/font.h b/third_party/blink/renderer/platform/fonts/font.h
+index b6dbb6f31e6f48ac1f7e0ceb386a63e0cbaf67f1..8864a71c4c3441e0cb639d86b3ebda2e66014586 100644
+--- a/third_party/blink/renderer/platform/fonts/font.h
++++ b/third_party/blink/renderer/platform/fonts/font.h
+@@ -162,7 +162,6 @@ class PLATFORM_EXPORT Font {
+                                  float height,
+                                  int from = 0,
+                                  int to = -1) const;
+-  FloatRect BoundingBox(const TextRun&, int from = 0, int to = -1) const;
+   CharacterRange GetCharacterRange(const TextRun&,
+                                    unsigned from,
+                                    unsigned to) const;
