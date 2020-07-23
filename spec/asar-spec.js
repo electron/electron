@@ -1426,15 +1426,20 @@ describe('asar package', function () {
     });
 
     describe('internalModuleReadJSON', function () {
-      const internalModuleReadJSON = process.binding('fs').internalModuleReadJSON;
+      const { internalModuleReadJSON } = process.binding('fs');
 
-      it('read a normal file', function () {
+      it('reads a normal file', function () {
         const file1 = path.join(asarDir, 'a.asar', 'file1');
-        expect(internalModuleReadJSON(file1).toString().trim()).to.equal('file1');
+        const [s1, c1] = internalModuleReadJSON(file1);
+        expect([s1.toString().trim(), c1]).to.eql(['file1', true]);
+
         const file2 = path.join(asarDir, 'a.asar', 'file2');
-        expect(internalModuleReadJSON(file2).toString().trim()).to.equal('file2');
+        const [s2, c2] = internalModuleReadJSON(file2);
+        expect([s2.toString().trim(), c2]).to.eql(['file2', true]);
+
         const file3 = path.join(asarDir, 'a.asar', 'file3');
-        expect(internalModuleReadJSON(file3).toString().trim()).to.equal('file3');
+        const [s3, c3] = internalModuleReadJSON(file3);
+        expect([s3.toString().trim(), c3]).to.eql(['file3', true]);
       });
 
       it('reads a normal file with unpacked files', function () {
