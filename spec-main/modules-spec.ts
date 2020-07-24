@@ -44,7 +44,12 @@ describe('modules support', () => {
       });
     });
 
-    ifdescribe(nativeModulesEnabled)('module that use uv_dlopen', () => {
+    const enablePlatforms: NodeJS.Platform[] = [
+      'linux',
+      'darwin',
+      'win32'
+    ];
+    ifdescribe(nativeModulesEnabled && enablePlatforms.includes(process.platform))('module that use uv_dlopen', () => {
       it('can be required in renderer', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
         w.loadURL('about:blank');
