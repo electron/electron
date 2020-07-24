@@ -22,7 +22,7 @@ index c872941b974216d94863bcbf0e597b9c09ca50e2..4e7c3c10255a0eae4d5333f88e51cf71
  process.config = JSONParse(internalBinding('native_module').config);
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 92554a374d189b3b284546b0e122940e9a175de8..e478c57af873da717c00db73d6719f806280efe1 100644
+index 44271058a26dc05b693e07aad9a22037dd9a5d1f..7d08fb05e9a0abeb82d416891968b23002dc3685 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -55,7 +55,7 @@ const assert = require('internal/assert');
@@ -34,7 +34,7 @@ index 92554a374d189b3b284546b0e122940e9a175de8..e478c57af873da717c00db73d6719f80
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -144,14 +141,12 @@ function enrichCJSError(err) {
+@@ -142,14 +142,12 @@ function enrichCJSError(err) {
  }
  
  function stat(filename) {
@@ -72,4 +72,3 @@ index 066047b55eb9d82bc1eea66dc54aa68abd116b6b..4fcc65e235692d7d5fe2643571f006c5
    const result = { string, containsKeys };
    cache.set(path, result);
    return result;
-

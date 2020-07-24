@@ -14,10 +14,10 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 1b916d645d863929710ce5e4e930ec72fb426844..6d39a8858e093199fb935b68ff84388d48d6c35e 100644
+index 7362207412efa49bddfab4e32a64c7e07cf29074..acd9afa62d3aa1b01ce54f189a7261e7e61aa60d 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
-@@ -23,6 +23,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
+@@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
  
  NativeModuleLoader::NativeModuleLoader() : config_(GetConfig()) {
    LoadJavaScriptSource();
@@ -38,7 +38,7 @@ index c0bce3bce42c848d63a10147ef483c9d4465f5ce..7f296e459d46b4cda51baf9887df060f
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 9e9883129bed62c591d23f71d139514c5034ac8d..ad073bd7f023c8436985f177011a7d29829098b4 100755
+index d5109fcae5542730623f5ec3ca244ec0973109f2..8537f7fd50b0441307f91cad3bf9f730c2cb8cdf 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -56,13 +56,15 @@ namespace native_module {{
@@ -118,7 +118,7 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..ad073bd7f023c8436985f177011a7d29
    write_if_chaged(out, target)
  
  
-@@ -208,17 +223,21 @@ def main():
+@@ -209,17 +224,21 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')

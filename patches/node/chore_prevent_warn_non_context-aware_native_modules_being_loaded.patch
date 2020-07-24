@@ -23,10 +23,10 @@ index 0a7c4a47c11eb4bb360b6a46fccb4692241bd2dc..b4a0f71af5853f427a10449b52509052
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index e478c57af873da717c00db73d6719f806280efe1..1c949cab49224a6f1be7685acfd3ed19e11526c3 100644
+index 7d08fb05e9a0abeb82d416891968b23002dc3685..1f6f5e0cee36fb2a07963264f513a930c349b8fa 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1109,6 +1109,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1111,6 +1111,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -41,7 +41,7 @@ index e478c57af873da717c00db73d6719f806280efe1..1c949cab49224a6f1be7685acfd3ed19
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/src/env.h b/src/env.h
-index 6de5ba9b192dd1ec23afe7a7736373acb59a6c4e..b6e02a2910cd8fe5ff3a17d6e1a98b937323ae3a 100644
+index d22b579b25ce4e6af8ec042e282e94248ea14162..67cefbe35f390ba25b49e422d10bca8b423a49a8 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -890,6 +890,15 @@ class Environment : public MemoryRetainer {
@@ -60,7 +60,7 @@ index 6de5ba9b192dd1ec23afe7a7736373acb59a6c4e..b6e02a2910cd8fe5ff3a17d6e1a98b93
    void InitializeLibuv(bool start_profiler_idle_notifier);
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
-@@ -1273,6 +1282,9 @@ class Environment : public MemoryRetainer {
+@@ -1271,6 +1280,9 @@ class Environment : public MemoryRetainer {
    inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
                           const char* errmsg);
  
@@ -71,7 +71,7 @@ index 6de5ba9b192dd1ec23afe7a7736373acb59a6c4e..b6e02a2910cd8fe5ff3a17d6e1a98b93
    v8::Isolate* const isolate_;
    IsolateData* const isolate_data_;
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 565a3fff85a25ef25ccf5c74d2ade7f5a6994b05..814f01f6144c0a0e053d2100f88e29ca2179b4a0 100644
+index 5291858bb164a262ca1d69d2582e037aeab23d55..a9ce41fbba4e8b0c4704c1d7795308ce18916739 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -3,6 +3,7 @@
@@ -82,7 +82,7 @@ index 565a3fff85a25ef25ccf5c74d2ade7f5a6994b05..814f01f6144c0a0e053d2100f88e29ca
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -462,10 +463,22 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -461,10 +462,22 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
  
      if (mp != nullptr) {
        if (mp->nm_context_register_func == nullptr) {
