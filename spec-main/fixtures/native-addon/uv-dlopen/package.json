@@ -1,0 +1,9 @@
+{
+  "name": "uv-dlopen",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "node-addon-api": "^3.0.0"
+  }
+}
