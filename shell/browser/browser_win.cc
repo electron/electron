@@ -10,6 +10,8 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include "base/win/shlwapi.h"  // must come before other includes. fixes bad #defines from <shlwapi.h>.
+
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
