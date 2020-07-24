@@ -167,7 +167,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
-    gin::ErrorThrower thrower,
+    gin_helper::ErrorThrower thrower,
     const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertDeviceAccessStatus(
