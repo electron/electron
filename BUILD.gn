@@ -1155,6 +1155,11 @@ if (is_mac) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
     }
+
+    if (is_mac) {
+      ldflags =
+          [ "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a" ]
+    }
   }
 
   if (is_official_build) {
