@@ -1144,20 +1144,23 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
-      ldflags = [
-        "-pie",
-        "-Wl,--whole-archive",
-        "obj/third_party/electron_node/deps/uv/libuv.a",
-        "-Wl,--no-whole-archive",
-      ]
+      ldflags = [ "-pie" ]
 
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
     }
 
+    if (is_linux || is_mac) {
+      ldflags += [
+        "-Wl,--whole-archive",
+        "obj/third_party/electron_node/deps/uv/libuv.a",
+        "-Wl,--no-whole-archive",
+      ]
+    }
+
     if (is_mac) {
-      ldflags =
+      ldflags +=
           [ "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a" ]
     }
   }
