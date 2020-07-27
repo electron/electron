@@ -1269,7 +1269,8 @@ void ElectronBrowserClient::
         NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
-  protocol_registry->RegisterURLLoaderFactories(factories);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kWorkerMainResource, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
