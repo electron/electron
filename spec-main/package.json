@@ -5,7 +5,14 @@
   "version": "0.1.0",
   "devDependencies": {
     "@types/dirty-chai": "^2.0.0",
+    "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
+    "sinon": "^9.0.1",
     "ws": "^7.2.1"
+  },
+  "dependencies": {
+    "chai-as-promised": "^7.1.1",
+    "dirty-chai": "^2.0.1"
+
   }
 }
