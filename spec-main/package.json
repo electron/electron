@@ -4,9 +4,11 @@
   "main": "index.js",
   "version": "0.1.0",
   "devDependencies": {
+    "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "echo": "file:fixtures/native-addon/echo",
     "q": "^1.5.1",
+    "sinon": "^9.0.1",
     "ws": "^7.2.1"
   },
   "dependencies": {
