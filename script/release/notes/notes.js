@@ -327,31 +327,33 @@ const addRepoToPool = async (pool, repo, from, to) => {
   }
 };
 
-// returns Map<string,GHKey>
-// where the key is a branch name (e.g. '7-1-x' or '8-x-y')
-// and the value is a GHKey to the PR
-async function getBranchesOfCommit (commit, pool) {
+// @return Map<string,GHKey>
+//   where the key is a branch name (e.g. '7-1-x' or '8-x-y')
+//   and the value is a GHKey to the PR
+async function getMergedTrops (commit, pool) {
   const branches = new Map();
 
   for (const prKey of commit.prKeys.values()) {
     const pull = pool.pulls[prKey.number];
-    const mergedBranches = new Set((pull?.data?.labels || [])
-      .map(label => (label?.name ?? '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
-      .filter(match => match)
-      .map(match => match[1])
+    const mergedBranches = new Set(
+      ((pull && pull.data && pull.data.labels) ? pull.data.labels : [])
+        .map(label => ((label && label.name) ? label.name : '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
+        .filter(match => match)
+        .map(match => match[1])
     );
 
     if (mergedBranches.size > 0) {
-      const isTropComment = (comment) => (comment?.user?.login ?? '') === TROP_LOGIN;
+      const isTropComment = (comment) => comment && comment.user && comment.user.login === TROP_LOGIN;
 
       const ghKey = GHKey.NewFromPull(pull.data);
       const backportRegex = /backported this PR to "(.*)",\s+please check out #(\d+)/;
       const getBranchNameAndPullKey = (comment) => {
-        const match = (comment?.body ?? '').match(backportRegex);
+        const match = ((comment && comment.body) ? comment.body : '').match(backportRegex);
         return match ? [match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))] : null;
       };
 
-      ((await getComments(ghKey))?.data ?? [])
+      const comments = await getComments(ghKey);
+      ((comments && comments.data) ? comments.data : [])
         .filter(isTropComment)
         .map(getBranchNameAndPullKey)
         .filter(pair => pair)
@@ -363,8 +365,8 @@ async function getBranchesOfCommit (commit, pool) {
   return branches;
 }
 
-// @return the shorthand name of the branch that `ref` is on.
-// e.g. a ref of '10.0.0-beta.1' will return '10-x-y'
+// @return the shorthand name of the branch that `ref` is on,
+//   e.g. a ref of '10.0.0-beta.1' will return '10-x-y'
 async function getBranchNameOfRef (ref, dir) {
   return (await runGit(dir, ['branch', '--all', '--contains', ref, '--sort', 'version:refname']))
     .split(/\r?\n/) // split into lines
@@ -426,11 +428,12 @@ const getNotes = async (fromRef, toRef, newVersion) => {
 
   // remove non-user-facing commits
   pool.commits = pool.commits
-    .filter(commit => commit.note && (commit.note !== NO_NOTES))
-    .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)));
+    .filter(commit => commit && commit.note)
+    .filter(commit => commit.note !== NO_NOTES)
+    .filter(commit => commit.note.match(/^[Bb]ump v\d+\.\d+\.\d+/) === null);
 
   for (const commit of pool.commits) {
-    commit.trops = await getBranchesOfCommit(commit, pool);
+    commit.trops = await getMergedTrops(commit, pool);
   }
 
   pool.commits = removeSupercededStackUpdates(pool.commits);
