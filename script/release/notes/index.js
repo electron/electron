@@ -8,7 +8,7 @@ const semver = require('semver');
 const { ELECTRON_DIR } = require('../../lib/utils');
 const notesGenerator = require('./notes.js');
 
-const semverify = version => version.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.');
+const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
   const response = await GitProcess.exec(args, ELECTRON_DIR);
@@ -60,7 +60,7 @@ const getAllBranches = async () => {
 
 const getStabilizationBranches = async () => {
   return (await getAllBranches())
-    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch));
+    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch) || /^origin\/\d+-x-y$/.test(branch));
 };
 
 const getPreviousStabilizationBranch = async (current) => {
@@ -120,7 +120,7 @@ const getPreviousPoint = async (point) => {
   }
 };
 
-async function getReleaseNotes (range, newVersion, explicitLinks) {
+async function getReleaseNotes (range, newVersion) {
   const rangeList = range.split('..') || ['HEAD'];
   const to = rangeList.pop();
   const from = rangeList.pop() || (await getPreviousPoint(to));
@@ -129,10 +129,9 @@ async function getReleaseNotes (range, newVersion, explicitLinks) {
     newVersion = to;
   }
 
-  console.log(`Generating release notes between ${from} and ${to} for version ${newVersion}`);
   const notes = await notesGenerator.get(from, to, newVersion);
   const ret = {
-    text: notesGenerator.render(notes, explicitLinks)
+    text: notesGenerator.render(notes)
   };
 
   if (notes.unknown.length) {
@@ -144,8 +143,8 @@ async function getReleaseNotes (range, newVersion, explicitLinks) {
 
 async function main () {
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'explicit-links', 'help' ],
-    string: [ 'version' ]
+    boolean: ['help'],
+    string: ['version']
   });
   opts.range = opts._.shift();
   if (opts.help || !opts.range) {
@@ -153,14 +152,13 @@ async function main () {
     console.log(`
 easy usage: ${name} version
 
-full usage: ${name} [begin..]end [--version version] [--explicit-links]
+full usage: ${name} [begin..]end [--version version]
 
  * 'begin' and 'end' are two git references -- tags, branches, etc --
    from which the release notes are generated.
  * if omitted, 'begin' defaults to the previous tag in end's branch.
  * if omitted, 'version' defaults to 'end'. Specifying a version is
    useful if you're making notes on a new version that isn't tagged yet.
- * 'explicit-links' makes every note's issue, commit, or pull an MD link
 
 For example, these invocations are equivalent:
   ${process.argv[1]} v4.0.1
@@ -169,7 +167,7 @@ For example, these invocations are equivalent:
     return 0;
   }
 
-  const notes = await getReleaseNotes(opts.range, opts.version, opts['explicit-links']);
+  const notes = await getReleaseNotes(opts.range, opts.version);
   console.log(notes.text);
   if (notes.warning) {
     throw new Error(notes.warning);
