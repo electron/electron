@@ -67,6 +67,14 @@ class GitFake {
         }
       }
       stdout = lines.join('\n');
+    } else if (args.length === 6 &&
+               args[0] === 'branch' &&
+               args[1] === '--all' &&
+               args[2] === '--contains' &&
+               args[3].endsWith('-x-y')) {
+      // "what branch is this tag in?"
+      // git branch --all --contains ${ref} --sort version:refname
+      stdout = args[3];
     } else {
       console.error('unhandled GitProcess.exec():', args);
     }
@@ -115,25 +123,15 @@ describe('release notes', () => {
     sandbox.restore();
   });
 
-  describe('changes that exist in older branches', () => {
-    // use case: this fix is NOT news because it was already fixed
-    // while oldBranch was the latest stable release
-    it('are skipped if the target version is a new major line (x.0.0)', async function () {
+  describe('trop annotations', () => {
+    it('shows sibling branches', async function () {
       const version = 'v9.0.0';
       gitFake.setBranch(oldBranch, [...sharedHistory, oldTropFix]);
       gitFake.setBranch(newBranch, [...sharedHistory, newTropFix]);
       const results: any = await notes.get(oldBranch, newBranch, version);
-      expect(results.fix).to.have.lengthOf(0);
-    });
-
-    // use case: this fix IS news because it's being fixed in
-    // multiple stable branches at once, including newBranch.
-    it('are included if the target version is a minor or patch bump', async function () {
-      const version = 'v9.0.1';
-      gitFake.setBranch(oldBranch, [...sharedHistory, oldTropFix]);
-      gitFake.setBranch(newBranch, [...sharedHistory, newTropFix]);
-      const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(1);
+      console.log(results.fix);
+      expect(results.fix[0].trops).to.have.keys('8-x-y', '9-x-y');
     });
   });
 
