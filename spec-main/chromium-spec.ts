@@ -441,6 +441,30 @@ describe('chromium features', () => {
       w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
+
+    it('should not crash when nodeIntegration is enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true
+        }
+      });
+
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          done();
+        }
+      });
+
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
   });
 
   describe('navigator.geolocation', () => {
