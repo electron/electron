@@ -5,7 +5,7 @@ Subject: chore: SetHostCleanupFinalizationGroupCallback has been removed from
  V8
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 60d30b7eff7329c4235024c31525107216d70d7a..21980987644c6e83029157785dea463070456c77 100644
+index e2aa9c821de685a022fd78935399b7d219468403..2bfba8a011c2b902932e6b1714bbb55b945cd96d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -12,7 +12,6 @@ using errors::TryCatchScope;
@@ -16,7 +16,7 @@ index 60d30b7eff7329c4235024c31525107216d70d7a..21980987644c6e83029157785dea4630
  using v8::Function;
  using v8::FunctionCallbackInfo;
  using v8::HandleScope;
-@@ -78,15 +77,6 @@ static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -72,15 +71,6 @@ static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -32,7 +32,7 @@ index 60d30b7eff7329c4235024c31525107216d70d7a..21980987644c6e83029157785dea4630
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
-@@ -255,11 +245,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -249,11 +239,6 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      s.promise_reject_callback : task_queue::PromiseRejectCallback;
    isolate->SetPromiseRejectCallback(promise_reject_cb);
  
@@ -62,7 +62,7 @@ index c6ef9dc13ab6f1d1a778871a62a0a98a01d84ec6..222555831aa1bf0b7b29b4b46e235c98
      const CleanupHookCallback& cb) const {
    return std::hash<void*>()(cb.arg_);
 diff --git a/src/env.cc b/src/env.cc
-index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..02c5ba259c94bb160972005998007d66731d9dde 100644
+index 18788e4ceaf208c13704c9c43f017bb1b6dfb0b6..ee76d5889e5672716ac2f0c586f1ddc47fa56be7 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -30,7 +30,6 @@ using v8::ArrayBuffer;
@@ -73,7 +73,7 @@ index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..02c5ba259c94bb160972005998007d66
  using v8::Function;
  using v8::FunctionTemplate;
  using v8::HandleScope;
-@@ -494,7 +493,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
+@@ -487,7 +486,6 @@ void Environment::InitializeLibuv(bool start_profiler_idle_notifier) {
        [](uv_async_t* async) {
          Environment* env = ContainerOf(
              &Environment::task_queues_async_, async);
@@ -81,7 +81,7 @@ index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..02c5ba259c94bb160972005998007d66
          env->RunAndClearNativeImmediates();
        });
    uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
-@@ -1121,25 +1119,6 @@ void Environment::RunWeakRefCleanup() {
+@@ -1085,25 +1083,6 @@ void Environment::RunWeakRefCleanup() {
    isolate()->ClearKeptObjects();
  }
  
@@ -108,10 +108,10 @@ index 657d711e539d81bfd03166bbaaae7f0b5db91a5f..02c5ba259c94bb160972005998007d66
  void BaseObject::DeleteMe(void* data) {
    BaseObject* self = static_cast<BaseObject*>(data);
 diff --git a/src/env.h b/src/env.h
-index b6e02a2910cd8fe5ff3a17d6e1a98b937323ae3a..c1966a9f55126bdd65d8c9d529d934977bb4ad65 100644
+index 67cefbe35f390ba25b49e422d10bca8b423a49a8..9420bdf3f71e2df1011ddd7e583071f5c99beac8 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1132,9 +1132,7 @@ class Environment : public MemoryRetainer {
+@@ -1130,9 +1130,7 @@ class Environment : public MemoryRetainer {
    void AtExit(void (*cb)(void* arg), void* arg);
    void RunAtExitCallbacks();
  
@@ -121,7 +121,7 @@ index b6e02a2910cd8fe5ff3a17d6e1a98b937323ae3a..c1966a9f55126bdd65d8c9d529d93497
  
    // Strings and private symbols are shared across shared contexts
    // The getters simply proxy to the per-isolate primitive.
-@@ -1357,8 +1355,6 @@ class Environment : public MemoryRetainer {
+@@ -1355,8 +1353,6 @@ class Environment : public MemoryRetainer {
    uint64_t thread_id_;
    std::unordered_set<worker::Worker*> sub_worker_contexts_;
  
