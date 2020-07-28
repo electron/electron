@@ -3,11 +3,7 @@ import { EventEmitter } from 'events';
 let _inAppPurchase;
 
 if (process.platform === 'darwin') {
-  const { inAppPurchase, InAppPurchase } = process._linkedBinding('electron_browser_in_app_purchase');
-
-  // inAppPurchase is an EventEmitter.
-  Object.setPrototypeOf(InAppPurchase.prototype, EventEmitter.prototype);
-  EventEmitter.call(inAppPurchase);
+  const { inAppPurchase } = process._linkedBinding('electron_browser_in_app_purchase');
 
   _inAppPurchase = inAppPurchase;
 } else {

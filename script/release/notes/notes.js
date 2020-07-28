@@ -2,24 +2,22 @@
 
 'use strict';
 
-const childProcess = require('child_process');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const { GitProcess } = require('dugite');
 const octokit = require('@octokit/rest')({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
-const semver = require('semver');
 
-const { ELECTRON_VERSION, SRC_DIR } = require('../../lib/utils');
+const { SRC_DIR } = require('../../lib/utils');
 
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
 
+const TROP_LOGIN = 'trop[bot]';
+
 const NO_NOTES = 'No notes';
-const FOLLOW_REPOS = ['electron/electron', 'electron/node'];
 
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
@@ -57,6 +55,11 @@ class Commit {
 
     this.isBreakingChange = false;
     this.note = null; // string
+
+    // A set of branches to which this change has been merged.
+    // '8-x-y' => GHKey { owner: 'electron', repo: 'electron', number: 23714 }
+    this.trops = new Map(); // Map<string,GHKey>
+
     this.prKeys = new Set(); // GHKey
     this.revertHash = null; // string
     this.semanticType = null; // string
@@ -107,7 +110,7 @@ const getNoteFromClerk = async (ghKey) => {
     if (comment.body.startsWith(PERSIST_LEAD)) {
       return comment.body
         .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
-        .split('\r?\n') // break into lines
+        .split(/\r?\n/) // split into lines
         .map(line => line.trim())
         .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
         .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
@@ -116,18 +119,6 @@ const getNoteFromClerk = async (ghKey) => {
     }
   }
 };
-
-// copied from https://github.com/electron/clerk/blob/master/src/index.ts#L4-L13
-const OMIT_FROM_RELEASE_NOTES_KEYS = [
-  'no-notes',
-  'no notes',
-  'no_notes',
-  'none',
-  'no',
-  'nothing',
-  'empty',
-  'blank'
-];
 
 /**
  * Looks for our project's conventions in the commit message:
@@ -206,7 +197,9 @@ const parsePullText = (pull, commit) => parseCommitMessage(`${pull.data.title}\n
 
 const getLocalCommitHashes = async (dir, ref) => {
   const args = ['log', '--format=%H', ref];
-  return (await runGit(dir, args)).split(/[\r\n]+/).map(hash => hash.trim());
+  return (await runGit(dir, args))
+    .split(/\r?\n/) // split into lines
+    .map(hash => hash.trim());
 };
 
 // return an array of Commits
@@ -216,7 +209,9 @@ const getLocalCommits = async (module, point1, point2) => {
   const fieldSep = ',';
   const format = ['%H', '%s'].join(fieldSep);
   const args = ['log', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
-  const logs = (await runGit(dir, args)).split(/[\r\n]+/).map(field => field.trim());
+  const logs = (await runGit(dir, args))
+    .split(/\r?\n/) // split into lines
+    .map(field => field.trim());
 
   const commits = [];
   for (const log of logs) {
@@ -332,92 +327,52 @@ const addRepoToPool = async (pool, repo, from, to) => {
   }
 };
 
-/***
-****  Other Repos
-***/
+// @return Map<string,GHKey>
+//   where the key is a branch name (e.g. '7-1-x' or '8-x-y')
+//   and the value is a GHKey to the PR
+async function getMergedTrops (commit, pool) {
+  const branches = new Map();
 
-// other repos - gn
+  for (const prKey of commit.prKeys.values()) {
+    const pull = pool.pulls[prKey.number];
+    const mergedBranches = new Set(
+      ((pull && pull.data && pull.data.labels) ? pull.data.labels : [])
+        .map(label => ((label && label.name) ? label.name : '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
+        .filter(match => match)
+        .map(match => match[1])
+    );
 
-const getDepsVariable = async (ref, key) => {
-  // get a copy of that reference point's DEPS file
-  const deps = await runGit(ELECTRON_VERSION, ['show', `${ref}:DEPS`]);
-  const filename = path.resolve(os.tmpdir(), 'DEPS');
-  fs.writeFileSync(filename, deps);
+    if (mergedBranches.size > 0) {
+      const isTropComment = (comment) => comment && comment.user && comment.user.login === TROP_LOGIN;
 
-  // query the DEPS file
-  const response = childProcess.spawnSync(
-    'gclient',
-    ['getdep', '--deps-file', filename, '--var', key],
-    { encoding: 'utf8' }
-  );
+      const ghKey = GHKey.NewFromPull(pull.data);
+      const backportRegex = /backported this PR to "(.*)",\s+please check out #(\d+)/;
+      const getBranchNameAndPullKey = (comment) => {
+        const match = ((comment && comment.body) ? comment.body : '').match(backportRegex);
+        return match ? [match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))] : null;
+      };
 
-  // cleanup
-  fs.unlinkSync(filename);
-  return response.stdout.trim();
-};
-
-const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
-  const repos = [{ // just node
-    owner: 'electron',
-    repo: 'node',
-    dir: path.resolve(SRC_DIR, 'third_party', 'electron_node'),
-    deps_variable_name: 'node_version'
-  }];
-
-  for (const repo of repos) {
-    // the 'DEPS' file holds the dependency reference point
-    const key = repo.deps_variable_name;
-    const from = await getDepsVariable(fromRef, key);
-    const to = await getDepsVariable(toRef, key);
-    await addRepoToPool(pool, repo, from, to);
-  }
-};
-
-// Changes are interesting if they make a change relative to a previous
-// release in the same series. For example if you fix a Y.0.0 bug, that
-// should be included in the Y.0.1 notes even if it's also tropped back
-// to X.0.1.
-//
-// The phrase 'previous release' is important: if this is the first
-// prerelease or first stable release in a series, we omit previous
-// branches' changes. Otherwise we will have an overwhelmingly long
-// list of mostly-irrelevant changes.
-const shouldIncludeMultibranchChanges = (version) => {
-  let show = true;
-
-  if (semver.valid(version)) {
-    const prerelease = semver.prerelease(version);
-    show = prerelease
-      ? parseInt(prerelease.pop()) > 1
-      : semver.patch(version) > 0;
+      const comments = await getComments(ghKey);
+      ((comments && comments.data) ? comments.data : [])
+        .filter(isTropComment)
+        .map(getBranchNameAndPullKey)
+        .filter(pair => pair)
+        .filter(([branch]) => mergedBranches.has(branch))
+        .forEach(([branch, key]) => branches.set(branch, key));
+    }
   }
 
-  return show;
-};
-
-function getOldestMajorBranchOfPull (pull) {
-  return pull.data.labels
-    .map(label => label.name.match(/merged\/(\d+)-(\d+)-x/) || label.name.match(/merged\/(\d+)-x-y/))
-    .filter(label => !!label)
-    .map(label => parseInt(label[1]))
-    .filter(major => !!major)
-    .sort()
-    .shift();
+  return branches;
 }
 
-function getOldestMajorBranchOfCommit (commit, pool) {
-  return [...commit.prKeys.values()]
-    .map(prKey => pool.pulls[prKey.number])
-    .filter(pull => !!pull)
-    .map(pull => getOldestMajorBranchOfPull(pull))
-    .filter(major => !!major)
-    .sort()
-    .shift();
-}
-
-function commitExistsBeforeMajor (commit, pool, major) {
-  const firstAppearance = getOldestMajorBranchOfCommit(commit, pool);
-  return firstAppearance && (firstAppearance < major);
+// @return the shorthand name of the branch that `ref` is on,
+//   e.g. a ref of '10.0.0-beta.1' will return '10-x-y'
+async function getBranchNameOfRef (ref, dir) {
+  return (await runGit(dir, ['branch', '--all', '--contains', ref, '--sort', 'version:refname']))
+    .split(/\r?\n/) // split into lines
+    .shift() // we sorted by refname and want the first result
+    .match(/(?:.*\/)?(.*)/)[1] // 'remote/origins/10-x-y' -> '10-x-y'
+    .trim();
 }
 
 /***
@@ -431,20 +386,14 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   }
 
   const pool = new Pool();
+  const electronDir = path.resolve(SRC_DIR, 'electron');
+  const toBranch = await getBranchNameOfRef(toRef, electronDir);
+
+  console.log(`Generating release notes between ${fromRef} and ${toRef} for version ${newVersion} in branch ${toBranch}`);
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: path.resolve(SRC_DIR, 'electron') };
+  const electron = { owner: 'electron', repo: 'electron', dir: electronDir };
   await addRepoToPool(pool, electron, fromRef, toRef);
-
-  // Don't include submodules if comparing across major versions;
-  // there's just too much churn otherwise.
-  const includeDeps = semver.valid(fromRef) &&
-                      semver.valid(toRef) &&
-                      semver.major(fromRef) === semver.major(toRef);
-
-  if (includeDeps) {
-    await getDependencyCommitsGN(pool, fromRef, toRef);
-  }
 
   // remove any old commits
   pool.commits = pool.commits.filter(commit => !pool.processedHashes.has(commit.hash));
@@ -479,12 +428,12 @@ const getNotes = async (fromRef, toRef, newVersion) => {
 
   // remove non-user-facing commits
   pool.commits = pool.commits
-    .filter(commit => commit.note && (commit.note !== NO_NOTES))
-    .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)));
+    .filter(commit => commit && commit.note)
+    .filter(commit => commit.note !== NO_NOTES)
+    .filter(commit => commit.note.match(/^[Bb]ump v\d+\.\d+\.\d+/) === null);
 
-  if (!shouldIncludeMultibranchChanges(newVersion)) {
-    const { major } = semver.parse(newVersion);
-    pool.commits = pool.commits.filter(commit => !commitExistsBeforeMajor(commit, pool, major));
+  for (const commit of pool.commits) {
+    commit.trops = await getMergedTrops(commit, pool);
   }
 
   pool.commits = removeSupercededStackUpdates(pool.commits);
@@ -496,7 +445,8 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     fix: [],
     other: [],
     unknown: [],
-    name: newVersion
+    name: newVersion,
+    toBranch
   };
 
   pool.commits.forEach(commit => {
@@ -545,31 +495,42 @@ const removeSupercededStackUpdates = (commits) => {
 ****  Render
 ***/
 
-const renderLink = (commit, explicitLinks) => {
-  let link;
-  const { owner, repo } = commit;
-  const keyIt = commit.prKeys.values().next();
-  if (keyIt.done) /* no PRs */ {
-    const { hash } = commit;
-    const url = `https://github.com/${owner}/${repo}/commit/${hash}`;
-    const text = owner === 'electron' && repo === 'electron'
-      ? `${hash.slice(0, 8)}`
-      : `${owner}/${repo}@${hash.slice(0, 8)}`;
-    link = explicitLinks ? `[${text}](${url})` : text;
-  } else {
-    const { number } = keyIt.value;
-    const url = `https://github.com/${owner}/${repo}/pull/${number}`;
-    const text = owner === 'electron' && repo === 'electron'
-      ? `#${number}`
-      : `${owner}/${repo}#${number}`;
-    link = explicitLinks ? `[${text}](${url})` : text;
-  }
-  return link;
-};
+// @return the pull request's GitHub URL
+const buildPullURL = ghKey => `https://github.com/${ghKey.owner}/${ghKey.repo}/pull/${ghKey.number}`;
 
-const renderCommit = (commit, explicitLinks) => {
-  // clean up the note
-  let note = commit.note || commit.subject;
+const renderPull = ghKey => `[#${ghKey.number}](${buildPullURL(ghKey)})`;
+
+// @return the commit's GitHub URL
+const buildCommitURL = commit => `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`;
+
+const renderCommit = commit => `[${commit.hash.slice(0, 8)}](${buildCommitURL(commit)})`;
+
+// @return a markdown link to the PR if available; otherwise, the git commit
+function renderLink (commit) {
+  const maybePull = commit.prKeys.values().next();
+  return maybePull.value ? renderPull(maybePull.value) : renderCommit(commit);
+}
+
+// @return a terser branch name,
+//   e.g. '7-2-x' -> '7.2' and '8-x-y' -> '8'
+const renderBranchName = name => name.replace(/-[a-zA-Z]/g, '').replace('-', '.');
+
+const renderTrop = (branch, ghKey) => `[${renderBranchName(branch)}](${buildPullURL(ghKey)})`;
+
+// @return markdown-formatted links to other branches' trops,
+//   e.g. "(Also in 7.2, 8, 9)"
+function renderTrops (commit, excludeBranch) {
+  const body = [...commit.trops.entries()]
+    .filter(([branch]) => branch !== excludeBranch)
+    .sort(([branchA], [branchB]) => parseInt(branchA) - parseInt(branchB)) // sort by semver major
+    .map(([branch, key]) => renderTrop(branch, key))
+    .join(', ');
+  return body ? `<span style="font-size:small;">(Also in ${body})</span>` : body;
+}
+
+// @return a slightly cleaned-up human-readable change description
+function renderDescription (commit) {
+  let note = commit.note || commit.subject || '';
   note = note.trim();
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1);
@@ -606,30 +567,24 @@ const renderCommit = (commit, explicitLinks) => {
     }
   }
 
-  const link = renderLink(commit, explicitLinks);
+  return note;
+}
 
-  return { note, link };
-};
+// @return markdown-formatted release note line item,
+//   e.g. '* Fixed a foo. #12345 (Also in 7.2, 8, 9)'
+const renderNote = (commit, excludeBranch) =>
+  `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(commit, excludeBranch)}\n`;
 
-const renderNotes = (notes, explicitLinks) => {
+const renderNotes = (notes) => {
   const rendered = [`# Release Notes for ${notes.name}\n\n`];
 
   const renderSection = (title, commits) => {
-    if (commits.length === 0) {
-      return;
+    if (commits.length > 0) {
+      rendered.push(
+        `## ${title}\n\n`,
+        ...(commits.map(commit => renderNote(commit, notes.toBranch)).sort())
+      );
     }
-    const notes = new Map();
-    for (const note of commits.map(commit => renderCommit(commit, explicitLinks))) {
-      if (!notes.has(note.note)) {
-        notes.set(note.note, [note.link]);
-      } else {
-        notes.get(note.note).push(note.link);
-      }
-    }
-    rendered.push(`## ${title}\n\n`);
-    const lines = [];
-    notes.forEach((links, key) => lines.push(` * ${key} ${links.map(link => link.toString()).sort().join(', ')}\n`));
-    rendered.push(...lines.sort(), '\n');
   };
 
   renderSection('Breaking Changes', notes.breaking);
@@ -638,7 +593,7 @@ const renderNotes = (notes, explicitLinks) => {
   renderSection('Other Changes', notes.other);
 
   if (notes.docs.length) {
-    const docs = notes.docs.map(commit => renderLink(commit, explicitLinks)).sort();
+    const docs = notes.docs.map(commit => renderLink(commit)).sort();
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n');
   }
 

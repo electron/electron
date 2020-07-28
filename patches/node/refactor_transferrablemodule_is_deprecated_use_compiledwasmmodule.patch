@@ -7,10 +7,10 @@ Subject: refactor: TransferrableModule is deprecated, use CompiledWasmModule
 This is already present in Node.js v14 and can be removed when we upgrade.
 
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index 16b1a97eec2dfc236d54e76ef795ce1c0b958fb8..9ed2526fc04f63d857942684dd63b1b93ef2969e 100644
+index f19e541bff08fb69209a50f4b21257de77efaf9f..f42ed9661500d862545c09cdb233ca8a99cafd35 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
-@@ -57,7 +57,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+@@ -56,7 +56,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
        Environment* env,
        const std::vector<MessagePort*>& message_ports,
        const std::vector<Local<SharedArrayBuffer>>& shared_array_buffers,
@@ -19,7 +19,7 @@ index 16b1a97eec2dfc236d54e76ef795ce1c0b958fb8..9ed2526fc04f63d857942684dd63b1b9
        : message_ports_(message_ports),
          shared_array_buffers_(shared_array_buffers),
          wasm_modules_(wasm_modules) {}
-@@ -81,7 +81,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+@@ -80,7 +80,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
    MaybeLocal<WasmModuleObject> GetWasmModuleFromId(
        Isolate* isolate, uint32_t transfer_id) override {
      CHECK_LE(transfer_id, wasm_modules_.size());
@@ -28,7 +28,7 @@ index 16b1a97eec2dfc236d54e76ef795ce1c0b958fb8..9ed2526fc04f63d857942684dd63b1b9
          isolate, wasm_modules_[transfer_id]);
    }
  
-@@ -90,7 +90,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
+@@ -89,7 +89,7 @@ class DeserializerDelegate : public ValueDeserializer::Delegate {
   private:
    const std::vector<MessagePort*>& message_ports_;
    const std::vector<Local<SharedArrayBuffer>>& shared_array_buffers_;
@@ -37,7 +37,7 @@ index 16b1a97eec2dfc236d54e76ef795ce1c0b958fb8..9ed2526fc04f63d857942684dd63b1b9
  };
  
  }  // anonymous namespace
-@@ -180,7 +180,7 @@ void Message::AddMessagePort(std::unique_ptr<MessagePortData>&& data) {
+@@ -179,7 +179,7 @@ void Message::AddMessagePort(std::unique_ptr<MessagePortData>&& data) {
    message_ports_.emplace_back(std::move(data));
  }
  
@@ -46,7 +46,7 @@ index 16b1a97eec2dfc236d54e76ef795ce1c0b958fb8..9ed2526fc04f63d857942684dd63b1b9
    wasm_modules_.emplace_back(std::move(mod));
    return wasm_modules_.size() - 1;
  }
-@@ -277,7 +277,7 @@ class SerializerDelegate : public ValueSerializer::Delegate {
+@@ -276,7 +276,7 @@ class SerializerDelegate : public ValueSerializer::Delegate {
  
    Maybe<uint32_t> GetWasmModuleTransferId(
        Isolate* isolate, Local<WasmModuleObject> module) override {
