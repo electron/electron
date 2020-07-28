@@ -315,6 +315,23 @@ describe('<webview> tag', function () {
       const [, zoomLevel] = await emittedOnce(ipcMain, 'webview-origin-zoom-level');
       expect(zoomLevel).to.equal(2.0);
     });
+
+    it('does not crash when navigating with zoom level inherited from parent', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          zoomFactor: 1.2,
+          session: webviewSession
+        }
+      });
+      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      const [, webview] = await attachPromise;
+      expect(webview.getZoomFactor()).to.equal(1.2);
+      await w.loadURL(`${zoomScheme}://host1`);
+    });
   });
 
   describe('nativeWindowOpen option', () => {
