@@ -7,8 +7,9 @@
 
 #include <vector>
 
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"
 
@@ -22,13 +23,16 @@ namespace electron {
 
 namespace api {
 
-class Screen : public gin_helper::EventEmitter<Screen>,
+class Screen : public gin::Wrappable<Screen>,
+               public gin_helper::EventEmitterMixin<Screen>,
                public display::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(gin_helper::ErrorThrower error_thrower);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
   Screen(v8::Isolate* isolate, display::Screen* screen);
