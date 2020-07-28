@@ -4,7 +4,8 @@
 
 #include "shell/browser/browser.h"
 
-#include "base/win/shlwapi.h"  // must come before other includes. fixes bad #defines from <shlwapi.h>.
+// must come before other includes. fixes bad #defines from <shlwapi.h>.
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
 #include <windows.h>  // windows.h must be included first
 
