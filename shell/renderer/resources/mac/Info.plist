@@ -12,5 +12,7 @@
   <true/>
   <key>NSSupportsAutomaticGraphicsSwitching</key>
   <true/>
+  <key>LSRequiresNativeExecution</key>
+  <true/>
 </dict>
 </plist>
