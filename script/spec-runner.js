@@ -2,7 +2,7 @@
 
 const childProcess = require('child_process');
 const crypto = require('crypto');
-const fs = require('fs');
+const fs = require('fs-extra');
 const { hashElement } = require('folder-hash');
 const path = require('path');
 const unknownFlags = [];
@@ -225,6 +225,9 @@ async function installSpecModules (dir) {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019'
   });
+  if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
+    await fs.remove(path.resolve(dir, 'node_modules'));
+  }
   const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
     env,
     cwd: dir,
@@ -233,6 +236,19 @@ async function installSpecModules (dir) {
   if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);
     process.exit(1);
+  }
+
+  // TODO(MarshallOfSound): Remove once node-gyp supports arm64
+  if (process.platform === 'darwin' && process.env.npm_config_arch === 'arm64') {
+    for (const nodeModule of fs.readdirSync(path.resolve(dir, 'node_modules'))) {
+      if (fs.existsSync(path.resolve(dir, 'node_modules', nodeModule, 'binding.gyp'))) {
+        childProcess.spawnSync(NPX_CMD, ['https://github.com/MarshallOfSound/node-gyp/archive/apple-silicon.tar.gz', 'clean', 'configure', 'build', '--arch=arm64'], {
+          env,
+          cwd: path.resolve(dir, 'node_modules', nodeModule),
+          stdio: 'inherit'
+        });
+      }
+    }
   }
 }
 
@@ -244,6 +260,7 @@ function getSpecHash () {
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../script/spec-runner.js')));
       return hasher.digest('hex');
     })(),
     (async () => {

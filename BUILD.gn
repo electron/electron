@@ -94,6 +94,15 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
+webpack_build("electron_asar_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.asar_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.asar.js"
+  out_file = "$target_gen_dir/js2c/asar_bundle.js"
+}
+
 webpack_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -139,36 +148,24 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-copy("electron_js2c_copy") {
-  sources = [
-    "lib/common/asar.js",
-    "lib/common/asar_init.js",
-  ]
-  outputs = [ "$target_gen_dir/js2c/{{source_file_part}}" ]
-}
-
 action("electron_js2c") {
   deps = [
+    ":electron_asar_bundle",
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
-    ":electron_js2c_copy",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_worker_bundle",
   ]
 
-  webpack_sources = [
+  sources = [
+    "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
-
-  sources = webpack_sources + [
-              "$target_gen_dir/js2c/asar.js",
-              "$target_gen_dir/js2c/asar_init.js",
-            ]
 
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
@@ -468,7 +465,7 @@ source_set("electron_lib") {
       deps += [ "//third_party/crashpad/crashpad/client" ]
     }
 
-    libs = [
+    frameworks = [
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",
@@ -495,7 +492,7 @@ source_set("electron_lib") {
         "shell/common/crash_keys.h",
       ]
     } else {
-      libs += [
+      frameworks += [
         "Squirrel.framework",
         "ReactiveObjC.framework",
         "Mantle.framework",
@@ -661,6 +658,7 @@ source_set("electron_lib") {
     deps += [
       "//components/pdf/browser",
       "//components/pdf/renderer",
+      "//pdf:pdf_ppapi",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
@@ -805,10 +803,10 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-    libs = []
+    frameworks = []
 
     if (enable_osr) {
-      libs += [ "IOSurface.framework" ]
+      frameworks += [ "IOSurface.framework" ]
     }
 
     ldflags = [
@@ -917,7 +915,7 @@ if (is_mac) {
     output_name = electron_login_helper_name
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
-    libs = [ "AppKit.framework" ]
+    frameworks = [ "AppKit.framework" ]
     info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
         [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]

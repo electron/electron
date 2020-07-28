@@ -440,6 +440,30 @@ describe('protocol module', () => {
       ajax(protocolName + '://fake-host');
       await hasEndedPromise;
     });
+
+    it('destroys response streams when aborted before completion', async () => {
+      const events = new EventEmitter();
+      registerStreamProtocol(protocolName, (request, callback) => {
+        const responseStream = new stream.PassThrough();
+        responseStream.push('data\r\n');
+        responseStream.on('close', () => {
+          events.emit('close');
+        });
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: responseStream
+        });
+        events.emit('respond');
+      });
+
+      const hasRespondedPromise = emittedOnce(events, 'respond');
+      const hasClosedPromise = emittedOnce(events, 'close');
+      ajax(protocolName + '://fake-host');
+      await hasRespondedPromise;
+      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+      await hasClosedPromise;
+    });
   });
 
   describe('protocol.isProtocolRegistered', () => {

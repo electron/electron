@@ -1,5 +1,5 @@
-import * as roles from './menu-item-roles';
-import { Menu, Event, BrowserWindow, WebContents } from 'electron';
+import * as roles from '@electron/internal/browser/api/menu-item-roles';
+import { Menu, Event, BrowserWindow, WebContents } from 'electron/main';
 
 let nextCommandId = 0;
 

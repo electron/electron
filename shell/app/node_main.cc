@@ -167,10 +167,6 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    // We do not want to double-set the error level and promise rejection
-    // callback.
-    node::g_standalone_mode = false;
-
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -256,6 +252,8 @@ int NodeMain(int argc, char* argv[]) {
       node::LoadEnvironment(env);
     }
 
+    env->set_trace_sync_io(env->options()->trace_sync_io);
+
     {
       v8::SealHandleScope seal(isolate);
       bool more;
@@ -279,6 +277,9 @@ int NodeMain(int argc, char* argv[]) {
     }
 
     node_debugger.Stop();
+
+    env->set_trace_sync_io(false);
+
     exit_code = node::EmitExit(env);
 
     node::ResetStdio();

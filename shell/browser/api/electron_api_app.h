@@ -157,6 +157,10 @@ class App : public ElectronBrowserClient::Delegate,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
+  void BrowserChildProcessCrashedOrKilled(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info);
+
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
                             base::ProcessHandle handle,

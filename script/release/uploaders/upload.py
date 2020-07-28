@@ -107,7 +107,7 @@ def main():
 
   mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
   mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
-  if get_target_arch().startswith('arm'):
+  if get_target_arch().startswith('arm') and PLATFORM != 'darwin':
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
     mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)

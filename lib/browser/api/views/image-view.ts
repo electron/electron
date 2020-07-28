@@ -1,4 +1,4 @@
-import { View } from 'electron';
+import { View } from 'electron/main';
 
 const { ImageView } = process._linkedBinding('electron_browser_image_view');
 

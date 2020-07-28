@@ -65,7 +65,6 @@
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "ui/base/x/x11_util.h"
-#include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/x11_types.h"
@@ -325,6 +324,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_debugger_ = std::make_unique<NodeDebugger>(env);
   node_debugger_->Start();
 
+  env->set_trace_sync_io(env->options()->trace_sync_io);
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
@@ -400,7 +401,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(USE_X11)
   // In Aura/X11, Gtk-based LinuxUI implementation is used.
-  gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
+  gtk_ui_delegate_ =
+      std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
   ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
   views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
   views::LinuxUI::SetInstance(linux_ui);
@@ -547,6 +549,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
+  node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
   node_env_.reset();
 

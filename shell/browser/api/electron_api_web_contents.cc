@@ -12,10 +12,10 @@
 #include <utility>
 #include <vector>
 
-#include "base/message_loop/message_loop_current.h"
 #include "base/no_destructor.h"
 #include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/current_thread.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
@@ -47,6 +47,7 @@
 #include "content/public/common/referrer_type_converters.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -721,10 +722,12 @@ void WebContents::AddNewContents(
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
   DCHECK(tracker);
 
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
-      CreateAndTake(isolate(), std::move(new_contents), Type::BROWSER_WINDOW);
+      CreateAndTake(isolate, std::move(new_contents), Type::BROWSER_WINDOW);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
@@ -896,9 +899,10 @@ void WebContents::FindReply(content::WebContents* web_contents,
   if (!final_update)
     return;
 
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
@@ -944,7 +948,7 @@ std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
     content::WebContents* source) {
   if (!dialog_manager_)
-    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>(this);
+    dialog_manager_ = std::make_unique<ElectronJavaScriptDialogManager>();
 
   return dialog_manager_.get();
 }
@@ -1003,9 +1007,9 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
-  v8::HandleScope handle_scope(isolate());
-  gin_helper::Dictionary details =
-      gin_helper::Dictionary::CreateEmpty(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
   Emit("render-process-gone", details);
 }
@@ -1153,11 +1157,12 @@ void WebContents::Invoke(bool internal,
 
 void WebContents::ReceivePostMessage(const std::string& channel,
                                      blink::TransferableMessage message) {
-  v8::HandleScope handle_scope(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
   auto wrapped_ports =
-      MessagePort::EntanglePorts(isolate(), std::move(message.ports));
+      MessagePort::EntanglePorts(isolate, std::move(message.ports));
   v8::Local<v8::Value> message_value =
-      electron::DeserializeV8Value(isolate(), message);
+      electron::DeserializeV8Value(isolate, message);
   EmitWithSender("-ipc-ports", receivers_.current_context(), InvokeCallback(),
                  false, channel, message_value, std::move(wrapped_ports));
 }
@@ -1165,8 +1170,9 @@ void WebContents::ReceivePostMessage(const std::string& channel,
 void WebContents::PostMessage(const std::string& channel,
                               v8::Local<v8::Value> message_value,
                               base::Optional<v8::Local<v8::Value>> transfer) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   blink::TransferableMessage transferable_message;
-  if (!electron::SerializeV8Value(isolate(), message_value,
+  if (!electron::SerializeV8Value(isolate, message_value,
                                   &transferable_message)) {
     // SerializeV8Value sets an exception.
     return;
@@ -1174,16 +1180,16 @@ void WebContents::PostMessage(const std::string& channel,
 
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (transfer) {
-    if (!gin::ConvertFromV8(isolate(), *transfer, &wrapped_ports)) {
-      isolate()->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate(), "Invalid value for transfer")));
+    if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Invalid value for transfer")));
       return;
     }
   }
 
   bool threw_exception = false;
   transferable_message.ports =
-      MessagePort::DisentanglePorts(isolate(), wrapped_ports, &threw_exception);
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
   if (threw_exception)
     return;
 
@@ -1211,8 +1217,9 @@ void WebContents::MessageTo(bool internal,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
-      isolate(), web_contents_id);
+      isolate, web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
@@ -1352,11 +1359,12 @@ void WebContents::DevToolsFocused() {
 }
 
 void WebContents::DevToolsOpened() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
   auto handle =
-      FromOrCreate(isolate(), managed_web_contents()->GetDevToolsWebContents());
-  devtools_web_contents_.Reset(isolate(), handle.ToV8());
+      FromOrCreate(isolate, managed_web_contents()->GetDevToolsWebContents());
+  devtools_web_contents_.Reset(isolate, handle.ToV8());
 
   // Set inspected tabID.
   base::Value tab_id(ID());
@@ -1373,8 +1381,9 @@ void WebContents::DevToolsOpened() {
 }
 
 void WebContents::DevToolsClosed() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
   devtools_web_contents_.Reset();
 
   Emit("devtools-closed");
@@ -1643,8 +1652,7 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent,
-                               gin_helper::Arguments* args) {
+void WebContents::SetUserAgent(const std::string& user_agent) {
   web_contents()->SetUserAgentOverride(
       blink::UserAgentOverride::UserAgentOnly(user_agent), false);
 }
@@ -1656,7 +1664,8 @@ std::string WebContents::GetUserAgent() {
 v8::Local<v8::Promise> WebContents::SavePage(
     const base::FilePath& full_file_path,
     const content::SavePageType& save_type) {
-  gin_helper::Promise<void> promise(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* handler = new SavePageHandler(web_contents(), std::move(promise));
@@ -1665,7 +1674,7 @@ v8::Local<v8::Promise> WebContents::SavePage(
   return handle;
 }
 
-void WebContents::OpenDevTools(gin_helper::Arguments* args) {
+void WebContents::OpenDevTools(gin::Arguments* args) {
   if (type_ == Type::REMOTE)
     return;
 
@@ -1888,20 +1897,21 @@ void WebContents::OnGetDefaultPrinter(
                                std::move(print_callback));
 }
 
-void WebContents::Print(gin_helper::Arguments* args) {
+void WebContents::Print(gin::Arguments* args) {
   gin_helper::Dictionary options =
       gin::Dictionary::CreateEmpty(args->isolate());
   base::Value settings(base::Value::Type::DICTIONARY);
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    args->ThrowError("webContents.print(): Invalid print settings specified.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid print settings specified.");
     return;
   }
 
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    args->ThrowError(
-        "webContents.print(): Invalid optional callback provided.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid optional callback provided.");
     return;
   }
 
@@ -1961,7 +1971,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
   base::string16 device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
-    args->ThrowError("webContents.print(): Invalid deviceName provided.");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("webContents.print(): Invalid deviceName provided.");
     return;
   }
 
@@ -2025,7 +2036,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::mojom::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode =
+      printing::mojom::DuplexMode::kSimplex;
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode,
                      static_cast<int>(duplex_mode));
@@ -2073,7 +2085,8 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
 }
 
 v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
-  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(std::move(settings), std::move(promise));
@@ -2081,19 +2094,21 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
 }
 #endif
 
-void WebContents::AddWorkSpace(gin_helper::Arguments* args,
+void WebContents::AddWorkSpace(gin::Arguments* args,
                                const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
 }
 
-void WebContents::RemoveWorkSpace(gin_helper::Arguments* args,
+void WebContents::RemoveWorkSpace(gin::Arguments* args,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    args->ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -2143,10 +2158,11 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32_t WebContents::FindInPage(gin_helper::Arguments* args) {
+uint32_t WebContents::FindInPage(gin::Arguments* args) {
   base::string16 search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
-    args->ThrowError("Must provide a non-empty search content");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must provide a non-empty search content");
     return 0;
   }
 
@@ -2215,10 +2231,11 @@ bool WebContents::SendIPCMessage(bool internal,
                                  bool send_to_all,
                                  const std::string& channel,
                                  v8::Local<v8::Value> args) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate(), args, &message)) {
-    isolate()->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate(), "Failed to serialize arguments")));
+  if (!gin::ConvertFromV8(isolate, args, &message)) {
+    isolate->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate, "Failed to serialize arguments")));
     return false;
   }
   return SendIPCMessageWithSender(internal, send_to_all, channel,
@@ -2255,10 +2272,11 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
                                         int32_t frame_id,
                                         const std::string& channel,
                                         v8::Local<v8::Value> args) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate(), args, &message)) {
-    isolate()->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate(), "Failed to serialize arguments")));
+  if (!gin::ConvertFromV8(isolate, args, &message)) {
+    isolate->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate, "Failed to serialize arguments")));
     return false;
   }
   auto frames = web_contents()->GetAllFrames();
@@ -2340,11 +2358,16 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       v8::Exception::Error(gin::StringToV8(isolate, "Invalid event object")));
 }
 
-void WebContents::BeginFrameSubscription(gin_helper::Arguments* args) {
+void WebContents::BeginFrameSubscription(gin::Arguments* args) {
   bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
-  args->GetNext(&only_dirty);
+  if (args->Length() > 1) {
+    if (!args->GetNext(&only_dirty)) {
+      args->ThrowError();
+      return;
+    }
+  }
   if (!args->GetNext(&callback)) {
     args->ThrowError();
     return;
@@ -2359,7 +2382,7 @@ void WebContents::EndFrameSubscription() {
 }
 
 void WebContents::StartDrag(const gin_helper::Dictionary& item,
-                            gin_helper::Arguments* args) {
+                            gin::Arguments* args) {
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -2368,22 +2391,24 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   gin::Handle<NativeImage> icon;
   if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
-    args->ThrowError("Must specify non-empty 'icon' option");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must specify non-empty 'icon' option");
     return;
   }
 
   // Start dragging.
   if (!files.empty()) {
-    base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+    base::CurrentThread::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    args->ThrowError("Must specify either 'file' or 'files' option");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must specify either 'file' or 'files' option");
   }
 }
 
-v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
+v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   gfx::Rect rect;
-  gin_helper::Promise<gfx::Image> promise(isolate());
+  gin_helper::Promise<gfx::Image> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // get rect arguments if they exist
@@ -2415,7 +2440,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin_helper::Arguments* args) {
   return handle;
 }
 
-void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
+void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   gfx::Size size;
   bool stay_hidden = false;
 
@@ -2427,7 +2452,7 @@ void WebContents::IncrementCapturerCount(gin_helper::Arguments* args) {
   web_contents()->IncrementCapturerCount(size, stay_hidden);
 }
 
-void WebContents::DecrementCapturerCount(gin_helper::Arguments* args) {
+void WebContents::DecrementCapturerCount(gin::Arguments* args) {
   bool stay_hidden = false;
 
   // get stayHidden arguments if they exist
@@ -2594,11 +2619,12 @@ v8::Local<v8::Value> WebContents::GetLastWebPreferences(
   return gin::ConvertToV8(isolate, *web_preferences->last_preference());
 }
 
-v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() const {
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
+    v8::Isolate* isolate) const {
   if (owner_window())
-    return BrowserWindow::From(isolate(), owner_window());
+    return BrowserWindow::From(isolate, owner_window());
   else
-    return v8::Null(isolate());
+    return v8::Null(isolate);
 }
 
 int32_t WebContents::ID() const {
@@ -2639,12 +2665,12 @@ void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
     managed_web_contents()->SetDevToolsWebContents(devtools->web_contents());
 }
 
-v8::Local<v8::Value> WebContents::GetNativeView() const {
+v8::Local<v8::Value> WebContents::GetNativeView(v8::Isolate* isolate) const {
   gfx::NativeView ptr = web_contents()->GetNativeView();
-  auto buffer = node::Buffer::Copy(isolate(), reinterpret_cast<char*>(&ptr),
+  auto buffer = node::Buffer::Copy(isolate, reinterpret_cast<char*>(&ptr),
                                    sizeof(gfx::NativeView));
   if (buffer.IsEmpty())
-    return v8::Null(isolate());
+    return v8::Null(isolate);
   else
     return buffer.ToLocalChecked();
 }
@@ -2680,8 +2706,9 @@ void WebContents::NotifyUserActivation() {
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
+    v8::Isolate* isolate,
     const base::FilePath& file_path) {
-  gin_helper::Promise<void> promise(isolate());
+  gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -2863,24 +2890,25 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
 }
 
 // static
-gin::Handle<WebContents> WebContents::From(v8::Isolate* isolate,
-                                           content::WebContents* web_contents) {
+WebContents* WebContents::From(content::WebContents* web_contents) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
-  if (existing)
-    return gin::CreateHandle(isolate, static_cast<WebContents*>(existing));
-  else
-    return gin::Handle<WebContents>();
+  return static_cast<WebContents*>(existing);
 }
 
 // static
 gin::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  auto existing = From(isolate, web_contents);
-  if (!existing.IsEmpty())
-    return existing;
-  else
-    return gin::CreateHandle(isolate, new WebContents(isolate, web_contents));
+  WebContents* api_web_contents = From(web_contents);
+  if (!api_web_contents)
+    api_web_contents = new WebContents(isolate, web_contents);
+  return gin::CreateHandle(isolate, api_web_contents);
+}
+
+// static
+WebContents* WebContents::FromID(int32_t id) {
+  return FromWeakMapID(JavascriptEnvironment::GetIsolate(), id);
 }
 
 }  // namespace api

@@ -96,25 +96,25 @@ ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
-  // Close any active handles
   uv_stop(loop);
-  uv_walk(
-      loop,
-      [](uv_handle_t* handle, void*) {
-        if (!uv_is_closing(handle)) {
-          uv_close(handle, nullptr);
-        }
-      },
-      nullptr);
+  int error = uv_loop_close(loop);
 
-  // Run the loop to let it finish all the closing handles
-  // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
-  for (;;)
-    if (!uv_run(loop, UV_RUN_DEFAULT))
-      break;
+  while (error) {
+    uv_run(loop, UV_RUN_DEFAULT);
+    uv_stop(loop);
+    uv_walk(
+        loop,
+        [](uv_handle_t* handle, void*) {
+          if (!uv_is_closing(handle)) {
+            uv_close(handle, nullptr);
+          }
+        },
+        nullptr);
+    uv_run(loop, UV_RUN_DEFAULT);
+    error = uv_loop_close(loop);
+  }
 
-  DCHECK(!uv_loop_alive(loop));
-  uv_loop_close(loop);
+  DCHECK_EQ(error, 0);
 }
 
 bool g_is_initialized = false;
@@ -221,13 +221,6 @@ void SetNodeOptions(base::Environment* env) {
   }
 }
 
-bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
-}
-
 }  // namespace
 
 namespace electron {
@@ -274,6 +267,7 @@ NodeBindings::~NodeBindings() {
   // Quit the embed thread.
   embed_closed_ = true;
   uv_sem_post(&embed_sem_);
+
   WakeupEmbedThread();
 
   // Wait for everything to be done.
@@ -284,7 +278,7 @@ NodeBindings::~NodeBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
   // Clean up worker loop
-  if (uv_loop_ == &worker_loop_)
+  if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
 }
 
@@ -307,7 +301,6 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
@@ -402,28 +395,31 @@ node::Environment* NodeBindings::CreateEnvironment(
     global.Delete("_noBrowserGlobals");
   }
 
+  node::IsolateSettings is;
+
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // This policy requires that microtask checkpoints be explicitly invoked.
-    // Node.js requires this.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+    // Node.js requires that microtask checkpoints be explicitly invoked.
+    is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+    is.policy = v8::MicrotasksPolicy::kScoped;
+
+    // We do not want to use Node.js' message listener as it interferes with
+    // Blink's.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+    // We do not want to use the promise rejection callback that Node.js uses,
+    // because it does not send PromiseRejectionEvents to the global script
+    // context. We need to use the one Blink already provides.
+    is.flags &=
+        ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
   }
 
   // This needs to be called before the inspector is initialized.
   env->InitializeDiagnostics();
 
-  // Set the callback to invoke to check if wasm code generation should be
-  // allowed.
-  context->GetIsolate()->SetAllowWasmCodeGenerationCallback(
-      AllowWasmCodeGenerationCallback);
-
-  // Generate more detailed source positions to code objects. This results in
-  // better results when mapping profiling samples to script source.
-  v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(
-      context->GetIsolate());
+  node::SetIsolateUpForNode(context->GetIsolate(), is);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
@@ -501,7 +497,8 @@ void NodeBindings::WakeupMainThread() {
 }
 
 void NodeBindings::WakeupEmbedThread() {
-  uv_async_send(&dummy_uv_handle_);
+  if (!in_worker_loop())
+    uv_async_send(&dummy_uv_handle_);
 }
 
 // static

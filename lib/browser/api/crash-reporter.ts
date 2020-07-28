@@ -1,4 +1,4 @@
-import { app, deprecate } from 'electron';
+import { app, deprecate } from 'electron/main';
 
 const binding = process._linkedBinding('electron_browser_crash_reporter');
 

@@ -1,6 +1,6 @@
 // TODO(deepak1556): Deprecate and remove standalone netLog module,
 // it is now a property of session module.
-import { app, session } from 'electron';
+import { app, session } from 'electron/main';
 
 const startLogging: typeof session.defaultSession.netLog.startLogging = async (path, options) => {
   if (!app.isReady()) return;

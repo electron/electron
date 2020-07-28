@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 6 Jul 2020 20:49:19 -0700
+Subject: chore: add allocator patches for apple silicon
+
+Once these are available upstream we can remove this patch.
+
+diff --git a/base/mac/mac_util.h b/base/mac/mac_util.h
+index e24439cee6c81afc74bfcb557cbdab6785a32794..f84128e76f380a86b74d354787c741c2217b6b69 100644
+--- a/base/mac/mac_util.h
++++ b/base/mac/mac_util.h
+@@ -132,6 +132,12 @@ DEFINE_IS_OS_FUNCS(15, TEST_DEPLOYMENT_TARGET)
+ DEFINE_IS_OS_FUNCS(15, IGNORE_DEPLOYMENT_TARGET)
+ #endif
+ 
++#ifdef MAC_OS_X_VERSION_10_16
++DEFINE_IS_OS_FUNCS(16, TEST_DEPLOYMENT_TARGET)
++#else
++DEFINE_IS_OS_FUNCS(16, IGNORE_DEPLOYMENT_TARGET)
++#endif
++
+ #undef IGNORE_DEPLOYMENT_TARGET
+ #undef TEST_DEPLOYMENT_TARGET
+ #undef DEFINE_IS_OS_FUNCS_CR_MIN_REQUIRED

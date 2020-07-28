@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "base/message_loop/message_loop_current.h"
 #include "base/message_loop/message_pump_mac.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/current_thread.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -177,7 +177,7 @@
 
 - (void)popUpContextMenu:(electron::ElectronMenuModel*)menu_model {
   // Make sure events can be pumped while the menu is up.
-  base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+  base::CurrentThread::ScopedNestableTaskAllower allow;
 
   // Show a custom menu.
   if (menu_model) {

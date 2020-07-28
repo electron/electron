@@ -203,7 +203,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
           ignoreSystemCrashHandler: true,
-          extra: { 'longParam': 'a'.repeat(130) }
+          extra: { longParam: 'a'.repeat(130) }
         });
         setTimeout(() => process.crash());
       }, port);
@@ -381,7 +381,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       await remotely(() => {
         require('electron').crashReporter.start({
           submitURL: 'http://127.0.0.1',
-          extra: { 'extra1': 'hi' }
+          extra: { extra1: 'hi' }
         });
       });
       const parameters = await remotely(() => require('electron').crashReporter.getParameters());
@@ -414,8 +414,8 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         crashReporter.start({ submitURL: 'http://' });
         const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
         bw.loadURL('about:blank');
-        await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
-        return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
+        await bw.webContents.executeJavaScript('require(\'electron\').crashReporter.addExtraParameter(\'hello\', \'world\')');
+        return bw.webContents.executeJavaScript('require(\'electron\').crashReporter.getParameters()');
       });
       if (process.platform === 'linux') {
         // On Linux, 'getParameters' will also include the global parameters,

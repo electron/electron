@@ -1,10 +1,8 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
-import { app } from 'electron';
-import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+import { app } from 'electron/main';
+import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 const {
-  net,
-  Net,
   isValidHeaderName,
   isValidHeaderValue,
   createURLLoader
@@ -134,6 +132,7 @@ class SlurpStream extends Writable {
     this._data = Buffer.concat([this._data, chunk]);
     callback();
   }
+
   data () { return this._data; }
 }
 
@@ -271,7 +270,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   return urlLoaderOptions;
 }
 
-class ClientRequest extends Writable implements Electron.ClientRequest {
+export class ClientRequest extends Writable implements Electron.ClientRequest {
   _started: boolean = false;
   _firstWrite: boolean = false;
   _aborted: boolean = false;
@@ -298,6 +297,10 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
+  }
+
+  get chunkedEncoding () {
+    return this._chunkedEncoding || false;
   }
 
   set chunkedEncoding (value: boolean) {
@@ -490,10 +493,6 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 }
 
-Net.prototype.request = function (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
+export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   return new ClientRequest(options, callback);
-};
-
-net.ClientRequest = ClientRequest;
-
-module.exports = net;
+}

@@ -94,6 +94,6 @@ mainWindow.webContents.on('new-window', (event, url, frameName, disposition, opt
 
 ```javascript
 // renderer process (mainWindow)
-let modal = window.open('', 'modal')
+const modal = window.open('', 'modal')
 modal.document.write('<h1>Hello</h1>')
 ```

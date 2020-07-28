@@ -39,6 +39,8 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/browser/tts_controller.h"
+#include "content/public/browser/tts_platform.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -128,10 +130,6 @@
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-
-#if BUILDFLAG(ENABLE_TTS)
-#include "chrome/browser/speech/tts_controller_delegate_impl.h"
-#endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/printing_message_filter.h"
@@ -566,13 +564,8 @@ ElectronBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new ElectronSpeechRecognitionManagerDelegate;
 }
 
-content::TtsControllerDelegate*
-ElectronBrowserClient::GetTtsControllerDelegate() {
-#if BUILDFLAG(ENABLE_TTS)
-  return TtsControllerDelegateImpl::GetInstance();
-#else
+content::TtsPlatform* ElectronBrowserClient::GetTtsPlatform() {
   return nullptr;
-#endif
 }
 
 void ElectronBrowserClient::OverrideWebkitPrefs(
@@ -936,13 +929,6 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
     extensions::ProcessMap::Get(browser_context)
         ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -1021,13 +1007,6 @@ void ElectronBrowserClient::SiteInstanceDeleting(
     extensions::ProcessMap::Get(browser_context)
         ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif
 }
@@ -1282,6 +1261,16 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
       URLLoaderFactoryType::kNavigation, factories);
+}
+
+void ElectronBrowserClient::
+    RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kWorkerMainResource, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
