@@ -102,14 +102,14 @@ index 0cc0c87e74e829e16fc9dd449bef33a7db5f6799..3131bc806acc5dd9588d74979b9ec0c3
        accelerated_video_decode_enabled(false),
        animation_policy(IMAGE_ANIMATION_POLICY_ALLOWED),
 diff --git a/content/public/common/web_preferences.h b/content/public/common/web_preferences.h
-index e2183b7525eb21349b5de82512d8b9858ba2e743..229cc4f9e161b8924b22f0c17b5dc2d38c9ac397 100644
+index e2183b7525eb21349b5de82512d8b9858ba2e743..28cbfa1b1b5dce29a5f48358b8f2603537934b86 100644
 --- a/content/public/common/web_preferences.h
 +++ b/content/public/common/web_preferences.h
 @@ -183,6 +183,27 @@ struct CONTENT_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
-+  std::string preloads;
++  base::FilePath::StringType preloads;
 +  bool disable_electron_site_instance_overrides;
 +  std::string background_color;
 +  int opener_id;
@@ -119,7 +119,7 @@ index e2183b7525eb21349b5de82512d8b9858ba2e743..229cc4f9e161b8924b22f0c17b5dc2d3
 +  int guest_instance_id;
 +  bool hidden_page;
 +  bool offscreen;
-+  std::string preload;
++  base::FilePath::StringType preload;
 +  bool native_window_open;
 +  bool node_integration;
 +  bool node_integration_in_worker;
