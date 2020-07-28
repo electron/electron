@@ -313,7 +313,7 @@ describe('<webview> tag', function () {
         }
       });
       const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
       const [, webview] = await attachPromise;
       expect(webview.getZoomFactor()).to.equal(1.2);
       await w.loadURL(`${zoomScheme}://host1`);
