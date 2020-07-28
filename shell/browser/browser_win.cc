@@ -7,11 +7,11 @@
 // must come before other includes. fixes bad #defines from <shlwapi.h>.
 #include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
-#include <windows.h>  // windows.h must be included first
+#include <windows.h>  // NOLINT(build/include_order)
 
-#include <atlbase.h>
-#include <shlobj.h>
-#include <shobjidl.h>
+#include <atlbase.h>   // NOLINT(build/include_order)
+#include <shlobj.h>    // NOLINT(build/include_order)
+#include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
