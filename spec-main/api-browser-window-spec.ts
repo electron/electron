@@ -4293,7 +4293,7 @@ describe('BrowserWindow module', () => {
     it('can hook a window message', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
       const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
-      const sizeChanged = new Promise((resolve) => {
+      const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
         w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
           resolve([wparam, lparam]);
         });
