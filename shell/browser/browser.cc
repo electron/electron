@@ -40,6 +40,12 @@ void RunQuitClosure(base::OnceClosure quit) {
 
 }  // namespace
 
+#if defined(OS_WIN)
+Browser::LaunchItem::LaunchItem() = default;
+Browser::LaunchItem::~LaunchItem() = default;
+Browser::LaunchItem::LaunchItem(const LaunchItem& other) = default;
+#endif
+
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
 Browser::LoginItemSettings::LoginItemSettings(const LoginItemSettings& other) =
