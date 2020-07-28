@@ -135,10 +135,13 @@ class Browser : public WindowListObserver {
     std::vector<base::string16> args;
 
 #if defined(OS_WIN)
+    // used in browser::setLoginItemSettings
     bool enabled = true;
+    base::string16 name = base::string16();
+
+    // used in browser::getLoginItemSettings
     bool executable_will_launch_at_login = false;
     std::vector<LaunchItem> launch_items;
-    base::string16 name = base::string16();
 #endif
 
     LoginItemSettings();
