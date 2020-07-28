@@ -4,13 +4,13 @@
 
 #include "shell/browser/browser.h"
 
+#include "base/win/shlwapi.h"  // must come before other includes. fixes bad #defines from <shlwapi.h>.
+
 #include <windows.h>  // windows.h must be included first
 
 #include <atlbase.h>
 #include <shlobj.h>
 #include <shobjidl.h>
-
-#include "base/win/shlwapi.h"  // must come before other includes. fixes bad #defines from <shlwapi.h>.
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
