@@ -2,7 +2,7 @@
 # gitignore style patterns are used, not globs.
 # https://help.github.com/articles/about-codeowners
 # https://git-scm.com/docs/gitignore
-
+# https://atomxplus.com
 # Upgrades WG
 /patches/                               @electron/wg-upgrades
 DEPS                                    @electron/wg-upgrades
