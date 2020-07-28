@@ -42,7 +42,7 @@ describe('chrome extensions', () => {
     const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
     w.loadURL(`chrome-extension://${id}/bare-page.html`);
     await emittedOnce(w.webContents, 'dom-ready');
-    await expect(fetch(w.webContents, 'https://google.com')).to.not.be.rejected;
+    await expect(fetch(w.webContents, 'https://google.com')).to.not.be.rejected();
   });
 
   it('loads an extension', async () => {
