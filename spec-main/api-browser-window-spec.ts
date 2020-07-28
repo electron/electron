@@ -4308,6 +4308,22 @@ describe('BrowserWindow module', () => {
       expect(lparam).to.be.an.instanceOf(Buffer);
     });
 
+    it('wip - exploratory', async () => {
+      const w = new BrowserWindow({ show: true, width: 256, height: 256 });
+      for (let messageId = 1; messageId < 256; messageId++) {
+        w.hookWindowMessage(messageId, () => {
+          console.log(`got message: ${messageId}`);
+        });
+      }
+      console.log('before delay');
+      await delay(1000);
+      console.log('after delay');
+      w.setSize(300, 300);
+      console.log('after set size');
+      await delay(1000);
+      console.log('after set size + delay');
+    });
+
     /*
     it('no longer fires after unhookWindowMessage', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
