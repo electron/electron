@@ -10,8 +10,9 @@
 
 #include "base/values.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if defined(OS_WIN)
@@ -32,25 +33,30 @@ enum NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
+class SystemPreferences
+    : public gin::Wrappable<SystemPreferences>,
+      public gin_helper::EventEmitterMixin<SystemPreferences>
 #if defined(OS_WIN)
     ,
-                          public BrowserObserver,
-                          public gfx::SysColorChangeListener
+      public BrowserObserver,
+      public gfx::SysColorChangeListener
 #endif
 {
  public:
   static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
 #if defined(OS_WIN) || defined(OS_MACOSX)
   std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
-  std::string GetMediaAccessStatus(const std::string& media_type,
-                                   gin_helper::Arguments* args);
+  std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
+                                   const std::string& media_type);
 #endif
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
@@ -69,7 +75,7 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
 
   void PostNotification(const std::string& name,
                         base::DictionaryValue user_info,
-                        gin_helper::Arguments* args);
+                        gin::Arguments* args);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
@@ -83,12 +89,13 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   int SubscribeWorkspaceNotification(const std::string& name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
-  v8::Local<v8::Value> GetUserDefault(const std::string& name,
+  v8::Local<v8::Value> GetUserDefault(v8::Isolate* isolate,
+                                      const std::string& name,
                                       const std::string& type);
-  void RegisterDefaults(gin_helper::Arguments* args);
+  void RegisterDefaults(gin::Arguments* args);
   void SetUserDefault(const std::string& name,
                       const std::string& type,
-                      gin_helper::Arguments* args);
+                      gin::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
 
@@ -108,7 +115,7 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   // are running tests on a Mojave machine
   v8::Local<v8::Value> GetEffectiveAppearance(v8::Isolate* isolate);
   v8::Local<v8::Value> GetAppLevelAppearance(v8::Isolate* isolate);
-  void SetAppLevelAppearance(gin_helper::Arguments* args);
+  void SetAppLevelAppearance(gin::Arguments* args);
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();
@@ -116,7 +123,7 @@ class SystemPreferences : public gin_helper::EventEmitter<SystemPreferences>
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
  protected:
-  explicit SystemPreferences(v8::Isolate* isolate);
+  SystemPreferences();
   ~SystemPreferences() override;
 
 #if defined(OS_MACOSX)

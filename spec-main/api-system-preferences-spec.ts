@@ -53,7 +53,7 @@ describe('systemPreferences module', () => {
       for (const badDefault of badDefaults) {
         expect(() => {
           systemPreferences.registerDefaults(badDefault as any);
-        }).to.throw('Invalid userDefault data provided');
+        }).to.throw('Error processing argument at index 0, conversion failure from ');
       }
     });
   });
