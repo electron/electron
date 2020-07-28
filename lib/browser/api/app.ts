@@ -132,4 +132,4 @@ for (const name of events) {
 
 // Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
 // they are setting it to true
-deprecate.removeProperty(app, 'allowRendererProcessReuse', [false]);
+deprecate.removeProperty({ __proto__: app }, 'allowRendererProcessReuse', [false]);
