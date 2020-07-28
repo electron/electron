@@ -4,11 +4,14 @@
 
 #include "shell/browser/browser.h"
 
-#include <windows.h>  // windows.h must be included first
+// must come before other includes. fixes bad #defines from <shlwapi.h>.
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
-#include <atlbase.h>
-#include <shlobj.h>
-#include <shobjidl.h>
+#include <windows.h>  // NOLINT(build/include_order)
+
+#include <atlbase.h>   // NOLINT(build/include_order)
+#include <shlobj.h>    // NOLINT(build/include_order)
+#include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
@@ -61,7 +64,7 @@ bool GetProcessExecPath(base::string16* exe) {
   return true;
 }
 
-bool GetProtocolLaunchPath(gin_helper::Arguments* args, base::string16* exe) {
+bool GetProtocolLaunchPath(gin::Arguments* args, base::string16* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
@@ -196,7 +199,7 @@ Browser::UserTask::UserTask() = default;
 Browser::UserTask::UserTask(const UserTask&) = default;
 Browser::UserTask::~UserTask() = default;
 
-void Browser::Focus(gin_helper::Arguments* args) {
+void Browser::Focus(gin::Arguments* args) {
   // On Windows we just focus on the first window found for this process.
   DWORD pid = GetCurrentProcessId();
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
@@ -338,7 +341,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -400,7 +403,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -444,7 +447,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin_helper::Arguments* args) {
+                                      gin::Arguments* args) {
   if (protocol.empty())
     return false;
 

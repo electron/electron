@@ -57,13 +57,13 @@ class Browser : public WindowListObserver {
   void Quit();
 
   // Exit the application immediately and set exit code.
-  void Exit(gin_helper::Arguments* args);
+  void Exit(gin::Arguments* args);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
 
   // Focus the application.
-  void Focus(gin_helper::Arguments* args);
+  void Focus(gin::Arguments* args);
 
   // Returns the version of the executable (or bundle).
   std::string GetVersion() const;
@@ -88,15 +88,15 @@ class Browser : public WindowListObserver {
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                     gin_helper::Arguments* args);
+                                     gin::Arguments* args);
 
   // Set as default handler for a protocol.
   bool SetAsDefaultProtocolClient(const std::string& protocol,
-                                  gin_helper::Arguments* args);
+                                  gin::Arguments* args);
 
   // Query the current state of default handler for a protocol.
   bool IsDefaultProtocolClient(const std::string& protocol,
-                               gin_helper::Arguments* args);
+                               gin::Arguments* args);
 
   base::string16 GetApplicationNameForProtocol(const GURL& url);
 
@@ -140,7 +140,7 @@ class Browser : public WindowListObserver {
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
                        base::DictionaryValue user_info,
-                       gin_helper::Arguments* args);
+                       gin::Arguments* args);
 
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
