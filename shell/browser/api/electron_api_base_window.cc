@@ -302,7 +302,7 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
     v8::HandleScope scope(isolate);
     messages_callback_map_[message].Run(
         ToBuffer(isolate, static_cast<void*>(&w_param), sizeof(WPARAM)),
-        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+        ToBuffer(isolate, static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
 }
 #endif
