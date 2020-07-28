@@ -4289,10 +4289,13 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32')('hookWindowMessage', () => {
-    it('can hook a window message', async () => {
+  ifdescribe(process.platform === 'win32')('window message hooks', () => {
+    afterEach(closeAllWindows);
+
+    const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
+
+    it('can hook a window message with hookWindowMessage', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
-      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
       const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
         w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
           resolve([wparam, lparam]);
@@ -4302,6 +4305,48 @@ describe('BrowserWindow module', () => {
       const [wparam, lparam] = await sizeChanged;
       expect(wparam).to.be.an.instanceOf(Buffer);
       expect(lparam).to.be.an.instanceOf(Buffer);
+    });
+
+    it('no longer fires after unhookWindowMessage', async () => {
+      const w = new BrowserWindow({ show: true, width: 256, height: 256 });
+      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
+      let timesCalled = 0;
+      {
+        const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
+          w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
+            timesCalled++;
+            resolve([wparam, lparam]);
+          });
+        });
+        w.setSize(300, 300);
+        await sizeChanged;
+        expect(timesCalled).to.equal(1);
+      }
+      w.unhookWindowMessage(WM_SIZE);
+      w.setSize(200, 200);
+      await delay(100);
+      expect(timesCalled).to.equal(1);
+    });
+
+    it('no longer fires after unhookAllWindowMessages', async () => {
+      const w = new BrowserWindow({ show: true, width: 256, height: 256 });
+      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
+      let timesCalled = 0;
+      {
+        const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
+          w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
+            timesCalled++;
+            resolve([wparam, lparam]);
+          });
+        });
+        w.setSize(300, 300);
+        await sizeChanged;
+        expect(timesCalled).to.equal(1);
+      }
+      w.unhookAllWindowMessages();
+      w.setSize(200, 200);
+      await delay(100);
+      expect(timesCalled).to.equal(1);
     });
   });
 });
