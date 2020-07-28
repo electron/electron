@@ -700,7 +700,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw error;
     }
     const buffer = Buffer.from(arrayBuffer);
-    return buffer.toString('utf8');
+    const str = buffer.toString('utf8');
+    return [str, str.length > 0];
   };
 
   const { internalModuleStat } = internalBinding('fs');
