@@ -4288,4 +4288,20 @@ describe('BrowserWindow module', () => {
       });
     });
   });
+
+  ifdescribe(process.platform === 'win32')('hookWindowMessage', () => {
+    it('can hook a window message', async () => {
+      const w = new BrowserWindow({ show: true, width: 256, height: 256 });
+      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
+      const sizeChanged = new Promise((resolve) => {
+        w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
+          resolve([wparam, lparam]);
+        });
+      });
+      w.setSize(300, 300);
+      const [wparam, lparam] = await sizeChanged;
+      expect(wparam).to.be.an.instanceOf(Buffer);
+      expect(lparam).to.be.an.instanceOf(Buffer);
+    });
+  });
 });
