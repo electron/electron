@@ -114,7 +114,7 @@ class Archive : public gin_helper::Wrappable<Archive> {
     base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
     if (!safe_end.IsValid() ||
         safe_end.ValueOrDie() > archive_->file()->length()) {
-      thrower.ThrowError("Out of bounds read requested in ASAR");
+      thrower.ThrowError("Out of bounds read");
       return v8::Local<v8::ArrayBuffer>();
     }
     auto array_buffer = v8::ArrayBuffer::New(thrower.isolate(), length);
@@ -123,24 +123,23 @@ class Archive : public gin_helper::Wrappable<Archive> {
     return array_buffer;
   }
 
-  v8::Local<v8::Promise> Read(gin_helper::ErrorThrower thrower,
+  v8::Local<v8::Promise> Read(v8::Isolate* isolate,
                               uint64_t offset,
                               uint64_t length) {
-    gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise(thrower.isolate());
+    gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise(isolate);
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
     base::CheckedNumeric<uint64_t> safe_offset(offset);
     base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
     if (!safe_end.IsValid() ||
         safe_end.ValueOrDie() > archive_->file()->length()) {
-      thrower.ThrowError("Out of bounds read requested in ASAR");
-      return v8::Local<v8::Promise>();
+      promise.RejectWithErrorMessage("Out of bounds read");
+      return handle;
     }
 
     base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-        base::BindOnce(&Archive::ReadOnIO, thrower.isolate(), archive_, offset,
-                       length),
+        base::BindOnce(&Archive::ReadOnIO, isolate, archive_, offset, length),
         base::BindOnce(&Archive::ResolveReadOnUI, std::move(promise)));
 
     return handle;

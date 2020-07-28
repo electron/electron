@@ -534,7 +534,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const buffer = Buffer.from(buf);
       callback(null, encoding ? buffer.toString(encoding) : buffer);
     }, (err) => {
-      callback(err);
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      callback(error);
     });
   };
 
@@ -569,7 +572,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { encoding } = options;
 
     logASARAccess(asarPath, filePath, info.offset);
-    const buffer = Buffer.from(archive.readSync(info.offset, info.size));
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = archive.readSync(info.offset, info.size);
+    } catch (err) {
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      throw error;
+    }
+    const buffer = Buffer.from(arrayBuffer);
     return encoding ? buffer.toString(encoding) : buffer;
   };
 
@@ -678,7 +690,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     logASARAccess(asarPath, filePath, info.offset);
-    const buffer = Buffer.from(archive.readSync(info.offset, info.size));
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = archive.readSync(info.offset, info.size);
+    } catch (err) {
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      throw error;
+    }
+    const buffer = Buffer.from(arrayBuffer);
     return buffer.toString('utf8');
   };
 
