@@ -9,10 +9,10 @@ We need to use the one Blink already provides, and so we need to
 slightly augment IsolateSettings to allow for that.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 21980987644c6e83029157785dea463070456c77..20d9f91dcf6b5def05a706cf3389d64e9edbcf3e 100644
+index 2bfba8a011c2b902932e6b1714bbb55b945cd96d..28851b8a8f8bdd6dec0f54c62f79fd75a3be08ed 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -241,9 +241,11 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -235,9 +235,11 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      s.allow_wasm_code_generation_callback : AllowWasmCodeGenerationCallback;
    isolate->SetAllowWasmCodeGenerationCallback(allow_wasm_codegen_cb);
  

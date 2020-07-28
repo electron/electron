@@ -675,11 +675,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
-    if (!archive) return;
+    if (!archive) return [];
 
     const info = archive.getFileInfo(filePath);
-    if (!info) return;
-    if (info.size === 0) return '';
+    if (!info) return [];
+    if (info.size === 0) return ['', false];
     if (info.unpacked) {
       const realPath = archive.copyFileOut(filePath);
       return fs.readFileSync(realPath, { encoding: 'utf8' });
@@ -687,11 +687,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const buffer = Buffer.alloc(info.size);
     const fd = archive.getFd();
-    if (!(fd >= 0)) return;
+    if (!(fd >= 0)) return [];
 
     logASARAccess(asarPath, filePath, info.offset);
     fs.readSync(fd, buffer, 0, info.size, info.offset);
-    return buffer.toString('utf8');
+    const str = buffer.toString('utf8');
+    return [str, str.length > 0];
   };
 
   const { internalModuleStat } = internalBinding('fs');

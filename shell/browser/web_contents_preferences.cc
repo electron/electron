@@ -137,6 +137,7 @@ WebContentsPreferences::WebContentsPreferences(
                 "electron");
   }
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -429,6 +430,9 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   // Whether to enable the remote module
   prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule, false);
 #endif
+
+  prefs->world_safe_execute_javascript =
+      IsEnabled(options::kWorldSafeExecuteJavaScript);
 
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))

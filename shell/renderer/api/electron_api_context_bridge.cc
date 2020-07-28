@@ -127,6 +127,22 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
                           gin::StringToV8(context->GetIsolate(), key)));
 }
 
+// Where the context bridge should create the exception it is about to throw
+enum BridgeErrorTarget {
+  // The source / calling context.  This is default and correct 99% of the time,
+  // the caller / context asking for the conversion will receive the error and
+  // therefore the error should be made in that context
+  kSource,
+  // The destination / target context.  This should only be used when the source
+  // won't catch the error that results from the value it is passing over the
+  // bridge.  This can **only** occur when returning a value from a function as
+  // we convert the return value after the method has terminated and execution
+  // has been returned to the caller.  In this scenario the error will the be
+  // catchable in the "destination" context and therefore we create the error
+  // there.
+  kDestination
+};
+
 }  // namespace
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
@@ -135,10 +151,13 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Value> value,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
-    int recursion_depth) {
+    int recursion_depth,
+    BridgeErrorTarget error_target = BridgeErrorTarget::kSource) {
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContext");
   if (recursion_depth >= kMaxRecursion) {
-    v8::Context::Scope source_scope(source_context);
+    v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
+                                       ? source_context
+                                       : destination_context);
     source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
         gin::StringToV8(source_context->GetIsolate(),
                         "Electron contextBridge recursion depth exceeded.  "
@@ -314,9 +333,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // Serializable objects
   blink::CloneableMessage ret;
   {
-    v8::Context::Scope source_context_scope(source_context);
+    v8::Local<v8::Context> error_context =
+        error_target == BridgeErrorTarget::kSource ? source_context
+                                                   : destination_context;
+    v8::Context::Scope error_scope(error_context);
     // V8 serializer will throw an error if required
-    if (!gin::ConvertFromV8(source_context->GetIsolate(), value, &ret))
+    if (!gin::ConvertFromV8(error_context->GetIsolate(), value, &ret))
       return v8::MaybeLocal<v8::Value>();
   }
 
@@ -402,10 +424,10 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (maybe_return_value.IsEmpty())
       return;
 
-    auto ret =
-        PassValueToOtherContext(func_owning_context, calling_context,
-                                maybe_return_value.ToLocalChecked(),
-                                &object_cache, support_dynamic_properties, 0);
+    auto ret = PassValueToOtherContext(
+        func_owning_context, calling_context,
+        maybe_return_value.ToLocalChecked(), &object_cache,
+        support_dynamic_properties, 0, BridgeErrorTarget::kDestination);
     if (ret.IsEmpty())
       return;
     info.GetReturnValue().Set(ret.ToLocalChecked());

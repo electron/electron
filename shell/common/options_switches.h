@@ -63,6 +63,7 @@ extern const char kPreloadScripts[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
+extern const char kWorldSafeExecuteJavaScript[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kOpenerID[];

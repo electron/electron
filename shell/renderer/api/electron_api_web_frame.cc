@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
@@ -122,25 +123,83 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   explicit ScriptExecutionCallback(
       gin_helper::Promise<v8::Local<v8::Value>> promise,
+      bool world_safe_result,
       CompletionCallback callback)
-      : promise_(std::move(promise)), callback_(std::move(callback)) {}
+      : promise_(std::move(promise)),
+        world_safe_result_(world_safe_result),
+        callback_(std::move(callback)) {}
 
   ~ScriptExecutionCallback() override = default;
+
+  void CopyResultToCallingContextAndFinalize(
+      v8::Isolate* isolate,
+      const v8::Local<v8::Value>& result) {
+    blink::CloneableMessage ret;
+    bool success;
+    std::string error_message;
+    {
+      v8::TryCatch try_catch(isolate);
+      success = gin::ConvertFromV8(isolate, result, &ret);
+      if (try_catch.HasCaught()) {
+        auto message = try_catch.Message();
+
+        if (message.IsEmpty() ||
+            !gin::ConvertFromV8(isolate, message->Get(), &error_message)) {
+          error_message =
+              "An unknown exception occurred while getting the result of "
+              "the script";
+        }
+      }
+    }
+    if (!success) {
+      // Failed convert so we send undefined everywhere
+      if (callback_)
+        std::move(callback_).Run(
+            v8::Undefined(isolate),
+            v8::Exception::Error(
+                v8::String::NewFromUtf8(isolate, error_message.c_str())
+                    .ToLocalChecked()));
+      promise_.RejectWithErrorMessage(error_message);
+    } else {
+      v8::Local<v8::Context> context = promise_.GetContext();
+      v8::Context::Scope context_scope(context);
+      v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
+      if (callback_)
+        std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
+      promise_.Resolve(cloned_value);
+    }
+  }
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
-        // Right now only single results per frame is supported.
-        if (!callback_.is_null())
-          std::move(callback_).Run(result[0], v8::Undefined(isolate));
-        promise_.Resolve(result[0]);
+        v8::Local<v8::Value> value = result[0];
+        // Either world safe results are disabled or the result was created in
+        // the same world as the caller or the result is not an object and
+        // therefore does not have a prototype chain to protect
+        bool should_clone_value =
+            world_safe_result_ &&
+            !(value->IsObject() &&
+              promise_.GetContext() ==
+                  value.As<v8::Object>()->CreationContext()) &&
+            value->IsObject();
+        if (should_clone_value) {
+          CopyResultToCallingContextAndFinalize(isolate, value);
+        } else {
+          // Right now only single results per frame is supported.
+          if (callback_)
+            std::move(callback_).Run(value, v8::Undefined(isolate));
+          promise_.Resolve(value);
+        }
       } else {
         const char* error_message =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
+          v8::Local<v8::Context> context = promise_.GetContext();
+          v8::Context::Scope context_scope(context);
           std::move(callback_).Run(
               v8::Undefined(isolate),
               v8::Exception::Error(
@@ -154,6 +213,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
+        v8::Local<v8::Context> context = promise_.GetContext();
+        v8::Context::Scope context_scope(context);
         std::move(callback_).Run(
             v8::Undefined(isolate),
             v8::Exception::Error(v8::String::NewFromUtf8(isolate, error_message)
@@ -166,6 +227,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
+  bool world_safe_result_;
   CompletionCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
@@ -335,6 +397,8 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
   } else if (pref_name == options::kEnableRemoteModule) {
     return gin::ConvertToV8(isolate, prefs.enable_remote_module);
 #endif
+  } else if (pref_name == options::kWorldSafeExecuteJavaScript) {
+    return gin::ConvertToV8(isolate, prefs.world_safe_execute_javascript);
   } else if (pref_name == options::kGuestInstanceID) {
     // NOTE: guestInstanceId is internal-only.
     return gin::ConvertToV8(isolate, prefs.guest_instance_id);
@@ -550,10 +614,13 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   ScriptExecutionCallback::CompletionCallback completion_callback;
   args->GetNext(&completion_callback);
 
+  auto prefs = render_frame->GetWebkitPreferences();
+
   render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
       has_user_gesture,
       new ScriptExecutionCallback(std::move(promise),
+                                  prefs.world_safe_execute_javascript,
                                   std::move(completion_callback)));
 
   return handle;
@@ -613,6 +680,8 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
                                blink::WebURL(GURL(url)), start_line));
   }
 
+  auto prefs = render_frame->GetWebkitPreferences();
+
   // Debugging tip: if you see a crash stack trace beginning from this call,
   // then it is very likely that some exception happened when executing the
   // "content_script/init.js" script.
@@ -620,6 +689,7 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType,
       new ScriptExecutionCallback(std::move(promise),
+                                  prefs.world_safe_execute_javascript,
                                   std::move(completion_callback)));
 
   return handle;
