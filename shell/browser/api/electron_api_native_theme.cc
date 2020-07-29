@@ -49,7 +49,7 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   ui_theme_->set_theme_source(override);
   web_theme_->set_theme_source(override);
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
@@ -74,14 +74,14 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return ui_theme_->UsesHighContrastColors();
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 const CFStringRef WhiteOnBlack = CFSTR("whiteOnBlack");
 const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
 #endif
 
 // TODO(MarshallOfSound): Implement for Linux
 bool NativeTheme::ShouldUseInvertedColorScheme() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   CFPreferencesAppSynchronize(UniversalAccessDomain);
   Boolean keyExistsAndHasValidFormat = false;
   Boolean is_inverted = CFPreferencesGetAppBooleanValue(

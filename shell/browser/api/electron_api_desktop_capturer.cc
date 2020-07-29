@@ -182,7 +182,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         source.display_id = base::NumberToString(device_id);
       }
     }
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
     // On Mac, the IDs across the APIs match.
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);

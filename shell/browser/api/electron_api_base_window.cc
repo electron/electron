@@ -818,7 +818,7 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
@@ -1174,11 +1174,11 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
@@ -1187,7 +1187,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)

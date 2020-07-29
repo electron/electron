@@ -209,7 +209,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
   dict.Set("free", free);
 
   // NB: These return bogus values on macOS
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
   dict.Set("swapTotal", mem_info.swap_total);
   dict.Set("swapFree", mem_info.swap_free);
 #endif

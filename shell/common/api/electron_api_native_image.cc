@@ -76,7 +76,7 @@ base::FilePath NormalizePath(const base::FilePath& path) {
   }
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool IsTemplateFilename(const base::FilePath& path) {
   return (base::MatchPattern(path.value(), "*Template.*") ||
           base::MatchPattern(path.value(), "*Template@*x.*"));
@@ -233,7 +233,7 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   if (IsEmpty())
     return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
 
@@ -356,7 +356,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   }
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {}
 
 bool NativeImage::IsTemplateImage() {
@@ -407,7 +407,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPath(
   electron::util::PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   gfx::Image image(image_skia);
   gin::Handle<NativeImage> handle = Create(isolate, image);
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
 #endif
@@ -504,7 +504,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
   return CreateEmpty(isolate);
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
                                                            std::string name) {
   return CreateEmpty(args->isolate());

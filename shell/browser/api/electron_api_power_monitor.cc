@@ -42,14 +42,14 @@ namespace api {
 gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   Browser::Get()->SetShutdownHandler(base::BindRepeating(
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
   base::PowerMonitor::AddObserver(this);
 
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
 #endif
 }

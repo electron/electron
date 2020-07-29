@@ -25,7 +25,7 @@
 #include "services/service_manager/embedder/switches.h"
 #include "shell/common/electron_paths.h"
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_POSIX) && !defined(OS_MAC)
 #include "components/version_info/version_info_values.h"
 #endif
 
@@ -151,12 +151,12 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 }
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
 bool ElectronCrashReporterClient::GetCrashMetricsLocation(
     base::FilePath* metrics_dir) {
   return base::PathService::Get(electron::DIR_USER_DATA, metrics_dir);
 }
-#endif  // OS_MACOSX || OS_LINUX
+#endif  // OS_MAC || OS_LINUX
 
 bool ElectronCrashReporterClient::IsRunningUnattended() {
   return false;
@@ -166,7 +166,7 @@ bool ElectronCrashReporterClient::GetCollectStatsConsent() {
   return collect_stats_consent_;
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
     bool* breakpad_enabled) {
   return false;
@@ -188,7 +188,7 @@ void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
   (*annotations)["ver"] = ELECTRON_VERSION_STRING;
 }
 
-#if defined(OS_LINUX) || defined(OS_MACOSX)
+#if defined(OS_LINUX) || defined(OS_MAC)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
   return false;
 }

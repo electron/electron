@@ -112,7 +112,7 @@
 #include "net/ssl/client_cert_store_nss.h"
 #elif defined(OS_WIN)
 #include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
@@ -163,7 +163,7 @@
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
 #endif
@@ -691,7 +691,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
@@ -1019,7 +1019,7 @@ ElectronBrowserClient::CreateClientCertStore(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
 #elif defined(OS_WIN)
   return std::make_unique<net::ClientCertStoreWin>();
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
