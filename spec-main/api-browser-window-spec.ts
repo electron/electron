@@ -4292,80 +4292,62 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform === 'win32')('window message hooks', () => {
     afterEach(closeAllWindows);
 
-    const WM_INPUTLANGCHANGE = 0x00051;
+    const WM_GETICON = 0x7f;
 
     it('can hook a window message with hookWindowMessage', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
       const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
-        w.hookWindowMessage(WM_INPUTLANGCHANGE, (wparam: Buffer, lparam: Buffer) => {
+        w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
           resolve([wparam, lparam]);
         });
       });
-      w.minimize();
-      w.restore();
       const [wparam, lparam] = await messageReceived;
       expect(wparam).to.be.an.instanceOf(Buffer);
       expect(lparam).to.be.an.instanceOf(Buffer);
     });
 
-    it('wip - exploratory', async () => {
-      const w = new BrowserWindow({ show: true, width: 256, height: 256 });
-      for (let messageId = 1; messageId < 256; messageId++) {
-        w.hookWindowMessage(messageId, () => {
-          console.log(`got message: ${messageId}`);
-        });
-      }
-      console.log('before delay');
-      await delay(1000);
-      console.log('after delay');
-      w.setSize(300, 300);
-      console.log('after set size');
-      await delay(1000);
-      console.log('after set size + delay');
-    });
-
-    /*
     it('no longer fires after unhookWindowMessage', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
-      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
       let timesCalled = 0;
       {
-        const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
-          w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
+        const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
+          w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
             timesCalled++;
             resolve([wparam, lparam]);
           });
         });
-        w.setSize(300, 300);
-        await sizeChanged;
+        await messageReceived;
         expect(timesCalled).to.equal(1);
       }
-      w.unhookWindowMessage(WM_SIZE);
-      w.setSize(200, 200);
-      await delay(100);
-      expect(timesCalled).to.equal(1);
+      w.hide();
+      w.show();
+      expect(timesCalled).to.equal(2);
+      w.unhookWindowMessage(WM_GETICON);
+      w.hide();
+      w.show();
+      expect(timesCalled).to.equal(2);
     });
 
     it('no longer fires after unhookAllWindowMessages', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
-      const WM_SIZE = 0x0005; // https://docs.microsoft.com/en-us/windows/win32/winmsg/wm-size
       let timesCalled = 0;
       {
-        const sizeChanged = new Promise<[Buffer, Buffer]>((resolve) => {
-          w.hookWindowMessage(WM_SIZE, (wparam: Buffer, lparam: Buffer) => {
+        const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
+          w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
             timesCalled++;
             resolve([wparam, lparam]);
           });
         });
-        w.setSize(300, 300);
-        await sizeChanged;
+        await messageReceived;
         expect(timesCalled).to.equal(1);
       }
+      w.hide();
+      w.show();
+      expect(timesCalled).to.equal(2);
       w.unhookAllWindowMessages();
-      w.setSize(200, 200);
-      await delay(100);
-      expect(timesCalled).to.equal(1);
+      w.hide();
+      w.show();
+      expect(timesCalled).to.equal(2);
     });
-    */
   });
 });
