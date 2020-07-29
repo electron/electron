@@ -24,7 +24,7 @@ namespace crash_keys {
 
 namespace {
 
-using ExtraCrashKeys = std::deque<crash_reporter::CrashKeyString<127>>;
+using ExtraCrashKeys = std::deque<crash_reporter::CrashKeyString<crashpad::Annotation::kValueMaxSize>>;
 ExtraCrashKeys& GetExtraCrashKeys() {
   static base::NoDestructor<ExtraCrashKeys> extra_keys;
   return *extra_keys;
