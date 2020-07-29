@@ -447,7 +447,7 @@ bool ReplaceOldSingletonLock(const base::FilePath& symlink_content,
   // lock. We never flock() the lock file from now on. I.e. we assume that an
   // old version of Chrome will not run with the same user data dir after this
   // version has run.
-  if (!base::DeleteFile(lock_path, false)) {
+  if (!base::DeleteFile(lock_path)) {
     PLOG(ERROR) << "Could not delete old singleton lock.";
     return false;
   }
