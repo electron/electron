@@ -34,14 +34,7 @@ index 44271058a26dc05b693e07aad9a22037dd9a5d1f..7d08fb05e9a0abeb82d416891968b230
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -142,14 +142,12 @@ function enrichCJSError(err) {
- }
- 
- function stat(filename) {
--  // FIXME(codebytere): determine why this needs to be done and remove
--  const internalModuleStat = process.binding('fs').internalModuleStat;
-   filename = path.toNamespacedPath(filename);
-   if (statCache !== null) {
+@@ -147,7 +147,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
