@@ -16,6 +16,7 @@
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
+#include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -181,6 +182,87 @@ bool FormatCommandLineString(base::string16* exe,
   }
 
   return true;
+}
+
+// Helper for GetLoginItemSettings().
+// iterates over all the entries in a windows registry path and returns
+// a list of launchItem with matching paths to our application.
+// if a launchItem with a matching path also has a matching entry within the
+// startup_approved_key_path, set executable_will_launch_at_login to be `true`
+std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
+    base::win::RegistryValueIterator* it,
+    boolean* executable_will_launch_at_login,
+    base::string16 scope,
+    const Browser::LoginItemSettings& options) {
+  std::vector<Browser::LaunchItem> launch_items;
+
+  while (it->Valid()) {
+    base::string16 exe = options.path;
+    if (FormatCommandLineString(&exe, options.args)) {
+      // add launch item to vector if it has a matching path (case-insensitive)
+      if ((base::CompareCaseInsensitiveASCII(it->Value(), exe.c_str())) == 0) {
+        Browser::LaunchItem launch_item;
+        base::string16 launch_path = options.path;
+        if (!(launch_path.size() > 0)) {
+          GetProcessExecPath(&launch_path);
+        }
+        launch_item.name = it->Name();
+        launch_item.path = launch_path;
+        launch_item.args = options.args;
+        launch_item.scope = scope;
+        launch_item.enabled = true;
+
+        // attempt to update launch_item.enabled if there is a matching key
+        // value entry in the StartupApproved registry
+        HKEY hkey;
+        // StartupApproved registry path
+        LPCTSTR path = TEXT(
+            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
+            "roved\\Run");
+        LONG res;
+        if (scope == L"user") {
+          res =
+              RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_QUERY_VALUE, &hkey);
+        } else {
+          res =
+              RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_QUERY_VALUE, &hkey);
+        }
+        if (res == ERROR_SUCCESS) {
+          DWORD type, size;
+          wchar_t startup_binary[12];
+          LONG result =
+              RegQueryValueEx(hkey, it->Name(), nullptr, &type,
+                              reinterpret_cast<BYTE*>(&startup_binary),
+                              &(size = sizeof(startup_binary)));
+          if (result == ERROR_SUCCESS) {
+            if (type == REG_BINARY) {
+              // any other binary other than this indicates that the program is
+              // not set to launch at login
+              wchar_t binary_accepted[12] = {0x00, 0x00, 0x00, 0x00,
+                                             0x00, 0x00, 0x00, 0x00,
+                                             0x00, 0x00, 0x00, 0x00};
+              wchar_t binary_accepted_alt[12] = {0x02, 0x00, 0x00, 0x00,
+                                                 0x00, 0x00, 0x00, 0x00,
+                                                 0x00, 0x00, 0x00, 0x00};
+              std::string reg_binary(reinterpret_cast<char*>(binary_accepted));
+              std::string reg_binary_alt(
+                  reinterpret_cast<char*>(binary_accepted_alt));
+              std::string reg_startup_binary(
+                  reinterpret_cast<char*>(startup_binary));
+              launch_item.enabled = (reg_binary == reg_startup_binary) ||
+                                    (reg_binary == reg_binary_alt);
+            }
+          }
+        }
+
+        *executable_will_launch_at_login =
+            *executable_will_launch_at_login || launch_item.enabled;
+        launch_items.push_back(launch_item);
+      }
+    }
+    it->operator++();
+  }
+  return launch_items;
 }
 
 std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
@@ -515,16 +597,46 @@ bool Browser::SetBadgeCount(int count) {
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  base::string16 key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
+
+  base::string16 startup_approved_key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
+      L"\\Run";
+  base::win::RegKey startup_approved_key(
+      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+  PCWSTR key_name =
+      settings.name.size() > 0 ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;
     if (FormatCommandLineString(&exe, settings.args)) {
-      key.WriteValue(GetAppUserModelID(), exe.c_str());
+      key.WriteValue(key_name, exe.c_str());
+
+      if (settings.enabled) {
+        startup_approved_key.DeleteValue(key_name);
+      } else {
+        HKEY hard_key;
+        LPCTSTR path = TEXT(
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
+            "roved\\Run");
+        LONG res =
+            RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &hard_key);
+
+        if (res == ERROR_SUCCESS) {
+          UCHAR disable_startup_binary[] = {0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+          RegSetValueEx(hard_key, key_name, 0, REG_BINARY,
+                        reinterpret_cast<const BYTE*>(disable_startup_binary),
+                        sizeof(disable_startup_binary));
+        }
+      }
     }
   } else {
-    key.DeleteValue(GetAppUserModelID());
+    // if open at login is false, delete both values
+    startup_approved_key.DeleteValue(key_name);
+    key.DeleteValue(key_name);
   }
 }
 
@@ -535,6 +647,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
+  // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::string16 exe = options.path;
     if (FormatCommandLineString(&exe, options.args)) {
@@ -542,6 +655,27 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
     }
   }
 
+  // iterate over current user and machine registries and populate launch items
+  // if there exists a launch entry with property enabled=='true',
+  // set executable_will_launch_at_login to 'true'.
+  boolean executable_will_launch_at_login = false;
+  std::vector<Browser::LaunchItem> launch_items;
+  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
+                                                 keyPath.c_str());
+  base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
+                                                 keyPath.c_str());
+
+  launch_items = GetLoginItemSettingsHelper(
+      &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
+  std::vector<Browser::LaunchItem> launch_items_hklm =
+      GetLoginItemSettingsHelper(&hklm_iterator,
+                                 &executable_will_launch_at_login, L"machine",
+                                 options);
+  launch_items.insert(launch_items.end(), launch_items_hklm.begin(),
+                      launch_items_hklm.end());
+
+  settings.executable_will_launch_at_login = executable_will_launch_at_login;
+  settings.launch_items = launch_items;
   return settings;
 }
 
