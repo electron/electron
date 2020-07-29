@@ -646,6 +646,9 @@ void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
 
 void OffScreenRenderWidgetHostView::SpeakSelection() {}
 
+void OffScreenRenderWidgetHostView::SetWindowFrameInScreen(
+    const gfx::Rect& rect) {}
+
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
   return false;
 }
