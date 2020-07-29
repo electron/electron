@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 29 Jul 2020 12:03:04 -0700
+Subject: feat: add implementation of v8::Platform::PostJob
+
+Uses the new "v8::platform::NewDefaultJobHandle" method
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2315981
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2304812
+
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 3f6786d6dda1625a29ab178b29790c5cbaa1fd31..29e5a72d247fd6ccd00a3c67d48b23a40768ccfe 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -500,6 +500,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+   };
+ }
+ 
++std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority, std::unique_ptr<v8::JobTask> job_task) {
++  return v8::platform::NewDefaultJobHandle(this, priority, std::move(job_task), 1 /* num_worker_threads */);
++}
++
+ template <class T>
+ TaskQueue<T>::TaskQueue()
+     : lock_(), tasks_available_(), tasks_drained_(),
+diff --git a/src/node_platform.h b/src/node_platform.h
+index 3c855afeb4019adfb5389721357abe3cd620a01c..1e14daa711ba62f9619ca83a8655482b11cef41d 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -158,6 +158,7 @@ class NodePlatform : public MultiIsolatePlatform {
+   void UnregisterIsolate(v8::Isolate* isolate) override;
+   void AddIsolateFinishedCallback(v8::Isolate* isolate,
+                                   void (*callback)(void*), void* data) override;
++  std::unique_ptr<v8::JobHandle> PostJob(v8::TaskPriority priority, std::unique_ptr<v8::JobTask> job_task) override;
+ 
+   std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
+       v8::Isolate* isolate) override;
