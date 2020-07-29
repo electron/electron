@@ -103,6 +103,16 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
       v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
+// This causes a fatal error by creating a circular extension dependency.
+void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
+  static const char* aDeps[] = {"B"};
+  v8::RegisterExtension(std::make_unique<v8::Extension>("A", "", 1, aDeps));
+  static const char* bDeps[] = {"A"};
+  v8::RegisterExtension(std::make_unique<v8::Extension>("B", "", 1, bDeps));
+  v8::ExtensionConfiguration config(1, bDeps);
+  v8::Context::New(isolate, &config);
+}
+
 bool IsSameOrigin(const GURL& l, const GURL& r) {
   return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
 }
@@ -143,6 +153,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
+  dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
 #ifdef DCHECK_IS_ON
   dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
   dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);

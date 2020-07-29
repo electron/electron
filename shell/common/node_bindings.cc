@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -32,6 +33,10 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+
+#if !defined(MAS_BUILD)
+#include "shell/common/crash_keys.h"
+#endif
 
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
@@ -130,6 +135,15 @@ bool IsPackagedApp() {
 #else
   return base_name != FILE_PATH_LITERAL("electron");
 #endif
+}
+
+void FatalErrorCallback(const char* location, const char* message) {
+  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
+
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+
+  electron::ElectronBindings::Crash();
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -396,6 +410,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   node::IsolateSettings is;
+
+  // Use a custom fatal error callback to allow us to add
+  // crash message and location to CrashReports.
+  is.fatal_error_callback = FatalErrorCallback;
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
