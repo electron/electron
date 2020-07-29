@@ -540,11 +540,10 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       }
     }
 
-    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
-      // TODO(nornagon): breakpad on linux disables itself when uploadToServer
-      // is false, so we should figure out a different way to test the crash
-      // dump dir on linux.
-      ifdescribe(process.platform !== 'linux')(`when ${crashingProcess} crashes`, () => {
+    const processList = process.platform === 'linux' ? ['main', 'renderer', 'sandboxed-renderer']
+      : ['main', 'renderer', 'sandboxed-renderer', 'node'];
+    for (const crashingProcess of processList) {
+      describe(`when ${crashingProcess} crashes`, () => {
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
@@ -552,12 +551,27 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
             return crashReporter.getCrashesDirectory();
           });
-          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          let reportsDir = crashesDir;
+          if (process.platform === 'darwin') {
+            reportsDir = path.join(crashesDir, 'completed');
+          } else if (process.platform === 'win32') {
+            reportsDir = path.join(crashesDir, 'reports');
+          }
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          if (process.platform === 'linux') {
+            if (crashingProcess === 'main') {
+              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
+            } else {
+              const process = crashingProcess !== 'sandboxed-renderer' ? crashingProcess : 'renderer';
+              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
+              expect(newFiles[0]).to.match(regex);
+            }
+          } else {
+            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          }
         });
 
         it('respects an overridden crash dump directory', async () => {
@@ -571,12 +585,27 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 
-          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          let reportsDir = crashesDir;
+          if (process.platform === 'darwin') {
+            reportsDir = path.join(crashesDir, 'completed');
+          } else if (process.platform === 'win32') {
+            reportsDir = path.join(crashesDir, 'reports');
+          }
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          if (process.platform === 'linux') {
+            if (crashingProcess === 'main') {
+              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
+            } else {
+              const process = crashingProcess !== 'sandboxed-renderer' ? crashingProcess : 'renderer';
+              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
+              expect(newFiles[0]).to.match(regex);
+            }
+          } else {
+            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          }
         });
       });
     }
