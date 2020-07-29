@@ -196,19 +196,19 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
   });
 
   ifdescribe(!isLinuxOnArm)('extra parameter limits', () => {
-    it('should truncate extra values longer than 127 characters', async () => {
+    it('should truncate extra values longer than 5 * 4096 characters', async () => {
       const { port, waitForCrash } = await startServer();
       const { remotely } = await startRemoteControlApp();
       remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
           ignoreSystemCrashHandler: true,
-          extra: { longParam: 'a'.repeat(130) }
+          extra: { longParam: 'a'.repeat(7 * 4096) }
         });
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(crash).to.have.property('longParam', 'a'.repeat(127));
+      expect(crash).to.have.property('longParam', 'a'.repeat(5 * 4096 - 1));
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {
