@@ -745,8 +745,6 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
         ninja -C out/Default electron:electron_symbols
-        cd out/Default/breakpad_symbols
-        find . -name \*.sym -print0 | xargs -0 npx @sentry/cli@1.51.1 difutil bundle-sources
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
