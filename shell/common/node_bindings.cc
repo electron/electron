@@ -137,13 +137,16 @@ bool IsPackagedApp() {
 #endif
 }
 
-void FatalErrorCallback(const char* location, const char* message) {
+void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
 
+#if !defined(MAS_BUILD)
   electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
   electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
 
-  electron::ElectronBindings::Crash();
+  volatile int* zero = nullptr;
+  *zero = 0;
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -413,7 +416,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Use a custom fatal error callback to allow us to add
   // crash message and location to CrashReports.
-  is.fatal_error_callback = FatalErrorCallback;
+  is.fatal_error_callback = V8FatalErrorCallback;
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
