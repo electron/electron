@@ -565,7 +565,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             if (crashingProcess === 'main') {
               expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
             } else {
-              const process = crashingProcess !== 'sandboxed-renderer' ? crashingProcess : 'renderer';
+              const process = crashingProcess === 'sandboxed-renderer' ? 'renderer' : crashingProcess;
               const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
               expect(newFiles[0]).to.match(regex);
             }
