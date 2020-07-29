@@ -49,7 +49,7 @@ index 84d276be597b7004c7ec38d81e415cf0489b1bcf..32b28cd71148d4c5c48b0b145577d220
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index a5c25e290ef79c33117e14c02c05c86ebd558527..b21b39385ba3a15546eb38a26cb14a317bb64227 100644
+index a7654a25b2fbfdcc6898c778b6295cb1b9351ecc..ea40853186371d9f24d614da229a59124b485e23 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -472,6 +472,7 @@ URLLoader::URLLoader(
@@ -108,7 +108,7 @@ index a5c25e290ef79c33117e14c02c05c86ebd558527..b21b39385ba3a15546eb38a26cb14a31
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 9f4d85ca7913c8de998e18560c6755cec51135d8..04748acc74ce55a335abb1865bb9bef9ae7a33c6 100644
+index be7583c48b7a7d568f8823b281a25b881606584e..870a9a9b0120dfc687f0584c7674dc34fb8ae5fe 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -116,6 +116,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
@@ -119,7 +119,7 @@ index 9f4d85ca7913c8de998e18560c6755cec51135d8..04748acc74ce55a335abb1865bb9bef9
        mojom::OriginPolicyManager* origin_policy_manager,
        std::unique_ptr<TrustTokenRequestHelperFactory>
            trust_token_helper_factory,
-@@ -457,6 +458,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -467,6 +468,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
    mojo::Remote<mojom::TrustedHeaderClient> header_client_;

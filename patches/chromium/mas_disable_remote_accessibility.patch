@@ -170,7 +170,7 @@ index ed223cdb6ea7a0f6130547b7988982bb44aa157d..b5e4f8fb0e914078ae40d034e1b785f7
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index d1aa0aaf5a949683e37a26ada1b1f178d9d82721..6dc85fa624d49e0222f7d25c2602dc6e4b2a2b56 100644
+index 092aa6f59e49adac50196ea8b5ac81c2d263cedf..b037640bfb645f37de423bc49082ec43cd600c2a 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -309,6 +309,13 @@ jumbo_component("base") {
@@ -239,7 +239,7 @@ diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa
 index 39c39c1585e71e276cbbd073c81eac2b3f0ed655..ae5bd658ed21d03710fe3aa7d9f19cce9476fac4 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -283,14 +283,22 @@ gfx::NativeViewAccessible
+@@ -283,14 +283,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -262,7 +262,7 @@ index 39c39c1585e71e276cbbd073c81eac2b3f0ed655..ae5bd658ed21d03710fe3aa7d9f19cce
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1121,6 +1129,7 @@ void NativeWidgetMacNSWindowHost::OnFocusWindowToolbar() {
+@@ -1121,6 +1129,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -270,7 +270,7 @@ index 39c39c1585e71e276cbbd073c81eac2b3f0ed655..ae5bd658ed21d03710fe3aa7d9f19cce
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1128,14 +1137,17 @@ void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
+@@ -1128,14 +1137,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];

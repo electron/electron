@@ -28,7 +28,7 @@ index 919ccd3f86aaecc841182de67ed94cab1008ae3d..cd9a0c9d1842daf1536b88e9d10c447c
  
  void GpuDataManagerImpl::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 8af48d23b020779c1714fc7ca70966e8d33f7252..5dfa29db15467f8fc55f86a2a225380c70d4aaab 100644
+index 207e27419b1e82bfb1a59399b257b434a820d577..1aa131759978cae4cd3ee3f379282bd5bb03c1e9 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -95,6 +95,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -37,7 +37,7 @@ index 8af48d23b020779c1714fc7ca70966e8d33f7252..5dfa29db15467f8fc55f86a2a225380c
    void TerminateInfoCollectionGpuProcess();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
-   // Update the GPU feature info. This updates the blacklist and enabled status
+   // Update the GPU feature info. This updates the blocklist and enabled status
    // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
 index 462ac6dcb6e83fdc478de35eb4fb0636590e48b9..b8b627b2a04e58f82967d28c63f941a1162df226 100644
@@ -56,7 +56,7 @@ index 462ac6dcb6e83fdc478de35eb4fb0636590e48b9..b8b627b2a04e58f82967d28c63f941a1
  
  void GpuDataManagerImplPrivate::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 7afb818da963271751f6ff7d876505c739ec3fae..7453817e192e01b06b8680a2209bc5c8794bb959 100644
+index 18f1d94764048b19a53b68622ea2f133ccf4c11b..1e6230534a85ccd23736a73f7285a5fed6ad7f0d 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
 @@ -75,6 +75,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {

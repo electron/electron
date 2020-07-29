@@ -5,10 +5,10 @@ Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index d3dfa5e970db93ab71d701f72079194a5499fdfd..eab3b7bafa0f3571df8ca7f7ff561a0f46de8f59 100644
+index 8f8b8f11b956818d77ef8a39a72bf470d61938ea..fddbd17229875408486d72c81ff11fceba27371d 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -482,6 +482,9 @@ void SpellcheckService::LoadDictionaries() {
+@@ -471,6 +471,9 @@ void SpellcheckService::LoadDictionaries() {
          std::make_unique<SpellcheckHunspellDictionary>(
              dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
@@ -18,7 +18,7 @@ index d3dfa5e970db93ab71d701f72079194a5499fdfd..eab3b7bafa0f3571df8ca7f7ff561a0f
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -514,6 +517,20 @@ SpellcheckService::GetHunspellDictionaries() {
+@@ -503,6 +506,20 @@ SpellcheckService::GetHunspellDictionaries() {
    return hunspell_dictionaries_;
  }
  
@@ -40,10 +40,10 @@ index d3dfa5e970db93ab71d701f72079194a5499fdfd..eab3b7bafa0f3571df8ca7f7ff561a0f
                                                 std::string locale,
                                                 std::string path,
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index bc7a644062d62f9483bc5971723239f9814a282b..05aa35ef3d960aa2f823c308ffe51086308dd9d2 100644
+index 6a7b381aa6b8eb425c62fff63c4f1001ddda2b52..47848e01a8d63c1f715080ca238326a0422d175b 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
-@@ -134,6 +134,8 @@ class SpellcheckService : public KeyedService,
+@@ -137,6 +137,8 @@ class SpellcheckService : public KeyedService,
    const std::vector<std::unique_ptr<SpellcheckHunspellDictionary>>&
    GetHunspellDictionaries();
  
@@ -52,7 +52,7 @@ index bc7a644062d62f9483bc5971723239f9814a282b..05aa35ef3d960aa2f823c308ffe51086
    // Load a dictionary from a given path. Format specifies how the dictionary
    // is stored. Return value is true if successful.
    bool LoadExternalDictionary(std::string language,
-@@ -306,6 +308,8 @@ class SpellcheckService : public KeyedService,
+@@ -315,6 +317,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    content::BrowserContext* context_;
  
