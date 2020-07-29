@@ -445,7 +445,7 @@ index 8159a61d2707082461a419a344487bbd460a1d29..d5ef9c6a7064885deb7d27518448cc67
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 2d866024a98e97177ba4c81ad67b6615f11b4d66..d5619f754473b94ecdb855fff9a8d21d78770313 100644
+index f76df7b27bf3b447e8c928651e276b87ee309cd9..bbe3698c3720a58a61a91a35eca8bab735f4ce08 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -41,6 +41,7 @@
@@ -594,7 +594,7 @@ index 2d866024a98e97177ba4c81ad67b6615f11b4d66..d5619f754473b94ecdb855fff9a8d21d
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 98352ba8bcb7cca4f7ccf58b8e217dfdb9de6cae..f8d87bae95794a8f886c9e9c7f723fbbd25ad457 100644
+index 36418df29689f7573a44ce20460a81a2ca5b3859..234c46e9ab8f83eddbd70b69c996735e5c6d70c8 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -225,7 +225,7 @@ class PrintRenderFrameHelper

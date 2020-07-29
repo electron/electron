@@ -5,7 +5,7 @@ Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 8f8b8f11b956818d77ef8a39a72bf470d61938ea..fddbd17229875408486d72c81ff11fceba27371d 100644
+index 7a3916012cd3824c748dd1f0850a2c665add4462..72e90cfa6180f875c3c5ff814b0bb0bc8954661c 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -471,6 +471,9 @@ void SpellcheckService::LoadDictionaries() {

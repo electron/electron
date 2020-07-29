@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 3547ee865c220731a6b4be4c1b32ec899b3dd11f..715bfa4b5db5fc4beb83c26b1eedda82c87a245b 100644
+index c80e6831d4af6c704609f69182cb8c4e216b9987..28c4f42fbcd04e08ac02b4b9f5b2aa4decd35557 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -43,9 +43,13 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -41,7 +41,7 @@ index 3547ee865c220731a6b4be4c1b32ec899b3dd11f..715bfa4b5db5fc4beb83c26b1eedda82
  #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
  void HostDisplayClient::DidCompleteSwapWithNewSize(const gfx::Size& size) {
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index cedf833d23589dc3157168cfc7e6d3bb12939f7a..4437a7875076ef5a99ddcd767036ec37c2d48d44 100644
+index 521ea99a35da33947aba209e8ef8a4d56dac4696..0741427b1fc27d4abf8d5bd42b105810cf459e18 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -31,17 +31,17 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -53,7 +53,7 @@ index cedf833d23589dc3157168cfc7e6d3bb12939f7a..4437a7875076ef5a99ddcd767036ec37
    // mojom::DisplayClient implementation:
 +  void IsOffscreen(IsOffscreenCallback callback) override;
 +
- #if defined(OS_MACOSX)
+ #if defined(OS_APPLE)
    void OnDisplayReceivedCALayerParams(
        const gfx::CALayerParams& ca_layer_params) override;
  #endif
@@ -94,10 +94,10 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3d5cbb2af7afab6bcda461099304aa1b89d606d0..1362306eb08c124d6c9f20090ba17a2048c390c3 100644
+index f6142e30c553940bca645f31ced7f16c6d022317..57f08ff2082b8c53a6935126da8719434bd72046 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -111,6 +111,8 @@ viz_component("service") {
+@@ -113,6 +113,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -107,7 +107,7 @@ index 3d5cbb2af7afab6bcda461099304aa1b89d606d0..1362306eb08c124d6c9f20090ba17a20
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 0b2971f1d77d00c37894230c6ae487b0f88a397e..09de8f413d8b03f0f5da3182bbf7753867776d24 100644
+index 649ecffb549639ab88ba6eba7bb720b3b56f9f82..8746ed9006f29cf6212d66d9c002d872c5d808e0 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -22,6 +22,7 @@
@@ -496,10 +496,10 @@ index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab
    // (https://crbug.com/811945)
    friend class ui::Compositor;
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index d88fab3b7d0a968b2a5503e04a0812dc1edeaf28..4f66ac576ca495630cba4f82f0e5e0ebda434ddd 100644
+index 0c9686f3c8070000bf5b180d9c06a8817d430c4a..a69b9613a61ef68624b3f69dc087603ad5cfd0c2 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -74,12 +74,14 @@ interface DisplayPrivate {
+@@ -80,12 +80,14 @@ interface DisplayPrivate {
  };
  
  interface DisplayClient {
@@ -527,18 +527,18 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 7eb1c4cfd3402fb641f630e438be32b4e4262f23..52df60fc8b7154d27fec4785356c7eaff451193a 100644
+index 13665946e08abe7161b710b52d20307d9d248b84..eb530286d5e30691deee2285b6e78a8ee7dd6dd9 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -74,6 +74,7 @@ class DisplayPrivate;
- class ExternalBeginFrameController;
+@@ -75,6 +75,7 @@ class ExternalBeginFrameController;
+ class DelegatedInkPointRenderer;
  }  // namespace mojom
  class ContextProvider;
 +class HostDisplayClient;
  class HostFrameSinkManager;
  class LocalSurfaceIdAllocation;
  class RasterContextProvider;
-@@ -127,6 +128,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -128,6 +129,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -554,7 +554,7 @@ index 7eb1c4cfd3402fb641f630e438be32b4e4262f23..52df60fc8b7154d27fec4785356c7eaf
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -161,6 +171,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -162,6 +172,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -564,7 +564,7 @@ index 7eb1c4cfd3402fb641f630e438be32b4e4262f23..52df60fc8b7154d27fec4785356c7eaf
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -431,6 +444,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -435,6 +448,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
@@ -574,7 +574,7 @@ index 7eb1c4cfd3402fb641f630e438be32b4e4262f23..52df60fc8b7154d27fec4785356c7eaf
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 4014e64a75da88cf66c02e8adb71171c2666cab7..25e57784e1a1ffc546b003daa4cd0059c468432f 100644
+index 64af450ed36a982124c6fcce7056b4058140747a..dcee2ec9de0e759b868b0de2c7106b2cf084c41c 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -606,7 +606,7 @@ index de00e766ba17532e10dcf5d0fd31fa344920a9f7..7aaedf83ad22dcc1d2dd39a31cf7e08b
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index d6ec9ef087f00d4c8d7c495b7e57a1d9c3c8b3bb..1b1aafcf75e422b4c94bdc8da895488245cdf360 100644
+index c1f21d7f4348df96f7be5c0adb1b9650304048e0..760c849aebba70e575e59883655d707f36c5424a 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(

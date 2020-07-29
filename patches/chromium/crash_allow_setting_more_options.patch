@@ -21,7 +21,7 @@ index d2ca4a9056e56c1e3e38a5aeaf97daa3a731de3c..a3599b4403b7be33cb4aa300746c3ade
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 44e81b2f95f6332df16cfa00bdd26c7abbc733dc..9b3db694b920048735789d4db0f8670addd22b40 100644
+index 5f143fd17f067a9bb699e2a3920bdb98cf2ca60d..d826060a86702e1d9a3562cc1766458e9b6fd5ab 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -148,6 +148,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -43,7 +43,7 @@ index 44e81b2f95f6332df16cfa00bdd26c7abbc733dc..9b3db694b920048735789d4db0f8670a
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 05538423d0b9ad0d83e9326a58f8856e0403fed2..06d9f1e3b57db5cf33555eb5ad837f8d66aa8b3d 100644
+index 0e5d2b6e06d751afae39c161cd64a35ebbba3999..2af7fcb3b4115b6bc1f468e3c6c91b0175073eb5 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@

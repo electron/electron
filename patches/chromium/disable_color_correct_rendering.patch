@@ -60,7 +60,7 @@ index 733d83e802b0c99d5d237ab5d0deea2385c4e899..f3dc39b3bd3e85cd7f68b81210b3bd64
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index fa9c0c5e70cac0b2f298f2e228ad6ad6c22a2576..cebefa39a4d081dbe22f429d34387b62c642ccc7 100644
+index b06ea5f9fe36162dc9bcec32f604b1a8fc10f825..d53e7a0055dbdfe937a51939a312272317749f2a 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -16,6 +16,7 @@
@@ -69,7 +69,7 @@ index fa9c0c5e70cac0b2f298f2e228ad6ad6c22a2576..cebefa39a4d081dbe22f429d34387b62
  #include "ui/base/ui_base_switches.h"
 +#include "ui/gfx/switches.h"
  
- #if defined(OS_MACOSX)
+ #if defined(OS_APPLE)
  #include "ui/base/cocoa/remote_layer_api.h"
 @@ -53,6 +54,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
  RendererSettings CreateRendererSettings() {
@@ -79,9 +79,9 @@ index fa9c0c5e70cac0b2f298f2e228ad6ad6c22a2576..cebefa39a4d081dbe22f429d34387b62
 +      !command_line->HasSwitch(switches::kDisableColorCorrectRendering);
    renderer_settings.partial_swap_enabled =
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
- #if defined(OS_MACOSX)
+ #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 0725ed58695f44c704aa17dcad2b0be231d648a2..d6fc7bdd4a3a93a9a24337dc16af8799147f8b0d 100644
+index ce87ad2b228421225939909d3246939a80030e41..79ce4896ec0836c8f312a77d79e7943b6eb773e4 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -295,7 +295,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index d8a737f5008f3b60f4ac74592cb23f8b04c4577a..178b84bccb6ad131391dbb6c856df2e766b0d221 100644
+index 09ca6721fad3ac5c9c4192370116d5fb6557bc94..145f9b8b1aca764c612247ccd0a768e18618fb58 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -23,6 +23,7 @@
