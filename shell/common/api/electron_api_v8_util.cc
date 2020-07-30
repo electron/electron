@@ -133,6 +133,16 @@ std::vector<v8::Local<v8::Value>> GetWeaklyTrackedValues(v8::Isolate* isolate) {
   }
   return locals;
 }
+
+// This causes a fatal error by creating a circular extension dependency.
+void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
+  static const char* aDeps[] = {"B"};
+  v8::RegisterExtension(std::make_unique<v8::Extension>("A", "", 1, aDeps));
+  static const char* bDeps[] = {"A"};
+  v8::RegisterExtension(std::make_unique<v8::Extension>("B", "", 1, bDeps));
+  v8::ExtensionConfiguration config(1, bDeps);
+  v8::Context::New(isolate, &config);
+}
 #endif
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -160,6 +170,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
 #ifdef DCHECK_IS_ON
+  dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
   dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);
   dict.SetMethod("weaklyTrackValue", &WeaklyTrackValue);
