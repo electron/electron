@@ -196,6 +196,20 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
   });
 
   ifdescribe(!isLinuxOnArm)('extra parameter limits', () => {
+    function stitchLongCrashParam (crash: any, paramKey: string) {
+      if (crash[paramKey]) return crash[paramKey];
+      let chunk = 1;
+      if (crash[`${paramKey}__${chunk}`]) {
+        let stitched = '';
+        while (crash[`${paramKey}__${chunk}`]) {
+          stitched += crash[`${paramKey}__${chunk}`];
+          chunk++;
+        }
+        return stitched;
+      }
+      return null;
+    }
+
     it('should truncate extra values longer than 5 * 4096 characters', async () => {
       const { port, waitForCrash } = await startServer();
       const { remotely } = await startRemoteControlApp();
@@ -203,12 +217,12 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
           ignoreSystemCrashHandler: true,
-          extra: { longParam: 'a'.repeat(7 * 4096) }
+          extra: { longParam: 'a'.repeat(100000) }
         });
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(crash).to.have.property('longParam', 'a'.repeat(5 * 4096 - 1));
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {
