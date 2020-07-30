@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 const { GitProcess } = require('dugite');
-const octokit = require('@octokit/rest')({
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 

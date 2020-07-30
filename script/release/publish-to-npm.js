@@ -6,8 +6,10 @@ const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
 const request = require('request');
 const semver = require('semver');
 const rootPackageJson = require('../../package.json');
-const octokit = require('@octokit/rest')({
-  headers: { 'User-Agent': 'electron-npm-publisher' }
+
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
+  userAgent: 'electron-npm-publisher'
 });
 
 if (!process.env.ELECTRON_NPM_OTP) {

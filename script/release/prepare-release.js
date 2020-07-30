@@ -5,9 +5,7 @@ const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 });
 const ciReleaseBuild = require('./ci-release-build');
-const octokit = require('@octokit/rest')({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
+const { Octokit } = require('@octokit/rest');
 const { execSync } = require('child_process');
 const { GitProcess } = require('dugite');
 
@@ -17,6 +15,10 @@ const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const bumpType = args._[0];
 const targetRepo = bumpType === 'nightly' ? 'nightlies' : 'electron';
+
+const octokit = new Octokit({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+});
 
 require('colors');
 const pass = '✓'.green;
