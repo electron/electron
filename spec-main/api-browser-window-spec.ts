@@ -4319,8 +4319,12 @@ describe('BrowserWindow module', () => {
         await messageReceived;
         expect(timesCalled).to.equal(1);
       }
+      console.log('before hide/show');
       w.hide();
       w.show();
+      console.log('after hide/show');
+      await delay(100);
+      console.log('after delay');
       expect(timesCalled).to.equal(2);
       w.unhookWindowMessage(WM_GETICON);
       w.hide();
@@ -4341,8 +4345,12 @@ describe('BrowserWindow module', () => {
         await messageReceived;
         expect(timesCalled).to.equal(1);
       }
+      console.log('before hide/show');
       w.hide();
       w.show();
+      console.log('after hide/show');
+      await delay(100);
+      console.log('after delay');
       expect(timesCalled).to.equal(2);
       w.unhookAllWindowMessages();
       w.hide();
