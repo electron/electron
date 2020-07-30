@@ -4,6 +4,7 @@
 
 #include "shell/browser/browser.h"
 
+#include <Foundation/Foundation.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -29,6 +30,8 @@
 #include "shell/common/platform_util.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
+
+#import <QuickLook/QuickLook.h>
 
 namespace electron {
 
@@ -93,6 +96,31 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
+}
+// filepath
+gfx::Image Browser::CreateThumbnailFromPath(std::string path,
+                                            int width,
+                                            int height) {
+  NSString* ns_path = base::SysUTF8ToNSString(path);
+  LOG(ERROR) << "NS PATH" << ns_path;
+  NSSize size = NSMakeSize(width, height);
+  LOG(ERROR) << "NS SIZE" << size;
+  CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
+  LOG(ERROR) << "NS PATH" << ns_path;
+
+  QLThumbnailRef ql_thumbnail = QLThumbnailCreate(
+      kCFAllocatorDefault, cfurl, CGSizeMake(size.width, size.height), NULL);
+  CGImageRef cg_thumbnail = QLThumbnailCopyImage(ql_thumbnail);
+  LOG(ERROR) << "NS THUMBNAIL CG" << cg_thumbnail;
+  NSBitmapImageRep* bitmap_image_rep =
+      [[NSBitmapImageRep alloc] initWithCGImage:cg_thumbnail];
+  NSImage* result = [[NSImage alloc] initWithSize:[bitmap_image_rep size]];
+  [result addRepresentation:bitmap_image_rep];
+  CFRelease(ql_thumbnail);
+  CGImageRelease(cg_thumbnail);
+  gfx::Image thumbnail(result);
+  LOG(ERROR) << "IMAGE" << result;
+  return thumbnail;
 }
 
 void Browser::Focus(gin::Arguments* args) {
