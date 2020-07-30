@@ -102,3 +102,9 @@ The following methods of `chrome.tabs` are supported:
 > **Note:** In Chrome, passing `-1` as a tab ID signifies the "currently active
 > tab". Since Electron has no such concept, passing `-1` as a tab ID is not
 > supported and will raise an error.
+
+### `chrome.webRequest`
+
+All features of this API are supported.
+
+> **NOTE:** `chrome.webRequest` takes precedence over Electron's [`webRequest`](web-request.md) module.
