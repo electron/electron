@@ -111,7 +111,7 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index af3a6dab055f2e2215e4602697dbe35507b7ed96..fcb06b764b618fe7162243b6e52e53261b473bee 100644
+index e08e556858e4079d953027399e04056f62e2db78..2aa72571e44a9027d5bd84498d65f835da87935b 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -10,13 +10,14 @@

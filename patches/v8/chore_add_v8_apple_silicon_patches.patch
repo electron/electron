@@ -78,10 +78,10 @@ index af28af2236f470c0d90cf09a9f9313dc8d45c43f..56eef9c76bf403a197548310962ed1a0
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 70d063e3967b81aa68609cc0271a314f13c734ad..c3f5f562eca537ad2ea8c27f56b1b5a1b3604f27 100644
+index 2b35b9491c65cb2a3c33470ab5829ec4f5079a68..417356e30cbbca219caf1ac6481d827b30b9e980 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -713,7 +713,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -714,7 +714,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
