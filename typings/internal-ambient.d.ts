@@ -44,6 +44,7 @@ declare namespace NodeJS {
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
+    triggerFatalErrorForTesting(): void;
   }
 
   interface Process {
