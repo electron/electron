@@ -199,15 +199,12 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     function stitchLongCrashParam (crash: any, paramKey: string) {
       if (crash[paramKey]) return crash[paramKey];
       let chunk = 1;
-      if (crash[`${paramKey}__${chunk}`]) {
-        let stitched = '';
-        while (crash[`${paramKey}__${chunk}`]) {
-          stitched += crash[`${paramKey}__${chunk}`];
-          chunk++;
-        }
-        return stitched;
+      let stitched = '';
+      while (crash[`${paramKey}__${chunk}`]) {
+        stitched += crash[`${paramKey}__${chunk}`];
+        chunk++;
       }
-      return null;
+      return stitched;
     }
 
     it('should truncate extra values longer than 5 * 4096 characters', async () => {
