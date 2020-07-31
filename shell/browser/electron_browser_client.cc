@@ -51,7 +51,6 @@
 #include "electron/grit/electron_resources.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/browser/extension_protocols.h"
-#include "extensions/browser/process_map.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/switches.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
