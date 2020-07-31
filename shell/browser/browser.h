@@ -104,6 +104,10 @@ class Browser : public WindowListObserver {
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
                                                        const GURL& url);
+  v8::Local<v8::Promise> CreateThumbnailFromPath(v8::Isolate* isolate,
+                                                 const base::FilePath& path,
+                                                 int width,
+                                                 int height);
 #endif
 
   // Set/Get the badge count.
@@ -154,10 +158,6 @@ class Browser : public WindowListObserver {
 #if defined(OS_MACOSX)
   // Set the handler which decides whether to shutdown.
   void SetShutdownHandler(base::Callback<bool()> handler);
-
-  gfx::Image CreateThumbnailFromPath(const base::FilePath& path,
-                                     int width,
-                                     int height);
 
   // Hide the application.
   void Hide();
