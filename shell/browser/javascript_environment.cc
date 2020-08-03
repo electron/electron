@@ -5,8 +5,9 @@
 #include "shell/browser/javascript_environment.h"
 
 #include <memory>
-
 #include <string>
+#include <unordered_set>
+#include <utility>
 
 #include "base/command_line.h"
 #include "base/task/current_thread.h"
@@ -130,7 +131,7 @@ class EnabledStateObserverImpl final
 
   void RemoveObserver(v8::TracingController::TraceStateObserver* observer) {
     base::AutoLock lock(mutex_);
-    DCHECK(observers_.count(observer) == 1);
+    DCHECK_EQ(observers_.count(observer), 1);
     observers_.erase(observer);
   }
 
@@ -168,7 +169,8 @@ class TracingControllerImpl : public node::tracing::TracingController {
       unsigned int flags) override {
     base::trace_event::TraceArguments args(
         num_args, arg_names, arg_types,
-        reinterpret_cast<const unsigned long long*>(arg_values),
+        reinterpret_cast<const unsigned long long*>(
+            arg_values),  // NOLINT(runtime/int)
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::trace_event::TraceEventHandle handle =
@@ -195,7 +197,8 @@ class TracingControllerImpl : public node::tracing::TracingController {
       int64_t timestampMicroseconds) override {
     base::trace_event::TraceArguments args(
         num_args, arg_names, arg_types,
-        reinterpret_cast<const unsigned long long*>(arg_values),
+        reinterpret_cast<const unsigned long long*>(
+            arg_values),  // NOLINT(runtime/int)
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::TimeTicks timestamp =
