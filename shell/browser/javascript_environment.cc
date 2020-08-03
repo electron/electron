@@ -169,8 +169,8 @@ class TracingControllerImpl : public node::tracing::TracingController {
       unsigned int flags) override {
     base::trace_event::TraceArguments args(
         num_args, arg_names, arg_types,
-        reinterpret_cast<const unsigned long long*>(
-            arg_values),  // NOLINT(runtime/int)
+        reinterpret_cast<const unsigned long long*>(  // NOLINT(runtime/int)
+            arg_values),
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::trace_event::TraceEventHandle handle =
@@ -197,8 +197,8 @@ class TracingControllerImpl : public node::tracing::TracingController {
       int64_t timestampMicroseconds) override {
     base::trace_event::TraceArguments args(
         num_args, arg_names, arg_types,
-        reinterpret_cast<const unsigned long long*>(
-            arg_values),  // NOLINT(runtime/int)
+        reinterpret_cast<const unsigned long long*>(  // NOLINT(runtime/int)
+            arg_values),
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::TimeTicks timestamp =
