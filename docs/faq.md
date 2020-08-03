@@ -159,5 +159,6 @@ Notice that just setting the background in the CSS does not have the desired eff
 [local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
 [session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
 [indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+[message-port]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
 [browser-window]: api/browser-window.md
 [subpixel rendering example]: images/subpixel-rendering-screenshot.gif
