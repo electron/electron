@@ -24,29 +24,27 @@
   if ((self = [super init])) {
     NSDistributedNotificationCenter* distCenter =
         [NSDistributedNotificationCenter defaultCenter];
+    // A notification that the screen was locked.
     [distCenter addObserver:self
                    selector:@selector(onScreenLocked:)
                        name:@"com.apple.screenIsLocked"
                      object:nil];
+    // A notification that the screen was unlocked by the user.
     [distCenter addObserver:self
                    selector:@selector(onScreenUnlocked:)
                        name:@"com.apple.screenIsUnlocked"
                      object:nil];
-
     // A notification that the workspace posts before the machine goes to sleep.
-    [[[NSWorkspace sharedWorkspace] notificationCenter]
-        addObserver:self
-           selector:@selector(isSuspending:)
-               name:NSWorkspaceWillSleepNotification
-             object:nil];
-
+    [distCenter addObserver:self
+                   selector:@selector(isSuspending:)
+                       name:NSWorkspaceWillSleepNotification
+                     object:nil];
     // A notification that the workspace posts when the machine wakes from
     // sleep.
-    [[[NSWorkspace sharedWorkspace] notificationCenter]
-        addObserver:self
-           selector:@selector(isResuming:)
-               name:NSWorkspaceDidWakeNotification
-             object:nil];
+    [distCenter addObserver:self
+                   selector:@selector(isResuming:)
+                       name:NSWorkspaceDidWakeNotification
+                     object:nil];
   }
   return self;
 }
