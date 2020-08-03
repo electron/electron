@@ -49,10 +49,6 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
-#include "extensions/browser/extension_navigation_ui_data.h"
-#include "extensions/browser/extension_protocols.h"
-#include "extensions/common/constants.h"
-#include "extensions/common/switches.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -142,9 +138,12 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
@@ -152,8 +151,11 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -1481,6 +1483,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
+
   return true;
 }
 
@@ -1499,6 +1502,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->is_corb_enabled = false;
     }
   }
+
+  extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
+      browser_context, origin, is_for_isolated_world, factory_params);
 }
 
 #if defined(OS_WIN)

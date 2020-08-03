@@ -16,7 +16,12 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer((req, res) => res.end(emptyPage));
+    server = http.createServer((req, res) => {
+      if (req.url === '/cors') {
+        res.setHeader('Access-Control-Allow-Origin', 'http://example.com');
+      }
+      res.end(emptyPage);
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();
@@ -30,6 +35,19 @@ describe('chrome extensions', () => {
     session.defaultSession.getAllExtensions().forEach((e: any) => {
       session.defaultSession.removeExtension(e.id);
     });
+  });
+
+  function fetch (contents: WebContents, url: string) {
+    return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
+  }
+
+  it('bypasses CORS in requests made from extensions', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
+    w.loadURL(`${extension.url}bare-page.html`);
+    await emittedOnce(w.webContents, 'dom-ready');
+    await expect(fetch(w.webContents, `${url}/cors`)).to.not.be.rejectedWith(TypeError);
   });
 
   it('loads an extension', async () => {
