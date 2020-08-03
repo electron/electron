@@ -144,17 +144,16 @@ void SetPlatformCrashKey() {
   platform_key.Set("win32");
 #elif defined(OS_MACOSX)
   platform_key.Set("darwin");
-#elif defined(OS_LINUX)
-  platform_key.Set("linux");
-#else
-#error Unknown platform.
-#endif
-
   static crash_reporter::CrashKeyString<1> mas_key("mas_build");
 #if defined(MAS_BUILD)
   mas_key.Set("1");
 #else
   mas_key.Set("0");
+#endif
+#elif defined(OS_LINUX)
+  platform_key.Set("linux");
+#else
+#error Unknown platform.
 #endif
 }
 
