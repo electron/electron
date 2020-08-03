@@ -137,9 +137,11 @@ class Archive : public gin::Wrappable<Archive> {
       return handle;
     }
 
+    auto backing_store = v8::ArrayBuffer::NewBackingStore(isolate, length);
     base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-        base::BindOnce(&Archive::ReadOnIO, isolate, archive_, offset, length),
+        base::BindOnce(&Archive::ReadOnIO, isolate, archive_,
+                       std::move(backing_store), offset, length),
         base::BindOnce(&Archive::ResolveReadOnUI, std::move(promise)));
 
     return handle;
@@ -149,9 +151,9 @@ class Archive : public gin::Wrappable<Archive> {
   static std::unique_ptr<v8::BackingStore> ReadOnIO(
       v8::Isolate* isolate,
       std::shared_ptr<asar::Archive> archive,
+      std::unique_ptr<v8::BackingStore> backing_store,
       uint64_t offset,
       uint64_t length) {
-    auto backing_store = v8::ArrayBuffer::NewBackingStore(isolate, length);
     memcpy(backing_store->Data(), archive->file()->data() + offset, length);
     return backing_store;
   }
