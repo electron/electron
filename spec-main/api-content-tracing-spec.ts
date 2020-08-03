@@ -120,4 +120,24 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
       expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
     });
   });
+
+  describe('captured events', () => {
+    it('include V8 samples from the main process', async () => {
+      await contentTracing.startRecording({
+        categoryFilter: 'disabled-by-default-v8.cpu_profiler',
+        traceOptions: 'record-until-full'
+      });
+      {
+        const start = +new Date();
+        const f = () => {};
+        while (+new Date() - start < 200) {
+          f();
+        }
+      }
+      const path = await contentTracing.stopRecording();
+      const data = fs.readFileSync(path, 'utf8');
+      const parsed = JSON.parse(data);
+      expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
+    });
+  });
 });
