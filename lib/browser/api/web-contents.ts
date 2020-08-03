@@ -9,7 +9,6 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import { EventEmitter } from 'events';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -123,8 +122,6 @@ const defaultPrintingSetting = {
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
-
-Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {

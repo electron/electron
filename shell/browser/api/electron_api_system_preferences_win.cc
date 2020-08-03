@@ -167,8 +167,8 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
-    const std::string& media_type,
-    gin_helper::Arguments* args) {
+    gin_helper::ErrorThrower thrower,
+    const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertDeviceAccessStatus(
         GetDeviceAccessStatus(DeviceClass::DeviceClass_VideoCapture));
@@ -179,7 +179,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
     return ConvertDeviceAccessStatus(
         DeviceAccessStatus::DeviceAccessStatus_Allowed);
   } else {
-    args->ThrowError("Invalid media type");
+    thrower.ThrowError("Invalid media type");
     return std::string();
   }
 }

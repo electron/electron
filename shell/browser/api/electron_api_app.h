@@ -25,9 +25,9 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if defined(USE_NSS_CERTS)
@@ -47,7 +47,8 @@ enum class JumpListResult : int;
 namespace api {
 
 class App : public ElectronBrowserClient::Delegate,
-            public gin_helper::EventEmitter<App>,
+            public gin::Wrappable<App>,
+            public gin_helper::EventEmitterMixin<App>,
             public BrowserObserver,
             public content::GpuDataManagerObserver,
             public content::BrowserChildProcessObserver {
@@ -58,8 +59,11 @@ class App : public ElectronBrowserClient::Delegate,
   static gin::Handle<App> Create(v8::Isolate* isolate);
   static App* Get();
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
@@ -72,7 +76,7 @@ class App : public ElectronBrowserClient::Delegate,
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessDisconnected(base::ProcessId host_pid);
 
-  explicit App(v8::Isolate* isolate);
+  App();
 
  private:
   ~App() override;
@@ -185,20 +189,20 @@ class App : public ElectronBrowserClient::Delegate,
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock();
   void ReleaseSingleInstanceLock();
-  bool Relaunch(gin_helper::Arguments* args);
+  bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
-  Browser::LoginItemSettings GetLoginItemSettings(gin_helper::Arguments* args);
+  Browser::LoginItemSettings GetLoginItemSettings(gin::Arguments* args);
 #if defined(USE_NSS_CERTS)
   void ImportCertificate(gin_helper::ErrorThrower thrower,
                          base::Value options,
                          net::CompletionOnceCallback callback);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
-                                     gin_helper::Arguments* args);
+                                     gin::Arguments* args);
 
   std::vector<gin_helper::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
@@ -221,7 +225,7 @@ class App : public ElectronBrowserClient::Delegate,
 
 #if defined(MAS_BUILD)
   base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
-      gin_helper::Arguments* args);
+      gin::Arguments* args);
 #endif
 
 #if defined(OS_WIN)
@@ -229,8 +233,7 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Local<v8::Value> GetJumpListSettings();
 
   // Set or remove a custom Jump List for the application.
-  JumpListResult SetJumpList(v8::Local<v8::Value> val,
-                             gin_helper::Arguments* args);
+  JumpListResult SetJumpList(v8::Local<v8::Value> val, gin::Arguments* args);
 #endif  // defined(OS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;

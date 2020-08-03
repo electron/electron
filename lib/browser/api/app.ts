@@ -2,40 +2,35 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { deprecate, Menu } from 'electron/main';
-import { EventEmitter } from 'events';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
-const { app, App } = bindings;
+const { app } = bindings;
 
 // Only one app object permitted.
 export default app;
 
 let dockMenu: Electron.Menu | null = null;
 
-// App is an EventEmitter.
-Object.setPrototypeOf(App.prototype, EventEmitter.prototype);
-EventEmitter.call(app as any);
-
 // Properties.
 
 const nativeASGetter = app.isAccessibilitySupportEnabled;
 const nativeASSetter = app.setAccessibilitySupportEnabled;
-Object.defineProperty(App.prototype, 'accessibilitySupportEnabled', {
+Object.defineProperty(app, 'accessibilitySupportEnabled', {
   get: () => nativeASGetter.call(app),
   set: (enabled) => nativeASSetter.call(app, enabled)
 });
 
 const nativeBCGetter = app.getBadgeCount;
 const nativeBCSetter = app.setBadgeCount;
-Object.defineProperty(App.prototype, 'badgeCount', {
+Object.defineProperty(app, 'badgeCount', {
   get: () => nativeBCGetter.call(app),
   set: (count) => nativeBCSetter.call(app, count)
 });
 
 const nativeNGetter = app.getName;
 const nativeNSetter = app.setName;
-Object.defineProperty(App.prototype, 'name', {
+Object.defineProperty(app, 'name', {
   get: () => nativeNGetter.call(app),
   set: (name) => nativeNSetter.call(app, name)
 });
@@ -60,7 +55,7 @@ Object.defineProperty(app, 'applicationMenu', {
   }
 });
 
-App.prototype.isPackaged = (() => {
+(app as any).isPackaged = (() => {
   const execFile = path.basename(process.execPath).toLowerCase();
   if (process.platform === 'win32') {
     return execFile !== 'electron.exe';
@@ -137,4 +132,4 @@ for (const name of events) {
 
 // Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
 // they are setting it to true
-deprecate.removeProperty(app, 'allowRendererProcessReuse', [false]);
+deprecate.removeProperty({ __proto__: app } as any, 'allowRendererProcessReuse', [false]);

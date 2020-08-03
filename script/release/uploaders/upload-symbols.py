@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import os
 import glob
+import os
+import subprocess
 import sys
 
 sys.path.append(
@@ -22,6 +23,10 @@ PDB_LIST = [
   os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))
 ]
 
+NPX_CMD = "npx"
+if sys.platform == "win32":
+    NPX_CMD += ".cmd"
+
 
 def main():
   os.chdir(ELECTRON_DIR)
@@ -30,7 +35,13 @@ def main():
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
   else:
-    files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym') + glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
+    files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+
+  for symbol_file in files:
+    print("Generating Sentry src bundle for: " + symbol_file)
+    subprocess.check_output([NPX_CMD, '@sentry/cli@1.51.1', 'difutil', 'bundle-sources', symbol_file])
+
+  files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
   # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
   os.chdir(SYMBOLS_DIR)

@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
@@ -147,7 +148,14 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #else
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
-  return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  bool result = base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    if (result && !base::PathExists(*crash_dir)) {
+      return base::CreateDirectory(*crash_dir);
+    }
+  }
+  return result;
 }
 #endif
 
@@ -159,7 +167,7 @@ bool ElectronCrashReporterClient::GetCrashMetricsLocation(
 #endif  // OS_MACOSX || OS_LINUX
 
 bool ElectronCrashReporterClient::IsRunningUnattended() {
-  return false;
+  return !collect_stats_consent_;
 }
 
 bool ElectronCrashReporterClient::GetCollectStatsConsent() {
