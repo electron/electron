@@ -147,7 +147,14 @@ void SetPlatformCrashKey() {
 #elif defined(OS_LINUX)
   platform_key.Set("linux");
 #else
-  platform_key.Set("unknown");
+#error Unknown platform.
+#endif
+
+  static crash_reporter::CrashKeyString<1> mas_key("mas_build");
+#if defined(MAS_BUILD)
+  mas_key.Set("1");
+#else
+  mas_key.Set("0");
 #endif
 }
 
