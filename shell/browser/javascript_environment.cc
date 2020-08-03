@@ -131,7 +131,7 @@ class EnabledStateObserverImpl final
 
   void RemoveObserver(v8::TracingController::TraceStateObserver* observer) {
     base::AutoLock lock(mutex_);
-    DCHECK_EQ(observers_.count(observer), 1);
+    DCHECK_EQ(observers_.count(observer), 1lu);
     observers_.erase(observer);
   }
 
