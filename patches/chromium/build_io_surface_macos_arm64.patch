@@ -3,9 +3,8 @@ From: Erick Zhao <ezhao@slack-corp.com>
 Date: Tue, 4 Aug 2020 13:42:43 -0700
 Subject: Build io_surface.cc for macOS ARM64
 
-This patch makes io_surface.cc build for macOS ARM64 and Big Sur. An alternative patch from
-Chromium (https://chromium-review.googlesource.com/c/chromium/src/+/2315078) is not ideal
-because it references a private symbol.
+This patch makes io_surface.cc build for macOS ARM64 and Big Sur. See upstream change at
+https://chromium-review.googlesource.com/c/chromium/src/+/2337401
 
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
 index 93a9652b71d86441e15b87aafd7a6b1a13f45830..bc92d62facb7291a8c9e1dd35bf28a8e5b0b0142 100644
