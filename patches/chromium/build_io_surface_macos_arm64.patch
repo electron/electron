@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Erick Zhao <ezhao@slack-corp.com>
+Date: Tue, 4 Aug 2020 13:42:43 -0700
+Subject: Build io_surface.cc for macOS ARM64
+
+This patch makes io_surface.cc build for macOS ARM64 and Big Sur. An alternative patch from
+Chromium (https://chromium-review.googlesource.com/c/chromium/src/+/2315078) is not ideal
+because it references a private symbol.
+
+diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
+index 93a9652b71d86441e15b87aafd7a6b1a13f45830..bc92d62facb7291a8c9e1dd35bf28a8e5b0b0142 100644
+--- a/ui/gfx/mac/io_surface.cc
++++ b/ui/gfx/mac/io_surface.cc
+@@ -150,7 +150,12 @@ bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
+                                   ColorSpace::TransferID::SMPTEST2084,
+                                   ColorSpace::MatrixID::BT2020_NCL,
+                                   ColorSpace::RangeID::LIMITED)) {
++      #if defined(CG_HDR_BT_2100)
++      color_space_name = kCGColorSpaceITUR_2100_PQ;
++      #else
+       color_space_name = kCGColorSpaceITUR_2020_PQ_EOTF;
++      #endif
++
+     } else if (color_space == ColorSpace(ColorSpace::PrimaryID::BT2020,
+                                          ColorSpace::TransferID::ARIB_STD_B67,
+                                          ColorSpace::MatrixID::BT2020_NCL,
