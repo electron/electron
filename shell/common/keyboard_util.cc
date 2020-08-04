@@ -24,7 +24,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
              str == "meta") {
     return ui::VKEY_COMMAND;
   } else if (str == "commandorcontrol" || str == "cmdorctrl") {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     return ui::VKEY_COMMAND;
 #else
     return ui::VKEY_CONTROL;

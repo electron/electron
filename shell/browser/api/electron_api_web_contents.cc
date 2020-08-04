@@ -116,7 +116,7 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 #include "ui/aura/window.h"
 #else
 #include "ui/base/cocoa/defaults_utils.h"
@@ -346,7 +346,7 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
     return interval;
@@ -369,7 +369,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const base::string16& device_name) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
@@ -2226,7 +2226,7 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 }
 
 void WebContents::ShowDefinitionForSelection() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
@@ -2242,14 +2242,14 @@ void WebContents::CopyImageAt(int x, int y) {
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
   if (owner_window())
     owner_window()->Focus(true);
 #endif
   web_contents()->Focus();
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)

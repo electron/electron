@@ -76,7 +76,7 @@ namespace api {
 
 gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 // static
 gin::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new InAppPurchase());
@@ -158,7 +158,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));

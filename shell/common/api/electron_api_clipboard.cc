@@ -206,7 +206,7 @@ void Clipboard::WriteImage(const gfx::Image& image,
   }
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 void Clipboard::WriteFindText(const base::string16& text) {}
 base::string16 Clipboard::ReadFindText() {
   return base::string16();

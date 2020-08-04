@@ -85,7 +85,7 @@
 #include "ui/strings/grit/app_locale_settings.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -368,7 +368,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   ui::InitIdleMonitor();
 #endif
 
@@ -432,7 +432,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   views_delegate_.reset(new ViewsDelegateMac);
 #else
   views_delegate_ = std::make_unique<ViewsDelegate>();
@@ -486,7 +486,7 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
     DevToolsManagerDelegate::StartHttpHandler();
   }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching(base::DictionaryValue());
@@ -530,7 +530,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   FreeAppDelegate();
 #endif
 
@@ -557,14 +557,14 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   PreMainMessageLoopStartCommon();
 }
 #endif
 
 void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();
 #endif

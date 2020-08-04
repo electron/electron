@@ -639,7 +639,7 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
   return false;
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
 void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}

@@ -99,13 +99,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
   void SetWindowFrameInScreen(const gfx::Rect& rect) override;
   bool UpdateNSViewAndDisplay();
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
   // content::RenderWidgetHostViewBase:
 

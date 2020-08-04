@@ -16,7 +16,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
@@ -24,7 +24,7 @@ using extensions::GlobalShortcutListener;
 
 namespace {
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
   if (base::mac::IsAtLeastOS10_14()) {
     constexpr ui::KeyboardCode mediaKeys[] = {
@@ -89,7 +89,7 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   if (RegisteringMediaKeyForUntrustedClient(accelerator))
     return false;
 #endif
