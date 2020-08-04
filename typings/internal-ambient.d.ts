@@ -68,7 +68,8 @@ declare namespace NodeJS {
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    getFd(): number | -1;
+    read(offset: number, size: number): Promise<ArrayBuffer>;
+    readSync(offset: number, size: number): ArrayBuffer;
   }
 
   interface AsarBinding {
