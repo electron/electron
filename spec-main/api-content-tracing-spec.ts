@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe, ifit, delay } from './spec-helpers';
 
 // FIXME: The tests are skipped on arm/arm64.
 ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
@@ -122,7 +122,9 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
   });
 
   describe('captured events', () => {
-    it('include V8 samples from the main process', async () => {
+    // This test triggers a faulty DCHECK in V8: https://bugs.chromium.org/p/v8/issues/detail?id=10778
+    const isV8Bug10778FixedYet = false;
+    ifit(isV8Bug10778FixedYet)('include V8 samples from the main process', async () => {
       await contentTracing.startRecording({
         categoryFilter: 'disabled-by-default-v8.cpu_profiler',
         traceOptions: 'record-until-full'
