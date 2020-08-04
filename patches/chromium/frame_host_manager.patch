@@ -42,7 +42,7 @@ index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 24eb6b901ae2380af9b5ee064fc28f9690a71939..b5fdd804dc6675c016135fee9965343630d6b66f 100644
+index 519c5fd52451e3aefda4a4f149ca0557a5bb2b09..2bc0fabab13733f1d9ec7ed9281c0c145360654a 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1462,6 +1462,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 24eb6b901ae2380af9b5ee064fc28f9690a71939..b5fdd804dc6675c016135fee99653436
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4948,6 +4963,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4940,6 +4955,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 24eb6b901ae2380af9b5ee064fc28f9690a71939..b5fdd804dc6675c016135fee99653436
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4961,10 +4977,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4953,10 +4969,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -106,10 +106,10 @@ index 861187345ef4c3749bf1d685ecfb84a23c51bfc7..526c91ff35f3740420bebcae5c2aacaa
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index c13020a280b01b2757ae529b3db450e8604b7fa1..871d6004cf2ef9a99aaa918ad34e21d855a25321 100644
+index 2feb42eb8bf5fb1036872b64ad76145e30221a7a..210884c25377a55df83e3150feda27355044cfa1 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2346,6 +2346,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2351,6 +2351,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -126,7 +126,7 @@ index c13020a280b01b2757ae529b3db450e8604b7fa1..871d6004cf2ef9a99aaa918ad34e21d8
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2365,10 +2375,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2370,10 +2380,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index c13020a280b01b2757ae529b3db450e8604b7fa1..871d6004cf2ef9a99aaa918ad34e21d8
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2394,6 +2454,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2399,6 +2459,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -229,10 +229,10 @@ index 0fecca6137cf970ce747491b218e8cacf242758c..806852dc83e8bcfac8c117a4d8961b56
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 735402da36c1165fefb603c35e0211e3935e9e10..d70230804c4927419947fbb7a47284e27c3be0a9 100644
+index 0e150a89b451e7ae464f1bd5e38c412f58aa8568..187e8bc17e2dfb662c283bacaeda9764c2fdc11e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -61,6 +61,21 @@
+@@ -62,6 +62,21 @@
  
  namespace content {
  

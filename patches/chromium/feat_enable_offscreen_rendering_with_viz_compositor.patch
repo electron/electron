@@ -107,7 +107,7 @@ index f6142e30c553940bca645f31ced7f16c6d022317..57f08ff2082b8c53a6935126da871943
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 649ecffb549639ab88ba6eba7bb720b3b56f9f82..8746ed9006f29cf6212d66d9c002d872c5d808e0 100644
+index 649ecffb549639ab88ba6eba7bb720b3b56f9f82..5e7d0651b18bd3c3b29891d90e5e7631288ca262 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -22,6 +22,7 @@
@@ -130,7 +130,7 @@ index 649ecffb549639ab88ba6eba7bb720b3b56f9f82..8746ed9006f29cf6212d66d9c002d872
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
-+#if !defined(OS_MACOSX)
++#if !defined(OS_MAC)
 +  {
 +    mojo::ScopedAllowSyncCallForTesting allow_sync;
 +    DCHECK(display_client);

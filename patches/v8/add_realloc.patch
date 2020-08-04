@@ -12,10 +12,10 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side.
 
 diff --git a/include/v8.h b/include/v8.h
-index b119ce0a78a395b795b3a79fdc2a36bc22c63928..410f67daef0ad7fa71708073f1f6342f2cd5ea70 100644
+index 38ce4f1235b4446d71f2258a3dc98dc63ddbe1b2..62338341e528920189228cbf60824fbfeae4bea9 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -5072,6 +5072,13 @@ class V8_EXPORT ArrayBuffer : public Object {
+@@ -5097,6 +5097,13 @@ class V8_EXPORT ArrayBuffer : public Object {
       */
      virtual void* AllocateUninitialized(size_t length) = 0;
  
@@ -30,10 +30,10 @@ index b119ce0a78a395b795b3a79fdc2a36bc22c63928..410f67daef0ad7fa71708073f1f6342f
       * Free the memory block of size |length|, pointed to by |data|.
       * That memory is guaranteed to be previously allocated by |Allocate|.
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 27faf4895e98137e6eaa254d4d62dc3ff3bfc1e1..390d80543d732a281031f38f6e208732618d3695 100644
+index 8b9a8e101aec3d1c55a997e29d4f2b06b72ec327..935758afa9007ff73c4e5ec69b5e767143c2a625 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -535,6 +535,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
+@@ -536,6 +536,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
    i::V8::SetSnapshotBlob(snapshot_blob);
  }
  

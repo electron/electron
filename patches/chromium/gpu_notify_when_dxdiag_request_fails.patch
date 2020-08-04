@@ -40,7 +40,7 @@ index 207e27419b1e82bfb1a59399b257b434a820d577..1aa131759978cae4cd3ee3f379282bd5
    // Update the GPU feature info. This updates the blocklist and enabled status
    // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 892afd15440dc3d682409ff41c4ba52bc86e9a83..28ea0af27ad590c31e12f9f39e96880ddfaecce9 100644
+index 6f93628f837950cc9af5ca09179a1894c0b215ad..4c70fd640a7a2c75894826552649f46a49223c87 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
 @@ -1060,6 +1060,11 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {

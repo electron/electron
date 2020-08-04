@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 35da14ea4ec024193534fb217bcfd36b68435978..1fef629472267399690f6cfcc79646b718745983 100644
+index bb3479c8a2d9093d6b01650c79d281295d78f41e..18bd69cd68b40f97f2e7e0ea6689ab8d5a18cdda 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -504,6 +504,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -61,10 +61,10 @@ index 50601f801e08a90d8556007617a0310bc3bfe2e3..f1f03eb2eb91567cbda2f8b9abe9979e
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 4f5deff2e4b6f69eab4c2c7ccc9d51827d7071b5..5eafce758233210d34aa873b9d3d24d5bd0aa599 100644
+index fb55234745342c0586462693c7f43a3004417d9d..fbb8821704d8f32dca92031e88592b429c53437b 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1162,6 +1162,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1155,6 +1155,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -73,7 +73,7 @@ index 4f5deff2e4b6f69eab4c2c7ccc9d51827d7071b5..5eafce758233210d34aa873b9d3d24d5
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1620,6 +1622,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1613,6 +1615,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  
@@ -87,10 +87,10 @@ index 4f5deff2e4b6f69eab4c2c7ccc9d51827d7071b5..5eafce758233210d34aa873b9d3d24d5
    webkit_preferences_ = prefs;
    ApplyWebPreferences(webkit_preferences_, GetWebView());
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 5dbf50846de1825e6eaf0bb8799ab6bece67445b..711012a5adbe73349485bd0e197e97bbfacb5c7e 100644
+index d3d1c04216923c7706dfe6e0bc13969e08a4307c..9289ba35f781ebfce19b8ff8a9f9520faded9f1c 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -391,6 +391,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -388,6 +388,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    void OnSetHistoryOffsetAndLength(int history_offset, int history_length);
    void OnSetRendererPrefs(
        const blink::mojom::RendererPreferences& renderer_prefs);

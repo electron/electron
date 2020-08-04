@@ -5,7 +5,7 @@ Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index ceec9f3d304b3b6557f45f5799a879d8490a67d0..76d3e81c601364e3c869da446117c21491263483 100644
+index c2136776f09458ddfd6265d415534f5ef9df4d8a..8354ecc34c84a1d2fa14f295f3b71fe4ee5dfa61 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -471,6 +471,9 @@ void SpellcheckService::LoadDictionaries() {
@@ -40,7 +40,7 @@ index ceec9f3d304b3b6557f45f5799a879d8490a67d0..76d3e81c601364e3c869da446117c214
                                                 std::string locale,
                                                 std::string path,
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index b035057f03a3a3b46214e8cffbea8e0ab1728536..0e0e4c2802d9c2ae2fdbeb7c941273f0c1bf50d1 100644
+index 28e67e5172059dfc956e8c2fa7eca5de1a348439..e297e7b6672bdcfce5d596c7bf744dc73d49dc88 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -137,6 +137,8 @@ class SpellcheckService : public KeyedService,
