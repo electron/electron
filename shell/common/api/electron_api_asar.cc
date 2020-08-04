@@ -2,35 +2,36 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <stddef.h>
-
 #include <vector>
 
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+
 namespace {
 
-class Archive : public gin_helper::Wrappable<Archive> {
+class Archive : public gin::Wrappable<Archive> {
  public:
-  static v8::Local<v8::Value> Create(v8::Isolate* isolate,
+  static gin::Handle<Archive> Create(v8::Isolate* isolate,
                                      const base::FilePath& path) {
     auto archive = std::make_unique<asar::Archive>(path);
     if (!archive->Init())
-      return v8::False(isolate);
-    return (new Archive(isolate, std::move(archive)))->GetWrapper();
+      return gin::Handle<Archive>();
+    return gin::CreateHandle(isolate, new Archive(isolate, std::move(archive)));
   }
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype) {
-    prototype->SetClassName(gin::StringToV8(isolate, "Archive"));
-    gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::ObjectTemplateBuilder(isolate)
         .SetProperty("path", &Archive::GetPath)
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
@@ -40,11 +41,11 @@ class Archive : public gin_helper::Wrappable<Archive> {
         .SetMethod("getFd", &Archive::GetFD);
   }
 
+  const char* GetTypeName() override { return "Archive"; }
+
  protected:
   Archive(v8::Isolate* isolate, std::unique_ptr<asar::Archive> archive)
-      : archive_(std::move(archive)) {
-    Init(isolate);
-  }
+      : archive_(std::move(archive)) {}
 
   // Returns the path of the file.
   base::FilePath GetPath() { return archive_->path(); }
@@ -115,6 +116,9 @@ class Archive : public gin_helper::Wrappable<Archive> {
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
+
+// static
+gin::WrapperInfo Archive::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
   // Evaluate asar_bundle.js.

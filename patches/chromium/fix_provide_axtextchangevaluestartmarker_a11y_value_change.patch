@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 30 Jul 2020 16:02:55 -0700
+Subject: fix: provide AXTextChangeValueStartMarker a11y value change
+ notifications
+
+This will be upstreamed and can be removed once it has landed there.
+
+Upstream attempt: https://chromium-review.googlesource.com/c/chromium/src/+/2330812
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index f56a191cb01fbcf91f60abc312ee5277bf857929..fa5429e2da1124fc1c2ff4fb6fed7aeb4dabdbea 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -19,13 +19,14 @@ namespace content {
+ // support character echo and other announcements during editing.
+ struct AXTextEdit {
+   AXTextEdit() = default;
+-  AXTextEdit(base::string16 inserted_text, base::string16 deleted_text)
+-      : inserted_text(inserted_text), deleted_text(deleted_text) {}
++  AXTextEdit(base::string16 inserted_text, base::string16 deleted_text, id edit_text_marker)
++      : inserted_text(inserted_text), deleted_text(deleted_text), edit_text_marker(edit_text_marker) {}
+ 
+   bool IsEmpty() const { return inserted_text.empty() && deleted_text.empty(); }
+ 
+   base::string16 inserted_text;
+   base::string16 deleted_text;
++  id edit_text_marker;
+ };
+ 
+ // Returns true if the given object is AXTextMarker object.
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 090c8fdc3b374ed937d3e04ccd5d91772acc7d9d..8a96c55b638b33f390372c2a30228dabad08665a 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -1882,7 +1882,11 @@ id content::AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker) {
+ 
+   base::string16 deletedText = oldValue.substr(i, oldValue.length() - i - j);
+   base::string16 insertedText = newValue.substr(i, newValue.length() - i - j);
+-  return content::AXTextEdit(insertedText, deletedText);
++#ifndef MAS_BUILD
++  return content::AXTextEdit(insertedText, deletedText, CreateTextMarker(_owner->CreatePositionAt(i)));
++#else
++  return content::AXTextEdit(insertedText, deletedText, nil);
++#endif
+ }
+ 
+ - (BOOL)instanceActive {
+@@ -2257,7 +2261,7 @@ id content::AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker) {
+ - (id)selectedTextMarkerRange {
+   if (![self instanceActive])
+     return nil;
+-  return CreateTextMarkerRange(GetSelectedRange(*_owner));
++  return CreateTextMarkerRange(GetSelectedRange(*_owner).AsBackwardRange());
+ }
+ #endif
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b/content/browser/accessibility/browser_accessibility_manager_mac.h
+index 8fb447a74cb6e818c221131aba5f57c5f8b8094d..b930963467642738db3ec0109b4a6681ade03b2c 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.h
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
+@@ -60,7 +60,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+   NSDictionary* GetUserInfoForValueChangedNotification(
+       const BrowserAccessibilityCocoa* native_node,
+       const base::string16& deleted_text,
+-      const base::string16& inserted_text) const;
++      const base::string16& inserted_text,
++      id edit_text_marker) const;
+ 
+   void AnnounceActiveDescendant(BrowserAccessibility* node) const;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 5972939a070908521e82845b084d2d3b9f9a73f8..fda1d2f9fdccbff035d05f0dfc39238a8a667522 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -94,6 +94,7 @@ NSString* const NSAccessibilityTextSelectionChangedFocus =
+ NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
+ NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
+ NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
++NSString* const NSAccessibilityChangeValueStartMarker = @"AXTextChangeValueStartMarker";
+ NSString* const NSAccessibilityTextChangeValueLength =
+     @"AXTextChangeValueLength";
+ NSString* const NSAccessibilityTextChangeValues = @"AXTextChangeValues";
+@@ -313,16 +314,18 @@ void BrowserAccessibilityManagerMac::FireGeneratedEvent(
+       if (base::mac::IsAtLeastOS10_11() && !text_edits_.empty()) {
+         base::string16 deleted_text;
+         base::string16 inserted_text;
+-        int32_t id = node->GetId();
+-        const auto iterator = text_edits_.find(id);
++        int32_t id_ = node->GetId();
++        id edit_text_marker = nil;
++        const auto iterator = text_edits_.find(id_);
+         if (iterator != text_edits_.end()) {
+           AXTextEdit text_edit = iterator->second;
+           deleted_text = text_edit.deleted_text;
+           inserted_text = text_edit.inserted_text;
++          edit_text_marker = text_edit.edit_text_marker;
+         }
+ 
+         NSDictionary* user_info = GetUserInfoForValueChangedNotification(
+-            native_node, deleted_text, inserted_text);
++            native_node, deleted_text, inserted_text, edit_text_marker);
+ 
+         BrowserAccessibility* root = GetRoot();
+         if (!root)
+@@ -546,27 +549,34 @@ NSDictionary*
+ BrowserAccessibilityManagerMac::GetUserInfoForValueChangedNotification(
+     const BrowserAccessibilityCocoa* native_node,
+     const base::string16& deleted_text,
+-    const base::string16& inserted_text) const {
++    const base::string16& inserted_text,
++    id edit_text_marker) const {
+   DCHECK(native_node);
+   if (deleted_text.empty() && inserted_text.empty())
+     return nil;
+ 
+   NSMutableArray* changes = [[[NSMutableArray alloc] init] autorelease];
+   if (!deleted_text.empty()) {
+-    [changes addObject:@{
+-      NSAccessibilityTextEditType : @(AXTextEditTypeDelete),
+-      NSAccessibilityTextChangeValueLength : @(deleted_text.length()),
+-      NSAccessibilityTextChangeValue : base::SysUTF16ToNSString(deleted_text)
+-    }];
++    NSMutableDictionary* change = [[[NSMutableDictionary alloc] initWithCapacity:4] autorelease];
++    change[NSAccessibilityTextEditType] = @(AXTextEditTypeDelete);
++    change[NSAccessibilityTextChangeValueLength] = @(deleted_text.length());
++    change[NSAccessibilityTextChangeValue] = base::SysUTF16ToNSString(deleted_text);
++    if (edit_text_marker) {
++      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++    }
++    [changes addObject:change];
+   }
+   if (!inserted_text.empty()) {
+     // TODO(nektar): Figure out if this is a paste operation instead of typing.
+     // Changes to Blink would be required.
+-    [changes addObject:@{
+-      NSAccessibilityTextEditType : @(AXTextEditTypeTyping),
+-      NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
+-      NSAccessibilityTextChangeValue : base::SysUTF16ToNSString(inserted_text)
+-    }];
++    NSMutableDictionary* change = [[[NSMutableDictionary alloc] initWithCapacity:4] autorelease];
++    change[NSAccessibilityTextEditType] = @(AXTextEditTypeTyping);
++    change[NSAccessibilityTextChangeValueLength] = @(inserted_text.length());
++    change[NSAccessibilityTextChangeValue] = base::SysUTF16ToNSString(inserted_text);
++    if (edit_text_marker) {
++      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++    }
++    [changes addObject:change];
+   }
+ 
+   return @{
+diff --git a/ui/accessibility/ax_range.h b/ui/accessibility/ax_range.h
+index 62db9d3c0ff251e40dd5016901e40a3083cb786f..2d263e1c7eaf806a76eba6ee79919ef87d3eb04b 100644
+--- a/ui/accessibility/ax_range.h
++++ b/ui/accessibility/ax_range.h
+@@ -131,6 +131,12 @@ class AXRange {
+                : AXRange(anchor_->Clone(), focus_->Clone());
+   }
+ 
++  AXRange AsBackwardRange() const {
++    return (CompareEndpoints(anchor(), focus()).value_or(0) < 0)
++               ? AXRange(focus_->Clone(), anchor_->Clone())
++               : AXRange(anchor_->Clone(), focus_->Clone());
++  }
++
+   bool IsCollapsed() const { return !IsNull() && *anchor_ == *focus_; }
+ 
+   // We define a "leaf text range" as an AXRange whose endpoints are leaf text

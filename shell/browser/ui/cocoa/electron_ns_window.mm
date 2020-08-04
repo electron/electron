@@ -17,6 +17,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace electron
 
+@interface NSWindow (PrivateAPI)
+- (NSImage*)_cornerMask;
+@end
+
 @implementation ElectronNSWindow
 
 @synthesize acceptsFirstMouse;
@@ -121,28 +125,20 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (![attribute isEqualToString:@"AXChildren"])
     return [super accessibilityAttributeValue:attribute];
 
-  // Filter out objects that aren't the title bar buttons. This has the effect
-  // of removing the window title, which VoiceOver already sees.
+  // We want to remove the window title (also known as
+  // NSAccessibilityReparentingCellProxy), which VoiceOver already sees.
   // * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but
   //   still leaves the buttons available in the accessibility tree.
   // * when VoiceOver is enabled, the full accessibility tree is used.
   // Without removing the title and with VO disabled, the TTS would always read
   // the window title instead of using Cmd+C to get the selected text.
-  NSPredicate* predicate = [NSPredicate
-      predicateWithFormat:@"(self isKindOfClass: %@) OR (self.className == %@)",
-                          [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
+  NSPredicate* predicate =
+      [NSPredicate predicateWithFormat:@"(self.className != %@)",
+                                       @"NSAccessibilityReparentingCellProxy"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
   NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
   [mutableChildren filterUsingPredicate:predicate];
-
-  // We need to add the web contents: Without us doing so, VoiceOver
-  // users will be able to navigate up the a11y tree, but not back down.
-  // The content view contains the "web contents", which VoiceOver
-  // immediately understands.
-  NSView* contentView =
-      [shell_->GetNativeWindow().GetNativeNSWindow() contentView];
-  [mutableChildren addObject:contentView];
 
   return mutableChildren;
 }
@@ -166,7 +162,11 @@ bool ScopedDisableResize::disable_resize_ = false;
 // By overriding this built-in method the corners of the vibrant view (if set)
 // will be smooth.
 - (NSImage*)_cornerMask {
-  return [self cornerMask];
+  if (self.vibrantView != nil) {
+    return [self cornerMask];
+  } else {
+    return [super _cornerMask];
+  }
 }
 
 // Quicklook methods

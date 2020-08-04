@@ -78,7 +78,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   Observe(api_web_contents_->web_contents());
 
   // Keep a copy of the options for later use.
-  gin_helper::Dictionary(isolate, web_contents->GetWrapper())
+  gin_helper::Dictionary(isolate, web_contents.ToV8().As<v8::Object>())
       .Set("browserWindowOptions", options);
 
   // Associate with BrowserWindow.

@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -32,6 +33,10 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+
+#if !defined(MAS_BUILD)
+#include "shell/common/crash_keys.h"
+#endif
 
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
@@ -132,6 +137,18 @@ bool IsPackagedApp() {
 #endif
 }
 
+void V8FatalErrorCallback(const char* location, const char* message) {
+  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
+
+#if !defined(MAS_BUILD)
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
+
+  volatile int* zero = nullptr;
+  *zero = 0;
+}
+
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
@@ -221,13 +238,6 @@ void SetNodeOptions(base::Environment* env) {
   }
 }
 
-bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
-}
-
 }  // namespace
 
 namespace electron {
@@ -308,7 +318,6 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
@@ -403,28 +412,35 @@ node::Environment* NodeBindings::CreateEnvironment(
     global.Delete("_noBrowserGlobals");
   }
 
+  node::IsolateSettings is;
+
+  // Use a custom fatal error callback to allow us to add
+  // crash message and location to CrashReports.
+  is.fatal_error_callback = V8FatalErrorCallback;
+
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // This policy requires that microtask checkpoints be explicitly invoked.
-    // Node.js requires this.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+    // Node.js requires that microtask checkpoints be explicitly invoked.
+    is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+    is.policy = v8::MicrotasksPolicy::kScoped;
+
+    // We do not want to use Node.js' message listener as it interferes with
+    // Blink's.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+    // We do not want to use the promise rejection callback that Node.js uses,
+    // because it does not send PromiseRejectionEvents to the global script
+    // context. We need to use the one Blink already provides.
+    is.flags &=
+        ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
   }
 
   // This needs to be called before the inspector is initialized.
   env->InitializeDiagnostics();
 
-  // Set the callback to invoke to check if wasm code generation should be
-  // allowed.
-  context->GetIsolate()->SetAllowWasmCodeGenerationCallback(
-      AllowWasmCodeGenerationCallback);
-
-  // Generate more detailed source positions to code objects. This results in
-  // better results when mapping profiling samples to script source.
-  v8::CpuProfiler::UseDetailedSourcePositionsForProfiling(
-      context->GetIsolate());
+  node::SetIsolateUpForNode(context->GetIsolate(), is);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
