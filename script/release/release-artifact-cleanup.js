@@ -9,8 +9,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { GitProcess } = require('dugite');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
+const { Octokit } = require('@octokit/rest');
 
-const octokit = require('@octokit/rest')({
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 

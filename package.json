@@ -6,7 +6,7 @@
   "devDependencies": {
     "@electron/docs-parser": "^0.9.1",
     "@electron/typescript-definitions": "^8.7.4",
-    "@octokit/rest": "^16.3.2",
+    "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
     "@types/busboy": "^0.2.3",

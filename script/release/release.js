@@ -21,6 +21,7 @@ const path = require('path');
 const sumchecker = require('sumchecker');
 const temp = require('temp').track();
 const { URL } = require('url');
+const { Octokit } = require('@octokit/rest');
 
 require('colors');
 const pass = '✓'.green;
@@ -28,7 +29,7 @@ const fail = '✗'.red;
 
 const { ELECTRON_DIR } = require('../lib/utils');
 
-const octokit = require('@octokit/rest')({
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
