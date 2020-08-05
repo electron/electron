@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Marshall <petermarshall@chromium.org>
+Date: Wed, 5 Aug 2020 14:28:15 +0200
+Subject: cpu-profiler: Use Handle version of SourcePositionTableIterator
+
+The surrounding code can trigger an allocation through InliningStack
+which can eventually end up allocating a line ends array.
+
+This is fine as-is because the existing iterator code makes a copy
+of the byte array. It just triggers the no_gc dcheck in debug mode.
+
+Fixed: v8:10778
+Change-Id: Ic8c502767ec6c3d3b1f5e84df60638bd2fc6be75
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2339102
+Auto-Submit: Peter Marshall <petermarshall@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#69247}
+
+diff --git a/src/profiler/profiler-listener.cc b/src/profiler/profiler-listener.cc
+index fc29591dc73c1d692e2d15f24821bc15880e90a9..60eddfd5ae4f382800058be7be5b4b1693bf42c5 100644
+--- a/src/profiler/profiler-listener.cc
++++ b/src/profiler/profiler-listener.cc
+@@ -113,7 +113,8 @@ void ProfilerListener::CodeCreateEvent(LogEventsAndTags tag,
+     // profiler as is stored on the code object, except that we transform source
+     // positions to line numbers here, because we only care about attributing
+     // ticks to a given line.
+-    for (SourcePositionTableIterator it(abstract_code->source_position_table());
++    for (SourcePositionTableIterator it(
++             handle(abstract_code->source_position_table(), isolate_));
+          !it.done(); it.Advance()) {
+       int position = it.source_position().ScriptOffset();
+       int inlining_id = it.source_position().InliningId();
