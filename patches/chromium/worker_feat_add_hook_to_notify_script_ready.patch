@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 8309bb7f3f284b0930c13a7e75a7f9de64fedb73..7c5c925cadc5caca5ef69eda80ccc04797b2c803 100644
+index e56aae188d7d8f46a4438b8e99f7e9b714c5875a..56b1155e36ed29a1a406e3824b6903346ce40793 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -405,6 +405,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -404,6 +404,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -65,10 +65,10 @@ index 6c8ef4c7c37e6b951f228500b178a53d91ebdfb9..4165e0cf3d3c5b0c289f2a5d83d72d69
    bool IsExcludedHeaderForServiceWorkerFetchEvent(
        const blink::WebString& header_name) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 754634fd4935cdf38168361f1491cf3aedaf8cdb..513cdea72aba0082d43268bdbfc5328fb21afb76 100644
+index 01930661416c1987790bb9b3fdd88a04e3662c7a..10d5a00c69f939b5871dea5ea9d6f059066c458d 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -638,6 +638,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -619,6 +619,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
