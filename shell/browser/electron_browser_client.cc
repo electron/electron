@@ -58,6 +58,7 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -151,6 +152,7 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
@@ -286,8 +288,9 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;
+    bool upload = ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
     breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, true);
+        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
     crash_handler->StartUploaderThread();
     return crash_handler;
   }
@@ -931,13 +934,6 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
     extensions::ProcessMap::Get(browser_context)
         ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -1016,13 +1012,6 @@ void ElectronBrowserClient::SiteInstanceDeleting(
     extensions::ProcessMap::Get(browser_context)
         ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif
 }
@@ -1277,6 +1266,16 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
       URLLoaderFactoryType::kNavigation, factories);
+}
+
+void ElectronBrowserClient::
+    RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kWorkerMainResource, factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1552,6 +1551,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->is_corb_enabled = false;
     }
   }
+
+  extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
+      browser_context, origin, is_for_isolated_world, factory_params);
 }
 
 #if defined(OS_WIN)

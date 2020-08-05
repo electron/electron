@@ -65,7 +65,6 @@
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "ui/base/x/x11_util.h"
-#include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/x11_types.h"
@@ -402,7 +401,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(USE_X11)
   // In Aura/X11, Gtk-based LinuxUI implementation is used.
-  gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
+  gtk_ui_delegate_ =
+      std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
   ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
   views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
   views::LinuxUI::SetInstance(linux_ui);

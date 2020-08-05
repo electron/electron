@@ -22,29 +22,19 @@ index c872941b974216d94863bcbf0e597b9c09ca50e2..4e7c3c10255a0eae4d5333f88e51cf71
  process.config = JSONParse(internalBinding('native_module').config);
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 92554a374d189b3b284546b0e122940e9a175de8..e478c57af873da717c00db73d6719f806280efe1 100644
+index 0ef46569924354ea3ef59f3220637e30b316a761..7d08fb05e9a0abeb82d416891968b23002dc3685 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -55,10 +55,7 @@ const assert = require('internal/assert');
+@@ -55,7 +55,7 @@ const assert = require('internal/assert');
  const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
--const {
--  internalModuleReadJSON,
--  internalModuleStat
--} = internalBinding('fs');
+-const { internalModuleStat } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
+ const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-   makeRequireFunction,
-@@ -144,14 +141,12 @@ function enrichCJSError(err) {
- }
- 
- function stat(filename) {
--  // FIXME(codebytere): determine why this needs to be done and remove
--  const internalModuleStat = process.binding('fs').internalModuleStat;
-   filename = path.toNamespacedPath(filename);
-   if (statCache !== null) {
+@@ -147,7 +147,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
@@ -53,12 +43,25 @@ index 92554a374d189b3b284546b0e122940e9a175de8..e478c57af873da717c00db73d6719f80
    if (statCache !== null) statCache.set(filename, result);
    return result;
  }
-@@ -257,7 +252,7 @@ function readPackage(requestPath) {
-   const existing = packageJsonCache.get(jsonPath);
-   if (existing !== undefined) return existing;
+diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
+index 066047b55eb9d82bc1eea66dc54aa68abd116b6b..4fcc65e235692d7d5fe2643571f006c593c4e173 100644
+--- a/lib/internal/modules/package_json_reader.js
++++ b/lib/internal/modules/package_json_reader.js
+@@ -1,7 +1,7 @@
+ 'use strict';
  
--  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
-+  const json = internalFsBinding.internalModuleReadJSON(path.toNamespacedPath(jsonPath));
-   if (json === undefined) {
-     packageJsonCache.set(jsonPath, false);
-     return false;
+ const { SafeMap } = primordials;
+-const { internalModuleReadJSON } = internalBinding('fs');
++const internalFsBinding = internalBinding('fs');
+ 
+ const cache = new SafeMap();
+ 
+@@ -14,7 +14,7 @@ function read(path) {
+     return cache.get(path);
+   }
+ 
+-  const [string, containsKeys] = internalModuleReadJSON(path);
++  const [string, containsKeys] = internalFsBinding.internalModuleReadJSON(path);
+   const result = { string, containsKeys };
+   cache.set(path, result);
+   return result;

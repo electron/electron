@@ -24,7 +24,19 @@ namespace crash_keys {
 
 namespace {
 
-using ExtraCrashKeys = std::deque<crash_reporter::CrashKeyString<127>>;
+#if defined(OS_LINUX)
+// Breakpad has a flawed system of calculating the number of chunks
+// we add 127 bytes to force an extra chunk
+constexpr size_t kMaxCrashKeyValueSize = 20479;
+#else
+constexpr size_t kMaxCrashKeyValueSize = 20320;
+#endif
+
+static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
+              "max crash key value length above what crashpad supports");
+
+using ExtraCrashKeys =
+    std::deque<crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>>;
 ExtraCrashKeys& GetExtraCrashKeys() {
   static base::NoDestructor<ExtraCrashKeys> extra_keys;
   return *extra_keys;

@@ -374,7 +374,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
     std::vector<base::string16> types;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
-        ui::ClipboardBuffer::kCopyPaste, &types);
+        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr, &types);
     pasteFlag = !types.empty();
   }
   dict.Set("canPaste", pasteFlag);

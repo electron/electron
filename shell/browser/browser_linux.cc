@@ -84,7 +84,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
   return ran_ok && exit_code == EXIT_SUCCESS;
 }
 
-void Browser::Focus(gin_helper::Arguments* args) {
+void Browser::Focus(gin::Arguments* args) {
   // Focus on the first visible window.
   for (auto* const window : WindowList::GetWindows()) {
     if (window->IsVisible()) {
@@ -101,12 +101,12 @@ void Browser::ClearRecentDocuments() {}
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin_helper::Arguments* args) {
+                                      gin::Arguments* args) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   if (protocol.empty())
@@ -128,7 +128,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
 // Todo implement
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   return false;
 }
 

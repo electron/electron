@@ -42,7 +42,7 @@ index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index f8b36be425a78783a7ee8fb305d64a109f6c72fc..2227c81ef5878d687c125ae993c06700e5c131ef 100644
+index c0c37674e99b9d04c983dda8312433a37dbd5170..282bdb964cb4e3fb03d53768b3212fe2b84e3bd7 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -63,7 +63,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -70,7 +70,7 @@ index f8b36be425a78783a7ee8fb305d64a109f6c72fc..2227c81ef5878d687c125ae993c06700
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -558,6 +567,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -560,6 +569,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -89,7 +89,7 @@ index f8b36be425a78783a7ee8fb305d64a109f6c72fc..2227c81ef5878d687c125ae993c06700
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -661,7 +682,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -663,7 +684,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -99,10 +99,10 @@ index f8b36be425a78783a7ee8fb305d64a109f6c72fc..2227c81ef5878d687c125ae993c06700
        return color.value();
    }
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 739c28d17cae9f5150539ada37533a49c8526963..b2a0fc2fc8278936c9eda48b6056cb0ce97412b4 100644
+index dde0f977c676b6914f206ca7022290887257622b..67fe14f482dcbdf884711e3b283f9d6107a6cfe6 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -145,6 +145,11 @@
+@@ -146,6 +146,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \

@@ -529,17 +529,15 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return fs.readFile(realPath, options, callback);
     }
 
-    const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
-    if (!(fd >= 0)) {
-      const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
-      nextTick(callback, [error]);
-      return;
-    }
-
     logASARAccess(asarPath, filePath, info.offset);
-    fs.read(fd, buffer, 0, info.size, info.offset, (error: Error) => {
-      callback(error, encoding ? buffer.toString(encoding) : buffer);
+    archive.read(info.offset, info.size).then((buf) => {
+      const buffer = Buffer.from(buf);
+      callback(null, encoding ? buffer.toString(encoding) : buffer);
+    }, (err) => {
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      callback(error);
     });
   };
 
@@ -572,13 +570,19 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     const { encoding } = options;
-    const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
-    if (!(fd >= 0)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
 
     logASARAccess(asarPath, filePath, info.offset);
-    fs.readSync(fd, buffer, 0, info.size, info.offset);
-    return (encoding) ? buffer.toString(encoding) : buffer;
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = archive.readSync(info.offset, info.size);
+    } catch (err) {
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      throw error;
+    }
+    const buffer = Buffer.from(arrayBuffer);
+    return encoding ? buffer.toString(encoding) : buffer;
   };
 
   const { readdir } = fs;
@@ -675,23 +679,29 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
-    if (!archive) return;
+    if (!archive) return [];
 
     const info = archive.getFileInfo(filePath);
-    if (!info) return;
-    if (info.size === 0) return '';
+    if (!info) return [];
+    if (info.size === 0) return ['', false];
     if (info.unpacked) {
       const realPath = archive.copyFileOut(filePath);
       return fs.readFileSync(realPath, { encoding: 'utf8' });
     }
 
-    const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
-    if (!(fd >= 0)) return;
-
     logASARAccess(asarPath, filePath, info.offset);
-    fs.readSync(fd, buffer, 0, info.size, info.offset);
-    return buffer.toString('utf8');
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = archive.readSync(info.offset, info.size);
+    } catch (err) {
+      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
+      error.code = 'EINVAL';
+      error.errno = -22;
+      throw error;
+    }
+    const buffer = Buffer.from(arrayBuffer);
+    const str = buffer.toString('utf8');
+    return [str, str.length > 0];
   };
 
   const { internalModuleStat } = internalBinding('fs');
