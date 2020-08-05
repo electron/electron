@@ -30,7 +30,6 @@ ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 )
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
-BOTO_DIR = os.path.join(ELECTRON_DIR, 'vendor', 'boto')
 
 NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
@@ -197,12 +196,6 @@ def get_electron_version():
   version_file = os.path.join(SOURCE_ROOT, 'ELECTRON_VERSION')
   with open(version_file) as f:
     return 'v' + f.read().strip()
-
-def boto_path_dirs():
-  return [
-    os.path.join(BOTO_DIR, 'build', 'lib'),
-    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')
-  ]
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   env = os.environ.copy()

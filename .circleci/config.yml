@@ -1405,7 +1405,6 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        mv src/electron/vendor/boto .
                         mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
@@ -1418,9 +1417,7 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        rm -rf src/electron/vendor/boto
                         rm -rf src/electron/vendor/requests
-                        mv boto src/electron/vendor
                         mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
@@ -1616,7 +1613,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1675,7 +1672,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1768,7 +1765,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
@@ -1830,7 +1827,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1901,7 +1898,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-32bit-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -1975,7 +1972,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2037,7 +2034,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2051,7 +2048,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2145,7 +2142,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2159,7 +2156,7 @@ jobs:
       <<: *env-mas-apple-silicon
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
