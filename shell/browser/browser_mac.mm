@@ -101,8 +101,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
-    int width,
-    int height) {
+    int size) {
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -111,7 +110,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
 
   // convert width and height to CGSIZE
-  NSSize ns_size = NSMakeSize(width, height);
+  NSSize ns_size = NSMakeSize(size, size);
   CGSize cg_size = CGSizeMake(ns_size.width, ns_size.height);
 
   QLThumbnailRef ql_thumbnail =

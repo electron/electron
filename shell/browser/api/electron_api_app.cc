@@ -1568,6 +1568,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod(
           "getApplicationInfoForProtocol",
           base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
+      .SetMethod(
+          "createThumbnailFromPath",
+          base::BindRepeating(&Browser::CreateThumbnailFromPath, browser))
 #endif
       .SetMethod(
           "getApplicationNameForProtocol",
@@ -1595,9 +1598,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::ResignCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
-      .SetMethod(
-          "createThumbnailFromPath",
-          base::BindRepeating(&Browser::CreateThumbnailFromPath, browser))
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
