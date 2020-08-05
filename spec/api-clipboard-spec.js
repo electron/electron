@@ -112,37 +112,17 @@ describe('clipboard module', () => {
     });
   });
 
-  describe('clipboard.writeBuffer(format, buffer)', () => {
+  describe('clipboard.readBuffer(format)', () => {
     it('writes a Buffer for the specified format', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
       const buffer = Buffer.from('writeBuffer', 'utf8');
       clipboard.writeBuffer('public.utf8-plain-text', buffer);
-      expect(clipboard.readText()).to.equal('writeBuffer');
+      expect(buffer.equals(clipboard.readBuffer('public.utf8-plain-text'))).to.equal(true);
     });
 
     it('throws an error when a non-Buffer is specified', () => {
       expect(() => {
         clipboard.writeBuffer('public.utf8-plain-text', 'hello');
       }).to.throw(/buffer must be a node Buffer/);
-    });
-  });
-
-  describe('clipboard.readBuffer(format)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
-    it('returns a Buffer of the content for the specified format', () => {
-      const buffer = Buffer.from('this is binary', 'utf8');
-      clipboard.writeText(buffer.toString());
-      expect(buffer.equals(clipboard.readBuffer('public.utf8-plain-text'))).to.equal(true);
     });
   });
 });

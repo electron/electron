@@ -6,9 +6,9 @@
 
 #include <string>
 
-#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
-#import <ReactiveCocoa/RACCommand.h>
-#import <ReactiveCocoa/RACSignal.h>
+#import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
+#import <ReactiveObjC/RACCommand.h>
+#import <ReactiveObjC/RACSignal.h>
 #import <Squirrel/Squirrel.h>
 
 #include "base/bind.h"
@@ -41,14 +41,19 @@ std::string AutoUpdater::GetFeedURL() {
 }
 
 // static
-void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
+void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   gin_helper::ErrorThrower thrower(args->isolate());
   gin_helper::Dictionary opts;
 
   std::string feed;
   HeaderMap requestHeaders;
   std::string serverType = "default";
-  if (args->GetNext(&opts)) {
+  v8::Local<v8::Value> first_arg = args->PeekNext();
+  if (!first_arg.IsEmpty() && first_arg->IsString()) {
+    if (args->GetNext(&feed)) {
+      args->GetNext(&requestHeaders);
+    }
+  } else if (args->GetNext(&opts)) {
     if (!opts.Get("url", &feed)) {
       thrower.ThrowError(
           "Expected options object to contain a 'url' string property in "
@@ -61,8 +66,6 @@ void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
       thrower.ThrowError("Expected serverType to be 'default' or 'json'");
       return;
     }
-  } else if (args->GetNext(&feed)) {
-    args->GetNext(&requestHeaders);
   } else {
     thrower.ThrowError(
         "Expected an options object with a 'url' property to be provided");

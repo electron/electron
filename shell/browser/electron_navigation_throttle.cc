@@ -31,8 +31,8 @@ ElectronNavigationThrottle::WillRedirectRequest() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto api_contents = electron::api::WebContents::From(isolate, contents);
-  if (api_contents.IsEmpty()) {
+  api::WebContents* api_contents = api::WebContents::From(contents);
+  if (!api_contents) {
     // No need to emit any event if the WebContents is not available in JS.
     return PROCEED;
   }

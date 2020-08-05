@@ -8,16 +8,19 @@ gclient_gn_args = [
   'checkout_pgo_profiles',
   'checkout_oculus_sdk',
   'checkout_openxr',
-  'checkout_google_benchmark'
+  'checkout_google_benchmark',
+  'mac_xcode_version',
 ]
 
 vars = {
   'chromium_version':
-    '9ae03ef8f7d4f6ac663f725bcfe70311987652f3',
+    '93a6ebbe22f1a093e6a0cb5e72ba78990fe39824',
   'node_version':
-    'v12.18.1',
+    'v12.18.3',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
+  'squirrel.mac_version':
+    '44468f858ce0d25c27bd5e674abfa104e0119738',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -29,6 +32,7 @@ vars = {
   'nodejs_git': 'https://github.com/nodejs',
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
+  'squirrel_git': 'https://github.com/Squirrel',
 
   # KEEP IN SYNC WITH utils.js FILE
   'yarn_version': '1.15.2',
@@ -50,6 +54,8 @@ vars = {
 
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
+
+  'mac_xcode_version': 'default',
 
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,
@@ -101,6 +107,18 @@ deps = {
     'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
     'condition': 'checkout_requests and process_deps',
   },
+  'src/third_party/squirrel.mac': {
+    'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
+    'condition': 'process_deps',
+  },
+  'src/third_party/squirrel.mac/vendor/ReactiveObjC': {
+    'url': 'https://github.com/ReactiveCocoa/ReactiveObjC.git@74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
+    'condition': 'process_deps'
+  },
+  'src/third_party/squirrel.mac/vendor/Mantle': {
+    'url': 'https://github.com/Mantle/Mantle.git@78d3966b3c331292ea29ec38661b25df0a245948',
+    'condition': 'process_deps',
+  }
 }
 
 hooks = [
@@ -109,7 +127,7 @@ hooks = [
     'condition': '(checkout_chromium and apply_patches) and process_deps',
     'pattern': 'src/electron',
     'action': [
-      'python',
+      'python3',
       'src/electron/script/apply_all_patches.py',
       'src/electron/patches/config.json',
     ],
@@ -127,7 +145,7 @@ hooks = [
     'name': 'electron_npm_deps',
     'pattern': 'src/electron/package.json',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
     ],
@@ -137,7 +155,7 @@ hooks = [
     'pattern': 'src/electron',
     'condition': 'checkout_boto and process_deps',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "boto")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
@@ -147,7 +165,7 @@ hooks = [
     'pattern': 'src/electron',
     'condition': 'checkout_requests and process_deps',
     'action': [
-      'python',
+      'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "requests")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
@@ -156,4 +174,5 @@ hooks = [
 
 recursedeps = [
   'src',
+  'src/third_party/squirrel.mac',
 ]

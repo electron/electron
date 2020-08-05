@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_system_preferences.h"
 
 #include "base/win/core_winrt_util.h"
+#include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "ui/base/win/shell.h"
@@ -166,8 +167,8 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
-    const std::string& media_type,
-    gin_helper::Arguments* args) {
+    gin_helper::ErrorThrower thrower,
+    const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertDeviceAccessStatus(
         GetDeviceAccessStatus(DeviceClass::DeviceClass_VideoCapture));
@@ -178,7 +179,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
     return ConvertDeviceAccessStatus(
         DeviceAccessStatus::DeviceAccessStatus_Allowed);
   } else {
-    args->ThrowError("Invalid media type");
+    thrower.ThrowError("Invalid media type");
     return std::string();
   }
 }
@@ -209,7 +210,7 @@ void SystemPreferences::InitializeWindow() {
   // receive broadcast messages like "WM_DWMCOLORIZATIONCOLORCHANGED".
   window_ = CreateWindow(MAKEINTATOM(atom_), 0, WS_POPUP, 0, 0, 0, 0, 0, 0,
                          instance_, 0);
-  gfx::CheckWindowCreated(window_);
+  gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 }
 

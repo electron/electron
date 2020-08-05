@@ -4,15 +4,19 @@
 
 #include "shell/browser/browser.h"
 
-#include <windows.h>  // windows.h must be included first
+// must come before other includes. fixes bad #defines from <shlwapi.h>.
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
-#include <atlbase.h>
-#include <shlobj.h>
-#include <shobjidl.h>
+#include <windows.h>  // NOLINT(build/include_order)
+
+#include <atlbase.h>   // NOLINT(build/include_order)
+#include <shlobj.h>    // NOLINT(build/include_order)
+#include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
+#include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -21,11 +25,17 @@
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
+#include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
+#include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 
@@ -49,14 +59,13 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 bool GetProcessExecPath(base::string16* exe) {
   base::FilePath path;
   if (!base::PathService::Get(base::FILE_EXE, &path)) {
-    LOG(ERROR) << "Error getting app exe path";
     return false;
   }
   *exe = path.value();
   return true;
 }
 
-bool GetProtocolLaunchPath(gin_helper::Arguments* args, base::string16* exe) {
+bool GetProtocolLaunchPath(gin::Arguments* args, base::string16* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
@@ -81,28 +90,56 @@ bool IsValidCustomProtocol(const base::string16& scheme) {
   return cmd_key.Valid() && cmd_key.HasValue(L"URL Protocol");
 }
 
+// Helper for GetApplicationInfoForProtocol().
+// takes in an assoc_str
+// (https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/ne-shlwapi-assocstr)
+// and returns the application name, icon and path that handles the protocol.
+//
 // Windows 8 introduced a new protocol->executable binding system which cannot
 // be retrieved in the HKCR registry subkey method implemented below. We call
 // AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
-base::string16 GetAppForProtocolUsingAssocQuery(const GURL& url) {
+base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
+                                           const GURL& url) {
   const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
     return base::string16();
 
-  // Query AssocQueryString for a human-readable description of the program
-  // that will be invoked given the provided URL spec. This is used only to
-  // populate the external protocol dialog box the user sees when invoking
-  // an unknown external protocol.
   wchar_t out_buffer[1024];
   DWORD buffer_size = base::size(out_buffer);
   HRESULT hr =
-      AssocQueryString(ASSOCF_IS_PROTOCOL, ASSOCSTR_FRIENDLYAPPNAME,
-                       url_scheme.c_str(), NULL, out_buffer, &buffer_size);
+      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
+                       out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
     return base::string16();
   }
   return base::string16(out_buffer);
+}
+
+void OnIconDataAvailable(const base::FilePath& app_path,
+                         const base::string16& app_display_name,
+                         gin_helper::Promise<gin_helper::Dictionary> promise,
+                         gfx::Image icon) {
+  if (!icon.IsEmpty()) {
+    v8::HandleScope scope(promise.isolate());
+    gin_helper::Dictionary dict =
+        gin::Dictionary::CreateEmpty(promise.isolate());
+
+    dict.Set("path", app_path);
+    dict.Set("name", app_display_name);
+    dict.Set("icon", icon);
+    promise.Resolve(dict);
+  } else {
+    promise.RejectWithErrorMessage("Failed to get file icon.");
+  }
+}
+
+base::string16 GetAppDisplayNameForProtocol(const GURL& url) {
+  return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
+}
+
+base::string16 GetAppPathForProtocol(const GURL& url) {
+  return GetAppInfoHelperForProtocol(ASSOCSTR_EXECUTABLE, url);
 }
 
 base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
@@ -147,6 +184,87 @@ bool FormatCommandLineString(base::string16* exe,
   return true;
 }
 
+// Helper for GetLoginItemSettings().
+// iterates over all the entries in a windows registry path and returns
+// a list of launchItem with matching paths to our application.
+// if a launchItem with a matching path also has a matching entry within the
+// startup_approved_key_path, set executable_will_launch_at_login to be `true`
+std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
+    base::win::RegistryValueIterator* it,
+    boolean* executable_will_launch_at_login,
+    base::string16 scope,
+    const Browser::LoginItemSettings& options) {
+  std::vector<Browser::LaunchItem> launch_items;
+
+  while (it->Valid()) {
+    base::string16 exe = options.path;
+    if (FormatCommandLineString(&exe, options.args)) {
+      // add launch item to vector if it has a matching path (case-insensitive)
+      if ((base::CompareCaseInsensitiveASCII(it->Value(), exe.c_str())) == 0) {
+        Browser::LaunchItem launch_item;
+        base::string16 launch_path = options.path;
+        if (!(launch_path.size() > 0)) {
+          GetProcessExecPath(&launch_path);
+        }
+        launch_item.name = it->Name();
+        launch_item.path = launch_path;
+        launch_item.args = options.args;
+        launch_item.scope = scope;
+        launch_item.enabled = true;
+
+        // attempt to update launch_item.enabled if there is a matching key
+        // value entry in the StartupApproved registry
+        HKEY hkey;
+        // StartupApproved registry path
+        LPCTSTR path = TEXT(
+            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
+            "roved\\Run");
+        LONG res;
+        if (scope == L"user") {
+          res =
+              RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_QUERY_VALUE, &hkey);
+        } else {
+          res =
+              RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_QUERY_VALUE, &hkey);
+        }
+        if (res == ERROR_SUCCESS) {
+          DWORD type, size;
+          wchar_t startup_binary[12];
+          LONG result =
+              RegQueryValueEx(hkey, it->Name(), nullptr, &type,
+                              reinterpret_cast<BYTE*>(&startup_binary),
+                              &(size = sizeof(startup_binary)));
+          if (result == ERROR_SUCCESS) {
+            if (type == REG_BINARY) {
+              // any other binary other than this indicates that the program is
+              // not set to launch at login
+              wchar_t binary_accepted[12] = {0x00, 0x00, 0x00, 0x00,
+                                             0x00, 0x00, 0x00, 0x00,
+                                             0x00, 0x00, 0x00, 0x00};
+              wchar_t binary_accepted_alt[12] = {0x02, 0x00, 0x00, 0x00,
+                                                 0x00, 0x00, 0x00, 0x00,
+                                                 0x00, 0x00, 0x00, 0x00};
+              std::string reg_binary(reinterpret_cast<char*>(binary_accepted));
+              std::string reg_binary_alt(
+                  reinterpret_cast<char*>(binary_accepted_alt));
+              std::string reg_startup_binary(
+                  reinterpret_cast<char*>(startup_binary));
+              launch_item.enabled = (reg_binary == reg_startup_binary) ||
+                                    (reg_binary == reg_binary_alt);
+            }
+          }
+        }
+
+        *executable_will_launch_at_login =
+            *executable_will_launch_at_login || launch_item.enabled;
+        launch_items.push_back(launch_item);
+      }
+    }
+    it->operator++();
+  }
+  return launch_items;
+}
+
 std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
   base::FilePath path;
 
@@ -163,10 +281,100 @@ Browser::UserTask::UserTask() = default;
 Browser::UserTask::UserTask(const UserTask&) = default;
 Browser::UserTask::~UserTask() = default;
 
-void Browser::Focus(gin_helper::Arguments* args) {
+void Browser::Focus(gin::Arguments* args) {
   // On Windows we just focus on the first window found for this process.
   DWORD pid = GetCurrentProcessId();
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
+}
+
+void GetFileIcon(const base::FilePath& path,
+                 v8::Isolate* isolate,
+                 base::CancelableTaskTracker* cancelable_task_tracker_,
+                 const base::string16 app_display_name,
+                 gin_helper::Promise<gin_helper::Dictionary> promise) {
+  base::FilePath normalized_path = path.NormalizePathSeparators();
+  IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
+
+  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
+  gfx::Image* icon =
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+  if (icon) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("icon", *icon);
+    dict.Set("name", app_display_name);
+    dict.Set("path", normalized_path);
+    promise.Resolve(dict);
+  } else {
+    icon_manager->LoadIcon(normalized_path, icon_size,
+                           base::BindOnce(&OnIconDataAvailable, normalized_path,
+                                          app_display_name, std::move(promise)),
+                           cancelable_task_tracker_);
+  }
+}
+
+void GetApplicationInfoForProtocolUsingRegistry(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
+  base::FilePath app_path;
+
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme)) {
+    promise.RejectWithErrorMessage("invalid url_scheme");
+    return;
+  }
+  base::string16 command_to_launch;
+  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
+                                KEY_READ);
+  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
+    base::CommandLine command_line(
+        base::CommandLine::FromString(command_to_launch));
+    app_path = command_line.GetProgram();
+  } else {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+
+  if (app_display_name.length() == 0) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve application display name");
+    return;
+  }
+  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_display_name,
+              std::move(promise));
+}
+
+// resolves `Promise<Object>` - Resolve with an object containing the following:
+// * `icon` NativeImage - the display icon of the app handling the protocol.
+// * `path` String  - installation path of the app handling the protocol.
+// * `name` String - display name of the app handling the protocol.
+void GetApplicationInfoForProtocolUsingAssocQuery(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
+  base::string16 app_path = GetAppPathForProtocol(url);
+
+  if (app_path.empty()) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
+
+  if (app_display_name.empty()) {
+    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return;
+  }
+
+  base::FilePath app_path_file_path = base::FilePath(app_path);
+  GetFileIcon(app_path_file_path, isolate, cancelable_task_tracker_,
+              app_display_name, std::move(promise));
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
@@ -215,7 +423,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -277,7 +485,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"
@@ -321,7 +529,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin_helper::Arguments* args) {
+                                      gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -358,7 +566,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    base::string16 application_name = GetAppForProtocolUsingAssocQuery(url);
+    base::string16 application_name = GetAppDisplayNameForProtocol(url);
     if (!application_name.empty())
       return application_name;
   }
@@ -366,21 +574,69 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   return GetAppForProtocolUsingRegistry(url);
 }
 
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // Windows 8 or above has a new protocol association query.
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
+    GetApplicationInfoForProtocolUsingAssocQuery(
+        isolate, url, std::move(promise), &cancelable_task_tracker_);
+    return handle;
+  }
+
+  GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise),
+                                             &cancelable_task_tracker_);
+  return handle;
+}
+
 bool Browser::SetBadgeCount(int count) {
   return false;
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  base::string16 key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
+
+  base::string16 startup_approved_key_path =
+      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
+      L"\\Run";
+  base::win::RegKey startup_approved_key(
+      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+  PCWSTR key_name =
+      settings.name.size() > 0 ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;
     if (FormatCommandLineString(&exe, settings.args)) {
-      key.WriteValue(GetAppUserModelID(), exe.c_str());
+      key.WriteValue(key_name, exe.c_str());
+
+      if (settings.enabled) {
+        startup_approved_key.DeleteValue(key_name);
+      } else {
+        HKEY hard_key;
+        LPCTSTR path = TEXT(
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
+            "roved\\Run");
+        LONG res =
+            RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &hard_key);
+
+        if (res == ERROR_SUCCESS) {
+          UCHAR disable_startup_binary[] = {0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+          RegSetValueEx(hard_key, key_name, 0, REG_BINARY,
+                        reinterpret_cast<const BYTE*>(disable_startup_binary),
+                        sizeof(disable_startup_binary));
+        }
+      }
     }
   } else {
-    key.DeleteValue(GetAppUserModelID());
+    // if open at login is false, delete both values
+    startup_approved_key.DeleteValue(key_name);
+    key.DeleteValue(key_name);
   }
 }
 
@@ -391,6 +647,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
   base::string16 keyVal;
 
+  // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::string16 exe = options.path;
     if (FormatCommandLineString(&exe, options.args)) {
@@ -398,6 +655,27 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
     }
   }
 
+  // iterate over current user and machine registries and populate launch items
+  // if there exists a launch entry with property enabled=='true',
+  // set executable_will_launch_at_login to 'true'.
+  boolean executable_will_launch_at_login = false;
+  std::vector<Browser::LaunchItem> launch_items;
+  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
+                                                 keyPath.c_str());
+  base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
+                                                 keyPath.c_str());
+
+  launch_items = GetLoginItemSettingsHelper(
+      &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
+  std::vector<Browser::LaunchItem> launch_items_hklm =
+      GetLoginItemSettingsHelper(&hklm_iterator,
+                                 &executable_will_launch_at_login, L"machine",
+                                 options);
+  launch_items.insert(launch_items.end(), launch_items_hklm.begin(),
+                      launch_items_hklm.end());
+
+  settings.executable_will_launch_at_login = executable_will_launch_at_login;
+  settings.launch_items = launch_items;
   return settings;
 }
 

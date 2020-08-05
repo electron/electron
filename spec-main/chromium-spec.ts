@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, delay, defer } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -259,22 +259,21 @@ describe('command line switches', () => {
   });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
-    const testLocale = (locale: string, result: string, done: () => void) => {
+    const testLocale = async (locale: string, result: string) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
-      let output = '';
       appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
 
+      let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
-      appProcess.stdout.on('end', () => {
-        output = output.replace(/(\r\n|\n|\r)/gm, '');
-        expect(output).to.equal(result);
-        done();
-      });
+
+      await emittedOnce(appProcess.stdout, 'end');
+      output = output.replace(/(\r\n|\n|\r)/gm, '');
+      expect(output).to.equal(result);
     };
 
-    it('should set the locale', (done) => testLocale('fr', 'fr', done));
-    it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
+    it('should set the locale', async () => testLocale('fr', 'fr'));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
   });
 
   // TODO(nornagon): figure out why these tests fail under ASan.
@@ -338,10 +337,15 @@ describe('command line switches', () => {
           appProcess!.stderr.removeAllListeners('data');
           const port = m[1];
           http.get(`http://127.0.0.1:${port}`, (res) => {
-            res.destroy();
-            expect(res.statusCode).to.eql(200);
-            expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
-            done();
+            try {
+              expect(res.statusCode).to.eql(200);
+              expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              res.destroy();
+            }
           });
         }
       });
@@ -445,6 +449,30 @@ describe('chromium features', () => {
       w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
+
+    it('should not crash when nodeIntegration is enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true
+        }
+      });
+
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          done();
+        }
+      });
+
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
   });
 
   describe('navigator.geolocation', () => {
@@ -454,7 +482,7 @@ describe('chromium features', () => {
       }
     });
 
-    it('returns error when permission is denied', (done) => {
+    it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -462,13 +490,7 @@ describe('chromium features', () => {
           partition: 'geolocation-spec'
         }
       });
-      w.webContents.on('ipc-message', (event, channel) => {
-        if (channel === 'success') {
-          done();
-        } else {
-          done('unexpected response from geolocation api');
-        }
-      });
+      const message = emittedOnce(w.webContents, 'ipc-message');
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
         if (permission === 'geolocation') {
           callback(false);
@@ -477,6 +499,8 @@ describe('chromium features', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
+      const [, channel] = await message;
+      expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
   });
 
@@ -559,7 +583,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
+      it(`inherits parent visibility over parent {show=${show}} option`, async () => {
         const w = new BrowserWindow({ show });
 
         // toggle visibility
@@ -569,12 +593,12 @@ describe('chromium features', () => {
           w.show();
         }
 
-        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          expect(options.show).to.equal(w.isVisible());
-          w.close();
-          done();
-        });
+        defer(() => { w.close(); });
+
+        const newWindow = emittedOnce(w.webContents, 'new-window');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
+        const [,,,, options] = await newWindow;
+        expect(options.show).to.equal(w.isVisible());
       });
     }
 
@@ -610,7 +634,7 @@ describe('chromium features', () => {
       expect(preferences.javascript).to.be.false();
     });
 
-    it('handles cycles when merging the parent options into the child options', (done) => {
+    it('handles cycles when merging the parent options into the child options', async () => {
       const foo = {} as any;
       foo.bar = foo;
       foo.baz = {
@@ -622,22 +646,20 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false, foo: foo } as any);
 
       w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-      w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-        expect(options.show).to.be.false();
-        expect((options as any).foo).to.deep.equal({
-          bar: undefined,
-          baz: {
-            hello: {
-              world: true
-            }
-          },
-          baz2: {
-            hello: {
-              world: true
-            }
+      const [,,,, options] = await emittedOnce(w.webContents, 'new-window');
+      expect(options.show).to.be.false();
+      expect((options as any).foo).to.deep.equal({
+        bar: undefined,
+        baz: {
+          hello: {
+            world: true
           }
-        });
-        done();
+        },
+        baz2: {
+          hello: {
+            world: true
+          }
+        }
       });
     });
 
@@ -967,44 +989,39 @@ describe('chromium features', () => {
         contents = null as any;
       });
 
-      it('cannot access localStorage', (done) => {
-        ipcMain.once('local-storage-response', (event, error) => {
-          expect(error).to.equal('Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access localStorage', async () => {
+        const response = emittedOnce(ipcMain, 'local-storage-response');
         contents.loadURL(protocolName + '://host/localStorage');
+        const [, error] = await response;
+        expect(error).to.equal('Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.');
       });
 
-      it('cannot access sessionStorage', (done) => {
-        ipcMain.once('session-storage-response', (event, error) => {
-          expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access sessionStorage', async () => {
+        const response = emittedOnce(ipcMain, 'session-storage-response');
         contents.loadURL(`${protocolName}://host/sessionStorage`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.');
       });
 
-      it('cannot access WebSQL database', (done) => {
-        ipcMain.once('web-sql-response', (event, error) => {
-          expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.');
-          done();
-        });
+      it('cannot access WebSQL database', async () => {
+        const response = emittedOnce(ipcMain, 'web-sql-response');
         contents.loadURL(`${protocolName}://host/WebSQL`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.');
       });
 
-      it('cannot access indexedDB', (done) => {
-        ipcMain.once('indexed-db-response', (event, error) => {
-          expect(error).to.equal('Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.');
-          done();
-        });
+      it('cannot access indexedDB', async () => {
+        const response = emittedOnce(ipcMain, 'indexed-db-response');
         contents.loadURL(`${protocolName}://host/indexedDB`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.');
       });
 
-      it('cannot access cookie', (done) => {
-        ipcMain.once('cookie-response', (event, error) => {
-          expect(error).to.equal('Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access cookie', async () => {
+        const response = emittedOnce(ipcMain, 'cookie-response');
         contents.loadURL(`${protocolName}://host/cookie`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.');
       });
     });
 
@@ -1042,7 +1059,7 @@ describe('chromium features', () => {
       afterEach(closeAllWindows);
 
       const testLocalStorageAfterXSiteRedirect = (testTitle: string, extraPreferences = {}) => {
-        it(testTitle, (done) => {
+        it(testTitle, async () => {
           const w = new BrowserWindow({
             show: false,
             ...extraPreferences
@@ -1055,11 +1072,8 @@ describe('chromium features', () => {
             expect(url).to.equal(`${serverCrossSiteUrl}/redirected`);
             redirected = true;
           });
-          w.webContents.on('did-finish-load', () => {
-            expect(redirected).to.be.true('didnt redirect');
-            done();
-          });
-          w.loadURL(`${serverUrl}/redirect-cross-site`);
+          await w.loadURL(`${serverUrl}/redirect-cross-site`);
+          expect(redirected).to.be.true('didnt redirect');
         });
       };
 
@@ -1371,47 +1385,44 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', done => {
-    ipcMain.once('fullscreenChange', async () => {
-      const fullscreenWidth = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(fullscreenWidth > 0).to.be.true();
-
-      await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
-      );
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const width = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(width).to.equal(0);
-
-      done();
-    });
-
+  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
     w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+
+    await delay(500);
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
   });
 
-  it('can fullscreen from in-process iframes', done => {
-    ipcMain.once('fullscreenChange', async () => {
-      const fullscreenWidth = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(fullscreenWidth > 0).to.true();
-
-      await w.webContents.executeJavaScript('document.exitFullscreen()');
-      const width = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(width).to.equal(0);
-      done();
-    });
-
+  it('can fullscreen from in-process iframes', async () => {
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.true();
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
   });
 });

@@ -8,8 +8,8 @@
 #include <utility>
 
 #include "base/mac/scoped_sending_event.h"
-#include "base/message_loop/message_loop_current.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/current_thread.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -34,7 +34,7 @@ MenuMac::MenuMac(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuMac::~MenuMac() = default;
 
-void MenuMac::PopupAt(TopLevelWindow* window,
+void MenuMac::PopupAt(BaseWindow* window,
                       int x,
                       int y,
                       int positioning_item,
@@ -106,7 +106,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
   [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
   // Make sure events can be pumped while the menu is up.
-  base::MessageLoopCurrent::ScopedNestableTaskAllower allow;
+  base::CurrentThread::ScopedNestableTaskAllower allow;
 
   // One of the events that could be pumped is |window.close()|.
   // User-initiated event-tracking loops protect against this by

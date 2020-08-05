@@ -1,4 +1,4 @@
-import { dialog, Menu } from 'electron';
+import { dialog, Menu } from 'electron/main';
 import * as fs from 'fs';
 import * as url from 'url';
 

@@ -31,7 +31,7 @@ class GitFake {
 
   // find the newest shared commit between branches a and b
   mergeBase (a: string, b:string): string {
-    for (const commit of [ ...this.branches[a].reverse() ]) {
+    for (const commit of [...this.branches[a].reverse()]) {
       if (this.branches[b].map((commit: Commit) => commit.sha1).includes(commit.sha1)) {
         return commit.sha1;
       }
@@ -57,7 +57,7 @@ class GitFake {
       stdout = this.branches[branch].map((commit: Commit) => commit.sha1).join('\n');
     } else if (args.length > 1 && args[0] === 'log' && args.includes('--format=%H,%s')) {
       // expected form: `git log --format=%H,%s sha1..branchName
-      const [ start, branch ] = args[args.length - 1].split('..');
+      const [start, branch] = args[args.length - 1].split('..');
       const lines : string[] = [];
       let started = false;
       for (const commit of this.branches[branch]) {
@@ -67,6 +67,14 @@ class GitFake {
         }
       }
       stdout = lines.join('\n');
+    } else if (args.length === 6 &&
+               args[0] === 'branch' &&
+               args[1] === '--all' &&
+               args[2] === '--contains' &&
+               args[3].endsWith('-x-y')) {
+      // "what branch is this tag in?"
+      // git branch --all --contains ${ref} --sort version:refname
+      stdout = args[3];
     } else {
       console.error('unhandled GitProcess.exec():', args);
     }
@@ -108,32 +116,22 @@ describe('release notes', () => {
     const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
     sandbox.replace(GitProcess, 'exec', wrapper);
 
-    gitFake.setBranch(oldBranch, [ ...sharedHistory, oldFix ]);
+    gitFake.setBranch(oldBranch, [...sharedHistory, oldFix]);
   });
 
   afterEach(() => {
     sandbox.restore();
   });
 
-  describe('changes that exist in older branches', () => {
-    // use case: this fix is NOT news because it was already fixed
-    // while oldBranch was the latest stable release
-    it('are skipped if the target version is a new major line (x.0.0)', async function () {
+  describe('trop annotations', () => {
+    it('shows sibling branches', async function () {
       const version = 'v9.0.0';
-      gitFake.setBranch(oldBranch, [ ...sharedHistory, oldTropFix ]);
-      gitFake.setBranch(newBranch, [ ...sharedHistory, newTropFix ]);
-      const results: any = await notes.get(oldBranch, newBranch, version);
-      expect(results.fix).to.have.lengthOf(0);
-    });
-
-    // use case: this fix IS news because it's being fixed in
-    // multiple stable branches at once, including newBranch.
-    it('are included if the target version is a minor or patch bump', async function () {
-      const version = 'v9.0.1';
-      gitFake.setBranch(oldBranch, [ ...sharedHistory, oldTropFix ]);
-      gitFake.setBranch(newBranch, [ ...sharedHistory, newTropFix ]);
+      gitFake.setBranch(oldBranch, [...sharedHistory, oldTropFix]);
+      gitFake.setBranch(newBranch, [...sharedHistory, newTropFix]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(1);
+      console.log(results.fix);
+      expect(results.fix[0].trops).to.have.keys('8-x-y', '9-x-y');
     });
   });
 
@@ -146,7 +144,7 @@ describe('release notes', () => {
     const testCommit = new Commit('89eb309d0b22bd4aec058ffaf983e81e56a5c378', 'feat: lole u got troled hard (#21891)');
     const version = 'v9.0.0';
 
-    gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
+    gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
     const results: any = await notes.get(oldBranch, newBranch, version);
     expect(results.feat).to.have.lengthOf(1);
     expect(results.feat[0].hash).to.equal(testCommit.sha1);
@@ -160,7 +158,7 @@ describe('release notes', () => {
 
     it("honors 'feat' type", async function () {
       const testCommit = newFeat;
-      gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
+      gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.feat).to.have.lengthOf(1);
       expect(results.feat[0].hash).to.equal(testCommit.sha1);
@@ -168,7 +166,7 @@ describe('release notes', () => {
 
     it("honors 'fix' type", async function () {
       const testCommit = newFix;
-      gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
+      gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.fix).to.have.lengthOf(1);
       expect(results.fix[0].hash).to.equal(testCommit.sha1);
@@ -176,7 +174,7 @@ describe('release notes', () => {
 
     it("honors 'BREAKING CHANGE' message", async function () {
       const testCommit = newBreaking;
-      gitFake.setBranch(newBranch, [ ...sharedHistory, testCommit ]);
+      gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
       const results: any = await notes.get(oldBranch, newBranch, version);
       expect(results.breaking).to.have.lengthOf(1);
       expect(results.breaking[0].hash).to.equal(testCommit.sha1);

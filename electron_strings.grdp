@@ -75,4 +75,9 @@
   <message name="IDS_ACCEPT_LANGUAGES" use_name_for_id="true">
     en-US,en
   </message>
+  <if expr="is_win">
+    <message name="IDS_UTILITY_PROCESS_UTILITY_WIN_NAME" desc="The name of the utility process used to handle Windows utility operations.">
+      Windows Utilities
+    </message>
+  </if>
 </grit-part>

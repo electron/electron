@@ -21,6 +21,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -31,11 +32,70 @@
 
 namespace electron {
 
+namespace {
+
+NSString* GetAppPathForProtocol(const GURL& url) {
+  NSURL* ns_url = [NSURL
+      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
+  base::ScopedCFTypeRef<CFErrorRef> out_err;
+
+  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
+      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+
+  if (out_err) {
+    // likely kLSApplicationNotFoundErr
+    return nullptr;
+  }
+  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  return app_path;
+}
+
+gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
+  NSImage* image = [[NSWorkspace sharedWorkspace] iconForFile:app_path];
+  gfx::Image icon(image);
+  return icon;
+}
+
+base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
+  NSString* app_display_name =
+      [[NSFileManager defaultManager] displayNameAtPath:app_path];
+  return base::SysNSStringToUTF16(app_display_name);
+}
+
+}  // namespace
+
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+
+  NSString* ns_app_path = GetAppPathForProtocol(url);
+
+  if (!ns_app_path) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
+  gfx::Image app_icon = GetApplicationIconForProtocol(ns_app_path);
+
+  dict.Set("name", app_display_name);
+  dict.Set("path", app_path);
+  dict.Set("icon", app_icon);
+
+  promise.Resolve(dict);
+  return handle;
+}
+
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
-void Browser::Focus(gin_helper::Arguments* args) {
+void Browser::Focus(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
 
@@ -74,7 +134,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
@@ -109,7 +169,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -124,7 +184,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin_helper::Arguments* args) {
+                                      gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -148,19 +208,12 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 }
 
 base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
-  NSURL* ns_url = [NSURL
-      URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
-  base::ScopedCFTypeRef<CFErrorRef> out_err;
-  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
-      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
-  if (out_err) {
-    // likely kLSApplicationNotFoundErr
+  NSString* app_path = GetAppPathForProtocol(url);
+  if (!app_path) {
     return base::string16();
   }
-  NSString* appPath = [base::mac::CFToNSCast(openingApp.get()) path];
-  NSString* appDisplayName =
-      [[NSFileManager defaultManager] displayNameAtPath:appPath];
-  return base::SysNSStringToUTF16(appDisplayName);
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(app_path);
+  return app_display_name;
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
@@ -173,7 +226,7 @@ bool Browser::SetBadgeCount(int count) {
 
 void Browser::SetUserActivity(const std::string& type,
                               base::DictionaryValue user_info,
-                              gin_helper::Arguments* args) {
+                              gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 

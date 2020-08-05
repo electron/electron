@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Wed, 15 Jul 2020 17:52:32 -0400
+Subject: skip atk toolchain check
+
+this patch is needed to work around the following gn error on
+Linux arm/arm64:
+
+ERROR at //build/config/linux/atk/BUILD.gn:13:1: Assertion failed.
+
+assert(current_toolchain == default_toolchain)
+
+^-----
+
+See //ui/accessibility/BUILD.gn:297:20: which caused the file to be included.
+
+      configs += [ "//build/config/linux/atk" ]
+
+                   ^-------------------------
+"//build/config/linux/atk" is only needed for accessibility unit tests
+which we don't build
+
+diff --git a/build/config/linux/atk/BUILD.gn b/build/config/linux/atk/BUILD.gn
+index aad2efa60d6c9b555e5679e9883e0f10bf8b0008..db083cd0c0ed9a846bbe827efc4783637439be7b 100644
+--- a/build/config/linux/atk/BUILD.gn
++++ b/build/config/linux/atk/BUILD.gn
+@@ -10,7 +10,7 @@ import("//build/config/ui.gni")
+ assert(!is_chromeos)
+ 
+ # These packages should _only_ be expected when building for a target.
+-assert(current_toolchain == default_toolchain)
++#assert(current_toolchain == default_toolchain)
+ 
+ if (use_atk) {
+   assert(use_glib, "use_atk=true requires that use_glib=true")

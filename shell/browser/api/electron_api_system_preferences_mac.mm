@@ -125,7 +125,7 @@ std::string ConvertSystemPermission(
 
 void SystemPreferences::PostNotification(const std::string& name,
                                          base::DictionaryValue user_info,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
 
@@ -257,60 +257,61 @@ void SystemPreferences::DoUnsubscribeNotification(int request_id,
 }
 
 v8::Local<v8::Value> SystemPreferences::GetUserDefault(
+    v8::Isolate* isolate,
     const std::string& name,
     const std::string& type) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
     return gin::StringToV8(
-        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
+        isolate, base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
-    return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
+    return v8::Boolean::New(isolate, [defaults boolForKey:key]);
   } else if (type == "float") {
-    return v8::Number::New(isolate(), [defaults floatForKey:key]);
+    return v8::Number::New(isolate, [defaults floatForKey:key]);
   } else if (type == "integer") {
-    return v8::Integer::New(isolate(), [defaults integerForKey:key]);
+    return v8::Integer::New(isolate, [defaults integerForKey:key]);
   } else if (type == "double") {
-    return v8::Number::New(isolate(), [defaults doubleForKey:key]);
+    return v8::Number::New(isolate, [defaults doubleForKey:key]);
   } else if (type == "url") {
-    return gin::ConvertToV8(isolate(),
+    return gin::ConvertToV8(isolate,
                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    return gin::ConvertToV8(isolate(),
+    return gin::ConvertToV8(isolate,
                             NSArrayToListValue([defaults arrayForKey:key]));
   } else if (type == "dictionary") {
-    return gin::ConvertToV8(isolate(), NSDictionaryToDictionaryValue(
-                                           [defaults dictionaryForKey:key]));
+    return gin::ConvertToV8(isolate, NSDictionaryToDictionaryValue(
+                                         [defaults dictionaryForKey:key]));
   } else {
-    return v8::Undefined(isolate());
+    return v8::Undefined(isolate);
   }
 }
 
-void SystemPreferences::RegisterDefaults(gin_helper::Arguments* args) {
+void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
   base::DictionaryValue value;
 
   if (!args->GetNext(&value)) {
-    args->ThrowError("Invalid userDefault data provided");
+    args->ThrowError();
   } else {
     @try {
       NSDictionary* dict = DictionaryValueToNSDictionary(value);
       for (id key in dict) {
         id value = [dict objectForKey:key];
         if ([value isKindOfClass:[NSNull class]] || value == nil) {
-          args->ThrowError("Invalid userDefault data provided");
+          args->ThrowError();
           return;
         }
       }
       [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
     } @catch (NSException* exception) {
-      args->ThrowError("Invalid userDefault data provided");
+      args->ThrowError();
     }
   }
 }
 
 void SystemPreferences::SetUserDefault(const std::string& name,
                                        const std::string& type,
-                                       gin_helper::Arguments* args) {
+                                       gin::Arguments* args) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
@@ -321,7 +322,8 @@ void SystemPreferences::SetUserDefault(const std::string& name,
     }
   } else if (type == "boolean") {
     bool value;
-    if (args->GetNext(&value)) {
+    v8::Local<v8::Value> next = args->PeekNext();
+    if (!next.IsEmpty() && next->IsBoolean() && args->GetNext(&value)) {
       [defaults setBool:value forKey:key];
       return;
     }
@@ -368,11 +370,13 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       }
     }
   } else {
-    args->ThrowError("Invalid type: " + type);
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError("Invalid type: " + type);
     return;
   }
 
-  args->ThrowError("Unable to convert value to: " + type);
+  gin_helper::ErrorThrower(args->isolate())
+      .ThrowTypeError("Unable to convert value to: " + type);
 }
 
 std::string SystemPreferences::GetAccentColor() {
@@ -572,8 +576,8 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
-    const std::string& media_type,
-    gin_helper::Arguments* args) {
+    gin_helper::ErrorThrower thrower,
+    const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertSystemPermission(
         system_media_permissions::CheckSystemVideoCapturePermission());
@@ -584,7 +588,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
     return ConvertSystemPermission(
         system_media_permissions::CheckSystemScreenCapturePermission());
   } else {
-    args->ThrowError("Invalid media type");
+    thrower.ThrowError("Invalid media type");
     return std::string();
   }
 }
@@ -651,13 +655,13 @@ v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
   return v8::Null(isolate);
 }
 
-void SystemPreferences::SetAppLevelAppearance(gin_helper::Arguments* args) {
+void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
   if (@available(macOS 10.14, *)) {
     NSAppearance* appearance;
     if (args->GetNext(&appearance)) {
       [[NSApplication sharedApplication] setAppearance:appearance];
     } else {
-      args->ThrowError("Invalid app appearance provided as first argument");
+      args->ThrowError();
     }
   }
 }

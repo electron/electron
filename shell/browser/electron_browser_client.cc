@@ -39,6 +39,8 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/browser/tts_controller.h"
+#include "content/public/browser/tts_platform.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -47,10 +49,6 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
-#include "extensions/browser/extension_navigation_ui_data.h"
-#include "extensions/browser/extension_protocols.h"
-#include "extensions/common/constants.h"
-#include "extensions/common/switches.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -60,6 +58,7 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -129,10 +128,6 @@
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
-#if BUILDFLAG(ENABLE_TTS)
-#include "chrome/browser/speech/tts_controller_delegate_impl.h"
-#endif  // BUILDFLAG(ENABLE_TTS)
-
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/printing_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
@@ -143,9 +138,12 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
@@ -153,8 +151,11 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -286,8 +287,9 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;
+    bool upload = ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
     breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, true);
+        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
     crash_handler->StartUploaderThread();
     return crash_handler;
   }
@@ -566,13 +568,8 @@ ElectronBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new ElectronSpeechRecognitionManagerDelegate;
 }
 
-content::TtsControllerDelegate*
-ElectronBrowserClient::GetTtsControllerDelegate() {
-#if BUILDFLAG(ENABLE_TTS)
-  return TtsControllerDelegateImpl::GetInstance();
-#else
+content::TtsPlatform* ElectronBrowserClient::GetTtsPlatform() {
   return nullptr;
-#endif
 }
 
 void ElectronBrowserClient::OverrideWebkitPrefs(
@@ -936,13 +933,6 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
     extensions::ProcessMap::Get(browser_context)
         ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::RegisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -1021,13 +1011,6 @@ void ElectronBrowserClient::SiteInstanceDeleting(
     extensions::ProcessMap::Get(browser_context)
         ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
                  site_instance->GetId());
-
-    base::PostTask(
-        FROM_HERE, {BrowserThread::IO},
-        base::BindOnce(&extensions::InfoMap::UnregisterExtensionProcess,
-                       browser_context->extension_system()->info_map(),
-                       extension->id(), site_instance->GetProcess()->GetID(),
-                       site_instance->GetId()));
   }
 #endif
 }
@@ -1284,6 +1267,16 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
       URLLoaderFactoryType::kNavigation, factories);
 }
 
+void ElectronBrowserClient::
+    RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(
+      URLLoaderFactoryType::kWorkerMainResource, factories);
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
@@ -1490,6 +1483,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
+
   return true;
 }
 
@@ -1508,6 +1502,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->is_corb_enabled = false;
     }
   }
+
+  extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
+      browser_context, origin, is_for_isolated_world, factory_params);
 }
 
 #if defined(OS_WIN)

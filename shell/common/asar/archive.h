@@ -11,6 +11,7 @@
 
 #include "base/files/file.h"
 #include "base/files/file_path.h"
+#include "base/files/memory_mapped_file.h"
 
 namespace base {
 class DictionaryValue;
@@ -61,16 +62,13 @@ class Archive {
   // For unpacked file, this method will return its real path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 
-  // Returns the file's fd.
-  int GetFD() const;
-
+  base::MemoryMappedFile* file() { return &file_; }
   base::FilePath path() const { return path_; }
   base::DictionaryValue* header() const { return header_.get(); }
 
  private:
   base::FilePath path_;
-  base::File file_;
-  int fd_ = -1;
+  base::MemoryMappedFile file_;
   uint32_t header_size_ = 0;
   std::unique_ptr<base::DictionaryValue> header_;
 

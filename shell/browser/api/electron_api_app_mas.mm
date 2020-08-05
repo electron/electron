@@ -22,7 +22,7 @@ void OnStopAccessingSecurityScopedResource(NSURL* bookmarkUrl) {
 
 // Get base64 encoded NSData, create a bookmark for it and start accessing it.
 base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
-    gin_helper::Arguments* args) {
+    gin::Arguments* args) {
   std::string data;
   args->GetNext(&data);
   NSString* base64str = base::SysUTF8ToNSString(data);
@@ -42,11 +42,13 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
   if (error != nil) {
     NSString* err =
         [NSString stringWithFormat:@"NSError: %@ %@", error, [error userInfo]];
-    args->ThrowError(base::SysNSStringToUTF8(err));
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(base::SysNSStringToUTF8(err));
   }
 
   if (isStale) {
-    args->ThrowError("bookmarkDataIsStale - try recreating the bookmark");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("bookmarkDataIsStale - try recreating the bookmark");
   }
 
   if (error == nil && isStale == false) {

@@ -313,6 +313,34 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal(['null', 'undefined']);
       });
 
+      it('should proxy symbols such that symbol equality works', async () => {
+        await makeBindingWindow(() => {
+          const mySymbol = Symbol('unique');
+          contextBridge.exposeInMainWorld('example', {
+            getSymbol: () => mySymbol,
+            isSymbol: (s: Symbol) => s === mySymbol
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.isSymbol(root.example.getSymbol());
+        });
+        expect(result).to.equal(true, 'symbols should be equal across contexts');
+      });
+
+      it('should proxy symbols such that symbol key lookup works', async () => {
+        await makeBindingWindow(() => {
+          const mySymbol = Symbol('unique');
+          contextBridge.exposeInMainWorld('example', {
+            getSymbol: () => mySymbol,
+            getObject: () => ({ [mySymbol]: 123 })
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getObject()[root.example.getSymbol()];
+        });
+        expect(result).to.equal(123, 'symbols key lookup should work across contexts');
+      });
+
       it('should proxy typed arrays and regexps through the serializer', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
@@ -472,6 +500,39 @@ describe('contextBridge', () => {
         expect(threw).to.equal(true);
       });
 
+      it('should copy thrown errors into the other context', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            throwNormal: () => {
+              throw new Error('whoops');
+            },
+            throwWeird: () => {
+              throw 'this is no error...'; // eslint-disable-line no-throw-literal
+            },
+            throwNotClonable: () => {
+              return Object(Symbol('foo'));
+            },
+            argumentConvert: () => {}
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return e;
+            }
+            return null;
+          };
+          const normalIsError = Object.getPrototypeOf(getError(root.example.throwNormal)) === Error.prototype;
+          const weirdIsError = Object.getPrototypeOf(getError(root.example.throwWeird)) === Error.prototype;
+          const notClonableIsError = Object.getPrototypeOf(getError(root.example.throwNotClonable)) === Error.prototype;
+          const argumentConvertIsError = Object.getPrototypeOf(getError(() => root.example.argumentConvert(Object(Symbol('test'))))) === Error.prototype;
+          return [normalIsError, weirdIsError, notClonableIsError, argumentConvertIsError];
+        });
+        expect(result).to.deep.equal([true, true, true, true], 'should all be errors in the current context');
+      });
+
       it('should not leak prototypes', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
@@ -479,6 +540,8 @@ describe('contextBridge', () => {
             string: 'string',
             boolean: true,
             arr: [123, 'string', true, ['foo']],
+            symbol: Symbol('foo'),
+            bigInt: 10n,
             getObject: () => ({ thing: 123 }),
             getNumber: () => 123,
             getString: () => 'string',
@@ -493,7 +556,10 @@ describe('contextBridge', () => {
               arr: [123, 'string', true, ['foo']],
               getPromise: async () => ({ number: 123, string: 'string', boolean: true, fn: () => 'string', arr: [123, 'string', true, ['foo']] })
             },
-            receiveArguments: (fn: any) => fn({ key: 'value' })
+            receiveArguments: (fn: any) => fn({ key: 'value' }),
+            symbolKeyed: {
+              [Symbol('foo')]: 123
+            }
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -501,6 +567,8 @@ describe('contextBridge', () => {
           let arg: any;
           example.receiveArguments((o: any) => { arg = o; });
           const protoChecks = [
+            ...Object.keys(example).map(key => [key, String]),
+            ...Object.getOwnPropertySymbols(example.symbolKeyed).map(key => [key, Symbol]),
             [example, Object],
             [example.number, Number],
             [example.string, String],
@@ -511,6 +579,8 @@ describe('contextBridge', () => {
             [example.arr[2], Boolean],
             [example.arr[3], Array],
             [example.arr[3][0], String],
+            [example.symbol, Symbol],
+            [example.bigInt, BigInt],
             [example.getNumber, Function],
             [example.getNumber(), Number],
             [example.getObject(), Object],

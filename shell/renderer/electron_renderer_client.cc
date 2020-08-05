@@ -37,7 +37,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
-      electron_bindings_(new ElectronBindings(uv_default_loop())) {}
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
@@ -200,11 +200,11 @@ bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   return http_method == "GET";
 }
 
-void ElectronRendererClient::DidInitializeWorkerContextOnWorkerThread(
+void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
-    WebWorkerObserver::GetCurrent()->ContextCreated(context);
+    WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
   }
 }
 

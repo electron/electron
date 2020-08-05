@@ -6,7 +6,7 @@
 
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_mac.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"

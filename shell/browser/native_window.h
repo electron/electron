@@ -257,6 +257,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
+  void NotifyWindowIsKeyChanged(bool is_key);
   void NotifyWindowHide();
   void NotifyWindowMaximize();
   void NotifyWindowUnmaximize();
@@ -307,6 +308,8 @@ class NativeWindow : public base::SupportsUserData,
 
   std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
+  int32_t window_id() const { return next_id_; }
+
  protected:
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
@@ -327,6 +330,8 @@ class NativeWindow : public base::SupportsUserData,
 
  private:
   std::unique_ptr<views::Widget> widget_;
+
+  static int32_t next_id_;
 
   // The content view, weak ref.
   views::View* content_view_ = nullptr;

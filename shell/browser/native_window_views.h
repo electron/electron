@@ -184,7 +184,7 @@ class NativeWindowViews : public NativeWindow,
       gfx::NativeView child,
       const gfx::Point& location) override;
   views::ClientView* CreateClientView(views::Widget* widget) override;
-  views::NonClientFrameView* CreateNonClientFrameView(
+  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
 #if defined(OS_WIN)

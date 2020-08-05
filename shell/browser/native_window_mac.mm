@@ -1451,7 +1451,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    [effect_view setState:NSVisualEffectStateActive];
+    [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
 
     // Make frameless Vibrant windows have rounded corners.
     if (!has_frame() && !is_modal()) {

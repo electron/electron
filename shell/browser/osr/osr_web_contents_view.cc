@@ -6,7 +6,7 @@
 
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_view_host.h"
-#include "third_party/blink/public/platform/web_screen_info.h"
+#include "third_party/blink/public/common/widget/screen_info.h"
 #include "ui/display/screen.h"
 
 namespace electron {
@@ -143,7 +143,10 @@ OffScreenWebContentsView::CreateViewForChildWidget(
 
 void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}
 
-void OffScreenWebContentsView::RenderViewReady() {}
+void OffScreenWebContentsView::RenderViewReady() {
+  if (GetView())
+    GetView()->InstallTransparency();
+}
 
 void OffScreenWebContentsView::RenderViewHostChanged(
     content::RenderViewHost* old_host,

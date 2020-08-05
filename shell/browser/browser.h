@@ -13,7 +13,9 @@
 #include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
+#include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
+#include "gin/dictionary.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/promise.h"
@@ -55,13 +57,13 @@ class Browser : public WindowListObserver {
   void Quit();
 
   // Exit the application immediately and set exit code.
-  void Exit(gin_helper::Arguments* args);
+  void Exit(gin::Arguments* args);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
 
   // Focus the application.
-  void Focus(gin_helper::Arguments* args);
+  void Focus(gin::Arguments* args);
 
   // Returns the version of the executable (or bundle).
   std::string GetVersion() const;
@@ -86,21 +88,41 @@ class Browser : public WindowListObserver {
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                     gin_helper::Arguments* args);
+                                     gin::Arguments* args);
 
   // Set as default handler for a protocol.
   bool SetAsDefaultProtocolClient(const std::string& protocol,
-                                  gin_helper::Arguments* args);
+                                  gin::Arguments* args);
 
   // Query the current state of default handler for a protocol.
   bool IsDefaultProtocolClient(const std::string& protocol,
-                               gin_helper::Arguments* args);
+                               gin::Arguments* args);
 
   base::string16 GetApplicationNameForProtocol(const GURL& url);
+
+#if !defined(OS_LINUX)
+  // get the name, icon and path for an application
+  v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
+                                                       const GURL& url);
+#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(int count);
   int GetBadgeCount();
+
+#if defined(OS_WIN)
+  struct LaunchItem {
+    base::string16 name;
+    base::string16 path;
+    base::string16 scope;
+    std::vector<base::string16> args;
+    bool enabled = true;
+
+    LaunchItem();
+    ~LaunchItem();
+    LaunchItem(const LaunchItem&);
+  };
+#endif
 
   // Set/Get the login item settings of the app
   struct LoginItemSettings {
@@ -111,6 +133,16 @@ class Browser : public WindowListObserver {
     bool opened_as_hidden = false;
     base::string16 path;
     std::vector<base::string16> args;
+
+#if defined(OS_WIN)
+    // used in browser::setLoginItemSettings
+    bool enabled = true;
+    base::string16 name = base::string16();
+
+    // used in browser::getLoginItemSettings
+    bool executable_will_launch_at_login = false;
+    std::vector<LaunchItem> launch_items;
+#endif
 
     LoginItemSettings();
     ~LoginItemSettings();
@@ -132,7 +164,7 @@ class Browser : public WindowListObserver {
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
                        base::DictionaryValue user_info,
-                       gin_helper::Arguments* args);
+                       gin::Arguments* args);
 
   // Returns the type name of the current user activity.
   std::string GetCurrentActivityType();
@@ -301,6 +333,9 @@ class Browser : public WindowListObserver {
 
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
+
+  // Tracks tasks requesting file icons.
+  base::CancelableTaskTracker cancelable_task_tracker_;
 
   // Whether `app.exit()` has been called
   bool is_exiting_ = false;

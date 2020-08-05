@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
+import { ifit, delay } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -836,7 +836,7 @@ describe('Menu module', function () {
       });
     });
 
-    it('prevents menu from getting garbage-collected when popuping', (done) => {
+    it('prevents menu from getting garbage-collected when popuping', async () => {
       const menu = Menu.buildFromTemplate([{ role: 'paste' }]);
       menu.popup({ window: w });
 
@@ -844,21 +844,21 @@ describe('Menu module', function () {
       // eslint-disable-next-line no-undef
       const wr = new (globalThis as any).WeakRef(menu);
 
-      setTimeout(() => {
-        // Do garbage collection, since |menu| is not referenced in this closure
-        // it would be gone after next call.
-        const v8Util = process._linkedBinding('electron_common_v8_util');
-        v8Util.requestGarbageCollectionForTesting();
-        setTimeout(() => {
-          // Try to receive menu from weak reference.
-          if (wr.deref()) {
-            wr.deref().closePopup();
-            done();
-          } else {
-            done('Menu is garbage-collected while popuping');
-          }
-        });
-      });
+      await delay();
+
+      // Do garbage collection, since |menu| is not referenced in this closure
+      // it would be gone after next call.
+      const v8Util = process._linkedBinding('electron_common_v8_util');
+      v8Util.requestGarbageCollectionForTesting();
+
+      await delay();
+
+      // Try to receive menu from weak reference.
+      if (wr.deref()) {
+        wr.deref().closePopup();
+      } else {
+        throw new Error('Menu is garbage-collected while popuping');
+      }
     });
   });
 

@@ -31,7 +31,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 #else
     : View(web_contents->managed_web_contents()->GetView()->GetView()),
 #endif
-      web_contents_(isolate, web_contents->GetWrapper()),
+      web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
 #if !defined(OS_MACOSX)
   // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our

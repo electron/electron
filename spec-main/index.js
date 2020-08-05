@@ -124,4 +124,8 @@ app.whenReady().then(async () => {
   chai.use(require('dirty-chai'));
 
   const runner = mocha.run(cb);
+}).catch((err) => {
+  console.error('An error occurred while running the spec-main spec runner');
+  console.error(err);
+  process.exit(1);
 });

@@ -209,7 +209,7 @@ not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
 const { BrowserWindow, systemPreferences } = require('electron')
-let browserOptions = { width: 1000, height: 800 }
+const browserOptions = { width: 1000, height: 800 }
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
@@ -218,7 +218,7 @@ if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
 }
 
 // Create the window.
-let win = new BrowserWindow(browserOptions)
+const win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {

@@ -2,21 +2,15 @@ import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifdescribe } from './spec-helpers';
-
-const timeout = async (milliseconds: number) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-};
+import { ifdescribe, delay } from './spec-helpers';
 
 // FIXME: The tests are skipped on arm/arm64.
-ifdescribe(!(process.platform === 'linux' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
+ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
   const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
     await app.whenReady();
 
     await contentTracing.startRecording(options);
-    await timeout(recordTimeInMilliseconds);
+    await delay(recordTimeInMilliseconds);
     const resultFilePath = await contentTracing.stopRecording(outputFilePath);
 
     return resultFilePath;

@@ -10,7 +10,7 @@
 
 #include "base/callback.h"
 #include "gin/arguments.h"
-#include "shell/browser/api/electron_api_top_level_window.h"
+#include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -67,7 +67,7 @@ class Menu : public gin::Wrappable<Menu>,
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
-  virtual void PopupAt(TopLevelWindow* window,
+  virtual void PopupAt(BaseWindow* window,
                        int x,
                        int y,
                        int positioning_item,
