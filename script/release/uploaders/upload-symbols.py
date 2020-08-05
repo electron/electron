@@ -2,6 +2,7 @@
 
 import glob
 import os
+import shutil
 import subprocess
 import sys
 
@@ -49,7 +50,18 @@ def main():
 
   # The symbol server needs lowercase paths, it will fail otherwise
   # So lowercase all the file paths here
+  for f in files:
+    lower_f = f.lower()
+    if lower_f != f:
+      if os.path.exists(lower_f):
+        shutil.rmtree(lower_f)
+      lower_dir = os.path.dirname(lower_f)
+      if not os.path.exists(lower_dir):
+        os.makedirs(lower_dir)
+      shutil.copy2(f, lower_f)
   files = [f.lower() for f in files]
+  for f in files:
+    assert os.path.exists(f)
 
   bucket, access_key, secret_key = s3_config()
   upload_symbols(bucket, access_key, secret_key, files)
