@@ -24,6 +24,14 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
 
+bool ElectronDesktopWindowTreeHostWin::ShouldPaintAsActive() const {
+  // Tell Chromium to use system default behavior when rendering inactive
+  // titlebar, otherwise it would render inactive titlebar as active under
+  // some cases.
+  // See also https://github.com/electron/electron/issues/24647.
+  return false;
+}
+
 bool ElectronDesktopWindowTreeHostWin::HasNativeFrame() const {
   // Since we never use chromium's titlebar implementation, we can just say
   // that we use a native titlebar. This will disable the repaint locking when
