@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index bb3479c8a2d9093d6b01650c79d281295d78f41e..18bd69cd68b40f97f2e7e0ea6689ab8d5a18cdda 100644
+index 0ba74f2826bf994b32b48d27f9fbb4bcdcac6a27..dd591bc54686634a13ac4c7b675feb6a3aa2067b 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -504,6 +504,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -21,7 +21,7 @@ index bb3479c8a2d9093d6b01650c79d281295d78f41e..18bd69cd68b40f97f2e7e0ea6689ab8d
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 73ab668888efe828da795dd4640f7cf376017b07..433894584af1c90373bd11e2d5bfa3112d8064ab 100644
+index a66502aebe95f17a7f8b562d0cf4296da77ecb38..a838821ebd19a86c32bcadd2a00000814de56e77 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -61,7 +61,7 @@ index 50601f801e08a90d8556007617a0310bc3bfe2e3..f1f03eb2eb91567cbda2f8b9abe9979e
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index fb55234745342c0586462693c7f43a3004417d9d..fbb8821704d8f32dca92031e88592b429c53437b 100644
+index 7a2caf820cbb97fa55b58c10ada37ea81f158038..c74c3df8bf585f18a3767bc37ae3db84ae1ae293 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1155,6 +1155,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -73,7 +73,7 @@ index fb55234745342c0586462693c7f43a3004417d9d..fbb8821704d8f32dca92031e88592b42
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1613,6 +1615,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1614,6 +1616,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  
@@ -111,7 +111,7 @@ index 2be7d1c89628f19bc13125f57ae56acb502619b4..051da1d40825d6012d271e740bccd672
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index c0323583be7f725ae8212763d0224069e0d20aee..a8e0451a4a9ac9be691286427168a4f722f9bcd1 100644
+index 9ae726b29543a2a6f041c53ebecea0c738e6420a..9511609f61ba3881be702cd8b3307e2efe2acb0e 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3412,6 +3412,13 @@ PageScheduler* WebViewImpl::Scheduler() const {

@@ -92,10 +92,10 @@ index cc6101c82e659bbc5a8568c166d5a56fae0c8d64..8309bb7f3f284b0930c13a7e75a7f9de
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 8d9fcb1a95ac5259faa69d182259f2578c990434..91e611fee28a0338fbab7c9e8425cb569085c4ca 100644
+index e397aed25556a5214164512825ca5dfbfb9a0aa0..37dc1cadea3ca17b1a7716a4ea376f61f9c14a1f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5544,6 +5544,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5547,6 +5547,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

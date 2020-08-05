@@ -78,7 +78,7 @@ index 03fbe0f0645c192dfe4b845171f354fc190ea4da..a7fe894e97243fd7e517c58f5cd9d3eb
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 2b35b9491c65cb2a3c33470ab5829ec4f5079a68..417356e30cbbca219caf1ac6481d827b30b9e980 100644
+index c8db970ae2888484a891a1b8aa312fcdfe995f45..958f55bc117c021d32229463d4a044e14fd7c868 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -714,7 +714,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
@@ -96,7 +96,7 @@ index 2b35b9491c65cb2a3c33470ab5829ec4f5079a68..417356e30cbbca219caf1ac6481d827b
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index d05183a03da0e2f2a849a3335d86d28839b985ab..b3dc1e199af6db4354fb26e91ac5ff4e97e7b417 100644
+index 53ac7550f403357958f9ccf1e65267004bb6be27..fdf5cd9305bd97034355b5ab386cf8a2d98953d8 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -261,6 +261,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
@@ -108,10 +108,10 @@ index d05183a03da0e2f2a849a3335d86d28839b985ab..b3dc1e199af6db4354fb26e91ac5ff4e
          native_module->AddCompiledCode(std::move(result)));
    } else {
 diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
-index 6da473ae5ee4556105aaaa01751ec8edea8f574a..1abc0a9a5038b1c667a01c993250690b18319e38 100644
+index 1fe6cd4b9ed4c4850583cf1b2310a84a38f04c1a..c48c0faef6d4db191c5dcd7efa9dab230241efe3 100644
 --- a/src/wasm/wasm-code-manager.h
 +++ b/src/wasm/wasm-code-manager.h
-@@ -859,7 +859,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+@@ -864,7 +864,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
  //    and even if we did, the resulting set of pages may be fragmented.
  //    Currently, we try and keep the number of syscalls low.
  // -  similar argument for debug time.

@@ -75,10 +75,10 @@ index 0e5d2b6e06d751afae39c161cd64a35ebbba3999..2af7fcb3b4115b6bc1f468e3c6c91b01
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index 0b594d053d7c7f2a8eae9a15e62daacab52ffa64..96210530f699a2331f57415beddc20ed19b9cb4b 100644
+index aa7c3302f2e3fc7129381b355ed4fa1bc386f8cb..d7dd05118f3c90f5ab570f59685c43bd180885e5 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -67,6 +67,8 @@ std::map<std::string, std::string> GetProcessSimpleAnnotations() {
+@@ -71,6 +71,8 @@ std::map<std::string, std::string> GetProcessSimpleAnnotations() {
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -87,7 +87,7 @@ index 0b594d053d7c7f2a8eae9a15e62daacab52ffa64..96210530f699a2331f57415beddc20ed
    return annotations;
  }
  
-@@ -137,6 +139,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -141,6 +143,13 @@ base::FilePath PlatformCrashpadInitialization(
  
        std::vector<std::string> arguments;
  

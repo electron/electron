@@ -42,7 +42,7 @@ index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 519c5fd52451e3aefda4a4f149ca0557a5bb2b09..2bc0fabab13733f1d9ec7ed9281c0c145360654a 100644
+index eabb4ce64b3e7d8375ddc26385ec673b8f743769..87917bc9f736006340df310e1ffaadae912bc1aa 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1462,6 +1462,21 @@ void NavigationRequest::BeginNavigation() {
@@ -106,10 +106,10 @@ index 861187345ef4c3749bf1d685ecfb84a23c51bfc7..526c91ff35f3740420bebcae5c2aacaa
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 2feb42eb8bf5fb1036872b64ad76145e30221a7a..210884c25377a55df83e3150feda27355044cfa1 100644
+index 7016b591ff0fba926dfcc6e82fe53a9f37a1d39a..6a5db5c815cb3265b5359e680d32a76cb0d7e743 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2351,6 +2351,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2354,6 +2354,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -126,7 +126,7 @@ index 2feb42eb8bf5fb1036872b64ad76145e30221a7a..210884c25377a55df83e3150feda2735
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2370,10 +2380,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2373,10 +2383,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index 2feb42eb8bf5fb1036872b64ad76145e30221a7a..210884c25377a55df83e3150feda2735
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2399,6 +2459,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2402,6 +2462,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  

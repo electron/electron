@@ -12,7 +12,7 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side.
 
 diff --git a/include/v8.h b/include/v8.h
-index 38ce4f1235b4446d71f2258a3dc98dc63ddbe1b2..62338341e528920189228cbf60824fbfeae4bea9 100644
+index f0f6472ba38595a08e98a345723f4fc80928948f..1343788434a4e735088219ec3808fd2ea5122996 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -5097,6 +5097,13 @@ class V8_EXPORT ArrayBuffer : public Object {
