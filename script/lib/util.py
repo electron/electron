@@ -30,8 +30,7 @@ ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 )
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
-BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
-                                        'boto'))
+BOTO_DIR = os.path.join(ELECTRON_DIR, 'vendor', 'boto')
 
 NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
@@ -205,27 +204,18 @@ def boto_path_dirs():
     os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')
   ]
 
-
-def run_boto_script(access_key, secret_key, script_name, *args):
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   env = os.environ.copy()
   env['AWS_ACCESS_KEY_ID'] = access_key
   env['AWS_SECRET_ACCESS_KEY'] = secret_key
-  env['PYTHONPATH'] = os.path.pathsep.join(
-      [env.get('PYTHONPATH', '')] + boto_path_dirs())
-
-  boto = os.path.join(BOTO_DIR, 'bin', script_name)
-  execute([sys.executable, boto] + list(args), env)
-
-
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
-  args = [
+  execute([
+    'node',
+    os.path.join(os.path.dirname(__file__), 's3put.js'),
     '--bucket', bucket,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
-    '--grant', 'public-read'
-  ] + files
-
-  run_boto_script(access_key, secret_key, 's3put', *args)
+    '--grant', 'public-read',
+  ] + files)
 
 
 def add_exec_bit(filename):
