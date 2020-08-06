@@ -200,11 +200,11 @@ bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   return http_method == "GET";
 }
 
-void ElectronRendererClient::DidInitializeWorkerContextOnWorkerThread(
+void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
-    WebWorkerObserver::GetCurrent()->ContextCreated(context);
+    WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
   }
 }
 
