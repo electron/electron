@@ -37,4 +37,3 @@ index 09fa9f2cf47d50d369fa3eae378f81767486e83e..e6a37dcd22c51b37838a577be44be198
      return fileURLOrPath;
    return fileURLToPath(fileURLOrPath);
  }
-
