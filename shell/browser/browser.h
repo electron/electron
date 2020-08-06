@@ -106,7 +106,7 @@ class Browser : public WindowListObserver {
                                                        const GURL& url);
   v8::Local<v8::Promise> CreateThumbnailFromPath(v8::Isolate* isolate,
                                                  const base::FilePath& path,
-                                                 int size);
+                                                 const gfx::Size& size);
 #endif
 
   // Set/Get the badge count.
