@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 8309bb7f3f284b0930c13a7e75a7f9de64fedb73..7c5c925cadc5caca5ef69eda80ccc04797b2c803 100644
+index a94b2b289eb1b5da820dd3bf620911f2edef7c68..e11d29b43553574425c524e722f31bb8c2996fcb 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -405,6 +405,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -385,6 +385,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -65,10 +65,10 @@ index 236894dc0dd7242c1f47caeb982c4f24b784ce95..35f229faa607bc3f06c524619e385d9a
    bool IsExcludedHeaderForServiceWorkerFetchEvent(
        const blink::WebString& header_name) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 754634fd4935cdf38168361f1491cf3aedaf8cdb..513cdea72aba0082d43268bdbfc5328fb21afb76 100644
+index 3edcb4715c2dd8b2cf33f093710f14816b061117..79336bcad4d18e617677b2fb80d898680618e03b 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -638,6 +638,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -615,6 +615,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -78,7 +78,7 @@ index 754634fd4935cdf38168361f1491cf3aedaf8cdb..513cdea72aba0082d43268bdbfc5328f
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 83db0d2cba80184ecea9314b5869f836c0e3ea20..d8586cc276f6872d41e5bb29288690f4cac37a89 100644
+index 83db0d2cba80184ecea9314b5869f836c0e3ea20..a25e2631bfd23bf1c212943d05b5f93a1c0201ed 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 @@ -323,6 +323,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
