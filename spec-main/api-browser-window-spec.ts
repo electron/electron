@@ -4292,15 +4292,16 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform === 'win32')('window message hooks', () => {
     afterEach(closeAllWindows);
 
-    const WM_GETICON = 0x7f;
+    const WM_ACTIVATEAPP = 0x1C;
 
     it('can hook a window message with hookWindowMessage', async () => {
       const w = new BrowserWindow({ show: true, width: 256, height: 256 });
       const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
-        w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
+        w.hookWindowMessage(WM_ACTIVATEAPP, (wparam: Buffer, lparam: Buffer) => {
           resolve([wparam, lparam]);
         });
       });
+      w.minimize();
       const [wparam, lparam] = await messageReceived;
       expect(wparam).to.be.an.instanceOf(Buffer);
       expect(lparam).to.be.an.instanceOf(Buffer);
@@ -4311,24 +4312,22 @@ describe('BrowserWindow module', () => {
       let timesCalled = 0;
       {
         const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
-          w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
+          w.hookWindowMessage(WM_ACTIVATEAPP, (wparam: Buffer, lparam: Buffer) => {
             timesCalled++;
             resolve([wparam, lparam]);
           });
         });
+        w.blur();
         await messageReceived;
         expect(timesCalled).to.equal(1);
       }
-      console.log('before hide/show');
-      w.hide();
-      w.show();
-      console.log('after hide/show');
-      await delay(100);
-      console.log('after delay');
+      const p = emittedOnce(w, 'focus');
+      w.focus();
+      await p;
       expect(timesCalled).to.equal(2);
-      w.unhookWindowMessage(WM_GETICON);
-      w.hide();
-      w.show();
+      w.unhookWindowMessage(WM_ACTIVATEAPP);
+      w.blur();
+      w.focus();
       expect(timesCalled).to.equal(2);
     });
 
@@ -4337,24 +4336,22 @@ describe('BrowserWindow module', () => {
       let timesCalled = 0;
       {
         const messageReceived = new Promise<[Buffer, Buffer]>((resolve) => {
-          w.hookWindowMessage(WM_GETICON, (wparam: Buffer, lparam: Buffer) => {
+          w.hookWindowMessage(WM_ACTIVATEAPP, (wparam: Buffer, lparam: Buffer) => {
             timesCalled++;
             resolve([wparam, lparam]);
           });
         });
+        w.minimize();
         await messageReceived;
         expect(timesCalled).to.equal(1);
       }
-      console.log('before hide/show');
-      w.hide();
-      w.show();
-      console.log('after hide/show');
-      await delay(100);
-      console.log('after delay');
+      const p = emittedOnce(w, 'restore');
+      w.restore();
+      await p;
       expect(timesCalled).to.equal(2);
       w.unhookAllWindowMessages();
-      w.hide();
-      w.show();
+      w.minimize();
+      w.restore();
       expect(timesCalled).to.equal(2);
     });
   });

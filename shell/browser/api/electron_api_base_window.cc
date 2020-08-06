@@ -296,7 +296,6 @@ void BaseWindow::OnNewWindowForTab() {
 
 #if defined(OS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
-  LOG(INFO) << "GOT MESSAGE " << (int)message;
   if (IsWindowMessageHooked(message)) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::Locker locker(isolate);
