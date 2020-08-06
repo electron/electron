@@ -546,7 +546,7 @@ describe('app module', () => {
       });
     });
 
-    it('should emit failed-to-register-for-remote-notifications event when app.registerForRemoteNotifications() is invoked and APNS registration fails', async function() {
+    it('should emit failed-to-register-for-remote-notifications event when app.registerForRemoteNotifications() is invoked and APNS registration fails', async function () {
       if (process.platform !== 'darwin') {
         this.skip();
       }

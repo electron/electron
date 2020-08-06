@@ -19,10 +19,6 @@ NSArray* ListValueToNSArray(const base::ListValue& value);
 base::ListValue NSArrayToListValue(NSArray* arr);
 NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value);
 base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict);
-
-std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
-    NSDictionary* dict);
-
 NSDictionary* UNNotificationResponseToNSDictionary(
     UNNotificationResponse* response) API_AVAILABLE(macosx(10.14));
 
