@@ -4,7 +4,7 @@
   "main": "static/main.js",
   "version": "0.1.0",
   "scripts": {
-    "postinstall": "node ../tools/run-if-exists.js node_modules/robotjs node-gyp rebuild"
+    "postinstall": "node ../script/run-if-exists.js node_modules/robotjs node-gyp rebuild"
   },
   "devDependencies": {
     "basic-auth": "^2.0.1",

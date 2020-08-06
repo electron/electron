@@ -170,7 +170,7 @@ action("electron_js2c") {
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
-  script = "tools/js2c.py"
+  script = "build/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
          rebase_path(outputs, root_build_dir) +
          rebase_path(sources, root_build_dir)
