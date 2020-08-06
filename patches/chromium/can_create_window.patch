@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 116b5c8f5386829d82ae79fd2db252d3a67ca66e..2c1262b92f620d4cc451a9d966101638f9877d71 100644
+index 4fcc39a319135cf656a118db3c42a0be58995457..52434f9803fe881f334369d31dc05423ee988da7 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4727,6 +4727,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 116b5c8f5386829d82ae79fd2db252d3a67ca66e..2c1262b92f620d4cc451a9d966101638
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1cf8510a842c966a18592cd5ab5b3d1086e7f88b..a8f98d4ae29260727ee39e9723f9bb6af4018348 100644
+index a2ebb0d6bb50accda34845cbb1186cbb02733209..d038f13b43f97bef7b72112d0905b632c82b963c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3368,9 +3368,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -38,10 +38,10 @@ index 1cf8510a842c966a18592cd5ab5b3d1086e7f88b..a8f98d4ae29260727ee39e9723f9bb6a
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index a3eb0274ba76a614117c2b2f60d10c6ada597f37..4477e9c0f8d7c56606bf5fe7e858a2bf8352e7b0 100644
+index c969ed9b17b915f713d9b82114c7b637c8fd90df..9530a1936b0a801a4c6152dd53ec5105d5d712e0 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -284,6 +284,10 @@ struct CreateNewWindowParams {
+@@ -264,6 +264,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -135,7 +135,7 @@ index 61ed37a5868fd53f669d40c62542d6271daea91d..c1d7b01d0d63f9f1ba90a32511f69318
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index b76e278330b364c60fb70018194d8b647fb01039..7a2caf820cbb97fa55b58c10ada37ea81f158038 100644
+index b34393f42c6c2ba5b39d72d6a40219071bd61ff4..03fc999b46164b44a17537cc574afbeb712abfb0 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -67,6 +67,7 @@
@@ -146,7 +146,7 @@ index b76e278330b364c60fb70018194d8b647fb01039..7a2caf820cbb97fa55b58c10ada37ea8
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1218,6 +1219,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1215,6 +1216,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  

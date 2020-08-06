@@ -39,11 +39,11 @@ index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 77724df403e7ec9f1995e62b8737cb1d46ce20b1..244412c9a52ba701b161d1391e5f3cfb73307afc 100644
+index 211ea701aba4935ed5641914493fd90e277f18f5..7c2ae147254dad017214d2535203a18719294768 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -672,6 +672,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
-         size, ArrayBufferContents::kDontInitialize);
+@@ -689,6 +689,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+     return result;
    }
  
 +  void* Realloc(void* data, size_t size) override {
@@ -51,8 +51,8 @@ index 77724df403e7ec9f1995e62b8737cb1d46ce20b1..244412c9a52ba701b161d1391e5f3cfb
 +  }
 +
    void Free(void* data, size_t size) override {
-     ArrayBufferContents::FreeMemory(data);
-   }
+     if (max_allocation_ != 0 && data)
+       total_allocation_.fetch_sub(size, std::memory_order_relaxed);
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 index 686806bcafa0939d29bbc6775748a115130feb96..20f7a9a594cf379b2dac6970bc8c02aebc3be360 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc

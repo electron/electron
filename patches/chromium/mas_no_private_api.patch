@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa0481551d 100644
+index d4ff1fc077b86eecdcb8862af2537d4a0dd97be4..d2af8db6df75940bfc3b01b5361b91d7d5b5a225 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -341,11 +341,13 @@ AccessibilityTreeFormatterMac::ParamByPropertyNode(
+@@ -342,11 +342,13 @@ AccessibilityTreeFormatterMac::ParamByPropertyNode(
      param = PropertyNodeToRange(property_node);
    } else if (property_name == "AXIndexForChildUIElement") {  // UIElement
      param = PropertyNodeToUIElement(property_node, line_indexes_map);
@@ -24,7 +24,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
    }
  
    return param;
-@@ -433,6 +435,7 @@ AccessibilityTreeFormatterMac::PropertyNodeToUIElement(
+@@ -434,6 +436,7 @@ AccessibilityTreeFormatterMac::PropertyNodeToUIElement(
    return uielement;
  }
  
@@ -32,7 +32,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
  id AccessibilityTreeFormatterMac::DictNodeToTextMarker(
      const PropertyNode& dictnode,
      const LineIndexesMap& line_indexes_map) const {
-@@ -512,6 +515,7 @@ id AccessibilityTreeFormatterMac::PropertyNodeToTextMarkerRange(
+@@ -513,6 +516,7 @@ id AccessibilityTreeFormatterMac::PropertyNodeToTextMarkerRange(
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
@@ -40,7 +40,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
  
  base::Value AccessibilityTreeFormatterMac::PopulateSize(
      const BrowserAccessibilityCocoa* cocoa_node) const {
-@@ -573,7 +577,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -574,7 +578,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -49,7 +49,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -584,7 +588,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
+@@ -585,7 +589,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateObject(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexes_map);
    }
@@ -58,7 +58,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -635,7 +639,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
+@@ -636,7 +640,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextPosition(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -67,7 +67,7 @@ index 6074fd6fb7da7c0e927fa81e8095729349520417..d6e93ab7cea23fe9592110967a1c9cfa
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexesMap& line_indexes_map) const {
-@@ -650,7 +654,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
+@@ -651,7 +655,7 @@ base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
    return dict;
  }
