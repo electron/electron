@@ -23,6 +23,7 @@ type CrashInfo = {
   _productName: string
   _version: string
   upload_file_minidump: Buffer // eslint-disable-line camelcase
+  guid: string
   mainProcessSpecific: 'mps' | undefined
   rendererSpecific: 'rs' | undefined
   globalParam: 'globalValue' | undefined
@@ -172,6 +173,35 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       checkCrash('node', crash);
       expect(crash.mainProcessSpecific).to.be.undefined();
       expect(crash.rendererSpecific).to.be.undefined();
+    });
+
+    describe('with guid', () => {
+      for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
+        it(`when ${processType} crashes`, async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp(processType, port);
+          const crash = await waitForCrash();
+          expect(crash.guid).to.be.a('string');
+        });
+      }
+
+      it('is a consistent id', async () => {
+        let crash1Guid;
+        let crash2Guid;
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash1Guid = crash.guid;
+        }
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash2Guid = crash.guid;
+        }
+        expect(crash2Guid).to.equal(crash1Guid);
+      });
     });
 
     describe('with extra parameters', () => {
