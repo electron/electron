@@ -1,6 +1,6 @@
 # Boilerplates and CLIs
 
-Electron development is unopinionated - there is no "one true way" to develop,
+Electron development is unopinionated. There is no “one true way” to develop,
 build, package, or release an Electron application. Additional features for
 Electron, both for build- and run-time, can usually be found on
 [npm](https://www.npmjs.com/search?q=electron) in individual packages, allowing developers to build both
@@ -15,14 +15,15 @@ app.
 
 ## Boilerplate vs CLI
 
-A boilerplate is only a starting point - a canvas, so to speak - from which
+A **boilerplate** is only a starting point—a canvas, so to speak—from which
 you build your application. They usually come in the form of a repository you
 can clone and customize to your heart's content.
 
-A command line tool on the other hand continues to support you throughout the
+A **command line tool**, on the other hand, continues to support you throughout the
 development and release. They are more helpful and supportive but enforce
-guidelines on how your code should be structured and built. *Especially for
-beginners, using a command line tool is likely to be helpful*.
+guidelines on how your code should be structured and built. 
+
+*Especially for beginners, using a command line tool is likely to be helpful.*
 
 ## electron-forge
 
@@ -31,11 +32,11 @@ unifies the existing (and well maintained) build tools for Electron development
 into a cohesive package so that anyone can jump right in to Electron
 development.
 
-Forge comes with [a ready-to-use template](https://electronforge.io/templates) using Webpack as a bundler. It includes an example typescript configuration and provides two configuration files to enable easy customization. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager)) – 
+Forge comes with [a ready-to-use template](https://electronforge.io/templates) using Webpack as a bundler. It includes an example TypeScript configuration and provides two configuration files to enable easy customization. It uses the same core modules used by the
+greater Electron community (like [`electron-packager`](https://github.com/electron/electron-packager))—
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
-You can find more information and documentation on [electronforge.io](https://electronforge.io/).
+You can find more information and documentation on [electronforge.io](https://electronforge.io).
 
 ## electron-builder
 
