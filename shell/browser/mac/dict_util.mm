@@ -111,9 +111,9 @@ NSDictionary* UNNotificationResponseToNSDictionary(
   }
 
   NSMutableDictionary* notification_response_dictionary =
-    [NSMutableDictionary new];
+      [NSMutableDictionary new];
   notification_response_dictionary[@"actionIdentifier"] =
-    [response actionIdentifier];
+      [response actionIdentifier];
 
   UNNotification* notification = [response notification];
   if (notification) {
@@ -132,7 +132,7 @@ NSDictionary* UNNotificationResponseToNSDictionary(
 
   if ([response isKindOfClass:[UNTextInputNotificationResponse class]]) {
     notification_response_dictionary[@"userTextInput"] =
-      [(UNTextInputNotificationResponse *)response userText];
+        [static_cast<UNTextInputNotificationResponse*>(response) userText];
   }
 
   return notification_response_dictionary;
