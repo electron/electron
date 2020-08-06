@@ -699,7 +699,7 @@ See: https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428
 
 Returns:
 
-* `user_info` Object
+* `userInfo` Record<String, any>
 
 Emitted when the app receives a remote notification while running.
 See: https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428430-application?language=objc
