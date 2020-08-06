@@ -14,10 +14,10 @@ in all URL instances as specified in the WHATWG spec.
 Upstreamed at: https://github.com/nodejs/node/pull/34622.
 
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 09fa9f2cf47d50d369fa3eae378f81767486e83e..e6a37dcd22c51b37838a577be44be198649eabad 100644
+index 860fa4d7ad01b391d7d8e4c5ffe432d4d1d5983e..7d557a51930b7f225d128425fcc9db959c13392c 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1348,8 +1348,7 @@ function getPathFromURLPosix(url) {
+@@ -1334,8 +1334,7 @@ function getPathFromURLPosix(url) {
  function fileURLToPath(path) {
    if (typeof path === 'string')
      path = new URL(path);
@@ -27,7 +27,7 @@ index 09fa9f2cf47d50d369fa3eae378f81767486e83e..e6a37dcd22c51b37838a577be44be198
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
    if (path.protocol !== 'file:')
      throw new ERR_INVALID_URL_SCHEME('file');
-@@ -1397,8 +1396,7 @@ function pathToFileURL(filepath) {
+@@ -1383,8 +1382,7 @@ function pathToFileURL(filepath) {
  }
 
  function toPathIfFileURL(fileURLOrPath) {
