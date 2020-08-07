@@ -40,7 +40,11 @@
 #endif
 
 #if defined(OS_LINUX)
+#include "base/containers/span.h"
+#include "base/files/file_util.h"
+#include "base/guid.h"
 #include "components/crash/core/app/breakpad_linux.h"
+#include "components/crash/core/common/crash_keys.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
@@ -81,6 +85,40 @@ bool IsCrashReporterEnabled() {
 const std::map<std::string, std::string>& GetGlobalCrashKeys() {
   return GetGlobalCrashKeysMutable();
 }
+
+base::FilePath GetClientIdPath() {
+  base::FilePath path;
+  base::PathService::Get(electron::DIR_CRASH_DUMPS, &path);
+  return path.Append("client_id");
+}
+
+std::string ReadClientId() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  std::string client_id;
+  // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
+  if (!base::ReadFileToStringWithMaxSize(GetClientIdPath(), &client_id, 36) ||
+      client_id.size() != 36)
+    return std::string();
+  return client_id;
+}
+
+void WriteClientId(const std::string& client_id) {
+  DCHECK_EQ(client_id.size(), 36u);
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::WriteFile(GetClientIdPath(), client_id);
+}
+
+std::string GetClientId() {
+  static base::NoDestructor<std::string> client_id;
+  if (!client_id->empty())
+    return *client_id;
+  *client_id = ReadClientId();
+  if (client_id->empty()) {
+    *client_id = base::GenerateGUID();
+    WriteClientId(*client_id);
+  }
+  return *client_id;
+}
 #endif
 
 void Start(const std::string& submit_url,
@@ -107,6 +145,7 @@ void Start(const std::string& submit_url,
           ? "node"
           : command_line->GetSwitchValueASCII(::switches::kProcessType);
 #if defined(OS_LINUX)
+  ::crash_keys::SetMetricsClientIdFromGUID(GetClientId());
   auto& global_crash_keys = GetGlobalCrashKeysMutable();
   for (const auto& pair : global_extra) {
     global_crash_keys[pair.first] = pair.second;

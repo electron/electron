@@ -722,8 +722,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   bool enable_crash_reporter = false;
   enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   if (enable_crash_reporter) {
-    command_line->AppendSwitch(::switches::kEnableCrashReporter);
-    std::string switch_value;
+    std::string switch_value =
+        api::crash_reporter::GetClientId() + ",no_channel";
+    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
+                                    switch_value);
     for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
       if (!switch_value.empty())
         switch_value += ",";
