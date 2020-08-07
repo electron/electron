@@ -9,7 +9,7 @@ diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/br
 index d34b836b842cb5c82f79bf2aa9d8334077422cbf..c56d26581500de448ded221a7b872b1d7d365aac 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -511,6 +511,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -511,6 +511,10 @@
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -24,7 +24,7 @@ diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/bro
 index e00204b089349c6356acaac6a8918c8b74936486..b77b8028772f9e1afdc62606094defbe40074fbe 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -110,6 +110,7 @@
    SiteInstanceImpl* GetSiteInstance() override;
    bool IsRenderViewLive() override;
    void NotifyMoveOrResizeStarted() override;
@@ -36,7 +36,7 @@ diff --git a/content/common/view_messages.h b/content/common/view_messages.h
 index 19fa7ac26926231b01fe19f7adf62dd0e08edb1b..d4d3b97811a656d40884d7e4b872fdf72dfb11fa 100644
 --- a/content/common/view_messages.h
 +++ b/content/common/view_messages.h
-@@ -94,6 +94,9 @@ IPC_STRUCT_TRAITS_END()
+@@ -94,6 +94,9 @@
  
  // Messages sent from the browser to the renderer.
  
@@ -50,7 +50,7 @@ diff --git a/content/public/browser/render_view_host.h b/content/public/browser/
 index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f806da68f0 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -96,6 +96,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
+@@ -96,6 +96,9 @@
    // started.
    virtual void NotifyMoveOrResizeStarted() = 0;
  
@@ -64,7 +64,7 @@ diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view
 index d9792ba47cf8621549676564ef4c162b0714d45d..d57a8432e8638036f309f317e6f857757ed54549 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1165,6 +1165,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -1165,6 +1165,8 @@
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -90,7 +90,7 @@ diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_
 index 8f81196e2f173fc5d055122ae510c236628cd6b5..f49baf8aad5ffc020f456cdc4c05d983066f32f3 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -391,6 +391,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -391,6 +391,7 @@
    void OnSetHistoryOffsetAndLength(int history_offset, int history_length);
    void OnSetRendererPrefs(
        const blink::mojom::RendererPreferences& renderer_prefs);
@@ -102,7 +102,7 @@ diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/
 index b5562d3ea4cec46f2a763caab823db3160331084..e88ae7c76397f51d07ccdb680ce2344a61c9aa38 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -388,6 +388,7 @@ class WebView {
+@@ -388,6 +388,7 @@
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -114,7 +114,7 @@ diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_p
 index fc961dd8c7e5285dc04c5e8e5f6f8eeecb49b50b..7ae0213d684f950a3f123ab3dff7343a675babf9 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3369,6 +3369,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3369,6 +3369,13 @@
    return GetPage()->GetPageScheduler();
  }
  
@@ -142,7 +142,7 @@ diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_pa
 index 395899d96358e2af8f7c6ca7f44ae1ec38bbe0ed..aee2b40effb2050f309e09642edf56e44859e714 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -329,6 +329,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -329,6 +329,7 @@
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;

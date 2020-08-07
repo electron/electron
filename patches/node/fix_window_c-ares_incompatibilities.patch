@@ -11,7 +11,7 @@ diff --git a/deps/cares/src/ares_getaddrinfo.c b/deps/cares/src/ares_getaddrinfo
 index 8265e4afc20f6043260efe003c3c890db4fa8b73..11e565aa2e9c8a1ee1f86c153ee6371568cc9bb4 100644
 --- a/deps/cares/src/ares_getaddrinfo.c
 +++ b/deps/cares/src/ares_getaddrinfo.c
-@@ -456,18 +456,18 @@ static int file_lookup(struct host_query *hquery)
+@@ -456,18 +456,18 @@
            char tmp[MAX_PATH];
            HKEY hkeyHosts;
  

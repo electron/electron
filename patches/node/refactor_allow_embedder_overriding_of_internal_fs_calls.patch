@@ -10,7 +10,7 @@ diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
 index c872941b974216d94863bcbf0e597b9c09ca50e2..4e7c3c10255a0eae4d5333f88e51cf7178163a44 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -57,6 +57,10 @@ setupBuffer();
+@@ -57,6 +57,10 @@
  process.domain = null;
  process._exiting = false;
  
@@ -25,7 +25,7 @@ diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loade
 index 0ef46569924354ea3ef59f3220637e30b316a761..7d08fb05e9a0abeb82d416891968b23002dc3685 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -55,7 +55,7 @@ const assert = require('internal/assert');
+@@ -55,7 +55,7 @@
  const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');

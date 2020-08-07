@@ -12,7 +12,7 @@ diff --git a/buildtools/ensure_gn_version.py b/buildtools/ensure_gn_version.py
 index cfc75a37792a93f209a0e7543d577a18d004a615..dd8c3468a914f44050b19002cb2c2df312038398 100755
 --- a/buildtools/ensure_gn_version.py
 +++ b/buildtools/ensure_gn_version.py
-@@ -45,6 +45,11 @@ def ChmodGnFile(path_to_exe):
+@@ -45,6 +45,11 @@
             stat.S_IROTH | stat.S_IXOTH)
  
  def main():

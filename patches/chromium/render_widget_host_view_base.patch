@@ -9,7 +9,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/con
 index 4482c6df317c30249e2908ed5c4fce85be92db92..b5c5dbd3f09a63f5b98a807f17479cb1250ed5e2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -624,6 +624,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -624,6 +624,13 @@
    return false;
  }
  

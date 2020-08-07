@@ -9,7 +9,7 @@ diff --git a/test/parallel/test-buffer-alloc.js b/test/parallel/test-buffer-allo
 index 070a3803802e56ec7736791559ec7d7204625754..9f626c0683ae74ae984496c77d0b73c9b4c7b872 100644
 --- a/test/parallel/test-buffer-alloc.js
 +++ b/test/parallel/test-buffer-alloc.js
-@@ -8,8 +8,8 @@ const SlowBuffer = require('buffer').SlowBuffer;
+@@ -8,8 +8,8 @@
  // Verify the maximum Uint8Array size. There is no concrete limit by spec. The
  // internal limits should be updated if this fails.
  assert.throws(
@@ -24,7 +24,7 @@ diff --git a/test/parallel/test-buffer-over-max-length.js b/test/parallel/test-b
 index b04f89aae0344c008dff4c737aac96f53d6f7e17..ddbd93ddb088deb53304cb06d8fcdc59214dbc31 100644
 --- a/test/parallel/test-buffer-over-max-length.js
 +++ b/test/parallel/test-buffer-over-max-length.js
-@@ -12,11 +12,11 @@ const bufferMaxSizeMsg = {
+@@ -12,11 +12,11 @@
    message: /^The value "[^"]*" is invalid for option "size"$/
  };
  

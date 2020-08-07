@@ -23,7 +23,7 @@ diff --git a/ui/gfx/x/x11_error_tracker.cc b/ui/gfx/x/x11_error_tracker.cc
 index 6592ae0483884815697358040123eed5ee657816..d6862673c0b5a61db550c084291787ad1549db69 100644
 --- a/ui/gfx/x/x11_error_tracker.cc
 +++ b/ui/gfx/x/x11_error_tracker.cc
-@@ -24,7 +24,7 @@ namespace gfx {
+@@ -24,7 +24,7 @@
  X11ErrorTracker::X11ErrorTracker() {
    // This is a non-exhaustive check for incorrect usage. It disallows nested
    // X11ErrorTracker instances on the same thread.

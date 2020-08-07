@@ -12,7 +12,7 @@ diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core
 index d2ca4a9056e56c1e3e38a5aeaf97daa3a731de3c..a3599b4403b7be33cb4aa300746c3ade962627de 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -111,6 +111,7 @@ void SetUploadURL(const std::string& url) {
+@@ -111,6 +111,7 @@
  }
  #endif
  
@@ -24,7 +24,7 @@ diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/cra
 index 44e81b2f95f6332df16cfa00bdd26c7abbc733dc..9b3db694b920048735789d4db0f8670addd22b40 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -148,6 +148,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -148,6 +148,17 @@
    return false;
  }
  
@@ -78,7 +78,7 @@ diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/a
 index 0b594d053d7c7f2a8eae9a15e62daacab52ffa64..96210530f699a2331f57415beddc20ed19b9cb4b 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -67,6 +67,8 @@ std::map<std::string, std::string> GetProcessSimpleAnnotations() {
+@@ -67,6 +67,8 @@
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -105,7 +105,7 @@ diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/a
 index c199b467ffeb007f3098ccde6879fbd71e9ec9fd..a2007514e799b77fa15cbc178d38594e4d847caa 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -84,6 +84,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -84,6 +84,7 @@
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);

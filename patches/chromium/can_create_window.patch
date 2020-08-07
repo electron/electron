@@ -12,7 +12,7 @@ diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/brow
 index 1483547eff57f9d3ee6e1874ac733f88a0c5093b..ccb2a4790d2a8b709011529ecd5fda1ba0e0ab22 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4661,6 +4661,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4661,6 +4661,7 @@
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -24,7 +24,7 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index 3d2866b5748e74e8e99dc37352ba7534c816b29b..502893ba5219f64ed9c84f83c40b28188966d2a0 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3089,9 +3089,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3089,9 +3089,9 @@
    }
  
    if (delegate_) {
@@ -41,7 +41,7 @@ diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index eff5643a896cfb16fce10306ec4a40dd89ccce71..e5c32de563f673aa4da61c93292a767fce3cfe57 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -283,6 +283,10 @@ struct CreateNewWindowParams {
+@@ -283,6 +283,10 @@
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -56,7 +56,7 @@ diff --git a/content/public/browser/content_browser_client.cc b/content/public/b
 index 762329d64784898db41d167cd8d4865bfff02830..2e1b2be0a96ef14e0d5d0cec0ce114ad97b4bf37 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -531,6 +531,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -531,6 +531,8 @@
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -69,7 +69,7 @@ diff --git a/content/public/browser/content_browser_client.h b/content/public/br
 index f800969fb25cac51a7f6732e37d3d1cecf906557..f2b64eb90f80c94a9b8a7374b5733a609446346b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -147,6 +147,7 @@ class NetworkService;
+@@ -147,6 +147,7 @@
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -90,7 +90,7 @@ diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/br
 index b30f242d2b61b10f68f016bc1e93419b520d3b06..bfbad0007797d9c3fff78fae121aa2546b22eb95 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -26,6 +26,17 @@ namespace content {
+@@ -26,6 +26,17 @@
  
  WebContentsDelegate::WebContentsDelegate() = default;
  
@@ -161,7 +161,7 @@ diff --git a/content/shell/browser/web_test/web_test_content_browser_client.cc b
 index 955bec3a920365a6c0d682b9ac4935cd8d242f5f..16956bed44b7e211b2b464bd136c950609129980 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.cc
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.cc
-@@ -365,6 +365,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -365,6 +365,8 @@
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -174,7 +174,7 @@ diff --git a/content/shell/browser/web_test/web_test_content_browser_client.h b/
 index 150d1a8808d326d4ca9d445fa92ec08c95e02b62..5c837fcbe7ee66d6f500e4453fe56ca7b32394cf 100644
 --- a/content/shell/browser/web_test/web_test_content_browser_client.h
 +++ b/content/shell/browser/web_test/web_test_content_browser_client.h
-@@ -76,6 +76,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
+@@ -76,6 +76,8 @@
                         const std::string& frame_name,
                         WindowOpenDisposition disposition,
                         const blink::mojom::WindowFeatures& features,
@@ -209,7 +209,7 @@ diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_p
 index d0e5c20a2a1e5807a645488cc4832e02b3f2a5ad..a8a7cef09e81a19906558a0243efa9d3a8498f3c 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1976,6 +1976,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1976,6 +1976,7 @@
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);

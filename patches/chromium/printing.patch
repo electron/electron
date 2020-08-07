@@ -14,7 +14,7 @@ diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/prin
 index 668a14bff461e83b2c6d9d7f23d9674ff081ef12..674f141e80c0316fd47558c4d428a9706ac5a7b6 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -353,12 +353,14 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -353,12 +353,14 @@
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because |web_contents| was null. As a result, this section has many more
    // pointer checks to avoid crashing.
@@ -282,7 +282,7 @@ diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/
 index 94b65e85561e1440b60086b668865bda07303d35..7044463d163fd74e55ff1a042c36739fdeff3689 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -33,6 +33,8 @@ class PrintJob;
+@@ -33,6 +33,8 @@
  class PrintQueriesQueue;
  class PrinterQuery;
  
@@ -410,7 +410,7 @@ diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/
 index 9fbea6d0a2dbe55b1d600fbc217dee5aa8ae8cd5..de9bd267e408c02fd4da7d903523c0e6305088d5 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
-@@ -24,6 +24,10 @@ struct PrintHostMsg_ScriptedPrint_Params;
+@@ -24,6 +24,10 @@
  struct PrintMsg_Print_Params;
  class Profile;
  
@@ -435,7 +435,7 @@ diff --git a/components/printing/common/print.mojom b/components/printing/common
 index 8159a61d2707082461a419a344487bbd460a1d29..d5ef9c6a7064885deb7d27518448cc67b21f0b4a 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -121,7 +121,7 @@ interface PrintPreviewUI {
+@@ -121,7 +121,7 @@
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -597,7 +597,7 @@ diff --git a/components/printing/renderer/print_render_frame_helper.h b/componen
 index dbf78f87024a2200154f7811e07466072508eff0..9f7b5f9f013bc59dd3dbcccab5bda1d5e30baf6d 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -225,7 +225,7 @@ class PrintRenderFrameHelper
+@@ -225,7 +225,7 @@
        mojo::PendingAssociatedReceiver<mojom::PrintRenderFrame> receiver);
  
    // printing::mojom::PrintRenderFrame:
@@ -638,7 +638,7 @@ diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index ad26397af46f024a81902949e1c7d627922ff492..e23abbac0014eac5fa0042111b920a1dec4723f8 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -94,8 +94,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -94,8 +94,6 @@
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
@@ -651,7 +651,7 @@ diff --git a/printing/printing_context.h b/printing/printing_context.h
 index 6a5a7c90ef5ba82837095c7bb934881b108797f7..a033c58076ff229ae45ed7c454fc60a57e5707b7 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -131,12 +131,12 @@ class PRINTING_EXPORT PrintingContext {
+@@ -131,12 +131,12 @@
  
    int job_id() const { return job_id_; }
  

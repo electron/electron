@@ -12,7 +12,7 @@ diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/
 index 229f29e47b326e6ef4ef28e0d3037f5cf58e34f3..cf9c14cddfdf94d3819f42918ac3687b7b005e44 100644
 --- a/chrome/browser/spellchecker/spellcheck_factory.cc
 +++ b/chrome/browser/spellchecker/spellcheck_factory.cc
-@@ -71,7 +71,10 @@ void SpellcheckServiceFactory::RegisterProfilePrefs(
+@@ -71,7 +71,10 @@
  
  content::BrowserContext* SpellcheckServiceFactory::GetBrowserContextToUse(
      content::BrowserContext* context) const {

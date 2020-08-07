@@ -11,7 +11,7 @@ diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_p
 index ad603aa7c557bfd4f571a541d70e2edf9ae757d9..d4b0bf8f5e8f3af9328b0099b65d9963414dfcc1 100644
 --- a/third_party/blink/public/web/web_message_port_converter.h
 +++ b/third_party/blink/public/web/web_message_port_converter.h
-@@ -13,6 +13,7 @@ class Isolate;
+@@ -13,6 +13,7 @@
  template <class T>
  class Local;
  class Value;
@@ -33,7 +33,7 @@ diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter
 index 333760d667f6b98b3e7674bf9082f999743dadfa..fc2f517de1951380482fbfa92c038041e15d9c3e 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-@@ -21,4 +21,15 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
+@@ -21,4 +21,15 @@
    return port->Disentangle();
  }
  

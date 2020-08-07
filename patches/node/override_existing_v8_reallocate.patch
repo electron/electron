@@ -12,7 +12,7 @@ diff --git a/src/node_internals.h b/src/node_internals.h
 index cb388f3a9f12949fd3ecb0406f7b550f4ca5ca7c..f4b5c9bb7058da2355204a7285e5f7cc70c4ffda 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -115,7 +115,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -115,7 +115,7 @@
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
    void Free(void* data, size_t size) override;

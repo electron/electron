@@ -18,7 +18,7 @@ diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_ha
 index 4cfdfcc93b4da0497271fd31e01db8485b2ec7b2..e7be846616e58631ed2a89530d02930d64336b70 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -306,6 +306,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
+@@ -306,6 +306,10 @@
  
  }  // namespace
  
@@ -52,7 +52,7 @@ diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_han
 index 7118ff56f0dd1c6291e4095ce7f3d8fc723f0398..5dbaab15ee1667ed1caf0b746b8e31d1b12a7b52 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -203,6 +203,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -203,6 +203,8 @@
    using TouchIDs = std::set<DWORD>;
    enum class DwmFrameState { kOff, kOn };
  
@@ -65,7 +65,7 @@ diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_me
 index 98efa2b7c4033c9ce8c73f7201e68e85baf05bba..4f0897ecc675d3e366ec07df28e09698c6b6e4cf 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -46,6 +46,8 @@
    // True if the widget associated with this window has a non-client view.
    virtual bool HasNonClientView() const = 0;
  

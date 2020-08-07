@@ -9,7 +9,7 @@ diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/br
 index c1b5d30fd927feaeb3e068adc72edafa871ae8cd..7534eef2cfe57044be038632ab040b4df1e7ef9e 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -53,6 +53,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -53,6 +53,18 @@
    if (GetProcessType() == switches::kRendererProcess) {
      const int sandbox_fd = SandboxHostLinux::GetInstance()->GetChildSocket();
      options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));

@@ -25,7 +25,7 @@ diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content
 index d9f21680c7777622090dda2c10349b9fd47d83bc..f3b77a295f334ffa696f1085a4ca5c0c86479987 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -411,6 +411,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -411,6 +411,11 @@
    {
    }
  

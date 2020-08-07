@@ -9,7 +9,7 @@ diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
 index 957b6d6f411332176108c7ed2c7fbce912181865..c0be0ce55ae56e052d6db0f312b33e4ab2b22dd2 100644
 --- a/src/deoptimizer/deoptimizer.h
 +++ b/src/deoptimizer/deoptimizer.h
-@@ -496,14 +496,14 @@ class Deoptimizer : public Malloced {
+@@ -496,14 +496,14 @@
                                      DeoptimizeKind* type);
  
    // Code generation support.

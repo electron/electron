@@ -11,7 +11,7 @@ diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/ho
 index 3547ee865c220731a6b4be4c1b32ec899b3dd11f..715bfa4b5db5fc4beb83c26b1eedda82c87a245b 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -43,9 +43,13 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -43,9 +43,13 @@
  }
  #endif
  
@@ -44,7 +44,7 @@ diff --git a/components/viz/host/host_display_client.h b/components/viz/host/hos
 index cedf833d23589dc3157168cfc7e6d3bb12939f7a..4437a7875076ef5a99ddcd767036ec37c2d48d44 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
-@@ -31,17 +31,17 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
+@@ -31,17 +31,17 @@
    mojo::PendingRemote<mojom::DisplayClient> GetBoundRemote(
        scoped_refptr<base::SingleThreadTaskRunner> task_runner);
  
@@ -69,7 +69,7 @@ diff --git a/components/viz/host/layered_window_updater_impl.cc b/components/viz
 index b04f654fe820f821b18e059cdd40085fc2384c4e..ee22012b01ef92bb3b32b5b1081609a7bdfb0d93 100644
 --- a/components/viz/host/layered_window_updater_impl.cc
 +++ b/components/viz/host/layered_window_updater_impl.cc
-@@ -44,7 +44,9 @@ void LayeredWindowUpdaterImpl::OnAllocatedSharedMemory(
+@@ -44,7 +44,9 @@
    // |region|'s handle will close when it goes out of scope.
  }
  
@@ -84,7 +84,7 @@ diff --git a/components/viz/host/layered_window_updater_impl.h b/components/viz/
 index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb319a4dd04 100644
 --- a/components/viz/host/layered_window_updater_impl.h
 +++ b/components/viz/host/layered_window_updater_impl.h
-@@ -35,7 +35,7 @@ class VIZ_HOST_EXPORT LayeredWindowUpdaterImpl
+@@ -35,7 +35,7 @@
    // mojom::LayeredWindowUpdater implementation.
    void OnAllocatedSharedMemory(const gfx::Size& pixel_size,
                                 base::UnsafeSharedMemoryRegion region) override;
@@ -97,7 +97,7 @@ diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
 index 5f8fbe5b245946b8c6307f2026842277d7be4664..fa78160ebdb8cbc975047e933d7b086b7f226b4f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -113,6 +113,8 @@ viz_component("service") {
+@@ -113,6 +113,8 @@
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -153,7 +153,7 @@ diff --git a/components/viz/service/display_embedder/software_output_device_mac.
 index 49149081cc603f14eacee647cbb2fcf8ed5e66fd..9ff3f2ee203403fdaa31edb8a0bcc000c4d214d7 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -102,6 +102,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -102,6 +102,8 @@
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -174,7 +174,7 @@ diff --git a/components/viz/service/display_embedder/software_output_device_mac.
 index f3867356e3d641416e00e6d115ae9ae2a0be90ab..b1d192d2b20ccb63fba07093101d745e5ffe86dd 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
-@@ -56,6 +56,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
+@@ -56,6 +56,7 @@
    void UpdateAndCopyBufferDamage(Buffer* previous_paint_buffer,
                                   const SkRegion& new_damage_rect);
  
@@ -445,7 +445,7 @@ diff --git a/components/viz/service/display_embedder/software_output_device_win.
 index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c055ca7791 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -188,7 +188,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -188,7 +188,7 @@
    if (!canvas_)
      return;
  
@@ -458,7 +458,7 @@ diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/conte
 index 858d6f4a7428a081cb0f47a1d49b70e489d2d834..dedb7d158cef10f76a38fdb4df9a379997d7c3c3 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -407,8 +407,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -407,8 +407,13 @@
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
@@ -478,7 +478,7 @@ diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp
 index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab1cacffef 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -29,6 +29,7 @@ class Compositor;
+@@ -29,6 +29,7 @@
  
  namespace viz {
  class HostFrameSinkManager;
@@ -499,7 +499,7 @@ diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/s
 index d88fab3b7d0a968b2a5503e04a0812dc1edeaf28..4f66ac576ca495630cba4f82f0e5e0ebda434ddd 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -74,12 +74,14 @@ interface DisplayPrivate {
+@@ -74,12 +74,14 @@
  };
  
  interface DisplayClient {
@@ -519,7 +519,7 @@ diff --git a/services/viz/privileged/mojom/compositing/layered_window_updater.mo
 index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a285498c3f8e72 100644
 --- a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 +++ b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
-@@ -26,5 +26,5 @@ interface LayeredWindowUpdater {
+@@ -26,5 +26,5 @@
    // Draws to the HWND by copying pixels from shared memory. Callback must be
    // called after draw operation is complete to signal shared memory can be
    // modified.
@@ -530,7 +530,7 @@ diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
 index 438dd212d881abf70362f12391b6a85f697785d0..34bd0cbf18714ac24355e603806cc36986f24e30 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -74,6 +74,7 @@ class DisplayPrivate;
+@@ -74,6 +74,7 @@
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -598,7 +598,7 @@ diff --git a/ui/gfx/mojom/ca_layer_params.mojom b/ui/gfx/mojom/ca_layer_params.m
 index de00e766ba17532e10dcf5d0fd31fa344920a9f7..7aaedf83ad22dcc1d2dd39a31cf7e08b7b6ba4d3 100644
 --- a/ui/gfx/mojom/ca_layer_params.mojom
 +++ b/ui/gfx/mojom/ca_layer_params.mojom
-@@ -18,5 +18,6 @@ struct CALayerParams {
+@@ -18,5 +18,6 @@
    bool is_empty;
    CALayerContent content;
    gfx.mojom.Size pixel_size;
@@ -609,7 +609,7 @@ diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_laye
 index d6ec9ef087f00d4c8d7c495b7e57a1d9c3c8b3bb..1b1aafcf75e422b4c94bdc8da895488245cdf360 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-@@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
+@@ -52,6 +52,9 @@
    if (!data.ReadPixelSize(&out->pixel_size))
      return false;
  
@@ -623,7 +623,7 @@ diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.h b/ui/gfx/mojom/ca_layer
 index 4cac766eae3161baedac4202f694129cd90c80de..0821495ad22944d8856bb750cac8912a2f8328c3 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.h
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.h
-@@ -20,6 +20,10 @@ struct StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams> {
+@@ -20,6 +20,10 @@
      return ca_layer_params.pixel_size;
    }
  

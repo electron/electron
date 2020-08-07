@@ -12,7 +12,7 @@ diff --git a/ui/views/accessible_pane_view.h b/ui/views/accessible_pane_view.h
 index 813fd13860a863cd1e6e5bfec38d15f798418673..990c905e8f19dd015a625010ea30adfcb6f51ea6 100644
 --- a/ui/views/accessible_pane_view.h
 +++ b/ui/views/accessible_pane_view.h
-@@ -35,7 +35,7 @@ class VIEWS_EXPORT AccessiblePaneView : public View,
+@@ -35,7 +35,7 @@
    // If |initial_focus| is not NULL, that control will get
    // the initial focus, if it's enabled and focusable. Returns true if
    // the pane was able to receive focus.

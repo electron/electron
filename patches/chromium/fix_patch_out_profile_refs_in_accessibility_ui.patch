@@ -130,7 +130,7 @@ diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/ac
 index 906b24117cdf584dc4935e81c61fe664c48d552b..7a542240c77877a19d0e80649605a1fee393c50f 100644
 --- a/chrome/browser/accessibility/accessibility_ui.h
 +++ b/chrome/browser/accessibility/accessibility_ui.h
-@@ -24,6 +24,8 @@ struct AXEventNotificationDetails;
+@@ -24,6 +24,8 @@
  class WebContents;
  }  // namespace content
  

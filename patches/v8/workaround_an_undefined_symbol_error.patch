@@ -15,7 +15,7 @@ diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-
 index 2e21ab913d7b5ebc62857883ce3907c451b56399..e6a6b39086b2d5a6bf39b5a88df970cec662edf5 100644
 --- a/src/codegen/arm64/assembler-arm64.cc
 +++ b/src/codegen/arm64/assembler-arm64.cc
-@@ -3600,6 +3600,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
+@@ -3600,6 +3600,22 @@
         ImmMoveWide(static_cast<int>(imm)) | ShiftMoveWide(shift));
  }
  
@@ -42,7 +42,7 @@ diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-a
 index f787bad464f82db2d138507832be7beafad658b5..bbbe52001634550052eac8b5b2712ae656575923 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
-@@ -2095,11 +2095,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2095,11 +2095,7 @@
      return rm.code() << Rm_offset;
    }
  

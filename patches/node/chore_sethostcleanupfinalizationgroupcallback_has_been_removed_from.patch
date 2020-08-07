@@ -8,7 +8,7 @@ diff --git a/src/api/environment.cc b/src/api/environment.cc
 index e2aa9c821de685a022fd78935399b7d219468403..2bfba8a011c2b902932e6b1714bbb55b945cd96d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -12,7 +12,6 @@ using errors::TryCatchScope;
+@@ -12,7 +12,6 @@
  using v8::Array;
  using v8::Context;
  using v8::EscapableHandleScope;
@@ -48,7 +48,7 @@ diff --git a/src/env-inl.h b/src/env-inl.h
 index c6ef9dc13ab6f1d1a778871a62a0a98a01d84ec6..222555831aa1bf0b7b29b4b46e235c98a5dd4ac5 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -1123,12 +1123,6 @@ void Environment::RemoveCleanupHook(void (*fn)(void*), void* arg) {
+@@ -1123,12 +1123,6 @@
    cleanup_hooks_.erase(search);
  }
  
@@ -65,7 +65,7 @@ diff --git a/src/env.cc b/src/env.cc
 index 18788e4ceaf208c13704c9c43f017bb1b6dfb0b6..ee76d5889e5672716ac2f0c586f1ddc47fa56be7 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -30,7 +30,6 @@ using v8::ArrayBuffer;
+@@ -30,7 +30,6 @@
  using v8::Boolean;
  using v8::Context;
  using v8::EmbedderGraph;
@@ -111,7 +111,7 @@ diff --git a/src/env.h b/src/env.h
 index 67cefbe35f390ba25b49e422d10bca8b423a49a8..9420bdf3f71e2df1011ddd7e583071f5c99beac8 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1130,9 +1130,7 @@ class Environment : public MemoryRetainer {
+@@ -1130,9 +1130,7 @@
    void AtExit(void (*cb)(void* arg), void* arg);
    void RunAtExitCallbacks();
  
@@ -134,7 +134,7 @@ diff --git a/src/node.h b/src/node.h
 index 638a1a85b046ce4db303d532f7cf36cca2271db5..b9b11b4331bd3ae4a87f65758ee09af25222e19a 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -322,8 +322,6 @@ struct IsolateSettings {
+@@ -322,8 +322,6 @@
    v8::PromiseRejectCallback promise_reject_callback = nullptr;
    v8::AllowWasmCodeGenerationCallback
        allow_wasm_code_generation_callback = nullptr;

@@ -71,7 +71,7 @@ diff --git a/lib/internal/errors.js b/lib/internal/errors.js
 index a3d99a79c6340c3bc2955bf3b36d11e8676d1aa1..4e2d1e48257acff20131ee998a0774b709d5dbcc 100644
 --- a/lib/internal/errors.js
 +++ b/lib/internal/errors.js
-@@ -827,9 +827,7 @@ E('ERR_FALSY_VALUE_REJECTION', function(reason) {
+@@ -827,9 +827,7 @@
    this.reason = reason;
    return 'Promise was rejected with falsy value';
  }, Error);
@@ -118,7 +118,7 @@ diff --git a/lib/internal/fs/utils.js b/lib/internal/fs/utils.js
 index ed4e9bb66ad79ffd542b769ab17a28bb801764c6..84f9e3b806a237c599f85dcb8fb93bfe9a098eda 100644
 --- a/lib/internal/fs/utils.js
 +++ b/lib/internal/fs/utils.js
-@@ -12,7 +12,7 @@ const {
+@@ -12,7 +12,7 @@
    Symbol,
  } = primordials;
  
@@ -151,7 +151,7 @@ diff --git a/src/node_buffer.cc b/src/node_buffer.cc
 index 59baa45413d500272d0e293ab06bfe4d24e5e0cb..4d1951b740240bff231b7f4c855beb5b73d076af 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -62,6 +62,7 @@ using v8::Local;
+@@ -62,6 +62,7 @@
  using v8::Maybe;
  using v8::MaybeLocal;
  using v8::Nothing;
@@ -172,7 +172,7 @@ diff --git a/src/node_buffer.h b/src/node_buffer.h
 index 11010017ce0df8367b1992bd9df57117ff50454d..606a6f5caa3b11b6d2a9068ed2fd65800530a5eb 100644
 --- a/src/node_buffer.h
 +++ b/src/node_buffer.h
-@@ -29,7 +29,7 @@ namespace node {
+@@ -29,7 +29,7 @@
  
  namespace Buffer {
  

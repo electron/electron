@@ -10,7 +10,7 @@ diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/
 index e9707e037d0018677160ab3088467dd5de3ffd3f..dbc7a488fc2d12bd875ac19dc638fe1b05f1938a 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
-@@ -192,6 +192,9 @@ class CORE_EXPORT File final : public Blob {
+@@ -192,6 +192,9 @@
    }
    const String& name() const { return name_; }
  

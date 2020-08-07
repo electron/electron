@@ -10,7 +10,7 @@ diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/m
 index a489bf6ea2179059f53e53563e993db9c7cd123b..93e237569fe94ec8526f67d915e1a7352d586b16 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -38,6 +38,9 @@ class DesktopMediaList {
+@@ -38,6 +38,9 @@
  
    virtual ~DesktopMediaList() {}
  
@@ -32,7 +32,7 @@ diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/bro
 index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9c724511c 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -20,6 +20,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
+@@ -20,6 +20,11 @@
  
  DesktopMediaListBase::~DesktopMediaListBase() {}
  
@@ -82,7 +82,7 @@ diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/brow
 index 3c09ec3111d54cb4f0b74f16a81292b779009eae..5c3667822afd47a22878b508b844a615c24f3162 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
-@@ -27,6 +27,7 @@ class DesktopMediaListBase : public DesktopMediaList {
+@@ -27,6 +27,7 @@
    ~DesktopMediaListBase() override;
  
    // DesktopMediaList interface.
@@ -102,7 +102,7 @@ diff --git a/chrome/browser/media/webrtc/desktop_media_list_observer.h b/chrome/
 index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c5916a9f2009 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_observer.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_observer.h
-@@ -20,6 +20,7 @@ class DesktopMediaListObserver {
+@@ -20,6 +20,7 @@
                               int new_index) = 0;
    virtual void OnSourceNameChanged(DesktopMediaList* list, int index) = 0;
    virtual void OnSourceThumbnailChanged(DesktopMediaList* list, int index) = 0;

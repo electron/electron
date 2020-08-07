@@ -12,7 +12,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/
 index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca887176642f74 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-@@ -39,7 +39,7 @@ GlobalShortcutListenerMac::GlobalShortcutListenerMac()
+@@ -39,7 +39,7 @@
    // global MediaKeysListener to receive media keys.
    if (!content::MediaKeysListenerManager::IsMediaKeysListenerManagerEnabled()) {
      media_keys_listener_ = ui::MediaKeysListener::Create(
@@ -25,7 +25,7 @@ diff --git a/ui/base/accelerators/media_keys_listener.h b/ui/base/accelerators/m
 index 6787fa39da18ec26c215e4cbe0b3f69093323f8c..ec10c46cde437a935edfdf79e5ba9622c6ba1d67 100644
 --- a/ui/base/accelerators/media_keys_listener.h
 +++ b/ui/base/accelerators/media_keys_listener.h
-@@ -20,8 +20,9 @@ class Accelerator;
+@@ -20,8 +20,9 @@
  class COMPONENT_EXPORT(UI_BASE) MediaKeysListener {
   public:
    enum class Scope {
@@ -41,7 +41,7 @@ diff --git a/ui/base/accelerators/media_keys_listener_linux.cc b/ui/base/acceler
 index c74807dfae799851bb2e40996e634d8513e590a0..48f459941cae385e49af09410bb1812db5e6d971 100644
 --- a/ui/base/accelerators/media_keys_listener_linux.cc
 +++ b/ui/base/accelerators/media_keys_listener_linux.cc
-@@ -13,7 +13,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
+@@ -13,7 +13,7 @@
      MediaKeysListener::Scope scope) {
    DCHECK(delegate);
  
@@ -54,7 +54,7 @@ diff --git a/ui/base/accelerators/media_keys_listener_win.cc b/ui/base/accelerat
 index c50ea0ca2b8d612b96c0c822f5d36e9eb4ff861d..8b89fea7c09be007d8a020eb4d75f783c887f1a7 100644
 --- a/ui/base/accelerators/media_keys_listener_win.cc
 +++ b/ui/base/accelerators/media_keys_listener_win.cc
-@@ -14,7 +14,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
+@@ -14,7 +14,7 @@
      MediaKeysListener::Scope scope) {
    DCHECK(delegate);
  

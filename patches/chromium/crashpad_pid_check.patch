@@ -19,7 +19,7 @@ diff --git a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc 
 index c841f7bc5c3d9962ea24664f26c6867ded529c7b..13218a598bbd4b51cd9a045879ee20b0491f8146 100644
 --- a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 +++ b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
-@@ -445,9 +445,16 @@ bool ExceptionHandlerServer::ServiceClientConnection(
+@@ -445,9 +445,16 @@
      DWORD real_pid = 0;
      if (get_named_pipe_client_process_id(service_context.pipe(), &real_pid) &&
          message.registration.client_process_id != real_pid) {

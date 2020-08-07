@@ -12,7 +12,7 @@ diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer
 index 85c7cca6f069202a9de00cedc480e94209350425..29c383071229da71af3592293a8e237baa73c1bb 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1312,6 +1312,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1312,6 +1312,25 @@
  #endif
  }
  
@@ -42,7 +42,7 @@ diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/
 index 066a1a0690c013ffdb8ee043f8489e250ac430f0..4a2f67ba8e0aab4c46413e2f1268af9495038139 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -127,6 +127,11 @@ class ChromeContentRendererClient
+@@ -127,6 +127,11 @@
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
@@ -58,7 +58,7 @@ diff --git a/content/public/renderer/content_renderer_client.cc b/content/public
 index 6c7478594f980e3518fea2afc53d941b0f6c6a34..3b514f084ed16fc924f6a2909bd51056e5c58f6d 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
-@@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
+@@ -114,6 +114,14 @@
  }
  #endif
  
@@ -77,7 +77,7 @@ diff --git a/content/public/renderer/content_renderer_client.h b/content/public/
 index cc6101c82e659bbc5a8568c166d5a56fae0c8d64..8309bb7f3f284b0930c13a7e75a7f9de64fedb73 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -227,6 +227,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -227,6 +227,13 @@
                                  bool is_redirect);
  #endif
  
@@ -95,7 +95,7 @@ diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_fra
 index 899c4265fe65fc8dbd3d2e621b801635ae0efbb1..1935b892de9dfc7c0ca14255aadaab4c6e92aa13 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5534,6 +5534,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5534,6 +5534,23 @@
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

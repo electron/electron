@@ -24,7 +24,7 @@ diff --git a/test/parallel/test-finalization-group-regular-gc.js b/test/parallel
 index 7a4a4797eadcf02867ad30c20b37060fa7abb5fb..3c16cfcee23e971fde8793a0478a819d3fc59d90 100644
 --- a/test/parallel/test-finalization-group-regular-gc.js
 +++ b/test/parallel/test-finalization-group-regular-gc.js
-@@ -7,7 +7,7 @@ const assert = require('assert');
+@@ -7,7 +7,7 @@
  // GC (not global.gc()).
  
  const start = Date.now();

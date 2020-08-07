@@ -14,7 +14,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/
 index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab999510e9b1 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+@@ -62,6 +62,8 @@
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -35,7 +35,7 @@ diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/
 index a33ff046e940880f9c1ad15769325b0dac22ee43..a4cf5dd70cd2ab6a5246b06790f2f7f6c9fd8631 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-@@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
+@@ -38,6 +38,7 @@
    modifiers |= accelerator.IsShiftDown() ? ShiftMask : 0;
    modifiers |= accelerator.IsCtrlDown() ? ControlMask : 0;
    modifiers |= accelerator.IsAltDown() ? Mod1Mask : 0;
@@ -47,7 +47,7 @@ diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc
 +++ b/ui/base/accelerators/media_keys_listener.cc
-@@ -13,7 +13,8 @@ MediaKeysListener::~MediaKeysListener() = default;
+@@ -13,7 +13,8 @@
  // static
  bool MediaKeysListener::IsMediaKeycode(KeyboardCode key_code) {
    return key_code == VKEY_MEDIA_PLAY_PAUSE || key_code == VKEY_MEDIA_STOP ||
@@ -61,7 +61,7 @@ diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerat
 index 6052fd13ff3d63cf8a4b019b058efb61aad39c3b..42eac7a7b656096c1d2039e340037ac8a70678c9 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -33,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -33,6 +33,12 @@
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -90,7 +90,7 @@ diff --git a/ui/base/accelerators/system_media_controls_media_keys_listener.cc b
 index 9d6084ceaccfd071549e63e3015f55ef292312ec..846210b04d6e2e193413c643296938ec550f6d25 100644
 --- a/ui/base/accelerators/system_media_controls_media_keys_listener.cc
 +++ b/ui/base/accelerators/system_media_controls_media_keys_listener.cc
-@@ -65,6 +65,11 @@ bool SystemMediaControlsMediaKeysListener::StartWatchingMediaKey(
+@@ -65,6 +65,11 @@
      case VKEY_MEDIA_STOP:
        service_->SetIsStopEnabled(true);
        break;

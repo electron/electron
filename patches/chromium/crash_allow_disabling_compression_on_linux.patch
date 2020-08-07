@@ -16,7 +16,7 @@ diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core
 index 342f16a4c8418c1e56703d8969d0f31d834ad74c..454e1c0d58a39cbf23da32f56af7cdf16e9085f0 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -109,6 +109,8 @@ void SetUploadURL(const std::string& url) {
+@@ -109,6 +109,8 @@
    DCHECK(!g_upload_url);
    g_upload_url = strdup(url.c_str());
  }

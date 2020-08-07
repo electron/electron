@@ -81,7 +81,7 @@ diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/com
 index e03bbc724cfd01967e71998394361556df1c4915..783745b11365c04c1e1052197d20d494bc901d45 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-@@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
+@@ -17,6 +17,7 @@
  
  @protocol WindowTouchBarDelegate;
  

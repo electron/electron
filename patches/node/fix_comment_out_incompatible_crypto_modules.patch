@@ -12,7 +12,7 @@ diff --git a/src/node_crypto.cc b/src/node_crypto.cc
 index c373533ce85241f86d64eab8a49af79f935acdeb..454fff5ada0c271db7fb975f809c84d87773dcd6 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5145,6 +5145,7 @@ bool DiffieHellman::Init(int primeLength, int g) {
+@@ -5145,6 +5145,7 @@
  
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());

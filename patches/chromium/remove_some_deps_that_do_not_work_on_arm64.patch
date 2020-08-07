@@ -9,7 +9,7 @@ diff --git a/.vpython b/.vpython
 index 27117b1372b9a002672161f9c1fe3c1a14448c7d..5d330c75ca24863c0aa0e596ab66c48f65541c34 100644
 --- a/.vpython
 +++ b/.vpython
-@@ -53,10 +53,10 @@ wheel: <
+@@ -53,10 +53,10 @@
  #
  # This version must be compatible with the version range specified by
  # //third_party/catapult/telemetry/telemetry/internal/util/external_modules.py

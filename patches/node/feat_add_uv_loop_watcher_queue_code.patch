@@ -9,7 +9,7 @@ diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
 index fec663136a4ff14480cc8edcf846cba320ddd4eb..653c8910d7350185d1db4d343e19236a899b3a04 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -1770,6 +1770,8 @@ union uv_any_req {
+@@ -1770,6 +1770,8 @@
  struct uv_loop_s {
    /* User data - use this for whatever. */
    void* data;
@@ -22,7 +22,7 @@ diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
 index 949eefae339919c36775d6c1bbca5f6f9b3b6201..454bd1bd3c2c7be34b764be39962b35e4e3066f6 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -885,8 +885,11 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -885,8 +885,11 @@
      return;
  #endif
  

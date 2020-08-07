@@ -10,7 +10,7 @@ diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUIL
 index 400a2de58c79d88abd3c62a61b96e28eb5fd5bfd..faf88518b8ed57b06cb4a092744150073eb270da 100644
 --- a/tools/v8_context_snapshot/BUILD.gn
 +++ b/tools/v8_context_snapshot/BUILD.gn
-@@ -103,6 +103,7 @@ if (use_v8_context_snapshot) {
+@@ -103,6 +103,7 @@
      configs += [
        "//v8:external_startup_data",
        ":disable_icf",

@@ -27,7 +27,7 @@ diff --git a/src/node.cc b/src/node.cc
 index 728785d5d2773df68a891a4c81e7b0ebfa6021bb..15abe45edb39597d4fcc686cca4d79314090fa6f 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -122,6 +122,8 @@ using v8::Undefined;
+@@ -122,6 +122,8 @@
  using v8::V8;
  using v8::Value;
  
@@ -68,7 +68,7 @@ diff --git a/src/node.h b/src/node.h
 index 886216e2cb533e7337bc4f6816e2de796f64f81e..8378553f28671e4685b4ed20279b2be5d202e527 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -211,6 +211,8 @@ namespace node {
+@@ -211,6 +211,8 @@
  
  class IsolateData;
  class Environment;

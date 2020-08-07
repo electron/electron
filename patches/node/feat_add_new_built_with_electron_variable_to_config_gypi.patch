@@ -10,7 +10,7 @@ diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 index 01f62d4ae6e3b9d539444e3dff069f0011353caa..d8b279f590c115108d5dca879747de7b0c9f1934 100644
 --- a/tools/generate_config_gypi.py
 +++ b/tools/generate_config_gypi.py
-@@ -5,7 +5,7 @@ import sys
+@@ -5,7 +5,7 @@
  def main(args):
    out = args[0]
    with open(out, 'w') as f:

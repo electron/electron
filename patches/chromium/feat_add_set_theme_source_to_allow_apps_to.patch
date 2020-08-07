@@ -16,7 +16,7 @@ diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
 index eee37be164598cda0601f3580d0cbf51a22f4c61..6b724ff4006182ed2a3d381637a923a28754caa0 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -249,6 +249,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors)
+@@ -249,6 +249,8 @@
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -29,7 +29,7 @@ diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
 index f4e9cc14b0b8406d255bbed56d98dcf61f24a405..e1b9298532b2676aa4d9cdacb15e9398be3ccc3f 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -392,6 +392,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -392,6 +392,22 @@
        ColorId color_id,
        ColorScheme color_scheme = ColorScheme::kDefault) const;
  
@@ -65,7 +65,7 @@ diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_
 index 1ff5451c10c4843557746df9daf879d422b9855a..b215a4b7965f180f71a84b022f15f7f636924124 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -734,6 +734,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -734,6 +734,8 @@
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (UsesHighContrastColors() && !IsForcedDarkMode())
      return false;

@@ -10,7 +10,7 @@ diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-po
 index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d381804e50 100644
 --- a/src/base/platform/platform-posix.cc
 +++ b/src/base/platform/platform-posix.cc
-@@ -147,9 +147,19 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access) {
+@@ -147,9 +147,19 @@
  void* Allocate(void* hint, size_t size, OS::MemoryPermission access) {
    int prot = GetProtectionFromMemoryPermission(access);
    int flags = GetFlagsForMemoryPermission(access);

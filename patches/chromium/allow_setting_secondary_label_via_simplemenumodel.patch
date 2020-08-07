@@ -9,7 +9,7 @@ diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_mo
 index 0c37f6e2caead2f3004f1fbdd2abe7921ef4bea7..6f46775d96153d0c6a0795a1d6085f532daf985c 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
-@@ -53,6 +53,11 @@ base::string16 SimpleMenuModel::Delegate::GetLabelForCommandId(
+@@ -53,6 +53,11 @@
    return base::string16();
  }
  
@@ -50,7 +50,7 @@ diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_mod
 index 5f1116ba19b8160a2fee008415b8841f056aad98..9c07e44c484a9a15b7d16d592311eb07d9b3734a 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
-@@ -48,6 +48,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -48,6 +48,7 @@
      // Some command ids have labels and icons that change over time.
      virtual bool IsItemForCommandIdDynamic(int command_id) const;
      virtual base::string16 GetLabelForCommandId(int command_id) const;

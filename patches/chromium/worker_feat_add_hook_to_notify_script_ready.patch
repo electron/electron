@@ -22,7 +22,7 @@ diff --git a/content/public/renderer/content_renderer_client.h b/content/public/
 index 8309bb7f3f284b0930c13a7e75a7f9de64fedb73..7c5c925cadc5caca5ef69eda80ccc04797b2c803 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -405,6 +405,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -405,6 +405,11 @@
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -38,7 +38,7 @@ diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer
 index 906e86480872394d33608a954440cbc92273d0ff..27bf2e12e5f2a150fca992f1bfed88936c7cee35 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -877,6 +877,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -877,6 +877,12 @@
        worker);
  }
  
@@ -55,7 +55,7 @@ diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/
 index db58cb0be064b7944b17dd12f1d1e6c12cecfff7..5c80537e6020ae5845728130b46825f5db745a5e 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -191,6 +191,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -191,6 +191,8 @@
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -68,7 +68,7 @@ diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/pu
 index 754634fd4935cdf38168361f1491cf3aedaf8cdb..513cdea72aba0082d43268bdbfc5328fb21afb76 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -638,6 +638,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -638,6 +638,8 @@
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -81,7 +81,7 @@ diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_scrip
 index 72b80a13cc7845236b58a4944be0ac8b314dc5fe..c227343c1c58acf94c7be2a9a2a12e921c1b5943 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-@@ -328,6 +328,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+@@ -328,6 +328,8 @@
    wrapper_type_info->InstallConditionalFeatures(
        context, *world_, global_object, v8::Local<v8::Object>(),
        v8::Local<v8::Function>(), global_interface_template);

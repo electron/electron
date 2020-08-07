@@ -12,7 +12,7 @@ diff --git a/components/upload_list/upload_list.cc b/components/upload_list/uplo
 index 4a6b57e81398727977a9ad21ec601ee2f81e910b..03163affcc649ae53c2b7110d27dbd39ae00ae26 100644
 --- a/components/upload_list/upload_list.cc
 +++ b/components/upload_list/upload_list.cc
-@@ -72,6 +72,10 @@ void UploadList::Load(base::OnceClosure callback) {
+@@ -72,6 +72,10 @@
        base::BindOnce(&UploadList::OnLoadComplete, this));
  }
  
@@ -27,7 +27,7 @@ diff --git a/components/upload_list/upload_list.h b/components/upload_list/uploa
 index 20358339df63ae2bb8b955870c5daf51b65f19f7..7cf89626bea8ee9436f15366446f053a479ac438 100644
 --- a/components/upload_list/upload_list.h
 +++ b/components/upload_list/upload_list.h
-@@ -73,6 +73,8 @@ class UploadList : public base::RefCountedThreadSafe<UploadList> {
+@@ -73,6 +73,8 @@
    // overwrite the previously supplied one, and the first will not be called.
    void Load(base::OnceClosure callback);
  

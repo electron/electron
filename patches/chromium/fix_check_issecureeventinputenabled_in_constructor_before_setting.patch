@@ -10,7 +10,7 @@ diff --git a/ui/base/cocoa/secure_password_input.mm b/ui/base/cocoa/secure_passw
 index c9d003216ec51407d80b2c3ed0a77e747d203069..f10829d7fe369d2419bb1f0828d6d1ec7c8f57e1 100644
 --- a/ui/base/cocoa/secure_password_input.mm
 +++ b/ui/base/cocoa/secure_password_input.mm
-@@ -41,7 +41,7 @@ void SetPasswordInputEnabled(bool enabled) {
+@@ -41,7 +41,7 @@
  namespace ui {
  
  ScopedPasswordInputEnabler::ScopedPasswordInputEnabler() {

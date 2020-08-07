@@ -12,7 +12,7 @@ diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
 index a992ba42ce46bfcdccdca997ee13718086d3256d..62096edec540ec3dd70e56fee53b9813b2ebbbfc 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
-@@ -23,8 +23,7 @@ const objects = [
+@@ -23,8 +23,7 @@
    undefined,
    null,
    42,

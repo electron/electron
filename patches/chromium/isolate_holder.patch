@@ -11,7 +11,7 @@ diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
 index 58a0eb4b105c802f9dd336a778081ccb0ef084a0..77e0d468f0fcb3b37f8f47134bf543db03b53a16 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -53,7 +53,8 @@ IsolateHolder::IsolateHolder(
+@@ -53,7 +53,8 @@
      AccessMode access_mode,
      AllowAtomicsWaitMode atomics_wait_mode,
      IsolateType isolate_type,
@@ -38,7 +38,7 @@ diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
 index ede178acabc63c3c33d6ce93efd5632bec50ba89..ffe7331cf1806417a32e66970f81b7797b9b80fc 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -75,7 +75,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -75,7 +75,8 @@
        AccessMode access_mode,
        AllowAtomicsWaitMode atomics_wait_mode,
        IsolateType isolate_type,

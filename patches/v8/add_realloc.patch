@@ -15,7 +15,7 @@ diff --git a/include/v8.h b/include/v8.h
 index 4db319871f891f94b3c7c46fcd3742dc47c78f57..03f14309787f5963ba263739c9104e2b267ec202 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -5068,6 +5068,13 @@ class V8_EXPORT ArrayBuffer : public Object {
+@@ -5068,6 +5068,13 @@
       */
      virtual void* AllocateUninitialized(size_t length) = 0;
  
@@ -33,7 +33,7 @@ diff --git a/src/api/api.cc b/src/api/api.cc
 index 5e2d9f7099ebbccb374b5b08f65a90187e0a5860..fff3163ab0d424a5a588879638e9b77a84e3f10a 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -534,6 +534,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
+@@ -534,6 +534,10 @@
    i::V8::SetSnapshotBlob(snapshot_blob);
  }
  

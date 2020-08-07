@@ -9,7 +9,7 @@ diff --git a/base/mac/mac_util.h b/base/mac/mac_util.h
 index e24439cee6c81afc74bfcb557cbdab6785a32794..f84128e76f380a86b74d354787c741c2217b6b69 100644
 --- a/base/mac/mac_util.h
 +++ b/base/mac/mac_util.h
-@@ -132,6 +132,12 @@ DEFINE_IS_OS_FUNCS(15, TEST_DEPLOYMENT_TARGET)
+@@ -132,6 +132,12 @@
  DEFINE_IS_OS_FUNCS(15, IGNORE_DEPLOYMENT_TARGET)
  #endif
  

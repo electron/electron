@@ -22,7 +22,7 @@ diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy.cc b/third
 index 3139b74a464888159cbb6b93f15e54b578986f92..784f3b31e1258ff29e01f556a0d37f45ddc9b117 100644
 --- a/third_party/blink/renderer/bindings/core/v8/window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/window_proxy.cc
-@@ -104,10 +104,7 @@ v8::Local<v8::Object> WindowProxy::ReleaseGlobalProxy() {
+@@ -104,10 +104,7 @@
  }
  
  void WindowProxy::SetGlobalProxy(v8::Local<v8::Object> global_proxy) {
@@ -52,7 +52,7 @@ diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy.h b/third_
 index 33d85e22813ee15ced7e8c41d1bc070c8dbbdd26..d9ff55f67ffa4208a6fa342ed24cd6e1a3af145e 100644
 --- a/third_party/blink/renderer/bindings/core/v8/window_proxy.h
 +++ b/third_party/blink/renderer/bindings/core/v8/window_proxy.h
-@@ -156,6 +156,7 @@ class WindowProxy : public GarbageCollected<WindowProxy> {
+@@ -156,6 +156,7 @@
    CORE_EXPORT v8::Local<v8::Object> GlobalProxyIfNotDetached();
    v8::Local<v8::Object> ReleaseGlobalProxy();
    void SetGlobalProxy(v8::Local<v8::Object>);
@@ -64,7 +64,7 @@ diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
 index 90083d1fa2e2fed8173f6ff993c7a93da36510bf..9fa174ba67b1212a70f8951eda86d12ecb0df9a3 100644
 --- a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
-@@ -55,8 +55,11 @@ void WindowProxyManager::ReleaseGlobalProxies(
+@@ -55,8 +55,11 @@
  
  void WindowProxyManager::SetGlobalProxies(
      const GlobalProxyVector& global_proxies) {

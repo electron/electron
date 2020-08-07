@@ -71,7 +71,7 @@ diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_dat
 index 3da5a7bba5e7cc0f54998a81649f4dd9d78aa7be..938ae6ebc92315b3a75019c3bc8c9058106f7695 100644
 --- a/media/blink/multibuffer_data_source.h
 +++ b/media/blink/multibuffer_data_source.h
-@@ -30,6 +30,8 @@ class BufferedDataSourceHost;
+@@ -30,6 +30,8 @@
  class MediaLog;
  class MultiBufferReader;
  

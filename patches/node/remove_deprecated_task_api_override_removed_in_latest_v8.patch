@@ -11,7 +11,7 @@ diff --git a/src/node_platform.h b/src/node_platform.h
 index 533ae1bcca824837aca327d4ff8f122da12d94f0..3c855afeb4019adfb5389721357abe3cd620a01c 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
-@@ -148,14 +148,6 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -148,14 +148,6 @@
    void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
    void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task> task,
                                   double delay_in_seconds) override;

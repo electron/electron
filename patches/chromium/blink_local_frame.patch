@@ -17,7 +17,7 @@ diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/
 index 25a7913d239dddbe623195323f0abc1c3fd8d752..b59873bdd37ebf5008a98946163c4a6f7b47884b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -550,10 +550,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -550,10 +550,6 @@
    }
    CHECK(!view_ || !view_->IsAttached());
  

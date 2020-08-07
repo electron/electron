@@ -13,7 +13,7 @@ diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core
 index a3599b4403b7be33cb4aa300746c3ade962627de..342f16a4c8418c1e56703d8969d0f31d834ad74c 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -719,8 +719,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
+@@ -719,8 +719,13 @@
    log_path[log_path_len] = '\0';
    info.log_filename = log_path;
  #endif

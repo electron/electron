@@ -12,7 +12,7 @@ diff --git a/BUILD.gn b/BUILD.gn
 index 41a53fbbcaf995d5c59c37464f81ed05d432cf3c..53265cb1441e695ab4ffac667cf5c3c67deaa534 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -368,7 +368,7 @@ config("internal_config") {
+@@ -368,7 +368,7 @@
      ":v8_header_features",
    ]
  

@@ -35,7 +35,7 @@ diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/thi
 index c9f9124eb6f4900988ad63fa38a03b7b6c5d1abb..9cba4e5af9a624d358697d806f151ee3998f0b58 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-@@ -50,7 +50,8 @@ struct KeyValue {
+@@ -50,7 +50,8 @@
  interface StorageArea {
    // The quota for each storage area.
    // This value is enforced in renderer processes and the browser process.

@@ -17,7 +17,7 @@ diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components
 index 9ddda9116e7284cbccde8a51e23ad7560dd06367..e846091ad99b0154636489e53491209ff3cbfaaa 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
 +++ b/components/remote_cocoa/app_shim/application_bridge.mm
-@@ -49,6 +49,7 @@ class NativeWidgetBridgeOwner : public NativeWidgetNSWindowHostHelper {
+@@ -49,6 +49,7 @@
  
    // NativeWidgetNSWindowHostHelper:
    id GetNativeViewAccessible() override {
@@ -50,7 +50,7 @@ diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm 
 index 2ee45cb069ec5d78d9c7a3f61fdd1d444a590f41..badc4323b910f8e3957583e05af303472cb204f6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -543,10 +543,12 @@ void NativeWidgetNSWindowBridge::CreateContentView(uint64_t ns_view_id,
+@@ -543,10 +543,12 @@
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -67,7 +67,7 @@ diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/cont
 index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a4dc4ea8e 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -70,8 +70,10 @@ class RenderWidgetHostNSViewBridgeOwner
+@@ -70,8 +70,10 @@
      return nil;
    }
    void SetAccessibilityWindow(NSWindow* window) override {
@@ -93,7 +93,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/conte
 index 90f5455272c6685f6d5abeb6c636234f49618422..d13cc2c15ae553c2d20562deea62173b7d933f59 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
-@@ -47,7 +47,9 @@ class ScopedPasswordInputEnabler;
+@@ -47,7 +47,9 @@
  
  @protocol RenderWidgetHostViewMacDelegate;
  
@@ -120,7 +120,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/cont
 index ed223cdb6ea7a0f6130547b7988982bb44aa157d..b5e4f8fb0e914078ae40d034e1b785f77607bbea 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -233,8 +233,10 @@ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
+@@ -233,8 +233,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -173,7 +173,7 @@ diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
 index d1aa0aaf5a949683e37a26ada1b1f178d9d82721..6dc85fa624d49e0222f7d25c2602dc6e4b2a2b56 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -309,6 +309,13 @@ jumbo_component("base") {
+@@ -309,6 +309,13 @@
      ]
    }
  
@@ -239,7 +239,7 @@ diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa
 index 2256c365af5b1af79458fdcb0cb9d44c9ff641fd..f4949b071a177452b0074a2436669e9846558d1a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -282,14 +282,22 @@ gfx::NativeViewAccessible
+@@ -282,14 +282,22 @@
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();

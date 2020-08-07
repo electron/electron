@@ -12,7 +12,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/conte
 index f56a191cb01fbcf91f60abc312ee5277bf857929..fa5429e2da1124fc1c2ff4fb6fed7aeb4dabdbea 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.h
-@@ -19,13 +19,14 @@ namespace content {
+@@ -19,13 +19,14 @@
  // support character echo and other announcements during editing.
  struct AXTextEdit {
    AXTextEdit() = default;
@@ -33,7 +33,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/cont
 index 090c8fdc3b374ed937d3e04ccd5d91772acc7d9d..8a96c55b638b33f390372c2a30228dabad08665a 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -1882,7 +1882,11 @@ id content::AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker) {
+@@ -1882,7 +1882,11 @@
  
    base::string16 deletedText = oldValue.substr(i, oldValue.length() - i - j);
    base::string16 insertedText = newValue.substr(i, newValue.length() - i - j);
@@ -59,7 +59,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b
 index 8fb447a74cb6e818c221131aba5f57c5f8b8094d..b930963467642738db3ec0109b4a6681ade03b2c 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.h
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
-@@ -60,7 +60,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+@@ -60,7 +60,8 @@
    NSDictionary* GetUserInfoForValueChangedNotification(
        const BrowserAccessibilityCocoa* native_node,
        const base::string16& deleted_text,
@@ -73,7 +73,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm 
 index 5972939a070908521e82845b084d2d3b9f9a73f8..fda1d2f9fdccbff035d05f0dfc39238a8a667522 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -94,6 +94,7 @@ NSString* const NSAccessibilityTextSelectionChangedFocus =
+@@ -94,6 +94,7 @@
  NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
  NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
  NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
@@ -153,7 +153,7 @@ diff --git a/ui/accessibility/ax_range.h b/ui/accessibility/ax_range.h
 index 62db9d3c0ff251e40dd5016901e40a3083cb786f..2d263e1c7eaf806a76eba6ee79919ef87d3eb04b 100644
 --- a/ui/accessibility/ax_range.h
 +++ b/ui/accessibility/ax_range.h
-@@ -131,6 +131,12 @@ class AXRange {
+@@ -131,6 +131,12 @@
                 : AXRange(anchor_->Clone(), focus_->Clone());
    }
  

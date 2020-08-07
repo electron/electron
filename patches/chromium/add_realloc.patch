@@ -15,7 +15,7 @@ diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
 index 124c2f72a5cbc2abe8c7686c32b61718d4c95d4b..fa4a478450cc97d231496ab82c74c1a94d1f3557 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
-@@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
+@@ -43,6 +43,10 @@
    return malloc(length);
  }
  
@@ -30,7 +30,7 @@ diff --git a/gin/array_buffer.h b/gin/array_buffer.h
 index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f4ddb2de2 100644
 --- a/gin/array_buffer.h
 +++ b/gin/array_buffer.h
-@@ -21,6 +21,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -21,6 +21,7 @@
   public:
    void* Allocate(size_t length) override;
    void* AllocateUninitialized(size_t length) override;
@@ -42,7 +42,7 @@ diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/thi
 index 77724df403e7ec9f1995e62b8737cb1d46ce20b1..244412c9a52ba701b161d1391e5f3cfb73307afc 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -672,6 +672,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -672,6 +672,10 @@
          size, ArrayBufferContents::kDontInitialize);
    }
  
@@ -57,7 +57,7 @@ diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buf
 index 5026ce05c5eb0be037ce4085488eb473828175a5..639173c18ddb743a4abe650cefdd94d257437262 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -128,6 +128,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -128,6 +128,11 @@
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  
@@ -73,7 +73,7 @@ diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buf
 index cce802e4fc94c258607bc943d9902e6d18173c44..4f7f4eaf005aac701360e567e6faca7f2e0ff3da 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h
-@@ -108,6 +108,7 @@ class CORE_EXPORT ArrayBufferContents {
+@@ -108,6 +108,7 @@
    void CopyTo(ArrayBufferContents& other);
  
    static void* AllocateMemoryOrNull(size_t, InitializationPolicy);

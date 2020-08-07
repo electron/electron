@@ -1730,7 +1730,7 @@ diff --git a/tools/install.py b/tools/install.py
 index 655802980a6ea94d1d4ca1dc63c8c8e905fbb83a..ab1a18a215cb7393310324c6dbcacc6655bae9ef 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -163,8 +163,8 @@ def files(action):
+@@ -163,8 +163,8 @@
  def headers(action):
    def ignore_inspector_headers(files_arg, dest):
      inspector_headers = [
@@ -1754,7 +1754,7 @@ diff --git a/tools/js2c.py b/tools/js2c.py
 index 195e6a6189a98916bcfb7abb1b73595b8bc8eb38..d5109fcae5542730623f5ec3ca244ec0973109f2 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -130,6 +130,14 @@ def NormalizeFileName(filename):
+@@ -130,6 +130,14 @@
      split = split[1:]
    if len(split):
      filename = '/'.join(split)

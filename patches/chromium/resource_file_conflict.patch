@@ -55,7 +55,7 @@ diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
 index 5eb707b31f976cf4e17fbe3f51062819f1cc7a07..7c18c7c05d7f43a0017001be76377390c4920f2e 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1399,7 +1399,7 @@ if (is_chrome_branded && !is_android) {
+@@ -1399,7 +1399,7 @@
    }
  }
  

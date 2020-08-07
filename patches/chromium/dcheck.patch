@@ -20,7 +20,7 @@ diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/
 index 954d5401b71bb090c1c533783398298f28eeefbd..dd9051afe099cb1ef3aebb825cf05c347b4abbf4 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1271,8 +1271,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1271,8 +1271,10 @@
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -49,7 +49,7 @@ diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_wi
 index b422119ff36713399358b27aff8b18423f79d954..5c223f360ca641a3e29f23e6d409d7f97414a985 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -831,10 +831,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -831,10 +831,10 @@
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

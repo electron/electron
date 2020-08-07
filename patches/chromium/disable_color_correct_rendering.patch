@@ -23,7 +23,7 @@ diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
 index c389d38fbf98374a2c7677a95624eb87c1466b3f..e90709822d6d0462931efc979c00586749c01a3c 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1857,6 +1857,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1857,6 +1857,10 @@
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -38,7 +38,7 @@ diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index eaff59cabf659c0d3ffe46c394c51b6d30c05806..899be4f3d9cdb82e03d34ee940f26af89235dd31 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -99,6 +99,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -99,6 +99,8 @@
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -51,7 +51,7 @@ diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/
 index 758390280505913d1562dd84e6333924ded0d68f..32856ca4132c205bc142bf033e4f6d5d84f74329 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
-@@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
+@@ -23,6 +23,7 @@
    RendererSettings(const RendererSettings& other);
    ~RendererSettings();
  
@@ -222,7 +222,7 @@ diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_p
 index b8032917cce5224403304c5f41674533e3d59528..2e871204e8dc9bf13315ba9a1448ab7ce157180c 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -220,6 +220,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -220,6 +220,7 @@
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -363,7 +363,7 @@ diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
 index 16eeda0d910c555aae074fe1ed8ba04c4be76d9e..095b704442f55e978c7f60e9c97c2abe20b131a7 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
-@@ -10,6 +10,7 @@ namespace switches {
+@@ -10,6 +10,7 @@
  // Scale factor to apply to every animation duration. Must be >= 0.0. This will
  // only apply to LinearAnimation and its subclasses.
  const char kAnimationDurationScale[] = "animation-duration-scale";

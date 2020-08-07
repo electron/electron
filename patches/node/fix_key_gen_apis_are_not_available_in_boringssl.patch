@@ -9,7 +9,7 @@ diff --git a/src/node_crypto.cc b/src/node_crypto.cc
 index c132e6a089b3cb7119910131fe740574d7917b89..82afaee6e2b929faac76fc5d930a8c0fd6558df3 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -267,24 +267,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -267,24 +267,14 @@
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -54,7 +54,7 @@ diff --git a/src/node_crypto_common.cc b/src/node_crypto_common.cc
 index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99cbd7a106d 100644
 --- a/src/node_crypto_common.cc
 +++ b/src/node_crypto_common.cc
-@@ -239,10 +239,10 @@ int UseSNIContext(const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
+@@ -239,10 +239,10 @@
  }
  
  const char* GetClientHelloALPN(const SSLPointer& ssl) {

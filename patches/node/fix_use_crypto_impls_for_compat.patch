@@ -11,7 +11,7 @@ diff --git a/src/node_crypto.cc b/src/node_crypto.cc
 index ce64dbca7ce6555bd37d3b6f85ecf41a98e3dd29..c373533ce85241f86d64eab8a49af79f935acdeb 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -4525,7 +4525,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
+@@ -4525,7 +4525,7 @@
    if (base_id == EVP_PKEY_DSA) {
      DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
      // Both r and s are computed mod q, so their width is limited by that of q.

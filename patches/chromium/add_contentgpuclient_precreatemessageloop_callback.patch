@@ -13,7 +13,7 @@ diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
 index 1a2c3b6a910c24b7d124ea1b3180a3c9655580d8..e6795df82114e85cbda78ca89ca0716f963ba180 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -255,6 +255,10 @@ int GpuMain(const MainFunctionParams& parameters) {
+@@ -255,6 +255,10 @@
    // to the GpuProcessHost once the GpuServiceImpl has started.
    viz::GpuServiceImpl::InstallPreInitializeLogHandler();
  
@@ -36,7 +36,7 @@ diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/conten
 index 88e80bdaecbdd9000109f638c6d79d8102d0e537..a0c0f17e6642dcd2690c095b95ff2c2de9b6ae4f 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -30,6 +30,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -30,6 +30,10 @@
   public:
    virtual ~ContentGpuClient() {}
  

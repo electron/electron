@@ -9,7 +9,7 @@ diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppap
 index 7846244231558f74cf5a9afdec3cd8597e0f5368..257452822d95e74a0d6da2b731bd02a2bd99b119 100644
 --- a/content/browser/ppapi_plugin_process_host.cc
 +++ b/content/browser/ppapi_plugin_process_host.cc
-@@ -122,6 +122,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+@@ -122,6 +122,9 @@
    ZygoteHandle GetZygote() override {
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();

@@ -10,7 +10,7 @@ diff --git a/src/api/callback.cc b/src/api/callback.cc
 index 9f52c25cf0d9005c2e70b76eb52eae1bd15f0a53..e151871dc90b6c29dc3fc3db162e24baeb45923d 100644
 --- a/src/api/callback.cc
 +++ b/src/api/callback.cc
-@@ -117,12 +117,14 @@ void InternalCallbackScope::Close() {
+@@ -117,12 +117,14 @@
      perform_stopping_check();
    }
  

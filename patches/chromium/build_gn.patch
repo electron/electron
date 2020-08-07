@@ -17,7 +17,7 @@ diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
 index 284a7da8868dc7fc46768c9ea92cc1506d887c02..d66ed569ada79aa1ee728989cb1f9809e30a9155 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
-@@ -123,6 +123,9 @@ if (current_os == "") {
+@@ -123,6 +123,9 @@
  #   even if the value is overridden, which is wasteful. See first bullet.
  
  declare_args() {

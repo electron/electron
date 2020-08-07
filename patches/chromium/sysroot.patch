@@ -10,7 +10,7 @@ diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroo
 index f8b7906cc557fb196e19dd6684a29c174b56c789..9fe9fe15f6bbaa38bb74930c4d069000f680987b 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
-@@ -37,9 +37,11 @@ except ImportError:
+@@ -37,9 +37,11 @@
      from urllib2 import urlopen
  
  SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

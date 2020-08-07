@@ -9,7 +9,7 @@ diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
 index 73543c6ed987ceed517e8d1ce8135c1ad233795d..249336d0a23cf32e25c93d917ffb1626119c624f 100644
 --- a/deps/uv/src/win/process.c
 +++ b/deps/uv/src/win/process.c
-@@ -1098,6 +1098,9 @@ int uv_spawn(uv_loop_t* loop,
+@@ -1098,6 +1098,9 @@
      process_flags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
    }
  

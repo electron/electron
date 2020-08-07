@@ -11,7 +11,7 @@ diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/pr
 index d7e470bbb181b2274584ffc14f2c26625b1d5794..78216f0083281b4f1e0209f766753d0dc9c796c4 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
-@@ -68,7 +68,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
+@@ -68,7 +68,7 @@
  PreresolveJob::~PreresolveJob() = default;
  
  PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,

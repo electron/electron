@@ -9,7 +9,7 @@ diff --git a/lib/internal/bootstrap/switches/is_main_thread.js b/lib/internal/bo
 index ac8336fb6229e7f44eb00f43abb07bea83a9463c..2005e8ef9ebd090c1be19ff320f48b9cd365239e 100644
 --- a/lib/internal/bootstrap/switches/is_main_thread.js
 +++ b/lib/internal/bootstrap/switches/is_main_thread.js
-@@ -80,6 +80,11 @@ function createWritableStdioStream(fd) {
+@@ -80,6 +80,11 @@
        const { Writable } = require('stream');
        stream = new Writable({
          write(buf, enc, cb) {

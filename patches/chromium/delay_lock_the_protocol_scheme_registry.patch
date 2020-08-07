@@ -22,7 +22,7 @@ diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_
 index 8ca7ccfad7d9d8f874f7a6a0507c787492f99ecb..40a17e6f4a0ee9e7490a32d1307dd74dd0f923d6 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -662,7 +662,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -662,7 +662,7 @@
    }
  #endif
  
@@ -35,7 +35,7 @@ diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
 index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d4a00bde3 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
-@@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
+@@ -49,7 +49,7 @@
  
  }  // namespace
  
@@ -58,7 +58,7 @@ diff --git a/content/common/url_schemes.h b/content/common/url_schemes.h
 index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f889977bee 100644
 --- a/content/common/url_schemes.h
 +++ b/content/common/url_schemes.h
-@@ -16,7 +16,7 @@ namespace content {
+@@ -16,7 +16,7 @@
  // parsed as "standard" or "referrer" with the src/url/ library, then locks the
  // sets of schemes down. The embedder can add additional schemes by
  // overriding the ContentClient::AddAdditionalSchemes method.
@@ -71,7 +71,7 @@ diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/co
 index 02985a525c98999f469906c8ff3647b740d9f962..e52e8d69c2d05b31d1f28b19752be362941e52be 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -36,6 +36,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+@@ -36,6 +36,10 @@
    return 0;
  }
  
@@ -86,7 +86,7 @@ diff --git a/content/public/app/content_main_delegate.h b/content/public/app/con
 index 0ca924769b98009264b53121dfe6a892b81e8530..606a5cb8d89216a95e9187fba2ea9b6d4121a394 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -76,6 +76,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -76,6 +76,20 @@
    // returning initialization error code. Default behavior is CHECK(false).
    virtual int TerminateForFatalInitializationError();
  

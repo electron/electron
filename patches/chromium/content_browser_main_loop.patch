@@ -11,7 +11,7 @@ diff --git a/content/browser/browser_main_loop.cc b/content/browser/browser_main
 index 50536c86ff6be648bbbfd01551a5c140ffc75b67..1a1c8102df1ea1d210146672167ae4c3e12f0f1d 100644
 --- a/content/browser/browser_main_loop.cc
 +++ b/content/browser/browser_main_loop.cc
-@@ -1436,7 +1436,7 @@ void BrowserMainLoop::MainMessageLoopRun() {
+@@ -1436,7 +1436,7 @@
    NOTREACHED();
  #else
    base::RunLoop run_loop;

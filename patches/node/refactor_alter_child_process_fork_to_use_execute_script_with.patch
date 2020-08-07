@@ -10,7 +10,7 @@ diff --git a/lib/child_process.js b/lib/child_process.js
 index 77bce9c386bb3f5f23a003e6e7290b2d84ac06e0..5ed166e1ed76b830c2d97f8170a4a72841201537 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
-@@ -110,6 +110,15 @@ function fork(modulePath /* , args, options */) {
+@@ -110,6 +110,15 @@
      throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
    }
  

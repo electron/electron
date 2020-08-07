@@ -11,7 +11,7 @@ diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
 index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd04a46fef 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -353,6 +353,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -353,6 +353,29 @@
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -45,7 +45,7 @@ diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
 index c0c37674e99b9d04c983dda8312433a37dbd5170..282bdb964cb4e3fb03d53768b3212fe2b84e3bd7 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -63,7 +63,8 @@ base::Optional<SkColor> GetHighContrastColor(
+@@ -63,7 +63,8 @@
    }
  }
  
@@ -118,7 +118,7 @@ diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_
 index 91c5532be895114ac532d270cb5e00cbfd4abf89..1ff5451c10c4843557746df9daf879d422b9855a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -646,6 +646,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -646,6 +646,18 @@
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

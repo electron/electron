@@ -12,7 +12,7 @@ diff --git a/src/node_binding.cc b/src/node_binding.cc
 index 0b5f6cfa038369be758e3b0857ee6fa594358b58..5291858bb164a262ca1d69d2582e037aeab23d55 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
-@@ -605,6 +605,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
+@@ -605,6 +605,10 @@
    args.GetReturnValue().Set(exports);
  }
  
@@ -27,7 +27,7 @@ diff --git a/src/node_binding.h b/src/node_binding.h
 index 5bced5b41431dc7838d1a30774a1a41ff797290e..4233ee968fb4b3b5456997cbf1450ecf07392455 100644
 --- a/src/node_binding.h
 +++ b/src/node_binding.h
-@@ -91,6 +91,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -91,6 +91,8 @@
  void GetLinkedBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
  void DLOpen(const v8::FunctionCallbackInfo<v8::Value>& args);
  

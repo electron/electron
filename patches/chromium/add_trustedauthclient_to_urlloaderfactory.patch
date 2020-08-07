@@ -13,7 +13,7 @@ diff --git a/services/network/public/mojom/network_context.mojom b/services/netw
 index 41f5c3db2171cbe015dcb8c6a4436b94c377fec8..621dcf406e899ed9561568a812b6eea042e8c427 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -214,6 +214,25 @@ struct CTPolicy {
+@@ -214,6 +214,25 @@
    array<string> excluded_legacy_spkis;
  };
  
@@ -52,7 +52,7 @@ diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
 index a5c25e290ef79c33117e14c02c05c86ebd558527..b21b39385ba3a15546eb38a26cb14a317bb64227 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -472,6 +472,7 @@ URLLoader::URLLoader(
+@@ -472,6 +472,7 @@
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -111,7 +111,7 @@ diff --git a/services/network/url_loader.h b/services/network/url_loader.h
 index 9f4d85ca7913c8de998e18560c6755cec51135d8..04748acc74ce55a335abb1865bb9bef9ae7a33c6 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -116,6 +116,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -116,6 +116,7 @@
        base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
        base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
        mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -131,7 +131,7 @@ diff --git a/services/network/url_loader_factory.cc b/services/network/url_loade
 index 75ae8488efa7e5acfda0b21029657b525fa95f86..5dce71ee5efc97f9f63d0b5f236dccdfb05cfc79 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
-@@ -75,6 +75,7 @@ URLLoaderFactory::URLLoaderFactory(
+@@ -75,6 +75,7 @@
        resource_scheduler_client_(std::move(resource_scheduler_client)),
        header_client_(std::move(params_->header_client)),
        coep_reporter_(std::move(params_->coep_reporter)),
@@ -151,7 +151,7 @@ diff --git a/services/network/url_loader_factory.h b/services/network/url_loader
 index 8b29b67a5b0663778df3169e09bf818e6bbcec3f..e504fa3d41066907a3fbc41e69daac968415dfa6 100644
 --- a/services/network/url_loader_factory.h
 +++ b/services/network/url_loader_factory.h
-@@ -75,6 +75,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
+@@ -75,6 +75,7 @@
    scoped_refptr<ResourceSchedulerClient> resource_scheduler_client_;
    mojo::Remote<mojom::TrustedURLLoaderHeaderClient> header_client_;
    mojo::Remote<mojom::CrossOriginEmbedderPolicyReporter> coep_reporter_;

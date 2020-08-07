@@ -11,7 +11,7 @@ diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_ins
 index 54546d15ba4006481ca8844e26b86359d3eb8a79..7712c681170ddf6739b2825b4b2fb9284a23f4b1 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
-@@ -83,6 +83,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
+@@ -83,6 +83,13 @@
    return instance;
  }
  
@@ -29,7 +29,7 @@ diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_inst
 index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a20195e56 100644
 --- a/content/browser/browsing_instance.h
 +++ b/content/browser/browsing_instance.h
-@@ -134,6 +134,11 @@ class CONTENT_EXPORT BrowsingInstance final
+@@ -134,6 +134,11 @@
        const GURL& url,
        bool allow_default_instance);
  
@@ -45,7 +45,7 @@ diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/
 index 2cf0ea5f20c09a6bc9948b4485f3f023c5c53b59..81f95e2ad9d0200c779f277d190ad870ebf91d3f 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1447,6 +1447,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1447,6 +1447,21 @@
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -94,7 +94,7 @@ diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/f
 index ccaa4324303df603bb7bc24077f58920420e0dae..8af5643e2105c8e307b7b736b72807e5aa9085b9 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -142,6 +142,10 @@ class CONTENT_EXPORT NavigationRequest
+@@ -142,6 +142,10 @@
      // asynchronous.
      WILL_PROCESS_RESPONSE,
  
@@ -109,7 +109,7 @@ diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/b
 index a1f68822b0d4fb8eaac271a5bf4aaeaf0765c124..23843f36808d37a753acc92199e82e7568df92da 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2335,6 +2335,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2335,6 +2335,16 @@
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -205,7 +205,7 @@ diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instan
 index 5a7ccbd331b4b6a898abea1d1c0081ff6ab20fea..2163cdc8808a3aec0a94df8a352594a8515f0f79 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -497,6 +497,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
+@@ -497,6 +497,10 @@
    return browsing_instance_->HasSiteInstance(site_info);
  }
  
@@ -220,7 +220,7 @@ diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instanc
 index e5d26881312d422ef34b8d769528a7ad4e5c8dd4..48bf203e49584b337dc5cca99339f74107f8ca97 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
-@@ -183,6 +183,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
+@@ -183,6 +183,7 @@
    BrowserContext* GetBrowserContext() override;
    const GURL& GetSiteURL() override;
    scoped_refptr<SiteInstance> GetRelatedSiteInstance(const GURL& url) override;
@@ -258,7 +258,7 @@ diff --git a/content/public/browser/content_browser_client.h b/content/public/br
 index f2b64eb90f80c94a9b8a7374b5733a609446346b..28f170b9455835f0c90af3411538b098e4fe75e9 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -247,8 +247,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -247,8 +247,45 @@
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  
@@ -308,7 +308,7 @@ diff --git a/content/public/browser/site_instance.h b/content/public/browser/sit
 index 0e6c3d076a02cd1b356745e514b9de9d32e4b00c..76647f1c5e9ee401fbf3def6ccfe73372f622548 100644
 --- a/content/public/browser/site_instance.h
 +++ b/content/public/browser/site_instance.h
-@@ -134,6 +134,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
+@@ -134,6 +134,11 @@
    //   corresponds to a site URL with the host "example.com".
    virtual const GURL& GetSiteURL() = 0;
  

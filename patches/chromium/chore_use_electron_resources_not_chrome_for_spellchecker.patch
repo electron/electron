@@ -10,7 +10,7 @@ diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
 index 1a43043910b445d2195e173f26e9b0b39abc88ff..fab18a88d821edea23e5bc9db771ad4f233749b2 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -5528,6 +5528,7 @@ static_library("browser") {
+@@ -5528,6 +5528,7 @@
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",
@@ -35,7 +35,7 @@ diff --git a/components/language/core/browser/BUILD.gn b/components/language/cor
 index f28230ea94fece5ae8ca7ac27a14da48f40fadbb..c10eea103852b9411a644e1fe20a7e20a38bf187 100644
 --- a/components/language/core/browser/BUILD.gn
 +++ b/components/language/core/browser/BUILD.gn
-@@ -31,6 +31,7 @@ static_library("browser") {
+@@ -31,6 +31,7 @@
      "//components/pref_registry",
      "//components/prefs",
      "//components/strings",
