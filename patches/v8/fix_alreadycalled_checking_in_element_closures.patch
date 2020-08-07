@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Wed, 15 Jul 2020 17:12:44 -0700
+Subject: Fix [[AlreadyCalled]] checking in element closures
+
+Bug: chromium:1105318
+Change-Id: I7b1c57b7ff7beaaa53c19a270d5a8c36b11baf17
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2301082
+Reviewed-by: Sathya Gunasekaran  <gsathya@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#68903}
+
+diff --git a/src/builtins/promise-all-element-closure.tq b/src/builtins/promise-all-element-closure.tq
+index c320b24f036c1cf2afb2fb9d0906690cc90bdb82..bb65760bd16c4d7510e4d1267b6037aef32767e7 100644
+--- a/src/builtins/promise-all-element-closure.tq
++++ b/src/builtins/promise-all-element-closure.tq
+@@ -81,9 +81,9 @@ namespace promise {
+   generates 'PropertyArray::HashField::kMax';
+ 
+   transitioning macro PromiseAllResolveElementClosure<F: type>(
+-      implicit context:
+-          Context)(value: JSAny, function: JSFunction, wrapResultFunctor: F):
+-      JSAny {
++      implicit context: Context)(
++      value: JSAny, function: JSFunction, wrapResultFunctor: F,
++      hasResolveAndRejectClosures: constexpr bool): JSAny { 
+     // We use the {function}s context as the marker to remember whether this
+     // resolve element closure was already called. It points to the resolve
+     // element context (which is a FunctionContext) until it was called the
+@@ -99,10 +99,6 @@ namespace promise {
+     const nativeContext = LoadNativeContext(context);
+     function.context = nativeContext;
+ 
+-    // Update the value depending on whether Promise.all or
+-    // Promise.allSettled is called.
+-    const updatedValue = wrapResultFunctor.Call(nativeContext, value);
+-
+     // Determine the index from the {function}.
+     assert(kPropertyArrayNoHashSentinel == 0);
+     const identityHash =
+@@ -117,13 +113,41 @@ namespace promise {
+     const elements = UnsafeCast<FixedArray>(valuesArray.elements);
+     const valuesLength = Convert<intptr>(valuesArray.length);
+     if (index < valuesLength) {
+-      // The {index} is in bounds of the {values_array},
+-      // just store the {value} and continue.
++      // The {index} is in bounds of the {values_array}, check if this element has
++      // already been resolved, and store the {value} if not.
++      //
++      // Promise.allSettled, for each input element, has both a resolve and a
++      // reject closure that share an [[AlreadyCalled]] boolean. That is, the
++      // input element can only be settled once: after resolve is called, reject
++      // returns early, and vice versa. Using {function}'s context as the marker
++      // only tracks per-closure instead of per-element. When the second
++      // resolve/reject closure is called on the same index, values.object[index]
++      // will already exist and will not be the hole value. In that case, return
++      // early. Everything up to this point is not yet observable to user code.
++      // This is not a problem for Promise.all since Promise.all has a single
++      // resolve closure (no reject) per element.
++      if (hasResolveAndRejectClosures) {
++        if (elements.objects[index] != TheHole) deferred {
++            return Undefined;
++          }
++      }
++
++      // Update the value depending on whether Promise.all or
++      // Promise.allSettled is called.
++      const updatedValue = wrapResultFunctor.Call(nativeContext, value);
+       elements.objects[index] = updatedValue;
+     } else {
+       // Check if we need to grow the backing store.
++      //
++      // There's no need to check if this element has already been resolved for
++      // Promise.allSettled if {values_array} has not yet grown to the index.      
+       const newLength = index + 1;
+       const elementsLength = elements.length_intptr;
++
++      // Update the value depending on whether Promise.all or
++      // Promise.allSettled is called.
++      const updatedValue = wrapResultFunctor.Call(nativeContext, value);
++
+       if (index < elementsLength) {
+         // The {index} is within bounds of the {elements} backing store, so
+         // just store the {value} and update the "length" of the {values_array}.
+@@ -168,7 +192,7 @@ namespace promise {
+       js-implicit context: Context, receiver: JSAny,
+       target: JSFunction)(value: JSAny): JSAny {
+     return PromiseAllResolveElementClosure(
+-        value, target, PromiseAllWrapResultAsFulfilledFunctor{});
++        value, target, PromiseAllWrapResultAsFulfilledFunctor{}, false);
+   }
+ 
+   transitioning javascript builtin
+@@ -176,7 +200,7 @@ namespace promise {
+       js-implicit context: Context, receiver: JSAny,
+       target: JSFunction)(value: JSAny): JSAny {
+     return PromiseAllResolveElementClosure(
+-        value, target, PromiseAllSettledWrapResultAsFulfilledFunctor{});
++        value, target, PromiseAllSettledWrapResultAsFulfilledFunctor{}, true);
+   }
+ 
+   transitioning javascript builtin
+@@ -184,6 +208,6 @@ namespace promise {
+       js-implicit context: Context, receiver: JSAny,
+       target: JSFunction)(value: JSAny): JSAny {
+     return PromiseAllResolveElementClosure(
+-        value, target, PromiseAllSettledWrapResultAsRejectedFunctor{});
++        value, target, PromiseAllSettledWrapResultAsRejectedFunctor{}, true);
+   }
+ }
