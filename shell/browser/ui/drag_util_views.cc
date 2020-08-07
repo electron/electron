@@ -8,6 +8,7 @@
 #include "ui/aura/window.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/base/dragdrop/file_info/file_info.h"
+#include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
@@ -39,12 +40,12 @@ void DragFileItems(const std::vector<base::FilePath>& files,
     return;
 
   gfx::Point location = display::Screen::GetScreen()->GetCursorScreenPoint();
-  // TODO(varunjain): Properly determine and send DRAG_EVENT_SOURCE below.
+  // TODO(varunjain): Properly determine and send DragEventSource below.
   aura::client::GetDragDropClient(root_window)
       ->StartDragAndDrop(
           std::move(data), root_window, view, location,
           ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK,
-          ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
+          ui::mojom::DragEventSource::kMouse);
 }
 
 }  // namespace electron
