@@ -126,12 +126,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   NSString* ns_path = base::mac::FilePathToNSString(path);
   CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
 
-  // // convert gfx::Size to CGSIZE
-  // NSSize ns_size = NSMakeSize(size.width(), size.height());
-  // CGSize cg_size = CGSizeMake(ns_size.width, ns_size.height);
-
   CGSize cg_size = CGSizeMake(size.width(), size.height());
-
   QLThumbnailRef ql_thumbnail =
       QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL);
   __block gin_helper::Promise<gfx::Image> p = std::move(promise);
