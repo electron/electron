@@ -41,7 +41,7 @@ function uploadToGitHub () {
   octokit.repos.uploadReleaseAsset({
     url: uploadUrl,
     headers: getHeaders(filePath, fileName),
-    file: fs.createReadStream(filePath),
+    data: fs.createReadStream(filePath),
     name: fileName
   }).then(() => {
     console.log(`Successfully uploaded ${fileName} to GitHub.`);
