@@ -119,7 +119,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 Archive::Archive(const base::FilePath& path) : path_(path) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (!file_.Initialize(path_)) {
+  if (base::PathExists(path_) && !file_.Initialize(path_)) {
     LOG(ERROR) << "Failed to open ASAR archive at '" << path_.value() << "'";
   }
 }
