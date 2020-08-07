@@ -1,6 +1,6 @@
-const cp = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import * as cp from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const certificatePath = process.argv[2];
 const outPath = process.argv[3];
