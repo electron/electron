@@ -252,7 +252,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
       'content-type': 'text/plain',
       'content-length': fs.statSync(filePath).size
     },
-    file: fs.createReadStream(filePath),
+    data: fs.createReadStream(filePath),
     name: fileName
   }).catch(err => {
     console.log(`${fail} Error uploading ${filePath} to GitHub:`, err);
