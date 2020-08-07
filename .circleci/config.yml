@@ -1037,6 +1037,11 @@ steps-lint: &steps-lint
           cd src/electron
           node script/yarn install --frozen-lockfile
           node script/yarn lint
+    - run:
+        name: Run Script Typechecker
+        command: |
+          cd src/electron
+          node script/yarn tsc -p tsconfig.script.json
 
 steps-checkout-and-save-cache: &steps-checkout-and-save-cache
   steps:
