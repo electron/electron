@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Taylor Brandstetter <deadbeef@webrtc.org>
+Date: Mon, 13 Jul 2020 11:51:49 -0700
+Subject: Check for null before accessing SctpTransport map.
+
+Bug: chromium:1104061
+Change-Id: I52d44ff1603341777a873e747c625665bc11bfa5
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/179161
+Commit-Queue: Taylor <deadbeef@webrtc.org>
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Cr-Commit-Position: refs/heads/master@{#31720}
+
+diff --git a/media/sctp/sctp_transport.cc b/media/sctp/sctp_transport.cc
+index e788d89bd64f912c54c6e8a6f0804860d683870d..6b14fcce7f2a4eb44fbc7761bdc120510fe9663e 100644
+--- a/media/sctp/sctp_transport.cc
++++ b/media/sctp/sctp_transport.cc
+@@ -302,18 +302,21 @@ class SctpTransport::UsrSctpWrapper {
+   }
+ 
+   static void UninitializeUsrSctp() {
+-    delete g_transport_map_;
+     RTC_LOG(LS_INFO) << __FUNCTION__;
+     // usrsctp_finish() may fail if it's called too soon after the transports
+     // are
+     // closed. Wait and try again until it succeeds for up to 3 seconds.
+     for (size_t i = 0; i < 300; ++i) {
+       if (usrsctp_finish() == 0) {
++        delete g_transport_map_;
++        g_transport_map_ = nullptr;
+         return;
+       }
+ 
+       rtc::Thread::SleepMs(10);
+     }
++    delete g_transport_map_;
++    g_transport_map_ = nullptr;
+     RTC_LOG(LS_ERROR) << "Failed to shutdown usrsctp.";
+   }
+ 
+@@ -340,6 +343,11 @@ class SctpTransport::UsrSctpWrapper {
+                                   size_t length,
+                                   uint8_t tos,
+                                   uint8_t set_df) {
++    if (!g_transport_map_) {
++      RTC_LOG(LS_ERROR)
++          << "OnSctpOutboundPacket called after usrsctp uninitialized?";
++      return EINVAL;
++    }
+     SctpTransport* transport =
+         g_transport_map_->Retrieve(reinterpret_cast<uintptr_t>(addr));
+     if (!transport) {
+@@ -462,6 +470,12 @@ class SctpTransport::UsrSctpWrapper {
+     // id of the transport that created them, so [0] is as good as any other.
+     struct sockaddr_conn* sconn =
+         reinterpret_cast<struct sockaddr_conn*>(&addrs[0]);
++    if (!g_transport_map_) {
++      RTC_LOG(LS_ERROR)
++          << "GetTransportFromSocket called after usrsctp uninitialized?";
++      usrsctp_freeladdrs(addrs);
++      return nullptr;
++    }
+     SctpTransport* transport = g_transport_map_->Retrieve(
+         reinterpret_cast<uintptr_t>(sconn->sconn_addr));
+     usrsctp_freeladdrs(addrs);
