@@ -222,7 +222,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   ISharedBitmap* pThumbnail = nullptr;
   WTS_CACHEFLAGS flags;
   WTS_THUMBNAILID thumbId;
-  hr = pThumbnailCache->GetThumbnail(pItem, size, WTS_FLAGS::WTS_NONE,
+  hr = pThumbnailCache->GetThumbnail(pItem, size.width(), WTS_FLAGS::WTS_NONE,
                                      &pThumbnail, &flags, &thumbId);
   pItem->Release();
 
