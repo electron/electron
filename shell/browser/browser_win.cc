@@ -191,7 +191,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   }
 
   if (!path.IsAbsolute()) {
-    promise.RejectWithErrorMessage("Path must be absolute");
+    promise.RejectWithErrorMessage("path must be absolute");
     return handle;
   }
 
@@ -203,7 +203,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
 
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
-        "Failed to create IShellItem from the given path");
+        "failed to create IShellItem from the given path");
     return handle;
   }
 
@@ -213,7 +213,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
                         IID_PPV_ARGS(&pThumbnailCache));
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
-        "Failed to acquire local thumbnail cache reference");
+        "failed to acquire local thumbnail cache reference");
     pItem->Release();
     return handle;
   }
@@ -228,7 +228,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
 
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
-        "Failed to get thumbnail from local thumbnail cache reference");
+        "failed to get thumbnail from local thumbnail cache reference");
     pThumbnailCache->Release();
     return handle;
   }
@@ -237,7 +237,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   HBITMAP hBitmap = NULL;
   hr = pThumbnail->GetSharedBitmap(&hBitmap);
   if (FAILED(hr)) {
-    promise.RejectWithErrorMessage("Failed to extract Bitmap from Thumbnail");
+    promise.RejectWithErrorMessage("failed to extract bitmap from thumbnail");
     pThumbnailCache->Release();
     pThumbnail->Release();
     return handle;
@@ -246,7 +246,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   // convert HBITMAP to gfx::Image
   BITMAP bitmap;
   if (!GetObject(hBitmap, sizeof(bitmap), &bitmap)) {
-    promise.RejectWithErrorMessage("Could not convert HBITMAP to BITMAP");
+    promise.RejectWithErrorMessage("could not convert HBITMAP to BITMAP");
     return handle;
   }
 

@@ -4,7 +4,6 @@
 
 #include "shell/browser/browser.h"
 
-#include <Foundation/Foundation.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -58,7 +57,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
   }
 
   if (!path.IsAbsolute()) {
-    promise.RejectWithErrorMessage("Path must be absolute");
+    promise.RejectWithErrorMessage("path must be absolute");
     return handle;
   }
 

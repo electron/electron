@@ -805,7 +805,7 @@ describe('app module', () => {
 
       await expect(
         app.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejectedWith('Path must be absolute');
+      ).to.eventually.be.rejectedWith('path must be absolute');
     });
 
     ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
