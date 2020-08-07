@@ -832,6 +832,13 @@ describe('app module', () => {
       const result = await app.createThumbnailFromPath(goodPath, goodSize);
       expect(result.isEmpty()).to.equal(false);
     });
+
+    ifit(process.platform === 'win32')('returns native image with valid params (Windows)', async () => {
+      const goodPath = path.join(__dirname, 'fixtures\\apps\\xwindow-icon\\icon.png');
+      const goodSize:MaxSize = { width: 100, height: 100 };
+      const result = await app.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
   });
 
   describe('select-client-certificate event', () => {
