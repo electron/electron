@@ -29,7 +29,7 @@ index fde643bea370c86d8a7e7f17ae8aa12894028abf..a39ba02d6f4cfaa1ca2325366cd52f50
      throw new ERR_INVALID_URL_SCHEME('file');
 @@ -1383,8 +1382,7 @@ function pathToFileURL(filepath) {
  }
-
+ 
  function toPathIfFileURL(fileURLOrPath) {
 -  if (fileURLOrPath == null || !fileURLOrPath[searchParams] ||
 -      !fileURLOrPath[searchParams][searchParams])
