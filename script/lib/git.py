@@ -260,6 +260,30 @@ def remove_patch_filename(patch):
     force_keep_next_line = l.startswith('Subject: ')
 
 
+def remove_hunk_header_function(patch):
+  """Strip out the portion of the hunk header that includes the nearest function name"""
+  i = 1
+  target_header = -1
+  for l in patch:
+    if i == target_header:
+      # header looks like
+      # @@ -148,14 +148,6 @@ class NodePlatform
+      # we need just the bit between the "@@"
+      line_refs = l.split("@@")[1]
+      new_line = "@@" + line_refs + "@@"
+      target_header = -1
+      yield new_line
+    elif target_header - 3 == i and l.startswith("new file"):
+      target_header += 1
+      yield l
+    elif target_header == -1 and l.startswith("diff --git a/"):
+      target_header = i + 4
+      yield l
+    else:
+      yield l    
+    i += 1
+
+
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
   if patch_range is None:
     patch_range, num_patches = guess_base_commit(repo)
@@ -281,7 +305,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       filename = get_file_name(patch)
       filepath = os.path.join(out_dir, filename)
       existing_patch = open(filepath, 'r').read()
-      formatted_patch = '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+      formatted_patch = '\n'.join(remove_hunk_header_function(remove_patch_filename(patch))).rstrip('\n') + '\n'
       if formatted_patch != existing_patch:
         patch_count += 1
     if patch_count > 0:
@@ -297,7 +321,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       for patch in patches:
         filename = get_file_name(patch)
         file_path = os.path.join(out_dir, filename)
-        formatted_patch = '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+        formatted_patch = '\n'.join(remove_hunk_header_function(remove_patch_filename(patch))).rstrip('\n') + '\n'
         with open(file_path, 'w') as f:
           f.write(formatted_patch)
         pl.write(filename + '\n')
