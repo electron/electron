@@ -108,7 +108,7 @@
       "node script/lint.js --js --fix --only --"
     ],
     "*.{js,ts,d.ts}": [
-      "node script/gen-filenames.js"
+      "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
       "python script/run-clang-format.py -r -c --fix"
@@ -124,13 +124,13 @@
       "node script/lint.js --py --fix --only --"
     ],
     "docs/api/**/*.md": [
-      "node script/gen-filenames.js",
+      "ts-node script/gen-filenames.ts",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
-      "node script/check-patch-diff.js"
+      "ts-node script/check-patch-diff.ts"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
