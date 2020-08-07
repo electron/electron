@@ -31,15 +31,26 @@
 #include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
+#if !defined(MAS_BUILD)
+#include "shell/common/crash_keys.h"
+#endif
+
 namespace electron {
 
 namespace {
 
 // Called when there is a fatal error in V8, we just crash the process here so
 // we can get the stack trace.
-void FatalErrorCallback(const char* location, const char* message) {
+void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  ElectronBindings::Crash();
+
+#if !defined(MAS_BUILD)
+  crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
+
+  volatile int* zero = nullptr;
+  *zero = 0;
 }
 
 }  // namespace
@@ -86,7 +97,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
 
 void ElectronBindings::BindTo(v8::Isolate* isolate,
                               v8::Local<v8::Object> process) {
-  isolate->SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler(V8FatalErrorCallback);
 
   gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
