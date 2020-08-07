@@ -41,7 +41,7 @@
 
 #if defined(OS_LINUX)
 #include "base/containers/span.h"
-#include "base/files/file.h"
+#include "base/files/file_util.h"
 #include "base/guid.h"
 #include "components/crash/core/app/breakpad_linux.h"
 #include "components/crash/core/common/crash_keys.h"
@@ -94,29 +94,18 @@ base::FilePath GetClientIdPath() {
 
 std::string ReadClientId() {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::FilePath client_id_path = GetClientIdPath();
-  base::File client_id_file(client_id_path,
-                            base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!client_id_file.IsValid())
-    return std::string();
-  std::vector<uint8_t> data;
+  std::string client_id;
   // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
-  data.resize(36);
-  if (!client_id_file.ReadAtCurrentPosAndCheck(base::make_span(data)))
+  if (!base::ReadFileToStringWithMaxSize(GetClientIdPath(), &client_id, 36) ||
+      client_id.size() != 36)
     return std::string();
-  return std::string(data.begin(), data.end());
+  return client_id;
 }
 
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::FilePath client_id_path = GetClientIdPath();
-  base::File client_id_file(
-      client_id_path, base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-  if (!client_id_file.IsValid())
-    return;
-  client_id_file.WriteAtCurrentPosAndCheck(base::make_span(
-      reinterpret_cast<const uint8_t*>(client_id.data()), client_id.size()));
+  base::WriteFile(GetClientIdPath(), client_id);
 }
 
 std::string GetClientId() {
