@@ -23,11 +23,15 @@ const tagIsBeta = tag => tag.includes('beta');
 const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag);
 
 const getTagsOf = async (point) => {
-  return (await runGit(['tag', '--merged', point]))
-    .split('\n')
-    .map(tag => tag.trim())
-    .filter(tag => semver.valid(tag))
-    .sort(semver.compare);
+  try {
+    const tags = await runGit(['tag', '--merged', point]);
+    return tags.split('\n')
+      .map(tag => tag.trim())
+      .filter(tag => semver.valid(tag))
+      .sort(semver.compare);
+  } catch (err) {
+    console.error('Failed to fetch tags: ', err);
+  }
 };
 
 const getTagsOnBranch = async (point) => {
@@ -41,21 +45,29 @@ const getTagsOnBranch = async (point) => {
 };
 
 const getBranchOf = async (point) => {
-  const branches = (await runGit(['branch', '-a', '--contains', point]))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch);
-  const current = branches.find(branch => branch.startsWith('* '));
-  return current ? current.slice(2) : branches.shift();
+  try {
+    const branches = (await runGit(['branch', '-a', '--contains', point]))
+      .split('\n')
+      .map(branch => branch.trim())
+      .filter(branch => !!branch);
+    const current = branches.find(branch => branch.startsWith('* '));
+    return current ? current.slice(2) : branches.shift();
+  } catch (err) {
+    console.error(`Failed to fetch branch for ${point}: `, err);
+  }
 };
 
 const getAllBranches = async () => {
-  return (await runGit(['branch', '--remote']))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch)
-    .filter(branch => branch !== 'origin/HEAD -> origin/master')
-    .sort();
+  try {
+    const branches = await runGit(['branch', '--remote']);
+    return branches.split('\n')
+      .map(branch => branch.trim())
+      .filter(branch => !!branch)
+      .filter(branch => branch !== 'origin/HEAD -> origin/master')
+      .sort();
+  } catch (err) {
+    console.error('Failed to fetch all branches: ', err);
+  }
 };
 
 const getStabilizationBranches = async () => {
