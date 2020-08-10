@@ -208,7 +208,7 @@ index 75a4ff5c1a45cb8a36f6b2979fc9a12a68e23953..75531d963c4ee8bb4197b30c93623e55
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 1b6a9ace62421ea3e72f7fadc6b9b73441576e51..199f14f42bbad4ac6ae12eee59da9c0200c7b8d6 100644
+index 2c5f258b75cda71ec8f5de721266243aa8b36db0..3580ca1bbce40fb219e900441b72d1ab6f7e61fc 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,17 @@ struct CTPolicy {
@@ -229,7 +229,7 @@ index 1b6a9ace62421ea3e72f7fadc6b9b73441576e51..199f14f42bbad4ac6ae12eee59da9c02
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -860,6 +871,9 @@ interface NetworkContext {
+@@ -861,6 +872,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

@@ -67,7 +67,7 @@ index 6d2a073ff4c52c7b5924fa5c9ab4fd0e9ba46116..80d91bbda3188caa91c30abcc0a92d7a
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 4e2f84beb37dd435afcc9ee0ad8b519f0e2af78a..2341fe4301ccc95a73197c60bd9301f14b9ed2ae 100644
+index 5467a8c10153d7e88d58d8bcbccbd1716a82870a..9311077be9fd1540e504aa1995bfb6171119d200 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -203,6 +203,7 @@ void LocalWindowProxy::Initialize() {
@@ -79,7 +79,7 @@ index 4e2f84beb37dd435afcc9ee0ad8b519f0e2af78a..2341fe4301ccc95a73197c60bd9301f1
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
-index 2e00b61d90de282a0c1cdf53dc53271b8312a81b..d958980bcc5d2586d1aa1a962b5778646f3ae4a2 100644
+index b849df64ee16f08d2370638fbe14ed364b2c0650..f38e3cfb85d5d5da9a429fd51dec0cd335a1a930 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.cc
 @@ -392,6 +392,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
@@ -97,10 +97,10 @@ index 2e00b61d90de282a0c1cdf53dc53271b8312a81b..d958980bcc5d2586d1aa1a962b577864
      v8::Local<v8::Context> context,
      int32_t world_id) {
 diff --git a/third_party/blink/renderer/core/exported/local_frame_client_impl.h b/third_party/blink/renderer/core/exported/local_frame_client_impl.h
-index 2d6e5d7988f0b460d81eae0d1ae2524637a1410b..70dccc35bc5b5b4c955de49b9dd3d7cb3728ca64 100644
+index dd60568c183c164bede36c69260866399b7e4b79..ab05496705b4aeeedf14af4c509a32c1d4382bb8 100644
 --- a/third_party/blink/renderer/core/exported/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/exported/local_frame_client_impl.h
-@@ -78,6 +78,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
+@@ -77,6 +77,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
  
    void DidCreateScriptContext(v8::Local<v8::Context>,
                                int32_t world_id) override;
@@ -110,10 +110,10 @@ index 2d6e5d7988f0b460d81eae0d1ae2524637a1410b..70dccc35bc5b5b4c955de49b9dd3d7cb
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 96bf50bf97fc23646edaae571a93a00be64e62c5..337ddaf201315f3eed006089111c515942b1602c 100644
+index 0360e07b16ee6b09ea4ff64ade54b428241fe3d1..83ae67eb024d6b0f1747af08adc5fd5a20088ae3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -287,6 +287,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -288,6 +288,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
  
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) = 0;
@@ -123,7 +123,7 @@ index 96bf50bf97fc23646edaae571a93a00be64e62c5..337ddaf201315f3eed006089111c5159
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 6744afc4762b72584658caec102a66bcbc5db12f..2eb500ab078660a22d9e14e4081184cd1ba18bb4 100644
+index c233b9b5067c7833e773926585bcb774641faf05..2d2bee9cf782851a93d1e2e021f3890893fa11f2 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -331,6 +331,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

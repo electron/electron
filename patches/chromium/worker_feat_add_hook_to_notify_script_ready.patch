@@ -78,10 +78,10 @@ index 614837662b2bf462e50c0bc702e4c29bcd42c8e2..8c643f40533b63cd3b6748d9acb44460
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index a1eeaa89889aff8457a371a61b0fabb365ca306e..c69c9b8f57c14073db79cedc09c4cf32bc1129c3 100644
+index e85ea76736a0712436cd8d338b55dcf45285715b..4c10d67881e8554c6c86482d5df6c9d956f3c12d 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-@@ -328,6 +328,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+@@ -331,6 +331,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    wrapper_type_info->InstallConditionalFeatures(
        context, *world_, global_object, v8::Local<v8::Object>(),
        v8::Local<v8::Function>(), global_interface_template);

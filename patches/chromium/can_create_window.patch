@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 4fcc39a319135cf656a118db3c42a0be58995457..52434f9803fe881f334369d31dc05423ee988da7 100644
+index 16c568be438a6d1bf5ed413fedaee03a5b866a6d..910020e4ec7125eaae9e0f42319ced54dd768d91 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4727,6 +4727,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4769,6 +4769,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 4fcc39a319135cf656a118db3c42a0be58995457..52434f9803fe881f334369d31dc05423
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a2ebb0d6bb50accda34845cbb1186cbb02733209..d038f13b43f97bef7b72112d0905b632c82b963c 100644
+index b56ff2cbb595ac9c1b88cbd84d39dc9587faaaba..247f6fc26104c24a9d818e3606d76f17f6e4be6b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3368,9 +3368,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3369,9 +3369,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -206,7 +206,7 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 83d7c4f7d405d3bba7eec65d96d559f5bfb0e327..20c1987f3c1ede7973b9036fd57fd092b254dd6d 100644
+index f4259f5af3ab508d58b8d351da147e2d71250f07..2943be5715f2436e40049f82d954caedd1b76cc0 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1915,6 +1915,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
