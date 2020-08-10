@@ -19,7 +19,7 @@ const runGit = async (args) => {
 };
 
 const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported');
-const tagIsBeta = tag => tag.includes('beta');
+const tagIsBeta = tag => tag && tag.includes('beta');
 const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag);
 
 const getTagsOf = async (point) => {
@@ -31,6 +31,7 @@ const getTagsOf = async (point) => {
       .sort(semver.compare);
   } catch (err) {
     console.error('Failed to fetch tags: ', err);
+    return [];
   }
 };
 
@@ -67,6 +68,7 @@ const getAllBranches = async () => {
       .sort();
   } catch (err) {
     console.error('Failed to fetch all branches: ', err);
+    return [];
   }
 };
 
