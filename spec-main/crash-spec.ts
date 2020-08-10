@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ifdescribe } from './spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -20,7 +21,7 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   return new Promise((resolve) => {
     child.on('exit', (code, signal) => {
       if (code !== 0 || signal !== null) {
-        console.error(`THERE WAS AN ERROR: "${out}"`);
+        console.error(out);
       }
       expect(signal).to.equal(null, 'exit signal should be null');
       expect(code).to.equal(0, 'should have exited with code 0');
@@ -30,7 +31,8 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   });
 };
 
-describe('crash cases', () => {
+// TODO re-enable this test for WOA
+ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('crash cases', () => {
   afterEach(() => {
     for (const child of children) {
       child.kill();
