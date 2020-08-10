@@ -11,6 +11,7 @@ const notesGenerator = require('./notes.js');
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
+  console.log(`Running: git ${args.join(' ')}`);
   const response = await GitProcess.exec(args, ELECTRON_DIR);
   if (response.exitCode !== 0) {
     throw new Error(response.stderr.trim());
