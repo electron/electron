@@ -105,7 +105,7 @@ std::string ReadClientId() {
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::WriteFile(GetClientIdPath(), client_id);
+  base::WriteFile(GetClientIdPath(), client_id.data(), client_id.size());
 }
 
 std::string GetClientId() {
