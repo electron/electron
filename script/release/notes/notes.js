@@ -11,7 +11,7 @@ const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
-const { SRC_DIR } = require('../../lib/utils');
+const { ELECTRON_DIR } = require('../../lib/utils');
 
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
@@ -387,13 +387,12 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   }
 
   const pool = new Pool();
-  const electronDir = path.resolve(SRC_DIR, 'electron');
-  const toBranch = await getBranchNameOfRef(toRef, electronDir);
+  const toBranch = await getBranchNameOfRef(toRef, ELECTRON_DIR);
 
   console.log(`Generating release notes between ${fromRef} and ${toRef} for version ${newVersion} in branch ${toBranch}`);
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: electronDir };
+  const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_DIR };
   await addRepoToPool(pool, electron, fromRef, toRef);
 
   // remove any old commits
