@@ -213,8 +213,8 @@ async function prepareRelease (isBeta, notesOnly) {
   }
 }
 
-try {
-  prepareRelease(!args.stable, args.notesOnly);
-} catch (err) {
-  console.error(err);
-}
+prepareRelease(!args.stable, args.notesOnly)
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
