@@ -13,11 +13,11 @@ to automate the `Info.plist` changes during app build time.
 
 ## Automatically updating the native interfaces
 
-"Native Interfaces" include the file picker, window border, dialogs, context menus and more; basically,
+"Native Interfaces" include the file picker, window border, dialogs, context menus, and more; basically,
 anything where the UI comes from macOS and not your app. As of Electron 7.0.0, the default behavior
-is to opt in to this automatic theming from the OS. If you wish to opt out and are using Electron
+is to opt into this automatic theming from the OS. If you wish to opt-out and are using Electron
 &gt; 8.0.0, you must set the `NSRequiresAquaSystemAppearance` key in the `Info.plist` file to `true`.
-Please note that Electron 8.0.0 and above will not let your opt out of this theming, due to the use
+Please note that Electron 8.0.0 and above will not let your opt-out of this theming, due to the use
 of the macOS 10.14 SDK.
 
 ## Automatically updating your own interfaces
