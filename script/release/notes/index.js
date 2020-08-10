@@ -11,7 +11,7 @@ const notesGenerator = require('./notes.js');
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
-  console.log(`Running: git ${args.join(' ')}`);
+  console.info(`Running: git ${args.join(' ')}`);
   const response = await GitProcess.exec(args, ELECTRON_DIR);
   if (response.exitCode !== 0) {
     throw new Error(response.stderr.trim());
@@ -31,8 +31,8 @@ const getTagsOf = async (point) => {
       .filter(tag => semver.valid(tag))
       .sort(semver.compare);
   } catch (err) {
-    console.error('Failed to fetch tags: ', err);
-    return [];
+    console.error(`Failed to fetch tags for point ${point}`);
+    throw err;
   }
 };
 
@@ -56,6 +56,7 @@ const getBranchOf = async (point) => {
     return current ? current.slice(2) : branches.shift();
   } catch (err) {
     console.error(`Failed to fetch branch for ${point}: `, err);
+    throw err;
   }
 };
 
@@ -68,8 +69,8 @@ const getAllBranches = async () => {
       .filter(branch => branch !== 'origin/HEAD -> origin/master')
       .sort();
   } catch (err) {
-    console.error('Failed to fetch all branches: ', err);
-    return [];
+    console.error('Failed to fetch all branches');
+    throw err;
   }
 };
 
