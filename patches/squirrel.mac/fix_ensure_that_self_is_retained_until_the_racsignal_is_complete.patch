@@ -9,7 +9,7 @@ diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
 index 478509cdd528db4fcfa340c6f93fa58a446957e6..7c279bf73c368453bff4f922d76908c06dc378cd 100644
 --- a/Squirrel/SQRLZipArchiver.m
 +++ b/Squirrel/SQRLZipArchiver.m
-@@ -134,7 +134,7 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
+@@ -134,7 +134,7 @@ - (RACSignal *)launchWithArguments:(NSArray *)arguments {
  			return [RACSignal
  				zip:@[ self.taskTerminated, self.standardErrorData ]
  				reduce:^(NSNumber *exitStatus, NSData *errorData) {
