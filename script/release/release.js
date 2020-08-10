@@ -23,7 +23,6 @@ const temp = require('temp').track();
 const { URL } = require('url');
 const { Octokit } = require('@octokit/rest');
 const AWS = require('aws-sdk');
-AWS.config.update({ region: 'us-west-2' });
 
 require('colors');
 const pass = '✓'.green;
@@ -225,13 +224,18 @@ async function mergeShasums (pkgVersion) {
   // concatenate them, and upload to GitHub.
 
   const bucket = process.env.ELECTRON_S3_BUCKET;
-  const accessKey = process.env.ELECTRON_S3_ACCESS_KEY;
-  const secretKey = process.env.ELECTRON_S3_SECRET_KEY;
-  if (!bucket || !accessKey || !secretKey) {
+  const accessKeyId = process.env.ELECTRON_S3_ACCESS_KEY;
+  const secretAccessKey = process.env.ELECTRON_S3_SECRET_KEY;
+  if (!bucket || !accessKeyId || !secretAccessKey) {
     throw new Error('Please set the $ELECTRON_S3_BUCKET, $ELECTRON_S3_ACCESS_KEY, and $ELECTRON_S3_SECRET_KEY environment variables');
   }
 
-  const s3 = new AWS.S3({ apiVersion: '2006-03-01' });
+  const s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    accessKeyId,
+    secretAccessKey,
+    region: 'us-west-2'
+  });
   const objects = await s3.listObjectsV2({
     Bucket: bucket,
     Prefix: `atom-shell/tmp/${pkgVersion}/`,
