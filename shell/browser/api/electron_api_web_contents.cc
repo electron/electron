@@ -1763,13 +1763,12 @@ void WebContents::EnableDeviceEmulation(
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (widget_host) {
-      auto* impl = content::RenderWidgetHostImpl::FromID(
-          widget_host->GetProcess()->GetID(), widget_host->GetRoutingID());
-
-      auto& frame_widget = impl->GetAssociatedFrameWidget();
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
       frame_widget->EnableDeviceEmulation(params);
     }
   }
@@ -1781,13 +1780,12 @@ void WebContents::DisableDeviceEmulation() {
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (widget_host) {
-      auto* impl = content::RenderWidgetHostImpl::FromID(
-          widget_host->GetProcess()->GetID(), widget_host->GetRoutingID());
-
-      auto& frame_widget = impl->GetAssociatedFrameWidget();
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
       frame_widget->DisableDeviceEmulation();
     }
   }

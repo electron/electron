@@ -55,11 +55,9 @@ void WindowStateWatcher::DidProcessXEvent(x11::Event* x11_event) {
 }
 
 bool WindowStateWatcher::IsWindowStateEvent(x11::Event* x11_event) const {
-  return (x11_event->As<x11::PropertyNotifyEvent>() &&
-          x11_event->As<x11::PropertyNotifyEvent>()->atom ==
-              window_state_atom_ &&
-          static_cast<uint32_t>(
-              x11_event->As<x11::PropertyNotifyEvent>()->window) == widget_);
+  auto* property = x11_event->As<x11::PropertyNotifyEvent>();
+  return (property && property->atom == window_state_atom_ &&
+          static_cast<uint32_t>(property->window) == widget_);
 }
 
 }  // namespace electron
