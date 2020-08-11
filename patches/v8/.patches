@@ -9,3 +9,4 @@ revert_cleanup_switch_offset_of_to_offsetof_where_possible.patch
 fix_build_deprecated_attirbute_for_older_msvc_versions.patch
 backport_1084820.patch
 backport_986051.patch
+fix_alreadycalled_checking_in_element_closures.patch
