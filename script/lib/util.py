@@ -208,7 +208,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--prefix', prefix,
     '--key_prefix', key_prefix,
     '--grant', 'public-read',
-  ] + files)
+  ] + files, env)
 
 
 def add_exec_bit(filename):
