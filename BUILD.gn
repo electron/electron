@@ -814,6 +814,9 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # Required for exporting all symbols of libuv.
+      "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
     ]
     if (is_component_build) {
       ldflags += [
@@ -1145,7 +1148,14 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
-      ldflags = [ "-pie" ]
+      ldflags = [
+        "-pie",
+
+        # Required for exporting all symbols of libuv.
+        "-Wl,--whole-archive",
+        "obj/third_party/electron_node/deps/uv/libuv.a",
+        "-Wl,--no-whole-archive",
+      ]
 
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
