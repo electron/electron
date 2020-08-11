@@ -33,6 +33,8 @@ void AddGuest(int guest_instance_id,
   }
 
   WebContentsPreferences::From(guest_web_contents)->Merge(options);
+  // Trigger re-calculation of webkit prefs.
+  guest_web_contents->NotifyPreferencesChanged();
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

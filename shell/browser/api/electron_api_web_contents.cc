@@ -593,6 +593,8 @@ void WebContents::InitWithSessionAndOptions(
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
+  // Trigger re-calculation of webkit prefs.
+  web_contents()->NotifyPreferencesChanged();
 
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   SecurityStateTabHelper::CreateForWebContents(web_contents());
