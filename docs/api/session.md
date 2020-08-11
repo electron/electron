@@ -283,6 +283,27 @@ Writes any unwritten DOMStorage data to disk.
 #### `ses.setProxy(config)`
 
 * `config` Object
+  * `mode` String (optional) - The proxy mode. Should be one of `direct`,
+    `auto_detect`, `pac_script`, `fixed_servers` or `system`. If it's
+    unspecified, it will be automatically determined based on other specified
+    options.
+    * `direct`
+      In direct mode all connections are created directly, without any proxy involved.
+    * `auto_detect`
+      In auto_detect mode the proxy configuration is determined by a PAC script that can
+      be downloaded at http://wpad/wpad.dat.
+    * `pac_script`
+      In pac_script mode the proxy configuration is determined by a PAC script that is
+      retrieved from the URL specified in the `pacScript`. This is the default mode
+      if `pacScript` is specified.
+    * `fixed_servers`
+      In fixed_servers mode the proxy configuration is specified in `proxyRules`.
+      This is the default mode if `proxyRules` is specified.
+    * `system`
+      In system mode the proxy configuration is taken from the operating system.
+      Note that the system mode is different from setting no proxy configuration.
+      In the latter case, Electron falls back to the system settings
+      only if no command-line options influence the proxy configuration.
   * `pacScript` String (optional) - The URL associated with the PAC file.
   * `proxyRules` String (optional) - Rules indicating which proxies to use.
   * `proxyBypassRules` String (optional) - Rules indicating which URLs should
@@ -292,7 +313,7 @@ Returns `Promise<void>` - Resolves when the proxy setting process is complete.
 
 Sets the proxy settings.
 
-When `pacScript` and `proxyRules` are provided together, the `proxyRules`
+When `mode` is unspecified, `pacScript` and `proxyRules` are provided together, the `proxyRules`
 option is ignored and `pacScript` configuration is applied.
 
 You may need `ses.closeAllConnections` to close currently in flight connections to prevent
