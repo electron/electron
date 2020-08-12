@@ -71,7 +71,7 @@ index 7b721327bbe784314f4523bc7164182af3f53299..baf338dd58e9223b6cfb313c31bbdb19
  // Returns browser accessibility range for the given AXTextMarkerRange.
  BrowserAccessibilityPosition::AXRangeType AXTextMarkerRangeToRange(id);
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index eae637ff66da54ec2cba43107504ee3133d5fb2c..d98ba9f8aefe4fc3dc8f6fa55c1ee47e27963047 100644
+index eae637ff66da54ec2cba43107504ee3133d5fb2c..5038378864a6dd78bd470e068049d0e4beef2f5c 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -711,6 +711,20 @@ bool IsSelectedStateRelevant(BrowserAccessibility* item) {
@@ -100,7 +100,7 @@ index eae637ff66da54ec2cba43107504ee3133d5fb2c..d98ba9f8aefe4fc3dc8f6fa55c1ee47e
          size_t{sel_end} == newValue.length()) {
        // Don't include oldValue as it would be announced -- very confusing.
 -      return content::AXTextEdit(newValue, base::string16());
-+      return content::AXTextEdit(newValue, base::string16(), nil));
++      return content::AXTextEdit(newValue, base::string16(), nil);
      }
    }
 -  return content::AXTextEdit(insertedText, deletedText);
