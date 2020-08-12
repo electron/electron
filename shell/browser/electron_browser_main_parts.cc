@@ -553,6 +553,8 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   js_env_->OnMessageLoopDestroying();
   node_env_.reset();
 
+  ElectronBrowserContext::browser_context_map().clear();
+
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 }

@@ -18,7 +18,6 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -51,7 +50,6 @@ class ProtocolRegistry;
 
 class ElectronBrowserContext
     : public content::BrowserContext,
-      public gin_helper::CleanedUpAtExit,
       public network::mojom::TrustedURLLoaderAuthClient {
  public:
   // partition_id => browser_context
