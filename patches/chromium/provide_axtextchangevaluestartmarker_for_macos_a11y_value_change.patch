@@ -71,7 +71,7 @@ index 7b721327bbe784314f4523bc7164182af3f53299..baf338dd58e9223b6cfb313c31bbdb19
  // Returns browser accessibility range for the given AXTextMarkerRange.
  BrowserAccessibilityPosition::AXRangeType AXTextMarkerRangeToRange(id);
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 84cb0fe898631353ade5b205cc061c7e8622301d..a3be88aa4297a490469c3aa01187a11d666314a9 100644
+index eae637ff66da54ec2cba43107504ee3133d5fb2c..cb6382b1ddc6da02bef90064cbcc7a3fb96c0853 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -711,6 +711,20 @@ bool IsSelectedStateRelevant(BrowserAccessibility* item) {
@@ -95,10 +95,10 @@ index 84cb0fe898631353ade5b205cc061c7e8622301d..a3be88aa4297a490469c3aa01187a11d
  #if defined(MAC_OS_X_VERSION_10_12) && \
      (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)
  #warning NSAccessibilityRequiredAttributeChrome \
-@@ -1876,7 +1890,12 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
- 
-   base::string16 deletedText = oldValue.substr(i, oldValue.length() - i - j);
-   base::string16 insertedText = newValue.substr(i, newValue.length() - i - j);
+@@ -1893,7 +1907,12 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+       return content::AXTextEdit(newValue, base::string16());
+     }
+   }
 -  return content::AXTextEdit(insertedText, deletedText);
 +#ifndef MAS_BUILD
 +  return content::AXTextEdit(insertedText, deletedText,
@@ -109,7 +109,7 @@ index 84cb0fe898631353ade5b205cc061c7e8622301d..a3be88aa4297a490469c3aa01187a11d
  }
  
  - (BOOL)instanceActive {
-@@ -2251,7 +2270,9 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+@@ -2268,7 +2287,9 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
@@ -183,7 +183,7 @@ index 8fb447a74cb6e818c221131aba5f57c5f8b8094d..b930963467642738db3ec0109b4a6681
    void AnnounceActiveDescendant(BrowserAccessibility* node) const;
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 462577a0dbd0fcc1baf17acd9678317cb27503fa..90bdee0cf769e872f2e9585eb5055429f12a9eda 100644
+index 9163ae35ba4dc81cbe9b8d8d4a456e8d36c3eede..90bdee0cf769e872f2e9585eb5055429f12a9eda 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -94,6 +94,8 @@ NSString* const NSAccessibilityTextSelectionChangedFocus =
@@ -217,7 +217,7 @@ index 462577a0dbd0fcc1baf17acd9678317cb27503fa..90bdee0cf769e872f2e9585eb5055429
  
          BrowserAccessibility* root = GetRoot();
          if (!root)
-@@ -544,27 +548,42 @@ NSDictionary*
+@@ -544,29 +548,42 @@ NSDictionary*
  BrowserAccessibilityManagerMac::GetUserInfoForValueChangedNotification(
      const BrowserAccessibilityCocoa* native_node,
      const base::string16& deleted_text,
@@ -248,17 +248,15 @@ index 462577a0dbd0fcc1baf17acd9678317cb27503fa..90bdee0cf769e872f2e9585eb5055429
 +    [changes addObject:change];
    }
    if (!inserted_text.empty()) {
--    // TODO(nektar): Figure out if this is a paste operation instead of typing.
--    // Changes to Blink would be required.
+     // TODO(nektar): Figure out if this is a paste, insertion or typing.
+     // Changes to Blink would be required. A heuristic is currently used.
+     auto edit_type = inserted_text.length() > 1 ? @(AXTextEditTypeInsert)
+                                                 : @(AXTextEditTypeTyping);
 -    [changes addObject:@{
--      NSAccessibilityTextEditType : @(AXTextEditTypeTyping),
+-      NSAccessibilityTextEditType : edit_type,
 -      NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
 -      NSAccessibilityTextChangeValue : base::SysUTF16ToNSString(inserted_text)
 -    }];
-+    // TODO(nektar): Figure out if this is a paste, insertion or typing.
-+    // Changes to Blink would be required. A heuristic is currently used.
-+    auto edit_type = inserted_text.length() > 1 ? @(AXTextEditTypeInsert)
-+                                                : @(AXTextEditTypeTyping);
 +    NSMutableDictionary* change =
 +        [NSMutableDictionary dictionaryWithDictionary:@{
 +          NSAccessibilityTextEditType : edit_type,
