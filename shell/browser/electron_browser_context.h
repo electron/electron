@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
@@ -19,6 +18,7 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -50,8 +50,8 @@ class WebViewManager;
 class ProtocolRegistry;
 
 class ElectronBrowserContext
-    : public base::RefCountedDeleteOnSequence<ElectronBrowserContext>,
-      public content::BrowserContext,
+    : public content::BrowserContext,
+      public gin_helper::CleanedUpAtExit,
       public network::mojom::TrustedURLLoaderAuthClient {
  public:
   // partition_id => browser_context
@@ -73,19 +73,17 @@ class ElectronBrowserContext
     }
   };
   using BrowserContextMap =
-      std::map<PartitionKey, base::WeakPtr<ElectronBrowserContext>>;
+      std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>;
 
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
-  static scoped_refptr<ElectronBrowserContext> From(
+  static ElectronBrowserContext* From(
       const std::string& partition,
       bool in_memory,
       base::DictionaryValue options = base::DictionaryValue());
 
-  static BrowserContextMap browser_context_map() {
-    return browser_context_map_;
-  }
+  static BrowserContextMap& browser_context_map();
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
@@ -151,15 +149,12 @@ class ElectronBrowserContext
     return protocol_registry_.get();
   }
 
- protected:
-  ElectronBrowserContext(const std::string& partition,
-                         bool in_memory,
-                         base::DictionaryValue options);
   ~ElectronBrowserContext() override;
 
  private:
-  friend class base::RefCountedDeleteOnSequence<ElectronBrowserContext>;
-  friend class base::DeleteHelper<ElectronBrowserContext>;
+  ElectronBrowserContext(const std::string& partition,
+                         bool in_memory,
+                         base::DictionaryValue options);
 
   void OnLoaderCreated(int32_t request_id,
                        mojo::PendingReceiver<network::mojom::TrustedAuthClient>
@@ -167,8 +162,6 @@ class ElectronBrowserContext
 
   // Initialize pref registry.
   void InitPrefs();
-
-  static BrowserContextMap browser_context_map_;
 
   ValueMapPrefStore* in_memory_pref_store_;
 

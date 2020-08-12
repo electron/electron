@@ -419,7 +419,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
   if (request->method != "GET" && request->method != "HEAD")
     dict.Get("uploadData", &upload_data);
 
-  scoped_refptr<ElectronBrowserContext> browser_context =
+  ElectronBrowserContext* browser_context =
       ElectronBrowserContext::From("", false);
   v8::Local<v8::Value> value;
   if (dict.Get("session", &value)) {

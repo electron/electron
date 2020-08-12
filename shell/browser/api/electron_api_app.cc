@@ -1197,10 +1197,10 @@ void App::ImportCertificate(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto browser_context = ElectronBrowserContext::From("", false);
+  auto* browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     CertificateManagerModel::Create(
-        browser_context.get(),
+        browser_context,
         base::BindOnce(&App::OnCertificateManagerModelCreated,
                        base::Unretained(this), std::move(options),
                        std::move(callback)));

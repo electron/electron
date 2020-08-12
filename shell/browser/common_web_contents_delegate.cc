@@ -253,11 +253,11 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
         base::BindOnce(
-            [](scoped_refptr<ElectronBrowserContext> browser_context,
+            [](ElectronBrowserContext* browser_context,
                std::unique_ptr<InspectableWebContents> web_contents) {
               web_contents.reset();
             },
-            base::RetainedRef(browser_context_), std::move(web_contents_)));
+            base::Unretained(browser_context_), std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }
