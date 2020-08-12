@@ -155,7 +155,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : global_extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   breakpad::InitCrashReporter(process_type);
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
@@ -190,7 +190,7 @@ void GetUploadedReports(
 }
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
   return new CrashUploadListCrashpad();
 #else
   base::FilePath crash_dir_path;
@@ -198,7 +198,7 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
   return new TextLogUploadList(upload_log_path);
-#endif  // defined(OS_MACOSX) || defined(OS_WIN)
+#endif  // defined(OS_MAC) || defined(OS_WIN)
 }
 
 v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {

@@ -16,7 +16,7 @@ void AutoUpdater::SetDelegate(Delegate* delegate) {
   delegate_ = delegate;
 }
 
-#if !defined(OS_MACOSX) || defined(MAS_BUILD)
+#if !defined(OS_MAC) || defined(MAS_BUILD)
 std::string AutoUpdater::GetFeedURL() {
   return "";
 }

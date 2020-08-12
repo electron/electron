@@ -184,7 +184,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
 #endif

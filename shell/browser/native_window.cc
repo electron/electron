@@ -139,7 +139,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
     // Disable fullscreen button if 'fullscreen' is specified to false.
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     fullscreenable = false;
 #endif
   }
@@ -157,7 +157,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
     SetVibrancy(type);

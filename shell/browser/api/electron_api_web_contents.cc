@@ -116,7 +116,7 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 #include "ui/aura/window.h"
 #else
 #include "ui/base/cocoa/defaults_utils.h"
@@ -346,7 +346,7 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
     return interval;
@@ -369,7 +369,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const base::string16& device_name) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
@@ -593,6 +593,8 @@ void WebContents::InitWithSessionAndOptions(
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
+  // Trigger re-calculation of webkit prefs.
+  web_contents()->NotifyPreferencesChanged();
 
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   SecurityStateTabHelper::CreateForWebContents(web_contents());
@@ -1755,18 +1757,20 @@ bool WebContents::IsDevToolsFocused() {
 }
 
 void WebContents::EnableDeviceEmulation(
-    const blink::WebDeviceEmulationParams& params) {
+    const blink::DeviceEmulationParams& params) {
   if (type_ == Type::REMOTE)
     return;
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(new WidgetMsg_EnableDeviceEmulation(
-        widget_host->GetRoutingID(), params));
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
+      frame_widget->EnableDeviceEmulation(params);
+    }
   }
 }
 
@@ -1776,12 +1780,14 @@ void WebContents::DisableDeviceEmulation() {
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(
-        new WidgetMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
+      frame_widget->DisableDeviceEmulation();
+    }
   }
 }
 
@@ -2220,7 +2226,7 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 }
 
 void WebContents::ShowDefinitionForSelection() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
@@ -2236,14 +2242,14 @@ void WebContents::CopyImageAt(int x, int y) {
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
   if (owner_window())
     owner_window()->Focus(true);
 #endif
   web_contents()->Focus();
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)
