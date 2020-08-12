@@ -1,6 +1,6 @@
 /// <reference path="../electron.d.ts" />
 
- /**
+/**
  * This file augments the Electron TS namespace with the internal APIs
  * that are not documented but are used by Electron internally
  */
@@ -57,11 +57,17 @@ declare namespace Electron {
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
+    equal(other: WebContents): string;
+    create(opts: Electron.WebPreferences): Electron.WebContents;
+    attachParams: Record<string, any>;
+    viewInstanceId: string;
   }
 
   interface WebPreferences {
     guestInstanceId?: number;
     openerId?: number;
+    preloadURL?: string;
+    disablePopups?: boolean;
   }
 
   interface SerializedError {
@@ -161,7 +167,6 @@ declare namespace Electron {
     acceleratorWorksWhenHidden?: boolean;
   }
 
-
   const deprecate: ElectronInternal.DeprecationUtil;
 
   namespace Main {
@@ -169,7 +174,7 @@ declare namespace Electron {
   }
 
   class View {}
-  
+
   // Experimental views API
   class BaseWindow {
     constructor(args: {show: boolean})
