@@ -801,8 +801,13 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void BaseWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
+void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
+                                           gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
+  bool visibleOnFullScreen = false;
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool BaseWindow::IsVisibleOnAllWorkspaces() {

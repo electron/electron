@@ -1351,8 +1351,21 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
+                                                bool visibleOnFullScreen) {
+  // In order for NSWindows to be visible on fullscreen we need to functionally
+  // mimic app.dock.hide() since Apple changed the underlying functionality of
+  // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
+  // fullscreen apps.
+  if (visibleOnFullScreen) {
+    [window_ setCanHide:NO];
+    ProcessSerialNumber psn = {0, kCurrentProcess};
+    TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+  }
+
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  SetCollectionBehavior(visibleOnFullScreen,
+                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
