@@ -7,40 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 169bf27136ff2036676cac2dcca78ee622593ba3..7bd731a24a518f7e9e65143dc307fcbef81a85d4 100644
+index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdde8168d09 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -315,11 +315,13 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
-     param = PropertyNodeToRange(property_node);
-   } else if (property_name == "AXIndexForChildUIElement") {  // UIElement
-     param = PropertyNodeToUIElement(property_node, line_indexes_map);
-+#ifndef MAS_BUILD
-   } else if (property_name == "AXIndexForTextMarker") {  // TextMarker
-     param = PropertyNodeToTextMarker(property_node, line_indexes_map);
-   } else if (property_name ==
-              "AXStringForTextMarkerRange") {  // TextMarkerRange
-     param = PropertyNodeToTextMarkerRange(property_node, line_indexes_map);
-+#endif
-   }
- 
-   return param;
-@@ -407,6 +409,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
-   return uielement;
- }
- 
-+#ifndef MAS_BUILD
- id AccessibilityTreeFormatterMac::DictNodeToTextMarker(
-     const PropertyNode& dictnode,
-     const LineIndexesMap& line_indexes_map) const {
-@@ -486,6 +489,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
- 
-   return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
- }
-+#endif
- 
- base::Value AccessibilityTreeFormatterMac::PopulateSize(
-     const BrowserAccessibilityCocoa* cocoa_node) const {
-@@ -547,7 +551,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
+@@ -299,7 +299,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -49,7 +19,7 @@ index 169bf27136ff2036676cac2dcca78ee622593ba3..7bd731a24a518f7e9e65143dc307fcbe
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -558,7 +562,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
+@@ -310,7 +310,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexes_map);
    }
@@ -58,7 +28,7 @@ index 169bf27136ff2036676cac2dcca78ee622593ba3..7bd731a24a518f7e9e65143dc307fcbe
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -609,7 +613,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
+@@ -361,7 +361,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -67,7 +37,7 @@ index 169bf27136ff2036676cac2dcca78ee622593ba3..7bd731a24a518f7e9e65143dc307fcbe
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexesMap& line_indexes_map) const {
-@@ -624,7 +628,7 @@ id PropertyNodeToTextMarkerRange(const PropertyNode&,
+@@ -376,7 +376,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
    return dict;
  }
@@ -76,6 +46,42 @@ index 169bf27136ff2036676cac2dcca78ee622593ba3..7bd731a24a518f7e9e65143dc307fcbe
  base::Value AccessibilityTreeFormatterMac::PopulateArray(
      NSArray* node_array,
      const LineIndexesMap& line_indexes_map) const {
+diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
+index a6d1fc76a58b03a0a35a9724850fe9ee84fe7909..d3e251cc3273d38a8930d00615a1423b4487b8de 100644
+--- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
++++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
+@@ -153,6 +153,7 @@
+   if (property_name == "AXIndexForChildUIElement") {  // UIElement
+     return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
+   }
++#ifndef MAS_BUILD
+   if (property_name == "AXIndexForTextMarker") {  // TextMarker
+     return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
+   }
+@@ -160,6 +161,7 @@
+     return OptionalNSObject::NotNilOrError(
+         PropertyNodeToTextMarkerRange(arg_node));
+   }
++#endif
+ 
+   return OptionalNSObject::NotApplicable();
+ }
+@@ -226,6 +228,7 @@
+   return uielement;
+ }
+ 
++#ifndef MAS_BUILD
+ id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
+   if (!dictnode.IsDict()) {
+     TEXTMARKER_FAIL(dictnode, "dictionary is expected")
+@@ -293,6 +296,7 @@
+ 
+   return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
+ }
++#endif
+ 
+ }  // namespace a11y
+ }  // namespace content
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
 index cb253906ddd9b70df1618a1c3738fc64389b5432..318af1ec3a11ee53a1146909f76c9cea7f78be1e 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
