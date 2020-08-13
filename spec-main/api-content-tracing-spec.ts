@@ -136,6 +136,7 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
       }
       const path = await contentTracing.stopRecording();
       const data = fs.readFileSync(path, 'utf8');
+      console.log(data); // XXX temp
       const parsed = JSON.parse(data);
       expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
     });
