@@ -57,9 +57,9 @@ class DevToolsWindowDelegate : public views::ClientView,
   }
 
   // views::ClientView:
-  bool CanClose() override {
+  views::CloseRequestResult OnWindowCloseRequested() override {
     shell_->inspectable_web_contents()->CloseDevTools();
-    return false;
+    return views::CloseRequestResult::kCannotClose;
   }
 
  private:

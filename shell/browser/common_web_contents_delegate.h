@@ -127,7 +127,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
                             const std::string& query) override;
 
   // InspectableWebContentsViewDelegate:
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
 #if defined(USE_X11)

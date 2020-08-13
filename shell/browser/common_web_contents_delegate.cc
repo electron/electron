@@ -209,7 +209,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
       web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
-  // Determien whether the WebContents is offscreen.
+  // Determine whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   offscreen_ =
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);

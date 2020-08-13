@@ -215,7 +215,7 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 void Tray::SetTitle(const std::string& title) {
   if (!CheckAlive())
     return;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   tray_icon_->SetTitle(title);
 #endif
 }
@@ -223,7 +223,7 @@ void Tray::SetTitle(const std::string& title) {
 std::string Tray::GetTitle() {
   if (!CheckAlive())
     return std::string();
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return tray_icon_->GetTitle();
 #else
   return "";
@@ -233,7 +233,7 @@ std::string Tray::GetTitle() {
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
   if (!CheckAlive())
     return;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
 #endif
 }
@@ -241,7 +241,7 @@ void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 bool Tray::GetIgnoreDoubleClickEvents() {
   if (!CheckAlive())
     return false;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return tray_icon_->GetIgnoreDoubleClickEvents();
 #else
   return false;

@@ -63,7 +63,7 @@
 #include "shell/browser/ui/win/jump_list.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
@@ -690,7 +690,7 @@ void App::OnAccessibilitySupportChanged() {
   Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void App::OnWillContinueUserActivity(bool* prevent_default,
                                      const std::string& type) {
   if (Emit("will-continue-activity", type)) {
@@ -899,7 +899,7 @@ void App::ChildProcessLaunched(int process_type,
                                const std::string& name) {
   auto pid = base::GetProcId(handle);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(
       handle, content::BrowserChildProcessHost::GetPortProvider());
 #else
@@ -921,7 +921,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          base::Optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
@@ -1027,7 +1027,7 @@ std::string App::GetLocaleCountryCode() {
                       sizeof(locale_name) / sizeof(WCHAR))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
       static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
@@ -1374,7 +1374,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("memory", memory_dict);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
 #elif defined(OS_WIN)
     auto integrity_level = process_metric.second->GetIntegrityLevel();
@@ -1413,7 +1413,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
-#if defined(OS_WIN) || defined(OS_MACOSX)
+#if defined(OS_WIN) || defined(OS_MAC)
     info_mgr->FetchCompleteInfo(std::move(promise));
 #else
     info_mgr->FetchBasicInfo(std::move(promise));
@@ -1466,7 +1466,7 @@ bool App::CanBrowserClientUseCustomSiteInstance() {
   return ElectronBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
   return ElectronBundleMover::Move(thrower, args);
@@ -1582,7 +1582,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
       .SetMethod("setUserActivity",
@@ -1604,7 +1604,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
                  base::BindRepeating(&Browser::ShowAboutPanel, browser))
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod(
           "isSecureKeyboardEntryEnabled",
           base::BindRepeating(&Browser::IsSecureKeyboardEntryEnabled, browser))
@@ -1612,7 +1612,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
           "setSecureKeyboardEntryEnabled",
           base::BindRepeating(&Browser::SetSecureKeyboardEntryEnabled, browser))
 #endif
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
       .SetMethod("showEmojiPanel",
                  base::BindRepeating(&Browser::ShowEmojiPanel, browser))
 #endif
@@ -1657,7 +1657,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,

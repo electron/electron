@@ -36,7 +36,7 @@ class Menu : public gin::Wrappable<Menu>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Set the global menubar.
   static void SetApplicationMenu(Menu* menu);
 
