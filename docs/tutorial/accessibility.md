@@ -46,9 +46,6 @@ accessibility documentation with a pull request.
 
 ## Enabling Accessibility
 
-Electron applications keep accessibility disabled by default for performance
-reasons but there are multiple ways to enable it.
-
 ### Inside Application
 
 By using [`app.setAccessibilitySupportEnabled(enabled)`][setAccessibilitySupportEnabled],
