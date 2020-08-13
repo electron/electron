@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index f2c4cbf786188b8aa5dad1e7f2b8ae9c785aaed9..2882ef3371960cc914ac27e9b6eedd09ff34cb63 100644
+index c5140471ec2ade58948972f433d79c11932e2f17..12db0a89ac0f37ecab137841264ddd108d622dc8 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -512,6 +512,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -21,7 +21,7 @@ index f2c4cbf786188b8aa5dad1e7f2b8ae9c785aaed9..2882ef3371960cc914ac27e9b6eedd09
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index c0943cbdd019a37474e1727b8282b7138475e74f..cb58b299976745edb6e3f0d13687301b7fc61a10 100644
+index e1f95d702844a687342f484e3c572686064dc498..0233242c0d2b4bde4e32931f30777ee26dc02619 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -61,7 +61,7 @@ index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f8
    //
    // Returns the current WebKit preferences. Note: WebPreferences is cached, so
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 272b613f658ef4bfa3869cbd17d342ceef665142..461310b69c823546f99d99b087b9ea005167a883 100644
+index c1b0d1f5f7acb82f559ba90f24b6f9e5e7c44dad..dacde7b382a698309e3b5644003d359e273d5bd1 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -1170,6 +1170,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
@@ -73,7 +73,7 @@ index 272b613f658ef4bfa3869cbd17d342ceef665142..461310b69c823546f99d99b087b9ea00
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1666,6 +1668,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+@@ -1667,6 +1669,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  

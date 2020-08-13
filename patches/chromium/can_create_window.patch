@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 1531d69cfe3d6c975073d293edf15e0bc4d9325b..0944fe0f52b4861b6584e02437fb7e186ff12004 100644
+index 4f9c570cb14297b28eddda03fe4860342bd06cf6..e640c71b9370b6303a4132e5481a787b812a4376 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -4816,6 +4816,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 1531d69cfe3d6c975073d293edf15e0bc4d9325b..0944fe0f52b4861b6584e02437fb7e18
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9917f0595f8131e3acc328dcf005b1e8685d9f36..f7d91b17c304f6676363e60104e3c6ef3a933d9e 100644
+index c8ba444365d3391056ff58c0e513bb0ad0a5f9b6..4b72590b9ae6994ca6fd2e56d46b3b5c5178aeb6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3087,9 +3087,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -38,10 +38,10 @@ index 9917f0595f8131e3acc328dcf005b1e8685d9f36..f7d91b17c304f6676363e60104e3c6ef
  
    for (auto& observer : observers_) {
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 118a262e5e18c22df6a01312b9f99b235d60ae50..329a92f9c0089cf8f94c7cd2fe990204c670419c 100644
+index 40821a2c3d7cf13136944e5bc6852047045a6be2..90c3ab998a8707eb91fc016ce56e9248194deeeb 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -277,6 +277,10 @@ struct CreateNewWindowParams {
+@@ -278,6 +278,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -135,7 +135,7 @@ index e545ff70c612e98cdd79230303273a3ec7bfcaac..405152e0e90bc76b7de9c3e6946944f3
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index c6a990f873066fec1ac7ce5e088ecd02d2142e71..272b613f658ef4bfa3869cbd17d342ceef665142 100644
+index efab61352658f6d1dc9370c8826af25e22b97b38..c1b0d1f5f7acb82f559ba90f24b6f9e5e7c44dad 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -67,6 +67,7 @@

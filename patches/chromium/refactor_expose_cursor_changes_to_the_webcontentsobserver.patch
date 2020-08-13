@@ -43,7 +43,7 @@ index bf6baff690af930acf19c2a544c8f00ab492bb8e..8d205a1b052c6d670c0c2e38852734c5
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 204541d24b2a67de2ba3075acd4015fd09ccf8b3..c82da3db6468a417f7f555f88e60a1d5ba21c4d6 100644
+index 7c527fc81a07c7060c78b8e95dc3b79313cc38b5..a7e9ee78ecb5bd9a7e0bf37d24d526de60f8a55a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3588,6 +3588,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
@@ -59,7 +59,7 @@ index 204541d24b2a67de2ba3075acd4015fd09ccf8b3..c82da3db6468a417f7f555f88e60a1d5
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 353addcc1e7646e7ddc14a8d253d622ced94f34d..b62b7aafc2dcfa281cf82b9d8088b053db425417 100644
+index b58cd9a57001be622849b992b22c196c76c40ac8..d57e3f2dd258a29de7c737228d80d377e50f036a 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -920,6 +920,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -71,7 +71,7 @@ index 353addcc1e7646e7ddc14a8d253d622ced94f34d..b62b7aafc2dcfa281cf82b9d8088b053
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 0cab1ba9e1efa9695fb0a12d71b6e960356460a6..fa831aaf51ba4bc20e68d0541eb657444ef37ab5 100644
+index 231047ad1fe15c2594ffb3594c047ec21e692664..91ec1d7dcd307dcaba5ff9bf22306a13a839b3fb 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
