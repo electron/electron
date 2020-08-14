@@ -42,7 +42,7 @@ index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 1027ee19f3ef7238ab702b5b9168fdd66649dcc3..3679afd8aaa646cb6401b3dd75bcb5a6befdb463 100644
+index a6d3bafd08336a07012e46aba6d611c62e61c7cf..f7b03517380b653071384a9686924b584efadde7 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1475,6 +1475,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 1027ee19f3ef7238ab702b5b9168fdd66649dcc3..3679afd8aaa646cb6401b3dd75bcb5a6
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5013,6 +5028,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5043,6 +5058,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 1027ee19f3ef7238ab702b5b9168fdd66649dcc3..3679afd8aaa646cb6401b3dd75bcb5a6
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5026,10 +5042,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5056,10 +5072,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,10 +91,10 @@ index 1027ee19f3ef7238ab702b5b9168fdd66649dcc3..3679afd8aaa646cb6401b3dd75bcb5a6
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index 1748599d5c0a7c79d91b538ccf7ef7e34d782f6f..8cac6c4e5bb25ff7a96b4126667ee33536e5da98 100644
+index cfcc6cd6cbc2723156a2bce1cd8a98a979952a04..a6736ae58641501041a676505ea8a3680f90cdf7 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -156,6 +156,10 @@ class CONTENT_EXPORT NavigationRequest
+@@ -162,6 +162,10 @@ class CONTENT_EXPORT NavigationRequest
      // asynchronous.
      WILL_PROCESS_RESPONSE,
  

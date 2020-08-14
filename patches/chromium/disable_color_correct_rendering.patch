@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index e8aea9ee0dbfe34da17575a56ad49552763ad6a2..0c17ab1b4383f3a3ad143779336390f9ba04f952 100644
+index 5c87f4ea0d6426606a1001f51aea1aa8b0ecaa8b..16fa2e95b89b569c76b57c1a57d0336ac3b8ea54 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1758,6 +1758,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1748,6 +1748,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
