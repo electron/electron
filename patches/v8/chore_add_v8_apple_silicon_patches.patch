@@ -78,7 +78,7 @@ index 03fbe0f0645c192dfe4b845171f354fc190ea4da..a7fe894e97243fd7e517c58f5cd9d3eb
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index f4366b60b3e61f9e5daa1e2c0e70466467217245..4364419fbc957f7e09b2a481b14971655b5c874c 100644
+index 508e02aa37d16dd0ad89d286054b3ecfe6056103..09c66d04d1873ad8026d031e02f5bce177ee456b 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -714,7 +714,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
@@ -96,10 +96,10 @@ index f4366b60b3e61f9e5daa1e2c0e70466467217245..4364419fbc957f7e09b2a481b1497165
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index 53ac7550f403357958f9ccf1e65267004bb6be27..fdf5cd9305bd97034355b5ab386cf8a2d98953d8 100644
+index 22cae5f668236438c9630287cbd5c6280e12d4b2..461243b4ddbcda4a7f1a3fd888b602a070706b24 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
-@@ -261,6 +261,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
+@@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
        isolate->counters(), detected);
    if (result.succeeded()) {
      WasmCodeRefScope code_ref_scope;
@@ -121,10 +121,10 @@ index 1fe6cd4b9ed4c4850583cf1b2310a84a38f04c1a..c48c0faef6d4db191c5dcd7efa9dab23
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index b68b68b7a268bf0c29a6540096d184906293df17..b8d1672018468e82a81242a1b8193e170d9b60c6 100644
+index 84db08733b4858d0c0b5d2aac25889a6acfed0f5..8400a7b579182d2cb9d1d5a27b55d0bb8f9aab7e 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
-@@ -1451,6 +1451,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
+@@ -1452,6 +1452,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
      wasm::WasmCompilationResult result = compiler::CompileWasmImportCallWrapper(
          isolate->wasm_engine(), &env, kind, sig, false,
          shared.internal_formal_parameter_count());

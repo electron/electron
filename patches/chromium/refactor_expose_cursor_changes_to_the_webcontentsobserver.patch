@@ -30,10 +30,10 @@ index b11e574d6fcfada1eb31c924c016fd81f395b885..4a7c10ffc498347d4c8b3394e863e29f
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 318eb9d8ceda86b4859dc6cf243da538fdd07eda..dbabc73d5b424d1ac881ae89ba72b270b5a5a498 100644
+index 77bc5b22fd03af3e576b3bec10ac8b747b013937..8a57bf66f24a1bf98ad3062312f7789648ee2fef 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1708,6 +1708,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1713,6 +1713,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,23 +43,24 @@ index 318eb9d8ceda86b4859dc6cf243da538fdd07eda..dbabc73d5b424d1ac881ae89ba72b270
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c57f6b4f63d2155d6287d0b39fcf531d5e954656..365028ef7b2913e763059f64e16aa9eb869a7f10 100644
+index 4d3ab221333465c3807393facbbf4727884b97b3..052f80a8df327e15e97dd956717897c8be43a1c7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3883,6 +3883,11 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3950,6 +3950,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
 +void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
-+  for (auto& observer : observers_)
-+    observer.OnCursorChanged(cursor);
++  observers_.ForEachObserver([&](WebContentsObserver* observer) {
++    observer->OnCursorChanged(cursor);
++  });
 +}
 +
  bool WebContentsImpl::IsWidgetForMainFrame(
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 756278488e4349a3f19e3b9980a529c3e0f143ac..41f3fc573b6247a2767dfefce8cf023bb890c532 100644
+index 0de7c43e4a4dcfb2011d93ce3bbb28ac0309abbc..0984f4db13eba71a226586e3b453e5eb1ec22d2d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -934,6 +934,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

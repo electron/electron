@@ -135,6 +135,10 @@
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "printing/mojom/print.mojom.h"
+#endif
+
 namespace gin {
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -154,26 +158,26 @@ struct Converter<printing::PrinterBasicInfo> {
 };
 
 template <>
-struct Converter<printing::MarginType> {
+struct Converter<printing::mojom::MarginType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     printing::MarginType* out) {
+                     printing::mojom::MarginType* out) {
     std::string type;
     if (ConvertFromV8(isolate, val, &type)) {
       if (type == "default") {
-        *out = printing::DEFAULT_MARGINS;
+        *out = printing::mojom::MarginType::kDefaultMargins;
         return true;
       }
       if (type == "none") {
-        *out = printing::NO_MARGINS;
+        *out = printing::mojom::MarginType::kNoMargins;
         return true;
       }
       if (type == "printableArea") {
-        *out = printing::PRINTABLE_AREA_MARGINS;
+        *out = printing::mojom::MarginType::kPrintableAreaMargins;
         return true;
       }
       if (type == "custom") {
-        *out = printing::CUSTOM_MARGINS;
+        *out = printing::mojom::MarginType::kCustomMargins;
         return true;
       }
     }
@@ -1970,11 +1974,13 @@ void WebContents::Print(gin::Arguments* args) {
   gin_helper::Dictionary margins =
       gin::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
-    printing::MarginType margin_type = printing::DEFAULT_MARGINS;
+    printing::mojom::MarginType margin_type =
+        printing::mojom::MarginType::kDefaultMargins;
     margins.Get("marginType", &margin_type);
-    settings.SetIntKey(printing::kSettingMarginsType, margin_type);
+    settings.SetIntKey(printing::kSettingMarginsType,
+                       static_cast<int>(margin_type));
 
-    if (margin_type == printing::CUSTOM_MARGINS) {
+    if (margin_type == printing::mojom::MarginType::kCustomMargins) {
       base::Value custom_margins(base::Value::Type::DICTIONARY);
       int top = 0;
       margins.Get("top", &top);
@@ -1992,8 +1998,9 @@ void WebContents::Print(gin::Arguments* args) {
                        std::move(custom_margins));
     }
   } else {
-    settings.SetIntKey(printing::kSettingMarginsType,
-                       printing::DEFAULT_MARGINS);
+    settings.SetIntKey(
+        printing::kSettingMarginsType,
+        static_cast<int>(printing::mojom::MarginType::kDefaultMargins));
   }
 
   // Set whether to print color or greyscale
