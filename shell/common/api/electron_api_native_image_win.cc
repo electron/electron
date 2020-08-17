@@ -1,3 +1,7 @@
+// Copyright (c) 2020 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #include "shell/common/api/electron_api_native_image.h"
 
 #include <windows.h>  // NOLINT(build/include_order)
