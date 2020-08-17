@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
 #define SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -124,6 +125,10 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
+  v8::Local<v8::Promise> SetCorsOriginAccessList(
+      const GURL& url,
+      const std::set<URLPattern>& allow_pattern_set,
+      const std::set<URLPattern>& block_pattern_set);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,

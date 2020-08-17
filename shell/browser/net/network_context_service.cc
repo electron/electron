@@ -87,6 +87,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->enable_ftp_url_support = true;
 #endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
 
+  network_context_params->cors_origin_access_list =
+      browser_context_->GetSharedCorsOriginAccessList()
+          ->GetOriginAccessList()
+          .CreateCorsOriginAccessPatternsList();
+
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
 
   BrowserProcessImpl::ApplyProxyModeFromCommandLine(

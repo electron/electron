@@ -662,6 +662,29 @@ event. The [DownloadItem](download-item.md) will not have any `WebContents` asso
 the initial state will be `interrupted`. The download will start only when the
 `resume` API is called on the [DownloadItem](download-item.md).
 
+#### `ses.setCorsOriginAccessList(origin, allowPatterns, blockPatterns)`
+
+* `origin` String - The Origin URL for which to set the CORS policy.
+* `allowPatterns` String[] - An array of URL patterns to allow.
+* `blockPatterns` String[] - An array of URL patterns to block.
+
+Returns `Promise<void>` - Resolves when the operation is complete.
+
+Adds additional URL patterns to the allow and block list of the CORS policy.
+This is often used to securely permit pages from your custom protocol to access resources that would otherwise be blocked by CORS, such as `file:///` URLs, without having to use `webSecurity: false`.
+This can also be used to block access to certain resources.
+
+```javascript
+const { app, session } = require('electron')
+
+app.whenReady().then(async () => {
+  await session.defaultSession.setCorsOriginAccessList(
+    'custom://abc/hello.html',
+    ['https://*.github.com/*', '*://electron.github.io', 'file'], /* allow list */
+    ['http://*/*'] /* block list */)
+})
+```
+
 #### `ses.clearAuthCache()`
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.

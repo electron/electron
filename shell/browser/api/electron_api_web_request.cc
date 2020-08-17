@@ -30,19 +30,6 @@
 namespace gin {
 
 template <>
-struct Converter<URLPattern> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     URLPattern* out) {
-    std::string pattern;
-    if (!ConvertFromV8(isolate, val, &pattern))
-      return false;
-    *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
-  }
-};
-
-template <>
 struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    extensions::WebRequestResourceType type) {

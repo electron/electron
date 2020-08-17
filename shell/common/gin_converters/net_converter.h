@@ -13,6 +13,8 @@
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
+class URLPattern;
+
 namespace base {
 class DictionaryValue;
 class ListValue;
@@ -112,6 +114,13 @@ template <>
 struct Converter<net::RedirectInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::RedirectInfo& val);
+};
+
+template <>
+struct Converter<URLPattern> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     URLPattern* out);
 };
 
 template <typename K, typename V>

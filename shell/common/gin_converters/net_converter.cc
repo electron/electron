@@ -12,6 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
+#include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "net/cert/x509_certificate.h"
@@ -398,6 +399,17 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
            val.is_signed_exchange_fallback_redirect);
 
   return ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<URLPattern>::FromV8(v8::Isolate* isolate,
+                                   v8::Local<v8::Value> val,
+                                   URLPattern* out) {
+  std::string pattern;
+  if (!ConvertFromV8(isolate, val, &pattern))
+    return false;
+  *out = URLPattern(URLPattern::SCHEME_ALL);
+  return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
 }
 
 }  // namespace gin

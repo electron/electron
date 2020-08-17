@@ -292,7 +292,9 @@ Do not disable `webSecurity` in production applications.
 
 Disabling `webSecurity` will disable the same-origin policy and set
 `allowRunningInsecureContent` property to `true`. In other words, it allows
-the execution of insecure code from different domains.
+the execution of insecure code from different domains. It also allows any
+website from any URL to access files on the local computer using
+the `file:///` protocol.
 
 ### How?
 
@@ -316,6 +318,24 @@ const mainWindow = new BrowserWindow()
 
 <!-- Good -->
 <webview src="page.html"></webview>
+```
+
+### Allow custom protocol to access `file:///` resources
+
+Instead of disabling `webSecurity`, consider using the
+[`session.setCorsOriginAccessList`][set-cors-origin-access-list] API
+to allow cross-origin resource access for your custom protocol.
+
+```javascript
+const { app, session } = require('electron')
+
+app.whenReady().then(async () => {
+  await session.defaultSession.setCorsOriginAccessList(
+    'my-custom-protocol://abc/index.html',
+    ['file'], /* allow list */
+    [] /* block list */
+  )
+})
 ```
 
 ## 6) Define a Content Security Policy
@@ -694,3 +714,4 @@ which potential security issues are not as widely known.
 [open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md
 [responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
+[set-cors-origin-access-list]: ../api/session.md#sessetcorsoriginaccesslistorigin-allowpatterns-blockpatterns

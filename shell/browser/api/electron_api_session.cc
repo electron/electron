@@ -318,6 +318,38 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 };
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
+uint16_t GetEffectivePort(const std::string& port_string) {
+  int port_int = 0;
+  bool success = base::StringToInt(port_string, &port_int);
+  // The URLPattern should verify that |port| is a number or "*", so conversion
+  // should never fail.
+  DCHECK(success) << port_string;
+  return port_int;
+}
+
+void AddPatternSetToAccessList(
+    const std::set<URLPattern>& pattern_set,
+    std::vector<network::mojom::CorsOriginPatternPtr>* list,
+    network::mojom::CorsOriginAccessMatchPriority priority) {
+  for (const URLPattern& pattern : pattern_set) {
+    network::mojom::CorsDomainMatchMode domain_match_mode =
+        pattern.match_subdomains()
+            ? network::mojom::CorsDomainMatchMode::kAllowSubdomains
+            : network::mojom::CorsDomainMatchMode::kDisallowSubdomains;
+    network::mojom::CorsPortMatchMode port_match_mode =
+        (pattern.port() == "*")
+            ? network::mojom::CorsPortMatchMode::kAllowAnyPort
+            : network::mojom::CorsPortMatchMode::kAllowOnlySpecifiedPort;
+    uint16_t port = (port_match_mode ==
+                     network::mojom::CorsPortMatchMode::kAllowOnlySpecifiedPort)
+                        ? GetEffectivePort(pattern.port())
+                        : 0u;
+    list->push_back(network::mojom::CorsOriginPattern::New(
+        pattern.scheme(), pattern.host(), port, domain_match_mode,
+        port_match_mode, priority));
+  }
+}
+
 struct UserDataLink : base::SupportsUserData::Data {
   explicit UserDataLink(Session* ses) : session(ses) {}
 
@@ -749,6 +781,32 @@ void Session::DownloadURL(const GURL& url) {
   download_manager->DownloadUrl(std::move(download_params));
 }
 
+v8::Local<v8::Promise> Session::SetCorsOriginAccessList(
+    const GURL& url,
+    const std::set<URLPattern>& allow_pattern_set,
+    const std::set<URLPattern>& block_pattern_set) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  std::vector<network::mojom::CorsOriginPatternPtr> allow_list;
+  std::vector<network::mojom::CorsOriginPatternPtr> block_list;
+  AddPatternSetToAccessList(
+      allow_pattern_set, &allow_list,
+      network::mojom::CorsOriginAccessMatchPriority::kDefaultPriority);
+  AddPatternSetToAccessList(
+      block_pattern_set, &block_list,
+      network::mojom::CorsOriginAccessMatchPriority::kDefaultPriority);
+
+  browser_context_->SetCorsOriginAccessListForOrigin(
+      content::BrowserContext::TargetBrowserContexts::kSingleContext,
+      url::Origin::Create(url), std::move(allow_list), std::move(block_list),
+      base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                     std::move(promise)));
+
+  return handle;
+}
+
 void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
   int64_t offset = 0, length = 0;
   double start_time = base::Time::Now().ToDoubleT();
@@ -1174,6 +1232,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)
+      .SetMethod("setCorsOriginAccessList", &Session::SetCorsOriginAccessList)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
       .SetMethod("setPreloads", &Session::SetPreloads)
