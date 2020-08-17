@@ -866,7 +866,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..964255d66b8c77ccd919853c8fceb53789756255
+index 0000000000000000000000000000000000000000..2e07ea28437ee25ddaea4d730e1a65a56f4d6751
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,519 @@
@@ -1176,17 +1176,17 @@ index 0000000000000000000000000000000000000000..964255d66b8c77ccd919853c8fceb537
 +    "lib/internal/streams/state.js",
 +    "lib/internal/streams/pipeline.js",
 +    "lib/internal/streams/end-of-stream.js",
-+    "deps/v8/tools/splaytree.js",
-+    "deps/v8/tools/codemap.js",
-+    "deps/v8/tools/consarray.js",
-+    "deps/v8/tools/csvparser.js",
-+    "deps/v8/tools/profile.js",
-+    "deps/v8/tools/profile_view.js",
-+    "deps/v8/tools/logreader.js",
-+    "deps/v8/tools/arguments.js",
-+    "deps/v8/tools/tickprocessor.js",
-+    "deps/v8/tools/SourceMap.js",
-+    "deps/v8/tools/tickprocessor-driver.js",
++    "//v8/tools/splaytree.js",
++    "//v8/tools/codemap.js",
++    "//v8/tools/consarray.js",
++    "//v8/tools/csvparser.js",
++    "//v8/tools/profile.js",
++    "//v8/tools/profile_view.js",
++    "//v8/tools/logreader.js",
++    "//v8/tools/arguments.js",
++    "//v8/tools/tickprocessor.js",
++    "//v8/tools/SourceMap.js",
++    "//v8/tools/tickprocessor-driver.js",
 +    "deps/node-inspect/lib/_inspect.js",
 +    "deps/node-inspect/lib/internal/inspect_client.js",
 +    "deps/node-inspect/lib/internal/inspect_repl.js",
