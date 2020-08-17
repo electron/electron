@@ -87,7 +87,11 @@ steps:
 
 - powershell: |
     Get-Process | Where Name –Like "electron*" | Stop-Process
-    Get-Process | Where Name –Like "MicrosoftEdge*" | Stop-Process
     Get-Process | Where Name –Like "msedge*" | Stop-Process
   displayName: 'Kill processes left running from last test run'
+  condition: always()
+
+- powershell: |
+    Remove-Item -path $env:APPDATA/Electron* -Recurse
+  displayName: 'Delete user app data directories'
   condition: always()
