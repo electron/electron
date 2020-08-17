@@ -145,20 +145,12 @@ class ElectronBrowserContext
   }
 #endif
 
-  ProtocolRegistry* protocol_registry() const {
-    return protocol_registry_.get();
-  }
-
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
                          base::DictionaryValue options);
   ~ElectronBrowserContext() override;
 
  private:
-  ElectronBrowserContext(const std::string& partition,
-                         bool in_memory,
-                         base::DictionaryValue options);
-
   void OnLoaderCreated(int32_t request_id,
                        mojo::PendingReceiver<network::mojom::TrustedAuthClient>
                            header_client) override;
