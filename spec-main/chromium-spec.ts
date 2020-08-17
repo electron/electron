@@ -395,7 +395,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          nodeIntegrationInWorker: true
+          nodeIntegrationInWorker: true,
+          partition: 'sw-file-scheme-worker-spec'
         }
       });
 
@@ -406,7 +407,9 @@ describe('chromium features', () => {
           done(`unexpected error : ${message}`);
         } else if (channel === 'response') {
           expect(message).to.equal('Hello from serviceWorker!');
-          done();
+          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
         }
       });
 
