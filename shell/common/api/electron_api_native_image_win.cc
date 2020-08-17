@@ -19,6 +19,7 @@ namespace electron {
 
 namespace api {
 
+// static
 v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,

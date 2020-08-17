@@ -5,6 +5,7 @@
 #include "shell/common/api/electron_api_native_image.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #import <Cocoa/Cocoa.h>
