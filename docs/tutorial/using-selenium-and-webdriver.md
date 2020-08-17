@@ -117,9 +117,11 @@ First you need to download the `chromedriver` binary, and run it:
 
 ```sh
 $ npm install electron-chromedriver
-$ ./node_modules/.bin/chromedriver --url-base=wd/hub --port=9515
-Starting ChromeDriver (v2.10.291558) on port 9515
+$ npx chromedriver --port=9515
+Starting ChromeDriver 83.0.4103.64 (4024d20fc543171fde8e13260cbb0b69398e0e12-refs/heads/master@{#759982}) on port 9515
 Only local connections are allowed.
+Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+ChromeDriver was started successfully.
 ```
 
 Remember the port number `9515`, which will be used later
@@ -140,23 +142,19 @@ const options = {
   desiredCapabilities: {
     browserName: 'chrome',
     'goog:chromeOptions': {
-      binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
-      args: [/* cli arguments */] // Optional, perhaps 'app=' + /path/to/your/app/
+      binary: './node_modules/electron/dist/electron',
+      args: ['app=path/to/your/app', 'remote-debugging-port=9522'] // Some debugging port is needed for WebdriverIO to connect.
     }
   }
 }
 
-const client = webdriverio.remote(options)
+async function runTests() {
+  const client = await webdriverio.remote(options);
+  button = await client.elementClick('my-button-id');
+  client.closeWindow();
+}
 
-client
-  .init()
-  .url('http://google.com')
-  .setValue('#q', 'webdriverio')
-  .click('#btnG')
-  .getTitle().then((title) => {
-    console.log('Title was: ' + title)
-  })
-  .end()
+runTests();
 ```
 
 ## Workflow
