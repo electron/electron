@@ -1286,6 +1286,18 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   }
 }
 
+void ElectronBrowserClient::
+    RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  api::Protocol* protocol = api::Protocol::FromWrappedClass(
+      v8::Isolate::GetCurrent(), browser_context);
+  if (protocol) {
+    protocol->RegisterURLLoaderFactories(
+        URLLoaderFactoryType::kWorkerMainResource, factories);
+  }
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
