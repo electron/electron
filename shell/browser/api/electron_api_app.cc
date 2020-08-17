@@ -1094,12 +1094,12 @@ Browser::LoginItemSettings App::GetLoginItemSettings(
 #if defined(USE_NSS_CERTS)
 void App::ImportCertificate(const base::DictionaryValue& options,
                             net::CompletionRepeatingCallback callback) {
-  auto browser_context = ElectronBrowserContext::From("", false);
+  auto* browser_context = ElectronBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     auto copy = base::DictionaryValue::From(
         base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
-        browser_context.get(),
+        browser_context,
         base::BindRepeating(&App::OnCertificateManagerModelCreated,
                             base::Unretained(this), base::Passed(&copy),
                             callback));
