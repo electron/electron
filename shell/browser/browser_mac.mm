@@ -30,8 +30,6 @@
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
-#import <QuickLook/QuickLook.h>
-
 namespace electron {
 
 namespace {
@@ -95,63 +93,6 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
-}
-
-v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
-    v8::Isolate* isolate,
-    const base::FilePath& path,
-    const gfx::Size& size) {
-  gin_helper::Promise<gfx::Image> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  if (size.width() <= 0) {
-    promise.RejectWithErrorMessage(
-        "invalid width, please enter a positive number");
-    return handle;
-  }
-
-  if (size.height() <= 0) {
-    promise.RejectWithErrorMessage(
-        "invalid height, please enter a positive number");
-    return handle;
-  }
-
-  if (!path.IsAbsolute()) {
-    promise.RejectWithErrorMessage("path must be absolute");
-    return handle;
-  }
-
-  // convert path to CFURLREF
-  NSString* ns_path = base::mac::FilePathToNSString(path);
-  CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
-
-  CGSize cg_size = CGSizeMake(size.width(), size.height());
-  QLThumbnailRef ql_thumbnail =
-      QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL);
-  __block gin_helper::Promise<gfx::Image> p = std::move(promise);
-  // we do not want to blocking the main thread while waiting for quicklook to
-  // generate the thumbnail
-  QLThumbnailDispatchAsync(
-      ql_thumbnail,
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, /*flags*/ 0), ^{
-        CGImageRef cg_thumbnail = QLThumbnailCopyImage(ql_thumbnail);
-        if (cg_thumbnail) {
-          NSImage* result = [[NSImage alloc] initWithCGImage:cg_thumbnail
-                                                        size:cg_size];
-          gfx::Image thumbnail(result);
-          dispatch_async(dispatch_get_main_queue(), ^{
-            p.Resolve(thumbnail);
-          });
-        } else {
-          dispatch_async(dispatch_get_main_queue(), ^{
-            p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
-                                     "image for the given path");
-          });
-        }
-        CFRelease(ql_thumbnail);
-        CGImageRelease(cg_thumbnail);
-      });
-  return handle;
 }
 
 void Browser::Focus(gin::Arguments* args) {

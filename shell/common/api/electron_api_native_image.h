@@ -68,6 +68,12 @@ class NativeImage : public gin::Wrappable<NativeImage> {
                                                     const GURL& url);
   static gin::Handle<NativeImage> CreateFromNamedImage(gin::Arguments* args,
                                                        std::string name);
+#if !defined(OS_LINUX)
+  static v8::Local<v8::Promise> CreateThumbnailFromPath(
+      v8::Isolate* isolate,
+      const base::FilePath& path,
+      const gfx::Size& size);
+#endif
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
 

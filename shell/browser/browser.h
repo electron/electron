@@ -104,9 +104,6 @@ class Browser : public WindowListObserver {
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
                                                        const GURL& url);
-  v8::Local<v8::Promise> CreateThumbnailFromPath(v8::Isolate* isolate,
-                                                 const base::FilePath& path,
-                                                 const gfx::Size& size);
 #endif
 
   // Set/Get the badge count.

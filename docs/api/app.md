@@ -864,13 +864,6 @@ Returns `Promise<Object>` - Resolve with an object containing the following:
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
 
-### `app.createThumbnailFromPath(path, maxSize)` _macOS_ _Windows_
-
-* `path` String - path to a file that we intend to construct a thumbnail out of.
-* `maxSize` [Size](structures/size.md) - the maximum width and height the thumbnail returned can be. The Windows implementation will ignore this parameter and scale the height according to `width`.
-
-Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
-
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task[]](structures/task.md) - Array of `Task` objects

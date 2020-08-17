@@ -6,7 +6,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
-import { app, BrowserWindow, Menu, session, Size } from 'electron/main';
+import { app, BrowserWindow, Menu, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
@@ -885,57 +885,6 @@ describe('app module', () => {
       expect(() => {
         app.setAppLogsPath(badPath);
       }).to.throw(/Path must be absolute/);
-    });
-  });
-
-  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
-    it('throws when invalid size is passed', async () => {
-      const badSize:Size = { width: -1, height: 30 };
-
-      await expect(
-        app.createThumbnailFromPath('path', badSize)
-      ).to.eventually.be.rejectedWith('invalid width, please enter a positive number');
-    });
-
-    it('throws when a relative path is passed', async () => {
-      const badPath = '../hey/hi/hello';
-      const goodSize:Size = { width: 100, height: 100 };
-
-      await expect(
-        app.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejectedWith('path must be absolute');
-    });
-
-    ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
-      const badPath = '/hey/hi/hello';
-      const goodSize:Size = { width: 100, height: 100 };
-
-      await expect(
-        app.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejectedWith('unable to retrieve thumbnail preview image for the given path');
-    });
-
-    ifit(process.platform === 'win32')('throws when a bad path is passed (Windows)', async () => {
-      const badPath = '\\hey\\hi\\hello';
-      const goodSize:Size = { width: 100, height: 100 };
-
-      await expect(
-        app.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejected();
-    });
-
-    ifit(process.platform === 'darwin')('returns native image with valid params (MacOS)', async () => {
-      const goodPath = path.join(__dirname, 'fixtures/apps/xwindow-icon/icon.png');
-      const goodSize:Size = { width: 100, height: 100 };
-      const result = await app.createThumbnailFromPath(goodPath, goodSize);
-      expect(result.isEmpty()).to.equal(false);
-    });
-
-    ifit(process.platform === 'win32')('returns native image with valid params (Windows)', async () => {
-      const goodPath = path.join(__dirname, 'fixtures\\apps\\xwindow-icon\\icon.png');
-      const goodSize:Size = { width: 100, height: 100 };
-      const result = await app.createThumbnailFromPath(goodPath, goodSize);
-      expect(result.isEmpty()).to.equal(false);
     });
   });
 
