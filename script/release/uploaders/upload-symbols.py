@@ -36,12 +36,13 @@ if sys.platform == "win32":
 
 def main():
   os.chdir(ELECTRON_DIR)
+  files = []
   if PLATFORM == 'win32':
     for pdb in PDB_LIST:
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
-  else:
-    files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+
+  files += glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
 
   for symbol_file in files:
     print("Generating Sentry src bundle for: " + symbol_file)
