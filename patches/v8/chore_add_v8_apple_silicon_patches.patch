@@ -78,10 +78,10 @@ index 03fbe0f0645c192dfe4b845171f354fc190ea4da..a7fe894e97243fd7e517c58f5cd9d3eb
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 508e02aa37d16dd0ad89d286054b3ecfe6056103..09c66d04d1873ad8026d031e02f5bce177ee456b 100644
+index ab0ce360db2219b79d8a862505d22b82d9a9e89f..c5f0a544e87a3412addfce1d9e62c9df863cc474 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -714,7 +714,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -713,7 +713,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -121,7 +121,7 @@ index 1fe6cd4b9ed4c4850583cf1b2310a84a38f04c1a..c48c0faef6d4db191c5dcd7efa9dab23
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index 84db08733b4858d0c0b5d2aac25889a6acfed0f5..8400a7b579182d2cb9d1d5a27b55d0bb8f9aab7e 100644
+index 5205153d8c7fb279c6c52687124485e81a1d66cf..9b3d255d65638aba1709b3806f1e862e44618721 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
 @@ -1452,6 +1452,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(

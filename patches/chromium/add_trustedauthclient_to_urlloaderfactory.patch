@@ -49,10 +49,10 @@ index 7dc2d14d47d395e3b8046cae8788c4e04bc8e7f3..55068e71568a022bbf335147e6b35c24
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c209506ca5f450f4611cb339f6d9876175eb713e..d4ff5100be651655140ca024fec12a7d98baa00e 100644
+index c89d6749355e54f212b972ba3d61a0f4ead5495c..e71b19401f46a9a48ba447dbaaab810bd78ecf81 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -473,6 +473,7 @@ URLLoader::URLLoader(
+@@ -476,6 +476,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index c209506ca5f450f4611cb339f6d9876175eb713e..d4ff5100be651655140ca024fec12a7d
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -536,6 +537,11 @@ URLLoader::URLLoader(
+@@ -539,6 +540,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index c209506ca5f450f4611cb339f6d9876175eb713e..d4ff5100be651655140ca024fec12a7d
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1120,7 +1126,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1114,7 +1120,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index c209506ca5f450f4611cb339f6d9876175eb713e..d4ff5100be651655140ca024fec12a7d
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1136,11 +1142,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1130,11 +1136,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
