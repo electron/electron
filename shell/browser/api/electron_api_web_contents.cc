@@ -394,7 +394,7 @@ base::string16 GetDefaultPrinterAsync() {
 
   scoped_refptr<printing::PrintBackend> backend =
       printing::PrintBackend::CreateInstance(
-          nullptr, g_browser_process->GetApplicationLocale());
+          g_browser_process->GetApplicationLocale());
   std::string printer_name = backend->GetDefaultPrinterName();
   return base::UTF8ToUTF16(printer_name);
 }
@@ -2186,7 +2186,7 @@ void WebContents::Print(gin::Arguments* args) {
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
   auto print_backend = printing::PrintBackend::CreateInstance(
-      nullptr, g_browser_process->GetApplicationLocale());
+      g_browser_process->GetApplicationLocale());
   {
     // TODO(deepak1556): Deprecate this api in favor of an
     // async version and post a non blocing task call.
