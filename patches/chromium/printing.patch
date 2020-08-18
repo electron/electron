@@ -432,7 +432,7 @@ index adb4ff6ece476a99ae12d9e3ecfb78931c04c81e..894148c8847b333be8636907e85476dc
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 948c86689c2779a8dc41b458ac670ec8a94e0efa..2e160658ff5ea814b9133c925e8b461a0d9bcfbc 100644
+index 83d1a0692855bb5cc382333722ea7beb87d7f466..2840f00fdb456a5261d7d2ba9516f052df38cd1b 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -197,7 +197,7 @@ interface PrintPreviewUI {
@@ -445,7 +445,7 @@ index 948c86689c2779a8dc41b458ac670ec8a94e0efa..2e160658ff5ea814b9133c925e8b461a
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 788257825daa531d2f878c4ee53272dd265dc8aa..e25c8cb1be55df8ae3af62a5738fc3813fa5d2e0 100644
+index 2bb312f4e46788e962e1a4943e19c26bc3b95c4e..f74350860c0766be81dec8ff0736435ae00c1461 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -40,6 +40,7 @@

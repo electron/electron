@@ -30,10 +30,10 @@ index b11e574d6fcfada1eb31c924c016fd81f395b885..4a7c10ffc498347d4c8b3394e863e29f
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 77bc5b22fd03af3e576b3bec10ac8b747b013937..8a57bf66f24a1bf98ad3062312f7789648ee2fef 100644
+index db588751f23a363c9df91ddcbd0b58dee795e280..cf92944db562c7554b585ba7ab12bf0bfc902855 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1713,6 +1713,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1715,6 +1715,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,7 +43,7 @@ index 77bc5b22fd03af3e576b3bec10ac8b747b013937..8a57bf66f24a1bf98ad3062312f77896
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4d3ab221333465c3807393facbbf4727884b97b3..052f80a8df327e15e97dd956717897c8be43a1c7 100644
+index 672cddbc6a4ea1ab0443f46af6eaaf6ad26c87db..6f5c1978404c959e604946eb061e3faf5df69987 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3950,6 +3950,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {

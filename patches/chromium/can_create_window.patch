@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index dba5ff9a920057d73a3def0a423acff021bece00..adbb43d36b10cbf4427a81b631807eed15baccf8 100644
+index efb38da1106590c991665e2a4601d41e24c926cb..be0ec3cef0a002853bef4adbe627b3014b4f51f4 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4890,6 +4890,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4895,6 +4895,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index dba5ff9a920057d73a3def0a423acff021bece00..adbb43d36b10cbf4427a81b631807eed
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b92cebd04eacb5b6fa3ff3d4c06388e7c8eac942..3ab23d0c634e8379573a4d818bbbe6200a88d073 100644
+index b18917a39fec55301ff7ac722d7aa6df644d302a..f877e021d05cf2269eb8411b7be80781ce8311f8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3420,9 +3420,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -87,7 +87,7 @@ index 5f73f4713eae097b544ba38c4117621d3a1b77e4..170beaff3f579d3fcf9c461f6a41350e
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 5631ce92ac15737d4aff4d08e4a285bc507b6d47..04428e426ff43570deb01edf33400824f9a5206c 100644
+index e46423759fd1a55c0ac4b0cd3ab28466448bcfb7..5cfc4c2c1b305831b390051503bbd06565c7c123 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,7 +109,7 @@ index 5631ce92ac15737d4aff4d08e4a285bc507b6d47..04428e426ff43570deb01edf33400824
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 61ed37a5868fd53f669d40c62542d6271daea91d..c1d7b01d0d63f9f1ba90a32511f69318c9ec10fb 100644
+index cade0abf7f9dbb4d2e4168d83410cf56d433cd00..3e7c88a4eca8181a42289951c8b7850624f1aed1 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
