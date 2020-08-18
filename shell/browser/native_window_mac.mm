@@ -1357,10 +1357,13 @@ void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
   // mimic app.dock.hide() since Apple changed the underlying functionality of
   // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
   // fullscreen apps.
+  ProcessSerialNumber psn = {0, kCurrentProcess};
   if (visibleOnFullScreen) {
     [window_ setCanHide:NO];
-    ProcessSerialNumber psn = {0, kCurrentProcess};
     TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+  } else {
+    [window_ setCanHide:YES];
+    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
   }
 
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
