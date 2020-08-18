@@ -26,7 +26,7 @@
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/file_dialog_helper.h"
+#include "shell/browser/file_select_helper.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -135,7 +135,6 @@ void WebDialogHelper::RunFileChooser(
         FALLTHROUGH;
       case blink::mojom::FileChooserParams::Mode::kOpen:
         flags |= file_dialog::OPEN_DIALOG_OPEN_FILE;
-        flags |= file_dialog::OPEN_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
         break;
       case blink::mojom::FileChooserParams::Mode::kUploadFolder:
         flags |= file_dialog::OPEN_DIALOG_OPEN_DIRECTORY;
