@@ -256,7 +256,7 @@ Returns:
 Emitted after a server side redirect occurs during navigation.  For example a 302
 redirect.
 
-This event can not be prevented, if you want to prevent redirects you should
+This event cannot be prevented, if you want to prevent redirects you should
 checkout out the `will-redirect` event above.
 
 #### Event: 'did-navigate'
@@ -348,7 +348,7 @@ Returns:
 Emitted when the renderer process crashes or is killed.
 
 **Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process dissapeared. It
+which contains more information about why the render process disappeared. It
 isn't always because it crashed.  The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
@@ -367,7 +367,7 @@ Returns:
     * `launch-failure` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
-Emitted when the renderer process unexpectedly dissapears.  This is normally
+Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
 
 #### Event: 'unresponsive'
@@ -720,7 +720,7 @@ This event can be used to configure `webPreferences` for the `webContents`
 of a `<webview>` before it's loaded, and provides the ability to set settings
 that can't be set via `<webview>` attributes.
 
-**Note:** The specified `preload` script option will be appear as `preloadURL`
+**Note:** The specified `preload` script option will appear as `preloadURL`
 (not `preload`) in the `webPreferences` object emitted with this event.
 
 #### Event: 'did-attach-webview'
@@ -1255,7 +1255,7 @@ is large then 0.
 
 #### `contents.incrementCapturerCount([size, stayHidden])`
 
-* `size` [Size](structures/size.md) (optional) - The perferred size for the capturer.
+* `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
 
 Increase the capturer count by one. The page is considered visible when its browser window is
@@ -1311,7 +1311,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Error description called back if the print fails.
 
-When a custom `pageSize` is passed, Chromium attempts to validate platform specific minumum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
+When a custom `pageSize` is passed, Chromium attempts to validate platform specific minimum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.

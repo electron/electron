@@ -170,7 +170,7 @@ your crash reporting backend you should stitch together keys in this format.
 
 * `key` String - Parameter key, must be no longer than 39 bytes.
 
-Remove a extra parameter from the current set of parameters. Future crashes
+Remove an extra parameter from the current set of parameters. Future crashes
 will not include this parameter.
 
 ### `crashReporter.getParameters()`

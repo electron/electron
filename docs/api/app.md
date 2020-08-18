@@ -370,7 +370,7 @@ Returns:
 Emitted when the GPU process crashes or is killed.
 
 **Deprecated:** This event is superceded by the `child-process-gone` event
-which contains more information about why the child process dissapeared. It
+which contains more information about why the child process disappeared. It
 isn't always because it crashed. The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
@@ -385,7 +385,7 @@ Returns:
 Emitted when the renderer process of `webContents` crashes or is killed.
 
 **Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process dissapeared. It
+which contains more information about why the render process disappeared. It
 isn't always because it crashed.  The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
@@ -405,7 +405,7 @@ Returns:
     * `launch-failure` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
-Emitted when the renderer process unexpectedly dissapears.  This is normally
+Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
 
 #### Event: 'child-process-gone'
@@ -435,7 +435,7 @@ Returns:
   * `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 
-Emitted when the child process unexpectedly dissapears. This is normally
+Emitted when the child process unexpectedly disappears. This is normally
 because it was crashed or killed. It does not include renderer processes.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
@@ -1222,7 +1222,7 @@ Returns `Object`:
   * `path` String _Windows_ - The executable to an app that corresponds to a registry entry.
   * `args` String[] _Windows_ - the command-line arguments to pass to the executable.
   * `scope` String _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
-  * `enabled` Boolean _Windows_ - `true` if the app registry key is startup approved and therfore shows as `enabled` in Task Manager and Windows settings.
+  * `enabled` Boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -1356,7 +1356,7 @@ method returns false. If we fail to perform the copy, then this method will
 throw an error. The message in the error should be informative and tell
 you exactly what went wrong.
 
-By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
+By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
 
 For example:
 
