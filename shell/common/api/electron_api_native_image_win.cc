@@ -7,8 +7,10 @@
 #include <windows.h>  // NOLINT(build/include_order)
 
 #include <thumbcache.h>  // NOLINT(build/include_order)
-#include <string>        // NOLINT(build/include_order)
-#include <vector>        // NOLINT(build/include_order)
+#include <wrl/client.h>  // NOLINT(build/include_order)
+
+#include <string>  // NOLINT(build/include_order)
+#include <vector>  // NOLINT(build/include_order)
 
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
@@ -28,19 +30,13 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   v8::Local<v8::Promise> handle = promise.GetHandle();
   HRESULT hr;
 
-  if (size.width() <= 0) {
-    promise.RejectWithErrorMessage(
-        "invalid width, please enter a positive number");
-    return handle;
-  }
-
-  if (!path.IsAbsolute()) {
-    promise.RejectWithErrorMessage("path must be absolute");
+  if (size.IsEmpty()) {
+    promise.RejectWithErrorMessage("size must not be empty");
     return handle;
   }
 
   // create an IShellItem
-  IShellItem* pItem = nullptr;
+  Microsoft::WRL::ComPtr<IShellItem> pItem;
   std::wstring image_path = path.AsUTF16Unsafe();
   hr = SHCreateItemFromParsingName(image_path.c_str(), nullptr,
                                    IID_PPV_ARGS(&pItem));
@@ -52,28 +48,26 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   }
 
   // Init thumbnail cache
-  IThumbnailCache* pThumbnailCache = nullptr;
+  Microsoft::WRL::ComPtr<IThumbnailCache> pThumbnailCache;
   hr = CoCreateInstance(CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC,
                         IID_PPV_ARGS(&pThumbnailCache));
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
         "failed to acquire local thumbnail cache reference");
-    pItem->Release();
     return handle;
   }
 
   // Populate the IShellBitmap
-  ISharedBitmap* pThumbnail = nullptr;
+  Microsoft::WRL::ComPtr<ISharedBitmap> pThumbnail;
   WTS_CACHEFLAGS flags;
   WTS_THUMBNAILID thumbId;
-  hr = pThumbnailCache->GetThumbnail(pItem, size.width(), WTS_FLAGS::WTS_NONE,
-                                     &pThumbnail, &flags, &thumbId);
-  pItem->Release();
+  hr = pThumbnailCache->GetThumbnail(pItem.Get(), size.width(),
+                                     WTS_FLAGS::WTS_NONE, &pThumbnail, &flags,
+                                     &thumbId);
 
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage(
         "failed to get thumbnail from local thumbnail cache reference");
-    pThumbnailCache->Release();
     return handle;
   }
 
@@ -82,8 +76,6 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   hr = pThumbnail->GetSharedBitmap(&hBitmap);
   if (FAILED(hr)) {
     promise.RejectWithErrorMessage("failed to extract bitmap from thumbnail");
-    pThumbnailCache->Release();
-    pThumbnail->Release();
     return handle;
   }
 
@@ -99,9 +91,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   icon_info.hbmMask = hBitmap;
   icon_info.hbmColor = hBitmap;
 
-  HICON icon(CreateIconIndirect(&icon_info));
-  SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon);
-  DestroyIcon(icon);
+  base::win::ScopedHICON icon(CreateIconIndirect(&icon_info));
+  SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon.get());
   gfx::ImageSkia image_skia;
   image_skia.AddRepresentation(
       gfx::ImageSkiaRep(skbitmap, 1.0 /*scale factor*/));

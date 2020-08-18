@@ -47,40 +47,27 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (size.width() <= 0) {
-    promise.RejectWithErrorMessage(
-        "invalid width, please enter a positive number");
+  if (size.IsEmpty()) {
+    promise.RejectWithErrorMessage("size must not be empty");
     return handle;
   }
 
-  if (size.height() <= 0) {
-    promise.RejectWithErrorMessage(
-        "invalid height, please enter a positive number");
-    return handle;
-  }
-
-  if (!path.IsAbsolute()) {
-    promise.RejectWithErrorMessage("path must be absolute");
-    return handle;
-  }
-
-  // convert path to CFURLREF
-  NSString* ns_path = base::mac::FilePathToNSString(path);
-  CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
-
-  CGSize cg_size = CGSizeMake(size.width(), size.height());
-  QLThumbnailRef ql_thumbnail =
-      QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL);
+  CGSize cg_size = size.ToCGSize();
+  base::ScopedCFTypeRef<CFURLRef> cfurl = base::mac::FilePathToCFURL(path);
+  base::ScopedCFTypeRef<QLThumbnailRef> ql_thumbnail(
+      QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL));
   __block gin_helper::Promise<gfx::Image> p = std::move(promise);
   // we do not want to blocking the main thread while waiting for quicklook to
   // generate the thumbnail
   QLThumbnailDispatchAsync(
       ql_thumbnail,
       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, /*flags*/ 0), ^{
-        CGImageRef cg_thumbnail = QLThumbnailCopyImage(ql_thumbnail);
+        base::ScopedCFTypeRef<CGImageRef> cg_thumbnail(
+            QLThumbnailCopyImage(ql_thumbnail));
         if (cg_thumbnail) {
-          NSImage* result = [[NSImage alloc] initWithCGImage:cg_thumbnail
-                                                        size:cg_size];
+          NSImage* result =
+              [[[NSImage alloc] initWithCGImage:cg_thumbnail
+                                           size:cg_size] autorelease];
           gfx::Image thumbnail(result);
           dispatch_async(dispatch_get_main_queue(), ^{
             p.Resolve(thumbnail);
@@ -91,8 +78,6 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
                                      "image for the given path");
           });
         }
-        CFRelease(ql_thumbnail);
-        CGImageRelease(cg_thumbnail);
       });
   return handle;
 }
