@@ -517,20 +517,11 @@ describe('nativeImage module', () => {
 
   ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
     it('throws when invalid size is passed', async () => {
-      const badSize = { width: -1, height: 30 };
+      const badSize = {};
 
       await expect(
         nativeImage.createThumbnailFromPath('path', badSize)
-      ).to.eventually.be.rejectedWith('invalid width, please enter a positive number');
-    });
-
-    it('throws when a relative path is passed', async () => {
-      const badPath = '../hey/hi/hello';
-      const goodSize = { width: 100, height: 100 };
-
-      await expect(
-        nativeImage.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejectedWith('path must be absolute');
+      ).to.eventually.be.rejectedWith('size must not be empty');
     });
 
     ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
@@ -551,15 +542,8 @@ describe('nativeImage module', () => {
       ).to.eventually.be.rejected();
     });
 
-    ifit(process.platform === 'darwin')('returns native image with valid params (MacOS)', async () => {
-      const goodPath = path.join(__dirname, 'fixtures/apps/xwindow-icon/icon.png');
-      const goodSize = { width: 100, height: 100 };
-      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
-      expect(result.isEmpty()).to.equal(false);
-    });
-
-    ifit(process.platform === 'win32')('returns native image with valid params (Windows)', async () => {
-      const goodPath = path.join(__dirname, 'fixtures\\apps\\xwindow-icon\\icon.png');
+    it('returns native image given valid params', async () => {
+      const goodPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
       const goodSize = { width: 100, height: 100 };
       const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
       expect(result.isEmpty()).to.equal(false);
