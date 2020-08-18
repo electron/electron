@@ -171,8 +171,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
-  // Make sure BrowserContext is alwasys destroyed after WebContents.
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   // The stored InspectableWebContents object.
   // Notice that web_contents_ must be placed after dialog_manager_, so we can
