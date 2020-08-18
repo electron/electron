@@ -71,15 +71,41 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void OnSelectionCancelled();
 
+  void ConvertToFileInfoList(const std::vector<base::FilePath>& paths);
+
+#if defined(OS_MAC)
+  // Must be called from a MayBlock() task. Each selected file that is a package
+  // will be zipped, and the zip will be passed to the render view host in place
+  // of the package.
+  void ProcessSelectedFilesMac(const std::vector<base::FilePath>& file_paths);
+
+  // Saves the paths of |zipped_files| for later deletion. Passes |files| to the
+  // render view host.
+  void ProcessSelectedFilesMacOnUIThread(
+      const std::vector<base::FilePath>& file_paths,
+      const std::vector<base::FilePath>& zipped_files);
+
+  // Zips the package at |path| into a temporary destination. Returns the
+  // temporary destination, if the zip was successful. Otherwise returns an
+  // empty path.
+  static base::FilePath ZipPackage(const base::FilePath& path);
+#endif  // defined(OS_MAC)
+
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
   void RenderFrameDeleted(content::RenderFrameHost* deleted_host) override;
   void WebContentsDestroyed() override;
 
+  void DeleteTemporaryFiles();
+
   content::RenderFrameHost* render_frame_host_;
   scoped_refptr<content::FileSelectListener> listener_;
   blink::mojom::FileChooserParams::Mode mode_;
+
+  // Temporary files only used on OSX. This class is responsible for deleting
+  // these files when they are no longer needed.
+  std::vector<base::FilePath> temporary_files_;
 
   // DirectoryLister-specific members
   std::unique_ptr<net::DirectoryLister> lister_;
