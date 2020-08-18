@@ -517,24 +517,15 @@ describe('nativeImage module', () => {
 
   ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
     it('throws when invalid size is passed', async () => {
-      const badSize = {};
+      const badSize = null;
 
       await expect(
         nativeImage.createThumbnailFromPath('path', badSize)
       ).to.eventually.be.rejectedWith('size must not be empty');
     });
 
-    ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
-      const badPath = '/hey/hi/hello';
-      const goodSize = { width: 100, height: 100 };
-
-      await expect(
-        nativeImage.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejectedWith('unable to retrieve thumbnail preview image for the given path');
-    });
-
-    ifit(process.platform === 'win32')('throws when a bad path is passed (Windows)', async () => {
-      const badPath = '\\hey\\hi\\hello';
+    it('throws when a bad path is passed', async () => {
+      const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
       const goodSize = { width: 100, height: 100 };
 
       await expect(
