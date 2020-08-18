@@ -58,7 +58,7 @@ class Cookies : public gin_helper::TrackableObject<Cookies> {
   std::unique_ptr<base::CallbackList<void(
       const net::CookieChangeInfo& change)>::Subscription>
       cookie_change_subscription_;
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
