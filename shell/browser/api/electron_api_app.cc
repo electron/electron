@@ -755,7 +755,7 @@ base::OnceClosure App::SelectClientCertificate(
 
   auto shared_identities =
       std::make_shared<net::ClientCertIdentityList>(std::move(identities));
-
+  v8::HandleScope handle_scope(isolate());
   bool prevent_default =
       Emit("select-client-certificate",
            WebContents::FromOrCreate(isolate(), web_contents),
