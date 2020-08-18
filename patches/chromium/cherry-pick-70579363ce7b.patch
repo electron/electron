@@ -1,7 +1,7 @@
-From 70579363ce7b613788a09c058220810d61c50ef2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Reilly Grant <reillyg@chromium.org>
 Date: Wed, 22 Jul 2020 04:00:16 +0000
-Subject: [PATCH] usb: Prevent iterator invalidation during Promise resolution
+Subject: usb: Prevent iterator invalidation during Promise resolution
 
 This change swaps sets of ScriptPromiseResolvers into local variables in
 a number of places where it was possible for script to execute during
@@ -22,16 +22,12 @@ Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Commit-Queue: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4183@{#842}
 Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
----
- third_party/blink/renderer/modules/webusb/usb.cc  | 15 +++++++++++----
- .../blink/renderer/modules/webusb/usb_device.cc   |  8 ++++++--
- 2 files changed, 17 insertions(+), 6 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webusb/usb.cc b/third_party/blink/renderer/modules/webusb/usb.cc
-index 786164b63faba..2f94a56f7160f 100644
+index cbe336ae6991d42aa7082aa99a95c4a380aa790f..ce38760e569e03bef1f64b14fca1122d7f98b452 100644
 --- a/third_party/blink/renderer/modules/webusb/usb.cc
 +++ b/third_party/blink/renderer/modules/webusb/usb.cc
-@@ -249,15 +249,22 @@ void USB::OnDeviceRemoved(UsbDeviceInfoPtr device_info) {
+@@ -264,15 +264,22 @@ void USB::OnDeviceRemoved(UsbDeviceInfoPtr device_info) {
  void USB::OnServiceConnectionError() {
    service_.reset();
    client_receiver_.reset();
@@ -59,10 +55,10 @@ index 786164b63faba..2f94a56f7160f 100644
  
  void USB::AddedEventListener(const AtomicString& event_type,
 diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
-index 4bab93cfd4bdb..1ba2a231a0bc5 100644
+index da7d3003c3a38cdf650ec0ab5c131fecd80ee4e5..23856abc9a59770f816c6d18cd12602e6d0dae58 100644
 --- a/third_party/blink/renderer/modules/webusb/usb_device.cc
 +++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
-@@ -1132,11 +1132,15 @@ void USBDevice::AsyncReset(ScriptPromiseResolver* resolver, bool success) {
+@@ -1099,11 +1099,15 @@ void USBDevice::AsyncReset(ScriptPromiseResolver* resolver, bool success) {
  void USBDevice::OnConnectionError() {
    device_.reset();
    opened_ = false;
