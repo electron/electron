@@ -4,7 +4,10 @@
 
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
+#include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/win/hwnd_metrics.h"
+#include "ui/base/win/shell.h"
+#include "ui/display/win/dpi.h"
 
 namespace electron {
 
@@ -36,18 +39,30 @@ bool ElectronDesktopWindowTreeHostWin::HasNativeFrame() const {
   // Since we never use chromium's titlebar implementation, we can just say
   // that we use a native titlebar. This will disable the repaint locking when
   // DWM composition is disabled.
-  return true;
+  return !ui::win::IsAeroGlassEnabled();
+}
+
+bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
+    gfx::Insets* insets) const {
+  if (IsMaximized() && !native_window_view_->has_frame()) {
+    WinFrameView* frame = static_cast<WinFrameView*>(
+        native_window_view_->widget()->non_client_view()->frame_view());
+    *insets = frame->GetGlassInsets();
+    // The DWM API's expect values in pixels. We need to convert from DIP to
+    // pixels here.
+    *insets = insets->Scale(display::win::GetDPIScale());
+    return true;
+  }
+  return false;
 }
 
 bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets,
     HMONITOR monitor) const {
   if (IsMaximized() && !native_window_view_->has_frame()) {
-    // Windows automatically adds a standard width border to all sides when a
-    // window is maximized.
-    int frame_thickness = ui::GetFrameThickness(monitor) - 1;
-    *insets = gfx::Insets(frame_thickness, frame_thickness, frame_thickness,
-                          frame_thickness);
+    WinFrameView* frame = static_cast<WinFrameView*>(
+        native_window_view_->widget()->non_client_view()->frame_view());
+    *insets = frame->GetClientAreaInsets(monitor);
     return true;
   }
   return false;

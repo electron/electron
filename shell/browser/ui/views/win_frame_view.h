@@ -15,10 +15,15 @@ class WinFrameView : public FramelessView {
   WinFrameView();
   ~WinFrameView() override;
 
+  gfx::Insets GetGlassInsets() const;
+  gfx::Insets GetClientAreaInsets(HMONITOR monitor) const;
+
   // views::NonClientFrameView:
+  gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
+  gfx::Size CalculatePreferredSize() const override;
 
   // views::View:
   const char* GetClassName() const override;
