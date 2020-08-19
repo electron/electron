@@ -33,7 +33,11 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "ui/shell_dialogs/selected_file_info.h"
+
+using blink::mojom::FileChooserFileInfo;
+using blink::mojom::FileChooserFileInfoPtr;
+using blink::mojom::FileChooserParams;
+using blink::mojom::NativeFileInfo;
 
 namespace {
 
@@ -115,28 +119,29 @@ WebDialogHelper::~WebDialogHelper() = default;
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     scoped_refptr<content::FileSelectListener> listener,
-    const blink::mojom::FileChooserParams& params) {
+    const FileChooserParams& params) {
   file_dialog::DialogSettings settings;
   settings.force_detached = offscreen_;
   settings.filters = GetFileTypesFromAcceptType(params.accept_types);
   settings.parent_window = window_;
   settings.title = base::UTF16ToUTF8(params.title);
 
-  auto file_select_helper = base::MakeRefCounted<FileSelectHelper>(
-      render_frame_host, std::move(listener), params.mode);
-  if (params.mode == blink::mojom::FileChooserParams::Mode::kSave) {
+  scoped_refptr<FileSelectHelper> file_select_helper =
+      base::MakeRefCounted<FileSelectHelper>(render_frame_host,
+                                             std::move(listener), params.mode);
+  if (params.mode == FileChooserParams::Mode::kSave) {
     settings.default_path = params.default_file_name;
     file_select_helper->ShowSaveDialog(settings);
   } else {
     int flags = file_dialog::OPEN_DIALOG_CREATE_DIRECTORY;
     switch (params.mode) {
-      case blink::mojom::FileChooserParams::Mode::kOpenMultiple:
+      case FileChooserParams::Mode::kOpenMultiple:
         flags |= file_dialog::OPEN_DIALOG_MULTI_SELECTIONS;
         FALLTHROUGH;
-      case blink::mojom::FileChooserParams::Mode::kOpen:
+      case FileChooserParams::Mode::kOpen:
         flags |= file_dialog::OPEN_DIALOG_OPEN_FILE;
         break;
-      case blink::mojom::FileChooserParams::Mode::kUploadFolder:
+      case FileChooserParams::Mode::kUploadFolder:
         flags |= file_dialog::OPEN_DIALOG_OPEN_DIRECTORY;
         break;
       default:
@@ -162,14 +167,14 @@ void WebDialogHelper::EnumerateDirectory(
   base::FileEnumerator file_enum(dir, false, types);
 
   base::FilePath path;
-  std::vector<blink::mojom::FileChooserFileInfoPtr> file_info;
+  std::vector<FileChooserFileInfoPtr> file_info;
   while (!(path = file_enum.Next()).empty()) {
-    file_info.push_back(blink::mojom::FileChooserFileInfo::NewNativeFile(
-        blink::mojom::NativeFileInfo::New(path, base::string16())));
+    file_info.push_back(FileChooserFileInfo::NewNativeFile(
+        NativeFileInfo::New(path, base::string16())));
   }
 
   listener->FileSelected(std::move(file_info), dir,
-                         blink::mojom::FileChooserParams::Mode::kUploadFolder);
+                         FileChooserParams::Mode::kUploadFolder);
 }
 
 }  // namespace electron

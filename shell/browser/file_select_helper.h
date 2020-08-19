@@ -35,7 +35,11 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
-class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
+using blink::mojom::FileChooserParams;
+
+class FileSelectHelper : public base::RefCountedThreadSafe<
+                             FileSelectHelper,
+                             content::BrowserThread::DeleteOnUIThread>,
                          public content::WebContentsObserver,
                          public net::DirectoryLister::DirectoryListerDelegate {
  public:
@@ -43,14 +47,17 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    scoped_refptr<content::FileSelectListener> listener,
-                   blink::mojom::FileChooserParams::Mode mode);
+                   FileChooserParams::Mode mode);
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings);
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings);
 
  private:
-  friend class base::RefCounted<FileSelectHelper>;
+  friend class base::RefCountedThreadSafe<FileSelectHelper>;
+  friend class base::DeleteHelper<FileSelectHelper>;
+  friend struct content::BrowserThread::DeleteOnThread<
+      content::BrowserThread::UI>;
 
   ~FileSelectHelper() override;
 
@@ -58,6 +65,8 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void OnListFile(
       const net::DirectoryLister::DirectoryListerData& data) override;
   void OnListDone(int error) override;
+
+  void DeleteTemporaryFiles();
 
   void EnumerateDirectory();
 
@@ -71,18 +80,19 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   void OnSelectionCancelled();
 
-  void ConvertToFileInfoList(const std::vector<base::FilePath>& paths);
+  void ConvertToFileChooserFileInfoList(
+      const std::vector<ui::SelectedFileInfo>& files);
 
 #if defined(OS_MAC)
   // Must be called from a MayBlock() task. Each selected file that is a package
   // will be zipped, and the zip will be passed to the render view host in place
   // of the package.
-  void ProcessSelectedFilesMac(const std::vector<base::FilePath>& file_paths);
+  void ProcessSelectedFilesMac(const std::vector<ui::SelectedFileInfo>& files);
 
   // Saves the paths of |zipped_files| for later deletion. Passes |files| to the
   // render view host.
   void ProcessSelectedFilesMacOnUIThread(
-      const std::vector<base::FilePath>& file_paths,
+      const std::vector<ui::SelectedFileInfo>& files,
       const std::vector<base::FilePath>& zipped_files);
 
   // Zips the package at |path| into a temporary destination. Returns the
@@ -97,11 +107,9 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void RenderFrameDeleted(content::RenderFrameHost* deleted_host) override;
   void WebContentsDestroyed() override;
 
-  void DeleteTemporaryFiles();
-
   content::RenderFrameHost* render_frame_host_;
   scoped_refptr<content::FileSelectListener> listener_;
-  blink::mojom::FileChooserParams::Mode mode_;
+  FileChooserParams::Mode mode_;
 
   // Temporary files only used on OSX. This class is responsible for deleting
   // these files when they are no longer needed.
