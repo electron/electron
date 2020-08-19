@@ -983,6 +983,26 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
+          const bounds = w.getBounds();
+          w.once('maximize', () => {
+            w.unmaximize();
+          });
+          const unmaximize = emittedOnce(w, 'unmaximize');
+          w.show();
+          w.maximize();
+          await unmaximize;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
