@@ -9,10 +9,10 @@ See https://github.com/electron/electron/issues/18380.
 This should be upstreamed.
 
 diff --git a/src/tls_wrap.cc b/src/tls_wrap.cc
-index bb09ee99e070172a3764119cf85f3eef4d79df87..95bbc4c6a62ccf19a9d94a6afa4f2ce277c9bd4c 100644
+index 36877424216ed458eeb7a0796703afb667b89f7c..63546540163abe08eb8c701dda9272c135fb36c0 100644
 --- a/src/tls_wrap.cc
 +++ b/src/tls_wrap.cc
-@@ -128,6 +128,12 @@ void TLSWrap::InitSSL() {
+@@ -129,6 +129,12 @@ void TLSWrap::InitSSL() {
    // - https://wiki.openssl.org/index.php/TLS1.3#Non-application_data_records
    SSL_set_mode(ssl_.get(), SSL_MODE_AUTO_RETRY);
  
