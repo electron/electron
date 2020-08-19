@@ -517,7 +517,7 @@ describe('nativeImage module', () => {
 
   ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
     it('throws when invalid size is passed', async () => {
-      const badSize = null;
+      const badSize = { width: -1, height: -1 };
 
       await expect(
         nativeImage.createThumbnailFromPath('path', badSize)

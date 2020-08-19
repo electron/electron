@@ -4,13 +4,13 @@
 
 #include "shell/common/api/electron_api_native_image.h"
 
-#include <windows.h>  // NOLINT(build/include_order)
+#include <windows.h>
 
-#include <thumbcache.h>  // NOLINT(build/include_order)
-#include <wrl/client.h>  // NOLINT(build/include_order)
+#include <thumbcache.h>
+#include <wrl/client.h>
 
-#include <string>  // NOLINT(build/include_order)
-#include <vector>  // NOLINT(build/include_order)
+#include <string>
+#include <vector>
 
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
