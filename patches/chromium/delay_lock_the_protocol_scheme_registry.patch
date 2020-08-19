@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 02985a525c98999f469906c8ff3647b740d9f962..e52e8d69c2d05b31d1f28b19752be362941e52be 100644
+index 57f1dcf106d1029a94d908f90b9f27fd96f2f888..ab4967bbcd687ff63f377c13d25b97cf395ee2f2 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -36,6 +36,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
@@ -83,7 +83,7 @@ index 02985a525c98999f469906c8ff3647b740d9f962..e52e8d69c2d05b31d1f28b19752be362
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 0ca924769b98009264b53121dfe6a892b81e8530..606a5cb8d89216a95e9187fba2ea9b6d4121a394 100644
+index a384cd8f3688797bff4ef2e007ef40b6f93755e5..a387441cbe5bbe676ea1c2d77605c97eba3dd746 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -76,6 +76,20 @@ class CONTENT_EXPORT ContentMainDelegate {

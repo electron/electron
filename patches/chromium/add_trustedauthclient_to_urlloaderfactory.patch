@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 34acc97e3936a4f9a8784a6e55a46804f03570a5..c3878e167a6508972065eb5031e62b6aee6df3b8 100644
+index 0ff929d09ba404b0a4e1b4f29b26fcbe2034f9d2..a8792275ea6cfe3cdb05ca5a2a608584a91da7be 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
@@ -39,7 +39,7 @@ index 34acc97e3936a4f9a8784a6e55a46804f03570a5..c3878e167a6508972065eb5031e62b6a
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -647,6 +666,8 @@ struct URLLoaderFactoryParams {
+@@ -641,6 +660,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
@@ -49,7 +49,7 @@ index 34acc97e3936a4f9a8784a6e55a46804f03570a5..c3878e167a6508972065eb5031e62b6a
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c89d6749355e54f212b972ba3d61a0f4ead5495c..e71b19401f46a9a48ba447dbaaab810bd78ecf81 100644
+index ff78e9af65cc0daa77fe5ba84b36ac9c4a672d55..4ef39f6de4570cd0fd6d83a09e4ac5b9f0415e05 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -476,6 +476,7 @@ URLLoader::URLLoader(

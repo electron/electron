@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 2748aff7d8f71716a944ff397295af5215069088..9544a8229ea523e243a4b434754600062e64cae1 100644
+index 8aedf955dc67309dd9b6e7d7dc668d80bdab722c..04c97519807984967569dcfba2fbd6df5b8c645f 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1748,6 +1748,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -231,7 +231,7 @@ index 9b200dbd44e0e5524276c8784c873fb720961baa..cef79334b88bf1b947360ed890fbf2f9
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a4194f5d6e88880c564ca1182b4e3248b2382f61..00a6ded4f5bcd97cdfb703183b141c2ae2186408 100644
+index d16b656310994c59fbc2ab28a2650a3b34b6ce1b..381c079fdfe98c5a65644f5c1586cf16b0369d7e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -226,6 +226,7 @@
@@ -317,7 +317,7 @@ index 95e818f1406eb1a73a746b73a608137ab5c6e894..6e1d3b3b1add4eda90560856b6915d46
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 906c208b7bdda94313dd25d96a93a0393a09d0d9..0ab01c2618b28e63c7ae47e737ad2adb4f168749 100644
+index 4f780768e5c606e08aad96d87c309d53154bcecd..8ddbb922399265f5d525274e7c2d01dbecfdf5a9 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
@@ -328,7 +328,7 @@ index 906c208b7bdda94313dd25d96a93a0393a09d0d9..0ab01c2618b28e63c7ae47e737ad2adb
  
  namespace gfx {
  
-@@ -143,6 +144,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -127,6 +128,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -343,7 +343,7 @@ index 906c208b7bdda94313dd25d96a93a0393a09d0d9..0ab01c2618b28e63c7ae47e737ad2adb
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -280,6 +289,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -265,6 +274,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

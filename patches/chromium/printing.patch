@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 668a14bff461e83b2c6d9d7f23d9674ff081ef12..674f141e80c0316fd47558c4d428a9706ac5a7b6 100644
+index 792f6ac614a159cd28c8ebefde627b13796a4f67..0aa8f73852aa33a174f75251d8862b0c0d355ff1 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -353,12 +353,14 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -354,12 +354,14 @@ void PrintJob::StartPdfToEmfConversion(
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because |web_contents| was null. As a result, this section has many more
    // pointer checks to avoid crashing.
@@ -635,10 +635,10 @@ index b5ec1df59c37ac18c64abe58955e676f546b3da8..6323915537c22bce36c3289fd51d7394
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 83e845e8093db6569d77255442c315920803b033..e7505757f2ea1fb8cef0b493336976768ff910d1 100644
+index 5f82472c0123c4a71be6c18561229ce2261b93e4..ed7db3d8463eb1353d7cadea33ded3c4d4ef21fe 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -94,8 +94,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -95,8 +95,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
