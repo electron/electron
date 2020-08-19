@@ -68,7 +68,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
       std::vector<blink::mojom::FileChooserFileInfoPtr> file_info,
       base::FilePath base_dir);
 
-  void RunSelectionEnd();
+  void RunFileChooserEnd();
 
   void ConvertToFileChooserFileInfoList(
       const std::vector<ui::SelectedFileInfo>& files);

@@ -30,6 +30,7 @@ static_library("chrome") {
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
+    "//chrome/browser/file_select_helper_mac.mm",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
     "//chrome/browser/net/proxy_config_monitor.cc",
