@@ -233,7 +233,7 @@ Try not to be discouraged. If you feel that a review is unfair, say so or seek
 the input of another project contributor. Often such comments are the result of
 a reviewer having taken insufficient time to review and are not ill-intended.
 Such difficulties can often be resolved with a bit of patience. That said,
-reviewers should be expected to provide helpful feeback.
+reviewers should be expected to provide helpful feedback.
 
 ### Step 11: Landing
 

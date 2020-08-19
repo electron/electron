@@ -1,12 +1,12 @@
 {
   "name": "electron",
-  "version": "11.0.0-nightly.20200730",
+  "version": "11.0.0-nightly.20200818",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@electron/docs-parser": "^0.9.1",
     "@electron/typescript-definitions": "^8.7.4",
-    "@octokit/rest": "^16.3.2",
+    "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
     "@types/busboy": "^0.2.3",
@@ -108,7 +108,7 @@
       "node script/lint.js --js --fix --only --"
     ],
     "*.{js,ts,d.ts}": [
-      "node script/gen-filenames.js"
+      "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
       "python script/run-clang-format.py -r -c --fix"
@@ -124,19 +124,20 @@
       "node script/lint.js --py --fix --only --"
     ],
     "docs/api/**/*.md": [
-      "node script/gen-filenames.js",
+      "ts-node script/gen-filenames.ts",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
-      "node script/check-patch-diff.js"
+      "ts-node script/check-patch-diff.ts"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
     ]
   },
   "dependencies": {
-    "@types/temp": "^0.8.34"
+    "@types/temp": "^0.8.34",
+    "aws-sdk": "^2.727.1"
   }
 }

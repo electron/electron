@@ -21,6 +21,8 @@ const path = require('path');
 const sumchecker = require('sumchecker');
 const temp = require('temp').track();
 const { URL } = require('url');
+const { Octokit } = require('@octokit/rest');
+const AWS = require('aws-sdk');
 
 require('colors');
 const pass = '✓'.green;
@@ -28,7 +30,7 @@ const fail = '✗'.red;
 
 const { ELECTRON_DIR } = require('../lib/utils');
 
-const octokit = require('@octokit/rest')({
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
@@ -217,6 +219,41 @@ function uploadIndexJson () {
   console.log(`${pass} Done uploading index.json to S3.`);
 }
 
+async function mergeShasums (pkgVersion) {
+  // Download individual checksum files for Electron zip files from S3,
+  // concatenate them, and upload to GitHub.
+
+  const bucket = process.env.ELECTRON_S3_BUCKET;
+  const accessKeyId = process.env.ELECTRON_S3_ACCESS_KEY;
+  const secretAccessKey = process.env.ELECTRON_S3_SECRET_KEY;
+  if (!bucket || !accessKeyId || !secretAccessKey) {
+    throw new Error('Please set the $ELECTRON_S3_BUCKET, $ELECTRON_S3_ACCESS_KEY, and $ELECTRON_S3_SECRET_KEY environment variables');
+  }
+
+  const s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    accessKeyId,
+    secretAccessKey,
+    region: 'us-west-2'
+  });
+  const objects = await s3.listObjectsV2({
+    Bucket: bucket,
+    Prefix: `atom-shell/tmp/${pkgVersion}/`,
+    Delimiter: '/'
+  }).promise();
+  const shasums = [];
+  for (const obj of objects.Contents) {
+    if (obj.Key.endsWith('.sha256sum')) {
+      const data = await s3.getObject({
+        Bucket: bucket,
+        Key: obj.Key
+      }).promise();
+      shasums.push(data.toString('ascii').trim());
+    }
+  }
+  return shasums.join('\n');
+}
+
 async function createReleaseShasums (release) {
   const fileName = 'SHASUMS256.txt';
   const existingAssets = release.assets.filter(asset => asset.name === fileName);
@@ -231,8 +268,7 @@ async function createReleaseShasums (release) {
     });
   }
   console.log(`Creating and uploading the release ${fileName}.`);
-  const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'merge-electron-checksums.py');
-  const checksums = runScript(scriptPath, ['-v', pkgVersion]);
+  const checksums = await mergeShasums(pkgVersion);
 
   console.log(`${pass} Generated release SHASUMS.`);
   const filePath = await saveShaSumFile(checksums, fileName);
@@ -251,7 +287,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
       'content-type': 'text/plain',
       'content-length': fs.statSync(filePath).size
     },
-    file: fs.createReadStream(filePath),
+    data: fs.createReadStream(filePath),
     name: fileName
   }).catch(err => {
     console.log(`${fail} Error uploading ${filePath} to GitHub:`, err);

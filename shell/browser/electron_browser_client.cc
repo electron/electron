@@ -49,10 +49,6 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
-#include "extensions/browser/extension_navigation_ui_data.h"
-#include "extensions/browser/extension_protocols.h"
-#include "extensions/common/constants.h"
-#include "extensions/common/switches.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -113,7 +109,7 @@
 #include "net/ssl/client_cert_store_nss.h"
 #elif defined(OS_WIN)
 #include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
@@ -142,9 +138,12 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
@@ -152,8 +151,11 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -164,7 +166,7 @@
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
 #endif
@@ -693,7 +695,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
@@ -720,8 +722,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   bool enable_crash_reporter = false;
   enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   if (enable_crash_reporter) {
-    command_line->AppendSwitch(::switches::kEnableCrashReporter);
-    std::string switch_value;
+    std::string switch_value =
+        api::crash_reporter::GetClientId() + ",no_channel";
+    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
+                                    switch_value);
     for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
       if (!switch_value.empty())
         switch_value += ",";
@@ -1021,7 +1025,7 @@ ElectronBrowserClient::CreateClientCertStore(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
 #elif defined(OS_WIN)
   return std::make_unique<net::ClientCertStoreWin>();
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
@@ -1250,6 +1254,7 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
+    base::UkmSourceId ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1258,7 +1263,8 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, false /* we don't support extensions::WebViewGuest */));
+          context, ukm_source_id,
+          false /* we don't support extensions::WebViewGuest */));
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
@@ -1481,6 +1487,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
+
   return true;
 }
 
@@ -1499,6 +1506,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->is_corb_enabled = false;
     }
   }
+
+  extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
+      browser_context, origin, is_for_isolated_world, factory_params);
 }
 
 #if defined(OS_WIN)

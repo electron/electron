@@ -47,7 +47,7 @@ namespace electron {
 class ElectronMenuModel;
 class NativeBrowserView;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 typedef NSView* NativeWindowHandle;
 #else
 typedef gfx::AcceleratedWidget NativeWindowHandle;
@@ -195,7 +195,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Traffic Light API
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;

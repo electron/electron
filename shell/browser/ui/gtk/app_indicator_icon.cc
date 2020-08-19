@@ -146,7 +146,7 @@ bool WriteFile(const base::FilePath& path, const SkBitmap& bitmap) {
 void DeleteTempDirectory(const base::FilePath& dir_path) {
   if (dir_path.empty())
     return;
-  base::DeleteFile(dir_path, true);
+  base::DeletePathRecursively(dir_path);
 }
 
 }  // namespace

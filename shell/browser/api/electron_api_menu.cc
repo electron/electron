@@ -266,7 +266,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Menu", Menu::GetConstructor(context));
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
                  &Menu::SendActionToFirstResponder);

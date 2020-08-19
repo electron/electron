@@ -87,9 +87,10 @@ ServiceWorkerContext::~ServiceWorkerContext() {
 
 void ServiceWorkerContext::OnReportConsoleMessage(
     int64_t version_id,
+    const GURL& scope,
     const content::ConsoleMessage& message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
+  v8::HandleScope handle_scope(isolate);
   Emit("console-message",
        gin::DataObjectBuilder(isolate)
            .Set("versionId", version_id)

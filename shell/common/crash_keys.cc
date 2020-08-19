@@ -142,7 +142,7 @@ void SetPlatformCrashKey() {
   static crash_reporter::CrashKeyString<8> platform_key("platform");
 #if defined(OS_WIN)
   platform_key.Set("win32");
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   platform_key.Set("darwin");
 #elif defined(OS_LINUX)
   platform_key.Set("linux");

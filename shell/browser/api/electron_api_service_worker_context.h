@@ -32,6 +32,7 @@ class ServiceWorkerContext
 
   // content::ServiceWorkerContextObserver
   void OnReportConsoleMessage(int64_t version_id,
+                              const GURL& scope,
                               const content::ConsoleMessage& message) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 

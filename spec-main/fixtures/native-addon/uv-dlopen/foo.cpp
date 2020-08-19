@@ -1,0 +1,2 @@
+extern "C"
+void foo() { }
