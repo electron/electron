@@ -61,6 +61,8 @@ void FileSelectHelper::ShowOpenDialog(
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowOpenDialog(settings, std::move(promise));
+
+  AddRef();
 }
 
 void FileSelectHelper::ShowSaveDialog(
@@ -73,6 +75,8 @@ void FileSelectHelper::ShowSaveDialog(
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
+
+  AddRef();
 }
 
 // net::DirectoryLister::DirectoryListerDelegate
@@ -97,6 +101,8 @@ void FileSelectHelper::RunSelectionEnd() {
 
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
+
+  Release();
 }
 
 // net::DirectoryLister::DirectoryListerDelegate
@@ -107,7 +113,6 @@ void FileSelectHelper::OnListDone(int error) {
         NativeFileInfo::New(path, base::string16())));
 
   OnFilesSelected(std::move(file_info), lister_base_dir_);
-  Release();
 }
 
 void FileSelectHelper::DeleteTemporaryFiles() {
@@ -211,7 +216,9 @@ void FileSelectHelper::OnFilesSelected(
     listener_->FileSelected(std::move(file_info), base_dir, mode_);
     listener_.reset();
   }
+
   render_frame_host_ = nullptr;
+  Release();
 }
 
 // content::WebContentsObserver:
@@ -241,4 +248,5 @@ void FileSelectHelper::WebContentsDestroyed() {
   web_contents_ = nullptr;
 
   DeleteTemporaryFiles();
+  Release();
 }
