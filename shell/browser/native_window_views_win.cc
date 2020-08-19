@@ -324,10 +324,14 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
-      if (w_param == SIZE_MAXIMIZED) {
+      // Note that SIZE_MAXIMIZED and SIZE_MINIMIZED might be emitted for
+      // multiple times for one resize because of the SetWindowPlacement call.
+      if (w_param == SIZE_MAXIMIZED &&
+          last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
         last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
         NotifyWindowMaximize();
-      } else if (w_param == SIZE_MINIMIZED) {
+      } else if (w_param == SIZE_MINIMIZED &&
+                 last_window_state_ != ui::SHOW_STATE_MINIMIZED) {
         last_window_state_ = ui::SHOW_STATE_MINIMIZED;
         NotifyWindowMinimize();
       }

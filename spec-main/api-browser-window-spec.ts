@@ -2975,6 +2975,15 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
+    it('emits only one event when frameless window is maximized', () => {
+      const w = new BrowserWindow({ show: false, frame: false });
+      let emitted = 0;
+      w.on('maximize', () => emitted++);
+      w.show();
+      w.maximize();
+      expect(emitted).to.equal(1);
+    });
+
     it('emits an event when window is unmaximized', async () => {
       const w = new BrowserWindow({ show: false });
       const unmaximize = emittedOnce(w, 'unmaximize');
