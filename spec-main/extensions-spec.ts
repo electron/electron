@@ -37,6 +37,18 @@ describe('chrome extensions', () => {
     });
   });
 
+  it('can open WebSQLDatabase in a background page', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    w.loadURL('about:blank');
+
+    await emittedOnce(w.webContents, 'dom-ready');
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
+    const args: any = await emittedOnce(app, 'web-contents-created');
+    const wc: Electron.WebContents = args[1];
+    await expect(wc.executeJavaScript('(()=>{try{openDatabase("t", "1.0", "test", 2e5);return true;}catch(e){throw e}})()')).to.not.be.rejected();
+  });
+
   function fetch (contents: WebContents, url: string) {
     return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
   }
