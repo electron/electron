@@ -2002,8 +2002,9 @@ void WebContents::Print(gin::Arguments* args) {
   // Set whether to print color or greyscale
   bool print_color = true;
   options.Get("color", &print_color);
-  int color_setting = print_color ? printing::COLOR : printing::GRAY;
-  settings.SetIntKey(printing::kSettingColor, color_setting);
+  auto const color_model = print_color ? printing::mojom::ColorModel::kColor
+                                       : printing::mojom::ColorModel::kGray;
+  settings.SetIntKey(printing::kSettingColor, static_cast<int>(color_model));
 
   // Is the orientation landscape or portrait.
   bool landscape = false;
