@@ -33,7 +33,11 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "ui/shell_dialogs/selected_file_info.h"
+
+using blink::mojom::FileChooserFileInfo;
+using blink::mojom::FileChooserFileInfoPtr;
+using blink::mojom::FileChooserParams;
+using blink::mojom::NativeFileInfo;
 
 namespace {
 void DeleteFiles(std::vector<base::FilePath> paths) {
@@ -45,7 +49,7 @@ void DeleteFiles(std::vector<base::FilePath> paths) {
 FileSelectHelper::FileSelectHelper(
     content::RenderFrameHost* render_frame_host,
     scoped_refptr<content::FileSelectListener> listener,
-    blink::mojom::FileChooserParams::Mode mode)
+    FileChooserParams::Mode mode)
     : render_frame_host_(render_frame_host),
       listener_(std::move(listener)),
       mode_(mode) {
@@ -92,13 +96,20 @@ void FileSelectHelper::OnListFile(
 
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListDone(int error) {
-  std::vector<blink::mojom::FileChooserFileInfoPtr> file_info;
+  std::vector<FileChooserFileInfoPtr> file_info;
   for (const auto& path : lister_paths_)
-    file_info.push_back(blink::mojom::FileChooserFileInfo::NewNativeFile(
-        blink::mojom::NativeFileInfo::New(path, base::string16())));
+    file_info.push_back(FileChooserFileInfo::NewNativeFile(
+        NativeFileInfo::New(path, base::string16())));
 
   OnFilesSelected(std::move(file_info), lister_base_dir_);
-  Release();
+}
+
+void FileSelectHelper::DeleteTemporaryFiles() {
+  base::ThreadPool::PostTask(
+      FROM_HERE,
+      {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
+       base::TaskShutdownBehavior::BLOCK_SHUTDOWN},
+      base::BindOnce(&DeleteFiles, std::move(temporary_files_)));
 }
 
 void FileSelectHelper::EnumerateDirectory() {
@@ -127,8 +138,10 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
   } else {
     std::vector<base::FilePath> paths;
     if (result.Get("filePaths", &paths)) {
+      std::vector<ui::SelectedFileInfo> files =
+          ui::FilePathListToSelectedFileInfoList(paths);
       // If we are uploading a folder we need to enumerate its contents
-      if (mode_ == blink::mojom::FileChooserParams::Mode::kUploadFolder &&
+      if (mode_ == FileChooserParams::Mode::kUploadFolder &&
           paths.size() >= 1) {
         lister_base_dir_ = paths[0];
         EnumerateDirectory();
@@ -139,9 +152,9 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
             {base::MayBlock(),
              base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
             base::BindOnce(&FileSelectHelper::ProcessSelectedFilesMac, this,
-                           paths));
+                           files));
 #else
-        ConvertToFileInfoList(paths);
+        ConvertToFileChooserFileInfoList(files);
 #endif
       }
 
@@ -155,21 +168,20 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
   }
 }
 
-void FileSelectHelper::ConvertToFileInfoList(
-    const std::vector<base::FilePath>& paths) {
-  std::vector<blink::mojom::FileChooserFileInfoPtr> file_info;
+void FileSelectHelper::ConvertToFileChooserFileInfoList(
+    const std::vector<ui::SelectedFileInfo>& files) {
+  std::vector<FileChooserFileInfoPtr> file_info;
 
-  for (auto& path : paths) {
-    file_info.push_back(blink::mojom::FileChooserFileInfo::NewNativeFile(
-        blink::mojom::NativeFileInfo::New(path,
-                                          path.BaseName().AsUTF16Unsafe())));
+  for (const auto& file : files) {
+    file_info.push_back(FileChooserFileInfo::NewNativeFile(NativeFileInfo::New(
+        file.local_path, base::FilePath(file.display_name).AsUTF16Unsafe())));
   }
 
   OnFilesSelected(std::move(file_info), lister_base_dir_);
 }
 
 void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
-  std::vector<blink::mojom::FileChooserFileInfoPtr> file_info;
+  std::vector<FileChooserFileInfoPtr> file_info;
   bool canceled = true;
   result.Get("canceled", &canceled);
 
@@ -178,24 +190,27 @@ void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
   } else {
     base::FilePath path;
     if (result.Get("filePath", &path)) {
-      file_info.push_back(blink::mojom::FileChooserFileInfo::NewNativeFile(
-          blink::mojom::NativeFileInfo::New(path,
-                                            path.BaseName().AsUTF16Unsafe())));
+      file_info.push_back(FileChooserFileInfo::NewNativeFile(
+          NativeFileInfo::New(path, path.BaseName().AsUTF16Unsafe())));
     }
-    // We should only call this if we have not cancelled the dialog
+    // We should only call this if we have not cancelled the dialog.
     OnFilesSelected(std::move(file_info), base::FilePath());
   }
 }
 
 void FileSelectHelper::OnFilesSelected(
-    std::vector<blink::mojom::FileChooserFileInfoPtr> file_info,
+    std::vector<FileChooserFileInfoPtr> file_info,
     base::FilePath base_dir) {
-  LOG(INFO) << "FileSelectHelper::OnFilesSelected";
   if (listener_) {
     listener_->FileSelected(std::move(file_info), base_dir, mode_);
     listener_.reset();
   }
   render_frame_host_ = nullptr;
+
+  if (!temporary_files_.empty())
+    DeleteTemporaryFiles();
+
+  Release();
 }
 
 void FileSelectHelper::OnSelectionCancelled() {
@@ -210,8 +225,14 @@ void FileSelectHelper::OnSelectionCancelled() {
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
-  if (old_host == render_frame_host_)
+  if (!render_frame_host_)
+    return;
+  // The |old_host| and its children are now pending deletion. Do not give
+  // them file access past this point.
+  if (render_frame_host_ == old_host ||
+      render_frame_host_->IsDescendantOf(old_host)) {
     render_frame_host_ = nullptr;
+  }
 }
 
 // content::WebContentsObserver:
@@ -223,14 +244,6 @@ void FileSelectHelper::RenderFrameDeleted(
 
 void FileSelectHelper::WebContentsDestroyed() {
   render_frame_host_ = nullptr;
-}
-
-void FileSelectHelper::DeleteTemporaryFiles() {
-  base::ThreadPool::PostTask(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-       base::TaskShutdownBehavior::BLOCK_SHUTDOWN},
-      base::BindOnce(&DeleteFiles, std::move(temporary_files_)));
 }
 
 file_dialog::Filters GetFileTypesFromAcceptType(
@@ -249,8 +262,8 @@ file_dialog::Filters GetFileTypesFromAcceptType(
     auto old_extension_size = extensions.size();
 
     if (ascii_type[0] == '.') {
-      // If the type starts with a period it is assumed to be a file extension,
-      // like `.txt`, // so we just have to add it to the list.
+      // If the type starts with a period it is assumed to be a file
+      // extension, like `.txt`, // so we just have to add it to the list.
       base::FilePath::StringType extension(ascii_type.begin(),
                                            ascii_type.end());
       // Skip the first character.

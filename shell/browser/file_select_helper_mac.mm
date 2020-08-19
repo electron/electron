@@ -93,25 +93,24 @@ base::FilePath FileSelectHelper::ZipPackage(const base::FilePath& path) {
 }
 
 void FileSelectHelper::ProcessSelectedFilesMac(
-    const std::vector<base::FilePath>& file_paths) {
-  std::vector<base::FilePath> files_out;
+    const std::vector<ui::SelectedFileInfo>& files) {
+  // Make a mutable copy of the input files.
+  std::vector<ui::SelectedFileInfo> files_out(files);
   std::vector<base::FilePath> temporary_files;
 
-  for (auto& path : file_paths) {
-    NSString* filename = base::mac::FilePathToNSString(path);
+  for (auto& file_info : files_out) {
+    NSString* filename = base::mac::FilePathToNSString(file_info.local_path);
     BOOL isPackage =
         [[NSWorkspace sharedWorkspace] isFilePackageAtPath:filename];
-    if (isPackage && base::DirectoryExists(path)) {
-      base::FilePath result = ZipPackage(path);
-      LOG(INFO) << "ZIPPPING";
+    if (isPackage && base::DirectoryExists(file_info.local_path)) {
+      base::FilePath result = ZipPackage(file_info.local_path);
 
       if (!result.empty()) {
         temporary_files.push_back(result);
-        LOG(INFO) << "NEW PATH IS: " << path.AddExtension("zip");
-        files_out.push_back(path.AddExtension("zip"));
+        file_info.local_path = result;
+        file_info.file_path = result;
+        file_info.display_name.append(".zip");
       }
-    } else {
-      files_out.push_back(path);
     }
   }
 
@@ -122,7 +121,7 @@ void FileSelectHelper::ProcessSelectedFilesMac(
 }
 
 void FileSelectHelper::ProcessSelectedFilesMacOnUIThread(
-    const std::vector<base::FilePath>& file_paths,
+    const std::vector<ui::SelectedFileInfo>& files,
     const std::vector<base::FilePath>& temporary_files) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
@@ -131,5 +130,5 @@ void FileSelectHelper::ProcessSelectedFilesMacOnUIThread(
                             temporary_files.end());
   }
 
-  ConvertToFileInfoList(file_paths);
+  ConvertToFileChooserFileInfoList(files);
 }
