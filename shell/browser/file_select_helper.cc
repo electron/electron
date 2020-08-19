@@ -89,7 +89,7 @@ void FileSelectHelper::OnListFile(
   lister_paths_.push_back(data.path);
 }
 
-void FileSelectHelper::RunSelectionEnd() {
+void FileSelectHelper::RunFileChooserEnd() {
   // If there are temporary files, then this instance needs to stick around
   // until web_contents_ is destroyed, so that this instance can delete the
   // temporary files.
@@ -145,7 +145,7 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
   result.Get("canceled", &canceled);
 
   if (!render_frame_host_ || canceled) {
-    RunSelectionEnd();
+    RunFileChooserEnd();
   } else {
     std::vector<base::FilePath> paths;
     if (result.Get("filePaths", &paths)) {
@@ -197,7 +197,7 @@ void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
   result.Get("canceled", &canceled);
 
   if (!render_frame_host_ || canceled) {
-    RunSelectionEnd();
+    RunFileChooserEnd();
   } else {
     base::FilePath path;
     if (result.Get("filePath", &path)) {
