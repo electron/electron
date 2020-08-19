@@ -137,7 +137,7 @@ env-arm: &env-arm
   TARGET_ARCH: arm
 
 env-apple-silicon: &env-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" enable_dsyms = false'
   TARGET_ARCH: arm64
 
 env-arm64: &env-arm64
@@ -151,7 +151,7 @@ env-mas: &env-mas
   MAS_BUILD: 'true'
 
 env-mas-apple-silicon: &env-mas-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true enable_dsyms = false'
   MAS_BUILD: 'true'
   TARGET_ARCH: arm64
 
@@ -344,23 +344,70 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
           fi
         }
+
+        strip_arm_deep() {
+          opwd=$(pwd)
+          cd $1
+          f=$(find . -perm +111 -type f)
+          for fp in $f
+          do
+            if [[ $(file "$fp") == *"universal binary"* ]]; then
+              if [[ $(file "$fp") == *"arm64e)"* ]]; then
+                sudo lipo -remove arm64e "$fp" -o "$fp" || true
+              fi
+              if [[ $(file "$fp") == *"arm64)"* ]]; then
+                sudo lipo -remove arm64 "$fp" -o "$fp" || true
+              fi
+            fi
+          done
+
+          cd $opwd
+        }
+
         tmpify /Library/Developer/CoreSimulator
+        tmpify ~/Library/Developer/CoreSimulator
         tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneOS.platform
         tmpify $(xcode-select -p)/Platforms/WatchOS.platform
         tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
         tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
         tmpify ~/.rubies
         tmpify ~/Library/Caches/Homebrew
         tmpify /usr/local/Homebrew
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          tmpify "/System/Library/Desktop Pictures"
-          tmpify /System/Library/Templates/Data
-          tmpify /System/Library/Speech/Voices
-          tmpify "/System/Library/Screen Savers"
-        fi
         sudo rm -rf $TMPDIR/del-target
+
+        if [ "$TARGET_ARCH" == "arm64" ]; then
+          sudo rm -rf "/System/Library/Desktop Pictures"
+          sudo rm -rf /System/Library/Templates/Data
+          sudo rm -rf /System/Library/Speech/Voices
+          sudo rm -rf "/System/Library/Screen Savers"
+          sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+          sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+          sudo rm -rf /System/Volumes/Data/Library/Java
+          sudo rm -rf /System/Volumes/Data/Library/Ruby
+          sudo rm -rf /System/Volumes/Data/Library/Printers
+          sudo rm -rf /System/iOSSupport
+          sudo rm -rf /System/Applications/*.app
+          sudo rm -rf /System/Applications/Utilities/*.app
+          sudo rm -rf /System/Library/LinguisticData
+          sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+          # sudo rm -rf /System/Library/Fonts/*
+          # sudo rm -rf /System/Library/PreferencePanes
+          sudo rm -rf /System/Library/AssetsV2/*
+          sudo rm -rf /Applications/Safari.app
+          sudo rm -rf ~/project/src/build/linux
+          sudo rm -rf ~/project/src/third_party/hunspell_dictionaries
+          sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
+          sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+
+          # lipo off some huge binaries arm64 versions to save space
+          strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+          strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
+        fi
       fi
     background: true
 
@@ -460,6 +507,11 @@ step-electron-build: &step-electron-build
         rm -f src/out/Default/libffmpeg.so
       fi
       cd src
+      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+        diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
+        mv /Applications/Xcode-12.beta.4.app /Volumes/xcode_disk/
+        ln -s /Volumes/xcode_disk/Xcode-12.beta.4.app /Applications/Xcode-12.beta.4.app
+      fi
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       node electron/script/check-symlinks.js
 
@@ -942,6 +994,7 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf src/third_party/WebKit/LayoutTests
       rm -rf third_party/electron_node/deps/openssl
       rm -rf third_party/electron_node/deps/v8
+      rm -rf chrome/test/data/xr/webvr_info
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
