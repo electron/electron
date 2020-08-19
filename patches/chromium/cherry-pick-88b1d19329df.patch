@@ -1,0 +1,103 @@
+From 88b1d19329dff67302e2c84008d9a7aaad758a00 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Wed, 15 Jul 2020 14:34:17 +0000
+Subject: [PATCH] Don't crash when using 'revert' in var() fallback
+
+CSS-wide keywords should not be allowed here in general, but they
+currently are by Chrome and FF. (And WPT requires this behavior).
+
+It would be easy to make revert-in-fallback actually behave as
+'revert', but I don't want to ship this behavior since the spec doesn't
+currently define how to handle this. So for now I'm just adding a unit
+test that verifies that we don't crash.
+
+Bug: 1105635, 1105782
+Change-Id: Ia8c9100484c3c351f67aada850211a0ff6d2367f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2300079
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Oriol Brufau <obrufau@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#788624}
+---
+ .../core/css/resolver/style_cascade.cc        | 12 +++++--
+ .../core/css/resolver/style_cascade_test.cc   | 31 +++++++++++++++++++
+ 2 files changed, 41 insertions(+), 2 deletions(-)
+
+diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade.cc b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+index 323c0e122bfeb..a17473e21f060 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_cascade.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+@@ -57,6 +57,14 @@ bool ConsumeComma(CSSParserTokenRange& range) {
+   return false;
+ }
+ 
++// TODO(crbug.com/1105782): It is currently unclear how to handle 'revert'
++// at computed-value-time. For now we treat it as 'unset'.
++const CSSValue* TreatRevertAsUnset(const CSSValue* value) {
++  if (value && value->IsRevertValue())
++    return cssvalue::CSSUnsetValue::Create();
++  return value;
++}
++
+ const CSSValue* Parse(const CSSProperty& property,
+                       CSSParserTokenRange range,
+                       const CSSParserContext* context) {
+@@ -615,7 +623,7 @@ const CSSValue* StyleCascade::ResolveVariableReference(
+ 
+   if (ResolveTokensInto(data->Tokens(), resolver, sequence)) {
+     if (const auto* parsed = Parse(property, sequence.TokenRange(), context))
+-      return parsed;
++      return TreatRevertAsUnset(parsed);
+   }
+ 
+   return cssvalue::CSSUnsetValue::Create();
+@@ -681,7 +689,7 @@ const CSSValue* StyleCascade::ResolvePendingSubstitution(
+     // When using var() in a css-logical shorthand (e.g. margin-inline),
+     // the longhands here will also be logical.
+     if (unvisited_property == &ResolveSurrogate(longhand))
+-      return parsed;
++      return TreatRevertAsUnset(parsed);
+   }
+ 
+   NOTREACHED();
+diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
+index 14176e151fcbb..cc95a798ea1e5 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
+@@ -1776,6 +1776,37 @@ TEST_F(StyleCascadeTest, RevertCausesTransition) {
+   EXPECT_EQ("150px", cascade2.ComputedValue("width"));
+ }
+ 
++TEST_F(StyleCascadeTest, CSSWideKeywordsInFallbacks) {
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,initial)");
++    cascade.Add("margin:var(--u,initial)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,inherit)");
++    cascade.Add("margin:var(--u,inherit)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,unset)");
++    cascade.Add("margin:var(--u,unset)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,revert)");
++    cascade.Add("margin:var(--u,revert)");
++    cascade.Apply();
++  }
++
++  // TODO(crbug.com/1105782): Specs and WPT are currently in conflict
++  // regarding the correct behavior here. For now this test just verifies
++  // that we don't crash.
++}
++
+ TEST_F(StyleCascadeTest, RegisteredInitial) {
+   RegisterProperty(GetDocument(), "--x", "<length>", "0px", false);
+ 
