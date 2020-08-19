@@ -326,8 +326,8 @@ index 906c208b7bdda94313dd25d96a93a0393a09d0d9..0ab01c2618b28e63c7ae47e737ad2adb
  #include "ui/gfx/icc_profile.h"
 +#include "ui/gfx/switches.h"
  
- #if defined(__MAC_11_0) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_16
- // https://crbug.com/1108561: This is supposed to be deprecated (but available)
+ namespace gfx {
+ 
 @@ -143,6 +144,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
