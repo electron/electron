@@ -1,5 +1,5 @@
-import { ipcRendererInternal } from "../ipc-renderer-internal";
-import { deserialize } from "@electron/internal/common/type-utils";
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import { deserialize } from '@electron/internal/common/type-utils';
 
 const { nativeImage } = process._linkedBinding('electron_common_native_image');
 
