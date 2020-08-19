@@ -25,6 +25,7 @@
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/info_map.h"
+#include "extensions/browser/management_policy.h"
 #include "extensions/browser/notification_types.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
@@ -91,6 +92,8 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
 
   if (!browser_context_->IsOffTheRecord())
     LoadComponentExtensions();
+
+  management_policy_.reset(new ManagementPolicy);
 }
 
 std::unique_ptr<base::DictionaryValue> ParseManifest(
@@ -130,7 +133,7 @@ RuntimeData* ElectronExtensionSystem::runtime_data() {
 }
 
 ManagementPolicy* ElectronExtensionSystem::management_policy() {
-  return nullptr;
+  return management_policy_.get();
 }
 
 ServiceWorkerManager* ElectronExtensionSystem::service_worker_manager() {
