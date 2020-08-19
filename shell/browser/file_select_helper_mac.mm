@@ -4,10 +4,10 @@
 
 #include "shell/browser/file_select_helper.h"
 
-#include <vector>
-
 #include <Cocoa/Cocoa.h>
 #include <sys/stat.h>
+
+#include <vector>
 
 #include "base/bind.h"
 #include "base/files/file.h"
