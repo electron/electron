@@ -11,12 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/bind.h"
-#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
-#include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
-#include "components/prefs/pref_service.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -25,13 +21,8 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/dictionary.h"
 #include "net/base/directory_lister.h"
-#include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
-#include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -71,14 +62,13 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   void EnumerateDirectory();
 
   void OnOpenDialogDone(gin_helper::Dictionary result);
-
   void OnSaveDialogDone(gin_helper::Dictionary result);
 
   void OnFilesSelected(
       std::vector<blink::mojom::FileChooserFileInfoPtr> file_info,
       base::FilePath base_dir);
 
-  void OnSelectionCancelled();
+  void RunSelectionEnd();
 
   void ConvertToFileChooserFileInfoList(
       const std::vector<ui::SelectedFileInfo>& files);
@@ -108,6 +98,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   void WebContentsDestroyed() override;
 
   content::RenderFrameHost* render_frame_host_;
+  content::WebContents* web_contents_;
   scoped_refptr<content::FileSelectListener> listener_;
   FileChooserParams::Mode mode_;
 

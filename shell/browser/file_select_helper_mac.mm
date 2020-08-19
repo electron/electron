@@ -4,6 +4,8 @@
 
 #include "shell/browser/file_select_helper.h"
 
+#include <vector>
+
 #include <Cocoa/Cocoa.h>
 #include <sys/stat.h>
 
