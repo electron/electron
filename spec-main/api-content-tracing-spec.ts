@@ -129,14 +129,16 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
       });
       {
         const start = +new Date();
+        let n = 0;
         const f = () => {};
-        while (+new Date() - start < 200) {
+        while (+new Date() - start < 200 || n < 500) {
+          await delay(0);
           f();
+          n++;
         }
       }
       const path = await contentTracing.stopRecording();
       const data = fs.readFileSync(path, 'utf8');
-      console.log(data); // XXX temp
       const parsed = JSON.parse(data);
       expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
     });
