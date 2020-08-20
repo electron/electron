@@ -17,6 +17,8 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_widget_host_observer.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/dictionary.h"
@@ -32,6 +34,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
                              FileSelectHelper,
                              content::BrowserThread::DeleteOnUIThread>,
                          public content::WebContentsObserver,
+                         public content::RenderWidgetHostObserver,
                          public net::DirectoryLister::DirectoryListerDelegate {
  public:
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
@@ -91,6 +94,10 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   static base::FilePath ZipPackage(const base::FilePath& path);
 #endif  // defined(OS_MAC)
 
+  // content::RenderWidgetHostObserver:
+  void RenderWidgetHostDestroyed(
+      content::RenderWidgetHost* widget_host) override;
+
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
@@ -101,6 +108,9 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   content::WebContents* web_contents_;
   scoped_refptr<content::FileSelectListener> listener_;
   FileChooserParams::Mode mode_;
+
+  ScopedObserver<content::RenderWidgetHost, content::RenderWidgetHostObserver>
+      observer_{this};
 
   // Temporary files only used on OSX. This class is responsible for deleting
   // these files when they are no longer needed.

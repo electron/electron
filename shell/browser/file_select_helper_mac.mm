@@ -7,6 +7,8 @@
 #include <Cocoa/Cocoa.h>
 #include <sys/stat.h>
 
+#include <vector>
+
 #include "base/bind.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
