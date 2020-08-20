@@ -97,6 +97,7 @@ base::FilePath FileSelectHelper::ZipPackage(const base::FilePath& path) {
 
 void FileSelectHelper::ProcessSelectedFilesMac(
     const std::vector<ui::SelectedFileInfo>& files) {
+  DCHECK(HasOneRef());
   // Make a mutable copy of the input files.
   std::vector<ui::SelectedFileInfo> files_out(files);
   std::vector<base::FilePath> temporary_files;
@@ -127,6 +128,7 @@ void FileSelectHelper::ProcessSelectedFilesMacOnUIThread(
     const std::vector<ui::SelectedFileInfo>& files,
     const std::vector<base::FilePath>& temporary_files) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK(HasOneRef());
 
   if (!temporary_files.empty()) {
     temporary_files_.insert(temporary_files_.end(), temporary_files.begin(),
