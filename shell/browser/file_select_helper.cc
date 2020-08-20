@@ -231,6 +231,12 @@ void FileSelectHelper::OnFilesSelected(
   Release();
 }
 
+void FileSelectHelper::RenderWidgetHostDestroyed(
+    content::RenderWidgetHost* widget_host) {
+  render_frame_host_ = nullptr;
+  observer_.Remove(widget_host);
+}
+
 // content::WebContentsObserver:
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
