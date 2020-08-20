@@ -146,6 +146,14 @@
       productStruct.formattedPrice =
           [[self formatPrice:product.price
                    withLocal:product.priceLocale] UTF8String];
+
+      // Currency Information
+      if (@available(macOS 10.12, *)) {
+        if (product.priceLocale.currencyCode != nil) {
+          productStruct.currencyCode =
+              [product.priceLocale.currencyCode UTF8String];
+        }
+      }
     }
   }
 

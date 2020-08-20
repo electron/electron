@@ -28,6 +28,9 @@ struct Product {
   double price = 0.0;
   std::string formattedPrice;
 
+  // Currency Information
+  std::string currencyCode;
+
   // Downloadable Content Information
   bool isDownloadable = false;
 

@@ -61,6 +61,9 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("price", val.price);
     dict.Set("formattedPrice", val.formattedPrice);
 
+    // Currency Information
+    dict.Set("currencyCode", val.currencyCode);
+
     // Downloadable Content Information
     dict.Set("isDownloadable", val.isDownloadable);
 
