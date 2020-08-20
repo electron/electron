@@ -6,9 +6,9 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>   // NOLINT(build/include_order)
-#include <shlobj.h>    // NOLINT(build/include_order)
-#include <shobjidl.h>  // NOLINT(build/include_order)
+#include <atlbase.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
@@ -169,97 +169,6 @@ void Browser::Focus(gin_helper::Arguments* args) {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
-void GetFileIcon(const base::FilePath& path,
-                 v8::Isolate* isolate,
-                 base::CancelableTaskTracker* cancelable_task_tracker_,
-                 const base::string16 app_display_name,
-                 gin_helper::Promise<gin_helper::Dictionary> promise) {
-  base::FilePath normalized_path = path.NormalizePathSeparators();
-  IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
-
-  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
-  gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
-  if (icon) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    dict.Set("icon", *icon);
-    dict.Set("name", app_display_name);
-    dict.Set("path", normalized_path);
-    promise.Resolve(dict);
-  } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
-                           base::BindOnce(&OnIconDataAvailable, normalized_path,
-                                          app_display_name, std::move(promise)),
-                           cancelable_task_tracker_);
-  }
-}
-
-void GetApplicationInfoForProtocolUsingRegistry(
-    v8::Isolate* isolate,
-    const GURL& url,
-    gin_helper::Promise<gin_helper::Dictionary> promise,
-    base::CancelableTaskTracker* cancelable_task_tracker_) {
-  base::FilePath app_path;
-
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
-  if (!IsValidCustomProtocol(url_scheme)) {
-    promise.RejectWithErrorMessage("invalid url_scheme");
-    return;
-  }
-  base::string16 command_to_launch;
-  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
-  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
-                                KEY_READ);
-  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
-    base::CommandLine command_line(
-        base::CommandLine::FromString(command_to_launch));
-    app_path = command_line.GetProgram();
-  } else {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve installation path to app");
-    return;
-  }
-  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
-
-  if (app_display_name.length() == 0) {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve application display name");
-    return;
-  }
-  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_display_name,
-              std::move(promise));
-}
-
-// resolves `Promise<Object>` - Resolve with an object containing the following:
-// * `icon` NativeImage - the display icon of the app handling the protocol.
-// * `path` String  - installation path of the app handling the protocol.
-// * `name` String - display name of the app handling the protocol.
-void GetApplicationInfoForProtocolUsingAssocQuery(
-    v8::Isolate* isolate,
-    const GURL& url,
-    gin_helper::Promise<gin_helper::Dictionary> promise,
-    base::CancelableTaskTracker* cancelable_task_tracker_) {
-  base::string16 app_path = GetAppPathForProtocol(url);
-
-  if (app_path.empty()) {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve installation path to app");
-    return;
-  }
-
-  base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
-
-  if (app_display_name.empty()) {
-    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
-    return;
-  }
-
-  base::FilePath app_path_file_path = base::FilePath(app_path);
-  GetFileIcon(app_path_file_path, isolate, cancelable_task_tracker_,
-              app_display_name, std::move(promise));
-}
-
->>>>>>> a2a2c5e5f... windows impl protoype
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,

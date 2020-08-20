@@ -35,7 +35,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
-void Browser::Focus(gin::Arguments* args) {
+void Browser::Focus(gin_helper::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
 
