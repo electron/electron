@@ -47,10 +47,6 @@
 #include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
-#include "extensions/browser/extension_navigation_ui_data.h"
-#include "extensions/browser/extension_protocols.h"
-#include "extensions/common/constants.h"
-#include "extensions/common/switches.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -60,6 +56,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/service_manager/public/cpp/binder_map.h"
+#include "shell/app/electron_crash_reporter_client.h"
 #include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -141,9 +138,12 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
@@ -151,8 +151,11 @@
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -284,8 +287,9 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;
+    bool upload = ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
     breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, true);
+        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
     crash_handler->StartUploaderThread();
     return crash_handler;
   }
@@ -723,8 +727,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   bool enable_crash_reporter = false;
   enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   if (enable_crash_reporter) {
-    command_line->AppendSwitch(::switches::kEnableCrashReporter);
-    std::string switch_value;
+    std::string switch_value =
+        api::crash_reporter::GetClientId() + ",no_channel";
+    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
+                                    switch_value);
     for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
       if (!switch_value.empty())
         switch_value += ",";
@@ -1292,6 +1298,18 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   }
 }
 
+void ElectronBrowserClient::
+    RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  api::Protocol* protocol = api::Protocol::FromWrappedClass(
+      v8::Isolate::GetCurrent(), browser_context);
+  if (protocol) {
+    protocol->RegisterURLLoaderFactories(
+        URLLoaderFactoryType::kWorkerMainResource, factories);
+  }
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
@@ -1517,6 +1535,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->is_corb_enabled = false;
     }
   }
+
+  extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
+      browser_context, origin, is_for_isolated_world, factory_params);
 }
 
 #if defined(OS_WIN)

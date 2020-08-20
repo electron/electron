@@ -57,9 +57,7 @@ class Session : public gin_helper::TrackableObject<Session>,
       const std::string& partition,
       base::DictionaryValue options = base::DictionaryValue());
 
-  ElectronBrowserContext* browser_context() const {
-    return browser_context_.get();
-  }
+  ElectronBrowserContext* browser_context() const { return browser_context_; }
 
   // gin_helper::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
@@ -146,7 +144,7 @@ class Session : public gin_helper::TrackableObject<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

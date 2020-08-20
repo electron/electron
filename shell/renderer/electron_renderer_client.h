@@ -47,7 +47,7 @@ class ElectronRendererClient : public RendererClientBase {
                   const std::string& http_method,
                   bool is_initial_navigation,
                   bool is_server_redirect) override;
-  void DidInitializeWorkerContextOnWorkerThread(
+  void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;

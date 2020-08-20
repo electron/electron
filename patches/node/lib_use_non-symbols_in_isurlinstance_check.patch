@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 4 Aug 2020 09:17:06 -0700
+Subject: lib: use non-symbols in isURLInstance check
+
+This slightly changes the conditional used to determine whether or
+not something is a URL instance. Since Node.js adds symbols to the URL
+not specified by the WHATWG, those symbols are not present in other
+implementations (like Blink's) and therefore can cause false negatives.
+
+This fixes that by slightly changing the check to properties present
+in all URL instances as specified in the WHATWG spec.
+
+Upstreamed at: https://github.com/nodejs/node/pull/34622.
+
+diff --git a/lib/internal/url.js b/lib/internal/url.js
+index 860fa4d7ad01b391d7d8e4c5ffe432d4d1d5983e..7d557a51930b7f225d128425fcc9db959c13392c 100644
+--- a/lib/internal/url.js
++++ b/lib/internal/url.js
+@@ -1334,8 +1334,7 @@ function getPathFromURLPosix(url) {
+ function fileURLToPath(path) {
+   if (typeof path === 'string')
+     path = new URL(path);
+-  else if (path == null || !path[searchParams] ||
+-           !path[searchParams][searchParams])
++  else if (path == null || !path['origin'] || !path['href'])
+     throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
+   if (path.protocol !== 'file:')
+     throw new ERR_INVALID_URL_SCHEME('file');
+@@ -1383,8 +1382,7 @@ function pathToFileURL(filepath) {
+ }
+ 
+ function toPathIfFileURL(fileURLOrPath) {
+-  if (fileURLOrPath == null || !fileURLOrPath[searchParams] ||
+-      !fileURLOrPath[searchParams][searchParams])
++  if (fileURLOrPath == null || !fileURLOrPath['origin'] || !fileURLOrPath['href'])
+     return fileURLOrPath;
+   return fileURLToPath(fileURLOrPath);
+ }

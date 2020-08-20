@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: add some crash debugging checks
+
+[1065122] [High]: heap-use-after-free : ui::AXTreeSerializerblink::WebAXObject,content::AXContentNodeData,content::AXContentTreeData::LeastCommonAncestor
+Backport https://chromium.googlesource.com/chromium/src/+/e0a661af6c2c7346183c47b106afecb01adbfa2e
+
+diff --git a/ui/accessibility/ax_tree_serializer.h b/ui/accessibility/ax_tree_serializer.h
+index 18fe3aa1b5f088632291f074ff9b29c5ce7694af..b9e6fc36fa68a45112dbacc97a912ca2d7ac2c71 100644
+--- a/ui/accessibility/ax_tree_serializer.h
++++ b/ui/accessibility/ax_tree_serializer.h
+@@ -180,6 +180,8 @@ class AXTreeSerializer {
+   // like when Reset() is called.
+   void InternalReset();
+ 
++  ClientTreeNode* GetClientTreeNodeParent(ClientTreeNode* obj);
++
+   // The tree source.
+   AXTreeSource<AXSourceNode, AXNodeData, AXTreeData>* tree_;
+ 
+@@ -269,7 +271,7 @@ AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::LeastCommonAncestor(
+   std::vector<ClientTreeNode*> client_ancestors;
+   while (client_node) {
+     client_ancestors.push_back(client_node);
+-    client_node = client_node->parent;
++    client_node = GetClientTreeNodeParent(client_node);
+   }
+ 
+   // Start at the root. Keep going until the source ancestor chain and
+@@ -304,9 +306,12 @@ AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::LeastCommonAncestor(
+   // that we're inside of an invalid subtree that all needs to be
+   // re-serialized, so the LCA should be higher.
+   ClientTreeNode* client_node = ClientTreeNodeById(tree_->GetId(node));
+-  while (
+-      tree_->IsValid(node) &&
+-      (!client_node || (client_node->parent && client_node->parent->invalid))) {
++  while (tree_->IsValid(node)) {
++    if (client_node) {
++      ClientTreeNode* parent = GetClientTreeNodeParent(client_node);
++      if (!parent || !parent->invalid)
++        break;
++    }
+     node = tree_->GetParent(node);
+     if (tree_->IsValid(node))
+       client_node = ClientTreeNodeById(tree_->GetId(node));
+@@ -326,12 +331,13 @@ bool AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::
+     int child_id = tree_->GetId(child);
+     ClientTreeNode* client_child = ClientTreeNodeById(child_id);
+     if (client_child) {
+-      if (!client_child->parent) {
++      ClientTreeNode* parent = client_child->parent;
++      if (!parent) {
+         // If the client child has no parent, it must have been the
+         // previous root node, so there is no LCA and we can exit early.
+         *out_lca = tree_->GetNull();
+         return true;
+-      } else if (client_child->parent->id != id) {
++      } else if (parent->id != id) {
+         // If the client child's parent is not this node, update the LCA
+         // and return true (reparenting was found).
+         *out_lca = LeastCommonAncestor(*out_lca, client_child);
+@@ -366,6 +372,19 @@ AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::ClientTreeNodeById(
+   return nullptr;
+ }
+ 
++template <typename AXSourceNode, typename AXNodeData, typename AXTreeData>
++ClientTreeNode*
++AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::GetClientTreeNodeParent(
++    ClientTreeNode* obj) {
++  ClientTreeNode* parent = obj->parent;
++#if DCHECK_IS_ON()
++  if (!parent)
++    return nullptr;
++  DCHECK(ClientTreeNodeById(parent->id)) << "Parent not in id map.";
++#endif  // DCHECK_IS_ON()
++  return parent;
++}
++
+ template <typename AXSourceNode, typename AXNodeData, typename AXTreeData>
+ bool AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::SerializeChanges(
+     AXSourceNode node,
+@@ -549,7 +568,7 @@ bool AXTreeSerializer<AXSourceNode, AXNodeData, AXTreeData>::
+     // above. If this happens, reset and return an error.
+ 
+     ClientTreeNode* client_child = ClientTreeNodeById(new_child_id);
+-    if (client_child && client_child->parent != client_node) {
++    if (client_child && GetClientTreeNodeParent(client_child) != client_node) {
+       DVLOG(1) << "Illegal reparenting detected";
+ #if defined(ADDRESS_SANITIZER)
+       // Wrapping this in ADDRESS_SANITIZER will cause it to run on
