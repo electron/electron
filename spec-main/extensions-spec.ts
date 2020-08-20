@@ -47,7 +47,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     const wc: Electron.WebContents = args[1];
     await expect(wc.executeJavaScript('(()=>{try{openDatabase("t", "1.0", "test", 2e5);return true;}catch(e){throw e}})()')).to.not.be.rejected();
   });
-  
+
   function fetch (contents: WebContents, url: string) {
     return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
   }
