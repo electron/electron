@@ -49,6 +49,10 @@ if (is_linux) {
   }
 }
 
+declare_args() {
+  use_prebuilt_v8_context_snapshot = false
+}
+
 branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
@@ -688,6 +692,15 @@ if (is_mac) {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
   }
 
+  action("fake_v8_context_snapshot_generator") {
+    script = "build/fake_v8_context_snapshot_generator.py"
+    args = [
+      rebase_path("$root_out_dir/v8_context_snapshot.bin"),
+      rebase_path("$root_out_dir/fake/v8_context_snapshot.bin"),
+    ]
+    outputs = [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+  }
+
   bundle_data("electron_framework_resources") {
     public_deps = [ ":packed_resources" ]
     sources = []
@@ -698,8 +711,13 @@ if (is_mac) {
     if (v8_use_external_startup_data) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
-        sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
-        public_deps += [ "//tools/v8_context_snapshot" ]
+        if (use_prebuilt_v8_context_snapshot) {
+          sources += [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+          public_deps += [ ":fake_v8_context_snapshot_generator" ]
+        } else {
+          sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+          public_deps += [ "//tools/v8_context_snapshot" ]
+        }
       } else {
         sources += [ "$root_out_dir/snapshot_blob.bin" ]
       }
