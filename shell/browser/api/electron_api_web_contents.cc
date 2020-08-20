@@ -769,12 +769,7 @@ content::WebContents* WebContents::OpenURLFromTab(
          params.post_data);
     return nullptr;
   }
-  if (!weak_this)
-    return nullptr;
 
-  // Give user a chance to cancel navigation.
-  if (Emit("will-navigate", params.url))
-    return nullptr;
   if (!weak_this)
     return nullptr;
 
