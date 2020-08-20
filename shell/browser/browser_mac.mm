@@ -37,21 +37,17 @@ namespace electron {
 void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
-// filepath
-gfx::Image Browser::CreateThumbnailFromPath(std::string path,
+
+gfx::Image Browser::CreateThumbnailFromPath(const base::FilePath& path,
                                             int width,
                                             int height) {
-  NSString* ns_path = base::SysUTF8ToNSString(path);
-  LOG(ERROR) << "NS PATH" << ns_path;
+  NSString* ns_path = base::mac::FilePathToNSString(path);
   NSSize size = NSMakeSize(width, height);
-  LOG(ERROR) << "NS SIZE" << size;
   CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
-  LOG(ERROR) << "NS PATH" << ns_path;
 
   QLThumbnailRef ql_thumbnail = QLThumbnailCreate(
       kCFAllocatorDefault, cfurl, CGSizeMake(size.width, size.height), NULL);
   CGImageRef cg_thumbnail = QLThumbnailCopyImage(ql_thumbnail);
-  LOG(ERROR) << "NS THUMBNAIL CG" << cg_thumbnail;
   NSBitmapImageRep* bitmap_image_rep =
       [[NSBitmapImageRep alloc] initWithCGImage:cg_thumbnail];
   NSImage* result = [[NSImage alloc] initWithSize:[bitmap_image_rep size]];
@@ -59,7 +55,6 @@ gfx::Image Browser::CreateThumbnailFromPath(std::string path,
   CFRelease(ql_thumbnail);
   CGImageRelease(cg_thumbnail);
   gfx::Image thumbnail(result);
-  LOG(ERROR) << "IMAGE" << result;
   return thumbnail;
 }
 
