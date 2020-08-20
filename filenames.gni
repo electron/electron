@@ -361,6 +361,7 @@ filenames = {
     "shell/browser/feature_list.h",
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
+    "shell/browser/file_select_helper_mac.mm",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
     "shell/browser/javascript_environment.cc",
