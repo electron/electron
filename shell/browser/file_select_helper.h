@@ -34,11 +34,11 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
                          public content::WebContentsObserver,
                          public net::DirectoryLister::DirectoryListerDelegate {
  public:
-  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
-
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    scoped_refptr<content::FileSelectListener> listener,
                    FileChooserParams::Mode mode);
+
+  // WebDialogHelper::RunFileChooser
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings);
 

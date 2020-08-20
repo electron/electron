@@ -47,6 +47,8 @@ FileSelectHelper::FileSelectHelper(
   web_contents_ = content::WebContents::FromRenderFrameHost(render_frame_host);
   DCHECK(web_contents_);
   content::WebContentsObserver::Observe(web_contents_);
+
+  AddRef();
 }
 
 FileSelectHelper::~FileSelectHelper() = default;
@@ -107,6 +109,14 @@ void FileSelectHelper::RunFileChooserEnd() {
 
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListDone(int error) {
+  if (!web_contents_) {
+    // Web contents was destroyed under us. We
+    // must notify |listener_| and release our reference to
+    // ourself. RunFileChooserEnd() performs this.
+    RunFileChooserEnd();
+    return;
+  }
+
   std::vector<FileChooserFileInfoPtr> file_info;
   for (const auto& path : lister_paths_)
     file_info.push_back(FileChooserFileInfo::NewNativeFile(
