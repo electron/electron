@@ -6,8 +6,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <windows.h>  // NOLINT(build/include_order)
-
 #include <atlbase.h>   // NOLINT(build/include_order)
 #include <shlobj.h>    // NOLINT(build/include_order)
 #include <shobjidl.h>  // NOLINT(build/include_order)
