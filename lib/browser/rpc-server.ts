@@ -1,6 +1,6 @@
 import { app } from 'electron/main';
 import type { IpcMainInvokeEvent, WebContents } from 'electron/main';
-import { clipboard, crashReporter } from 'electron/common';
+import { clipboard, crashReporter, nativeImage } from 'electron/common';
 import * as fs from 'fs';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
@@ -135,4 +135,8 @@ ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_SET_UPLOAD_TO_SERVER', (event: 
 
 ipcMainUtils.handleSync('ELECTRON_CRASH_REPORTER_GET_CRASHES_DIRECTORY', () => {
   return crashReporter.getCrashesDirectory();
+});
+
+ipcMainInternal.handle('ELECTRON_NATIVE_IMAGE_CREATE_THUMBNAIL_FROM_PATH', async (_, path: string, size: Electron.Size) => {
+  return typeUtils.serialize(await nativeImage.createThumbnailFromPath(path, size));
 });

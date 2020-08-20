@@ -4,8 +4,6 @@ import * as fs from 'fs';
 import { Socket } from 'net';
 import * as path from 'path';
 import * as util from 'util';
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
-import { serialize } from '@electron/internal/common/type-utils';
 const Module = require('module');
 
 // We modified the original process.argv to let node.js load the init.js,
@@ -215,7 +213,3 @@ if (packagePath) {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
   console.error('This normally means you\'ve damaged the Electron package somehow');
 }
-
-ipcMainInternal.handle('ELECTRON_NATIVE_IMAGE_CREATE_THUMBNAIL_FROM_PATH', async (_, path: string, size: Electron.Size) => {
-  return serialize(await require('electron').nativeImage.createThumbnailFromPath(path, size));
-});
