@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/id_map.h"
 #include "base/no_destructor.h"
 #include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
@@ -115,7 +116,7 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 #include "ui/aura/window.h"
 #else
 #include "ui/base/cocoa/defaults_utils.h"
@@ -132,6 +133,10 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/script_executor.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "printing/mojom/print.mojom.h"
 #endif
 
 namespace gin {
@@ -153,26 +158,26 @@ struct Converter<printing::PrinterBasicInfo> {
 };
 
 template <>
-struct Converter<printing::MarginType> {
+struct Converter<printing::mojom::MarginType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     printing::MarginType* out) {
+                     printing::mojom::MarginType* out) {
     std::string type;
     if (ConvertFromV8(isolate, val, &type)) {
       if (type == "default") {
-        *out = printing::DEFAULT_MARGINS;
+        *out = printing::mojom::MarginType::kDefaultMargins;
         return true;
       }
       if (type == "none") {
-        *out = printing::NO_MARGINS;
+        *out = printing::mojom::MarginType::kNoMargins;
         return true;
       }
       if (type == "printableArea") {
-        *out = printing::PRINTABLE_AREA_MARGINS;
+        *out = printing::mojom::MarginType::kPrintableAreaMargins;
         return true;
       }
       if (type == "custom") {
-        *out = printing::CUSTOM_MARGINS;
+        *out = printing::mojom::MarginType::kCustomMargins;
         return true;
       }
     }
@@ -332,6 +337,11 @@ namespace api {
 
 namespace {
 
+base::IDMap<WebContents*>& GetAllWebContents() {
+  static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
+  return *s_all_web_contents;
+}
+
 // Called when CapturePage is done.
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
@@ -340,7 +350,7 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
 }
 
 base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
     return interval;
@@ -363,7 +373,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const base::string16& device_name) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
@@ -389,12 +399,21 @@ base::string16 GetDefaultPrinterAsync() {
 }
 #endif
 
+struct UserDataLink : public base::SupportsUserData::Data {
+  explicit UserDataLink(base::WeakPtr<WebContents> contents)
+      : web_contents(contents) {}
+
+  base::WeakPtr<WebContents> web_contents;
+};
+const void* kElectronApiWebContentsKey = &kElectronApiWebContentsKey;
+
 }  // namespace
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
+      id_(GetAllWebContents().Add(this)),
       weak_factory_(this) {
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
@@ -402,8 +421,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
                                          GetBrowserContext()->GetUserAgent()),
                                      false);
-  Init(isolate);
-  AttachAsUserData(web_contents);
+  web_contents->SetUserData(kElectronApiWebContentsKey,
+                            std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
@@ -421,6 +440,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          Type type)
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
+      id_(GetAllWebContents().Add(this)),
       weak_factory_(this) {
   DCHECK(type != Type::REMOTE)
       << "Can't take ownership of a remote WebContents";
@@ -432,7 +452,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
-    : weak_factory_(this) {
+    : id_(GetAllWebContents().Add(this)), weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -577,6 +597,8 @@ void WebContents::InitWithSessionAndOptions(
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents(), options);
+  // Trigger re-calculation of webkit prefs.
+  web_contents()->NotifyPreferencesChanged();
 
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
   SecurityStateTabHelper::CreateForWebContents(web_contents());
@@ -610,11 +632,12 @@ void WebContents::InitWithSessionAndOptions(
       SetOwnerWindow(owner_window);
   }
 
-  Init(isolate);
-  AttachAsUserData(web_contents());
+  web_contents()->SetUserData(kElectronApiWebContentsKey,
+                              std::make_unique<UserDataLink>(GetWeakPtr()));
 }
 
 WebContents::~WebContents() {
+  MarkDestroyed();
   // The destroy() is called.
   if (managed_web_contents()) {
     managed_web_contents()->GetView()->SetDelegate(nullptr);
@@ -740,19 +763,19 @@ void WebContents::AddNewContents(
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
+  auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
          params.post_data);
     return nullptr;
   }
+  if (!weak_this)
+    return nullptr;
 
   // Give user a chance to cancel navigation.
   if (Emit("will-navigate", params.url))
     return nullptr;
-
-  // Don't load the URL if the web contents was marked as destroyed from a
-  // will-navigate event listener
-  if (IsDestroyed())
+  if (!weak_this)
     return nullptr;
 
   return CommonWebContentsDelegate::OpenURLFromTab(source, params);
@@ -1217,9 +1240,7 @@ void WebContents::MessageTo(bool internal,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  auto* web_contents = gin_helper::TrackableObject<WebContents>::FromWeakMapID(
-      isolate, web_contents_id);
+  auto* web_contents = FromID(web_contents_id);
 
   if (web_contents) {
     web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
@@ -1398,6 +1419,17 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
+void WebContents::MarkDestroyed() {
+  if (GetAllWebContents().Lookup(id_))
+    GetAllWebContents().Remove(id_);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  wrapper->SetAlignedPointerInInternalField(0, nullptr);
+}
+
 // There are three ways of destroying a webContents:
 // 1. call webContents.destroy();
 // 2. garbage collection;
@@ -1413,8 +1445,12 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // we need to make sure the api::WebContents is also deleted.
 // For #4, the WebContents will be destroyed by embedder.
 void WebContents::WebContentsDestroyed() {
+  // Give chance for guest delegate to cleanup its observers
+  // since the native class is only destroyed in the next tick.
+  if (guest_delegate_)
+    guest_delegate_->WillDestroy();
+
   // Cleanup relationships with other parts.
-  RemoveFromWeakMap();
 
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
@@ -1430,7 +1466,13 @@ void WebContents::WebContentsDestroyed() {
   }
 
   // Destroy the native class in next tick.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::BindOnce(
+                     [](base::WeakPtr<WebContents> wc) {
+                       if (wc)
+                         delete wc.get();
+                     },
+                     GetWeakPtr()));
 }
 
 void WebContents::NavigationEntryCommitted(
@@ -1719,18 +1761,20 @@ bool WebContents::IsDevToolsFocused() {
 }
 
 void WebContents::EnableDeviceEmulation(
-    const blink::WebDeviceEmulationParams& params) {
+    const blink::DeviceEmulationParams& params) {
   if (type_ == Type::REMOTE)
     return;
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(new WidgetMsg_EnableDeviceEmulation(
-        widget_host->GetRoutingID(), params));
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
+      frame_widget->EnableDeviceEmulation(params);
+    }
   }
 }
 
@@ -1740,12 +1784,14 @@ void WebContents::DisableDeviceEmulation() {
 
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host =
-        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
-    if (!widget_host)
-      return;
-    widget_host->Send(
-        new WidgetMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+    auto* widget_host_impl =
+        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
+                         frame_host->GetView()->GetRenderWidgetHost())
+                   : nullptr;
+    if (widget_host_impl) {
+      auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
+      frame_widget->DisableDeviceEmulation();
+    }
   }
 }
 
@@ -1928,11 +1974,13 @@ void WebContents::Print(gin::Arguments* args) {
   gin_helper::Dictionary margins =
       gin::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
-    printing::MarginType margin_type = printing::DEFAULT_MARGINS;
+    printing::mojom::MarginType margin_type =
+        printing::mojom::MarginType::kDefaultMargins;
     margins.Get("marginType", &margin_type);
-    settings.SetIntKey(printing::kSettingMarginsType, margin_type);
+    settings.SetIntKey(printing::kSettingMarginsType,
+                       static_cast<int>(margin_type));
 
-    if (margin_type == printing::CUSTOM_MARGINS) {
+    if (margin_type == printing::mojom::MarginType::kCustomMargins) {
       base::Value custom_margins(base::Value::Type::DICTIONARY);
       int top = 0;
       margins.Get("top", &top);
@@ -1950,8 +1998,9 @@ void WebContents::Print(gin::Arguments* args) {
                        std::move(custom_margins));
     }
   } else {
-    settings.SetIntKey(printing::kSettingMarginsType,
-                       printing::DEFAULT_MARGINS);
+    settings.SetIntKey(
+        printing::kSettingMarginsType,
+        static_cast<int>(printing::mojom::MarginType::kDefaultMargins));
   }
 
   // Set whether to print color or greyscale
@@ -2184,7 +2233,7 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 }
 
 void WebContents::ShowDefinitionForSelection() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
@@ -2200,14 +2249,14 @@ void WebContents::CopyImageAt(int x, int y) {
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
   if (owner_window())
     owner_window()->Focus(true);
 #endif
   web_contents()->Focus();
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)
@@ -2627,10 +2676,6 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
     return v8::Null(isolate);
 }
 
-int32_t WebContents::ID() const {
-  return weak_map_id();
-}
-
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
 }
@@ -2749,11 +2794,28 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 }
 
 // static
-void WebContents::BuildPrototype(v8::Isolate* isolate,
-                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "WebContents"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  gin::InvokerOptions options;
+  options.holder_is_first_argument = true;
+  options.holder_type = "WebContents";
+  templ->Set(
+      gin::StringToSymbol(isolate, "isDestroyed"),
+      gin::CreateFunctionTemplate(
+          isolate, base::BindRepeating(&gin_helper::Destroyable::IsDestroyed),
+          options));
+  templ->Set(
+      gin::StringToSymbol(isolate, "destroy"),
+      gin::CreateFunctionTemplate(
+          isolate, base::BindRepeating([](gin::Handle<WebContents> handle) {
+            delete handle.get();
+          }),
+          options));
+  // We use gin_helper::ObjectTemplateBuilder instead of
+  // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
+  // destroyable.
+  return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
@@ -2865,7 +2927,12 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
-      .SetProperty("debugger", &WebContents::Debugger);
+      .SetProperty("debugger", &WebContents::Debugger)
+      .Build();
+}
+
+const char* WebContents::GetTypeName() {
+  return "WebContents";
 }
 
 ElectronBrowserContext* WebContents::GetBrowserContext() const {
@@ -2877,7 +2944,17 @@ ElectronBrowserContext* WebContents::GetBrowserContext() const {
 gin::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& options) {
-  return gin::CreateHandle(isolate, new WebContents(isolate, options));
+  gin::Handle<WebContents> handle =
+      gin::CreateHandle(isolate, new WebContents(isolate, options));
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  return handle;
+}
+
+// static
+gin::Handle<WebContents> WebContents::New(
+    v8::Isolate* isolate,
+    const gin_helper::Dictionary& options) {
+  return Create(isolate, options);
 }
 
 // static
@@ -2885,15 +2962,19 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
     Type type) {
-  return gin::CreateHandle(
+  gin::Handle<WebContents> handle = gin::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  return handle;
 }
 
 // static
 WebContents* WebContents::From(content::WebContents* web_contents) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
-  return static_cast<WebContents*>(existing);
+  if (!web_contents)
+    return nullptr;
+  UserDataLink* data = static_cast<UserDataLink*>(
+      web_contents->GetUserData(kElectronApiWebContentsKey));
+  return data ? data->web_contents.get() : nullptr;
 }
 
 // static
@@ -2901,15 +2982,20 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
   WebContents* api_web_contents = From(web_contents);
-  if (!api_web_contents)
+  if (!api_web_contents) {
     api_web_contents = new WebContents(isolate, web_contents);
+    gin_helper::CallMethod(isolate, api_web_contents, "_init");
+  }
   return gin::CreateHandle(isolate, api_web_contents);
 }
 
 // static
 WebContents* WebContents::FromID(int32_t id) {
-  return FromWeakMapID(JavascriptEnvironment::GetIsolate(), id);
+  return GetAllWebContents().Lookup(id);
 }
+
+// static
+gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 }  // namespace api
 
@@ -2917,7 +3003,18 @@ WebContents* WebContents::FromID(int32_t id) {
 
 namespace {
 
+using electron::api::GetAllWebContents;
 using electron::api::WebContents;
+
+std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
+    v8::Isolate* isolate) {
+  std::vector<gin::Handle<WebContents>> list;
+  for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
+       !iter.IsAtEnd(); iter.Advance()) {
+    list.push_back(gin::CreateHandle(isolate, iter.GetCurrentValue()));
+  }
+  return list;
+}
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -2925,12 +3022,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebContents", WebContents::GetConstructor(isolate)
-                              ->GetFunction(context)
-                              .ToLocalChecked());
+  dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("create", &WebContents::Create);
-  dict.SetMethod("fromId", &WebContents::FromWeakMapID);
-  dict.SetMethod("getAllWebContents", &WebContents::GetAll);
+  dict.SetMethod("fromId", &WebContents::FromID);
+  dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
 
 }  // namespace

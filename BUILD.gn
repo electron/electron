@@ -170,7 +170,7 @@ action("electron_js2c") {
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
-  script = "tools/js2c.py"
+  script = "build/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
          rebase_path(outputs, root_build_dir) +
          rebase_path(sources, root_build_dir)
@@ -360,6 +360,7 @@ source_set("electron_lib") {
     "//services/viz/privileged/mojom/compositing",
     "//skia",
     "//third_party/blink/public:blink",
+    "//third_party/blink/public:blink_devtools_inspector_resources",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
     "//third_party/inspector_protocol:crdtp",
@@ -813,6 +814,9 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # Required for exporting all symbols of libuv.
+      "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
     ]
     if (is_component_build) {
       ldflags += [
@@ -1144,7 +1148,14 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
-      ldflags = [ "-pie" ]
+      ldflags = [
+        "-pie",
+
+        # Required for exporting all symbols of libuv.
+        "-Wl,--whole-archive",
+        "obj/third_party/electron_node/deps/uv/libuv.a",
+        "-Wl,--no-whole-archive",
+      ]
 
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]

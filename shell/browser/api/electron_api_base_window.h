@@ -179,12 +179,12 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetProgressBar(double progress, gin_helper::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible);
+  void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
 #endif

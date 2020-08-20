@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/macros.h"
-#include "content/public/common/transferrable_url_loader.mojom.h"
+#include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
 
 namespace extensions {
 
@@ -35,7 +35,7 @@ class StreamsPrivateAPI {
       int frame_tree_node_id,
       int render_process_id,
       int render_frame_id,
-      content::mojom::TransferrableURLLoaderPtr transferrable_loader,
+      blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url);
 };
 

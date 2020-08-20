@@ -271,7 +271,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the `nodeIntegration` option and the APIs available to the preload script
       are more limited. Read more about the option [here](sandbox-option.md).
     * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
-      Default is `true`.
+      Default is `false`.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
@@ -348,6 +348,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       You can access this context in the dev tools by selecting the
       'Electron Isolated Context' entry in the combo box at the top of the
       Console tab.
+    * `worldSafeExecuteJavaScript` Boolean (optional) - If true, values returned from `webFrame.executeJavaScript` will be sanitized to ensure JS values
+      can't unsafely cross between worlds when using `contextIsolation`.  The default
+      is `false`. In Electron 12, the default will be changed to `true`. _Deprecated_
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
       integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently
@@ -1666,9 +1669,12 @@ Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
 
 Returns `Boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible)`
+#### `win.setVisibleOnAllWorkspaces(visible[, options])`
 
 * `visible` Boolean
+* `options` Object (optional)
+  * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
+    the window should be visible above fullscreen windows
 
 Sets whether the window should be visible on all workspaces.
 

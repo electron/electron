@@ -45,20 +45,20 @@ will be started with the path of the file added as a command line argument.
 
 You can add menu items to access and clear recent documents by adding the following code snippet to your menu's template.
 
-```javascript
+```json
 {
-   "submenu":[
-      {
-         "label":"Open Recent",
-         "role":"recentdocuments",
-         "submenu":[
-            {
-               "label":"Clear Recent",
-               "role":"clearrecentdocuments"
-            }
-         ]
-      }
-   ]
+  "submenu":[
+    {
+      "label":"Open Recent",
+      "role":"recentdocuments",
+      "submenu":[
+        {
+          "label":"Clear Recent",
+          "role":"clearrecentdocuments"
+        }
+      ]
+    }
+  ]
 }
 ```
 

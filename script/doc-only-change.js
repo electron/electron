@@ -1,5 +1,6 @@
 const args = require('minimist')(process.argv.slice(2));
-const octokit = require('@octokit/rest')();
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit();
 const path = require('path');
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));

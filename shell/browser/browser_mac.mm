@@ -95,7 +95,7 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
-void Browser::Focus(gin_helper::Arguments* args) {
+void Browser::Focus(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
 
@@ -134,7 +134,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin_helper::Arguments* args) {
+                                            gin::Arguments* args) {
   NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
@@ -169,7 +169,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin_helper::Arguments* args) {
+                                         gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -184,7 +184,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin_helper::Arguments* args) {
+                                      gin::Arguments* args) {
   if (protocol.empty())
     return false;
 
@@ -226,7 +226,7 @@ bool Browser::SetBadgeCount(int count) {
 
 void Browser::SetUserActivity(const std::string& type,
                               base::DictionaryValue user_info,
-                              gin_helper::Arguments* args) {
+                              gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 

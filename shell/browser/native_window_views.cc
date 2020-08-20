@@ -116,9 +116,9 @@ class NativeWindowClientView : public views::ClientView {
       : views::ClientView(widget, root_view), window_(window) {}
   ~NativeWindowClientView() override = default;
 
-  bool CanClose() override {
+  views::CloseRequestResult OnWindowCloseRequested() override {
     window_->NotifyWindowCloseButtonClicked();
-    return false;
+    return views::CloseRequestResult::kCannotClose;
   }
 
  private:
@@ -1154,7 +1154,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
-void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
+                                                  bool visibleOnFullScreen) {
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 

@@ -15,7 +15,7 @@ namespace base {
 class Time;
 }
 
-namespace gin_helper {
+namespace gin {
 class Arguments;
 }
 
@@ -61,7 +61,7 @@ class AutoUpdater {
   // FIXME(zcbenz): We should not do V8 in this file, this method should only
   // accept C++ struct as parameter, and atom_api_auto_updater.cc is responsible
   // for parsing the parameter from JavaScript.
-  static void SetFeedURL(gin_helper::Arguments* args);
+  static void SetFeedURL(gin::Arguments* args);
   static void CheckForUpdates();
   static void QuitAndInstall();
 

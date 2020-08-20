@@ -29,6 +29,8 @@ namespace electron {
 
 namespace api {
 
+gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 namespace {
 
 // Find an item in container according to its ID.
@@ -72,7 +74,6 @@ void DelayEmitWithMetrics(Screen* screen,
 Screen::Screen(v8::Isolate* isolate, display::Screen* screen)
     : screen_(screen) {
   screen_->AddObserver(this);
-  Init(isolate);
 }
 
 Screen::~Screen() {
@@ -154,11 +155,10 @@ v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
       .ToV8();
 }
 
-// static
-void Screen::BuildPrototype(v8::Isolate* isolate,
-                            v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "Screen"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<Screen>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("getCursorScreenPoint", &Screen::GetCursorScreenPoint)
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
@@ -170,6 +170,10 @@ void Screen::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("dipToScreenRect", &DIPToScreenRect)
 #endif
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
+}
+
+const char* Screen::GetTypeName() {
+  return "Screen";
 }
 
 }  // namespace api
@@ -187,9 +191,6 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("createScreen", base::BindRepeating(&Screen::Create));
-  dict.Set(
-      "Screen",
-      Screen::GetConstructor(isolate)->GetFunction(context).ToLocalChecked());
 }
 
 }  // namespace

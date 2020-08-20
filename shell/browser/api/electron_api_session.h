@@ -71,9 +71,7 @@ class Session : public gin::Wrappable<Session>,
       const std::string& partition,
       base::DictionaryValue options = base::DictionaryValue());
 
-  ElectronBrowserContext* browser_context() const {
-    return browser_context_.get();
-  }
+  ElectronBrowserContext* browser_context() const { return browser_context_; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -159,7 +157,7 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

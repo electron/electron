@@ -14,6 +14,7 @@
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -296,9 +297,12 @@ void BaseWindow::OnNewWindowForTab() {
 #if defined(OS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::Locker locker(isolate);
+    v8::HandleScope scope(isolate);
     messages_callback_map_[message].Run(
-        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
-        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+        ToBuffer(isolate, static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate, static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
 }
 #endif
@@ -797,8 +801,13 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void BaseWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
+void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
+                                           gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
+  bool visibleOnFullScreen = false;
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool BaseWindow::IsVisibleOnAllWorkspaces() {
@@ -814,7 +823,7 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
@@ -1170,11 +1179,11 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
@@ -1183,7 +1192,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)

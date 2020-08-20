@@ -137,6 +137,7 @@ WebContentsPreferences::WebContentsPreferences(
                 "electron");
   }
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -152,7 +153,7 @@ WebContentsPreferences::WebContentsPreferences(
   } else {
     SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
@@ -351,6 +352,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kContextIsolation))
     command_line->AppendSwitch(switches::kContextIsolation);
 
+  if (IsEnabled(options::kWorldSafeExecuteJavaScript))
+    command_line->AppendSwitch(switches::kWorldSafeExecuteJavaScript);
+
   // --background-color.
   std::string s;
   if (GetAsString(&preference_, options::kBackgroundColor, &s)) {
@@ -378,7 +382,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::NumberToString(opener_id));
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
     command_line->AppendSwitch(switches::kScrollBounce);

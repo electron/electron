@@ -24,7 +24,19 @@ namespace crash_keys {
 
 namespace {
 
-using ExtraCrashKeys = std::deque<crash_reporter::CrashKeyString<127>>;
+#if defined(OS_LINUX)
+// Breakpad has a flawed system of calculating the number of chunks
+// we add 127 bytes to force an extra chunk
+constexpr size_t kMaxCrashKeyValueSize = 20479;
+#else
+constexpr size_t kMaxCrashKeyValueSize = 20320;
+#endif
+
+static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
+              "max crash key value length above what crashpad supports");
+
+using ExtraCrashKeys =
+    std::deque<crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>>;
 ExtraCrashKeys& GetExtraCrashKeys() {
   static base::NoDestructor<ExtraCrashKeys> extra_keys;
   return *extra_keys;
@@ -130,7 +142,7 @@ void SetPlatformCrashKey() {
   static crash_reporter::CrashKeyString<8> platform_key("platform");
 #if defined(OS_WIN)
   platform_key.Set("win32");
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   platform_key.Set("darwin");
 #elif defined(OS_LINUX)
   platform_key.Set("linux");

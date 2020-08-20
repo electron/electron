@@ -39,6 +39,7 @@ void WebViewGuestDelegate::AttachToIframe(
             content::WebContents::FromRenderFrameHost(embedder_frame));
 
   content::WebContents* guest_web_contents = api_web_contents_->web_contents();
+
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
@@ -55,6 +56,10 @@ void WebViewGuestDelegate::AttachToIframe(
   zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
 
   api_web_contents_->Emit("did-attach");
+}
+
+void WebViewGuestDelegate::WillDestroy() {
+  ResetZoomController();
 }
 
 void WebViewGuestDelegate::DidDetach() {

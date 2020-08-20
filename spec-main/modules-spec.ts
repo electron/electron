@@ -44,6 +44,27 @@ describe('modules support', () => {
       });
     });
 
+    const enablePlatforms: NodeJS.Platform[] = [
+      'linux',
+      'darwin',
+      'win32'
+    ];
+    ifdescribe(nativeModulesEnabled && enablePlatforms.includes(process.platform))('module that use uv_dlopen', () => {
+      it('can be required in renderer', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'uv-dlopen\'); null }')).to.be.fulfilled();
+      });
+
+      ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
+        const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
+        await new Promise(resolve => child.once('exit', (exitCode) => {
+          expect(exitCode).to.equal(0);
+          resolve();
+        }));
+      });
+    });
+
     describe('q', () => {
       describe('Q.when', () => {
         it('emits the fullfil callback', (done) => {

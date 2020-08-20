@@ -1,0 +1,12 @@
+<html>
+<body>
+<webview src="./a.html" id="view" partition="webview-temp"/>
+</body>
+<script>
+  const {ipcRenderer} = require('electron')
+  const view = document.getElementById('view')
+  view.addEventListener('dom-ready', () => {
+    ipcRenderer.send('dom-ready')
+  })
+</script>
+</html>
