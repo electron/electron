@@ -119,8 +119,8 @@ void WebDialogHelper::RunFileChooser(
   settings.parent_window = window_;
   settings.title = base::UTF16ToUTF8(params.title);
 
-  scoped_refptr<FileSelectHelper> file_select_helper(new FileSelectHelper(
-      render_frame_host, std::move(listener), params.mode));
+  auto file_select_helper = base::MakeRefCounted<FileSelectHelper>(
+      render_frame_host, std::move(listener), params.mode);
   if (params.mode == FileChooserParams::Mode::kSave) {
     settings.default_path = params.default_file_name;
     file_select_helper->ShowSaveDialog(settings);

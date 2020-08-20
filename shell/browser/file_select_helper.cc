@@ -46,9 +46,9 @@ FileSelectHelper::FileSelectHelper(
 
   web_contents_ = content::WebContents::FromRenderFrameHost(render_frame_host);
   DCHECK(web_contents_);
+  observer_.RemoveAll();
   content::WebContentsObserver::Observe(web_contents_);
-
-  AddRef();
+  observer_.Add(render_frame_host_->GetRenderViewHost()->GetWidget());
 }
 
 FileSelectHelper::~FileSelectHelper() = default;
@@ -59,12 +59,18 @@ void FileSelectHelper::ShowOpenDialog(
   v8::HandleScope scope(isolate);
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
-  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
+  // Will be released in one of the following
+  // OnFilesSelected - Callback flow completed with response
+  // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
+  // destroyed WebContentsDestroyed
+  AddRefWithCheck();
+  DCHECK(HasAtLeastOneRef());
+
+  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone,
+                                 base::Unretained(this));
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowOpenDialog(settings, std::move(promise));
-
-  AddRef();
 }
 
 void FileSelectHelper::ShowSaveDialog(
@@ -73,17 +79,31 @@ void FileSelectHelper::ShowSaveDialog(
   v8::HandleScope scope(isolate);
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
-  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
+  // Will be released in one of the following
+  // OnFilesSelected - Callback flow completed with response
+  // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
+  // destroyed WebContentsDestroyed
+  AddRefWithCheck();
+  DCHECK(HasAtLeastOneRef());
+
+  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone,
+                                 base::Unretained(this));
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
-
-  AddRef();
 }
 
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListFile(
     const net::DirectoryLister::DirectoryListerData& data) {
+  DCHECK(HasOneRef());
+  if (!render_frame_host_ || !web_contents_) {
+    // If the frame or webcontents was destroyed under us. We
+    // must notify |listener_| and release our reference to
+    // ourself. RunFileChooserEnd() performs this.
+    RunFileChooserEnd();
+    return;
+  }
   // We don't want to return directory paths, only file paths
   if (data.info.IsDirectory())
     return;
@@ -92,6 +112,7 @@ void FileSelectHelper::OnListFile(
 }
 
 void FileSelectHelper::RunFileChooserEnd() {
+  DCHECK(HasOneRef());
   // If there are temporary files, then this instance needs to stick around
   // until web_contents_ is destroyed, so that this instance can delete the
   // temporary files.
@@ -109,8 +130,9 @@ void FileSelectHelper::RunFileChooserEnd() {
 
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListDone(int error) {
-  if (!web_contents_) {
-    // Web contents was destroyed under us. We
+  DCHECK(HasOneRef());
+  if (!render_frame_host_ || !web_contents_) {
+    // If the frame or webcontents was destroyed under us. We
     // must notify |listener_| and release our reference to
     // ourself. RunFileChooserEnd() performs this.
     RunFileChooserEnd();
@@ -126,6 +148,7 @@ void FileSelectHelper::OnListDone(int error) {
 }
 
 void FileSelectHelper::DeleteTemporaryFiles() {
+  DCHECK(HasOneRef());
   base::ThreadPool::PostTask(
       FROM_HERE,
       {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
@@ -134,6 +157,7 @@ void FileSelectHelper::DeleteTemporaryFiles() {
 }
 
 void FileSelectHelper::EnumerateDirectory() {
+  DCHECK(HasOneRef());
   // Ensure that this fn is only called once
   DCHECK(!lister_);
   DCHECK(!lister_base_dir_.empty());
@@ -142,15 +166,10 @@ void FileSelectHelper::EnumerateDirectory() {
   lister_ = std::make_unique<net::DirectoryLister>(
       lister_base_dir_, net::DirectoryLister::NO_SORT_RECURSIVE, this);
   lister_->Start();
-  // It is difficult for callers to know how long to keep a reference to
-  // this instance.  We AddRef() here to keep the instance alive after we
-  // return to the caller.  Once the directory lister is complete we
-  // Release() & at that point we run OnFilesSelected() which will
-  // deref the last reference held by the listener.
-  AddRef();
 }
 
 void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
+  DCHECK(HasOneRef());
   bool canceled = true;
   result.Get("canceled", &canceled);
 
@@ -172,8 +191,8 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
             FROM_HERE,
             {base::MayBlock(),
              base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
-            base::BindOnce(&FileSelectHelper::ProcessSelectedFilesMac, this,
-                           files));
+            base::BindOnce(&FileSelectHelper::ProcessSelectedFilesMac,
+                           base::Unretained(this), files));
 #else
         ConvertToFileChooserFileInfoList(files);
 #endif
@@ -191,6 +210,7 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
 
 void FileSelectHelper::ConvertToFileChooserFileInfoList(
     const std::vector<ui::SelectedFileInfo>& files) {
+  DCHECK(HasOneRef());
   std::vector<FileChooserFileInfoPtr> file_info;
 
   for (const auto& file : files) {
@@ -202,6 +222,7 @@ void FileSelectHelper::ConvertToFileChooserFileInfoList(
 }
 
 void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
+  DCHECK(HasOneRef());
   std::vector<FileChooserFileInfoPtr> file_info;
   bool canceled = true;
   result.Get("canceled", &canceled);
@@ -222,6 +243,7 @@ void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
 void FileSelectHelper::OnFilesSelected(
     std::vector<FileChooserFileInfoPtr> file_info,
     base::FilePath base_dir) {
+  DCHECK(HasOneRef());
   if (listener_) {
     listener_->FileSelected(std::move(file_info), base_dir, mode_);
     listener_.reset();
@@ -233,6 +255,7 @@ void FileSelectHelper::OnFilesSelected(
 
 void FileSelectHelper::RenderWidgetHostDestroyed(
     content::RenderWidgetHost* widget_host) {
+  DCHECK(HasOneRef());
   render_frame_host_ = nullptr;
   observer_.Remove(widget_host);
 }
@@ -241,6 +264,7 @@ void FileSelectHelper::RenderWidgetHostDestroyed(
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
+  DCHECK(HasOneRef());
   if (!render_frame_host_)
     return;
   // The |old_host| and its children are now pending deletion. Do not give
@@ -254,15 +278,22 @@ void FileSelectHelper::RenderFrameHostChanged(
 // content::WebContentsObserver:
 void FileSelectHelper::RenderFrameDeleted(
     content::RenderFrameHost* deleted_host) {
+  DCHECK(HasOneRef());
   if (deleted_host == render_frame_host_)
     render_frame_host_ = nullptr;
 }
 
 // content::WebContentsObserver:
 void FileSelectHelper::WebContentsDestroyed() {
+  DCHECK(HasOneRef());
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
 
   DeleteTemporaryFiles();
-  Release();
+  if (!lister_) {
+    // If its a directory listing wait for response from
+    // DirectoryListerDelegate, which will eventually
+    // release the instance.
+    Release();
+  }
 }
