@@ -515,6 +515,57 @@ describe('nativeImage module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    it('throws when invalid size is passed', async () => {
+      const badSize = { width: -1, height: 30 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath('path', badSize)
+      ).to.eventually.be.rejectedWith('invalid width, please enter a positive number');
+    });
+
+    it('throws when a relative path is passed', async () => {
+      const badPath = '../hey/hi/hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejectedWith('path must be absolute');
+    });
+
+    ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
+      const badPath = '/hey/hi/hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejectedWith('unable to retrieve thumbnail preview image for the given path');
+    });
+
+    ifit(process.platform === 'win32')('throws when a bad path is passed (Windows)', async () => {
+      const badPath = '\\hey\\hi\\hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejected();
+    });
+
+    ifit(process.platform === 'darwin')('returns native image with valid params (MacOS)', async () => {
+      const goodPath = path.join(__dirname, 'fixtures/apps/xwindow-icon/icon.png');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
+
+    ifit(process.platform === 'win32')('returns native image with valid params (Windows)', async () => {
+      const goodPath = path.join(__dirname, 'fixtures\\apps\\xwindow-icon\\icon.png');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
+  });
+
   describe('addRepresentation()', () => {
     it('does not add representation when the buffer is too small', () => {
       const image = nativeImage.createEmpty();

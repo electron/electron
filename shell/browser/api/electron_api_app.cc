@@ -46,7 +46,6 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -1494,8 +1493,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
 #if !defined(OS_LINUX)
       .SetMethod(
-          "createThumbnailFromPath",
-          base::BindRepeating(&Browser::CreateThumbnailFromPath, browser))
+          "getApplicationInfoForProtocol",
+          base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
 #endif
       .SetMethod(
           "getApplicationNameForProtocol",
