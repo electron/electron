@@ -509,16 +509,26 @@ step-electron-build: &step-electron-build
         rm -f src/out/Default/libffmpeg.so
       fi
       cd src
-      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
-        diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
-        mv /Applications/Xcode-12.beta.4.app /Volumes/xcode_disk/
-        ln -s /Volumes/xcode_disk/Xcode-12.beta.4.app /Applications/Xcode-12.beta.4.app
-      fi
+      # Enable if things get really bad
+      # if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+      #   diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
+      #   mv /Applications/Xcode-12.beta.5.app /Volumes/xcode_disk/
+      #   ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
+      # fi
+
+      # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         touch out/Default/.electron_mksnapshot_zip_done
         rm -rf out/Default/clang_x64_v8_arm64/obj
+
+        # Regenerate because we just deleted some ninja files
+        if [ "$USE_GOMA" == "true" ]; then
+          gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        else
+          gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        fi
       fi
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       node electron/script/check-symlinks.js
