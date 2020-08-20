@@ -914,6 +914,10 @@ void BaseWindow::CloseFilePreview() {
   window_->CloseFilePreview();
 }
 
+void BaseWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+  window_->SetGTKDarkThemeEnabled(use_dark_theme);
+}
+
 v8::Local<v8::Value> BaseWindow::GetContentView() const {
   if (content_view_.IsEmpty())
     return v8::Null(isolate());
