@@ -31,6 +31,18 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     });
   });
 
+  it('can open WebSQLDatabase in a background page', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    w.loadURL('about:blank');
+
+    await emittedOnce(w.webContents, 'dom-ready');
+    await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
+    const args: any = await emittedOnce(app, 'web-contents-created');
+    const wc: Electron.WebContents = args[1];
+    await expect(wc.executeJavaScript('(()=>{try{openDatabase("t", "1.0", "test", 2e5);return true;}catch(e){throw e}})()')).to.not.be.rejected();
+  });
+
   it('loads an extension', async () => {
     // NB. we have to use a persist: session (i.e. non-OTR) because the
     // extension registry is redirected to the main session. so installing an
@@ -241,7 +253,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-get-background.html`);
-      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`);
+      const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
       expect(receivedMessage).to.deep.equal({ some: 'message' });
     });
 
@@ -250,7 +262,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-get-background.html`);
-      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`);
+      const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
       expect(receivedMessage).to.deep.equal({ some: 'message' });
     });
 
@@ -259,7 +271,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-runtime-get-background.html`);
-      const receivedMessage = await w.webContents.executeJavaScript(`window.completionPromise`);
+      const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
       expect(receivedMessage).to.deep.equal({ some: 'message' });
     });
   });
@@ -269,7 +281,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
     const promise = emittedOnce(app, 'web-contents-created');
-    await w.loadURL(`about:blank`);
+    await w.loadURL('about:blank');
     const [, bgPageContents] = await promise;
     expect(bgPageContents.session).to.not.equal(undefined);
   });
@@ -418,9 +430,9 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
           const contentScript = path.resolve(fixtures, 'extensions/content-script');
 
           // Computed style values
-          const COLOR_RED = `rgb(255, 0, 0)`;
-          const COLOR_BLUE = `rgb(0, 0, 255)`;
-          const COLOR_TRANSPARENT = `rgba(0, 0, 0, 0)`;
+          const COLOR_RED = 'rgb(255, 0, 0)';
+          const COLOR_BLUE = 'rgb(0, 0, 255)';
+          const COLOR_TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
           before(() => {
             BrowserWindow.addExtension(contentScript);
@@ -496,7 +508,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`chrome-extension://${id}/bare-page.html`);
-      const textContent = await w.webContents.executeJavaScript(`document.body.textContent`);
+      const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('ui page loaded ok\n');
     });
 
@@ -504,7 +516,7 @@ ifdescribe(process.electronBinding('features').isExtensionsEnabled())('chrome ex
       const { id } = await session.defaultSession.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`chrome-extension://${id}/page-script-load.html`);
-      const textContent = await w.webContents.executeJavaScript(`document.body.textContent`);
+      const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).to.equal('script loaded ok\n');
     });
   });
