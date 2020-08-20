@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Tue, 18 Aug 2020 09:51:46 -0700
+Subject: fix: enable TLS renegotiation
+
+This configures BoringSSL to behave more similarly to OpenSSL.
+See https://github.com/electron/electron/issues/18380.
+
+This should be upstreamed.
+
+diff --git a/src/tls_wrap.cc b/src/tls_wrap.cc
+index 36877424216ed458eeb7a0796703afb667b89f7c..63546540163abe08eb8c701dda9272c135fb36c0 100644
+--- a/src/tls_wrap.cc
++++ b/src/tls_wrap.cc
+@@ -129,6 +129,12 @@ void TLSWrap::InitSSL() {
+   // - https://wiki.openssl.org/index.php/TLS1.3#Non-application_data_records
+   SSL_set_mode(ssl_.get(), SSL_MODE_AUTO_RETRY);
+ 
++#ifdef OPENSSL_IS_BORINGSSL
++  // OpenSSL allows renegotiation by default, but BoringSSL disables it.
++  // Configure BoringSSL to match OpenSSL's behavior.
++  SSL_set_renegotiate_mode(ssl_.get(), ssl_renegotiate_freely);
++#endif
++
+   SSL_set_app_data(ssl_.get(), this);
+   // Using InfoCallback isn't how we are supposed to check handshake progress:
+   //   https://github.com/openssl/openssl/issues/7199#issuecomment-420915993

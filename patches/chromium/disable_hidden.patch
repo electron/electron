@@ -34,7 +34,7 @@ index 5f3f2feec8c787ff1e086bf256ef9353732037af..a127ec54042ef869f0e19ba6b86b86d4
        const base::TimeDelta& delay) {
      new_content_rendering_delay_ = delay;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 3ff69bf8cd7d7b5808aab5ae8d00f6c6e1dadf39..603b439f8113535ab16fea75c2b6520295e844a5 100644
+index 338fd87a55cbf4688079daa5ec86d81d8258339e..5477ee5ca3974aa043939c79bef2f8e12925148d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -623,7 +623,7 @@ void RenderWidgetHostViewAura::HideImpl() {

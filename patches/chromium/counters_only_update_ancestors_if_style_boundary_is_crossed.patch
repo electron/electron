@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 18 Aug 2020 18:42:09 +0000
+Subject: Counters: Only update ancestors if style boundary is crossed.
+
+This patch is an optimization patch that ensures that we only update
+ancestor counters if we have crossed a style containment boundary.
+
+The update is required since otherwise counters and content fields
+that are separated by a style boundary don't behave correctly (we
+elide updating counters if there is no content present; and then we
+stop updates when they cross a style boundary). However, this update
+is only needed on the other side of the containment boundary (and indeed
+if there is a style containment boundary).
+
+R=chrishtr@chromium.org, futhark@chromium.org
+
+Bug: 1112978
+Change-Id: I19e2e2c6132f1203c90a1e86a32a748a81066bd2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2363252
+Reviewed-by: Chris Harrelson <chrishtr@chromium.org>
+Commit-Queue: vmpstr <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#799231}
+
+diff --git a/third_party/blink/renderer/core/layout/layout_counter.cc b/third_party/blink/renderer/core/layout/layout_counter.cc
+index 5d28665954c8cc4c834d90bc3229391f8432926a..07e09e990394c1f23dad25c14eb1d8abb2d36466 100644
+--- a/third_party/blink/renderer/core/layout/layout_counter.cc
++++ b/third_party/blink/renderer/core/layout/layout_counter.cc
+@@ -745,11 +745,16 @@ void LayoutCounter::LayoutObjectSubtreeAttached(LayoutObject* layout_object) {
+   for (LayoutObject* descendant = layout_object; descendant;
+        descendant = descendant->NextInPreOrder(layout_object))
+     UpdateCounters(*descendant);
++
++  bool crossed_boundary = false;
+   // Since we skipped counter updates if there were no counters, we might need
+   // to update parent counters that lie beyond the style containment boundary.
+   for (LayoutObject* parent = layout_object->Parent(); parent;
+-       parent = parent->Parent())
+-    UpdateCounters(*parent);
++       parent = parent->Parent()) {
++    crossed_boundary |= parent->ShouldApplyStyleContainment();
++    if (crossed_boundary)
++      UpdateCounters(*parent);
++  }
+ }
+ 
+ void LayoutCounter::LayoutObjectStyleChanged(LayoutObject& layout_object,

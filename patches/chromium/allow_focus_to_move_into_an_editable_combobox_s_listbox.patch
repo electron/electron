@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@chromium.org>
+Date: Tue, 21 Jul 2020 19:41:11 +0000
+Subject: Allow focus to move into an editable combobox's listbox
+
+In bug 593646 (https://codereview.chromium.org/2024053003/) a rule was
+added, apparently similar to a rule in WebKit, that prevents
+aria-activedescendant on an editable combobox field from moving focus
+into its listbox. However, removing this condition fixes an issue where
+the first item is not read. It also improves the verbalization,
+providing the user with the positional info, e.g. "2 of 5".
+Removing this line also does not seem to break the example attached to
+bug 593646.
+
+Bug: 1082865
+Change-Id: I4250fb152f4b06f3c57b300ebe7ef5549c58d624
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2303789
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Commit-Queue: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#790502}
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 90bdee0cf769e872f2e9585eb5055429f12a9eda..614ea21f46190b14832ddba1e621464558630eb0 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -142,11 +142,6 @@ BrowserAccessibility* BrowserAccessibilityManagerMac::GetFocus() const {
+   if (!focus)
+     return nullptr;
+ 
+-  // For editable combo boxes, focus should stay on the combo box so the user
+-  // will not be taken out of the combo box while typing.
+-  if (focus->GetRole() == ax::mojom::Role::kTextFieldWithComboBox)
+-    return focus;
+-
+   // Otherwise, follow the active descendant.
+   return GetActiveDescendant(focus);
+ }
+diff --git a/content/test/data/accessibility/aria/aria-combobox-expected-mac.txt b/content/test/data/accessibility/aria/aria-combobox-expected-mac.txt
+index 05121ca639d0e891de51fb65a96659bcc97493c9..802bf5319941ec872dc21bd634979ca91ff33740 100644
+--- a/content/test/data/accessibility/aria/aria-combobox-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-combobox-expected-mac.txt
+@@ -1,7 +1,7 @@
+ AXWebArea
+ ++AXGroup
+ ++++AXStaticText AXValue='State'
+-++AXComboBox AXAutocompleteValue='list' AXFocused=1 AXTitle='State'
++++AXComboBox AXAutocompleteValue='list' AXTitle='State'
+ ++AXList
+ ++++AXStaticText AXValue='Alabama'
+-++++AXStaticText AXValue='Alaska'
++++++AXStaticText AXFocused=1 AXValue='Alaska'
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-collapse-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-collapse-expected-mac.txt
+index 97c3c417f30812abecdde273f130088df86bd4ae..93ef79e311977bb4277842fa5332f6097faba837 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-collapse-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-collapse-expected-mac.txt
+@@ -1,2 +1,3 @@
+ AXExpandedChanged on AXComboBox
+-AXSelectedChildrenChanged on AXComboBox
++AXFocusedUIElementChanged on AXComboBox
++AXSelectedChildrenChanged on AXComboBox
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-delay-add-list-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-delay-add-list-expected-mac.txt
+index 47ff72a2689baa23600ededfe38d79fd6b5bedcf..f7d4c30f49fe3f3f62132cddf59942181b8127b8 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-delay-add-list-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-delay-add-list-expected-mac.txt
+@@ -1 +1,2 @@
+-AXSelectedChildrenChanged on AXComboBox
++AXFocusedUIElementChanged on AXStaticText AXValue="Apple"
++AXSelectedChildrenChanged on AXComboBox
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-delay-show-list-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-delay-show-list-expected-mac.txt
+index ec6b5552605fcb7fc4fdada1265d5f25ee637dce..4de438fffab3c86b81961e1d989cd71de237eaa4 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-delay-show-list-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-delay-show-list-expected-mac.txt
+@@ -1,2 +1,3 @@
++AXFocusedUIElementChanged on AXStaticText AXValue="Apple"
+ AXSelectedChildrenChanged on AXComboBox
+ AXSelectedChildrenChanged on AXList
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-expand-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-expand-expected-mac.txt
+index 97cdb8b8b67d46e0a952d22765c823bd346aef3a..343feae3d79a48981cc1e27015ba2a93423eedc0 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-expand-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-expand-expected-mac.txt
+@@ -1,3 +1,4 @@
+ AXExpandedChanged on AXComboBox
++AXFocusedUIElementChanged on AXStaticText AXValue="Apple"
+ AXSelectedChildrenChanged on AXComboBox
+-AXSelectedChildrenChanged on AXList
++AXSelectedChildrenChanged on AXList
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
+index 2bfc70f5fecea2c2a5e7268cef641d6d0e7d4a47..ad5e2bf2c8029185c51eecc94cac1dbe7608c99e 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
+@@ -1,3 +1,3 @@
+-AXFocusedUIElementChanged on AXComboBox
+-AXSelectedTextChanged on AXComboBox
+-AXSelectedTextChanged on AXWebArea
++AXFocusedUIElementChanged on AXStaticText AXValue="Apple not selected"
++AXSelectedTextChanged on AXStaticText AXValue="Apple not selected"
++AXSelectedTextChanged on AXWebArea
+\ No newline at end of file
+diff --git a/content/test/data/accessibility/event/aria-combo-box-next-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-next-expected-mac.txt
+index d5f21183c3d0a1c24cb6665194a93c3299dbfd56..9e7d0c0aaeb1c52dc1f1b3afed36f287851b89ff 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-next-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-next-expected-mac.txt
+@@ -1,5 +1,7 @@
++AXFocusedUIElementChanged on AXStaticText AXValue="Orange"
+ AXSelectedChildrenChanged on AXComboBox
+ AXSelectedChildrenChanged on AXList
+ === Start Continuation ===
++AXFocusedUIElementChanged on AXStaticText AXValue="Banana"
+ AXSelectedChildrenChanged on AXComboBox
+-AXSelectedChildrenChanged on AXList
++AXSelectedChildrenChanged on AXList
+\ No newline at end of file

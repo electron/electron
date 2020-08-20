@@ -16,7 +16,12 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   before(async () => {
-    server = http.createServer((req, res) => res.end(emptyPage));
+    server = http.createServer((req, res) => {
+      if (req.url === '/cors') {
+        res.setHeader('Access-Control-Allow-Origin', 'http://example.com');
+      }
+      res.end(emptyPage);
+    });
     await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       resolve();

@@ -1418,6 +1418,11 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 // we need to make sure the api::WebContents is also deleted.
 // For #4, the WebContents will be destroyed by embedder.
 void WebContents::WebContentsDestroyed() {
+  // Give chance for guest delegate to cleanup its observers
+  // since the native class is only destroyed in the next tick.
+  if (guest_delegate_)
+    guest_delegate_->WillDestroy();
+
   // Cleanup relationships with other parts.
   RemoveFromWeakMap();
 
@@ -2039,7 +2044,8 @@ void WebContents::Print(gin_helper::Arguments* args) {
   }
 
   // Duplex type user wants to use.
-  printing::mojom::DuplexMode duplex_mode;
+  printing::mojom::DuplexMode duplex_mode =
+      printing::mojom::DuplexMode::kSimplex;
   options.Get("duplexMode", &duplex_mode);
   settings.SetIntKey(printing::kSettingDuplexMode,
                      static_cast<int>(duplex_mode));

@@ -1,0 +1,294 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 4 Aug 2020 16:11:36 -0700
+Subject: provide AXTextChangeValueStartMarker for macOS a11y value change
+ notifications
+
+This ensures that Voice Over can accurately read the words you are typing
+
+Bug: 1110480
+Change-Id: Ie47053136aa51bc28382f9053175e25d21ac6906
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2330812
+Commit-Queue: Jeremy Rose <jeremya@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Reviewed-by: Trent Apted <tapted@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#794753}
+
+diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm b/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm
+index 5f6db82d33d3343fc7bbc54783744a710c455a38..76131713f1919b62a35449fd411ad2f3333933f9 100644
+--- a/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm
++++ b/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm
+@@ -154,7 +154,7 @@ IN_PROC_BROWSER_TEST_F(AccessibilityTreeFormatterMacBrowserTest,
+                     </script>)~~",
+                {":3;AXSelectedTextMarkerRange=*"}, R"~~(AXWebArea
+ ++AXGroup
+-++++AXStaticText AXSelectedTextMarkerRange={anchor: {:3, 0, down}, focus: {:2, -1, down}} AXValue='Paragraph'
++++++AXStaticText AXSelectedTextMarkerRange={anchor: {:2, -1, down}, focus: {:3, 0, down}} AXValue='Paragraph'
+ )~~");
+ }
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index 7b721327bbe784314f4523bc7164182af3f53299..baf338dd58e9223b6cfb313c31bbdb192da9e51f 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -12,20 +12,25 @@
+ #include "base/strings/string16.h"
+ #include "content/browser/accessibility/browser_accessibility.h"
+ #include "content/browser/accessibility/browser_accessibility_manager.h"
++#include "content/common/content_export.h"
+ 
+ namespace content {
+ 
+ // Used to store changes in edit fields, required by VoiceOver in order to
+ // support character echo and other announcements during editing.
+-struct AXTextEdit {
+-  AXTextEdit() = default;
+-  AXTextEdit(base::string16 inserted_text, base::string16 deleted_text)
+-      : inserted_text(inserted_text), deleted_text(deleted_text) {}
++struct CONTENT_EXPORT AXTextEdit {
++  AXTextEdit();
++  AXTextEdit(base::string16 inserted_text,
++             base::string16 deleted_text,
++             id edit_text_marker);
++  AXTextEdit(const AXTextEdit& other);
++  ~AXTextEdit();
+ 
+   bool IsEmpty() const { return inserted_text.empty() && deleted_text.empty(); }
+ 
+   base::string16 inserted_text;
+   base::string16 deleted_text;
++  base::scoped_nsprotocol<id> edit_text_marker;
+ };
+ 
+ // Returns true if the given object is AXTextMarker object.
+@@ -35,7 +40,7 @@ bool IsAXTextMarker(id);
+ bool IsAXTextMarkerRange(id);
+ 
+ // Returns browser accessibility position for the given AXTextMarker.
+-BrowserAccessibilityPosition::AXPositionInstance AXTextMarkerToPosition(id);
++CONTENT_EXPORT BrowserAccessibilityPosition::AXPositionInstance AXTextMarkerToPosition(id);
+ 
+ // Returns browser accessibility range for the given AXTextMarkerRange.
+ BrowserAccessibilityPosition::AXRangeType AXTextMarkerRangeToRange(id);
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index eae637ff66da54ec2cba43107504ee3133d5fb2c..5038378864a6dd78bd470e068049d0e4beef2f5c 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -711,6 +711,20 @@ bool IsSelectedStateRelevant(BrowserAccessibility* item) {
+ 
+ }  // namespace
+ 
++namespace content {
++
++AXTextEdit::AXTextEdit() = default;
++AXTextEdit::AXTextEdit(base::string16 inserted_text,
++                       base::string16 deleted_text,
++                       id edit_text_marker)
++    : inserted_text(inserted_text),
++      deleted_text(deleted_text),
++      edit_text_marker(edit_text_marker, base::scoped_policy::RETAIN) {}
++AXTextEdit::AXTextEdit(const AXTextEdit& other) = default;
++AXTextEdit::~AXTextEdit() = default;
++
++}  // namespace content
++
+ #if defined(MAC_OS_X_VERSION_10_12) && \
+     (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)
+ #warning NSAccessibilityRequiredAttributeChrome \
+@@ -1890,10 +1904,15 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+     if (size_t{sel_start} == newValue.length() &&
+         size_t{sel_end} == newValue.length()) {
+       // Don't include oldValue as it would be announced -- very confusing.
+-      return content::AXTextEdit(newValue, base::string16());
++      return content::AXTextEdit(newValue, base::string16(), nil);
+     }
+   }
+-  return content::AXTextEdit(insertedText, deletedText);
++#ifndef MAS_BUILD
++  return content::AXTextEdit(insertedText, deletedText,
++                             CreateTextMarker(_owner->CreatePositionAt(i)));
++#else
++  return content::AXTextEdit(insertedText, deletedText, nil);
++#endif
+ }
+ 
+ - (BOOL)instanceActive {
+@@ -2268,7 +2287,9 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+ - (id)selectedTextMarkerRange {
+   if (![self instanceActive])
+     return nil;
+-  return CreateTextMarkerRange(GetSelectedRange(*_owner));
++  // Voiceover expects this range to be backwards in order to read the selected
++  // words correctly.
++  return CreateTextMarkerRange(GetSelectedRange(*_owner).AsBackwardRange());
+ }
+ #endif
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+index 4148e32e7184c0cb68327ff51bbe47a195a1b428..48f8d9dbbe387cf5f580c6b8ee769ab2651668b9 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+@@ -62,6 +62,43 @@ class BrowserAccessibilityCocoaBrowserTest : public ContentBrowserTest {
+ 
+ }  // namespace
+ 
++IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
++                       AXTextMarkerForTextEdit) {
++  EXPECT_TRUE(NavigateToURL(shell(), GURL(url::kAboutBlankURL)));
++
++  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
++                                         ui::kAXModeComplete,
++                                         ax::mojom::Event::kLoadComplete);
++  GURL url(R"HTML(data:text/html,
++             <input />)HTML");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  waiter.WaitForNotification();
++
++  BrowserAccessibility* text_field = FindNode(ax::mojom::Role::kTextField);
++  ASSERT_NE(nullptr, text_field);
++  EXPECT_TRUE(content::ExecuteScript(
++      shell()->web_contents(), "document.querySelector('input').focus()"));
++
++  content::SimulateKeyPress(shell()->web_contents(),
++                            ui::DomKey::FromCharacter('B'), ui::DomCode::US_B,
++                            ui::VKEY_B, false, false, false, false);
++
++  base::scoped_nsobject<BrowserAccessibilityCocoa> cocoa_text_field(
++      [ToBrowserAccessibilityCocoa(text_field) retain]);
++  AccessibilityNotificationWaiter value_waiter(shell()->web_contents(),
++                                               ui::kAXModeComplete,
++                                               ax::mojom::Event::kValueChanged);
++  value_waiter.WaitForNotification();
++  AXTextEdit text_edit = [cocoa_text_field computeTextEdit];
++  EXPECT_NE(text_edit.edit_text_marker, nil);
++
++  EXPECT_EQ(
++      content::AXTextMarkerToPosition(text_edit.edit_text_marker)->ToString(),
++      "TextPosition anchor_id=5 text_offset=1 affinity=downstream "
++      "annotated_text=B<>");
++}
++
+ IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
+                        AXCellForColumnAndRow) {
+   EXPECT_TRUE(NavigateToURL(shell(), GURL(url::kAboutBlankURL)));
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b/content/browser/accessibility/browser_accessibility_manager_mac.h
+index 8fb447a74cb6e818c221131aba5f57c5f8b8094d..b930963467642738db3ec0109b4a6681ade03b2c 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.h
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
+@@ -60,7 +60,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+   NSDictionary* GetUserInfoForValueChangedNotification(
+       const BrowserAccessibilityCocoa* native_node,
+       const base::string16& deleted_text,
+-      const base::string16& inserted_text) const;
++      const base::string16& inserted_text,
++      id edit_text_marker) const;
+ 
+   void AnnounceActiveDescendant(BrowserAccessibility* node) const;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 9163ae35ba4dc81cbe9b8d8d4a456e8d36c3eede..90bdee0cf769e872f2e9585eb5055429f12a9eda 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -94,6 +94,8 @@ NSString* const NSAccessibilityTextSelectionChangedFocus =
+ NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
+ NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
+ NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
++NSString* const NSAccessibilityChangeValueStartMarker =
++    @"AXTextChangeValueStartMarker";
+ NSString* const NSAccessibilityTextChangeValueLength =
+     @"AXTextChangeValueLength";
+ NSString* const NSAccessibilityTextChangeValues = @"AXTextChangeValues";
+@@ -313,16 +315,18 @@ void BrowserAccessibilityManagerMac::FireGeneratedEvent(
+       if (base::mac::IsAtLeastOS10_11() && !text_edits_.empty()) {
+         base::string16 deleted_text;
+         base::string16 inserted_text;
+-        int32_t id = node->GetId();
+-        const auto iterator = text_edits_.find(id);
++        int32_t node_id = node->GetId();
++        const auto iterator = text_edits_.find(node_id);
++        id edit_text_marker = nil;
+         if (iterator != text_edits_.end()) {
+           AXTextEdit text_edit = iterator->second;
+           deleted_text = text_edit.deleted_text;
+           inserted_text = text_edit.inserted_text;
++          edit_text_marker = text_edit.edit_text_marker;
+         }
+ 
+         NSDictionary* user_info = GetUserInfoForValueChangedNotification(
+-            native_node, deleted_text, inserted_text);
++            native_node, deleted_text, inserted_text, edit_text_marker);
+ 
+         BrowserAccessibility* root = GetRoot();
+         if (!root)
+@@ -544,29 +548,42 @@ NSDictionary*
+ BrowserAccessibilityManagerMac::GetUserInfoForValueChangedNotification(
+     const BrowserAccessibilityCocoa* native_node,
+     const base::string16& deleted_text,
+-    const base::string16& inserted_text) const {
++    const base::string16& inserted_text,
++    id edit_text_marker) const {
+   DCHECK(native_node);
+   if (deleted_text.empty() && inserted_text.empty())
+     return nil;
+ 
+   NSMutableArray* changes = [[[NSMutableArray alloc] init] autorelease];
+   if (!deleted_text.empty()) {
+-    [changes addObject:@{
+-      NSAccessibilityTextEditType : @(AXTextEditTypeDelete),
+-      NSAccessibilityTextChangeValueLength : @(deleted_text.length()),
+-      NSAccessibilityTextChangeValue : base::SysUTF16ToNSString(deleted_text)
+-    }];
++    NSMutableDictionary* change =
++        [NSMutableDictionary dictionaryWithDictionary:@{
++          NSAccessibilityTextEditType : @(AXTextEditTypeDelete),
++          NSAccessibilityTextChangeValueLength : @(deleted_text.length()),
++          NSAccessibilityTextChangeValue :
++              base::SysUTF16ToNSString(deleted_text)
++        }];
++    if (edit_text_marker) {
++      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++    }
++    [changes addObject:change];
+   }
+   if (!inserted_text.empty()) {
+     // TODO(nektar): Figure out if this is a paste, insertion or typing.
+     // Changes to Blink would be required. A heuristic is currently used.
+     auto edit_type = inserted_text.length() > 1 ? @(AXTextEditTypeInsert)
+                                                 : @(AXTextEditTypeTyping);
+-    [changes addObject:@{
+-      NSAccessibilityTextEditType : edit_type,
+-      NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
+-      NSAccessibilityTextChangeValue : base::SysUTF16ToNSString(inserted_text)
+-    }];
++    NSMutableDictionary* change =
++        [NSMutableDictionary dictionaryWithDictionary:@{
++          NSAccessibilityTextEditType : edit_type,
++          NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
++          NSAccessibilityTextChangeValue :
++              base::SysUTF16ToNSString(inserted_text)
++        }];
++    if (edit_text_marker) {
++      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++    }
++    [changes addObject:change];
+   }
+ 
+   return @{
+diff --git a/ui/accessibility/ax_range.h b/ui/accessibility/ax_range.h
+index 62db9d3c0ff251e40dd5016901e40a3083cb786f..2d263e1c7eaf806a76eba6ee79919ef87d3eb04b 100644
+--- a/ui/accessibility/ax_range.h
++++ b/ui/accessibility/ax_range.h
+@@ -131,6 +131,12 @@ class AXRange {
+                : AXRange(anchor_->Clone(), focus_->Clone());
+   }
+ 
++  AXRange AsBackwardRange() const {
++    return (CompareEndpoints(anchor(), focus()).value_or(0) < 0)
++               ? AXRange(focus_->Clone(), anchor_->Clone())
++               : AXRange(anchor_->Clone(), focus_->Clone());
++  }
++
+   bool IsCollapsed() const { return !IsNull() && *anchor_ == *focus_; }
+ 
+   // We define a "leaf text range" as an AXRange whose endpoints are leaf text

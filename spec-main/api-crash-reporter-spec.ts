@@ -33,11 +33,14 @@ type CrashInfo = {
   _productName: string
   _version: string
   upload_file_minidump: Buffer // eslint-disable-line camelcase
+  guid: string
   mainProcessSpecific: 'mps' | undefined
   rendererSpecific: 'rs' | undefined
   globalParam: 'globalValue' | undefined
   addedThenRemoved: 'to-be-removed' | undefined
   longParam: string | undefined
+  'electron.v8-fatal.location': string | undefined
+  'electron.v8-fatal.message': string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
@@ -227,6 +230,35 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.rendererSpecific).to.be.undefined();
     });
 
+    describe('with guid', () => {
+      for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
+        it(`when ${processType} crashes`, async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp(processType, port);
+          const crash = await waitForCrash();
+          expect(crash.guid).to.be.a('string');
+        });
+      }
+
+      it('is a consistent id', async () => {
+        let crash1Guid;
+        let crash2Guid;
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash1Guid = crash.guid;
+        }
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash2Guid = crash.guid;
+        }
+        expect(crash2Guid).to.equal(crash1Guid);
+      });
+    });
+
     describe('with extra parameters', () => {
       it('when renderer crashes', async () => {
         const { port, waitForCrash } = await startServer();
@@ -247,23 +279,60 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash.rendererSpecific).to.equal('rs');
         expect(crash.addedThenRemoved).to.be.undefined();
       });
+
+      it('contains v8 crash keys when a v8 crash occurs', async () => {
+        const { remotely } = await startRemoteControlApp();
+        const { port, waitForCrash } = await startServer();
+
+        await remotely((port: number) => {
+          require('electron').crashReporter.start({
+            submitURL: `http://127.0.0.1:${port}`,
+            ignoreSystemCrashHandler: true
+          });
+        }, [port]);
+
+        remotely(() => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          bw.loadURL('about:blank');
+          bw.webContents.executeJavaScript('process._linkedBinding(\'electron_common_v8_util\').triggerFatalErrorForTesting()');
+        });
+
+        const crash = await waitForCrash();
+        expect(crash.prod).to.equal('Electron');
+        expect(crash._productName).to.equal('remote-control');
+        expect(crash.process_type).to.equal('renderer');
+        expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
+        expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
+      });
     });
   });
 
   ifdescribe(!isLinuxOnArm)('extra parameter limits', () => {
-    it('should truncate extra values longer than 127 characters', async () => {
+    function stitchLongCrashParam (crash: any, paramKey: string) {
+      if (crash[paramKey]) return crash[paramKey];
+      let chunk = 1;
+      let stitched = '';
+      while (crash[`${paramKey}__${chunk}`]) {
+        stitched += crash[`${paramKey}__${chunk}`];
+        chunk++;
+      }
+      return stitched;
+    }
+
+    it('should truncate extra values longer than 5 * 4096 characters', async () => {
       const { port, waitForCrash } = await startServer();
       const { remotely } = await startRemoteControlApp();
       remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
           ignoreSystemCrashHandler: true,
-          extra: { 'longParam': 'a'.repeat(130) }
+          extra: { longParam: 'a'.repeat(100000) }
         });
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(crash).to.have.property('longParam', 'a'.repeat(127));
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {
@@ -436,7 +505,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       await remotely(() => {
         require('electron').crashReporter.start({
           submitURL: 'http://127.0.0.1',
-          extra: { 'extra1': 'hi' }
+          extra: { extra1: 'hi' }
         });
       });
       const parameters = await remotely(() => require('electron').crashReporter.getParameters());
@@ -469,8 +538,8 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         crashReporter.start({ submitURL: 'http://' });
         const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
         bw.loadURL('about:blank');
-        await bw.webContents.executeJavaScript(`require('electron').crashReporter.addExtraParameter('hello', 'world')`);
-        return bw.webContents.executeJavaScript(`require('electron').crashReporter.getParameters()`);
+        await bw.webContents.executeJavaScript('require(\'electron\').crashReporter.addExtraParameter(\'hello\', \'world\')');
+        return bw.webContents.executeJavaScript('require(\'electron\').crashReporter.getParameters()');
       });
       if (process.platform === 'linux') {
         // On Linux, 'getParameters' will also include the global parameters,
@@ -540,11 +609,10 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       }
     }
 
-    for (const crashingProcess of ['main', 'renderer', 'sandboxed-renderer', 'node']) {
-      // TODO(nornagon): breakpad on linux disables itself when uploadToServer
-      // is false, so we should figure out a different way to test the crash
-      // dump dir on linux.
-      ifdescribe(process.platform !== 'linux')(`when ${crashingProcess} crashes`, () => {
+    const processList = process.platform === 'linux' ? ['main', 'renderer', 'sandboxed-renderer']
+      : ['main', 'renderer', 'sandboxed-renderer', 'node'];
+    for (const crashingProcess of processList) {
+      describe(`when ${crashingProcess} crashes`, () => {
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
@@ -552,12 +620,27 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
             return crashReporter.getCrashesDirectory();
           });
-          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          let reportsDir = crashesDir;
+          if (process.platform === 'darwin') {
+            reportsDir = path.join(crashesDir, 'completed');
+          } else if (process.platform === 'win32') {
+            reportsDir = path.join(crashesDir, 'reports');
+          }
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          if (process.platform === 'linux') {
+            if (crashingProcess === 'main') {
+              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
+            } else {
+              const process = crashingProcess === 'sandboxed-renderer' ? 'renderer' : crashingProcess;
+              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
+              expect(newFiles[0]).to.match(regex);
+            }
+          } else {
+            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          }
         });
 
         it('respects an overridden crash dump directory', async () => {
@@ -571,12 +654,27 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 
-          const reportsDir = process.platform === 'darwin' ? path.join(crashesDir, 'completed') : path.join(crashesDir, 'reports');
+          let reportsDir = crashesDir;
+          if (process.platform === 'darwin') {
+            reportsDir = path.join(crashesDir, 'completed');
+          } else if (process.platform === 'win32') {
+            reportsDir = path.join(crashesDir, 'reports');
+          }
           const newFileAppeared = waitForNewFileInDir(reportsDir);
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          if (process.platform === 'linux') {
+            if (crashingProcess === 'main') {
+              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
+            } else {
+              const process = crashingProcess !== 'sandboxed-renderer' ? crashingProcess : 'renderer';
+              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
+              expect(newFiles[0]).to.match(regex);
+            }
+          } else {
+            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
+          }
         });
       });
     }
