@@ -6,9 +6,13 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>
-#include <shlobj.h>
-#include <shobjidl.h>
+#include <windows.h>  // NOLINT(build/include_order)
+
+#include <ShlObj.h>      //// NOLINT(build/include_order)
+#include <atlbase.h>     // NOLINT(build/include_order)
+#include <shlobj.h>      // NOLINT(build/include_order)
+#include <shobjidl.h>    // NOLINT(build/include_order)
+#include <thumbcache.h>  //// NOLINT(build/include_order)
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
@@ -28,6 +32,7 @@
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/skia_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
+#include "ui/gfx/icon_util.h"
 
 namespace electron {
 
@@ -169,6 +174,174 @@ void Browser::Focus(gin_helper::Arguments* args) {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
+<<<<<<< HEAD
+=======
+v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
+    v8::Isolate* isolate,
+    const base::FilePath& path,
+    int size) {
+  gin_helper::Promise<gfx::Image> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  HRESULT hr;
+
+  // create an IShellItem
+  IShellItem* pItem = nullptr;
+  // utf16
+  std::wstring image_path = path.AsUTF16Unsafe();
+  hr = SHCreateItemFromParsingName(image_path.c_str(), nullptr,
+                                   IID_PPV_ARGS(&pItem));
+
+  if (FAILED(hr)) {
+    promise.RejectWithErrorMessage(
+        "Failed to create IShellItem from the given path");
+    return handle;
+  }
+
+  // Init thumbnail cache
+  IThumbnailCache* pThumbnailCache = nullptr;
+  hr = CoCreateInstance(CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC,
+                        IID_PPV_ARGS(&pThumbnailCache));
+  if (FAILED(hr)) {
+    promise.RejectWithErrorMessage(
+        "Failed to acquire local thumbnail cache reference");
+    pItem->Release();
+    return handle;
+  }
+
+  // Populate the IShellBitmap
+  ISharedBitmap* pThumbnail = nullptr;
+  WTS_CACHEFLAGS flags;
+  WTS_THUMBNAILID thumbId;
+  hr = pThumbnailCache->GetThumbnail(pItem, size, WTS_FLAGS::WTS_NONE,
+                                     &pThumbnail, &flags, &thumbId);
+  pItem->Release();
+
+  if (FAILED(hr)) {
+    promise.RejectWithErrorMessage(
+        "Failed to get thumbnail from local thumbnail cache reference");
+    pThumbnailCache->Release();
+    return handle;
+  }
+
+  HBITMAP hBitmap = NULL;
+  hr = pThumbnail->GetSharedBitmap(&hBitmap);
+  if (FAILED(hr)) {
+    promise.RejectWithErrorMessage("Failed to extract Bitmap from Thumbnail");
+    pThumbnailCache->Release();
+    pThumbnail->Release();
+    return handle;
+  }
+
+  BITMAP bitmap;
+  if (!GetObject(hBitmap, sizeof(bitmap), &bitmap)) {
+    promise.RejectWithErrorMessage("Could not convert HBITMAP to BITMAP");
+    return handle;
+  }
+  ICONINFO icon_info;
+  icon_info.fIcon = TRUE;
+  icon_info.hbmMask = hBitmap;
+  icon_info.hbmColor = hBitmap;
+  HICON icon(CreateIconIndirect(&icon_info));
+  SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon);
+  gfx::ImageSkia image_skia;
+  image_skia.AddRepresentation(
+      gfx::ImageSkiaRep(skbitmap, 1.0 /*scale factor*/));
+  gfx::Image gfx_image = gfx::Image(image_skia);
+  promise.Resolve(gfx_image);
+  return handle;
+}
+
+void GetFileIcon(const base::FilePath& path,
+                 v8::Isolate* isolate,
+                 base::CancelableTaskTracker* cancelable_task_tracker_,
+                 const base::string16 app_display_name,
+                 gin_helper::Promise<gin_helper::Dictionary> promise) {
+  base::FilePath normalized_path = path.NormalizePathSeparators();
+  IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
+
+  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
+  gfx::Image* icon =
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+  if (icon) {
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("icon", *icon);
+    dict.Set("name", app_display_name);
+    dict.Set("path", normalized_path);
+    promise.Resolve(dict);
+  } else {
+    icon_manager->LoadIcon(normalized_path, icon_size,
+                           base::BindOnce(&OnIconDataAvailable, normalized_path,
+                                          app_display_name, std::move(promise)),
+                           cancelable_task_tracker_);
+  }
+}
+
+void GetApplicationInfoForProtocolUsingRegistry(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
+  base::FilePath app_path;
+
+  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  if (!IsValidCustomProtocol(url_scheme)) {
+    promise.RejectWithErrorMessage("invalid url_scheme");
+    return;
+  }
+  base::string16 command_to_launch;
+  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
+                                KEY_READ);
+  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
+    base::CommandLine command_line(
+        base::CommandLine::FromString(command_to_launch));
+    app_path = command_line.GetProgram();
+  } else {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+
+  if (app_display_name.length() == 0) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve application display name");
+    return;
+  }
+  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_display_name,
+              std::move(promise));
+}
+
+// resolves `Promise<Object>` - Resolve with an object containing the following:
+// * `icon` NativeImage - the display icon of the app handling the protocol.
+// * `path` String  - installation path of the app handling the protocol.
+// * `name` String - display name of the app handling the protocol.
+void GetApplicationInfoForProtocolUsingAssocQuery(
+    v8::Isolate* isolate,
+    const GURL& url,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::CancelableTaskTracker* cancelable_task_tracker_) {
+  base::string16 app_path = GetAppPathForProtocol(url);
+
+  if (app_path.empty()) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return;
+  }
+
+  base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
+
+  if (app_display_name.empty()) {
+    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return;
+  }
+
+  base::FilePath app_path_file_path = base::FilePath(app_path);
+  GetFileIcon(app_path_file_path, isolate, cancelable_task_tracker_,
+              app_display_name, std::move(promise));
+}
+
+>>>>>>> a2a2c5e5f... windows impl protoype
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,

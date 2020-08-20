@@ -1491,6 +1491,11 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
+#if !defined(OS_LINUX)
+      .SetMethod(
+          "createThumbnailFromPath",
+          base::BindRepeating(&Browser::CreateThumbnailFromPath, browser))
+#endif
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
@@ -1517,9 +1522,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::BindRepeating(&Browser::ResignCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::BindRepeating(&Browser::UpdateCurrentActivity, browser))
-      .SetMethod(
-          "createThumbnailFromPath",
-          base::BindRepeating(&Browser::CreateThumbnailFromPath, browser))
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)

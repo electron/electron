@@ -819,11 +819,10 @@ Returns `Promise<Object>` - Resolve with an object containing the following:
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
 
-### `app.createThumbnailFromPath(path, maxWidth, maxHeight)` _macOS_ _Windows_
+### `app.createThumbnailFromPath(path, maxSize)` _macOS_ _Windows_
 
 * `path` String - path to a file that we intend to construct a thumbnail out of.
-* `maxWidth` Integer - the maximum width that the thumbnail returned can be.
-* `maxHeight` Integer - the maximum height that the thumbnail returned can be.
+* `maxSize` Integer - the maximum width, in pixels, that the thumbnail returned can be. The thumbnail height will be scaled in proportion with the width.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
 
