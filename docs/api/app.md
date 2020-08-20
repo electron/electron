@@ -822,7 +822,9 @@ This method returns a promise that contains the application name, icon and path 
 ### `app.createThumbnailFromPath(path, maxSize)` _macOS_ _Windows_
 
 * `path` String - path to a file that we intend to construct a thumbnail out of.
-* `maxSize` Integer - the maximum width, in pixels, that the thumbnail returned can be. The thumbnail height will be scaled in proportion with the width.
+* `maxSize` Object[]
+  * `width`  Integer - the maximum width, in pixels, that the thumbnail returned can be.
+  * `height` Integer - the maximum height, in pixels, that the thumbnail returned can be. The Windows implementation will ignore this parameter and scale the height according to `width`.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
 

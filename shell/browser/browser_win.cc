@@ -179,14 +179,24 @@ void Browser::Focus(gin_helper::Arguments* args) {
 v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
-    int size) {
+    const gfx::Size& size) {
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   HRESULT hr;
 
+  if (size.width() <= 0) {
+    promise.RejectWithErrorMessage(
+        "invalid width, please enter a positive number");
+    return handle;
+  }
+
+  if (!path.IsAbsolute()) {
+    promise.RejectWithErrorMessage("Path must be absolute");
+    return handle;
+  }
+
   // create an IShellItem
   IShellItem* pItem = nullptr;
-  // utf16
   std::wstring image_path = path.AsUTF16Unsafe();
   hr = SHCreateItemFromParsingName(image_path.c_str(), nullptr,
                                    IID_PPV_ARGS(&pItem));
@@ -223,6 +233,7 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
     return handle;
   }
 
+  // Init HBITMAP
   HBITMAP hBitmap = NULL;
   hr = pThumbnail->GetSharedBitmap(&hBitmap);
   if (FAILED(hr)) {
@@ -232,17 +243,21 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
     return handle;
   }
 
+  // convert HBITMAP to gfx::Image
   BITMAP bitmap;
   if (!GetObject(hBitmap, sizeof(bitmap), &bitmap)) {
     promise.RejectWithErrorMessage("Could not convert HBITMAP to BITMAP");
     return handle;
   }
+
   ICONINFO icon_info;
   icon_info.fIcon = TRUE;
   icon_info.hbmMask = hBitmap;
   icon_info.hbmColor = hBitmap;
+
   HICON icon(CreateIconIndirect(&icon_info));
   SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon);
+  DestroyIcon(icon);
   gfx::ImageSkia image_skia;
   image_skia.AddRepresentation(
       gfx::ImageSkiaRep(skbitmap, 1.0 /*scale factor*/));

@@ -790,6 +790,50 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    it('throws when invalid size is passed', async () => {
+      const badSize:MaxSize = { width: -1, height: 30 };
+
+      await expect(
+        app.createThumbnailFromPath('path', badSize)
+      ).to.eventually.be.rejectedWith('invalid width, please enter a positive number');
+    });
+
+    it('throws when a relative path is passed', async () => {
+      const badPath = '../hey/hi/hello';
+      const goodSize:MaxSize = { width: 100, height: 100 };
+
+      await expect(
+        app.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+    });
+
+    ifit(process.platform === 'darwin')('throws when a bad path is passed (MacOS)', async () => {
+      const badPath = '/hey/hi/hello';
+      const goodSize:MaxSize = { width: 100, height: 100 };
+
+      await expect(
+        app.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejectedWith('unable to retrieve thumbnail preview image for the given path');
+    });
+
+    ifit(process.platform === 'win32')('throws when a bad path is passed (Windows)', async () => {
+      const badPath = '\\hey\\hi\\hello';
+      const goodSize:MaxSize = { width: 100, height: 100 };
+
+      await expect(
+        app.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejected();
+    });
+
+    ifit(process.platform === 'darwin')('returns native image with valid params', async () => {
+      const goodPath = path.join(__dirname, 'fixtures/apps/xwindow-icon/icon.png');
+      const goodSize:MaxSize = { width: 100, height: 100 };
+      const result = await app.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
+  });
+
   describe('select-client-certificate event', () => {
     let w: BrowserWindow;
 

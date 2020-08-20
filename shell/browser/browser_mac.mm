@@ -41,17 +41,36 @@ void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
 v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
-    int size) {
+    const gfx::Size& size) {
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (size.width() <= 0) {
+    promise.RejectWithErrorMessage(
+        "invalid width, please enter a positive number");
+    return handle;
+  }
+
+  if (size.height() <= 0) {
+    promise.RejectWithErrorMessage(
+        "invalid height, please enter a positive number");
+    return handle;
+  }
+
+  if (!path.IsAbsolute()) {
+    promise.RejectWithErrorMessage("Path must be absolute");
+    return handle;
+  }
 
   // convert path to CFURLREF
   NSString* ns_path = base::mac::FilePathToNSString(path);
   CFURLRef cfurl = (__bridge CFURLRef)[NSURL fileURLWithPath:ns_path];
 
-  // convert width and height to CGSIZE
-  NSSize ns_size = NSMakeSize(size, size);
-  CGSize cg_size = CGSizeMake(ns_size.width, ns_size.height);
+  // // convert gfx::Size to CGSIZE
+  // NSSize ns_size = NSMakeSize(size.width(), size.height());
+  // CGSize cg_size = CGSizeMake(ns_size.width, ns_size.height);
+
+  CGSize cg_size = CGSizeMake(size.width(), size.height());
 
   QLThumbnailRef ql_thumbnail =
       QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL);
@@ -66,10 +85,14 @@ v8::Local<v8::Promise> Browser::CreateThumbnailFromPath(
           NSImage* result = [[NSImage alloc] initWithCGImage:cg_thumbnail
                                                         size:cg_size];
           gfx::Image thumbnail(result);
-          p.Resolve(thumbnail);
+          dispatch_async(dispatch_get_main_queue(), ^{
+            p.Resolve(thumbnail);
+          });
         } else {
-          p.RejectWithErrorMessage(
-              "unable to retrieve thumbnail preview image for the given path");
+          dispatch_async(dispatch_get_main_queue(), ^{
+            p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
+                                     "image for the given path");
+          });
         }
         CFRelease(ql_thumbnail);
         CGImageRelease(cg_thumbnail);
