@@ -971,6 +971,26 @@ describe('BrowserWindow module', () => {
           w.show()
           w.minimize()
         })
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy()
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          })
+          const bounds = w.getBounds()
+          w.once('minimize', () => {
+            w.restore()
+          })
+          const restore = emittedOnce(w, 'restore')
+          w.show()
+          w.minimize()
+          await restore
+          expectBoundsEqual(w.getNormalBounds(), bounds)
+        })
       })
       ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
         it(`checks normal bounds when fullscreen'ed`, (done) => {
