@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 
 #include <string>
+#include <utility>
 
 #include "base/logging.h"
 #include "base/path_service.h"
