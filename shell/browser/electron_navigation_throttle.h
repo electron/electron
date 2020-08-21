@@ -14,6 +14,8 @@ class ElectronNavigationThrottle : public content::NavigationThrottle {
   explicit ElectronNavigationThrottle(content::NavigationHandle* handle);
   ~ElectronNavigationThrottle() override;
 
+  ElectronNavigationThrottle::ThrottleCheckResult WillStartRequest() override;
+
   ElectronNavigationThrottle::ThrottleCheckResult WillRedirectRequest()
       override;
 
