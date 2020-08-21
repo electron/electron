@@ -456,16 +456,14 @@ index 2bb312f4e46788e962e1a4943e19c26bc3b95c4e..f74350860c0766be81dec8ff0736435a
  #include "printing/units.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
-@@ -1156,7 +1157,8 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
-     web_frame->DispatchBeforePrintEvent();
-     if (!weak_this)
-       return;
--    Print(web_frame, blink::WebNode(), PrintRequestType::kScripted);
-+    Print(web_frame, blink::WebNode(), PrintRequestType::kScripted,
-+          false /* silent */, base::DictionaryValue() /* new_settings */);
+@@ -1161,6 +1161,7 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+     // Pause between onbeforeprint and onafterprint events.
+     // https://html.spec.whatwg.org/C/#printing-steps
+     Print(web_frame, blink::WebNode(), PrintRequestType::kScripted,
++          false /* silent */, base::DictionaryValue() /* new_settings */,
+           blink::WebScopedPagePauser::Create());
+ 
      if (weak_this)
-       web_frame->DispatchAfterPrintEvent();
-   }
 @@ -1177,7 +1179,7 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
@@ -475,23 +473,23 @@ index 2bb312f4e46788e962e1a4943e19c26bc3b95c4e..f74350860c0766be81dec8ff0736435a
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > 1)
      return;
-@@ -1191,7 +1193,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
-   // If we are printing a PDF extension frame, find the plugin node and print
-   // that instead.
-   auto plugin = delegate_->GetPdfElement(frame);
--  Print(frame, plugin, PrintRequestType::kRegular);
-+  Print(frame, plugin, PrintRequestType::kRegular, silent, std::move(settings));
+@@ -1206,7 +1206,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+ 
+   // Pause between onbeforeprint and onafterprint events.
+   // https://html.spec.whatwg.org/C/#printing-steps
+-  Print(frame, plugin, PrintRequestType::kRegular,
++  Print(frame, plugin, PrintRequestType::kRegular, silent, std::move(settings),
+         blink::WebScopedPagePauser::Create());
+ 
    if (!render_frame_gone_)
-     frame->DispatchAfterPrintEvent();
-   // WARNING: |this| may be gone at this point. Do not do any more work here and
-@@ -1208,7 +1210,7 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
-     return;
-   }
-   Print(frame, print_preview_context_.source_node(),
--        PrintRequestType::kRegular);
-+        PrintRequestType::kRegular, false, base::DictionaryValue());
+@@ -1228,7 +1228,7 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+   // Hand over control, including Print Preview's WebScopedPagePauser, to the
+   // system print dialog.
+   Print(frame, print_preview_context_.source_node(), PrintRequestType::kRegular,
+-        print_preview_context_.TakePauser());
++        false, base::DictionaryValue(), print_preview_context_.TakePauser());
    if (!render_frame_gone_)
-     frame->DispatchAfterPrintEvent();
+     print_preview_context_.DispatchAfterPrintEvent();
    // WARNING: |this| may be gone at this point. Do not do any more work here and
 @@ -1256,6 +1258,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value settings) {
    if (ipc_nesting_level_ > 1)
@@ -502,28 +500,26 @@ index 2bb312f4e46788e962e1a4943e19c26bc3b95c4e..f74350860c0766be81dec8ff0736435a
    print_preview_context_.OnPrintPreview();
  
    if (print_preview_context_.IsForArc()) {
-@@ -1790,7 +1794,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1828,7 +1828,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
        return;
  
      Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
--          PrintRequestType::kRegular);
-+          PrintRequestType::kRegular,
-+          false /* silent */,
-+          base::DictionaryValue() /* new_settings */);
+-          PrintRequestType::kRegular, blink::WebScopedPagePauser::Create());
++          PrintRequestType::kRegular, false /* silent */,
++          base::DictionaryValue() /* new_settings */,
++          blink::WebScopedPagePauser::Create());
      // Check if |this| is still valid.
      if (!weak_this)
        return;
-@@ -1805,7 +1811,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
- 
- void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
-                                    const blink::WebNode& node,
--                                   PrintRequestType print_request_type) {
-+                                   PrintRequestType print_request_type,
-+                                   bool silent,
-+                                   base::Value settings) {
+@@ -1845,6 +1847,8 @@ void PrintRenderFrameHelper::Print(
+     blink::WebLocalFrame* frame,
+     const blink::WebNode& node,
+     PrintRequestType print_request_type,
++    bool silent,
++    base::Value settings,
+     std::unique_ptr<blink::WebScopedPagePauser> pauser) {
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
-     return;
 @@ -1813,7 +1821,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
@@ -606,17 +602,15 @@ index b5ec1df59c37ac18c64abe58955e676f546b3da8..6323915537c22bce36c3289fd51d7394
    void PrintForSystemDialog() override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void SetPrintPreviewUI(
-@@ -293,7 +293,9 @@ class PrintRenderFrameHelper
-   // WARNING: |this| may be gone after this method returns.
+@@ -301,6 +301,8 @@ class PrintRenderFrameHelper
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
--             PrintRequestType print_request_type);
-+             PrintRequestType print_request_type,
+              PrintRequestType print_request_type,
 +             bool silent,
-+             base::Value settings);
++             base::Value settings,
+              std::unique_ptr<blink::WebScopedPagePauser> pauser);
  
    // Notification when printing is done - signal tear-down/free resources.
-   void DidFinishPrinting(PrintingResult result);
 @@ -302,12 +304,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
