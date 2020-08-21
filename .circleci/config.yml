@@ -519,6 +519,7 @@ step-electron-build: &step-electron-build
       # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         touch out/Default/.electron_mksnapshot_zip_done
         rm -rf out/Default/clang_x64_v8_arm64/obj
