@@ -95,7 +95,7 @@ machine-mac-large: &machine-mac-large
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.0.0-UA"
+    xcode: "12.0.0-large"
 
 # Build configurations options.
 env-testing-build: &env-testing-build
