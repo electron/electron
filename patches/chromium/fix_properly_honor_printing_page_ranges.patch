@@ -47,7 +47,7 @@ index 56bcfbe625537c7b1bc2a999c261836bb15896ba..849e35a5a862921fafc1580496063f4b
 +  if (ranges.empty())
 +    return true; 
 +
-+  auto print_settings =
++  auto* print_settings =
 +      static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 +
 +  // macOS does not allow multiple ranges, so pluck the first.
@@ -61,6 +61,41 @@ index 56bcfbe625537c7b1bc2a999c261836bb15896ba..849e35a5a862921fafc1580496063f4b
  bool PrintingContextMac::SetCollateInPrintSettings(bool collate) {
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
+diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
+index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..73744c03eae91687a9229ebc2249a55fdf30e4bb 100644
+--- a/printing/printing_context_system_dialog_win.cc
++++ b/printing/printing_context_system_dialog_win.cc
+@@ -52,14 +52,25 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+   PRINTPAGERANGE ranges[32];
+   dialog_options.nStartPage = START_PAGE_GENERAL;
+   if (max_pages) {
+-    // Default initialize to print all the pages.
+     memset(ranges, 0, sizeof(ranges));
+-    ranges[0].nFromPage = 1;
+-    ranges[0].nToPage = max_pages;
+-    dialog_options.nPageRanges = 1;
+-    dialog_options.nMaxPageRanges = base::size(ranges);
++
++    auto page_ranges = settings_->ranges();
++    if (!page_ranges.empty()) {
++      for (size_t i = 0; i < page_ranges.size(); i++) {
++        auto range = page_ranges[i];
++        ranges[i].nFromPage = range.from;
++        ranges[i].nToPage = range.to;
++      }
++      dialog_options.nPageRanges = page_ranges.size();
++    } else {
++      ranges[0].nFromPage = 1;
++      ranges[0].nToPage = max_pages;
++      dialog_options.nPageRanges = 1;
++    }
++
+     dialog_options.nMinPage = 1;
+     dialog_options.nMaxPage = max_pages;
++    dialog_options.nMaxPageRanges = base::size(ranges);
+     dialog_options.lpPageRanges = ranges;
+   } else {
+     // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
 index 8a78a609295a1d90208bdc7e73d7a850c319f361..8efbbfb31eac99323be5e81826d5738b2390a82d 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
