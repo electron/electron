@@ -160,17 +160,35 @@ describe('tray module', () => {
       expect(newTitle).to.equal(title);
     });
 
-    it('can be called with a font type', () => {
+    it('can have an options object passed in', () => {
       expect(() => {
-        tray.setTitle('Hello World!', 'monospaced');
-        tray.setTitle('Hello World!', 'monospacedDigit');
+        tray.setTitle('Hello World!', {});
       }).to.not.throw();
     });
 
-    it('throws on non-string font types', () => {
+    it('throws when the options parameter is not an object', () => {
       expect(() => {
-        tray.setTitle('Hello World!', 5.4 as any);
-      }).to.throw(/index 1/);
+        tray.setTitle('Hello World!', 'test' as any);
+      }).to.throw(/setTitle options must be an object/);
+    });
+
+    it('can have a font type option set', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 'monospaced' });
+        tray.setTitle('Hello World!', { fontType: 'monospacedDigit' });
+      }).to.not.throw();
+    });
+
+    it('throws when the font type is specified but is not a string', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 5.4 as any });
+      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
+    });
+
+    it('throws on invalid font types', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 'blep' });
+      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
     });
   });
 });

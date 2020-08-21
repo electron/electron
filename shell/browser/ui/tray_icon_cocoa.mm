@@ -336,9 +336,9 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconCocoa::SetTitle(const std::string& title,
-                             const std::string& font_type) {
+                             const TitleOptions& options) {
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)
-                    font_type:base::SysUTF8ToNSString(font_type)];
+                    font_type:base::SysUTF8ToNSString(options.font_type)];
 }
 
 std::string TrayIconCocoa::GetTitle() {

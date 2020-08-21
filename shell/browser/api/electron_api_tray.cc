@@ -212,19 +212,31 @@ void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(const std::string& title, gin::Arguments* args) {
+void Tray::SetTitle(gin_helper::ErrorThrower thrower,
+                    const std::string& title,
+                    const base::Optional<gin_helper::Dictionary>& options,
+                    gin::Arguments* args) {
   if (!CheckAlive())
     return;
 #if defined(OS_MAC)
-  std::string font_type;
-  v8::Local<v8::Value> font_arg;
-  if (args->GetNext(&font_arg)) {
-    if (!gin::ConvertFromV8(args->isolate(), font_arg, &font_type)) {
-      args->ThrowError();
-      return;
+  TrayIcon::TitleOptions title_options;
+  if (options) {
+    if (options->Get("fontType", &title_options.font_type)) {
+      // Validate the font type if it's passed in
+      if (title_options.font_type != "monospaced" &&
+          title_options.font_type != "monospacedDigit") {
+        thrower.ThrowError(
+            "fontType must be one of 'monospaced' or 'monospacedDigit'");
+      }
+    } else if (options->Has("fontType")) {
+      thrower.ThrowError(
+          "fontType must be one of 'monospaced' or 'monospacedDigit'");
     }
+  } else if (args->Length() >= 2) {
+    thrower.ThrowError("setTitle options must be an object");
   }
-  tray_icon_->SetTitle(title, font_type);
+
+  tray_icon_->SetTitle(title, title_options);
 #endif
 }
 
