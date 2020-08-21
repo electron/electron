@@ -1,7 +1,7 @@
-From 5ab6afdf34ad4eac74cef2c261853a3fd5a27aa6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anders Hartvoll Ruud <andruud@chromium.org>
 Date: Wed, 15 Jul 2020 14:34:17 +0000
-Subject: [PATCH] Don't crash when using 'revert' in var() fallback
+Subject: Don't crash when using 'revert' in var() fallback
 
 CSS-wide keywords should not be allowed here in general, but they
 currently are by Chrome and FF. (And WPT requires this behavior).
@@ -18,14 +18,8 @@ Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Reviewed-by: Oriol Brufau <obrufau@igalia.com>
 Cr-Commit-Position: refs/heads/master@{#788624}
 
-Patch-Filename: cherry-pick-88b1d19329df.patch
----
- .../core/css/resolver/style_cascade.cc        | 12 +++++--
- .../core/css/resolver/style_cascade_test.cc   | 31 +++++++++++++++++++
- 2 files changed, 41 insertions(+), 2 deletions(-)
-
 diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade.cc b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
-index 1fc9ecbb274c..01aaa0118909 100644
+index 1fc9ecbb274c43cc849479efc3890bb6280d7301..01aaa0118909b6794b9b68a7ed11dbdc008c9204 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_cascade.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
 @@ -55,6 +55,14 @@ bool ConsumeComma(CSSParserTokenRange& range) {
@@ -62,7 +56,7 @@ index 1fc9ecbb274c..01aaa0118909 100644
  
    NOTREACHED();
 diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
-index 87269c3ba0d1..167f202403c1 100644
+index 87269c3ba0d1d3bf42130b8f738d39116bb5b924..167f202403c18174e400c7b02dac69aa0392beeb 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
 @@ -1194,6 +1194,37 @@ TEST_F(StyleCascadeTest, Unset) {
