@@ -122,3 +122,4 @@ reconnect_p2p_socket_dispatcher_if_network_service_dies.patch
 allow_focus_to_move_into_an_editable_combobox_s_listbox.patch
 cherry-pick-70579363ce7b.patch
 cherry-pick-88b1d19329df.patch
+add_parser_support_for_the_revert_keyword.patch

@@ -1,0 +1,968 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Fri, 3 Apr 2020 09:24:31 +0000
+Subject: Add parser support for the 'revert' keyword
+
+This CL adds support for 'revert' in the parser, behind a flag. Using
+the keyword doesn't do anything yet. It temporarily behaves like
+"unset" for both regular declarations and keyframes.
+
+Bug: 579788
+Change-Id: I0882b41ff6f5c162be8ac1d1cd203ad4ec84c60f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2130249
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#756203}
+
+diff --git a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
+index f5a02e8fd5663d658dda7a2d1b14763c1eb76fa7..87caef2cf5cf56b7bf72752410648ef1d7bb9f9a 100644
+--- a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
++++ b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/renderer/core/css/css_property_id_templates.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_map.h"
++#include "third_party/blink/renderer/core/css/properties/css_parsing_utils.h"
+ 
+ namespace blink {
+ 
+@@ -20,11 +21,8 @@ bool CSSOMKeywords::ValidKeywordForProperty(CSSPropertyID id,
+     return false;
+   }
+ 
+-  if (valueID == CSSValueID::kInherit || valueID == CSSValueID::kInitial ||
+-      valueID == CSSValueID::kUnset) {
+-    // These are css-wide keywords that are valid for all properties.
++  if (css_parsing_utils::IsCSSWideKeyword(valueID))
+     return true;
+-  }
+ 
+   switch (id) {
+   {% for property in properties if property.keywordIDs and 'Keyword' in property.typedom_types %}
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index e9ef6e2aca7f9eb868b00fe4732ec10403a9a769..c83e78117ea566682cad521f828d10e2d1b58544 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -1047,6 +1047,7 @@ jumbo_source_set("unit_tests") {
+   sources = [
+     "clipboard/clipboard_utilities_test.cc",
+     "content_capture/content_capture_test.cc",
++    "css/css_revert_value_test.cc",
+     "css/css_test_helpers.cc",
+     "css/css_test_helpers.h",
+     "css/css_uri_value_test.cc",
+diff --git a/third_party/blink/renderer/core/animation/css_interpolation_type.cc b/third_party/blink/renderer/core/animation/css_interpolation_type.cc
+index fcc56d7d292c4ff86315dec1a7fcca2f1f063f97..efc95c587b55dcbe96b10aed53d2822e1211c2fb 100644
+--- a/third_party/blink/renderer/core/animation/css_interpolation_type.cc
++++ b/third_party/blink/renderer/core/animation/css_interpolation_type.cc
+@@ -12,6 +12,8 @@
+ #include "third_party/blink/renderer/core/animation/string_keyframe.h"
+ #include "third_party/blink/renderer/core/css/computed_style_css_value_mapping.h"
+ #include "third_party/blink/renderer/core/css/css_custom_property_declaration.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
++#include "third_party/blink/renderer/core/css/css_unset_value.h"
+ #include "third_party/blink/renderer/core/css/css_value.h"
+ #include "third_party/blink/renderer/core/css/css_variable_reference_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_tokenizer.h"
+@@ -183,6 +185,11 @@ InterpolationValue CSSInterpolationType::MaybeConvertSingleInternal(
+     value = resolved_value;
+   }
+ 
++  if (value->IsRevertValue()) {
++    // TODO(andruud): Actually revert instead of treating as unset.
++    value = cssvalue::CSSUnsetValue::Create();
++  }
++
+   bool is_inherited = CssProperty().IsInherited();
+   if (value->IsInitialValue() || (value->IsUnsetValue() && !is_inherited)) {
+     return MaybeConvertInitial(state, conversion_checkers);
+diff --git a/third_party/blink/renderer/core/css/BUILD.gn b/third_party/blink/renderer/core/css/BUILD.gn
+index 183fd3f378953f94fbde48702b0a5589e4b0808a..38512925addc89319e48a72b0c266e647d50e3f6 100644
+--- a/third_party/blink/renderer/core/css/BUILD.gn
++++ b/third_party/blink/renderer/core/css/BUILD.gn
+@@ -155,6 +155,8 @@ blink_core_sources("css") {
+     "css_reflection_direction.h",
+     "css_resolution_units.h",
+     "css_resource_fetch_restriction.h",
++    "css_revert_value.cc",
++    "css_revert_value.h",
+     "css_rule.cc",
+     "css_rule.h",
+     "css_rule_list.h",
+@@ -626,6 +628,7 @@ blink_core_tests("unit_tests") {
+     "cssom/inline_style_property_map_test.cc",
+     "cssom/paint_worklet_style_property_map_test.cc",
+     "cssom/prepopulated_computed_style_property_map_test.cc",
++    "cssom/style_property_map_test.cc",
+     "drag_update_test.cc",
+     "font_face_cache_test.cc",
+     "invalidation/invalidation_set_test.cc",
+@@ -643,6 +646,7 @@ blink_core_tests("unit_tests") {
+     "parser/css_parser_local_context_test.cc",
+     "parser/css_parser_token_stream_test.cc",
+     "parser/css_parser_token_test.cc",
++    "parser/css_property_parser_helpers_test.cc",
+     "parser/css_property_parser_test.cc",
+     "parser/css_selector_parser_test.cc",
+     "parser/css_supports_parser_test.cc",
+diff --git a/third_party/blink/renderer/core/css/css_custom_property_declaration.h b/third_party/blink/renderer/core/css/css_custom_property_declaration.h
+index f7d09e70029cbcaf43d0f1c2bbd34870a15310c6..b870b5bf348ddb97ecf6904fb396094c561604d2 100644
+--- a/third_party/blink/renderer/core/css/css_custom_property_declaration.h
++++ b/third_party/blink/renderer/core/css/css_custom_property_declaration.h
+@@ -8,6 +8,7 @@
+ #include "base/memory/scoped_refptr.h"
+ #include "third_party/blink/renderer/core/css/css_value.h"
+ #include "third_party/blink/renderer/core/css/css_variable_data.h"
++#include "third_party/blink/renderer/core/css/properties/css_parsing_utils.h"
+ #include "third_party/blink/renderer/core/css_value_keywords.h"
+ #include "third_party/blink/renderer/platform/wtf/casting.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+@@ -21,8 +22,7 @@ class CORE_EXPORT CSSCustomPropertyDeclaration : public CSSValue {
+         name_(name),
+         value_(nullptr),
+         value_id_(id) {
+-    DCHECK(id == CSSValueID::kInherit || id == CSSValueID::kInitial ||
+-           id == CSSValueID::kUnset);
++    DCHECK(css_parsing_utils::IsCSSWideKeyword(id));
+   }
+ 
+   CSSCustomPropertyDeclaration(const AtomicString& name,
+diff --git a/third_party/blink/renderer/core/css/css_revert_value.cc b/third_party/blink/renderer/core/css/css_revert_value.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e0d1b7b7a7857c7ef8d900be5a25b1de4885c9a5
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/css_revert_value.cc
+@@ -0,0 +1,24 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
++
++#include "third_party/blink/renderer/core/css/css_value_pool.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++
++namespace blink {
++namespace cssvalue {
++
++CSSRevertValue* CSSRevertValue::Create() {
++  DCHECK(RuntimeEnabledFeatures::CSSRevertEnabled());
++  return CssValuePool().RevertValue();
++}
++
++String CSSRevertValue::CustomCSSText() const {
++  return "revert";
++}
++
++}  // namespace cssvalue
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/css_revert_value.h b/third_party/blink/renderer/core/css/css_revert_value.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..5630c918a9a40fa263cb9b077895c79b648e0f10
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/css_revert_value.h
+@@ -0,0 +1,44 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_CSS_CSS_REVERT_VALUE_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_CSS_CSS_REVERT_VALUE_H_
++
++#include "base/memory/scoped_refptr.h"
++#include "base/util/type_safety/pass_key.h"
++#include "third_party/blink/renderer/core/css/css_value.h"
++#include "third_party/blink/renderer/platform/wtf/casting.h"
++
++namespace blink {
++
++class CSSValuePool;
++
++namespace cssvalue {
++
++class CORE_EXPORT CSSRevertValue : public CSSValue {
++ public:
++  static CSSRevertValue* Create();
++
++  explicit CSSRevertValue(util::PassKey<CSSValuePool>)
++      : CSSValue(kRevertClass) {}
++
++  String CustomCSSText() const;
++
++  bool Equals(const CSSRevertValue&) const { return true; }
++
++  void TraceAfterDispatch(blink::Visitor* visitor) {
++    CSSValue::TraceAfterDispatch(visitor);
++  }
++};
++
++}  // namespace cssvalue
++
++template <>
++struct DowncastTraits<cssvalue::CSSRevertValue> {
++  static bool AllowFrom(const CSSValue& value) { return value.IsRevertValue(); }
++};
++
++}  // namespace blink
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_CSS_CSS_REVERT_VALUE_H_
+diff --git a/third_party/blink/renderer/core/css/css_revert_value_test.cc b/third_party/blink/renderer/core/css/css_revert_value_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..a3508c24d1ddef4c1a73f6ce8dd41993590820b5
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/css_revert_value_test.cc
+@@ -0,0 +1,36 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
++#include "third_party/blink/renderer/core/css/css_initial_value.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
++#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++
++namespace blink {
++
++using CSSRevertValue = cssvalue::CSSRevertValue;
++
++TEST(CSSRevertValueTest, IsCSSWideKeyword) {
++  ScopedCSSRevertForTest scoped_revert(true);
++  EXPECT_TRUE(CSSRevertValue::Create()->IsCSSWideKeyword());
++}
++
++TEST(CSSRevertValueTest, CssText) {
++  ScopedCSSRevertForTest scoped_revert(true);
++  EXPECT_EQ("revert", CSSRevertValue::Create()->CssText());
++}
++
++TEST(CSSRevertValueTest, Equals) {
++  ScopedCSSRevertForTest scoped_revert(true);
++  EXPECT_EQ(*CSSRevertValue::Create(), *CSSRevertValue::Create());
++}
++
++TEST(CSSRevertValueTest, NotEquals) {
++  ScopedCSSRevertForTest scoped_revert(true);
++  EXPECT_FALSE(*CSSRevertValue::Create() == *CSSInitialValue::Create());
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/css_style_declaration_test.cc b/third_party/blink/renderer/core/css/css_style_declaration_test.cc
+index f4a15721b3fefe47c3cbc43dbb11b7b8887c98fb..5bfe780b1f93130a3eb4852f22b4ed00ca5d4bfc 100644
+--- a/third_party/blink/renderer/core/css/css_style_declaration_test.cc
++++ b/third_party/blink/renderer/core/css/css_style_declaration_test.cc
+@@ -7,6 +7,8 @@
+ #include "third_party/blink/renderer/core/css/css_rule_list.h"
+ #include "third_party/blink/renderer/core/css/css_style_rule.h"
+ #include "third_party/blink/renderer/core/css/css_test_helpers.h"
++#include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ 
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+@@ -25,4 +27,62 @@ TEST(CSSStyleDeclarationTest, getPropertyShorthand) {
+   EXPECT_EQ(AtomicString(), style->GetPropertyShorthand("padding"));
+ }
+ 
++TEST(CSSStyleDeclarationTest, ParsingRevertWithFeatureEnabled) {
++  ScopedCSSRevertForTest scoped_revert(true);
++
++  css_test_helpers::TestStyleSheet sheet;
++  sheet.AddCSSRules("div { top: revert; --x: revert; }");
++  ASSERT_TRUE(sheet.CssRules());
++  ASSERT_EQ(1u, sheet.CssRules()->length());
++  CSSStyleRule* style_rule = To<CSSStyleRule>(sheet.CssRules()->item(0));
++  CSSStyleDeclaration* style = style_rule->style();
++  ASSERT_TRUE(style);
++  EXPECT_EQ("revert", style->getPropertyValue("top"));
++  EXPECT_EQ("revert", style->getPropertyValue("--x"));
++
++  // Test setProperty/getPropertyValue:
++
++  DummyExceptionStateForTesting exception_state;
++
++  style->SetPropertyInternal(CSSPropertyID::kLeft, "left", "revert", false,
++                             SecureContextMode::kSecureContext,
++                             exception_state);
++  style->SetPropertyInternal(CSSPropertyID::kVariable, "--y", " revert", false,
++                             SecureContextMode::kSecureContext,
++                             exception_state);
++
++  EXPECT_EQ("revert", style->getPropertyValue("left"));
++  EXPECT_EQ("revert", style->getPropertyValue("--y"));
++  EXPECT_FALSE(exception_state.HadException());
++}
++
++TEST(CSSStyleDeclarationTest, ParsingRevertWithFeatureDisabled) {
++  ScopedCSSRevertForTest scoped_revert(false);
++
++  css_test_helpers::TestStyleSheet sheet;
++  sheet.AddCSSRules("div { top: revert; --x: revert; }");
++  ASSERT_TRUE(sheet.CssRules());
++  ASSERT_EQ(1u, sheet.CssRules()->length());
++  CSSStyleRule* style_rule = To<CSSStyleRule>(sheet.CssRules()->item(0));
++  CSSStyleDeclaration* style = style_rule->style();
++  ASSERT_TRUE(style);
++  EXPECT_EQ("", style->getPropertyValue("top"));
++  EXPECT_EQ(" revert", style->getPropertyValue("--x"));
++
++  // Test setProperty/getPropertyValue:
++
++  DummyExceptionStateForTesting exception_state;
++
++  style->SetPropertyInternal(CSSPropertyID::kLeft, "left", "revert", false,
++                             SecureContextMode::kSecureContext,
++                             exception_state);
++  style->SetPropertyInternal(CSSPropertyID::kVariable, "--y", " revert", false,
++                             SecureContextMode::kSecureContext,
++                             exception_state);
++
++  EXPECT_EQ("", style->getPropertyValue("left"));
++  EXPECT_EQ(" revert", style->getPropertyValue("--y"));
++  EXPECT_FALSE(exception_state.HadException());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/css_syntax_string_parser.cc b/third_party/blink/renderer/core/css/css_syntax_string_parser.cc
+index 41c81652c14d7bba9a0e39aedaf6001b756e26f0..a045ab45f32749331fd547447a172514dc4271f5 100644
+--- a/third_party/blink/renderer/core/css/css_syntax_string_parser.cc
++++ b/third_party/blink/renderer/core/css/css_syntax_string_parser.cc
+@@ -150,7 +150,6 @@ bool CSSSyntaxStringParser::ConsumeDataTypeName(CSSSyntaxType& type) {
+ 
+ bool CSSSyntaxStringParser::ConsumeIdent(String& ident) {
+   ident = ConsumeName(input_);
+-  // TODO(crbug.com/579788): Implement 'revert'.
+   // TODO(crbug.com/882285): Make 'default' invalid as <custom-ident>.
+   return !css_property_parser_helpers::IsCSSWideKeyword(ident) &&
+          !css_property_parser_helpers::IsRevertKeyword(ident) &&
+diff --git a/third_party/blink/renderer/core/css/css_syntax_string_parser_test.cc b/third_party/blink/renderer/core/css/css_syntax_string_parser_test.cc
+index 9dc46a538946f88ccc41bc64d7cf5162feeafd4a..fc8bf60f26fef6217c07090f0f1e08e43d1e26cc 100644
+--- a/third_party/blink/renderer/core/css/css_syntax_string_parser_test.cc
++++ b/third_party/blink/renderer/core/css/css_syntax_string_parser_test.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/css/css_syntax_string_parser.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/core/css/css_syntax_component.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ 
+ namespace blink {
+ 
+@@ -118,6 +119,15 @@ TEST_F(CSSSyntaxStringParserTest, InvalidIdents) {
+   EXPECT_FALSE(CSSSyntaxStringParser("initial").Parse());
+   EXPECT_FALSE(CSSSyntaxStringParser("inherit").Parse());
+   EXPECT_FALSE(CSSSyntaxStringParser("unset").Parse());
++  EXPECT_FALSE(CSSSyntaxStringParser("default").Parse());
++  EXPECT_FALSE(CSSSyntaxStringParser("revert").Parse());
++
++  // 'revert' is forbidden also with CSSRevert toggled.
++  {
++    ScopedCSSRevertForTest scoped_revert(
++        !RuntimeEnabledFeatures::CSSRevertEnabled());
++    EXPECT_FALSE(CSSSyntaxStringParser("revert").Parse());
++  }
+ }
+ 
+ TEST_F(CSSSyntaxStringParserTest, Combinator) {
+diff --git a/third_party/blink/renderer/core/css/css_value.cc b/third_party/blink/renderer/core/css/css_value.cc
+index d849ce2795d825abb55f1193e200f374f8b701ed..ed0ac04cbaf6e50a3c3093da47c792e44cdc28fa 100644
+--- a/third_party/blink/renderer/core/css/css_value.cc
++++ b/third_party/blink/renderer/core/css/css_value.cc
+@@ -65,6 +65,7 @@
+ #include "third_party/blink/renderer/core/css/css_quad_value.h"
+ #include "third_party/blink/renderer/core/css/css_ray_value.h"
+ #include "third_party/blink/renderer/core/css/css_reflect_value.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
+ #include "third_party/blink/renderer/core/css/css_shadow_value.h"
+ #include "third_party/blink/renderer/core/css/css_string_value.h"
+ #include "third_party/blink/renderer/core/css/css_timing_function_value.h"
+@@ -212,6 +213,8 @@ bool CSSValue::operator==(const CSSValue& other) const {
+         return CompareCSSValues<CSSInitialValue>(*this, other);
+       case kUnsetClass:
+         return CompareCSSValues<cssvalue::CSSUnsetValue>(*this, other);
++      case kRevertClass:
++        return CompareCSSValues<cssvalue::CSSRevertValue>(*this, other);
+       case kGridAutoRepeatClass:
+         return CompareCSSValues<cssvalue::CSSGridAutoRepeatValue>(*this, other);
+       case kGridIntegerRepeatClass:
+@@ -331,6 +334,8 @@ String CSSValue::CssText() const {
+       return To<CSSInheritedValue>(this)->CustomCSSText();
+     case kUnsetClass:
+       return To<cssvalue::CSSUnsetValue>(this)->CustomCSSText();
++    case kRevertClass:
++      return To<cssvalue::CSSRevertValue>(this)->CustomCSSText();
+     case kInitialClass:
+       return To<CSSInitialValue>(this)->CustomCSSText();
+     case kGridAutoRepeatClass:
+@@ -475,6 +480,9 @@ void CSSValue::FinalizeGarbageCollectedObject() {
+     case kUnsetClass:
+       To<cssvalue::CSSUnsetValue>(this)->~CSSUnsetValue();
+       return;
++    case kRevertClass:
++      To<cssvalue::CSSRevertValue>(this)->~CSSRevertValue();
++      return;
+     case kGridAutoRepeatClass:
+       To<cssvalue::CSSGridAutoRepeatValue>(this)->~CSSGridAutoRepeatValue();
+       return;
+@@ -648,6 +656,9 @@ void CSSValue::Trace(Visitor* visitor) {
+     case kUnsetClass:
+       To<cssvalue::CSSUnsetValue>(this)->TraceAfterDispatch(visitor);
+       return;
++    case kRevertClass:
++      To<cssvalue::CSSRevertValue>(this)->TraceAfterDispatch(visitor);
++      return;
+     case kGridAutoRepeatClass:
+       To<cssvalue::CSSGridAutoRepeatValue>(this)->TraceAfterDispatch(visitor);
+       return;
+diff --git a/third_party/blink/renderer/core/css/css_value.h b/third_party/blink/renderer/core/css/css_value.h
+index db205280304ad27bad72f6b21854c3d8f136f389..d4bc1ac1a6b60f36ced584fa8c68eea9b19c3d7a 100644
+--- a/third_party/blink/renderer/core/css/css_value.h
++++ b/third_party/blink/renderer/core/css/css_value.h
+@@ -109,8 +109,9 @@ class CORE_EXPORT CSSValue : public GarbageCollected<CSSValue> {
+   bool IsInheritedValue() const { return class_type_ == kInheritedClass; }
+   bool IsInitialValue() const { return class_type_ == kInitialClass; }
+   bool IsUnsetValue() const { return class_type_ == kUnsetClass; }
++  bool IsRevertValue() const { return class_type_ == kRevertClass; }
+   bool IsCSSWideKeyword() const {
+-    return class_type_ >= kInheritedClass && class_type_ <= kUnsetClass;
++    return class_type_ >= kInheritedClass && class_type_ <= kRevertClass;
+   }
+   bool IsLayoutFunctionValue() const {
+     return class_type_ == kLayoutFunctionClass;
+@@ -236,6 +237,7 @@ class CORE_EXPORT CSSValue : public GarbageCollected<CSSValue> {
+     kInheritedClass,
+     kInitialClass,
+     kUnsetClass,
++    kRevertClass,
+ 
+     kReflectClass,
+     kShadowClass,
+diff --git a/third_party/blink/renderer/core/css/css_value_pool.cc b/third_party/blink/renderer/core/css/css_value_pool.cc
+index 1d62b641b68d18bce4b60ad3c5754de63fb7ca6f..fa730f16c4bb033dfa95b8c332dddcd8d1656cd8 100644
+--- a/third_party/blink/renderer/core/css/css_value_pool.cc
++++ b/third_party/blink/renderer/core/css/css_value_pool.cc
+@@ -45,6 +45,7 @@ CSSValuePool::CSSValuePool()
+     : inherited_value_(MakeGarbageCollected<CSSInheritedValue>()),
+       initial_value_(MakeGarbageCollected<CSSInitialValue>()),
+       unset_value_(MakeGarbageCollected<CSSUnsetValue>(PassKey())),
++      revert_value_(MakeGarbageCollected<CSSRevertValue>(PassKey())),
+       invalid_variable_value_(MakeGarbageCollected<CSSInvalidVariableValue>()),
+       color_transparent_(
+           MakeGarbageCollected<cssvalue::CSSColorValue>(Color::kTransparent)),
+@@ -62,6 +63,7 @@ void CSSValuePool::Trace(Visitor* visitor) {
+   visitor->Trace(inherited_value_);
+   visitor->Trace(initial_value_);
+   visitor->Trace(unset_value_);
++  visitor->Trace(revert_value_);
+   visitor->Trace(invalid_variable_value_);
+   visitor->Trace(color_transparent_);
+   visitor->Trace(color_white_);
+diff --git a/third_party/blink/renderer/core/css/css_value_pool.h b/third_party/blink/renderer/core/css/css_value_pool.h
+index c2fb257666c25271168c2935515a8b275754d25a..7d978f1c6b84685fba009815cbac21767f3d8323 100644
+--- a/third_party/blink/renderer/core/css/css_value_pool.h
++++ b/third_party/blink/renderer/core/css/css_value_pool.h
+@@ -39,6 +39,7 @@
+ #include "third_party/blink/renderer/core/css/css_invalid_variable_value.h"
+ #include "third_party/blink/renderer/core/css/css_numeric_literal_value.h"
+ #include "third_party/blink/renderer/core/css/css_property_names.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
+ #include "third_party/blink/renderer/core/css/css_unset_value.h"
+ #include "third_party/blink/renderer/core/css/css_value_list.h"
+ #include "third_party/blink/renderer/core/css_value_keywords.h"
+@@ -55,6 +56,7 @@ class CORE_EXPORT CSSValuePool final : public GarbageCollected<CSSValuePool> {
+   static const int kMaximumCacheableIntegerValue = 255;
+   using CSSColorValue = cssvalue::CSSColorValue;
+   using CSSUnsetValue = cssvalue::CSSUnsetValue;
++  using CSSRevertValue = cssvalue::CSSRevertValue;
+   using ColorValueCache = HeapHashMap<unsigned, Member<CSSColorValue>>;
+   static const unsigned kMaximumColorCacheSize = 512;
+   using FontFaceValueCache =
+@@ -71,6 +73,7 @@ class CORE_EXPORT CSSValuePool final : public GarbageCollected<CSSValuePool> {
+   CSSInheritedValue* InheritedValue() { return inherited_value_; }
+   CSSInitialValue* InitialValue() { return initial_value_; }
+   CSSUnsetValue* UnsetValue() { return unset_value_; }
++  CSSRevertValue* RevertValue() { return revert_value_; }
+   CSSInvalidVariableValue* InvalidVariableValue() {
+     return invalid_variable_value_;
+   }
+@@ -134,6 +137,7 @@ class CORE_EXPORT CSSValuePool final : public GarbageCollected<CSSValuePool> {
+   Member<CSSInheritedValue> inherited_value_;
+   Member<CSSInitialValue> initial_value_;
+   Member<CSSUnsetValue> unset_value_;
++  Member<CSSRevertValue> revert_value_;
+   Member<CSSInvalidVariableValue> invalid_variable_value_;
+   Member<CSSColorValue> color_transparent_;
+   Member<CSSColorValue> color_white_;
+diff --git a/third_party/blink/renderer/core/css/cssom/css_keyword_value.cc b/third_party/blink/renderer/core/css/cssom/css_keyword_value.cc
+index 28df68d1e9476b17ecb9c87566e6ad394c0677b4..f7fbef3b3dd30d2197015986e7f43186eb36c0cf 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_keyword_value.cc
++++ b/third_party/blink/renderer/core/css/cssom/css_keyword_value.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/css/css_identifier_value.h"
+ #include "third_party/blink/renderer/core/css/css_inherited_value.h"
+ #include "third_party/blink/renderer/core/css/css_initial_value.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
+ #include "third_party/blink/renderer/core/css/css_unset_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_property_parser.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+@@ -38,6 +39,10 @@ CSSKeywordValue* CSSKeywordValue::FromCSSValue(const CSSValue& value) {
+     return MakeGarbageCollected<CSSKeywordValue>(
+         getValueName(CSSValueID::kUnset));
+   }
++  if (value.IsRevertValue()) {
++    return MakeGarbageCollected<CSSKeywordValue>(
++        getValueName(CSSValueID::kRevert));
++  }
+   if (auto* identifier_value = DynamicTo<CSSIdentifierValue>(value)) {
+     return MakeGarbageCollected<CSSKeywordValue>(
+         getValueName(identifier_value->GetValueID()));
+@@ -86,6 +91,8 @@ const CSSValue* CSSKeywordValue::ToCSSValue() const {
+       return CSSInitialValue::Create();
+     case (CSSValueID::kUnset):
+       return cssvalue::CSSUnsetValue::Create();
++    case (CSSValueID::kRevert):
++      return cssvalue::CSSRevertValue::Create();
+     case (CSSValueID::kInvalid):
+       return MakeGarbageCollected<CSSCustomIdentValue>(
+           AtomicString(keyword_value_));
+diff --git a/third_party/blink/renderer/core/css/cssom/style_property_map_test.cc b/third_party/blink/renderer/core/css/cssom/style_property_map_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..25d5c42e78371be196729cc77ab22ec2e753c44f
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/cssom/style_property_map_test.cc
+@@ -0,0 +1,100 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/css/cssom/style_property_map.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
++#include "third_party/blink/renderer/core/css/cssom/inline_style_property_map.h"
++#include "third_party/blink/renderer/core/html/html_element.h"
++#include "third_party/blink/renderer/core/testing/page_test_base.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
++
++namespace blink {
++
++class StylePropertyMapTest : public PageTestBase {};
++
++TEST_F(StylePropertyMapTest, SetRevertWithFeatureEnabled) {
++  ScopedCSSRevertForTest scoped_revert(true);
++
++  DummyExceptionStateForTesting exception_state;
++
++  HeapVector<CSSStyleValueOrString> revert_string;
++  revert_string.push_back(CSSStyleValueOrString::FromString(" revert"));
++
++  HeapVector<CSSStyleValueOrString> revert_style_value;
++  revert_style_value.push_back(CSSStyleValueOrString::FromCSSStyleValue(
++      CSSKeywordValue::Create("revert", exception_state)));
++
++  auto* map =
++      MakeGarbageCollected<InlineStylePropertyMap>(GetDocument().body());
++
++  map->set(GetDocument().ToExecutionContext(), "top", revert_string,
++           exception_state);
++  map->set(GetDocument().ToExecutionContext(), "left", revert_style_value,
++           exception_state);
++
++  CSSStyleValue* top =
++      map->get(GetDocument().ToExecutionContext(), "top", exception_state);
++  CSSStyleValue* left =
++      map->get(GetDocument().ToExecutionContext(), "left", exception_state);
++
++  ASSERT_TRUE(DynamicTo<CSSKeywordValue>(top));
++  EXPECT_EQ(CSSValueID::kRevert,
++            DynamicTo<CSSKeywordValue>(top)->KeywordValueID());
++
++  ASSERT_TRUE(DynamicTo<CSSKeywordValue>(left));
++  EXPECT_EQ(CSSValueID::kRevert,
++            DynamicTo<CSSKeywordValue>(top)->KeywordValueID());
++
++  EXPECT_FALSE(exception_state.HadException());
++}
++
++TEST_F(StylePropertyMapTest, SetRevertWithFeatureDisabled) {
++  ScopedCSSRevertForTest scoped_revert(false);
++
++  HeapVector<CSSStyleValueOrString> revert_string;
++  revert_string.push_back(CSSStyleValueOrString::FromString(" revert"));
++
++  HeapVector<CSSStyleValueOrString> revert_style_value;
++
++  DummyExceptionStateForTesting exception_state;
++  revert_style_value.push_back(CSSStyleValueOrString::FromCSSStyleValue(
++      CSSKeywordValue::Create("revert", exception_state)));
++  EXPECT_FALSE(exception_state.HadException());
++
++  auto* map =
++      MakeGarbageCollected<InlineStylePropertyMap>(GetDocument().body());
++
++  {
++    DummyExceptionStateForTesting exception_state;
++    map->set(GetDocument().ToExecutionContext(), "top", revert_string,
++             exception_state);
++    EXPECT_TRUE(exception_state.HadException());
++  }
++  {
++    DummyExceptionStateForTesting exception_state;
++    map->set(GetDocument().ToExecutionContext(), "left", revert_style_value,
++             exception_state);
++    EXPECT_TRUE(exception_state.HadException());
++  }
++  {
++    DummyExceptionStateForTesting exception_state;
++    map->set(GetDocument().ToExecutionContext(), "--y", revert_style_value,
++             exception_state);
++    EXPECT_TRUE(exception_state.HadException());
++  }
++
++  CSSStyleValue* top =
++      map->get(GetDocument().ToExecutionContext(), "top", exception_state);
++  CSSStyleValue* left =
++      map->get(GetDocument().ToExecutionContext(), "left", exception_state);
++  CSSStyleValue* y =
++      map->get(GetDocument().ToExecutionContext(), "--y", exception_state);
++
++  EXPECT_FALSE(top);
++  EXPECT_FALSE(left);
++  EXPECT_FALSE(y);
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser_fast_paths.cc b/third_party/blink/renderer/core/css/parser/css_parser_fast_paths.cc
+index faf3e61ee94bd147312e95d2d73f94fede43a0fd..ecb7f12166623a70a4eaadb24283697c3844f398 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser_fast_paths.cc
++++ b/third_party/blink/renderer/core/css/parser/css_parser_fast_paths.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/renderer/core/css/css_initial_value.h"
+ #include "third_party/blink/renderer/core/css/css_numeric_literal_value.h"
+ #include "third_party/blink/renderer/core/css/css_primitive_value.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
+ #include "third_party/blink/renderer/core/css/css_unset_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_idioms.h"
+ #include "third_party/blink/renderer/core/css/parser/css_property_parser.h"
+@@ -1107,13 +1108,15 @@ static CSSValue* ParseKeywordValue(CSSPropertyID property_id,
+   DCHECK(!string.IsEmpty());
+ 
+   if (!CSSParserFastPaths::IsKeywordPropertyID(property_id)) {
+-    // All properties accept the values of "initial," "inherit" and "unset".
++    // All properties accept CSS-wide keywords.
+     if (!EqualIgnoringASCIICase(string, "initial") &&
+         !EqualIgnoringASCIICase(string, "inherit") &&
+-        !EqualIgnoringASCIICase(string, "unset"))
++        !EqualIgnoringASCIICase(string, "unset") &&
++        (!RuntimeEnabledFeatures::CSSRevertEnabled() ||
++         !EqualIgnoringASCIICase(string, "revert")))
+       return nullptr;
+ 
+-    // Parse initial/inherit/unset shorthands using the CSSPropertyParser.
++    // Parse CSS-wide keyword shorthands using the CSSPropertyParser.
+     if (shorthandForProperty(property_id).length())
+       return nullptr;
+ 
+@@ -1133,6 +1136,10 @@ static CSSValue* ParseKeywordValue(CSSPropertyID property_id,
+     return CSSInitialValue::Create();
+   if (value_id == CSSValueID::kUnset)
+     return cssvalue::CSSUnsetValue::Create();
++  if (RuntimeEnabledFeatures::CSSRevertEnabled() &&
++      value_id == CSSValueID::kRevert) {
++    return cssvalue::CSSRevertValue::Create();
++  }
+   if (CSSParserFastPaths::IsValidKeywordPropertyAndValue(property_id, value_id,
+                                                          parser_mode))
+     return CSSIdentifierValue::Create(value_id);
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser_fast_paths_test.cc b/third_party/blink/renderer/core/css/parser/css_parser_fast_paths_test.cc
+index 5d01a4424092ec3b018b2b4299d08066aa36031e..a54b79c4d0ff40c110b9853ab86ebb2058cae1f2 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser_fast_paths_test.cc
++++ b/third_party/blink/renderer/core/css/parser/css_parser_fast_paths_test.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/css/css_color_value.h"
+ #include "third_party/blink/renderer/core/css/css_identifier_value.h"
+ #include "third_party/blink/renderer/core/css/css_value_list.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ 
+ namespace blink {
+ 
+@@ -53,6 +54,46 @@ TEST(CSSParserFastPathsTest, ParseCSSWideKeywords) {
+   ASSERT_EQ(nullptr, value);
+ }
+ 
++TEST(CSSParserFastPathsTest, ParseRevert) {
++  // Revert enabled, IsKeywordPropertyID=false
++  {
++    DCHECK(!CSSParserFastPaths::IsKeywordPropertyID(CSSPropertyID::kMarginTop));
++    ScopedCSSRevertForTest scoped_revert(true);
++    CSSValue* value = CSSParserFastPaths::MaybeParseValue(
++        CSSPropertyID::kMarginTop, "revert", kHTMLStandardMode);
++    ASSERT_TRUE(value);
++    EXPECT_TRUE(value->IsRevertValue());
++  }
++
++  // Revert enabled, IsKeywordPropertyID=true
++  {
++    DCHECK(CSSParserFastPaths::IsKeywordPropertyID(CSSPropertyID::kDisplay));
++    ScopedCSSRevertForTest scoped_revert(true);
++    CSSValue* value = CSSParserFastPaths::MaybeParseValue(
++        CSSPropertyID::kDisplay, "revert", kHTMLStandardMode);
++    ASSERT_TRUE(value);
++    EXPECT_TRUE(value->IsRevertValue());
++  }
++
++  // Revert disabled, IsKeywordPropertyID=false
++  {
++    DCHECK(!CSSParserFastPaths::IsKeywordPropertyID(CSSPropertyID::kMarginTop));
++    ScopedCSSRevertForTest scoped_revert(false);
++    CSSValue* value = CSSParserFastPaths::MaybeParseValue(
++        CSSPropertyID::kMarginTop, "revert", kHTMLStandardMode);
++    EXPECT_FALSE(value);
++  }
++
++  // Revert disabled, IsKeywordPropertyID=true
++  {
++    DCHECK(CSSParserFastPaths::IsKeywordPropertyID(CSSPropertyID::kDisplay));
++    ScopedCSSRevertForTest scoped_revert(false);
++    CSSValue* value = CSSParserFastPaths::MaybeParseValue(
++        CSSPropertyID::kDisplay, "revert", kHTMLStandardMode);
++    EXPECT_FALSE(value);
++  }
++}
++
+ TEST(CSSParserFastPathsTest, ParseTransform) {
+   CSSValue* value = CSSParserFastPaths::MaybeParseValue(
+       CSSPropertyID::kTransform, "translate(5.5px, 5px)", kHTMLStandardMode);
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser.cc b/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+index 1365fb4c828db44be0242d385c3d5540c36aec20..b7d3024e9097fd0ebc9140ab8836eb6734fe9f92 100644
+--- a/third_party/blink/renderer/core/css/parser/css_property_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/core/css/css_inherited_value.h"
+ #include "third_party/blink/renderer/core/css/css_initial_value.h"
+ #include "third_party/blink/renderer/core/css/css_pending_substitution_value.h"
++#include "third_party/blink/renderer/core/css/css_revert_value.h"
+ #include "third_party/blink/renderer/core/css/css_unicode_range_value.h"
+ #include "third_party/blink/renderer/core/css/css_unset_value.h"
+ #include "third_party/blink/renderer/core/css/css_variable_reference_value.h"
+@@ -45,6 +46,8 @@ const CSSValue* MaybeConsumeCSSWideKeyword(CSSParserTokenRange& range) {
+     value = CSSInheritedValue::Create();
+   if (id == CSSValueID::kUnset)
+     value = cssvalue::CSSUnsetValue::Create();
++  if (RuntimeEnabledFeatures::CSSRevertEnabled() && id == CSSValueID::kRevert)
++    value = cssvalue::CSSRevertValue::Create();
+ 
+   if (value)
+     range = local_range;
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.cc b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.cc
+index c2034ea64b7c38840603f4fbfc85ce68317d52de..0c58147e017d66406e0fa90cb8aa5b1773079e2d 100644
+--- a/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.cc
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.cc
+@@ -1868,7 +1868,9 @@ CSSValue* ConsumeImage(CSSParserTokenRange& range,
+ bool IsCSSWideKeyword(StringView keyword) {
+   return EqualIgnoringASCIICase(keyword, "initial") ||
+          EqualIgnoringASCIICase(keyword, "inherit") ||
+-         EqualIgnoringASCIICase(keyword, "unset");
++         EqualIgnoringASCIICase(keyword, "unset") ||
++         (RuntimeEnabledFeatures::CSSRevertEnabled() &&
++          EqualIgnoringASCIICase(keyword, "revert"));
+ }
+ 
+ // https://drafts.csswg.org/css-cascade/#default
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.h b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.h
+index 45c628c090a154aa26b6c888eabc663ae69b3f9c..6c4ea21506fb489e5b8c3023d88ec8476d6f3f0b 100644
+--- a/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.h
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers.h
+@@ -150,7 +150,8 @@ CSSValue* ConsumeImageOrNone(CSSParserTokenRange&, const CSSParserContext&);
+ 
+ CSSValue* ConsumeAxis(CSSParserTokenRange&, const CSSParserContext& context);
+ 
+-bool IsCSSWideKeyword(StringView);
++// See also css_parsing_utils::IsCSSWideKeyword.
++CORE_EXPORT bool IsCSSWideKeyword(StringView);
+ bool IsRevertKeyword(StringView);
+ bool IsDefaultKeyword(StringView);
+ 
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser_helpers_test.cc b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2eb068af3687ff40a3b859ec3609dca6e2fd364f
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser_helpers_test.cc
+@@ -0,0 +1,25 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/css/parser/css_property_parser_helpers.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
++#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++
++namespace blink {
++
++TEST(CSSPropertyParserHelpersTest, ParseRevert) {
++  {
++    ScopedCSSRevertForTest scoped_revert(true);
++    EXPECT_TRUE(css_property_parser_helpers::IsCSSWideKeyword("revert"));
++  }
++
++  {
++    ScopedCSSRevertForTest scoped_revert(false);
++    EXPECT_FALSE(css_property_parser_helpers::IsCSSWideKeyword("revert"));
++  }
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser_test.cc b/third_party/blink/renderer/core/css/parser/css_property_parser_test.cc
+index edd37e2658e4b41ad5ef3ece3df6107defe77022..a66b955d4cf4208a0537fa32cc7afba4b5e41c22 100644
+--- a/third_party/blink/renderer/core/css/parser/css_property_parser_test.cc
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser_test.cc
+@@ -725,4 +725,28 @@ TEST(CSSPropertyParserTest, UAInternalLightDarkColorSerialization) {
+             value->CssText());
+ }
+ 
++TEST(CSSPropertyParserTest, ParseRevert) {
++  auto* context = MakeGarbageCollected<CSSParserContext>(
++      kHTMLStandardMode, SecureContextMode::kInsecureContext);
++
++  String string = " revert";
++  CSSTokenizer tokenizer(string);
++  const auto tokens = tokenizer.TokenizeToEOF();
++
++  {
++    ScopedCSSRevertForTest scoped_revert(true);
++    const CSSValue* value = CSSPropertyParser::ParseSingleValue(
++        CSSPropertyID::kMarginLeft, CSSParserTokenRange(tokens), context);
++    ASSERT_TRUE(value);
++    EXPECT_TRUE(value->IsRevertValue());
++  }
++
++  {
++    ScopedCSSRevertForTest scoped_revert(false);
++    const CSSValue* value = CSSPropertyParser::ParseSingleValue(
++        CSSPropertyID::kMarginLeft, CSSParserTokenRange(tokens), context);
++    EXPECT_FALSE(value);
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/parser/css_variable_parser.cc b/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+index 61a8c02418332af8cd3db2dbfab827c5d7652ead..d95059d9595d7224b0dfdc7f78d8a0df1dde3e03 100644
+--- a/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/core/css/css_custom_property_declaration.h"
+ #include "third_party/blink/renderer/core/css/css_variable_reference_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_token_range.h"
++#include "third_party/blink/renderer/core/css/properties/css_parsing_utils.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ 
+ namespace blink {
+@@ -114,9 +115,7 @@ CSSValueID ClassifyVariableRange(CSSParserTokenRange range,
+   range.ConsumeWhitespace();
+   if (range.Peek().GetType() == kIdentToken) {
+     CSSValueID id = range.ConsumeIncludingWhitespace().Id();
+-    if (range.AtEnd() &&
+-        (id == CSSValueID::kInherit || id == CSSValueID::kInitial ||
+-         id == CSSValueID::kUnset))
++    if (range.AtEnd() && css_parsing_utils::IsCSSWideKeyword(id))
+       return id;
+   }
+ 
+diff --git a/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc b/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
+index 4ede24db6b5b475f47507623b9f9ce19c35e0618..c2e3c3a4d82b745d2fa15a7cab411593afaf3fb1 100644
+--- a/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
++++ b/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
+@@ -458,6 +458,13 @@ bool IsContentPositionOrLeftOrRightKeyword(CSSValueID id) {
+   return IsContentPositionKeyword(id) || IsLeftOrRightKeyword(id);
+ }
+ 
++bool IsCSSWideKeyword(CSSValueID id) {
++  return id == CSSValueID::kInherit || id == CSSValueID::kInitial ||
++         id == CSSValueID::kUnset ||
++         (RuntimeEnabledFeatures::CSSRevertEnabled() &&
++          (id == CSSValueID::kRevert));
++}
++
+ CSSValue* ConsumeScrollOffset(CSSParserTokenRange& range,
+                               const CSSParserContext& context) {
+   range.ConsumeWhitespace();
+diff --git a/third_party/blink/renderer/core/css/properties/css_parsing_utils.h b/third_party/blink/renderer/core/css/properties/css_parsing_utils.h
+index 1ffeb8471f02c013cdbdbb4474cc426437040f64..6cf2745204ceb909c7390c656553915bb6da1538 100644
+--- a/third_party/blink/renderer/core/css/properties/css_parsing_utils.h
++++ b/third_party/blink/renderer/core/css/properties/css_parsing_utils.h
+@@ -5,6 +5,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_CSS_PROPERTIES_CSS_PARSING_UTILS_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_CSS_PROPERTIES_CSS_PARSING_UTILS_H_
+ 
++#include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/css/css_numeric_literal_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_mode.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_token_range.h"
+@@ -46,6 +47,7 @@ bool IsSelfPositionKeyword(CSSValueID);
+ bool IsSelfPositionOrLeftOrRightKeyword(CSSValueID);
+ bool IsContentPositionKeyword(CSSValueID);
+ bool IsContentPositionOrLeftOrRightKeyword(CSSValueID);
++CORE_EXPORT bool IsCSSWideKeyword(CSSValueID);
+ 
+ CSSValue* ConsumeScrollOffset(CSSParserTokenRange&, const CSSParserContext&);
+ CSSValue* ConsumeSelfPositionOverflowPosition(CSSParserTokenRange&,
+diff --git a/third_party/blink/renderer/core/css/properties/css_parsing_utils_test.cc b/third_party/blink/renderer/core/css/properties/css_parsing_utils_test.cc
+index 8ac05ca0a7d54527f88da72bd89d612d43a2a3b0..3e768f51ca7be0c57f4f896a410a36bb833f59bb 100644
+--- a/third_party/blink/renderer/core/css/properties/css_parsing_utils_test.cc
++++ b/third_party/blink/renderer/core/css/properties/css_parsing_utils_test.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/core/html/html_html_element.h"
+ #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ 
+ namespace blink {
+ 
+@@ -21,4 +22,16 @@ TEST(CSSParsingUtilsTest, BasicShapeUseCount) {
+   EXPECT_TRUE(document.IsUseCounted(feature));
+ }
+ 
++TEST(CSSParsingUtilsTest, Revert) {
++  {
++    ScopedCSSRevertForTest scoped_revert(true);
++    EXPECT_TRUE(css_parsing_utils::IsCSSWideKeyword(CSSValueID::kRevert));
++  }
++
++  {
++    ScopedCSSRevertForTest scoped_revert(false);
++    EXPECT_FALSE(css_parsing_utils::IsCSSWideKeyword(CSSValueID::kRevert));
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade.cc b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+index 01aaa0118909b6794b9b68a7ed11dbdc008c9204..e1798e2ab4a69531c0fdf0e536274806c694b415 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_cascade.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+@@ -508,6 +508,9 @@ const CSSValue* StyleCascade::Resolve(const CSSProperty& property,
+     return ResolveVariableReference(property, *v, resolver);
+   if (const auto* v = DynamicTo<cssvalue::CSSPendingSubstitutionValue>(value))
+     return ResolvePendingSubstitution(property, *v, resolver);
++  // TODO(andruud): Actually revert instead of treating as unset.
++  if (value.IsRevertValue())
++    return cssvalue::CSSUnsetValue::Create();
+   return &value;
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 502ead1d51bce42da3419f9cc955c8967a576727..206e4fb3e5604b661bccb9987faab1cd86d27273 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -507,6 +507,10 @@
+       name: "CSSReducedFontLoadingInvalidations",
+       status: "test",
+     },
++    {
++      name: "CSSRevert",
++      depends_on: ["CSSCascade"],
++    },
+     {
+       name: "CSSSnapSize",
+       status: "experimental",
