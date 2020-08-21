@@ -73,6 +73,14 @@ namespace {
 
 const char* kRelauncherProcess = "relauncher";
 
+constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
+constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
+constexpr base::StringPiece kElectronEnableStackDumping(
+    "ELECTRON_ENABLE_STACK_DUMPING");
+constexpr base::StringPiece kElectronLogFile("ELECTRON_LOG_FILE");
+constexpr base::StringPiece kElectronLogLevel(
+    "ELECTRON_LOG_LEVEL");  // logging::LogSeverity
+
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
   return process_type.empty();
@@ -111,6 +119,62 @@ void InvalidParameterHandler(const wchar_t*,
   // noop.
 }
 #endif
+
+void InitLogging(base::Environment& env) {
+  logging::LoggingSettings settings;
+#if defined(OS_WIN) && defined(DEBUG)
+  // Print logging to debug.log on Windows
+  base::FilePath log_filename;
+  base::PathService::Get(base::DIR_EXE, &log_filename);
+  static constexpr base::StringPiece debug_log("debug.log");
+  log_filename = log_filename.AppendASCII(debug_log);
+
+  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
+  settings.lock_log = logging::LOCK_LOG_FILE;
+  settings.log_file_path = log_filename.value().c_str();
+  settings.logging_dest = logging::LOG_TO_ALL;
+#else
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
+#endif
+
+  bool logging_requested = false;
+
+  std::string envvar;
+  if (env.GetVar(kElectronLogLevel, &envvar)) {
+    int level;
+    if (base::StringToInt(envvar, &level)) {
+      auto const clamped =
+          base::ClampToRange(level, 0, logging::LOG_NUM_SEVERITIES);
+      logging::SetMinLogLevel(clamped);
+      logging_requested = true;
+    }
+  }
+
+  if (env.GetVar(kElectronLogFile, &envvar)) {
+#if defined(OS_WIN)
+    settings.log_file_path =
+        base::FilePath(base::UTF8ToWide(envvar)).value().c_str();
+#else
+    settings.log_file_path = envvar.c_str();
+#endif
+    settings.logging_dest |= logging::LOG_TO_FILE;
+    logging_requested = true;
+  }
+
+  logging_requested = logging_requested || env.HasVar(kElectronEnableLogging) ||
+                      base::CommandLine::ForCurrentProcess()->HasSwitch(
+                          ::switches::kEnableLogging);
+
+  // don't log unless someone asked for it
+  if (!logging_requested) {
+    settings.logging_dest = logging::LOG_NONE;
+    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+  }
+
+  logging::InitLogging(settings);
+  logging::SetLogItems(true /* pid */, false, true /* timestamp */, false);
+}
 
 }  // namespace
 
@@ -183,7 +247,6 @@ const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-  logging::LoggingSettings settings;
 #if defined(OS_WIN)
   v8_crashpad_support::SetUp();
 
@@ -191,43 +254,18 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // prevent output in the same line as the prompt.
   if (IsBrowserProcess(command_line))
     std::wcout << std::endl;
-#if defined(DEBUG)
-  // Print logging to debug.log on Windows
-  settings.logging_dest = logging::LOG_TO_ALL;
-  base::FilePath log_filename;
-  base::PathService::Get(base::DIR_EXE, &log_filename);
-  log_filename = log_filename.AppendASCII("debug.log");
-  settings.log_file_path = log_filename.value().c_str();
-  settings.lock_log = logging::LOCK_LOG_FILE;
-  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
-#else
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-#endif  // defined(DEBUG)
-#else   // defined(OS_WIN)
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // !defined(OS_WIN)
 
-  // Only enable logging when --enable-logging is specified.
   auto env = base::Environment::Create();
-  if (!command_line->HasSwitch(::switches::kEnableLogging) &&
-      !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
-    settings.logging_dest = logging::LOG_NONE;
-    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
-  }
 
-  logging::InitLogging(settings);
-
-  // Logging with pid and timestamp.
-  logging::SetLogItems(true, false, true, false);
+  InitLogging(*env);
 
   // Enable convient stack printing. This is enabled by default in non-official
   // builds.
-  if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
+  if (env->HasVar(kElectronEnableStackDumping))
     base::debug::EnableInProcessStackDumping();
 
-  if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
+  if (env->HasVar(kElectronDisableSandbox))
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
