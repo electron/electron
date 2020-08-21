@@ -561,8 +561,8 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
   * `pageRanges` Object[]  (optional) - The page range to print.
-    * `from` Number - Index of the first page to print (1-based).
-    * `to` Number - Index of the last page to print (inclusive) (1-based).
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
