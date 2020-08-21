@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Wed, 15 Jul 2020 14:34:17 +0000
+Subject: Don't crash when using 'revert' in var() fallback
+
+CSS-wide keywords should not be allowed here in general, but they
+currently are by Chrome and FF. (And WPT requires this behavior).
+
+It would be easy to make revert-in-fallback actually behave as
+'revert', but I don't want to ship this behavior since the spec doesn't
+currently define how to handle this. So for now I'm just adding a unit
+test that verifies that we don't crash.
+
+Bug: 1105635, 1105782
+Change-Id: Ia8c9100484c3c351f67aada850211a0ff6d2367f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2300079
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Oriol Brufau <obrufau@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#788624}
+
+diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade.cc b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+index 1fc9ecbb274c43cc849479efc3890bb6280d7301..01aaa0118909b6794b9b68a7ed11dbdc008c9204 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_cascade.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_cascade.cc
+@@ -55,6 +55,14 @@ bool ConsumeComma(CSSParserTokenRange& range) {
+   return false;
+ }
+ 
++// TODO(crbug.com/1105782): It is currently unclear how to handle 'revert'
++// at computed-value-time. For now we treat it as 'unset'.
++const CSSValue* TreatRevertAsUnset(const CSSValue* value) {
++  if (value && value->IsRevertValue())
++    return cssvalue::CSSUnsetValue::Create();
++  return value;
++}
++
+ const CSSValue* Parse(const CSSProperty& property,
+                       CSSParserTokenRange range,
+                       const CSSParserContext* context) {
+@@ -554,7 +562,7 @@ const CSSValue* StyleCascade::ResolveVariableReference(
+ 
+   if (ResolveTokensInto(data->Tokens(), resolver, sequence)) {
+     if (const auto* parsed = Parse(property, sequence.TokenRange(), context))
+-      return parsed;
++      return TreatRevertAsUnset(parsed);
+   }
+ 
+   return cssvalue::CSSUnsetValue::Create();
+@@ -617,7 +625,7 @@ const CSSValue* StyleCascade::ResolvePendingSubstitution(
+     const CSSValue* parsed = parsed_properties[i].Value();
+ 
+     if (unvisited_property == &longhand)
+-      return parsed;
++      return TreatRevertAsUnset(parsed);
+   }
+ 
+   NOTREACHED();
+diff --git a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
+index 87269c3ba0d1d3bf42130b8f738d39116bb5b924..167f202403c18174e400c7b02dac69aa0392beeb 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_cascade_test.cc
+@@ -1194,6 +1194,37 @@ TEST_F(StyleCascadeTest, Unset) {
+   EXPECT_EQ("foo", cascade.ComputedValue("--x"));
+ }
+ 
++TEST_F(StyleCascadeTest, CSSWideKeywordsInFallbacks) {
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,initial)");
++    cascade.Add("margin:var(--u,initial)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,inherit)");
++    cascade.Add("margin:var(--u,inherit)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,unset)");
++    cascade.Add("margin:var(--u,unset)");
++    cascade.Apply();
++  }
++  {
++    TestCascade cascade(GetDocument());
++    cascade.Add("display:var(--u,revert)");
++    cascade.Add("margin:var(--u,revert)");
++    cascade.Apply();
++  }
++
++  // TODO(crbug.com/1105782): Specs and WPT are currently in conflict
++  // regarding the correct behavior here. For now this test just verifies
++  // that we don't crash.
++}
++
+ TEST_F(StyleCascadeTest, RegisteredInitial) {
+   RegisterProperty(GetDocument(), "--x", "<length>", "0px", false);
+ 
