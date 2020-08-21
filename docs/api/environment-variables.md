@@ -126,6 +126,17 @@ When Electron reads from an ASAR file, log the read offset and file path to
 the system `tmpdir`. The resulting file can be provided to the ASAR module
 to optimize file ordering.
 
+### `ELECTRON_LOG_FILE`
+
+Print Chrome's internal logging to the specified file.
+When this is set, `ELECTRON_ENABLE_LOGGING` is treated as true.
+
+### `ELECTRON_LOG_LEVEL`
+
+Set the verbosity level for Chrome's internal logging.
+This value should be a number, one of [Chrome's LogSeverities](https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h?q=logging::LogSeverity&ss=chromium).
+When this is set, `ELECTRON_ENABLE_LOGGING` is treated as true.
+
 ### `ELECTRON_ENABLE_STACK_DUMPING`
 
 Prints the stack trace to the console when Electron crashes.
