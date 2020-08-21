@@ -108,10 +108,10 @@ index 22cae5f668236438c9630287cbd5c6280e12d4b2..461243b4ddbcda4a7f1a3fd888b602a0
          native_module->AddCompiledCode(std::move(result)));
    } else {
 diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
-index 50550cf270caf7088c89b6ef200a1ae6a89fd526..d78e86c5cb6bfd4e81befeb45a730f7956a29c0c 100644
+index 905449d63e930828192cf556ffbc5485667d092e..693b14c7da93736a00d961598e2057d985ef4bcb 100644
 --- a/src/wasm/wasm-code-manager.h
 +++ b/src/wasm/wasm-code-manager.h
-@@ -864,7 +864,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+@@ -869,7 +869,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
  //    and even if we did, the resulting set of pages may be fragmented.
  //    Currently, we try and keep the number of syscalls low.
  // -  similar argument for debug time.

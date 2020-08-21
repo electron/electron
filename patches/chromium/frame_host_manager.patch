@@ -42,7 +42,7 @@ index 7f588450c441ed2b17db06afb38075bbfadfc633..e56178401374f3c6a9536056511fb63a
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 49910a3abff47faf259780bacb7d70d30f784b94..687fe98b8825c8dd2d73221dfa67157dff169a47 100644
+index 8e1242b7f6074536472276015f5ec2404f203a05..993dda3947f091e7115abff059e27cacb51c23ca 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1390,6 +1390,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 49910a3abff47faf259780bacb7d70d30f784b94..687fe98b8825c8dd2d73221dfa67157d
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5011,6 +5026,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4967,6 +4982,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 49910a3abff47faf259780bacb7d70d30f784b94..687fe98b8825c8dd2d73221dfa67157d
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5024,10 +5040,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4980,10 +4996,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,10 +91,10 @@ index 49910a3abff47faf259780bacb7d70d30f784b94..687fe98b8825c8dd2d73221dfa67157d
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index e9819cdba4472e2ef2fa0e4f3b7fef737935a90b..3a008eabf466aff0aa0481a638cb2c753e04efa6 100644
+index e8c07036146b0df87613b54a7ab455ad99190fc7..e0b1af16759fcafcc07f6c5a8a56d2d089f667fd 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -130,6 +130,10 @@ class CONTENT_EXPORT NavigationRequest
+@@ -129,6 +129,10 @@ class CONTENT_EXPORT NavigationRequest
      // asynchronous.
      WILL_PROCESS_RESPONSE,
  
@@ -106,10 +106,10 @@ index e9819cdba4472e2ef2fa0e4f3b7fef737935a90b..3a008eabf466aff0aa0481a638cb2c75
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 7f82de5c573c1a9700b9033421f51c67c3f0aa94..311ffb3801c0b7e954593c83059bbfc3705382b1 100644
+index 9cc9423a46cfe41e5356e7af0858164825c1da0f..cacc55d9665b6c1596ed63cb8081101aa70dcbc5 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -2407,6 +2407,16 @@ bool RenderFrameHostManager::InitRenderView(
+@@ -2414,6 +2414,16 @@ bool RenderFrameHostManager::InitRenderView(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -126,7 +126,7 @@ index 7f82de5c573c1a9700b9033421f51c67c3f0aa94..311ffb3801c0b7e954593c83059bbfc3
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2426,10 +2436,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2433,10 +2443,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index 7f82de5c573c1a9700b9033421f51c67c3f0aa94..311ffb3801c0b7e954593c83059bbfc3
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2455,6 +2515,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2470,6 +2530,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -202,10 +202,10 @@ index 7f82de5c573c1a9700b9033421f51c67c3f0aa94..311ffb3801c0b7e954593c83059bbfc3
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 39c47fd3f0327c8fbff46e3b6850880a46c524cf..c14a20d8be360449f17ea406734b43ea8d5570d2 100644
+index 77c847dd23f02bb0c499553beef8b40a7c15fe9d..8ebabc2c2949c4b7606ae297c90d11f6e81a5f69 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -509,6 +509,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
+@@ -533,6 +533,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
    return browsing_instance_->HasSiteInstance(site_info);
  }
  
@@ -217,7 +217,7 @@ index 39c47fd3f0327c8fbff46e3b6850880a46c524cf..c14a20d8be360449f17ea406734b43ea
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index fe917d2bab44cebd71beee2ebc18b9baa5dd363b..0677b73c4b4aa8220af55b68727854596449443a 100644
+index c829688c4d419781cbc9b9811daa1a162a2b61bf..554c69fa189e16df2c307b56ceb81c92afc963e6 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -206,6 +206,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -229,10 +229,10 @@ index fe917d2bab44cebd71beee2ebc18b9baa5dd363b..0677b73c4b4aa8220af55b6872785459
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0e150a89b451e7ae464f1bd5e38c412f58aa8568..187e8bc17e2dfb662c283bacaeda9764c2fdc11e 100644
+index fa615046e1d9bb5ea9411a39915a9ac9c0f5a771..d6529a5ad4baf2c11fb0c4b82b94717cdff1a93c 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -62,6 +62,21 @@
+@@ -63,6 +63,21 @@
  
  namespace content {
  
@@ -255,7 +255,7 @@ index 0e150a89b451e7ae464f1bd5e38c412f58aa8568..187e8bc17e2dfb662c283bacaeda9764
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d80da10d600905214d95ab2065a3260e56296678..750fdde6982eeea287bb99920f171233d9b13c70 100644
+index befa44e4644e5e98dcf9f01c3c7a9a54f6f9239c..3d97303c8b23482788d67684b9feaed41a67cb5e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -249,8 +249,45 @@ class CONTENT_EXPORT ContentBrowserClient {
