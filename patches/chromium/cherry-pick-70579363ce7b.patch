@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Wed, 22 Jul 2020 04:00:16 +0000
+Subject: usb: Prevent iterator invalidation during Promise resolution
+
+This change swaps sets of ScriptPromiseResolvers into local variables in
+a number of places where it was possible for script to execute during
+the call to Resolve() or Reject() and modify the set being iterated
+over, thus invalidating the iterator.
+
+(cherry picked from commit dbc6c3c3652680e287c60b3c6551622748543439)
+
+Bug: 1106773
+Change-Id: Id4eb0cd444a7dbb5de23038ec80f44fee649cfe4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2304538
+Auto-Submit: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: James Hollyer <jameshollyer@chromium.org>
+Reviewed-by: James Hollyer <jameshollyer@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#790217}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2310964
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4183@{#842}
+Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
+
+diff --git a/third_party/blink/renderer/modules/webusb/usb.cc b/third_party/blink/renderer/modules/webusb/usb.cc
+index 2585c1b6cd2a2a780e388b6720493e317bed8c81..03199acc96d716623d2dfc0f3483cba9552f98b0 100644
+--- a/third_party/blink/renderer/modules/webusb/usb.cc
++++ b/third_party/blink/renderer/modules/webusb/usb.cc
+@@ -264,15 +264,22 @@ void USB::OnDeviceRemoved(UsbDeviceInfoPtr device_info) {
+ void USB::OnServiceConnectionError() {
+   service_.reset();
+   client_receiver_.reset();
+-  for (ScriptPromiseResolver* resolver : get_devices_requests_)
++
++  // Move the set to a local variable to prevent script execution in Resolve()
++  // from invalidating the iterator used by the loop.
++  HeapHashSet<Member<ScriptPromiseResolver>> get_devices_requests;
++  get_devices_requests.swap(get_devices_requests_);
++  for (auto& resolver : get_devices_requests)
+     resolver->Resolve(HeapVector<Member<USBDevice>>(0));
+-  get_devices_requests_.clear();
+ 
+-  for (ScriptPromiseResolver* resolver : get_permission_requests_) {
++  // Move the set to a local variable to prevent script execution in Reject()
++  // from invalidating the iterator used by the loop.
++  HeapHashSet<Member<ScriptPromiseResolver>> get_permission_requests;
++  get_permission_requests.swap(get_permission_requests_);
++  for (auto& resolver : get_permission_requests) {
+     resolver->Reject(MakeGarbageCollected<DOMException>(
+         DOMExceptionCode::kNotFoundError, kNoDeviceSelected));
+   }
+-  get_permission_requests_.clear();
+ }
+ 
+ void USB::AddedEventListener(const AtomicString& event_type,
+diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
+index 35f15124fafdfca38ba19d8e29d3cc7d68bae485..ea6191bd8410e67ec0fff439d4d2fbafaf648577 100644
+--- a/third_party/blink/renderer/modules/webusb/usb_device.cc
++++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
+@@ -1015,11 +1015,15 @@ void USBDevice::AsyncReset(ScriptPromiseResolver* resolver, bool success) {
+ void USBDevice::OnConnectionError() {
+   device_.reset();
+   opened_ = false;
+-  for (ScriptPromiseResolver* resolver : device_requests_) {
++
++  // Move the set to a local variable to prevent script execution in Reject()
++  // from invalidating the iterator used by the loop.
++  HeapHashSet<Member<ScriptPromiseResolver>> device_requests;
++  device_requests.swap(device_requests_);
++  for (auto& resolver : device_requests) {
+     resolver->Reject(MakeGarbageCollected<DOMException>(
+         DOMExceptionCode::kNotFoundError, kDeviceDisconnected));
+   }
+-  device_requests_.clear();
+ }
+ 
+ bool USBDevice::MarkRequestComplete(ScriptPromiseResolver* resolver) {
