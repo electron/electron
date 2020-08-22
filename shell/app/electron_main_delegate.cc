@@ -142,9 +142,9 @@ void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
 #endif
 
   // '--log-level' switch and 'ELECTRON_LOG_LEVEL' env
-  std::string arg;
-  if (!env->GetVar(kLogLevelEnv, &arg)) {
-    arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
+  std::string arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
+  if (arg.empty()) {
+    env->GetVar(kLogLevelEnv, &arg);
   }
   if (!arg.empty()) {
     int level;
@@ -157,15 +157,13 @@ void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
   }
 
   // '--log-file' switch and 'ELECTRON_LOG_FILE' env
-  base::FilePath path;
-  if (env->GetVar(kLogFileEnv, &arg)) {
+  base::FilePath path = cmd->GetSwitchValuePath(::switches::kLogFile);
+  if (path.empty() && env->GetVar(kLogFileEnv, &arg)) {
 #if defined(OS_WIN)
     path = base::FilePath(base::UTF8ToWide(arg));
 #else
     path = base::FilePath(arg);
 #endif
-  } else {
-    path = cmd->GetSwitchValuePath(::switches::kLogFile);
   }
   if (!path.empty()) {
     settings.log_file_path = path.value().c_str();
