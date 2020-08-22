@@ -12,6 +12,7 @@
 #include <glib.h>  // for g_setenv()
 #endif
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
@@ -77,9 +78,11 @@ constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
-constexpr base::StringPiece kElectronLogFile("ELECTRON_LOG_FILE");
-constexpr base::StringPiece kElectronLogLevel(
+
+constexpr base::StringPiece kLogFileEnv("ELECTRON_LOG_FILE");
+constexpr base::StringPiece kLogLevelEnv(
     "ELECTRON_LOG_LEVEL");  // logging::LogSeverity
+constexpr base::StringPiece kLogLevelSwitch("log-level");
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
@@ -120,8 +123,10 @@ void InvalidParameterHandler(const wchar_t*,
 }
 #endif
 
-void InitLogging(base::Environment* env) {
+void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
   logging::LoggingSettings settings;
+  bool logging_requested = false;
+
 #if defined(OS_WIN) && defined(DEBUG)
   // Print logging to debug.log on Windows
   base::FilePath log_filename;
@@ -133,17 +138,17 @@ void InitLogging(base::Environment* env) {
   settings.lock_log = logging::LOCK_LOG_FILE;
   settings.log_file_path = log_filename.value().c_str();
   settings.logging_dest = logging::LOG_TO_ALL;
-#else
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
+  logging_requested = true;
 #endif
 
-  bool logging_requested = false;
-
-  std::string envvar;
-  if (env->GetVar(kElectronLogLevel, &envvar)) {
+  // '-v' switch and 'ELECTRON_LOG_LEVEL' env
+  std::string arg;
+  if (!env->GetVar(kLogLevelEnv, &arg)) {
+    arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
+  }
+  if (!arg.empty()) {
     int level;
-    if (base::StringToInt(envvar, &level)) {
+    if (base::StringToInt(arg, &level)) {
       auto const clamped =
           base::ClampToRange(level, 0, logging::LOG_NUM_SEVERITIES);
       logging::SetMinLogLevel(clamped);
@@ -151,26 +156,31 @@ void InitLogging(base::Environment* env) {
     }
   }
 
-  if (env->GetVar(kElectronLogFile, &envvar)) {
+  // '--log-file' switch and 'ELECTRON_LOG_FILE' env
+  base::FilePath path;
+  if (env->GetVar(kLogFileEnv, &arg)) {
 #if defined(OS_WIN)
-    settings.log_file_path =
-        base::FilePath(base::UTF8ToWide(envvar)).value().c_str();
+    path = base::FilePath(base::UTF8ToWide(arg));
 #else
-    settings.log_file_path = envvar.c_str();
+    path = base::FilePath(arg);
 #endif
+  } else {
+    path = cmd->GetSwitchValuePath(::switches::kLogFile);
+  }
+  if (!path.empty()) {
+    settings.log_file_path = path.value().c_str();
     settings.logging_dest |= logging::LOG_TO_FILE;
     logging_requested = true;
   }
 
   logging_requested = logging_requested ||
                       env->HasVar(kElectronEnableLogging) ||
-                      base::CommandLine::ForCurrentProcess()->HasSwitch(
-                          ::switches::kEnableLogging);
+                      cmd->HasSwitch(::switches::kEnableLogging);
 
   // don't log unless someone asked for it
   if (!logging_requested) {
-    settings.logging_dest = logging::LOG_NONE;
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+    settings.logging_dest = logging::LOG_NONE;
   }
 
   logging::InitLogging(settings);
@@ -259,7 +269,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   auto env = base::Environment::Create();
 
-  InitLogging(env.get());
+  InitLogging(env.get(), command_line);
 
   // Enable convient stack printing. This is enabled by default in non-official
   // builds.
