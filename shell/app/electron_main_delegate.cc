@@ -120,7 +120,7 @@ void InvalidParameterHandler(const wchar_t*,
 }
 #endif
 
-void InitLogging(base::Environment& env) {
+void InitLogging(base::Environment* env) {
   logging::LoggingSettings settings;
 #if defined(OS_WIN) && defined(DEBUG)
   // Print logging to debug.log on Windows
@@ -141,7 +141,7 @@ void InitLogging(base::Environment& env) {
   bool logging_requested = false;
 
   std::string envvar;
-  if (env.GetVar(kElectronLogLevel, &envvar)) {
+  if (env->GetVar(kElectronLogLevel, &envvar)) {
     int level;
     if (base::StringToInt(envvar, &level)) {
       auto const clamped =
@@ -151,7 +151,7 @@ void InitLogging(base::Environment& env) {
     }
   }
 
-  if (env.GetVar(kElectronLogFile, &envvar)) {
+  if (env->GetVar(kElectronLogFile, &envvar)) {
 #if defined(OS_WIN)
     settings.log_file_path =
         base::FilePath(base::UTF8ToWide(envvar)).value().c_str();
@@ -162,7 +162,8 @@ void InitLogging(base::Environment& env) {
     logging_requested = true;
   }
 
-  logging_requested = logging_requested || env.HasVar(kElectronEnableLogging) ||
+  logging_requested = logging_requested ||
+                      env->HasVar(kElectronEnableLogging) ||
                       base::CommandLine::ForCurrentProcess()->HasSwitch(
                           ::switches::kEnableLogging);
 
@@ -258,7 +259,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   auto env = base::Environment::Create();
 
-  InitLogging(*env);
+  InitLogging(env.get());
 
   // Enable convient stack printing. This is enabled by default in non-official
   // builds.
