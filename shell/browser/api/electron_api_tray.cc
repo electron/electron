@@ -227,13 +227,16 @@ void Tray::SetTitle(gin_helper::ErrorThrower thrower,
           title_options.font_type != "monospacedDigit") {
         thrower.ThrowError(
             "fontType must be one of 'monospaced' or 'monospacedDigit'");
+        return;
       }
     } else if (options->Has("fontType")) {
       thrower.ThrowError(
           "fontType must be one of 'monospaced' or 'monospacedDigit'");
+      return;
     }
   } else if (args->Length() >= 2) {
     thrower.ThrowError("setTitle options must be an object");
+    return;
   }
 
   tray_icon_->SetTitle(title, title_options);
