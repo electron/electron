@@ -187,7 +187,7 @@ describe('tray module', () => {
 
     it('throws on invalid font types', () => {
       expect(() => {
-        tray.setTitle('Hello World!', { fontType: 'blep' });
+        tray.setTitle('Hello World!', { fontType: 'blep' as any });
       }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
     });
   });

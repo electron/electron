@@ -221,7 +221,7 @@ Sets the hover text for this tray icon.
 
 * `title` String
 * `options` Object (optional)
-  * `fontType` String (optional) - The font family variant to display, one of `monospaced` (available in macOS 10.15+) or `monospacedDigit` (available in macOS 10.11+). When left blank, the title uses the default system font.
+  * `fontType` String (optional) - The font family variant to display, can be `monospaced` or `monospacedDigit`. `monospaced` is available in macOS 10.15+ and `monospacedDigit` is available in macOS 10.11+.  When left blank, the title uses the default system font.
 
 Sets the title displayed next to the tray icon in the status bar (Support ANSI colors).
 
