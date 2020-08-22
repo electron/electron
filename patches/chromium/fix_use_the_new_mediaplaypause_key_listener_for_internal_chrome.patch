@@ -70,7 +70,7 @@ index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca8871
    }
  }
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 22fd524ae2996108fefdc3bb55a0f2b366310aa9..047fdce0bb57f1d78963200f907df147e174b978 100644
+index 28dc8c8451940b18e74384aad10d4d9e886b31a3..f9e1854ed72cc5a9f2431df066eb72f5242569f1 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -177,8 +177,14 @@ void MediaKeysListenerManagerImpl::EnsureMediaKeysListener() {
