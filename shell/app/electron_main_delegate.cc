@@ -141,7 +141,7 @@ void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
   logging_requested = true;
 #endif
 
-  // '-v' switch and 'ELECTRON_LOG_LEVEL' env
+  // '--log-level' switch and 'ELECTRON_LOG_LEVEL' env
   std::string arg;
   if (!env->GetVar(kLogLevelEnv, &arg)) {
     arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
