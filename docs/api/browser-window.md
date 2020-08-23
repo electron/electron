@@ -207,7 +207,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
-    some GTK desktop environments. Default is [`nativeTheme.shouldUseDarkColors`](native-theme.md).
+    some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md#transparent-window).
     Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` String (optional) - The type of window, default is normal window. See more about
@@ -1669,9 +1669,12 @@ Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
 
 Returns `Boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible)`
+#### `win.setVisibleOnAllWorkspaces(visible[, options])`
 
 * `visible` Boolean
+* `options` Object (optional)
+  * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
+    the window should be visible above fullscreen windows
 
 Sets whether the window should be visible on all workspaces.
 

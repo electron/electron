@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "11.0.0-nightly.20200817",
+  "version": "11.0.0-nightly.20200822",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -137,7 +137,6 @@
     ]
   },
   "dependencies": {
-    "@types/temp": "^0.8.34",
-    "aws-sdk": "^2.727.1"
+    "@types/temp": "^0.8.34"
   }
 }

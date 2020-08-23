@@ -684,6 +684,13 @@ v8::Local<v8::Promise> Session::LoadExtension(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<const extensions::Extension*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!extension_path.IsAbsolute()) {
+    promise.RejectWithErrorMessage(
+        "The path to the extension in 'loadExtension' must be absolute");
+    return handle;
+  }
+
   if (browser_context()->IsOffTheRecord()) {
     promise.RejectWithErrorMessage(
         "Extensions cannot be loaded in a temporary session");

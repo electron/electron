@@ -185,7 +185,8 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen = false) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
@@ -232,6 +233,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
   virtual void CloseFilePreview();
+
+  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) = 0;
 
   // Converts between content bounds and window bounds.
   virtual gfx::Rect ContentBoundsToWindowBounds(

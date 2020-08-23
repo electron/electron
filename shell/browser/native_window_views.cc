@@ -34,7 +34,6 @@
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
-#include "ui/native_theme/native_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -215,10 +214,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
-  bool use_dark_theme =
-      ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-  options.Get(options::kDarkTheme, &use_dark_theme);
-  SetGTKDarkThemeEnabled(use_dark_theme);
+  bool use_dark_theme = false;
+  if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
+    SetGTKDarkThemeEnabled(use_dark_theme);
+  }
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
@@ -326,6 +325,20 @@ NativeWindowViews::~NativeWindowViews() {
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
+#endif
+}
+
+void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+#if defined(USE_X11)
+  if (use_dark_theme) {
+    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                          gfx::GetAtom("_GTK_THEME_VARIANT"),
+                          gfx::GetAtom("UTF8_STRING"), "dark");
+  } else {
+    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                          gfx::GetAtom("_GTK_THEME_VARIANT"),
+                          gfx::GetAtom("UTF8_STRING"), "light");
+  }
 #endif
 }
 
@@ -1154,7 +1167,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
-void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
+                                                  bool visibleOnFullScreen) {
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
@@ -1287,20 +1301,6 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
       GetAcceleratedWidget());
   tree_host->SetWindowIcons(icon, {});
-}
-#endif
-
-#if defined(USE_X11)
-void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-  if (use_dark_theme) {
-    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                          gfx::GetAtom("_GTK_THEME_VARIANT"),
-                          gfx::GetAtom("UTF8_STRING"), "dark");
-  } else {
-    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                          gfx::GetAtom("_GTK_THEME_VARIANT"),
-                          gfx::GetAtom("UTF8_STRING"), "light");
-  }
 }
 #endif
 

@@ -90,7 +90,7 @@ index 977ad787270844b218a87fbe04fea616619e84ba..592fe4459cdae22d23a933a31c452c44
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..2cdfd7cec04c979aa8ca77273f9816495cdf147a 100644
+index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..33f48f473efd04e165ec7b9a8738b8d7c18a6adc 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -249,6 +249,9 @@ index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..2cdfd7cec04c979aa8ca77273f981649
    printing_rfh_ = nullptr;
  
 +  if (!callback_.is_null()) {
++    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                  content::NotificationService::AllSources());
++
 +    std::string cb_str = "";
 +    if (!printing_succeeded_)
 +      cb_str = printing_cancelled_ ? "cancelled" : "failed";
@@ -263,9 +266,6 @@ index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..2cdfd7cec04c979aa8ca77273f981649
  
 -  registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
 -                    content::Source<PrintJob>(print_job_.get()));
-+  if (!callback_.is_null())
-+    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
-+                      content::NotificationService::AllSources());
    // Don't close the worker thread.
    print_job_ = nullptr;
  }

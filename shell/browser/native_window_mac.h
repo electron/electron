@@ -118,7 +118,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
 
-  void SetVisibleOnAllWorkspaces(bool visible) override;
+  void SetVisibleOnAllWorkspaces(bool visible,
+                                 bool visibleOnFullScreen) override;
   bool IsVisibleOnAllWorkspaces() override;
 
   void SetAutoHideCursor(bool auto_hide) override;
@@ -137,6 +138,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
       std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
+  void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
