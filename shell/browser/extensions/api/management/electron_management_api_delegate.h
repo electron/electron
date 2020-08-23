@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_EXTENSIONS_API_MANAGEMENT_ELECTRON_MANAGEMENT_API_DELEGATE_H_
 
 #include <memory>
+#include <string>
 
 #include "base/task/cancelable_task_tracker.h"
 #include "extensions/browser/api/management/management_api_delegate.h"
@@ -82,5 +83,4 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
                   bool grayscale) const override;
 };
 
-#endif
-// SHELL_BROWSER_EXTENSIONS_API_MANAGEMENT_ELECTRON_MANAGEMENT_API_DELEGATE_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_API_MANAGEMENT_ELECTRON_MANAGEMENT_API_DELEGATE_H_
