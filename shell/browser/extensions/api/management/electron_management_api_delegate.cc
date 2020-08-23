@@ -18,7 +18,6 @@
 #include "chrome/common/extensions/manifest_handlers/app_launch_info.h"
 #include "chrome/common/web_application_info.h"
 #include "chrome/common/webui_url_constants.h"
-#include "components/favicon/core/favicon_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/web_contents.h"
 #include "extensions/browser/api/management/management_api.h"
