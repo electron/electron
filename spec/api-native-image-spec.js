@@ -515,6 +515,32 @@ describe('nativeImage module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    it('throws when invalid size is passed', async () => {
+      const badSize = { width: -1, height: -1 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath('path', badSize)
+      ).to.eventually.be.rejectedWith('size must not be empty');
+    });
+
+    it('throws when a bad path is passed', async () => {
+      const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejected();
+    });
+
+    it('returns native image given valid params', async () => {
+      const goodPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
+  });
+
   describe('addRepresentation()', () => {
     it('does not add representation when the buffer is too small', () => {
       const image = nativeImage.createEmpty();
