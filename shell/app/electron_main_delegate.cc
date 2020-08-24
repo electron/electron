@@ -127,20 +127,6 @@ void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
   logging::LoggingSettings settings;
   bool logging_requested = false;
 
-#if defined(OS_WIN) && defined(DEBUG)
-  // Print logging to debug.log on Windows
-  base::FilePath log_filename;
-  base::PathService::Get(base::DIR_EXE, &log_filename);
-  static constexpr base::StringPiece debug_log("debug.log");
-  log_filename = log_filename.AppendASCII(debug_log);
-
-  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
-  settings.lock_log = logging::LOCK_LOG_FILE;
-  settings.log_file_path = log_filename.value().c_str();
-  settings.logging_dest = logging::LOG_TO_ALL;
-  logging_requested = true;
-#endif
-
   // '--log-level' switch and 'ELECTRON_LOG_LEVEL' env
   std::string arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
   if (arg.empty()) {
