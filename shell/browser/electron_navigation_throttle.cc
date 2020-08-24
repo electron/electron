@@ -28,10 +28,10 @@ ElectronNavigationThrottle::WillStartRequest() {
     return PROCEED;
   }
 
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope scope(isolate);
-  api::WebContents* api_contents = api::WebContents::From(contents);
-  if (!api_contents) {
+  auto api_contents = electron::api::WebContents::From(isolate, contents);
+  if (api_contents.IsEmpty()) {
     // No need to emit any event if the WebContents is not available in JS.
     return PROCEED;
   }
