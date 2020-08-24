@@ -165,13 +165,13 @@ if (nodeIntegration) {
   // non context-isolated environment
   if (!contextIsolation) {
     process.once('loaded', function () {
-      delete global.process;
-      delete global.Buffer;
-      delete global.setImmediate;
-      delete global.clearImmediate;
-      delete global.global;
-      delete global.root;
-      delete global.GLOBAL;
+      delete (global as any).process;
+      delete (global as any).Buffer;
+      delete (global as any).setImmediate;
+      delete (global as any).clearImmediate;
+      delete (global as any).global;
+      delete (global as any).root;
+      delete (global as any).GLOBAL;
     });
   }
 }
