@@ -94,6 +94,25 @@ bool MoveItemToTrash(gin::Arguments* args) {
   return platform_util::MoveItemToTrash(full_path, delete_on_fail);
 }
 
+v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
+                                 const base::FilePath& path) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  platform_util::TrashItem(
+      path, base::BindOnce(
+                [](gin_helper::Promise<void> promise, bool success,
+                   const std::string& error) {
+                  if (success) {
+                    promise.Resolve();
+                  } else {
+                    promise.RejectWithErrorMessage(error);
+                  }
+                },
+                std::move(promise)));
+  return handle;
+}
+
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
@@ -158,6 +177,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
+  dict.SetMethod("trashItem", &TrashItem);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);

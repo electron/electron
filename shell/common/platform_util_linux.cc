@@ -12,6 +12,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "shell/common/platform_util_internal.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
 
@@ -135,6 +136,19 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
 
   return XDGUtil(argv, true, platform_util::OpenCallback());
 }
+
+namespace internal {
+
+bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
+  if (!MoveItemToTrash(full_path, false)) {
+    // TODO: at least include the exit code?
+    *error = "Failed to move item to trash";
+    return false;
+  }
+  return true;
+}
+
+}  // namespace internal
 
 void Beep() {
   // echo '\a' > /dev/console
