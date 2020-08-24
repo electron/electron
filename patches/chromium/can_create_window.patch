@@ -21,10 +21,10 @@ index 0e54861c260ecfa1635ee56c1c9e931914afe901..948e3e5cf64f74ae560c64d0490c22a8
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c8ba444365d3391056ff58c0e513bb0ad0a5f9b6..4b72590b9ae6994ca6fd2e56d46b3b5c5178aeb6 100644
+index 1db46cd9bee49617a045753340d35e0e74ebf1ed..b62a639e51886ddc500d7aa78aa2f9c2efc75514 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3087,9 +3087,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3091,9 +3091,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
