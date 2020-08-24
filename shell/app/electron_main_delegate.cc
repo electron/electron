@@ -125,6 +125,7 @@ void InvalidParameterHandler(const wchar_t*,
 
 void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
   logging::LoggingSettings settings;
+  settings.logging_dest = logging::LOG_NONE;
   bool logging_requested = false;
 
   // '--log-level' switch and 'ELECTRON_LOG_LEVEL' env
@@ -161,10 +162,11 @@ void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
                       env->HasVar(kElectronEnableLogging) ||
                       cmd->HasSwitch(::switches::kEnableLogging);
 
-  // don't log unless someone asked for it
-  if (!logging_requested) {
+  if (logging_requested) {
+    settings.logging_dest |=
+        logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
+  } else {
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
-    settings.logging_dest = logging::LOG_NONE;
   }
 
   logging::InitLogging(settings);
