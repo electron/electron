@@ -30,7 +30,7 @@ index b11e574d6fcfada1eb31c924c016fd81f395b885..4a7c10ffc498347d4c8b3394e863e29f
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b206e63bcafdbae948802b465952f48e5291010c..ada60ed3c67f694e4d3c82c7beb596009f610fa4 100644
+index 07a4e3b5bdd387301c5c4927aba42d0d670a7fb0..609631cafc4c1a06493722df8ff6f938bcd28eb5 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1713,6 +1713,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
@@ -43,10 +43,10 @@ index b206e63bcafdbae948802b465952f48e5291010c..ada60ed3c67f694e4d3c82c7beb59600
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e718ce245b0875f0b3c3b2e8540da545e7343c27..242d22bb51d8077acb143995cd60e4eb7da3330d 100644
+index 91807b814d87e4ecc85ac5ded31f17039c896eca..5a8aea92c0e86cf141dc62cfb5e4cf8c49eda21c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3954,6 +3954,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -3965,6 +3965,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -60,10 +60,10 @@ index e718ce245b0875f0b3c3b2e8540da545e7343c27..242d22bb51d8077acb143995cd60e4eb
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index f501ce8263e509cbd97ada714b17f2de9ca30ee0..8fc2f3cfa55fcf927f0f65d39189a1b65ee1b8ad 100644
+index c6e5a85f08cce0e5d39cf6e4252e7e2fa2678fcf..3f4f1c0cbbd7cd91cdf2a23ee817a14de7404eed 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -936,6 +936,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -937,6 +937,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;

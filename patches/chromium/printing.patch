@@ -90,7 +90,7 @@ index 17788cb2b506bbf04d8d5fe533e4374fddd8b9d2..a935d79806c3281fd7e75617fd226d84
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..33f48f473efd04e165ec7b9a8738b8d7c18a6adc 100644
+index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..ebf4f579f1abffe3528fe3f608fa661fad9776f8 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -279,7 +279,7 @@ index 2917e93c3f22b3bcbe683c2b944c7af25e66f950..33f48f473efd04e165ec7b9a8738b8d7
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 9ad03ae28904050d540661038f6ba15b7a5c5c54..6d1c4f338dde79abddbaf3ad55500c4e7e8767ec 100644
+index 3bc7512929535660ea7522cd1387c305de66b64e..50e7ecbc0335dfdd9b82c9cb5222d11a1204accc 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -34,6 +34,8 @@ class PrintJob;
@@ -320,18 +320,18 @@ index 9ad03ae28904050d540661038f6ba15b7a5c5c54..6d1c4f338dde79abddbaf3ad55500c4e
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c514090a6 100644
+index f7754394876d0d5a2613ed9bfd75a0ff220a7c42..1f8150f7c65a3d3ef51144a6589c9f78334564d1 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
-@@ -21,6 +21,7 @@
- #include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
+@@ -22,6 +22,7 @@
  #include "components/printing/browser/print_manager_utils.h"
+ #include "components/printing/common/print.mojom.h"
  #include "components/printing/common/print_messages.h"
 +#include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
-@@ -90,19 +91,22 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
+@@ -91,19 +92,22 @@ void PrintingMessageFilter::SetDelegateForTesting(TestDelegate* delegate) {
    g_test_delegate = delegate;
  }
  
@@ -357,7 +357,7 @@ index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c
  }
  
  PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -137,11 +141,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -138,11 +142,13 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
  
  void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -371,7 +371,7 @@ index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c
    std::unique_ptr<PrinterQuery> printer_query = queue_->PopPrinterQuery(0);
    if (!printer_query) {
      printer_query =
-@@ -225,12 +231,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
+@@ -226,12 +232,13 @@ void PrintingMessageFilter::OnScriptedPrintReply(
  void PrintingMessageFilter::OnUpdatePrintSettings(int document_cookie,
                                                    base::Value job_settings,
                                                    IPC::Message* reply_msg) {
@@ -386,7 +386,7 @@ index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c
    if (!job_settings.is_dict() ||
        !job_settings.FindIntKey(kSettingPrinterType)) {
      // Reply with null query.
-@@ -263,7 +270,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -264,7 +271,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      std::unique_ptr<PrinterQuery> printer_query,
      IPC::Message* reply_msg) {
    PrintMsg_PrintPages_Params params;
@@ -397,7 +397,7 @@ index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c
      params.Reset();
    } else {
      RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
-@@ -301,7 +310,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
+@@ -302,7 +311,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
  void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
                                               bool* cancel) {
@@ -407,11 +407,11 @@ index 64569c4c89b1e034a19b85bb3f6443d3ab76fcd8..164368028a6f3cf14ed6199e0f69717c
  #endif
  
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index adb4ff6ece476a99ae12d9e3ecfb78931c04c81e..894148c8847b333be8636907e85476dcd46862e2 100644
+index 478183cd3e5c2022ad3f484daf2f56b16f091203..951cedc75abb1e4a1e6da1a1371ba42a0ecd698c 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
-@@ -24,6 +24,10 @@ struct PrintHostMsg_PreviewIds;
- struct PrintHostMsg_ScriptedPrint_Params;
+@@ -23,6 +23,10 @@
+ struct PrintHostMsg_PreviewIds;
  class Profile;
  
 +namespace content {
@@ -421,7 +421,7 @@ index adb4ff6ece476a99ae12d9e3ecfb78931c04c81e..894148c8847b333be8636907e85476dc
  namespace printing {
  
  class PrintQueriesQueue;
-@@ -44,7 +48,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
+@@ -43,7 +47,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
  
    static void SetDelegateForTesting(TestDelegate* delegate);
  
@@ -432,10 +432,10 @@ index adb4ff6ece476a99ae12d9e3ecfb78931c04c81e..894148c8847b333be8636907e85476dc
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 83d1a0692855bb5cc382333722ea7beb87d7f466..2840f00fdb456a5261d7d2ba9516f052df38cd1b 100644
+index c5f86c7133b4d4a5a57f0cef497b5fcaa306cbef..edeac930306f413e412f34233167a594b17bb67a 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -197,7 +197,7 @@ interface PrintPreviewUI {
+@@ -209,7 +209,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -445,7 +445,7 @@ index 83d1a0692855bb5cc382333722ea7beb87d7f466..2840f00fdb456a5261d7d2ba9516f052
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a199781bf3985b8b4646b68918249b54d5582969..9792cfb6a4b36b434885f308c91f320c7ae569e2 100644
+index e17d88e0e10aefb1005f0a0f4c7d89b8358cf385..34fe3260e390768612f5bfd6786e5c2233a2811b 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@

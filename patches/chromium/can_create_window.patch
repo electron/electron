@@ -21,10 +21,10 @@ index 5b2ce6aaeb218f3c1b7baaa9e1bbbeeec7bb135c..fe566cacd59659d2264e929469f36003
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 35e641a05b46ca43a6e4d6f7dcacbbcd6f18f8ae..28cea0c9a10091ac3e374164a2766504a57f4bf0 100644
+index 0a3af0646bde445a8b3bb32097d7225a91fcacfe..6b4ecc7c551dae3f7db56afd3ca61bc4c8298511 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3424,9 +3424,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3431,9 +3431,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -53,7 +53,7 @@ index c969ed9b17b915f713d9b82114c7b637c8fd90df..9530a1936b0a801a4c6152dd53ec5105
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e112645811cb6ccf0bfb8ab463174cb240a4d5f6..fa615046e1d9bb5ea9411a39915a9ac9c0f5a771 100644
+index c3dd4fceb5a00eaa573d3af785d0063a1bb27ba6..1733b3d2605e52a33893a38178ad8ed273e3582f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -544,6 +544,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -66,7 +66,7 @@ index e112645811cb6ccf0bfb8ab463174cb240a4d5f6..fa615046e1d9bb5ea9411a39915a9ac9
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 428ec871deba7faa1aee05e9e4ab58814c8cff66..befa44e4644e5e98dcf9f01c3c7a9a54f6f9239c 100644
+index 4c27c7fb2092b9ec0b44f943bb556aba59026732..a52b4dc85db8cb95b67652b43f329ea5b971b7dd 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -149,6 +149,7 @@ class NetworkService;
