@@ -8,18 +8,18 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index b11e574d6fcfada1eb31c924c016fd81f395b885..4a7c10ffc498347d4c8b3394e863e29ff5319894 100644
+index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b741919560649f64b531 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -15,6 +15,7 @@
+@@ -14,6 +14,7 @@
+ #include "build/build_config.h"
  #include "components/viz/common/vertical_scroll_direction.h"
- #include "content/browser/renderer_host/input_event_shim.h"
  #include "content/common/content_export.h"
 +#include "content/common/cursors/webcursor.h"
  #include "content/common/drag_event_source_info.h"
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
-@@ -282,6 +283,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -281,6 +282,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Allow the delegate to handle the cursor update. Returns true if handled.
    virtual bool OnUpdateDragCursor();
  

@@ -229,7 +229,7 @@ index b70ed75a6500776fedcf75b5bce1f5e044664b4f..3d581373ff0251d8dbe6c09ecfc170c3
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 1733b3d2605e52a33893a38178ad8ed273e3582f..78bddbcedd4455481d8500328fed123d110d9031 100644
+index 593aaa7d7c9a170b2961a8d2c245c81fe138bd0f..31ad15e7e35d66129f47454b1e189d3d408faf6d 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@
@@ -255,10 +255,10 @@ index 1733b3d2605e52a33893a38178ad8ed273e3582f..78bddbcedd4455481d8500328fed123d
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a52b4dc85db8cb95b67652b43f329ea5b971b7dd..602d59e298f5f6b4dc8ea5a5c73764cf31446093 100644
+index 203ae3449f4547d9ba304f8aebb66becbe70d79d..929c0873542b8eaeb2e3e05079e43cf7a3bd2fb9 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -249,8 +249,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -250,8 +250,45 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteAllowedCallback =
        base::OnceCallback<void(ClipboardPasteAllowed)>;
  

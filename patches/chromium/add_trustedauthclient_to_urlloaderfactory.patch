@@ -49,10 +49,10 @@ index 113006d65c011bacd856c471d93dbff71254f034..d9e327e72ddf86f79387fa3c003e5637
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 18a71fc45dec0afb895fad4a76759348143dc790..a10644f8eddc48b6a67e14db24ad226b0fb6427f 100644
+index d1de1a9e59afc1fc28a622db6ab45c83729699a7..8d4b903aa5f2ff471bc67b9fb2e577ac74fd817b 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -478,6 +478,7 @@ URLLoader::URLLoader(
+@@ -483,6 +483,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index 18a71fc45dec0afb895fad4a76759348143dc790..a10644f8eddc48b6a67e14db24ad226b
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -541,6 +542,11 @@ URLLoader::URLLoader(
+@@ -546,6 +547,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }

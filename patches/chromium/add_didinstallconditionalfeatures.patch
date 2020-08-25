@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index e1bd458060e2eba703562121f134d0eede7c1986..7b9f534dbfff58c0778a2a4b0c79adb73c8fc377 100644
+index 8ab07f180b0e5d7baaa314cf1121c7182de7cce9..feb76f5278ba11f82c65e298d9772fc8742739a9 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -115,6 +115,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
@@ -67,7 +67,7 @@ index 55fcd230465f4732066188dca62c120b7d875378..97e297d4010c02cdf0af7361a5538e11
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 5467a8c10153d7e88d58d8bcbccbd1716a82870a..9311077be9fd1540e504aa1995bfb6171119d200 100644
+index 81287dbc57a55f02945a66801ea62b0e0dfe262c..8d084e236d4f0d142a2414c55a8b8aab51f41622 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -203,6 +203,7 @@ void LocalWindowProxy::Initialize() {
