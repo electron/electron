@@ -78,11 +78,7 @@ constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
-
-constexpr base::StringPiece kLogFileEnv("ELECTRON_LOG_FILE");
-constexpr base::StringPiece kLogLevelEnv(
-    "ELECTRON_LOG_LEVEL");  // logging::LogSeverity
-constexpr base::StringPiece kLogLevelSwitch("log-level");
+constexpr base::StringPiece kLogFileName("ELECTRON_LOG_FILE");
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
@@ -123,54 +119,68 @@ void InvalidParameterHandler(const wchar_t*,
 }
 #endif
 
-void InitLogging(base::Environment* env, const base::CommandLine* cmd) {
-  logging::LoggingSettings settings;
-  settings.logging_dest = logging::LOG_NONE;
-  bool logging_requested = false;
+void InitLogging(base::Environment* env,
+                 const base::CommandLine* command_line) {
+  if (!command_line->HasSwitch(::switches::kEnableLogging))
+    return;
 
-  // '--log-level' switch and 'ELECTRON_LOG_LEVEL' env
-  std::string arg = cmd->GetSwitchValueASCII(kLogLevelSwitch);
-  if (arg.empty()) {
-    env->GetVar(kLogLevelEnv, &arg);
-  }
-  if (!arg.empty()) {
-    int level;
-    if (base::StringToInt(arg, &level)) {
-      auto const clamped =
-          base::ClampToRange(level, 0, logging::LOG_NUM_SEVERITIES);
-      logging::SetMinLogLevel(clamped);
-      logging_requested = true;
+  logging::LoggingDestination log_mode;
+  base::FilePath log_filename(FILE_PATH_LITERAL("electron_debug.log"));
+  if (command_line->GetSwitchValueASCII(::switches::kEnableLogging) ==
+      "stderr") {
+    log_mode = logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
+  } else {
+    base::FilePath custom_filename(
+        command_line->GetSwitchValuePath(::switches::kEnableLogging));
+    if (custom_filename.empty()) {
+      log_mode = logging::LOG_TO_ALL;
+    } else {
+      log_mode = logging::LOG_TO_FILE;
+      log_filename = custom_filename;
     }
   }
 
-  // '--log-file' switch and 'ELECTRON_LOG_FILE' env
-  base::FilePath path = cmd->GetSwitchValuePath(::switches::kLogFile);
-  if (path.empty() && env->GetVar(kLogFileEnv, &arg)) {
-#if defined(OS_WIN)
-    path = base::FilePath(base::UTF8ToWide(arg));
-#else
-    path = base::FilePath(arg);
-#endif
-  }
-  if (!path.empty()) {
-    settings.log_file_path = path.value().c_str();
-    settings.logging_dest |= logging::LOG_TO_FILE;
-    logging_requested = true;
+  if (command_line->HasSwitch(::switches::kLoggingLevel) &&
+      logging::GetMinLogLevel() >= 0) {
+    std::string log_level =
+        command_line->GetSwitchValueASCII(::switches::kLoggingLevel);
+    int level = 0;
+    if (base::StringToInt(log_level, &level) && level >= 0 &&
+        level < logging::LOG_NUM_SEVERITIES) {
+      logging::SetMinLogLevel(level);
+    } else {
+      DLOG(WARNING) << "Bad log level: " << log_level;
+    }
   }
 
-  logging_requested = logging_requested ||
-                      env->HasVar(kElectronEnableLogging) ||
-                      cmd->HasSwitch(::switches::kEnableLogging);
+  base::FilePath log_path;
+  logging::LoggingSettings settings;
 
-  if (logging_requested) {
-    settings.logging_dest |=
-        logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-  } else {
-    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+  // we log to where the executable is.
+  if (log_path.empty()) {
+    if (base::PathService::Get(base::DIR_MODULE, &log_path)) {
+      log_path = log_path.Append(log_filename);
+    } else {
+      log_path = log_filename;
+    }
   }
 
-  logging::InitLogging(settings);
+  std::string filename;
+  if (env->GetVar(kLogFileName, &filename) && !filename.empty()) {
+    log_path = base::FilePath::FromUTF8Unsafe(filename);
+  }
+
+  settings.logging_dest = log_mode;
+  settings.log_file_path = log_path.value().c_str();
+  settings.lock_log = logging::DONT_LOCK_LOG_FILE;
+  bool success = logging::InitLogging(settings);
+  DCHECK(success);
+
   logging::SetLogItems(true /* pid */, false, true /* timestamp */, false);
+
+  if ((log_mode & logging::LOG_TO_FILE) != 0) {
+    std::cerr << "logging to " << log_path << std::endl;
+  }
 }
 
 }  // namespace
@@ -255,8 +265,6 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   auto env = base::Environment::Create();
 
-  InitLogging(env.get(), command_line);
-
   // Enable convient stack printing. This is enabled by default in non-official
   // builds.
   if (env->HasVar(kElectronEnableStackDumping))
@@ -270,6 +278,17 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   chrome::RegisterPathProvider();
   electron::RegisterPathProvider();
+
+  if (env->HasVar(kElectronEnableLogging) &&
+      !command_line->HasSwitch(::switches::kEnableLogging)) {
+    // support the long-standing 'ELECTRON_ENABLE_LOGGING' envvar:
+    // behaves equivalently to --enable-logging=stderr
+    auto cmd_tmp = *command_line;
+    cmd_tmp.AppendSwitchASCII(::switches::kEnableLogging, "stderr");
+    InitLogging(env.get(), &cmd_tmp);
+  } else {
+    InitLogging(env.get(), command_line);
+  }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(

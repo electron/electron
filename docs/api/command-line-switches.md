@@ -71,13 +71,23 @@ Enables caller stack logging for the following APIs (filtering events):
 - `remote.getCurrentWindow()` / `remote-get-current-window`
 - `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
 
-### --enable-logging
+### --enable-logging[=destination]
 
 Prints Chromium's logging into console.
 
 This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
 earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
 environment variable to achieve the same effect.
+
+If `destination` is:
+
+* `stderr`: logging will be sent to stderr.
+* a filename: logging will be saved to `filename`
+  in the same directory as the Electron executable.
+* an empty string: logging will be saved to stderr and to `electron_debug.log`
+  in the same directory as the Electron executable.
+
+See also `--logging-level`, `--v`, and `--vmodule`.
 
 ### --host-rules=`rules`
 
@@ -127,6 +137,25 @@ Set a custom locale.
 ### --log-net-log=`path`
 
 Enables net log events to be saved and writes them to `path`.
+
+### --logging-level=`N`
+
+Sets the verbosity of logging when used together with `--enable-logging`.
+`N` should be one of [Chrome's LogSeverities][severities].
+
+Note that two complimentary logging mechanisms in Chromium -- `LOG()`
+and `VLOG()` -- are controlled by different switches. `--logging-level`
+controls `LOG()` messages, while `--v` and `--vmodule` control `VLOG()`
+messages. So you may want to use a combination of these three switches
+depending on the granularity you want and what logging calls are made
+by the code you're trying to watch.
+
+See [Chromium Logging source][logging] for more information on how
+`LOG()` and `VLOG()` interact. Loosely speaking, `VLOG()` can be thought
+of as sub-levels / per-module levels inside `LOG(INFO)` to control the
+firehose of `LOG(INFO)` data.
+
+See also `--enable-logging`, `--logging-level`, `--v`, and `--vmodule`.
 
 ### --no-proxy-server
 
@@ -186,6 +215,8 @@ positive values are used for V-logging levels.
 
 This switch only works when `--enable-logging` is also passed.
 
+See also `--enable-logging`, `--logging-level`, and `--vmodule`.
+
 ### --vmodule=`pattern`
 
 Gives the per-module maximal V-logging levels to override the value given by
@@ -197,6 +228,8 @@ whole pathname and not only the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+See also `--enable-logging`, `--logging-level`, and `--v`.
 
 ## Node.js Flags
 
@@ -233,7 +266,9 @@ By default inspector websocket url is available in stderr and under /json/list e
 
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
-[ready]: app.md#event-ready
-[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
+[logging]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h
 [node-cli]: https://nodejs.org/api/cli.html
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
+[ready]: app.md#event-ready
+[severities]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h?q=logging::LogSeverity&ss=chromium
