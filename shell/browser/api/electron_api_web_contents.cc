@@ -1558,7 +1558,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
   if (rwh_impl->is_hidden()) {
-    rwh_impl->WasShown(base::nullopt);
+    rwh_impl->WasShown({});
   }
 }
 
