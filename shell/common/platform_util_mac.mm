@@ -154,7 +154,7 @@ bool MoveItemToTrashWithError(const base::FilePath& full_path,
   return did_trash;
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   std::string error;  // ignored
   return MoveItemToTrashWithError(path, delete_on_fail, &error);
 }
