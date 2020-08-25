@@ -49,13 +49,12 @@ v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
   return event;
 }
 
-v8::Local<v8::Object> CreateNativeEvent(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> sender,
-    content::RenderFrameHost* frame,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback) {
+v8::Local<v8::Object> CreateNativeEvent(v8::Isolate* isolate,
+                                        v8::Local<v8::Object> sender,
+                                        content::RenderFrameHost* frame,
+                                        Event::ValueCallback callback) {
   v8::Local<v8::Object> event;
-  if (frame && callback) {
+  if (callback) {
     gin::Handle<Event> native_event = Event::Create(isolate);
     native_event->SetCallback(std::move(callback));
     event = v8::Local<v8::Object>::Cast(native_event.ToV8());

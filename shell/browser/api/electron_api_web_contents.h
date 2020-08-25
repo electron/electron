@@ -30,6 +30,7 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
+#include "shell/browser/api/event.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -408,11 +409,15 @@ class WebContents : public gin::Wrappable<WebContents>,
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
 
+  bool EmitNavigationEvent(const std::string& event,
+                           content::NavigationHandle* navigation_handle,
+                           gin_helper::Event::ValueCallback callback);
+
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
   bool EmitWithSender(base::StringPiece name,
                       content::RenderFrameHost* sender,
-                      electron::mojom::ElectronBrowser::InvokeCallback callback,
+                      gin_helper::Event::ValueCallback callback,
                       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

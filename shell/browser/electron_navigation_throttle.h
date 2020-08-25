@@ -7,6 +7,8 @@
 
 #include "content/public/browser/navigation_throttle.h"
 
+#include <string>
+
 namespace electron {
 
 class ElectronNavigationThrottle : public content::NavigationThrottle {
@@ -16,12 +18,18 @@ class ElectronNavigationThrottle : public content::NavigationThrottle {
 
   ElectronNavigationThrottle::ThrottleCheckResult WillStartRequest() override;
 
+  ElectronNavigationThrottle::ThrottleCheckResult WillFailRequest() override;
+
   ElectronNavigationThrottle::ThrottleCheckResult WillRedirectRequest()
       override;
 
   const char* GetNameForLogging() override;
 
  private:
+  content::NavigationThrottle::ThrottleCheckResult DelegateEventToWebContents(
+      const std::string& event_name,
+      net::Error error_code);
+
   DISALLOW_COPY_AND_ASSIGN(ElectronNavigationThrottle);
 };
 

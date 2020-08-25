@@ -57,6 +57,25 @@ Process: [Main](../glossary.md#main-process)
 Emitted when the navigation is done, i.e. the spinner of the tab has stopped
 spinning, and the `onload` event was dispatched.
 
+#### Event: 'will-fail-load'
+
+Returns:
+
+* `event` Event
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+* `errorCode` Integer
+* `errorDescription` String
+
+This event will be emitted after `did-start-loading` and always before the
+`did-fail-load` event for the same navigation.
+
+Settings `event.returnValue` to an HTML string will result in a custom error page being
+displayed using that HTML.
+
 #### Event: 'did-fail-load'
 
 Returns:
@@ -242,6 +261,9 @@ or updating the `window.location.hash`. Use `did-navigate-in-page` event for
 this purpose.
 
 Calling `event.preventDefault()` will prevent the navigation.
+
+Settings `event.returnValue` to an HTML string will result in a custom error page being
+displayed using that HTML and the navigation being cancelled.
 
 #### Event: 'did-start-navigation'
 

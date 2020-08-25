@@ -18,16 +18,20 @@ namespace gin_helper {
 class Event : public gin::Wrappable<Event> {
  public:
   using InvokeCallback = electron::mojom::ElectronBrowser::InvokeCallback;
+  using ValueCallback = base::OnceCallback<bool(v8::Local<v8::Value>)>;
 
   static gin::WrapperInfo kWrapperInfo;
 
   static gin::Handle<Event> Create(v8::Isolate* isolate);
 
-  // Pass the callback to be invoked.
-  void SetCallback(InvokeCallback callback);
+  static ValueCallback AdaptInvokeCallbackToValueCallback(
+      InvokeCallback callback);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
+
+  // Pass the callback to be invoked.
+  void SetCallback(ValueCallback callback);
 
   // event.sendReply(value), used for replying to synchronous messages and
   // `invoke` calls.
@@ -44,7 +48,7 @@ class Event : public gin::Wrappable<Event> {
 
  private:
   // Replyer for the synchronous messages.
-  InvokeCallback callback_;
+  ValueCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

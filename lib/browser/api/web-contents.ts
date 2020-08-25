@@ -574,6 +574,23 @@ WebContents.prototype._init = function () {
     ipcMain.emit(channel, event, message);
   });
 
+  const handleCustomErrorPageEvent = (eventName: string) => {
+    this.on(`-${eventName}` as any, function (this: any, event: any, ...args: any[]) {
+      Object.defineProperty(event, 'returnValue', {
+        set: (value) => {
+          if (typeof value !== 'string') throw new TypeError(`event.returnValue must be set to a string, was set to a "${typeof value}"`);
+          if (value.length === 0) throw new Error('event.returnValue must be a non-empty string, an empty string was provided');
+          event.preventDefault();
+          event.sendReply(value);
+        },
+        get: () => {}
+      });
+      this.emit(eventName, event, ...args);
+    });
+  };
+  handleCustomErrorPageEvent('will-navigate');
+  handleCustomErrorPageEvent('will-fail-load');
+
   // Handle context menu action request from pepper plugin.
   this.on('pepper-context-menu' as any, function (event: any, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
     // Access Menu via electron.Menu to prevent circular require.

@@ -29,7 +29,7 @@ v8::Local<v8::Object> CreateNativeEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender,
     content::RenderFrameHost* frame,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback);
+    base::OnceCallback<bool(v8::Local<v8::Value>)> callback);
 
 }  // namespace internal
 

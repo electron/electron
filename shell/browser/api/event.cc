@@ -14,6 +14,22 @@
 
 namespace gin_helper {
 
+namespace {
+
+bool InvokeCallbackAdapter(Event::InvokeCallback callback,
+                           v8::Local<v8::Value> result) {
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  blink::CloneableMessage message;
+  if (!gin::ConvertFromV8(isolate, result, &message)) {
+    return false;
+  }
+
+  std::move(callback).Run(std::move(message));
+  return true;
+}
+
+}  // namespace
+
 gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Event::Event() {}
@@ -29,7 +45,7 @@ Event::~Event() {
   }
 }
 
-void Event::SetCallback(InvokeCallback callback) {
+void Event::SetCallback(ValueCallback callback) {
   DCHECK(!callback_);
   callback_ = std::move(callback);
 }
@@ -45,13 +61,7 @@ bool Event::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result) {
   if (!callback_)
     return false;
 
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, result, &message)) {
-    return false;
-  }
-
-  std::move(callback_).Run(std::move(message));
-  return true;
+  return std::move(callback_).Run(result);
 }
 
 gin::ObjectTemplateBuilder Event::GetObjectTemplateBuilder(
@@ -68,6 +78,14 @@ const char* Event::GetTypeName() {
 // static
 gin::Handle<Event> Event::Create(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new Event());
+}
+
+Event::ValueCallback Event::AdaptInvokeCallbackToValueCallback(
+    Event::InvokeCallback callback) {
+  if (!callback)
+    return ValueCallback();
+
+  return base::BindOnce(InvokeCallbackAdapter, std::move(callback));
 }
 
 }  // namespace gin_helper
