@@ -350,7 +350,6 @@ void OpenExternal(const GURL& url,
 bool MoveItemToTrashWithError(const base::FilePath& path,
                               bool delete_on_fail,
                               std::string* error) {
-  base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded()) {
     *error = "Failed to initialize COM";
     return false;
@@ -418,6 +417,7 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
 
 bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   std::string error;  // ignored
+  base::win::ScopedCOMInitializer com_initializer;
   return MoveItemToTrashWithError(path, delete_on_fail, &error);
 }
 
