@@ -144,7 +144,7 @@ int NodeMain(int argc, char* argv[]) {
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_WIN) || (defined(OS_MACOSX) && !defined(MAS_BUILD))
+#if defined(OS_WIN) || (defined(OS_MAC) && !defined(MAS_BUILD))
   crash_reporter::InitializeCrashpad(false, "node");
 #endif
 

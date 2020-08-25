@@ -46,7 +46,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 #endif
 
  private:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void OverrideChildProcessPath();
   void OverrideFrameworkBundlePath();
   void SetUpBundleOverrides();

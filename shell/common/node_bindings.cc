@@ -257,7 +257,7 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
 }
 
 base::FilePath GetResourcesPath() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
   auto* command_line = base::CommandLine::ForCurrentProcess();

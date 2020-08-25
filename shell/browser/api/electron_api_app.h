@@ -94,7 +94,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void OnWillContinueUserActivity(bool* prevent_default,
                                   const std::string& type) override;
   void OnDidFailToContinueUserActivity(const std::string& type,
@@ -214,7 +214,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
   bool CanBrowserClientUseCustomSiteInstance();
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);

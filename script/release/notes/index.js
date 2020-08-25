@@ -11,6 +11,7 @@ const notesGenerator = require('./notes.js');
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
+  console.info(`Running: git ${args.join(' ')}`);
   const response = await GitProcess.exec(args, ELECTRON_DIR);
   if (response.exitCode !== 0) {
     throw new Error(response.stderr.trim());
@@ -19,15 +20,20 @@ const runGit = async (args) => {
 };
 
 const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported');
-const tagIsBeta = tag => tag.includes('beta');
+const tagIsBeta = tag => tag && tag.includes('beta');
 const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag);
 
 const getTagsOf = async (point) => {
-  return (await runGit(['tag', '--merged', point]))
-    .split('\n')
-    .map(tag => tag.trim())
-    .filter(tag => semver.valid(tag))
-    .sort(semver.compare);
+  try {
+    const tags = await runGit(['tag', '--merged', point]);
+    return tags.split('\n')
+      .map(tag => tag.trim())
+      .filter(tag => semver.valid(tag))
+      .sort(semver.compare);
+  } catch (err) {
+    console.error(`Failed to fetch tags for point ${point}`);
+    throw err;
+  }
 };
 
 const getTagsOnBranch = async (point) => {
@@ -41,21 +47,31 @@ const getTagsOnBranch = async (point) => {
 };
 
 const getBranchOf = async (point) => {
-  const branches = (await runGit(['branch', '-a', '--contains', point]))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch);
-  const current = branches.find(branch => branch.startsWith('* '));
-  return current ? current.slice(2) : branches.shift();
+  try {
+    const branches = (await runGit(['branch', '-a', '--contains', point]))
+      .split('\n')
+      .map(branch => branch.trim())
+      .filter(branch => !!branch);
+    const current = branches.find(branch => branch.startsWith('* '));
+    return current ? current.slice(2) : branches.shift();
+  } catch (err) {
+    console.error(`Failed to fetch branch for ${point}: `, err);
+    throw err;
+  }
 };
 
 const getAllBranches = async () => {
-  return (await runGit(['branch', '--remote']))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch)
-    .filter(branch => branch !== 'origin/HEAD -> origin/master')
-    .sort();
+  try {
+    const branches = await runGit(['branch', '--remote']);
+    return branches.split('\n')
+      .map(branch => branch.trim())
+      .filter(branch => !!branch)
+      .filter(branch => branch !== 'origin/HEAD -> origin/master')
+      .sort();
+  } catch (err) {
+    console.error('Failed to fetch all branches');
+    throw err;
+  }
 };
 
 const getStabilizationBranches = async () => {

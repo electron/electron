@@ -171,6 +171,20 @@ lowercasing. It can be called only before first write. Calling this method after
 the first write will throw an error. If the passed value is not a `String`, its
 `toString()` method will be called to obtain the final value.
 
+Certain headers are restricted from being set by apps. These headers are
+listed below. More information on restricted headers can be found in
+[Chromium's header utils](https://source.chromium.org/chromium/chromium/src/+/master:services/network/public/cpp/header_util.cc;drc=1562cab3f1eda927938f8f4a5a91991fefde66d3;bpv=1;bpt=1;l=22).
+
+* `Content-Length`
+* `Host`
+* `Trailer` or `Te`
+* `Upgrade`
+* `Cookie2`
+* `Keep-Alive`
+* `Transfer-Encoding`
+
+Additionally, setting the `Connection` header to the value `upgrade` is also disallowed.
+
 #### `request.getHeader(name)`
 
 * `name` String - Specify an extra header name.

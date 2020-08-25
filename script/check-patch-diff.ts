@@ -1,6 +1,5 @@
-const { spawnSync } = require('child_process');
-const path = require('path');
-const { inspect } = require('util');
+import { spawnSync } from 'child_process';
+import * as path from 'path';
 
 const srcPath = path.resolve(__dirname, '..', '..', '..');
 const patchExportFnPath = path.resolve(__dirname, 'export_all_patches.py');

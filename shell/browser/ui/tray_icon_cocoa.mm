@@ -103,13 +103,42 @@
   return ignoreDoubleClickEvents_;
 }
 
-- (void)setTitle:(NSString*)title {
+- (void)setTitle:(NSString*)title font_type:(NSString*)font_type {
+  NSMutableAttributedString* attributed_title =
+      [[NSMutableAttributedString alloc] initWithString:title];
+
   if ([title containsANSICodes]) {
-    [[statusItem_ button]
-        setAttributedTitle:[title attributedStringParsingANSICodes]];
-  } else {
-    [[statusItem_ button] setTitle:title];
+    attributed_title = [title attributedStringParsingANSICodes];
   }
+
+  // Change font type, if specified
+  CGFloat existing_size = [[[statusItem_ button] font] pointSize];
+  if ([font_type isEqualToString:@"monospaced"]) {
+    if (@available(macOS 10.15, *)) {
+      NSDictionary* attributes = @{
+        NSFontAttributeName :
+            [NSFont monospacedSystemFontOfSize:existing_size
+                                        weight:NSFontWeightRegular]
+      };
+      [attributed_title
+          setAttributes:attributes
+                  range:NSMakeRange(0, [attributed_title length])];
+    }
+  } else if ([font_type isEqualToString:@"monospacedDigit"]) {
+    if (@available(macOS 10.11, *)) {
+      NSDictionary* attributes = @{
+        NSFontAttributeName :
+            [NSFont monospacedDigitSystemFontOfSize:existing_size
+                                             weight:NSFontWeightRegular]
+      };
+      [attributed_title
+          setAttributes:attributes
+                  range:NSMakeRange(0, [attributed_title length])];
+    }
+  }
+
+  // Set title
+  [[statusItem_ button] setAttributedTitle:attributed_title];
 
   // Fix icon margins.
   if (title.length > 0) {
@@ -306,8 +335,10 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
   [status_item_view_ setToolTip:base::SysUTF8ToNSString(tool_tip)];
 }
 
-void TrayIconCocoa::SetTitle(const std::string& title) {
-  [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
+void TrayIconCocoa::SetTitle(const std::string& title,
+                             const TitleOptions& options) {
+  [status_item_view_ setTitle:base::SysUTF8ToNSString(title)
+                    font_type:base::SysUTF8ToNSString(options.font_type)];
 }
 
 std::string TrayIconCocoa::GetTitle() {

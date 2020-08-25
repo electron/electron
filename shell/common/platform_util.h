@@ -54,7 +54,7 @@ void Beep();
 bool GetFolderPath(int key, base::FilePath* result);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool GetLoginItemEnabled();
 bool SetLoginItemEnabled(bool enabled);
 #endif

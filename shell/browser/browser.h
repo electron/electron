@@ -25,7 +25,7 @@
 #include "base/files/file_path.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
@@ -151,7 +151,7 @@ class Browser : public WindowListObserver {
   void SetLoginItemSettings(LoginItemSettings settings);
   LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Set the handler which decides whether to shutdown.
   void SetShutdownHandler(base::Callback<bool()> handler);
 
@@ -225,12 +225,12 @@ class Browser : public WindowListObserver {
   // Set docks' icon.
   void DockSetIcon(const gfx::Image& image);
 
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
   void ShowAboutPanel();
   void SetAboutPanelOptions(base::DictionaryValue options);
 
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
   void ShowEmojiPanel();
 #endif
 
@@ -269,13 +269,13 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Tell the application to create a new window for a tab.
   void NewWindowForTab();
 
   // Tell the application that application did become active
   void DidBecomeActive();
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
   // Tell the application that application is activated with visible/invisible
   // windows.
@@ -300,7 +300,7 @@ class Browser : public WindowListObserver {
 
   void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Returns whether secure input is enabled
   bool IsSecureKeyboardEntryEnabled();
   void SetSecureKeyboardEntryEnabled(bool enabled);
@@ -353,13 +353,13 @@ class Browser : public WindowListObserver {
 
   std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   base::Value about_panel_options_;
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   base::DictionaryValue about_panel_options_;
 #endif
 

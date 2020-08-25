@@ -1,30 +1,30 @@
 {
   "name": "electron",
-  "version": "11.0.0-nightly.20200806",
+  "version": "11.0.0-nightly.20200825",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@electron/docs-parser": "^0.9.1",
-    "@electron/typescript-definitions": "^8.7.4",
+    "@electron/typescript-definitions": "^8.7.5",
     "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
     "@types/busboy": "^0.2.3",
-    "@types/chai": "^4.2.11",
+    "@types/chai": "^4.2.12",
     "@types/chai-as-promised": "^7.1.3",
     "@types/dirty-chai": "^2.0.2",
     "@types/express": "^4.17.7",
     "@types/fs-extra": "^9.0.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^12.12.6",
-    "@types/semver": "^7.3.1",
+    "@types/semver": "^7.3.3",
     "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
     "@types/uuid": "^3.4.6",
     "@types/webpack": "^4.41.21",
     "@types/webpack-env": "^1.15.2",
-    "@typescript-eslint/eslint-plugin": "^3.6.0",
-    "@typescript-eslint/parser": "^3.6.0",
+    "@typescript-eslint/eslint-plugin": "^3.9.1",
+    "@typescript-eslint/parser": "^3.9.1",
     "asar": "^3.0.3",
     "check-for-leaks": "^1.2.1",
     "colors": "^1.4.0",
@@ -58,9 +58,9 @@
     "tap-xunit": "^2.4.1",
     "temp": "^0.8.3",
     "timers-browserify": "1.4.2",
-    "ts-loader": "^7.0.5",
+    "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
-    "typescript": "^3.9.6",
+    "typescript": "^4.0.2",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12"
   },
@@ -108,7 +108,7 @@
       "node script/lint.js --js --fix --only --"
     ],
     "*.{js,ts,d.ts}": [
-      "node script/gen-filenames.js"
+      "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
       "python script/run-clang-format.py -r -c --fix"
@@ -124,13 +124,13 @@
       "node script/lint.js --py --fix --only --"
     ],
     "docs/api/**/*.md": [
-      "node script/gen-filenames.js",
+      "ts-node script/gen-filenames.ts",
       "python script/check-trailing-whitespace.py --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
-      "node script/check-patch-diff.js"
+      "ts-node script/check-patch-diff.ts"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js"

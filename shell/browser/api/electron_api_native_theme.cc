@@ -10,8 +10,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
-#include "shell/browser/native_window_views.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -49,17 +47,12 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   ui_theme_->set_theme_source(override);
   web_theme_->set_theme_source(override);
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
-#if defined(USE_X11)
-  const bool dark_enabled = ShouldUseDarkColors();
-  for (auto* window : WindowList::GetWindows()) {
-    static_cast<NativeWindowViews*>(window)->SetGTKDarkThemeEnabled(
-        dark_enabled);
-  }
-#endif
+  // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
+  // theme
 }
 
 ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
@@ -74,14 +67,14 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return ui_theme_->UsesHighContrastColors();
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 const CFStringRef WhiteOnBlack = CFSTR("whiteOnBlack");
 const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
 #endif
 
 // TODO(MarshallOfSound): Implement for Linux
 bool NativeTheme::ShouldUseInvertedColorScheme() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   CFPreferencesAppSynchronize(UniversalAccessDomain);
   Boolean keyExistsAndHasValidFormat = false;
   Boolean is_inverted = CFPreferencesGetAppBooleanValue(

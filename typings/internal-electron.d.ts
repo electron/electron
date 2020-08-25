@@ -224,8 +224,8 @@ declare namespace ElectronInternal {
 
   interface DesktopCapturer {
     startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
-    _onerror: (error: string) => void;
-    _onfinished: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
+    _onerror?: (error: string) => void;
+    _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
   }
 
   interface GetSourcesOptions {
@@ -289,9 +289,9 @@ declare namespace ElectronInternal {
 
     public contentWindow: Window;
 
-    public connectedCallback(): void;
-    public attributeChangedCallback(): void;
-    public disconnectedCallback(): void;
+    public connectedCallback?(): void;
+    public attributeChangedCallback?(): void;
+    public disconnectedCallback?(): void;
 
     // Created in web-view-impl
     public getWebContentsId(): number;

@@ -43,7 +43,7 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   // Called by native calles.
   bool ShouldShutdown();
 
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
   void InitPlatformSpecificMonitors();
 #endif
 

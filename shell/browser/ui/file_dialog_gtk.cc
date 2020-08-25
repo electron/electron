@@ -137,8 +137,9 @@ class FileChooserDialog {
 
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
-    int time = ui::X11EventSource::GetInstance()->GetTimestamp();
-    gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
+    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+    gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                 static_cast<uint32_t>(time));
   }
 
   void RunSaveAsynchronous(

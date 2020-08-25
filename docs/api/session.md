@@ -389,7 +389,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
   * `permission` String - Enum of 'media'.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
-    * `securityOrigin` String - The security orign of the `media` check.
+    * `securityOrigin` String - The security origin of the `media` check.
     * `mediaType` String - The type of media access being requested, can be `video`,
       `audio` or `unknown`
     * `requestingUrl` String - The last URL the requesting frame loaded
@@ -526,7 +526,7 @@ Returns `String[]` - An array of language codes the spellchecker is enabled for.
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
-**Note:** On macOS the OS spellchecker is used and has it's own list of languages.  This API is a no-op on macOS.
+**Note:** On macOS the OS spellchecker is used and has its own list of languages.  This API is a no-op on macOS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
