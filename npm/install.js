@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const version = require('./package').version
+const {version} = require('./package')
 
 const fs = require('fs')
 const os = require('os')

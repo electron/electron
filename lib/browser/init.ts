@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import { Socket } from 'net';
 import * as path from 'path';
 import * as util from 'util';
-
 const Module = require('module');
 
 // We modified the original process.argv to let node.js load the init.js,

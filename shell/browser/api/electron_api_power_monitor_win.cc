@@ -8,6 +8,7 @@
 #include <wtsapi32.h>
 
 #include "base/win/windows_types.h"
+#include "base/win/windows_version.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
@@ -40,6 +41,13 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // Tel windows we want to be notified with session events
   WTSRegisterSessionNotification(window_, NOTIFY_FOR_THIS_SESSION);
+
+  // For Windows 8 and later, a new "connected standy" mode has been added and
+  // we must explicitly register for its notifications.
+  if (base::win::GetVersion() >= base::win::Version::WIN8) {
+    RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
+                                      DEVICE_NOTIFY_WINDOW_HANDLE);
+  }
 }
 
 LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,
