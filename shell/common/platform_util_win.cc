@@ -394,7 +394,7 @@ bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
          SUCCEEDED(pfo->PerformOperations()) &&
          SUCCEEDED(pfo->GetAnyOperationsAborted(&pfAnyOperationsAborted)) &&
-         pfAnyOperationsAborted;
+         !pfAnyOperationsAborted;
 }
 
 bool GetFolderPath(int key, base::FilePath* result) {
