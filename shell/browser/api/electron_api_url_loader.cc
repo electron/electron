@@ -368,7 +368,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
   if (!use_session_cookies) {
-    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
+    request->credentials_mode = network::mojom::CredentialsMode::kOmit;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
