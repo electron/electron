@@ -7,6 +7,8 @@
 
 #include "shell/common/platform_util.h"
 
+#include <string>
+
 namespace base {
 class FilePath;
 }

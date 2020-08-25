@@ -4,6 +4,8 @@
 
 #include "shell/common/platform_util.h"
 
+#include <utility>
+
 #include "base/bind.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"

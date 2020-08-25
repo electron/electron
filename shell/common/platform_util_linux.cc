@@ -222,7 +222,7 @@ namespace internal {
 
 bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
   if (!MoveItemToTrash(full_path, false)) {
-    // TODO: at least include the exit code?
+    // TODO(nornagon): at least include the exit code?
     *error = "Failed to move item to trash";
     return false;
   }
