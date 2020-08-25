@@ -110,3 +110,7 @@ The following methods of `chrome.management` are supported:
 - `chrome.management.getAll`
 - `chrome.management.get`
 - `chrome.management.getSelf`
+- `chrome.management.getPermissionWarningsById`
+- `chrome.management.getPermissionWarningsByManifest`
+- `chrome.management.onEnabled`
+- `chrome.management.onDisabled`
