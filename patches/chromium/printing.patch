@@ -244,11 +244,13 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..551dbc7b0bfdbf4ca549278bb3dfc4e3
    printing_succeeded_ = false;
    return true;
  }
-@@ -632,14 +654,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -632,6 +632,15 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
 +  if (!callback_.is_null()) {
++    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
++                      content::NotificationService::AllSources());
 +    std::string cb_str = "";
 +    if (!printing_succeeded_)
 +      cb_str = printing_cancelled_ ? "cancelled" : "failed";
@@ -258,17 +260,6 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..551dbc7b0bfdbf4ca549278bb3dfc4e3
    if (!print_job_)
      return;
  
-   if (rfh)
-     GetPrintRenderFrame(rfh)->PrintingDone(printing_succeeded_);
- 
--  registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
--                    content::Source<PrintJob>(print_job_.get()));
-+  if (!callback_.is_null())
-+    registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
-+                      content::NotificationService::AllSources());
-   // Don't close the worker thread.
-   print_job_ = nullptr;
- }
 @@ -675,7 +705,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
