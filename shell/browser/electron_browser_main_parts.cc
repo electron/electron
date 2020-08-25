@@ -168,7 +168,9 @@ void OverrideLinuxAppDataPath() {
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
+        FROM_HERE,
+        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
+                       e->request_code, e->minor_code));
   }
   return 0;
 }
