@@ -100,7 +100,7 @@ diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_
 index 8a78a609295a1d90208bdc7e73d7a850c319f361..8efbbfb31eac99323be5e81826d5738b2390a82d 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -239,6 +239,22 @@ void PrintDialogGtk::UpdateSettings(
+@@ -239,6 +239,23 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());
@@ -111,7 +111,7 @@ index 8a78a609295a1d90208bdc7e73d7a850c319f361..8efbbfb31eac99323be5e81826d5738b
 +    gtk_print_settings_set_print_pages(gtk_settings_, GTK_PRINT_PAGES_RANGES);
 +
 +    GtkPageRange* ranges;
-+    ranges = g_new (GtkPageRange, print_ranges.size());
++    ranges = g_new(GtkPageRange, print_ranges.size());
 +    for (size_t i = 0; i < print_ranges.size(); i++) {
 +      auto range = print_ranges[i];
 +      ranges[i].start = range.from;
@@ -119,6 +119,7 @@ index 8a78a609295a1d90208bdc7e73d7a850c319f361..8efbbfb31eac99323be5e81826d5738b
 +    }
 +
 +    gtk_print_settings_set_page_ranges(gtk_settings_, ranges, 1);
++    g_free(ranges);
 +  }
  
  #if defined(USE_CUPS)
