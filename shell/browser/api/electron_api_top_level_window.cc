@@ -810,7 +810,7 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                           gin_helper::Arguments* args) {
+                                               gin_helper::Arguments* args) {
   gin_helper::Dictionary options;
   bool visibleOnFullScreen = false;
   args->GetNext(&options) &&
