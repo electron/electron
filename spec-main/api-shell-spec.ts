@@ -97,7 +97,6 @@ describe('shell module', () => {
     ifit(process.platform === 'win32')('returns false when path is in use', async () => {
       const tempPath = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
       const cwd = process.cwd();
-      await fs.mkdir(tempPath);
       try {
         // A process working directory is automatically locked on Windows.
         // This is a workaround to avoid pulling in fs-extras flock method.
