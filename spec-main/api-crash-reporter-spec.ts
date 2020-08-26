@@ -245,7 +245,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
         const crash = await waitForCrash();
         expect(crash.prod).to.equal('Electron');
-        expect(crash._productName).to.equal('remote-control');
+        expect(crash._productName).to.equal('electron-test-remote-control');
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
