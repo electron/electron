@@ -99,6 +99,10 @@ const char kWebPreferences[] = "webPreferences";
 // Add a vibrancy effect to the browser window
 const char kVibrancyType[] = "vibrancy";
 
+// Specify how the material appearance should reflect window activity state on
+// macOS.
+const char kVisualEffectState[] = "visualEffectState";
+
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoomFactor";
 
