@@ -140,20 +140,31 @@ describe('BrowserView module', () => {
       view1.destroy();
       view2.destroy();
     });
+
     it('does not throw if called multiple times with same view', () => {
       view = new BrowserView();
       w.addBrowserView(view);
       w.addBrowserView(view);
       w.addBrowserView(view);
     });
+
+    it('does not crash if the BrowserView webContents are destroyed prior to window removal', () => {
+      expect(() => {
+        const view1 = new BrowserView();
+        (view1.webContents as any).destroy();
+        w.addBrowserView(view1);
+      }).to.not.throw();
+    });
   });
 
   describe('BrowserWindow.removeBrowserView()', () => {
     it('does not throw if called multiple times with same view', () => {
-      view = new BrowserView();
-      w.addBrowserView(view);
-      w.removeBrowserView(view);
-      w.removeBrowserView(view);
+      expect(() => {
+        view = new BrowserView();
+        w.addBrowserView(view);
+        w.removeBrowserView(view);
+        w.removeBrowserView(view);
+      }).to.not.throw();
     });
   });
 

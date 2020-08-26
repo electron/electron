@@ -752,7 +752,8 @@ void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(window_.get());
+      if (browser_view->web_contents())
+        browser_view->web_contents()->SetOwnerWindow(window_.get());
       browser_views_[browser_view->weak_map_id()].Reset(isolate(), value);
     }
   }
@@ -765,8 +766,8 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
-
+      if (browser_view->web_contents())
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
       (*get_that_view).second.Reset(isolate(), value);
       browser_views_.erase(get_that_view);
     }
@@ -1060,7 +1061,8 @@ void TopLevelWindow::ResetBrowserViews() {
                            &browser_view) &&
         !browser_view.IsEmpty()) {
       window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
+      if (browser_view->web_contents())
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
     }
 
     item.second.Reset();
