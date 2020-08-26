@@ -350,11 +350,6 @@ void OpenExternal(const GURL& url,
 bool MoveItemToTrashWithError(const base::FilePath& path,
                               bool delete_on_fail,
                               std::string* error) {
-  if (!com_initializer.Succeeded()) {
-    *error = "Failed to initialize COM";
-    return false;
-  }
-
   Microsoft::WRL::ComPtr<IFileOperation> pfo;
   if (FAILED(::CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,
                                 IID_PPV_ARGS(&pfo)))) {
