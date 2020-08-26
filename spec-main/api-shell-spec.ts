@@ -61,6 +61,23 @@ describe('shell module', () => {
     });
   });
 
+  describe('shell.moveItemToTrash()', () => {
+    it('moves an item to the trash', async () => {
+      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
+      const filename = path.join(dir, 'temp-to-be-deleted');
+      await fs.writeFile(filename, 'dummy-contents');
+      const result = shell.moveItemToTrash(filename);
+      expect(result).to.be.true();
+      expect(fs.existsSync(filename)).to.be.false();
+    });
+
+    it('returns false when called with a nonexistent path', () => {
+      const filename = path.join(app.getPath('temp'), 'does-not-exist');
+      const result = shell.moveItemToTrash(filename);
+      expect(result).to.be.false();
+    });
+  });
+
   describe('shell.trashItem()', () => {
     it('moves an item to the trash', async () => {
       const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));

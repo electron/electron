@@ -658,7 +658,8 @@ WebContents::~WebContents() {
     } else {
       // Destroy WebContents asynchronously unless app is shutting down,
       // because destroy() might be called inside WebContents's event handler.
-      DestroyWebContents(!IsGuest() /* async */);
+      bool is_browser_view = type_ == Type::BROWSER_VIEW;
+      DestroyWebContents(!(IsGuest() || is_browser_view) /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
       // call it here to make sure "destroyed" event is emitted.
