@@ -245,6 +245,14 @@ describe('web security', () => {
       <script src="${serverUrl}"></script>`);
     await p;
   });
+
+  it('does not crash when multiple WebContent are created with web security disabled', () => {
+    const options = { webPreferences: { webSecurity: false } };
+    const w1 = new BrowserWindow(options);
+    w1.loadURL(serverUrl);
+    const w2 = new BrowserWindow(options);
+    w2.loadURL(serverUrl);
+  });
 });
 
 describe('command line switches', () => {
