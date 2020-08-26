@@ -1013,6 +1013,26 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
+          const bounds = w.getBounds();
+          w.once('maximize', () => {
+            w.unmaximize();
+          });
+          const unmaximize = emittedOnce(w, 'unmaximize');
+          w.show();
+          w.maximize();
+          await unmaximize;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
@@ -1057,7 +1077,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform === 'win32')(`Fullscreen state`, () => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
         it('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
@@ -1071,7 +1091,7 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             const enterFullScreen = emittedOnce(w, 'enter-full-screen');
             w.show();
@@ -1080,7 +1100,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
               w.fullScreen = false;
@@ -1106,7 +1126,7 @@ describe('BrowserWindow module', () => {
             expect(w.isFullScreen()).to.be.true();
           });
 
-          it(`checks normal bounds when fullscreen'ed`, async () => {
+          it('checks normal bounds when fullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -1117,7 +1137,7 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
-          it(`checks normal bounds when unfullscreen'ed`, async () => {
+          it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -2985,6 +3005,15 @@ describe('BrowserWindow module', () => {
       w.once('maximize', () => { done(); });
       w.show();
       w.maximize();
+    });
+
+    it('emits only one event when frameless window is maximized', () => {
+      const w = new BrowserWindow({ show: false, frame: false });
+      let emitted = 0;
+      w.on('maximize', () => emitted++);
+      w.show();
+      w.maximize();
+      expect(emitted).to.equal(1);
     });
 
     it('emits an event when window is unmaximized', (done) => {
