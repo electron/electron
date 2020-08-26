@@ -13,6 +13,7 @@
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "base/threading/thread_restrictions.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "content/public/browser/browser_thread.h"
 #include "dbus/bus.h"
@@ -125,6 +126,8 @@ bool XDGUtil(const std::vector<std::string>& argv,
     return false;
 
   if (wait_for_exit) {
+    base::ScopedAllowBaseSyncPrimitivesForTesting
+        allow_sync;  // required by WaitForExit
     int exit_code = -1;
     bool success = process.WaitForExit(&exit_code);
     if (!callback.is_null())
