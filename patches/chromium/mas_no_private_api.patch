@@ -420,6 +420,44 @@ index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a
  }
  
  }  // namespace
+diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
+index 1db129740992672a4e8be8100da18b6813f1a4f8..5b1e456020ac859c826dbef2826cacf3bb60108b 100644
+--- a/content/renderer/theme_helper_mac.mm
++++ b/content/renderer/theme_helper_mac.mm
+@@ -7,11 +7,11 @@
+ #include <Cocoa/Cocoa.h>
+ 
+ #include "base/strings/sys_string_conversions.h"
+-
++#if !defined(MAS_BUILD)
+ extern "C" {
+ bool CGFontRenderingGetFontSmoothingDisabled(void) API_AVAILABLE(macos(10.14));
+ }
+-
++#endif
+ namespace content {
+ 
+ void SystemColorsDidChange(int aqua_color_variant,
+@@ -59,8 +59,19 @@ void SystemColorsDidChange(int aqua_color_variant,
+ bool IsSubpixelAntialiasingAvailable() {
+   if (__builtin_available(macOS 10.14, *)) {
+     // See https://trac.webkit.org/changeset/239306/webkit for more info.
++#if !defined(MAS_BUILD)
+     return !CGFontRenderingGetFontSmoothingDisabled();
++#else
++    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
++    NSString *default_key = @"CGFontRenderingGetFontSmoothingDisabled";
++    // Check that key exists since boolForKey defaults to NO when the 
++    // key is missing and this key in fact defaults to YES;
++    if ([defaults objectForKey:default_key] == nil)
++      return false;
++    return ![defaults boolForKey:default_key];
++#endif
+   }
++
+   return true;
+ }
+ 
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
 index 933483c36d94336c8e9cc56a53bc86aee01e12d0..a48b4af66fb4edcf74caef5bec68c53be5469fe8 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
