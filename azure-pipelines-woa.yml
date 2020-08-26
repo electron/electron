@@ -95,19 +95,3 @@ steps:
     Remove-Item -path $env:APPDATA/Electron* -Recurse
   displayName: 'Delete user app data directories'
   condition: always()
-
-- powershell: |
-    Remove-Item -path $env:APPDATA/app-path -Recurse
-    Remove-Item -path $env:APPDATA/command-line -Recurse    
-    Remove-Item -path $env:APPDATA/crash -Recurse
-    Remove-Item -path $env:APPDATA/default-menu -Recurse
-    Remove-Item -path $env:APPDATA/document-idle -Recurse
-    Remove-Item -path $env:APPDATA/foo -Recurse
-    Remove-Item -path $env:APPDATA/initial-app -Recurse
-    Remove-Item -path $env:APPDATA/locale-check -Recurse
-    Remove-Item -path $env:APPDATA/snapshot-items-available -Recurse    
-    Remove-Item -path $env:APPDATA/site-instance-overrides -Recurse
-    Remove-Item -path $env:APPDATA/remote-control -Recurse
-    Remove-Item -path $env:APPDATA/window-all-closed -Recurse
-  displayName: 'Delete test app data directories'
-  condition: always()
