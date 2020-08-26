@@ -119,6 +119,13 @@ Returns `NativeImage`
 
 Creates an empty `NativeImage` instance.
 
+### `nativeImage.createThumbnailFromPath(path, maxSize)` _macOS_ _Windows_
+
+* `path` String - path to a file that we intend to construct a thumbnail out of.
+* `maxSize` [Size](structures/size.md) - the maximum width and height (positive numbers) the thumbnail returned can be. The Windows implementation will ignore `maxSize.height` and scale the height according to `maxSize.width`.
+
+Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
+
 ### `nativeImage.createFromPath(path)`
 
 * `path` String
