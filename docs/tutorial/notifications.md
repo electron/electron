@@ -10,7 +10,8 @@ you want to show Notifications in the main process please check out the
 [Notification](../api/notification.md) module.
 
 ```javascript
-const myNotification = new Notification('Title', {
+const myNotification = new Notification({
+  title: 'Title',
   body: 'Lorem Ipsum Dolor Sit Amet'
 })
 
