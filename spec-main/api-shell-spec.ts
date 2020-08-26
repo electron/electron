@@ -7,7 +7,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { expect } from 'chai';
-import { ifit } from 'spec/spec-helpers';
+import { ifit } from './spec-helpers';
 import { execSync } from 'child_process';
 
 describe('shell module', () => {
