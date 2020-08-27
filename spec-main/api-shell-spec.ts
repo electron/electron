@@ -7,6 +7,8 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { expect } from 'chai';
+import { ifit } from './spec-helpers';
+import { execSync } from 'child_process';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -75,6 +77,39 @@ describe('shell module', () => {
       const filename = path.join(app.getPath('temp'), 'does-not-exist');
       const result = shell.moveItemToTrash(filename);
       expect(result).to.be.false();
+    });
+
+    ifit(process.platform === 'darwin')('returns false when file has immutable flag', async () => {
+      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
+      const tempPath = path.join(dir, 'locked-file');
+      await fs.writeFile(tempPath, 'delete me if you can');
+
+      // https://ss64.com/osx/chflags.html
+      execSync(`chflags uchg ${tempPath}`);
+      expect(shell.moveItemToTrash(tempPath)).to.be.false();
+      expect(await fs.pathExists(tempPath)).to.be.true();
+
+      execSync(`chflags nouchg ${tempPath}`);
+      expect(shell.moveItemToTrash(tempPath)).to.be.true();
+      expect(await fs.pathExists(tempPath)).to.be.false();
+    });
+
+    ifit(process.platform === 'win32')('returns false when path is in use', async () => {
+      const tempPath = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
+      const cwd = process.cwd();
+      try {
+        // A process working directory is automatically locked on Windows.
+        // This is a workaround to avoid pulling in fs-extras flock method.
+        process.chdir(tempPath);
+
+        expect(shell.moveItemToTrash(tempPath)).to.be.false();
+        expect(await fs.pathExists(tempPath)).to.be.true();
+      } finally {
+        process.chdir(cwd);
+      }
+
+      expect(shell.moveItemToTrash(tempPath)).to.be.true();
+      expect(await fs.pathExists(tempPath)).to.be.false();
     });
   });
 });
