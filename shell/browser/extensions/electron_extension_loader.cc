@@ -37,7 +37,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     return std::make_pair(nullptr, err);
   }
 
-  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
+  int load_flags =
+      Extension::FOLLOW_SYMLINKS_ANYWHERE | Extension::ALLOW_FILE_ACCESS;
   std::string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
