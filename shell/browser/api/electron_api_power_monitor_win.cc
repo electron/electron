@@ -8,7 +8,6 @@
 #include <wtsapi32.h>
 
 #include "base/win/windows_types.h"
-#include "base/win/windows_version.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
@@ -44,7 +43,12 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // For Windows 8 and later, a new "connected standy" mode has been added and
   // we must explicitly register for its notifications.
-  if (base::win::GetVersion() >= base::win::Version::WIN8) {
+  auto RegisterSuspendResumeNotification =
+      reinterpret_cast<decltype(&::RegisterSuspendResumeNotification)>(
+          GetProcAddress(GetModuleHandle(L"user32.dll"),
+                         "RegisterSuspendResumeNotification"));
+
+  if (RegisterSuspendResumeNotification) {
     RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
                                       DEVICE_NOTIFY_WINDOW_HANDLE);
   }
