@@ -59,10 +59,9 @@ gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     gfx::Insets insets = GetGlassInsets();
     insets += GetClientAreaInsets(
         MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST));
-    return gfx::Rect(client_bounds.x() - insets.left(),
-                     client_bounds.y() - insets.top(),
-                     client_bounds.width() + insets.left() + insets.right(),
-                     client_bounds.height() + insets.top() + insets.bottom());
+    gfx::Rect result(client_bounds);
+    result.Inset(-insets);
+    return result;
   } else {
     return views::GetWindowBoundsForClientBounds(
         static_cast<views::View*>(const_cast<WinFrameView*>(this)),
@@ -73,9 +72,9 @@ gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
 gfx::Rect WinFrameView::GetBoundsForClientView() const {
   if (window_->IsMaximized() && !window_->has_frame()) {
     gfx::Insets insets = GetGlassInsets();
-    return gfx::Rect(insets.left(), insets.top(),
-                     std::max(0, width() - insets.left() - insets.right()),
-                     std::max(0, height() - insets.top() - insets.bottom()));
+    gfx::Rect result(width(), height());
+    result.Inset(insets);
+    return result;
   } else {
     return bounds();
   }
@@ -83,7 +82,7 @@ gfx::Rect WinFrameView::GetBoundsForClientView() const {
 
 gfx::Size WinFrameView::CalculatePreferredSize() const {
   gfx::Size pref = frame_->client_view()->GetPreferredSize();
-  gfx::Rect bounds(0, 0, pref.width(), pref.height());
+  gfx::Rect bounds(pref);
   return frame_->non_client_view()
       ->GetWindowBoundsForClientBounds(bounds)
       .size();
