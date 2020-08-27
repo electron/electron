@@ -387,10 +387,14 @@ bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
   if (!delete_sink)
     return false;
 
+  BOOL pfAnyOperationsAborted;
+
   // Processes the queued command DeleteItem. This will trigger
   // the DeleteFileProgressSink to check for Recycle Bin.
   return SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get())) &&
-         SUCCEEDED(pfo->PerformOperations());
+         SUCCEEDED(pfo->PerformOperations()) &&
+         SUCCEEDED(pfo->GetAnyOperationsAborted(&pfAnyOperationsAborted)) &&
+         !pfAnyOperationsAborted;
 }
 
 bool GetFolderPath(int key, base::FilePath* result) {
