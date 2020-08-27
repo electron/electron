@@ -10,7 +10,7 @@ import { AddressInfo } from 'net'
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron'
 
 import { emittedOnce } from './events-helpers'
-import { ifit, ifdescribe } from './spec-helpers'
+import { delay, ifit, ifdescribe } from './spec-helpers'
 import { closeWindow } from './window-helpers'
 
 const { expect } = chai
