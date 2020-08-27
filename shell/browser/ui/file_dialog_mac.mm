@@ -90,7 +90,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
-    NSMutableSet* file_type_set = [NSMutableSet set];
+    NSMutableOrderedSet* file_type_set =
+        [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
     [filter_names addObject:@(filter.first.c_str())];
     for (std::string ext : filter.second) {
       // macOS is incapable of understanding multiple file extensions,
@@ -104,7 +105,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
       [file_type_set addObject:@(ext.c_str())];
     }
-    [file_types_list addObject:[file_type_set allObjects]];
+    [file_types_list addObject:[file_type_set array]];
   }
 
   // Passing empty array to setAllowedFileTypes will cause exception.
