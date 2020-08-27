@@ -62,10 +62,10 @@ index 56bcfbe625537c7b1bc2a999c261836bb15896ba..f916e78de99b87e0dae4f5f87329886b
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..bacc24388e0159a83c4ed5e03b104e1115dd9713 100644
+index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..de40066409c0fda5aac59ef3254c5e052dfa34f5 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -52,14 +52,25 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -52,15 +52,29 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
@@ -80,8 +80,8 @@ index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..bacc24388e0159a83c4ed5e03b104e11
 +    if (!page_ranges.empty()) {
 +      for (size_t i = 0; i < page_ranges.size(); i++) {
 +        auto range = page_ranges[i];
-+        ranges[i].nFromPage = range.from;
-+        ranges[i].nToPage = range.to;
++        ranges[i].nFromPage = range.from + 1;
++        ranges[i].nToPage = range.to + 1;
 +      }
 +      dialog_options.nPageRanges = page_ranges.size();
 +    } else {
@@ -94,8 +94,12 @@ index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..bacc24388e0159a83c4ed5e03b104e11
      dialog_options.nMaxPage = max_pages;
 +    dialog_options.nMaxPageRanges = base::size(ranges);
      dialog_options.lpPageRanges = ranges;
++
++    // Ensure the Pages radio button is selected.
++    dialog_options.Flags |= PD_PAGENUMS;
    } else {
      // No need to bother, we don't know how many pages are available.
+     dialog_options.Flags |= PD_NOPAGENUMS;
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
 index 8a78a609295a1d90208bdc7e73d7a850c319f361..2f5bc01bedf84126d8fb1597a0b813a2b7230279 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
