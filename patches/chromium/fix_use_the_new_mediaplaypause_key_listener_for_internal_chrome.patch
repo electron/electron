@@ -8,6 +8,54 @@ The new kGlobalRequiresAccessibility Scope type should be upstreamed
 and then we can use that and minimize this patch to just the change in
 global_shortcut_listener_mac.mm
 
+diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
+index bc009606d01469125052e68a9cdc82aaa697c764..ff18043cb07d748a49adea9874517fb29e3e7f9f 100644
+--- a/chrome/browser/extensions/global_shortcut_listener.cc
++++ b/chrome/browser/extensions/global_shortcut_listener.cc
+@@ -7,6 +7,7 @@
+ #include "base/check.h"
+ #include "base/notreached.h"
+ #include "content/public/browser/browser_thread.h"
++#include "content/public/browser/media_keys_listener_manager.h"
+ #include "ui/base/accelerators/accelerator.h"
+ 
+ using content::BrowserThread;
+@@ -66,6 +67,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
+     StopListening();
+ }
+ 
++// static
++void GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(bool should_use) {
++  if (content::MediaKeysListenerManager::
++            IsMediaKeysListenerManagerEnabled()) {
++    content::MediaKeysListenerManager* media_keys_listener_manager =
++        content::MediaKeysListenerManager::GetInstance();
++    DCHECK(media_keys_listener_manager);
++
++    if (should_use) {
++      media_keys_listener_manager->EnableInternalMediaKeyHandling();
++    } else {
++      media_keys_listener_manager->DisableInternalMediaKeyHandling();
++    }
++  }
++}
++
+ void GlobalShortcutListener::UnregisterAccelerators(Observer* observer) {
+   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+   if (IsShortcutHandlingSuspended())
+diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
+index 9aec54a3263d24491d24013a80b719dfc834ecd4..001a6cb2a5eb701351fa924109b43fab6f30748d 100644
+--- a/chrome/browser/extensions/global_shortcut_listener.h
++++ b/chrome/browser/extensions/global_shortcut_listener.h
+@@ -31,6 +31,8 @@ class GlobalShortcutListener {
+ 
+   static GlobalShortcutListener* GetInstance();
+ 
++  static void SetShouldUseInternalMediaKeyHandling(bool should_use);
++
+   // Register an observer for when a certain |accelerator| is struck. Returns
+   // true if register successfully, or false if 1) the specificied |accelerator|
+   // has been registered by another caller or other native applications, or
 diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/browser/extensions/global_shortcut_listener_mac.mm
 index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca887176642f74 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
@@ -21,6 +69,26 @@ index befe726af9c10b1563a7fc0bb77cc55f65943d5c..bac51f33f35f96fe4ecc764cf5ca8871
      DCHECK(media_keys_listener_);
    }
  }
+diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
+index 28dc8c8451940b18e74384aad10d4d9e886b31a3..f9e1854ed72cc5a9f2431df066eb72f5242569f1 100644
+--- a/content/browser/media/media_keys_listener_manager_impl.cc
++++ b/content/browser/media/media_keys_listener_manager_impl.cc
+@@ -177,8 +177,14 @@ void MediaKeysListenerManagerImpl::EnsureMediaKeysListener() {
+ 
+   EnsureAuxiliaryServices();
+ 
+-  media_keys_listener_ = ui::MediaKeysListener::Create(
++  if (!media_key_handling_enabled_) {
++    media_keys_listener_ = ui::MediaKeysListener::Create(
++      this, ui::MediaKeysListener::Scope::kGlobalRequiresAccessibility);
++  } else {
++    media_keys_listener_ = ui::MediaKeysListener::Create(
+       this, ui::MediaKeysListener::Scope::kGlobal);
++  }
++
+   DCHECK(media_keys_listener_);
+ 
+   media_keys_listener_->SetIsMediaPlaying(is_media_playing_);
 diff --git a/ui/base/accelerators/media_keys_listener.h b/ui/base/accelerators/media_keys_listener.h
 index 6787fa39da18ec26c215e4cbe0b3f69093323f8c..ec10c46cde437a935edfdf79e5ba9622c6ba1d67 100644
 --- a/ui/base/accelerators/media_keys_listener.h
