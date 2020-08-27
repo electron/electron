@@ -325,6 +325,8 @@
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@types/klaw/-/klaw-3.0.1.tgz#29f90021c0234976aa4eb97efced9cb6db9fa8b3"
   integrity sha512-acnF3n9mYOr1aFJKFyvfNX0am9EtPUsYPq22QUCGdJE+MVt6UyAN1jwo+PmOPqXD4K7ZS9MtxDEp/un0lxFccA==
+  dependencies:
+    "@types/node" "*"
 
 "@types/linkify-it@*":
   version "2.1.0"

@@ -61,7 +61,7 @@ spinning, and the `onload` event was dispatched.
 
 Returns:
 
-* `event` Event
+* `event` [CancellableNavigationEvent](structures/cancellable-navigation-event.md)
 * `url` String
 * `isInPlace` Boolean
 * `isMainFrame` Boolean
@@ -247,7 +247,7 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `event` Event
+* `event` [CancellableNavigationEvent](structures/cancellable-navigation-event.md)
 * `url` String
 
 Emitted when a user or the page wants to start navigation. It can happen when

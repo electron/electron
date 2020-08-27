@@ -10,21 +10,21 @@
 #include "content/public/browser/navigation_handle.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace electron {
 
 namespace {
 
-bool HandleEventReturnValue(std::shared_ptr<bool> is_delay_called,
-                            std::shared_ptr<std::string> error_html,
+bool HandleEventReturnValue(int* error_code,
+                            std::string* error_html,
                             v8::Local<v8::Value> val) {
-  if (*is_delay_called)
-    return true;
-
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  std::string provided_html;
-  if (gin::ConvertFromV8(isolate, val, &provided_html))
-    *error_html = provided_html;
+  gin_helper::Dictionary dict;
+  gin::ConvertFromV8(isolate, val, &dict);
+  if (!dict.Get("errorCode", error_code))
+    return false;
+  dict.Get("errorPage", error_html);
   return true;
 }
 
@@ -59,21 +59,20 @@ ElectronNavigationThrottle::DelegateEventToWebContents(
     return PROCEED;
   }
 
-  std::shared_ptr<bool> is_delay_called(new bool(false));
-  std::shared_ptr<std::string> error_html(new std::string);
+  int error_code_int = error_code;
+  std::string error_html;
+  // JS ensures that this callback can not be called out-of-stack
   if (api_contents->EmitNavigationEvent(
           event_name, handle,
-          base::BindOnce(&HandleEventReturnValue, is_delay_called,
-                         error_html))) {
-    *is_delay_called = true;
-
-    if (!error_html->empty()) {
+          base::BindOnce(&HandleEventReturnValue,
+                         base::Unretained(&error_code_int),
+                         base::Unretained(&error_html)))) {
+    if (!error_html.empty()) {
       return content::NavigationThrottle::ThrottleCheckResult(
-          CANCEL, error_code, *error_html);
+          CANCEL, error_code, error_html);
     }
-    return CANCEL;
+    return content::NavigationThrottle::ThrottleCheckResult(CANCEL, error_code);
   }
-  *is_delay_called = true;
   return PROCEED;
 }
 
