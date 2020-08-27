@@ -7,7 +7,8 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
-#include "ui/display/win/dpi.h"
+#include "ui/display/win/screen_win.h"
+#include "ui/views/win/hwnd_util.h"
 
 namespace electron {
 
@@ -50,7 +51,8 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
     *insets = frame->GetGlassInsets();
     // The DWM API's expect values in pixels. We need to convert from DIP to
     // pixels here.
-    *insets = insets->Scale(display::win::GetDPIScale());
+    *insets = insets->Scale(
+        display::win::ScreenWin::GetScaleFactorForHWND(HWNDForView(frame)));
     return true;
   }
   return false;
