@@ -1058,8 +1058,8 @@ void BaseWindow::ResetBrowserViews() {
                            &browser_view) &&
         !browser_view.IsEmpty()) {
       if (browser_view->web_contents()) {
-        browser_view->web_contents()->SetOwnerWindow(nullptr);
         window_->RemoveBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
       }
     }
 
