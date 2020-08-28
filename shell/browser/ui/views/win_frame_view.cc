@@ -4,39 +4,17 @@
 
 #include "shell/browser/ui/views/win_frame_view.h"
 
-#include <algorithm>
-
 #include "base/win/windows_version.h"
 #include "shell/browser/native_window_views.h"
-#include "ui/base/win/hwnd_metrics.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
 namespace electron {
 
-const char WinFrameView::kViewClassName[] = "WinFrameView";
+namespace {
 
-WinFrameView::WinFrameView() {}
-
-WinFrameView::~WinFrameView() {}
-
-gfx::Insets WinFrameView::GetGlassInsetsInPixels() const {
-  // Note that we should explicitly get metrics for monitor, instead of scaling
-  // from the DIP results, otherwise results might be wrong.
-  HMONITOR monitor = GetMonitor();
-  int frame_height = display::win::ScreenWin::GetSystemMetricsForMonitor(
-                         monitor, SM_CYSIZEFRAME) +
-                     display::win::ScreenWin::GetSystemMetricsForMonitor(
-                         monitor, SM_CXPADDEDBORDER);
-  int frame_size = base::win::GetVersion() < base::win::Version::WIN10
-                       ? display::win::ScreenWin::GetSystemMetricsForMonitor(
-                             monitor, SM_CXSIZEFRAME)
-                       : 0;
-  return gfx::Insets(frame_height, frame_size, frame_size, frame_size);
-}
-
-gfx::Insets WinFrameView::GetGlassInsets() const {
+gfx::Insets GetGlassInsets() {
   int frame_height =
       display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSIZEFRAME) +
       display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXPADDEDBORDER);
@@ -49,40 +27,19 @@ gfx::Insets WinFrameView::GetGlassInsets() const {
   return gfx::Insets(frame_height, frame_size, frame_size, frame_size);
 }
 
-gfx::Insets WinFrameView::GetClientAreaInsets() const {
-  gfx::Insets insets;
-  if (base::win::GetVersion() < base::win::Version::WIN10) {
-    // This tells Windows that most of the window is a client area, meaning
-    // Chrome will draw it. Windows still fills in the glass bits because of the
-    // DwmExtendFrameIntoClientArea call in |UpdateDWMFrame|.
-    // Without this 1 pixel offset on the right and bottom:
-    //   * windows paint in a more standard way, and
-    //   * we get weird black bars at the top when maximized in multiple monitor
-    //     configurations.
-    int border_thickness = 1;
-    insets.Set(0, 0, border_thickness, border_thickness);
-  } else {
-    const int frame_thickness = ui::GetFrameThickness(GetMonitor());
-    // Reduce the Windows non-client border size because we extend the border
-    // into our client area in UpdateDWMFrame(). The top inset must be 0 or
-    // else Windows will draw a full native titlebar outside the client area.
-    insets.Set(0, frame_thickness, frame_thickness, frame_thickness);
-  }
-  return insets;
-}
+}  // namespace
+
+const char WinFrameView::kViewClassName[] = "WinFrameView";
+
+WinFrameView::WinFrameView() {}
+
+WinFrameView::~WinFrameView() {}
 
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
-  if (window_->IsMaximized() && !window_->has_frame()) {
-    gfx::Insets insets = GetGlassInsets() + GetClientAreaInsets();
-    gfx::Rect result(client_bounds);
-    result.Inset(-insets);
-    return result;
-  } else {
-    return views::GetWindowBoundsForClientBounds(
-        static_cast<views::View*>(const_cast<WinFrameView*>(this)),
-        client_bounds);
-  }
+  return views::GetWindowBoundsForClientBounds(
+      static_cast<views::View*>(const_cast<WinFrameView*>(this)),
+      client_bounds);
 }
 
 gfx::Rect WinFrameView::GetBoundsForClientView() const {
@@ -96,14 +53,6 @@ gfx::Rect WinFrameView::GetBoundsForClientView() const {
   }
 }
 
-gfx::Size WinFrameView::CalculatePreferredSize() const {
-  gfx::Size pref = frame_->client_view()->GetPreferredSize();
-  gfx::Rect bounds(pref);
-  return frame_->non_client_view()
-      ->GetWindowBoundsForClientBounds(bounds)
-      .size();
-}
-
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
   if (window_->has_frame())
     return frame_->client_view()->NonClientHitTest(point);
@@ -113,10 +62,6 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
 
 const char* WinFrameView::GetClassName() const {
   return kViewClassName;
-}
-
-HMONITOR WinFrameView::GetMonitor() const {
-  return ::MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST);
 }
 
 }  // namespace electron
