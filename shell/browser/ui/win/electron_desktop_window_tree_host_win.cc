@@ -48,11 +48,7 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
   if (IsMaximized() && !native_window_view_->has_frame()) {
     WinFrameView* frame = static_cast<WinFrameView*>(
         native_window_view_->widget()->non_client_view()->frame_view());
-    *insets = frame->GetGlassInsets();
-    // The DWM API's expect values in pixels. We need to convert from DIP to
-    // pixels here.
-    *insets = insets->Scale(
-        display::win::ScreenWin::GetScaleFactorForHWND(HWNDForView(frame)));
+    *insets = frame->GetGlassInsetsInPixels();
     return true;
   }
   return false;
@@ -64,7 +60,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   if (IsMaximized() && !native_window_view_->has_frame()) {
     WinFrameView* frame = static_cast<WinFrameView*>(
         native_window_view_->widget()->non_client_view()->frame_view());
-    *insets = frame->GetClientAreaInsets(monitor);
+    *insets = frame->GetClientAreaInsets();
     return true;
   }
   return false;

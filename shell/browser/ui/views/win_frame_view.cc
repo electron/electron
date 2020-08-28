@@ -21,6 +21,21 @@ WinFrameView::WinFrameView() {}
 
 WinFrameView::~WinFrameView() {}
 
+gfx::Insets WinFrameView::GetGlassInsetsInPixels() const {
+  // Note that we should explicitly get metrics for monitor, instead of scaling
+  // from the DIP results, otherwise results might be wrong.
+  HMONITOR monitor = GetMonitor();
+  int frame_height = display::win::ScreenWin::GetSystemMetricsForMonitor(
+                         monitor, SM_CYSIZEFRAME) +
+                     display::win::ScreenWin::GetSystemMetricsForMonitor(
+                         monitor, SM_CXPADDEDBORDER);
+  int frame_size = base::win::GetVersion() < base::win::Version::WIN10
+                       ? display::win::ScreenWin::GetSystemMetricsForMonitor(
+                             monitor, SM_CXSIZEFRAME)
+                       : 0;
+  return gfx::Insets(frame_height, frame_size, frame_size, frame_size);
+}
+
 gfx::Insets WinFrameView::GetGlassInsets() const {
   int frame_height =
       display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYSIZEFRAME) +
@@ -34,7 +49,7 @@ gfx::Insets WinFrameView::GetGlassInsets() const {
   return gfx::Insets(frame_height, frame_size, frame_size, frame_size);
 }
 
-gfx::Insets WinFrameView::GetClientAreaInsets(HMONITOR monitor) const {
+gfx::Insets WinFrameView::GetClientAreaInsets() const {
   gfx::Insets insets;
   if (base::win::GetVersion() < base::win::Version::WIN10) {
     // This tells Windows that most of the window is a client area, meaning
@@ -47,7 +62,10 @@ gfx::Insets WinFrameView::GetClientAreaInsets(HMONITOR monitor) const {
     int border_thickness = 1;
     insets.Set(0, 0, border_thickness, border_thickness);
   } else {
-    const int frame_thickness = ui::GetFrameThickness(monitor);
+    const int frame_thickness = ui::GetFrameThickness(GetMonitor());
+    // Reduce the Windows non-client border size because we extend the border
+    // into our client area in UpdateDWMFrame(). The top inset must be 0 or
+    // else Windows will draw a full native titlebar outside the client area.
     insets.Set(0, frame_thickness, frame_thickness, frame_thickness);
   }
   return insets;
@@ -56,9 +74,7 @@ gfx::Insets WinFrameView::GetClientAreaInsets(HMONITOR monitor) const {
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
   if (window_->IsMaximized() && !window_->has_frame()) {
-    gfx::Insets insets = GetGlassInsets();
-    insets += GetClientAreaInsets(
-        MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST));
+    gfx::Insets insets = GetGlassInsets() + GetClientAreaInsets();
     gfx::Rect result(client_bounds);
     result.Inset(-insets);
     return result;
@@ -97,6 +113,10 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
 
 const char* WinFrameView::GetClassName() const {
   return kViewClassName;
+}
+
+HMONITOR WinFrameView::GetMonitor() const {
+  return ::MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST);
 }
 
 }  // namespace electron
