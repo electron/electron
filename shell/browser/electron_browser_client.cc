@@ -1090,10 +1090,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     content::RenderProcessHost* process,
     const url::Origin& origin,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  const auto& iter = process_preferences_.find(process->GetID());
-  if (iter != process_preferences_.end() && !iter->second.web_security) {
-    // bypass CORB
-    factory_params->process_id = iter->first;
+  // Bypass CORB when web security is disabled.
+  auto it = process_preferences_.find(factory_params->process_id);
+  if (it != process_preferences_.end() && !it->second.web_security) {
     factory_params->is_corb_enabled = false;
   }
 }
