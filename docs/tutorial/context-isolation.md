@@ -68,3 +68,6 @@ contextBridge.exposeInMainWorld('myAPI', {
 })
 ```
 
+The reason arbitary IPC messages are insecure is because electron uses `ipcRenderer` internally for communication. You only
+want to expose the IPC messages important for your app, not the electron internals.
+
