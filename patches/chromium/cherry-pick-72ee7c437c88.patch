@@ -1,8 +1,7 @@
-From 72ee7c437c88cbdf6248c677d1c7505a0b29abe3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hiroki Nakagawa <nhiroki@chromium.org>
 Date: Fri, 7 Aug 2020 15:27:06 +0000
-Subject: [PATCH] [Merge to M84] Worker: Fix a race condition on task runner
- handling
+Subject: Worker: Fix a race condition on task runner handling
 
 WebSharedWorkerImpl accesses WorkerScheduler from the main thread to
 take a task runner, and then dispatches a connect event to
@@ -32,13 +31,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2342337
 Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#1050}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../core/exported/web_shared_worker_impl.cc     | 17 +++++++++++++----
- .../core/exported/web_shared_worker_impl.h      |  2 ++
- 2 files changed, 15 insertions(+), 4 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc b/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
-index 7582cdbd3a1ee..9942e60d41f4a 100644
+index 7582cdbd3a1ee5e8a58686715020f304319860d8..9942e60d41f4add60bf28388902e08bc1d071dc7 100644
 --- a/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
 @@ -145,11 +145,8 @@ void WebSharedWorkerImpl::Connect(MessagePortChannel web_channel) {
@@ -74,7 +69,7 @@ index 7582cdbd3a1ee..9942e60d41f4a 100644
      case mojom::ScriptType::kClassic:
        GetWorkerThread()->FetchAndRunClassicScript(
 diff --git a/third_party/blink/renderer/core/exported/web_shared_worker_impl.h b/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
-index 13006f67bd3e1..98374fb9031e2 100644
+index 13006f67bd3e10b8d6c38e504d4bf235aa2f9022..98374fb9031e200a225e6e2982ff2d364fa007f5 100644
 --- a/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
 @@ -114,6 +114,8 @@ class CORE_EXPORT WebSharedWorkerImpl final : public WebSharedWorker {
