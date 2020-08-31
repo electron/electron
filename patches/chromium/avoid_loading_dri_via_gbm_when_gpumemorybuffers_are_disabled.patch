@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Thu, 21 May 2020 01:20:33 +0000
+Subject: Avoid loading DRI via GBM when GpuMemoryBuffers are disabled
+
+We haven't yet whitelisted the necessary dri files in the GPU sandbox,
+which is leading to issues like 1077609 and 1077626.  Since GMBs are
+not yet supported, avoid loading GBM unless
+--enable-native-gpu-memory-buffers is passed.
+
+Bug: 1077609, 1077626, 1031269
+Change-Id: Ic052d2e89330c6558da86a91b77637229808102f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2211120
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#770878}
+
+diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
+index 9b22493abbd81c2f592e75fe32f7ab7efbb281d9..d650cef5e081da9cd00896db7d59f00635f13279 100644
+--- a/content/gpu/gpu_main.cc
++++ b/content/gpu/gpu_main.cc
+@@ -366,11 +366,13 @@ int GpuMain(const MainFunctionParams& parameters) {
+ #if defined(USE_X11)
+   // ui::GbmDevice() takes >50ms with amdgpu, so kick off
+   // GpuMemoryBufferSupportX11 creation on another thread now.
+-  base::PostTask(
+-      FROM_HERE, base::BindOnce([]() {
+-        SCOPED_UMA_HISTOGRAM_TIMER("Linux.X11.GbmSupportX11CreationTime");
+-        ui::GpuMemoryBufferSupportX11::GetInstance();
+-      }));
++  if (gpu_preferences.enable_native_gpu_memory_buffers) {
++    base::PostTask(
++        FROM_HERE, base::BindOnce([]() {
++          SCOPED_UMA_HISTOGRAM_TIMER("Linux.X11.GbmSupportX11CreationTime");
++          ui::GpuMemoryBufferSupportX11::GetInstance();
++        }));
++  }
+ #endif
+ 
+   if (client)
