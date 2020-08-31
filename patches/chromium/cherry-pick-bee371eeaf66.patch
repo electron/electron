@@ -1,7 +1,7 @@
-From bee371eeaf6605057f84bf486dab89f1ab93d7a3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Tue, 4 Aug 2020 16:13:40 +0000
-Subject: [PATCH] Use SupportWeakPtr in OfflineAudioDestinationHandler
+Subject: Use SupportWeakPtr in OfflineAudioDestinationHandler
 
 OfflineAudioDestinationHandler's render thread notifies the
 main thread when the rendering state changes. In this process,
@@ -25,13 +25,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2335487
 Reviewed-by: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#1019}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../webaudio/offline_audio_destination_node.cc  | 17 +++++++----------
- .../webaudio/offline_audio_destination_node.h   | 14 ++++++++++++++
- 2 files changed, 21 insertions(+), 10 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
-index ec610b99c6758..2b0d87395cef3 100644
+index 71f8855b94ba19660478e1f6a9c98f425ba09a0e..e7336bbf6396d98f80e821932c179ddb3b91c7f4 100644
 --- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
 @@ -51,17 +51,14 @@ OfflineAudioDestinationHandler::OfflineAudioDestinationHandler(
@@ -76,7 +72,7 @@ index ec610b99c6758..2b0d87395cef3 100644
  
  void OfflineAudioDestinationHandler::NotifySuspend(size_t frame) {
 diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
-index e4d2d8bfcd5d9..07d80e4cff535 100644
+index e4d2d8bfcd5d90d233ca8c761f07e8f518f83018..07d80e4cff535ee7230ea14d96c292bacaa7c19e 100644
 --- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
 +++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
 @@ -28,6 +28,7 @@
