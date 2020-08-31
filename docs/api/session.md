@@ -178,6 +178,65 @@ Emitted when a hunspell dictionary file download fails.  For details
 on the failure you should collect a netlog and inspect the download
 request.
 
+#### Event: 'select-serial-port'
+
+Returns:
+
+* `event` Event
+* `portList` [SerialPort[]](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+* `callback` Function
+  * `portId` String
+
+Emitted when a serial port needs to be selected when a call to
+`navigator.serial.requestPort` is made. `callback` should be called with
+`portId` to be selected, passing an empty string to `callback` will
+cancel the request.  Additionally, permissioning on `navigator.serial` can
+be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
+with the `serial` permission.
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+app.commandLine.appendSwitch('enable-experimental-web-platform-features')
+
+app.whenReady().then(() => {
+  win = new BrowserWindow({ width: 800, height: 600 })
+  win.webContents.session.on('select-serial-port', (event, portList, callback) => {
+    event.preventDefault()
+    const selectedPort = portList.find((device) => {
+      return device.vendorId === 0x2341 && device.productId === 0x0043
+    })
+    if (!selectedPort) {
+      callback('')
+    } else {
+      callback(result1.portId)
+    }
+  })
+})
+```
+
+#### Event: 'serial-port-added'
+
+Returns:
+
+* `event` Event
+* `port` [SerialPort](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+
+Emitted after `navigator.serial.requestPort` has been called and `select-serial-port` has fired if a new serial port becomes available.  For example, this event will fire when a new USB device is plugged in.
+
+#### Event: 'serial-port-removed'
+
+Returns:
+
+* `event` Event
+* `port` [SerialPort](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+
+Emitted after `navigator.serial.requestPort` has been called and `select-serial-port` has fired if a serial port has been removed.  For example, this event will fire when a USB device is unplugged.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -420,7 +479,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 
 * `handler` Function<Boolean> | null
   * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` String - Enum of 'media'.
+  * `permission` String - Type of permission check.  Valid values are `midiSysex`, `notifications`, `geolocation`, `media`,`mediaKeySystem`,`midi`, `pointerLock`, `fullscreen`, `openExternal`, or `serial`.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `securityOrigin` String - The security origin of the `media` check.

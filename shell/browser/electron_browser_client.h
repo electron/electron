@@ -18,6 +18,7 @@
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
+#include "shell/browser/serial/electron_serial_delegate.h"
 
 namespace content {
 class ClientCertificateDelegate;
@@ -82,6 +83,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   void SetCanUseCustomSiteInstance(bool should_disable);
   bool CanUseCustomSiteInstance() override;
+  content::SerialDelegate* GetSerialDelegate() override;
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -334,6 +336,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.
   uint64_t next_id_ = 0;
+
+  std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

@@ -1455,3 +1455,49 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 });
+
+describe('navigator.serial', () => {
+  app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const getPorts: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.serial.requestPort().then(port => port.toString()).catch(err => err.toString());
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.removeAllListeners('select-serial-port');
+  });
+
+  it('does not return a port if select-serial-port event is not defined', async () => {
+    w = new BrowserWindow({ show: false });
+    w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('does not return a port when permission denied', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    session.defaultSession.setPermissionCheckHandler(() => false);
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('returns a port when select-serial-port event is defined', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    const port = await getPorts();
+    expect(port).to.equal('[object SerialPort]');
+  });
+});
