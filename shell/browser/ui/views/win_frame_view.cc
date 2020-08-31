@@ -20,7 +20,7 @@ gfx::Insets GetGlassInsets() {
       display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXPADDEDBORDER);
 
   int frame_size =
-      base::win::GetVersion() < base::win::Version::WIN10
+      base::win::GetVersion() < base::win::Version::WIN8
           ? display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME)
           : 0;
 

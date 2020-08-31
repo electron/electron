@@ -53,7 +53,7 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
                            monitor, SM_CYSIZEFRAME) +
                        display::win::ScreenWin::GetSystemMetricsForMonitor(
                            monitor, SM_CXPADDEDBORDER);
-    int frame_size = base::win::GetVersion() < base::win::Version::WIN10
+    int frame_size = base::win::GetVersion() < base::win::Version::WIN8
                          ? display::win::ScreenWin::GetSystemMetricsForMonitor(
                                monitor, SM_CXSIZEFRAME)
                          : 0;
@@ -67,7 +67,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets,
     HMONITOR monitor) const {
   if (IsMaximized() && !native_window_view_->has_frame()) {
-    if (base::win::GetVersion() < base::win::Version::WIN10) {
+    if (base::win::GetVersion() < base::win::Version::WIN8) {
       // This tells Windows that most of the window is a client area, meaning
       // Chrome will draw it. Windows still fills in the glass bits because of
       // the // DwmExtendFrameIntoClientArea call in |UpdateDWMFrame|.
