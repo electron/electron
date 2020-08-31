@@ -156,7 +156,7 @@ void ElectronExtensionLoader::LoadExtensionForReload(
     LoadErrorBehavior load_error_behavior) {
   CHECK(!path.empty());
 
-  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE; // FIXME
+  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;  // FIXME
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, path, load_flags),
