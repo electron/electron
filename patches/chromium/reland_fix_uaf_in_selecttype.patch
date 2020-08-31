@@ -1,7 +1,7 @@
-From 6b9a07d9eb9b720b6e6ccc899c0d1010fa12b5ed Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mason Freed <masonfreed@chromium.org>
 Date: Mon, 20 Jul 2020 19:55:49 +0000
-Subject: [PATCH] Reland "Fix UAF in SelectType"
+Subject: Reland "Fix UAF in SelectType"
 
 This is a reland of 72158deaf3751325f1983c87829f65441ee32de3
 
@@ -47,20 +47,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2307621
 Reviewed-by: Mason Freed <masonfreed@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#902}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../renderer/core/html/forms/select_type.cc     |  2 +-
- third_party/blink/web_tests/LeakExpectations    |  4 ++++
- ...lect-change-layout-object-crash-expected.txt |  1 +
- .../select-change-layout-object-crash.html      | 17 +++++++++++++++++
- 4 files changed, 23 insertions(+), 1 deletion(-)
- create mode 100644 third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash-expected.txt
- create mode 100644 third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash.html
 
 diff --git a/third_party/blink/renderer/core/html/forms/select_type.cc b/third_party/blink/renderer/core/html/forms/select_type.cc
-index 11fda22f82a94..6048bc713fc04 100644
+index 345cbeb26823c5f111f2bc2b98fc15f99efe3314..b5a7e169964b40a51b073ae13b2922019bee0927 100644
 --- a/third_party/blink/renderer/core/html/forms/select_type.cc
 +++ b/third_party/blink/renderer/core/html/forms/select_type.cc
-@@ -722,7 +722,7 @@ bool ListBoxSelectType::DefaultEventHandler(const Event& event) {
+@@ -709,7 +709,7 @@ bool ListBoxSelectType::DefaultEventHandler(const Event& event) {
  
        if (Page* page = select_->GetDocument().GetPage()) {
          page->GetAutoscrollController().StartAutoscrollForSelection(
@@ -69,31 +61,16 @@ index 11fda22f82a94..6048bc713fc04 100644
        }
      }
      // Mousedown didn't happen in this element.
-diff --git a/third_party/blink/web_tests/LeakExpectations b/third_party/blink/web_tests/LeakExpectations
-index e16c9cbc52403..b1e8fa010aa85 100644
---- a/third_party/blink/web_tests/LeakExpectations
-+++ b/third_party/blink/web_tests/LeakExpectations
-@@ -153,6 +153,10 @@ crbug.com/1068175 [ Linux ] external/wpt/referrer-policy/gen/worker-classic.http
- # Sheriff 2020-05-06
- crbug.com/1078769 [ Linux ] external/wpt/wasm/jsapi/idlharness.any.html [ Pass Failure ]
- 
-+# This test triggers existing leaky behavior, but this test also catches
-+# a prior crash.
-+crbug.com/1103082 [ Linux ] fast/forms/select/select-change-layout-object-crash.html [ Failure ]
-+
- ###########################################################################
- # WARNING: Memory leaks must be fixed asap. Sheriff is expected to revert #
- # culprit CLs instead of suppressing the leaks. If you have any question, #
 diff --git a/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash-expected.txt b/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash-expected.txt
 new file mode 100644
-index 0000000000000..cbe81f73ef4a3
+index 0000000000000000000000000000000000000000..cbe81f73ef4a3684565b70d51fe460b22702964f
 --- /dev/null
 +++ b/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash-expected.txt
 @@ -0,0 +1 @@
 +PASS - this test passes if it does not crash (ASAN)
 diff --git a/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash.html b/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash.html
 new file mode 100644
-index 0000000000000..8e9361dd7cd1f
+index 0000000000000000000000000000000000000000..8e9361dd7cd1f954a2c482aab7c182789ddc0701
 --- /dev/null
 +++ b/third_party/blink/web_tests/fast/forms/select/select-change-layout-object-crash.html
 @@ -0,0 +1,17 @@
