@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Emanuel Ziegler <ecmziegler@chromium.org>
 Date: Fri, 5 Jun 2020 19:54:58 +0200
-Subject: [wasm] Do not log code of functions whose module is not fully loaded
+Subject: Do not log code of functions whose module is not fully loaded
 
 This is a reland of change Idb1061cafcba7a2a654a207402dca520f79a3bbe.
 The access to wire_bytes has been protected by using atomic operations.
