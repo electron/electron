@@ -571,7 +571,7 @@ will not work on non-persistent (in-memory) sessions.
 
 * `path` String - Path to a directory containing an unpacked Chrome extension
 * `options` Object (optional)
-  * `allow_file_access` Boolean - Whether to allow the extension to read local files over `file://`
+  * `allowFileAccess` Boolean - Whether to allow the extension to read local files over `file://`
     protocol. This is required e.g. for loading devtools extensions on `file://` URLs. Defaults to
     false.
 
@@ -598,7 +598,7 @@ const path = require('path')
 app.on('ready', async () => {
   await session.defaultSession.loadExtension(
     path.join(__dirname, 'react-devtools'),
-    { allow_file_access: true }
+    { allowFileAccess: true }
   )
   // Note that in order to use the React DevTools extension, you'll need to
   // download and unzip a copy of the extension.

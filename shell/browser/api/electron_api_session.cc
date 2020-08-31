@@ -701,9 +701,9 @@ v8::Local<v8::Promise> Session::LoadExtension(
   int load_flags = extensions::Extension::FOLLOW_SYMLINKS_ANYWHERE;
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
-    bool allow_file_access = false;
-    options.Get("allowFileAccess", &allow_file_access);
-    if (allow_file_access)
+    bool allowFileAccess = false;
+    options.Get("allowFileAccess", &allowFileAccess);
+    if (allowFileAccess)
       load_flags |= extensions::Extension::ALLOW_FILE_ACCESS;
   }
 
