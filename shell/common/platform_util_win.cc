@@ -395,6 +395,8 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
     return false;
   }
 
+  BOOL pfAnyOperationsAborted;
+
   // Processes the queued command DeleteItem. This will trigger
   // the DeleteFileProgressSink to check for Recycle Bin.
   if (!SUCCEEDED(pfo->DeleteItem(delete_item.Get(), delete_sink.Get()))) {
@@ -404,6 +406,16 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
 
   if (!SUCCEEDED(pfo->PerformOperations())) {
     *error = "Failed to perform delete operation";
+    return false;
+  }
+
+  if (!SUCCEEDED(pfo->GetAnyOperationsAborted(&pfAnyOperationsAborted))) {
+    *error = "Failed to check operation status";
+    return false;
+  }
+
+  if (pfAnyOperationsAborted) {
+    *error = "Operation was aborted";
     return false;
   }
 

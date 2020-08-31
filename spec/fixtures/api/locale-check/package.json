@@ -1,5 +1,5 @@
 {
-  "name": "locale-check",
+  "name": "electron-test-locale-check",
   "main": "main.js"
 }
 

@@ -2069,8 +2069,9 @@ void WebContents::Print(gin::Arguments* args) {
       int from, to;
       if (range.Get("from", &from) && range.Get("to", &to)) {
         base::Value range(base::Value::Type::DICTIONARY);
-        range.SetIntKey(printing::kSettingPageRangeFrom, from);
-        range.SetIntKey(printing::kSettingPageRangeTo, to);
+        // Chromium uses 1-based page ranges, so increment each by 1.
+        range.SetIntKey(printing::kSettingPageRangeFrom, from + 1);
+        range.SetIntKey(printing::kSettingPageRangeTo, to + 1);
         page_range_list.Append(std::move(range));
       } else {
         continue;
