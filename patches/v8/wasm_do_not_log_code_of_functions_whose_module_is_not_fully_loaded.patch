@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Emanuel Ziegler <ecmziegler@chromium.org>
+Date: Fri, 5 Jun 2020 19:54:58 +0200
+Subject: Do not log code of functions whose module is not fully loaded
+
+This is a reland of change Idb1061cafcba7a2a654a207402dca520f79a3bbe.
+The access to wire_bytes has been protected by using atomic operations.
+
+Under some circumstances, Wasm is trying to log code for which the
+wire bytes are not fully loaded yet. This can happen during streaming
+compilation when a few functions are already fully compiled but the
+engine is still streaming the remaining functions.
+
+If the profiler now kicks in, it will attempt to log these freshly
+compiled functions. As these functions will not be executed before
+the module is fully compiled, we can simply defer the logging in this
+case.
+
+R=clemensb@chromium.org
+
+Bug: chromium:1085852
+Cq-Include-Trybots: luci.v8.try:v8_linux64_tsan_rel
+Cq-Include-Trybots: luci.v8.try:v8_linux64_tsan_isolates_rel_ng
+Change-Id: Iccb6607e8adb9fdaf6138d4ccd30de58d6a6cdff
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2230536
+Commit-Queue: Emanuel Ziegler <ecmziegler@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#68336}
+
+diff --git a/src/wasm/module-compiler.cc b/src/wasm/module-compiler.cc
+index 369dcfd9f79309ce10f0906bdcf11f53ef608deb..815a29640f51ba272a03c30526c0519ec1abd53f 100644
+--- a/src/wasm/module-compiler.cc
++++ b/src/wasm/module-compiler.cc
+@@ -1080,7 +1080,10 @@ bool ExecuteCompilationUnits(
+       }
+     }
+ 
+-    native_module->engine()->LogCode(VectorOf(code_vector));
++    // Defer logging code in case wire bytes were not fully received yet.
++    if (native_module->HasWireBytes()) {
++      native_module->engine()->LogCode(VectorOf(code_vector));
++    }
+ 
+     compile_scope->compilation_state()->OnFinishedUnits(
+         VectorOf(code_vector), VectorOf(results_to_publish));
+@@ -2357,6 +2360,7 @@ void AsyncStreamingProcessor::OnFinishedStream(OwnedVector<uint8_t> bytes) {
+   } else {
+     job_->native_module_->SetWireBytes(
+         {std::move(job_->bytes_copy_), job_->wire_bytes_.length()});
++    job_->native_module_->LogWasmCodes(job_->isolate_);
+   }
+   const bool needs_finish = job_->DecrementAndCheckFinisherCount();
+   DCHECK_IMPLIES(!has_code_section, needs_finish);
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index 99cf484b17821b7b1a09cb52bcc206c4c839e919..99cf3561c8622cd83970d30ea6718362d5f3e58b 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -1314,7 +1314,9 @@ class NativeModuleWireBytesStorage final : public WireBytesStorage {
+       : wire_bytes_(std::move(wire_bytes)) {}
+ 
+   Vector<const uint8_t> GetCode(WireBytesRef ref) const final {
+-    return wire_bytes_->as_vector().SubVector(ref.offset(), ref.end_offset());
++    return std::atomic_load(&wire_bytes_)
++        ->as_vector()
++        .SubVector(ref.offset(), ref.end_offset());
+   }
+ 
+  private:
+@@ -1325,7 +1327,7 @@ class NativeModuleWireBytesStorage final : public WireBytesStorage {
+ void NativeModule::SetWireBytes(OwnedVector<const uint8_t> wire_bytes) {
+   auto shared_wire_bytes =
+       std::make_shared<OwnedVector<const uint8_t>>(std::move(wire_bytes));
+-  wire_bytes_ = shared_wire_bytes;
++  std::atomic_store(&wire_bytes_, shared_wire_bytes);
+   if (!shared_wire_bytes->empty()) {
+     compilation_state_->SetWireBytesStorage(
+         std::make_shared<NativeModuleWireBytesStorage>(
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index 4b176f3ba61bcdfb922c5f5cbb92981d79393ffa..6960c224c32d3c8b237f973ecc399c49793af3e6 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -537,7 +537,9 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   UseTrapHandler use_trap_handler() const { return use_trap_handler_; }
+   void set_lazy_compile_frozen(bool frozen) { lazy_compile_frozen_ = frozen; }
+   bool lazy_compile_frozen() const { return lazy_compile_frozen_; }
+-  Vector<const uint8_t> wire_bytes() const { return wire_bytes_->as_vector(); }
++  Vector<const uint8_t> wire_bytes() const {
++    return std::atomic_load(&wire_bytes_)->as_vector();
++  }
+   const WasmModule* module() const { return module_.get(); }
+   std::shared_ptr<const WasmModule> shared_module() const { return module_; }
+   size_t committed_code_space() const {
+@@ -545,6 +547,10 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   }
+   WasmEngine* engine() const { return engine_; }
+ 
++  bool HasWireBytes() const {
++    auto wire_bytes = std::atomic_load(&wire_bytes_);
++    return wire_bytes && !wire_bytes->empty();
++  }
+   void SetWireBytes(OwnedVector<const uint8_t> wire_bytes);
+ 
+   WasmCode* Lookup(Address) const;
+diff --git a/test/cctest/wasm/test-streaming-compilation.cc b/test/cctest/wasm/test-streaming-compilation.cc
+index 4d3f83daff766edb96d25934bb7ab5564f193046..87da8ea1d62b14f792e9525f5707fb4b4e05cd94 100644
+--- a/test/cctest/wasm/test-streaming-compilation.cc
++++ b/test/cctest/wasm/test-streaming-compilation.cc
+@@ -1248,6 +1248,48 @@ STREAM_TEST(TestSetModuleCodeSection) {
+   CHECK(tester.IsPromiseFulfilled());
+ }
+ 
++// Test that profiler does not crash when module is only partly compiled.
++STREAM_TEST(TestProfilingMidStreaming) {
++  StreamTester tester;
++  v8::Isolate* isolate = CcTest::isolate();
++  Isolate* i_isolate = CcTest::i_isolate();
++  Zone* zone = tester.zone();
++
++  // Build module with one exported (named) function.
++  ZoneBuffer buffer(zone);
++  {
++    TestSignatures sigs;
++    WasmModuleBuilder builder(zone);
++    WasmFunctionBuilder* f = builder.AddFunction(sigs.v_v());
++    uint8_t code[] = {kExprEnd};
++    f->EmitCode(code, arraysize(code));
++    builder.AddExport(VectorOf("foo", 3), f);
++    builder.WriteTo(&buffer);
++  }
++
++  // Start profiler to force code logging.
++  v8::CpuProfiler* cpu_profiler = v8::CpuProfiler::New(isolate);
++  v8::CpuProfilingOptions profile_options;
++  cpu_profiler->StartProfiling(v8::String::Empty(isolate), profile_options);
++
++  // Send incomplete wire bytes and start compilation.
++  tester.OnBytesReceived(buffer.begin(), buffer.end() - buffer.begin());
++  tester.RunCompilerTasks();
++
++  // Trigger code logging explicitly like the profiler would do.
++  CHECK(WasmCode::ShouldBeLogged(i_isolate));
++  i_isolate->wasm_engine()->LogOutstandingCodesForIsolate(i_isolate);
++  CHECK(tester.IsPromisePending());
++
++  // Finalize stream, stop profiler and clean up.
++  tester.FinishStream();
++  CHECK(tester.IsPromiseFulfilled());
++  v8::CpuProfile* profile =
++      cpu_profiler->StopProfiling(v8::String::Empty(isolate));
++  profile->Delete();
++  cpu_profiler->Dispose();
++}
++
+ #undef STREAM_TEST
+ 
+ }  // namespace wasm
