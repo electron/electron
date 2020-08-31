@@ -90,7 +90,7 @@ index 17788cb2b506bbf04d8d5fe533e4374fddd8b9d2..a935d79806c3281fd7e75617fd226d84
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956e50ad81c 100644
+index dc7ff3ef3447d756936f77fdcec102e06a32908f..2850bc543cb1c95da992067cabd5bf456a505d9d 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -129,8 +129,8 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -116,12 +117,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
-       printing_succeeded_(false),
+@@ -114,12 +115,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
+     : PrintManager(web_contents),
        queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_);
 +#if 0
@@ -144,7 +144,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -129,7 +132,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
+@@ -127,7 +130,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
    DisconnectFromCurrentPrintJob();
  }
  
@@ -156,7 +156,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
    DisconnectFromCurrentPrintJob();
  
    // Don't print / print preview crashed tabs.
-@@ -137,7 +143,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
+@@ -135,7 +141,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
      return false;
  
    SetPrintingRFH(rfh);
@@ -172,7 +172,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
    return true;
  }
  
-@@ -258,9 +271,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -256,9 +269,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -185,7 +185,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -363,7 +376,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
+@@ -361,7 +374,7 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
    PrintManager::OnPrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -194,7 +194,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  #endif
  
    ReleasePrinterQuery();
-@@ -382,6 +395,11 @@ void PrintViewManagerBase::OnScriptedPrint(
+@@ -380,6 +393,11 @@ void PrintViewManagerBase::OnScriptedPrint(
  }
  
  void PrintViewManagerBase::OnShowInvalidPrinterSettingsError() {
@@ -206,7 +206,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -463,9 +481,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -461,9 +479,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -222,7 +222,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
        NOTREACHED();
        break;
      }
-@@ -560,8 +582,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -558,8 +580,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -235,7 +235,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetRenderViewHost() ||
-@@ -582,8 +606,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -580,8 +604,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
  
@@ -244,7 +244,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
    printing_succeeded_ = false;
    return true;
  }
-@@ -632,14 +654,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -630,14 +652,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -269,7 +269,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -675,7 +705,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -673,7 +703,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -279,7 +279,7 @@ index 2f88dfe7f2aa68c658a91d756f8ea5d311cb43f8..8b4c302399e9100bbf41ad6edc0f6956
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 3bc7512929535660ea7522cd1387c305de66b64e..50e7ecbc0335dfdd9b82c9cb5222d11a1204accc 100644
+index 234f422e7b4cc0c424eefbfcb78eef8e7d7b446d..99b8f8ee8c9e9ca83728def1fccfe899e2bf0104 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -34,6 +34,8 @@ class PrintJob;
@@ -305,13 +305,13 @@ index 3bc7512929535660ea7522cd1387c305de66b64e..50e7ecbc0335dfdd9b82c9cb5222d11a
    // Prints the document in |print_data| with settings specified in
 @@ -208,9 +213,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
-   content::RenderFrameHost* printing_rfh_;
+   content::RenderFrameHost* printing_rfh_ = nullptr;
  
 +  // Respond with success of the print job.
 +  CompletionCallback callback_;
 +
    // Indication of success of the print job.
-   bool printing_succeeded_;
+   bool printing_succeeded_ = false;
  
 +  // Indication of whether the print job was manually cancelled
 +  bool printing_cancelled_ = false;
