@@ -1,7 +1,7 @@
-From 9ad8c9610d0ad94b7a767cfb6164274f186064bb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Tue, 4 Aug 2020 21:25:10 +0000
-Subject: [PATCH] [M84] Use copy of source map in
+Subject: Use copy of source map in
  MediaElementElementListener::UpdateSources()
 
 Prior to this CL, this function iterated over a source map that could
@@ -19,12 +19,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2332823
 Reviewed-by: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#1026}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../mediacapturefromelement/html_media_element_capture.cc  | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc b/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
-index 7b00983e25468..9cad18a1db2ba 100644
+index 03ba68236c511ba2d2767af3c796b37a90dce476..80f36cb236adee50aefc505ff64f092cbc4e82b9 100644
 --- a/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
 +++ b/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
 @@ -242,9 +242,14 @@ void MediaElementEventListener::UpdateSources(ExecutionContext* context) {
