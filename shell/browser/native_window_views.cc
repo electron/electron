@@ -60,6 +60,7 @@
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
+#include "base/win/win_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
@@ -899,6 +900,14 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+bool NativeWindowViews::IsTabletMode() const {
+#if defined(OS_WIN)
+  return base::win::IsWindows10TabletMode(GetAcceleratedWidget());
+#else
+  return false;
+#endif
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {
