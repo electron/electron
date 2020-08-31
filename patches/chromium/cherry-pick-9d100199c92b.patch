@@ -1,7 +1,7 @@
-From 9d100199c92bc8660a9488078daad41e435e4748 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yutaka Hirano <yhirano@chromium.org>
 Date: Fri, 7 Aug 2020 09:06:23 +0000
-Subject: [PATCH] Fix UAF in ScriptPromiseProperty caused by reentrant code
+Subject: Fix UAF in ScriptPromiseProperty caused by reentrant code
 
 v8::Promise::Resolve can run user code synchronously, which caused a UAF
 in ScriptPromiseProperty. Fix it.
@@ -14,7 +14,6 @@ Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#792661}
 (cherry picked from commit 6d18e924b9c426905434cc280d7b602b3a3379ed)
 
-
 TBR=yhirano@chromium.org
 
 Change-Id: I3b7bfd5e8d932fb59c292159a4526cf70b44c58b
@@ -23,13 +22,9 @@ Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
 Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#1049}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../core/v8/script_promise_property.h         | 15 ++--
- .../core/v8/script_promise_property_test.cc   | 71 +++++++++++++++++++
- 2 files changed, 80 insertions(+), 6 deletions(-)
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/script_promise_property.h b/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
-index 7c83ee3524648..49ec9edc0d897 100644
+index 7c83ee35246486cf2a43227bf180904b2d9eb5f3..49ec9edc0d897e6f6e842a425cc2b0a4272702e2 100644
 --- a/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
 +++ b/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
 @@ -102,10 +102,11 @@ class ScriptPromiseProperty final
@@ -75,7 +70,7 @@ index 7c83ee3524648..49ec9edc0d897 100644
  
    // Resets this property by unregistering the Promise property from the
 diff --git a/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc b/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
-index 58979d5943469..ecbc62a554985 100644
+index c2dd607686e4ef76885036b4a678103c3869241e..95b6b1b83638b30918032fc4f76fec56a781c492 100644
 --- a/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
 @@ -96,6 +96,35 @@ class GarbageCollectedHolder final : public GarbageCollectedScriptWrappable {
@@ -114,7 +109,7 @@ index 58979d5943469..ecbc62a554985 100644
  class ScriptPromisePropertyTestBase {
   public:
    ScriptPromisePropertyTestBase()
-@@ -514,6 +543,48 @@ TEST_F(ScriptPromisePropertyGarbageCollectedTest, MarkAsHandled) {
+@@ -520,6 +549,48 @@ TEST_F(ScriptPromisePropertyGarbageCollectedTest, MarkAsHandled) {
    }
  }
  
