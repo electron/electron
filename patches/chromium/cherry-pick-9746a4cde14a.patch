@@ -1,7 +1,7 @@
-From 9746a4cde14a8abf4711801c8bcd3172ce5a5761 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Andres Calderon Jaramillo <andrescj@chromium.org>
 Date: Mon, 20 Jul 2020 19:49:42 +0000
-Subject: [PATCH] blink: Disable WebP YUV image decoding by default.
+Subject: blink: Disable WebP YUV image decoding by default.
 
 JPEG YUV image decoding is already disabled by default.
 
@@ -13,15 +13,12 @@ Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
 Commit-Queue: Andres Calderon Jaramillo <andrescj@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#901}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- third_party/blink/common/features.cc | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 6b3098e816c82..986267c41cbb5 100644
+index ad1c48f2d727f5fee33b2f5bd9d39682da2ba085..5f87b90e6cf3a3e3cb5f68e13fcbed06d039b18f 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -256,7 +256,7 @@ const base::Feature kDecodeJpeg420ImagesToYUV{
+@@ -257,7 +257,7 @@ const base::Feature kDecodeJpeg420ImagesToYUV{
  // Decodes lossy WebP images to YUV instead of RGBX and stores in this format
  // in the image decode cache. See crbug.com/900264 for details on the feature.
  const base::Feature kDecodeLossyWebPImagesToYUV{
