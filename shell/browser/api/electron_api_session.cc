@@ -702,7 +702,7 @@ v8::Local<v8::Promise> Session::LoadExtension(
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     bool allow_file_access = false;
-    options.Get("allow_file_access", &allow_file_access);
+    options.Get("allowFileAccess", &allow_file_access);
     if (allow_file_access)
       load_flags |= extensions::Extension::ALLOW_FILE_ACCESS;
   }
