@@ -10,7 +10,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..99192976f2bdfd900240aa58b8989fe2c9d8c771
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,361 @@
+@@ -0,0 +1,360 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -205,7 +205,6 @@ index 0000000000000000000000000000000000000000..99192976f2bdfd900240aa58b8989fe2
 +    ":node_js2c",
 +    "deps/cares",
 +    "deps/histogram",
-+    "deps/http_parser",
 +    "deps/llhttp",
 +    "deps/nghttp2",
 +    "deps/uvwasi",
@@ -530,25 +529,6 @@ index 0000000000000000000000000000000000000000..e741a2a9c238a782a674ddcb9a1f98de
 +  sources = [
 +    "src/hdr_histogram.c",
 +    "src/hdr_histogram.h",
-+  ]
-+}
-diff --git a/deps/http_parser/BUILD.gn b/deps/http_parser/BUILD.gn
-new file mode 100644
-index 0000000000000000000000000000000000000000..da9e2b42dccacc1ed9b00202c1ff73ebc60d0e8a
---- /dev/null
-+++ b/deps/http_parser/BUILD.gn
-@@ -0,0 +1,13 @@
-+config("http_parser_config") {
-+  defines = [ "HTTP_PARSER_STRICT=0" ]
-+  include_dirs = [ "." ]
-+}
-+
-+static_library("http_parser") {
-+  include_dirs = [ "." ]
-+  public_configs = [ ":http_parser_config" ]
-+  cflags_c = [ "-Wno-string-conversion" ]
-+  sources = [
-+    "http_parser.c",
 +  ]
 +}
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
