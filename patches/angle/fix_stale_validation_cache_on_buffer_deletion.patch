@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 14 Jul 2020 17:20:18 -0400
+Subject: Fix stale validation cache on buffer deletion.
+
+When we would delete the currently bound element array buffer we
+would neglect to invalidate a specific validation cache variable.
+This incorrectly would let us skip buffer size validation and lead
+to internal invalid memory accesses.
+
+Bug: chromium:1105202
+Change-Id: I23ab28ccd3ac6b5d461cb8745b930f4d42d53b35
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2323644
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 90e80d92b573c96eff7d9747669d5d6dd3943b47..f73391da2bd3461ab5c53b30e9fed7376773a051 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -8702,6 +8702,7 @@ void StateCache::onVertexArrayStateChange(Context *context)
+     updateActiveAttribsMask(context);
+     updateVertexElementLimits(context);
+     updateBasicDrawStatesError();
++    updateBasicDrawElementsError();
+ }
+ 
+ void StateCache::onVertexArrayBufferStateChange(Context *context)
+diff --git a/src/libANGLE/Context.h b/src/libANGLE/Context.h
+index 5668bb4f6e83250e1c1bc1007664b0b9c66b86a1..9c2abcae729775701cc5b37f1599b849db5978d3 100644
+--- a/src/libANGLE/Context.h
++++ b/src/libANGLE/Context.h
+@@ -201,6 +201,7 @@ class StateCache final : angle::NonCopyable
+     // 1. onActiveTransformFeedbackChange.
+     // 2. onVertexArrayBufferStateChange.
+     // 3. onBufferBindingChange.
++    // 4. onVertexArrayStateChange.
+     intptr_t getBasicDrawElementsError(Context *context) const
+     {
+         if (mCachedBasicDrawElementsError != kInvalidPointer)
