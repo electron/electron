@@ -54,7 +54,7 @@ class Notification {
   virtual void Dismiss() = 0;
 
   // Should be called by derived classes.
-  void NotificationClicked(bool should_destroy = true);
+  void NotificationClicked();
   void NotificationDismissed();
   void NotificationFailed();
 
