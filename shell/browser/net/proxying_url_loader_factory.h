@@ -236,6 +236,7 @@ class ProxyingURLLoaderFactory
 
   const int render_process_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
+  std::set<int32_t> intercepted_requests_;
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   base::Optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;
