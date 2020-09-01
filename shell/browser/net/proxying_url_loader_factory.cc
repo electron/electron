@@ -820,6 +820,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
+    intercepted_requests_.emplace(request_id);
+
     // <scheme, <type, handler>>
     it->second.second.Run(
         request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
@@ -915,7 +917,7 @@ void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
 void ProxyingURLLoaderFactory::MaybeDeleteThis() {
   // Even if all URLLoaderFactory pipes connected to this object have been
   // closed it has to stay alive until all active requests have completed.
-  if (target_factory_.is_bound() || !requests_.empty())
+  if (target_factory_.is_bound() || !requests_.empty() || !intercepted_requests_.empty())
     return;
 
   delete this;
