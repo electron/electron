@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 7362207412efa49bddfab4e32a64c7e07cf29074..acd9afa62d3aa1b01ce54f189a7261e7e61aa60d 100644
+index 74729c412674be2cbf01d68be1bc496b06b8ce1e..7311f249fbb24e0612d9f4f174e96fa13ed77acb 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
@@ -26,7 +26,7 @@ index 7362207412efa49bddfab4e32a64c7e07cf29074..acd9afa62d3aa1b01ce54f189a7261e7
  
  NativeModuleLoader* NativeModuleLoader::GetInstance() {
 diff --git a/src/node_native_module.h b/src/node_native_module.h
-index c0bce3bce42c848d63a10147ef483c9d4465f5ce..7f296e459d46b4cda51baf9887df060f0372227d 100644
+index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e7cb240f6 100644
 --- a/src/node_native_module.h
 +++ b/src/node_native_module.h
 @@ -44,6 +44,7 @@ class NativeModuleLoader {
