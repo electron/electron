@@ -53,7 +53,7 @@ index c969ed9b17b915f713d9b82114c7b637c8fd90df..9530a1936b0a801a4c6152dd53ec5105
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 7b19c20596bfa1eff5680192dba7643721e49285..593aaa7d7c9a170b2961a8d2c245c81fe138bd0f 100644
+index 3424f06556835295b1baaa851ab2e7df0997ff8f..2d3f51b2c07254f5d87b48aa77aac21fc1e11d28 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -544,6 +544,8 @@ bool ContentBrowserClient::CanCreateWindow(

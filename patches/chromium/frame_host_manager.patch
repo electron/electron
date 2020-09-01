@@ -229,7 +229,7 @@ index b70ed75a6500776fedcf75b5bce1f5e044664b4f..3d581373ff0251d8dbe6c09ecfc170c3
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 593aaa7d7c9a170b2961a8d2c245c81fe138bd0f..31ad15e7e35d66129f47454b1e189d3d408faf6d 100644
+index 2d3f51b2c07254f5d87b48aa77aac21fc1e11d28..f97f458ca4a61f6b9d536a60fc04a0ef29a5882e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@

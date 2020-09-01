@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 89c4355b48796f7336c4fd3c949c2fbce290e92b..eb81480c353229501ce992a4fdc2e70d9d01955b 100644
+index 588232179cba1b5051e16cedbcbb8a4ad412572f..a0e7af039fb6905b6fbb12670d365395eb5a4a91 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1766,6 +1766,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1777,6 +1777,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -81,7 +81,7 @@ index b06ea5f9fe36162dc9bcec32f604b1a8fc10f825..d53e7a0055dbdfe937a51939a3122723
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 21265c5bbbeb38ab58338519964fc598f8eed8e2..2be364cfc4482a5905b98e978e1d58fee272c356 100644
+index 60912b5f9246af5ea404db58aa1af9de7a75ae37..87af5e5b1bad76d06f9f281cda8154c53f891f6a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
