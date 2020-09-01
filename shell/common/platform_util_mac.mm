@@ -147,8 +147,7 @@ bool MoveItemToTrashWithError(const base::FilePath& full_path,
   if (!did_trash) {
     *error = base::SysNSStringToUTF8([err localizedDescription]);
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
-                 << " to trash: "
-                 << *error;
+                 << " to trash: " << *error;
   }
 
   return did_trash;
