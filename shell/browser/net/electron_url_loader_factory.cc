@@ -123,11 +123,16 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
       } else {
         continue;
       }
-      // Some apps are passing content-type via headers, which is not accepted
-      // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type") {
+
+      auto header_name_lowercase = base::ToLowerASCII(iter.first);
+
+      if (header_name_lowercase == "content-type") {
+        // Some apps are passing content-type via headers, which is not accepted
+        // in NetworkService.
         head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
         has_content_type = true;
+      } else if (header_name_lowercase == "content-length") {
+        head->content_length = std::stol(iter.second.GetString());
       }
     }
   }
