@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdde8168d09 100644
+index f60a93dd95c451d262bd61383af965a3d6068aa8..a1ecc3010413b1c51ea24bb8fe5a9dd562e32fe9 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -299,7 +299,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -297,7 +297,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdd
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -310,7 +310,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -308,7 +308,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexes_map);
    }
@@ -28,7 +28,7 @@ index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdd
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -361,7 +361,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -359,7 +359,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +37,7 @@ index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdd
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexesMap& line_indexes_map) const {
-@@ -376,7 +376,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -374,7 +374,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
    return dict;
  }
@@ -47,10 +47,10 @@ index 3846ac2e4ff654f77f8f66ace3bd87410534e34d..4cd4cd7f32f49c71134880252f5e5bdd
      NSArray* node_array,
      const LineIndexesMap& line_indexes_map) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index a6d1fc76a58b03a0a35a9724850fe9ee84fe7909..d3e251cc3273d38a8930d00615a1423b4487b8de 100644
+index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb4084c8cb950 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -153,6 +153,7 @@
+@@ -152,6 +152,7 @@
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -58,7 +58,7 @@ index a6d1fc76a58b03a0a35a9724850fe9ee84fe7909..d3e251cc3273d38a8930d00615a1423b
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -160,6 +161,7 @@
+@@ -159,6 +160,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -66,7 +66,7 @@ index a6d1fc76a58b03a0a35a9724850fe9ee84fe7909..d3e251cc3273d38a8930d00615a1423b
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -226,6 +228,7 @@
+@@ -224,6 +226,7 @@
    return uielement;
  }
  
@@ -74,7 +74,7 @@ index a6d1fc76a58b03a0a35a9724850fe9ee84fe7909..d3e251cc3273d38a8930d00615a1423b
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -293,6 +296,7 @@
+@@ -291,6 +294,7 @@
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
@@ -369,10 +369,10 @@ index d203e3a6a80d3347e22c84384359de3df50a1f0c..7d38e86e76e1f1ae70300141091d0fb9
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 87dafcd74b0c037a1aa3cdfe305d586218f12aa7..cdf2bde5ed2bd740797c7c3d422f78517937ab2d 100644
+index f77433fff5426dd174865aad3d290d787764174c..d64e4fbcf44590e9132c2338819d2aa76612db95 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -533,6 +533,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -529,6 +529,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -380,7 +380,7 @@ index 87dafcd74b0c037a1aa3cdfe305d586218f12aa7..cdf2bde5ed2bd740797c7c3d422f7851
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -540,6 +541,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -536,6 +537,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -503,7 +503,7 @@ index 933483c36d94336c8e9cc56a53bc86aee01e12d0..a48b4af66fb4edcf74caef5bec68c53b
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 0e8a5903f6b24e31c2b71037e94870aafbf30112..ea6b5c203fb6b34be36b86a2a3edcd5c69549fc5 100644
+index f5279e1f51e9fcb5f700311153b67044ddc81497..2aad6e02ef356765b80141702c21bb03dc2eb977 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -171,6 +171,12 @@ source_set("audio") {
@@ -533,7 +533,7 @@ index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 3206f81a75f4b7ea3a4257293dc92c3ada4c1327..2bcbf81008783dc8f6a10a65fac07875ee442e72 100644
+index 5a4aead0acf93db6a633fa90fac3c9943d58f6df..808ccae535c5a8473e15a7067b1e9034f3809b93 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -247,6 +247,7 @@ class DnsConfigServicePosix::Watcher {
