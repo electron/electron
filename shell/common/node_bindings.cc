@@ -450,8 +450,8 @@ node::Environment* NodeBindings::CreateEnvironment(
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
     // context. We need to use the one Blink already provides.
-    is.flags &=
-        ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
   }
 
   // This needs to be called before the inspector is initialized.
