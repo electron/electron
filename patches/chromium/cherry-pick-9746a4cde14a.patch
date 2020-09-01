@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andres Calderon Jaramillo <andrescj@chromium.org>
+Date: Mon, 20 Jul 2020 19:49:42 +0000
+Subject: blink: Disable WebP YUV image decoding by default.
+
+JPEG YUV image decoding is already disabled by default.
+
+Bug: 1102054,1091347
+Test: WebP images in bug 1091347 don't have artifacts on Linux
+Change-Id: Icf7f9ef46da97ba80d4e3b4aac4196f789bdf6d5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2283409
+Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
+Commit-Queue: Andres Calderon Jaramillo <andrescj@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#901}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index ad1c48f2d727f5fee33b2f5bd9d39682da2ba085..5f87b90e6cf3a3e3cb5f68e13fcbed06d039b18f 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -257,7 +257,7 @@ const base::Feature kDecodeJpeg420ImagesToYUV{
+ // Decodes lossy WebP images to YUV instead of RGBX and stores in this format
+ // in the image decode cache. See crbug.com/900264 for details on the feature.
+ const base::Feature kDecodeLossyWebPImagesToYUV{
+-    "DecodeLossyWebPImagesToYUV", base::FEATURE_ENABLED_BY_DEFAULT};
++    "DecodeLossyWebPImagesToYUV", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ // Enables cache-aware WebFonts loading. See https://crbug.com/570205.
+ // The feature is disabled on Android for WebView API issue discussed at
