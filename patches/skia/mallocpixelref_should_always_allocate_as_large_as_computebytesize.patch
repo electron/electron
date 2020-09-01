@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Reed <reed@google.com>
+Date: Mon, 20 Jul 2020 18:12:00 -0400
+Subject: MallocPixelRef should always allocate as large as computeByteSize()
+ says
+
+Bug: 1103827
+Change-Id: I837f92cf10a1a389fe1b0ba55ae1323e7e68f741
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/304416
+Reviewed-by: Ben Wagner <bungeman@google.com>
+Commit-Queue: Mike Reed <reed@google.com>
+(cherry picked from commit c1eb58de32c016eb60e7a46046321ffe351e8222)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/308761
+Reviewed-by: Heather Miller <hcm@google.com>
+
+diff --git a/src/core/SkMallocPixelRef.cpp b/src/core/SkMallocPixelRef.cpp
+index d998029a2be43b0ecd913ef8e7b2a52f419812dd..02fd9c458012f8b8b7982d2fe3c971e585b54ac2 100644
+--- a/src/core/SkMallocPixelRef.cpp
++++ b/src/core/SkMallocPixelRef.cpp
+@@ -30,12 +30,9 @@ sk_sp<SkPixelRef> SkMallocPixelRef::MakeAllocate(const SkImageInfo& info, size_t
+     if (!is_valid(info) || !info.validRowBytes(rowBytes)) {
+         return nullptr;
+     }
+-    size_t size = 0;
+-    if (!info.isEmpty() && rowBytes) {
+-        size = info.computeByteSize(rowBytes);
+-        if (SkImageInfo::ByteSizeOverflowed(size)) {
+-            return nullptr;
+-        }
++    size_t size = info.computeByteSize(rowBytes);
++    if (SkImageInfo::ByteSizeOverflowed(size)) {
++        return nullptr;
+     }
+     void* addr = sk_calloc_canfail(size);
+     if (nullptr == addr) {
+diff --git a/tests/BitmapTest.cpp b/tests/BitmapTest.cpp
+index e21d7275b201e27527ef2183a6b8df99b787c785..e4a957b916d8b7486bf1613f9ad93900805ee2f6 100644
+--- a/tests/BitmapTest.cpp
++++ b/tests/BitmapTest.cpp
+@@ -362,3 +362,38 @@ DEF_TEST(getalphaf, reporter) {
+         }
+     }
+ }
++
++/*  computeByteSize() is documented to return 0 if height is zero, but does not
++ *  special-case width==0, so computeByteSize() can return non-zero for that
++ *  (since it is defined to return (height-1)*rb + ...
++ *
++ *  Test that allocPixels() respects this, and allocates a buffer as large as
++ *  computeByteSize()... even though the bitmap is logicallly empty.
++ */
++DEF_TEST(bitmap_zerowidth_crbug_1103827, reporter) {
++    const size_t big_rb = 1 << 16;
++
++    struct {
++        int width, height;
++        size_t rowbytes, expected_size;
++    } rec[] = {
++        { 2, 0,     big_rb,         0 },    // zero-height means zero-size
++        { 0, 2,     big_rb,    big_rb },    // zero-width is computed normally
++    };
++
++    for (const auto& r : rec) {
++        auto info = SkImageInfo::Make(r.width, r.height,
++                                      kRGBA_8888_SkColorType, kPremul_SkAlphaType);
++        size_t size = info.computeByteSize(r.rowbytes);
++        REPORTER_ASSERT(reporter, size == r.expected_size);
++
++        SkBitmap bm;
++        bm.setInfo(info, r.rowbytes);
++        REPORTER_ASSERT(reporter, size == bm.computeByteSize());
++
++        // Be sure we can actually write to that much memory. If the bitmap underallocated
++        // the buffer, this should trash memory and crash (we hope).
++        bm.allocPixels();
++        sk_bzero(bm.getPixels(), size);
++    }
++}
