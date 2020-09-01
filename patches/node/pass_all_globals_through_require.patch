@@ -9,7 +9,7 @@ diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loade
 index d041ce0470ee48d44897fb77f37f6013d9cc108a..0ef46569924354ea3ef59f3220637e30b316a761 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -102,6 +102,13 @@ const {
+@@ -105,6 +105,13 @@ const {
    CHAR_COLON
  } = require('internal/constants');
  
@@ -20,9 +20,9 @@ index d041ce0470ee48d44897fb77f37f6013d9cc108a..0ef46569924354ea3ef59f3220637e30
 +// Do the same for "Buffer".
 +const localBuffer = Buffer;
 +
- const isWindows = process.platform === 'win32';
- 
- const relativeResolveCache = ObjectCreate(null);
+ const {
+   isProxy
+ } = require('internal/util/types');
 @@ -1132,10 +1139,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new Map();
    if (inspectorWrapper) {
