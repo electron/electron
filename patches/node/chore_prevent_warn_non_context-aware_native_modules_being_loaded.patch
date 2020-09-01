@@ -11,13 +11,19 @@ diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pr
 index 0a7c4a47c11eb4bb360b6a46fccb4692241bd2dc..b4a0f71af5853f427a10449b52509052fbe3facd 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
-@@ -89,8 +89,10 @@ function patchProcessObject(expandArgv1) {
+@@ -92,10 +92,12 @@ function patchProcessObject(expandArgv1) {
  
    if (expandArgv1 && process.argv[1] && !process.argv[1].startsWith('-')) {
      // Expand process.argv[1] into a full path.
+-    const path = require('path');
+-    try {
+-      process.argv[1] = path.resolve(process.argv[1]);
+-    } catch {}
 +    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
-     const path = require('path');
-     process.argv[1] = path.resolve(process.argv[1]);
++      const path = require('path');
++      try {
++        process.argv[1] = path.resolve(process.argv[1]);
++      } catch {}
 +    }
    }
  
@@ -44,8 +50,8 @@ diff --git a/src/env.h b/src/env.h
 index d22b579b25ce4e6af8ec042e282e94248ea14162..67cefbe35f390ba25b49e422d10bca8b423a49a8 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -890,6 +890,15 @@ class Environment : public MemoryRetainer {
-               uint64_t thread_id = kNoThreadId);
+@@ -885,6 +885,15 @@ class Environment : public MemoryRetainer {
+               ThreadId thread_id);
    ~Environment() override;
  
 +  void ForceOnlyContextAwareNativeModules() {
@@ -57,7 +63,7 @@ index d22b579b25ce4e6af8ec042e282e94248ea14162..67cefbe35f390ba25b49e422d10bca8b
 +  bool force_context_aware() { return force_context_aware_; }
 +  bool warn_non_context_aware() { return warn_non_context_aware_; }
 +
-   void InitializeLibuv(bool start_profiler_idle_notifier);
+   void InitializeLibuv();
    inline const std::vector<std::string>& exec_argv();
    inline const std::vector<std::string>& argv();
 @@ -1271,6 +1280,9 @@ class Environment : public MemoryRetainer {
