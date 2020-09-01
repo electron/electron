@@ -1,8 +1,7 @@
-From 0dc563cbbca5124c394b145d8d6d00d09f2cba66 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adrienne Walker <enne@chromium.org>
 Date: Wed, 5 Aug 2020 00:44:52 +0000
-Subject: [PATCH] indexeddb: reset async tasks in
- ~WebIDBGetDBNamesCallbacksImpl
+Subject: indexeddb: reset async tasks in ~WebIDBGetDBNamesCallbacksImpl
 
 Since sometimes the WebIDBGetDBNamesCallbacksImpl can be destroyed when
 the promise is resolved, make sure that no code that could reference it
@@ -25,12 +24,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2337110
 Reviewed-by: enne <enne@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4147@{#1029}
 Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
----
- .../blink/renderer/modules/indexeddb/idb_factory.cc        | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
-index 77ac797892d2b..50e642c032ad1 100644
+index af1b4c4234c62671ed56b52d7bd13c3557d397e9..d0ea6c191643ad51ab9e1d97e7a81ca9a074092e 100644
 --- a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
 +++ b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
 @@ -110,6 +110,7 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
