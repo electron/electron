@@ -1,4 +1,4 @@
 {
-  "name": "site-instance-overrides",
+  "name": "electron-test-site-instance-overrides",
   "main": "main.js"
 }
