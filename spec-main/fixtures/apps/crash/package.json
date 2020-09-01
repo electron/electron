@@ -1,4 +1,4 @@
 {
-  "name": "crash",
+  "name": "electron-test-crash",
   "main": "main.js"
 }
