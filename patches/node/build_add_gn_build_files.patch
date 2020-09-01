@@ -1604,7 +1604,7 @@ index 9252d51555f0e1bf0957bc4f8bc6e399c1ac6c23..431dd57a7dddc7476a179a5f30ce9e66
   */
 +// Electron sets NODE_MODULE_VERSION in their GN configuration
 +#ifndef NODE_MODULE_VERSION
- #define NODE_MODULE_VERSION 72
+ #define NODE_MODULE_VERSION 83
 +#endif
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
