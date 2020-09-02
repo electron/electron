@@ -28,7 +28,6 @@ fix_window_c-ares_incompatibilities.patch
 fix_comment_out_incompatible_crypto_modules.patch
 update_tests_after_increasing_typed_array_size.patch
 feat_add_implementation_of_v8_platform_postjob.patch
-fix_enable_tls_renegotiation.patch
 n-api_src_provide_asynchronous_cleanup_hooks.patch
 crypto_update_certdata_to_nss_3_56.patch
 fix_-wincompatible-pointer-types-discards-qualifiers_error.patch
