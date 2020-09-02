@@ -126,6 +126,7 @@ cherry-pick-9d100199c92b.patch
 cherry-pick-bee371eeaf66.patch
 cherry-pick-9746a4cde14a.patch
 avoid_loading_dri_via_gbm_when_gpumemorybuffers_are_disabled.patch
+cherry-pick-72ee7c437c88.patch
 cherry-pick-9ad8c9610d0a.patch
 indexeddb_fix_crash_in_webidbgetdbnamescallbacksimpl.patch
 indexeddb_reset_async_tasks_in_webidbgetdbnamescallbacksimpl.patch
