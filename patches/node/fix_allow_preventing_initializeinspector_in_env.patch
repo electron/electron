@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 1 Sep 2020 19:30:08 -0700
+Subject: fix: allow preventing InitializeInspector in env
+
+https://github.com/nodejs/node/commit/8c5ad1392f30cfe6b107e9bd85f4cb918ba04aab
+made it such that env->InitializeInspector was called in CreateEnvironment
+no matter what, which creates an issue for embedders seeking to manage
+the InspectorAgent themselves as Electron does. This adds a new
+EnvironmentFlags option which allows preventing that invocation.
+
+This will be upstreamed.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index ac6b47e0f327ca0ffe28e97f747c72ebaa5d7005..97610a12be47cdbf0d39d61e5982bab09ff09e95 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -358,12 +358,14 @@ Environment* CreateEnvironment(
+       thread_id);
+ 
+ #if HAVE_INSPECTOR
+-  if (inspector_parent_handle) {
+-    env->InitializeInspector(
+-        std::move(static_cast<InspectorParentHandleImpl*>(
+-            inspector_parent_handle.get())->impl));
+-  } else {
+-    env->InitializeInspector({});
++  if (!env->should_not_initialize_inspector()) {
++    if (inspector_parent_handle) {
++      env->InitializeInspector(
++          std::move(static_cast<InspectorParentHandleImpl*>(
++              inspector_parent_handle.get())->impl));
++    } else {
++      env->InitializeInspector({});
++    }
+   }
+ #endif
+ 
+diff --git a/src/env-inl.h b/src/env-inl.h
+index ddae5766127119f727f52212d5147d29eb72ebc0..a4f48dd1f7e5f765858dbce4a080a775c0d6a124 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -817,6 +817,10 @@ inline bool Environment::owns_inspector() const {
+   return flags_ & EnvironmentFlags::kOwnsInspector;
+ }
+ 
++inline bool Environment::should_not_initialize_inspector() const {
++  return flags_ & EnvironmentFlags::kNoInitializeInspector;
++}
++
+ inline bool Environment::tracks_unmanaged_fds() const {
+   return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
+ }
+diff --git a/src/env.h b/src/env.h
+index dea62b38cb20a0a0913128e17e8904c4ca71ac1a..18305853a4f0da3382f827e38f3b120d807a67c6 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1023,6 +1023,7 @@ class Environment : public MemoryRetainer {
+ 
+   inline bool is_main_thread() const;
+   inline bool should_not_register_esm_loader() const;
++  inline bool should_not_initialize_inspector() const;
+   inline bool owns_process_state() const;
+   inline bool owns_inspector() const;
+   inline bool tracks_unmanaged_fds() const;
+diff --git a/src/node.h b/src/node.h
+index 80acb3f9f04ef8e6c363cf31384af4037abeeb87..6b657f6941b8f96da08b6397e01e19a2763edf8f 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -424,7 +424,11 @@ enum Flags : uint64_t {
+   kNoRegisterESMLoader = 1 << 3,
+   // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
+   // by fs.open() and fs.close(), and close them during FreeEnvironment().
+-  kTrackUnmanagedFds = 1 << 4
++  kTrackUnmanagedFds = 1 << 4,
++  // This flag should be set to prevent InspectorAgent initialization from
++  // within the environment. This is used by embedders who wish to manage the
++  // InspectorAgent themselves.
++  kNoInitializeInspector = 1 << 5
+ };
+ }  // namespace EnvironmentFlags
+ 
