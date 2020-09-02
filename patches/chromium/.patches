@@ -121,5 +121,13 @@ worker_feat_add_hook_to_notify_script_ready.patch
 reconnect_p2p_socket_dispatcher_if_network_service_dies.patch
 allow_focus_to_move_into_an_editable_combobox_s_listbox.patch
 cherry-pick-70579363ce7b.patch
+cherry-pick-138b748dd0a4.patch
+cherry-pick-9d100199c92b.patch
+cherry-pick-bee371eeaf66.patch
+cherry-pick-9746a4cde14a.patch
 avoid_loading_dri_via_gbm_when_gpumemorybuffers_are_disabled.patch
 cherry-pick-72ee7c437c88.patch
+cherry-pick-9ad8c9610d0a.patch
+indexeddb_fix_crash_in_webidbgetdbnamescallbacksimpl.patch
+indexeddb_reset_async_tasks_in_webidbgetdbnamescallbacksimpl.patch
+reland_fix_uaf_in_selecttype.patch

@@ -7,11 +7,15 @@
 
   "src/electron/patches/node": "src/third_party/electron_node",
 
+  "src/electron/patches/swiftshader": "src/third_party/swiftshader",
+
   "src/electron/patches/pdfium": "src/third_party/pdfium",
 
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
   "src/electron/patches/skia": "src/third_party/skia",
+
+  "src/electron/patches/angle": "src/third_party/angle",
 
   "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
 }

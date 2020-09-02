@@ -2,3 +2,13 @@
 # files to be checked out with LF endings even if core.autocrlf is true.
 *.patch text eol=lf
 patches/**/.patches merge=union
+
+# Source code and markdown files should always use LF as line ending.
+*.cc text eol=lf
+*.mm text eol=lf
+*.h text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf

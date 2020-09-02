@@ -1,0 +1,160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Fri, 7 Aug 2020 09:06:23 +0000
+Subject: Fix UAF in ScriptPromiseProperty caused by reentrant code
+
+v8::Promise::Resolve can run user code synchronously, which caused a UAF
+in ScriptPromiseProperty. Fix it.
+
+Bug: 1108518
+Change-Id: Ia9baec6eef0887323cd88ceb1d3fa0c14fdb77ef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2325499
+Reviewed-by: Yuki Shiino <yukishiino@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#792661}
+(cherry picked from commit 6d18e924b9c426905434cc280d7b602b3a3379ed)
+
+TBR=yhirano@chromium.org
+
+Change-Id: I3b7bfd5e8d932fb59c292159a4526cf70b44c58b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2342489
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1049}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_promise_property.h b/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
+index 7c83ee35246486cf2a43227bf180904b2d9eb5f3..49ec9edc0d897e6f6e842a425cc2b0a4272702e2 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
++++ b/third_party/blink/renderer/bindings/core/v8/script_promise_property.h
+@@ -102,10 +102,11 @@ class ScriptPromiseProperty final
+     }
+     state_ = kResolved;
+     resolved_ = value;
+-    for (const Member<ScriptPromiseResolver>& resolver : resolvers_) {
++    HeapVector<Member<ScriptPromiseResolver>> resolvers;
++    resolvers.swap(resolvers_);
++    for (const Member<ScriptPromiseResolver>& resolver : resolvers) {
+       resolver->Resolve(resolved_);
+     }
+-    resolvers_.clear();
+   }
+ 
+   void ResolveWithUndefined() {
+@@ -116,10 +117,11 @@ class ScriptPromiseProperty final
+     }
+     state_ = kResolved;
+     resolved_with_undefined_ = true;
+-    for (const Member<ScriptPromiseResolver>& resolver : resolvers_) {
++    HeapVector<Member<ScriptPromiseResolver>> resolvers;
++    resolvers.swap(resolvers_);
++    for (const Member<ScriptPromiseResolver>& resolver : resolvers) {
+       resolver->Resolve();
+     }
+-    resolvers_.clear();
+   }
+ 
+   template <typename PassRejectedType>
+@@ -131,10 +133,11 @@ class ScriptPromiseProperty final
+     }
+     state_ = kRejected;
+     rejected_ = value;
+-    for (const Member<ScriptPromiseResolver>& resolver : resolvers_) {
++    HeapVector<Member<ScriptPromiseResolver>> resolvers;
++    resolvers.swap(resolvers_);
++    for (const Member<ScriptPromiseResolver>& resolver : resolvers) {
+       resolver->Reject(rejected_);
+     }
+-    resolvers_.clear();
+   }
+ 
+   // Resets this property by unregistering the Promise property from the
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc b/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
+index c2dd607686e4ef76885036b4a678103c3869241e..95b6b1b83638b30918032fc4f76fec56a781c492 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_promise_property_test.cc
+@@ -96,6 +96,35 @@ class GarbageCollectedHolder final : public GarbageCollectedScriptWrappable {
+   Member<Property> property_;
+ };
+ 
++class ScriptPromisePropertyResetter : public ScriptFunction {
++ public:
++  using Property =
++      ScriptPromiseProperty<Member<GarbageCollectedScriptWrappable>,
++                            Member<GarbageCollectedScriptWrappable>>;
++  static v8::Local<v8::Function> CreateFunction(ScriptState* script_state,
++                                                Property* property) {
++    auto* self = MakeGarbageCollected<ScriptPromisePropertyResetter>(
++        script_state, property);
++    return self->BindToV8Function();
++  }
++
++  ScriptPromisePropertyResetter(ScriptState* script_state, Property* property)
++      : ScriptFunction(script_state), property_(property) {}
++
++  void Trace(Visitor* visitor) override {
++    visitor->Trace(property_);
++    ScriptFunction::Trace(visitor);
++  }
++
++ private:
++  ScriptValue Call(ScriptValue arg) override {
++    property_->Reset();
++    return ScriptValue();
++  }
++
++  const Member<Property> property_;
++};
++
+ class ScriptPromisePropertyTestBase {
+  public:
+   ScriptPromisePropertyTestBase()
+@@ -520,6 +549,48 @@ TEST_F(ScriptPromisePropertyGarbageCollectedTest, MarkAsHandled) {
+   }
+ }
+ 
++TEST_F(ScriptPromisePropertyGarbageCollectedTest, SyncResolve) {
++  // Call getters to create resolvers in the property.
++  GetProperty()->Promise(DOMWrapperWorld::MainWorld());
++  GetProperty()->Promise(OtherWorld());
++
++  auto* resolution =
++      MakeGarbageCollected<GarbageCollectedScriptWrappable>("hi");
++  v8::HandleScope handle_scope(GetIsolate());
++  v8::Local<v8::Object> main_v8_resolution;
++  v8::Local<v8::Object> other_v8_resolution;
++  {
++    ScriptState::Scope scope(MainScriptState());
++    main_v8_resolution = ToV8(resolution, MainScriptState()).As<v8::Object>();
++    v8::PropertyDescriptor descriptor(
++        ScriptPromisePropertyResetter::CreateFunction(MainScriptState(),
++                                                      GetProperty()),
++        v8::Undefined(GetIsolate()));
++    ASSERT_EQ(
++        v8::Just(true),
++        main_v8_resolution->DefineProperty(
++            MainScriptState()->GetContext(),
++            v8::String::NewFromUtf8Literal(GetIsolate(), "then"), descriptor));
++  }
++  {
++    ScriptState::Scope scope(OtherScriptState());
++    other_v8_resolution = ToV8(resolution, OtherScriptState()).As<v8::Object>();
++    v8::PropertyDescriptor descriptor(
++        ScriptPromisePropertyResetter::CreateFunction(OtherScriptState(),
++                                                      GetProperty()),
++        v8::Undefined(GetIsolate()));
++    ASSERT_EQ(
++        v8::Just(true),
++        other_v8_resolution->DefineProperty(
++            OtherScriptState()->GetContext(),
++            v8::String::NewFromUtf8Literal(GetIsolate(), "then"), descriptor));
++  }
++
++  // This shouldn't crash.
++  GetProperty()->Resolve(resolution);
++  EXPECT_EQ(GetProperty()->GetState(), Property::State::kPending);
++}
++
+ TEST_F(ScriptPromisePropertyNonScriptWrappableResolutionTargetTest,
+        ResolveWithUndefined) {
+   Test(ToV8UndefinedGenerator(), "undefined", __FILE__, __LINE__);
