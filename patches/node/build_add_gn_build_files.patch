@@ -605,10 +605,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a6e4fd0c0
+index 0000000000000000000000000000000000000000..11b20bfb235aa35cedc1091be89694f3981a41f2
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,190 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -786,7 +786,6 @@ index 0000000000000000000000000000000000000000..67116f2070bb9200aace81afdf0b1e7a
 +      "src/unix/procfs-exepath.c",
 +      "src/unix/random-getrandom.c",
 +      "src/unix/random-sysctl-linux.c",
-+      "src/unix/sysinfo-loadavg.c",
 +    ]
 +    libs += [
 +      "dl",
