@@ -624,7 +624,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     IInspectable* args) {
   base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&Notification::NotificationClicked, notification_, true));
+      base::BindOnce(&Notification::NotificationClicked, notification_));
   if (IsDebuggingNotifications())
     LOG(INFO) << "Notification clicked";
 
