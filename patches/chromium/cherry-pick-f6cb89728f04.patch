@@ -1,7 +1,7 @@
-From f6cb89728f042989f4fddbbce390cb4cf25de40b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Lei Zhang <thestig@chromium.org>
 Date: Tue, 28 Jul 2020 22:47:48 +0000
-Subject: [PATCH] M85: Correctly retrieve the plugin when printing.
+Subject: M85: Correctly retrieve the plugin when printing.
 
 The logic in PrintRenderFrameHelper to retrieve a plugin is out of sync
 with the logic in WebLocalFrameImpl::PrintBegin(). If
@@ -28,28 +28,21 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2324664
 Reviewed-by: Lei Zhang <thestig@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4183@{#1009}
 Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
----
- .../renderer/print_render_frame_helper.cc     | 47 +++++++------------
- .../renderer/print_render_frame_helper.h      |  8 ++--
- .../blink/public/web/web_local_frame.h        | 10 ++--
- .../core/frame/web_local_frame_impl.cc        | 26 ++++++----
- .../core/frame/web_local_frame_impl.h         |  4 ++
- 5 files changed, 50 insertions(+), 45 deletions(-)
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index bb02f228d6049..3797c58b29136 100644
+index 8456ec0c453345e5cab96728e501d341053d8cf2..9dd56e9df0d91ccd1d6789e3b3f261a533d373e8 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -64,8 +64,6 @@
+@@ -61,8 +61,6 @@
  #include "third_party/blink/public/web/web_local_frame_client.h"
  #include "third_party/blink/public/web/web_navigation_control.h"
  #include "third_party/blink/public/web/web_plugin.h"
 -#include "third_party/blink/public/web/web_plugin_container.h"
 -#include "third_party/blink/public/web/web_plugin_document.h"
- #include "third_party/blink/public/web/web_print_page_description.h"
  #include "third_party/blink/public/web/web_print_params.h"
  #include "third_party/blink/public/web/web_print_preset_options.h"
-@@ -356,28 +354,14 @@ void ComputeWebKitPrintParamsInDesiredDpi(
+ #include "third_party/blink/public/web/web_script_source.h"
+@@ -343,28 +341,14 @@ void ComputeWebKitPrintParamsInDesiredDpi(
    webkit_print_params->pages_per_sheet = print_params.pages_per_sheet;
  }
  
@@ -81,7 +74,7 @@ index bb02f228d6049..3797c58b29136 100644
    return plugin && plugin->IsPdfPlugin();
  }
  
-@@ -2363,7 +2347,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2337,7 +2321,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
        // 2. PrintHostMsg_ShowScriptedPrintPreview shows preview once the
        //    document has been loaded.
        is_scripted_preview_delayed_ = true;
@@ -90,7 +83,7 @@ index bb02f228d6049..3797c58b29136 100644
          // Wait for DidStopLoading. Plugins may not know the correct
          // |is_modifiable| value until they are fully loaded, which occurs when
          // DidStopLoading() is called. Defer showing the preview until then.
-@@ -2390,7 +2374,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2364,7 +2348,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
        // Wait for DidStopLoading. Continuing with this function while
        // |is_loading_| is true will cause print preview to hang when try to
        // print a PDF document.
@@ -99,7 +92,7 @@ index bb02f228d6049..3797c58b29136 100644
          on_stop_loading_closure_ =
              base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
                             weak_ptr_factory_.GetWeakPtr(), type);
-@@ -2401,12 +2385,12 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2375,12 +2359,12 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
      }
      case PRINT_PREVIEW_USER_INITIATED_SELECTION: {
        DCHECK(has_selection);
@@ -114,7 +107,7 @@ index bb02f228d6049..3797c58b29136 100644
          on_stop_loading_closure_ =
              base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
                             weak_ptr_factory_.GetWeakPtr(), type);
-@@ -2503,8 +2487,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithFrame(
+@@ -2465,8 +2449,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithFrame(
    state_ = INITIALIZED;
    source_frame_.Reset(web_frame);
    source_node_.Reset();
@@ -124,7 +117,7 @@ index bb02f228d6049..3797c58b29136 100644
  }
  
  void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
-@@ -2515,8 +2498,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
+@@ -2477,8 +2460,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
    state_ = INITIALIZED;
    source_frame_.Reset(web_node.GetDocument().GetFrame());
    source_node_ = web_node;
@@ -134,7 +127,7 @@ index bb02f228d6049..3797c58b29136 100644
  }
  
  void PrintRenderFrameHelper::PrintPreviewContext::OnPrintPreview() {
-@@ -2659,6 +2641,11 @@ bool PrintRenderFrameHelper::PrintPreviewContext::IsForArc() const {
+@@ -2621,6 +2603,11 @@ bool PrintRenderFrameHelper::PrintPreviewContext::IsForArc() const {
    return is_for_arc_;
  }
  
@@ -146,7 +139,7 @@ index bb02f228d6049..3797c58b29136 100644
  bool PrintRenderFrameHelper::PrintPreviewContext::IsModifiable() const {
    DCHECK(state_ != UNINITIALIZED);
    return is_modifiable_;
-@@ -2749,11 +2736,9 @@ void PrintRenderFrameHelper::PrintPreviewContext::ClearContext() {
+@@ -2713,11 +2700,9 @@ void PrintRenderFrameHelper::PrintPreviewContext::ClearContext() {
    error_ = PREVIEW_ERROR_NONE;
  }
  
@@ -161,10 +154,10 @@ index bb02f228d6049..3797c58b29136 100644
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 674e43487837d..e6d759d06c0b8 100644
+index 81df566a5908f1b35b9da5c2aad35ea7dec1dc3b..30cb90cab8a971b1b4eb11bb89e05b09853b7721 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -509,6 +509,7 @@ class PrintRenderFrameHelper
+@@ -503,6 +503,7 @@ class PrintRenderFrameHelper
      int GetNextPageNumber();
      bool IsRendering() const;
      bool IsForArc() const;
@@ -172,7 +165,7 @@ index 674e43487837d..e6d759d06c0b8 100644
      bool IsModifiable() const;
      bool IsPdf() const;
      bool HasSelection();
-@@ -549,9 +550,7 @@ class PrintRenderFrameHelper
+@@ -543,9 +544,7 @@ class PrintRenderFrameHelper
      // Reset some of the internal rendering context.
      void ClearContext();
  
@@ -183,7 +176,7 @@ index 674e43487837d..e6d759d06c0b8 100644
  
      // Specifies what to render for print preview.
      FrameReference source_frame_;
-@@ -571,6 +570,9 @@ class PrintRenderFrameHelper
+@@ -565,6 +564,9 @@ class PrintRenderFrameHelper
      // List of page indices that need to be rendered.
      std::vector<int> pages_to_render_;
  
@@ -194,10 +187,10 @@ index 674e43487837d..e6d759d06c0b8 100644
      bool is_modifiable_ = true;
  
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 89e4c4992db42..2b6ac1ab43776 100644
+index c5d9cd52989c0d776ac12a5c0b88782d2c40b213..ecb810fecebd4ecb8c93630490cfb8ad5fe856c6 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
-@@ -62,6 +62,7 @@ class WebLocalFrameClient;
+@@ -59,6 +59,7 @@ class WebLocalFrameClient;
  class WebFrameWidget;
  class WebInputMethodController;
  class WebPerformance;
@@ -205,7 +198,7 @@ index 89e4c4992db42..2b6ac1ab43776 100644
  class WebRange;
  class WebSecurityOrigin;
  class WebScriptExecutionCallback;
-@@ -670,13 +671,16 @@ class WebLocalFrame : public WebFrame {
+@@ -655,13 +656,16 @@ class WebLocalFrame : public WebFrame {
    // This function should be called before pairs of PrintBegin() and PrintEnd().
    virtual void DispatchBeforePrintEvent() = 0;
  
@@ -226,10 +219,10 @@ index 89e4c4992db42..2b6ac1ab43776 100644
                           const WebNode& constrain_to_node = WebNode()) = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index fa177e0828702..74cc39af0a7c5 100644
+index 9cb4f3d02fccd6f1098c9b8080f1057642aead5f..52e57b11169ec19c2f890545560a5784af071029 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1546,19 +1546,29 @@ void WebLocalFrameImpl::DispatchPrintEventRecursively(
+@@ -1537,19 +1537,29 @@ void WebLocalFrameImpl::DispatchPrintEventRecursively(
    }
  }
  
@@ -268,10 +261,10 @@ index fa177e0828702..74cc39af0a7c5 100644
      print_context_ = MakeGarbageCollected<ChromePluginPrintContext>(
          GetFrame(), plugin_container, print_params);
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 8de9c4ccca25c..4555bd981a201 100644
+index d7582f9c2f733d4beeb294df34dcbf09ce3970ce..f93ce60b7dd67c49feadc7679f2dc40dab0fb47e 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-@@ -283,6 +283,7 @@ class CORE_EXPORT WebLocalFrameImpl final
+@@ -279,6 +279,7 @@ class CORE_EXPORT WebLocalFrameImpl final
    bool HasVisibleContent() const override;
    WebRect VisibleContentRect() const override;
    void DispatchBeforePrintEvent() override;
@@ -279,7 +272,7 @@ index 8de9c4ccca25c..4555bd981a201 100644
    int PrintBegin(const WebPrintParams&,
                   const WebNode& constrain_to_node) override;
    float GetPrintPageShrink(int page) override;
-@@ -486,6 +487,9 @@ class CORE_EXPORT WebLocalFrameImpl final
+@@ -470,6 +471,9 @@ class CORE_EXPORT WebLocalFrameImpl final
    // A helper for DispatchBeforePrintEvent() and DispatchAfterPrintEvent().
    void DispatchPrintEventRecursively(const AtomicString& event_type);
  
