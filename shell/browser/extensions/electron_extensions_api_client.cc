@@ -8,6 +8,7 @@
 #include <string>
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
+#include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
@@ -46,6 +47,11 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
+}
+
+ManagementAPIDelegate*
+ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
+  return new ElectronManagementAPIDelegate;
 }
 
 std::unique_ptr<MimeHandlerViewGuestDelegate>
