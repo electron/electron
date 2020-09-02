@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Tue, 4 Aug 2020 21:25:10 +0000
+Subject: Use copy of source map in
+ MediaElementElementListener::UpdateSources()
+
+Prior to this CL, this function iterated over a source map that could
+be modified by a re-entrant call triggered by JS code.
+
+(cherry picked from commit 292ac9aa5ba263f63f761e03b8214cae21e667c9)
+
+Bug: 1105426
+Change-Id: I47e49e4132cba98e12ee7c195720ac9ecc1f485b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2312703
+Reviewed-by: Marina Ciocea <marinaciocea@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#790894}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2332823
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1026}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc b/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
+index a24f912ad07902928c926a3b6afbb2574bfff5ee..c6314cd9f3a72c44f5598e249e6bfdb5569a40ee 100644
+--- a/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
++++ b/third_party/blink/renderer/modules/mediacapturefromelement/html_media_element_capture.cc
+@@ -240,9 +240,14 @@ void MediaElementEventListener::UpdateSources(ExecutionContext* context) {
+   for (auto track : media_stream_->getTracks())
+     sources_.insert(track->Component()->Source());
+ 
++  // Handling of the ended event in JS triggered by DidStopMediaStreamSource()
++  // may cause a reentrant call to this function, which can modify |sources_|.
++  // Iterate over a copy of |sources_| to avoid invalidation of the iterator
++  // when a reentrant call occurs.
++  auto sources_copy = sources_;
+   if (!media_element_->currentSrc().IsEmpty() &&
+       !media_element_->IsMediaDataCorsSameOrigin()) {
+-    for (auto source : sources_)
++    for (auto source : sources_copy)
+       DidStopMediaStreamSource(source.Get());
+   }
+ }
