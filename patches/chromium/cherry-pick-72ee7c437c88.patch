@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hiroki Nakagawa <nhiroki@chromium.org>
+Date: Fri, 7 Aug 2020 15:27:06 +0000
+Subject: Worker: Fix a race condition on task runner handling
+
+WebSharedWorkerImpl accesses WorkerScheduler from the main thread to
+take a task runner, and then dispatches a connect event to
+SharedWorkerGlobalScope using the task runner.
+
+This causes a race condition if close() is called on the global scope
+on the worker thread while the task runner is being taken on the main
+thread: close() call disposes of WorkerScheduler, and accessing the
+scheduler after that is not allowed. See the issue for details.
+
+To fix this, this CL makes WebSharedWorkerImpl capture the task runner
+between starting a worker thread (initializing WorkerScheduler) and
+posting a task to evaluate worker scripts that may call close(). This
+ensures that WebSharedWorkerImpl accesses WorkerScheduler before the
+scheduler is disposed of.
+
+(cherry picked from commit c7bbec3e595c4359e36e5472b7265c4b6d047f2c)
+
+Bug: 1104046
+Change-Id: I145cd39f706019c33220fcb01ed81f76963ffff0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2308550
+Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#790284}
+Tbr: bashi@chromium.org
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2342337
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1050}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc b/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
+index aa09f9c3cc442428830b7b6ef9d569f3da1e5269..4c62f91873619cdf85b95125e7391d6be330fecd 100644
+--- a/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_shared_worker_impl.cc
+@@ -129,11 +129,8 @@ void WebSharedWorkerImpl::Connect(MessagePortChannel web_channel) {
+   DCHECK(IsMainThread());
+   if (asked_to_terminate_)
+     return;
+-  // The HTML spec requires to queue a connect event using the DOM manipulation
+-  // task source.
+-  // https://html.spec.whatwg.org/C/#shared-workers-and-the-sharedworker-interface
+   PostCrossThreadTask(
+-      *GetWorkerThread()->GetTaskRunner(TaskType::kDOMManipulation), FROM_HERE,
++      *task_runner_for_connect_event_, FROM_HERE,
+       CrossThreadBindOnce(&WebSharedWorkerImpl::ConnectTaskOnWorkerThread,
+                           WTF::CrossThreadUnretained(this),
+                           WTF::Passed(std::move(web_channel))));
+@@ -248,6 +245,18 @@ void WebSharedWorkerImpl::StartWorkerContext(
+ 
+   GetWorkerThread()->Start(std::move(creation_params), thread_startup_data,
+                            std::move(devtools_params));
++
++  // Capture the task runner for dispatching connect events. This is necessary
++  // for avoiding race condition with WorkerScheduler termination induced by
++  // close() call on SharedWorkerGlobalScope. See https://crbug.com/1104046 for
++  // details.
++  //
++  // The HTML spec requires to queue a connect event using the DOM manipulation
++  // task source.
++  // https://html.spec.whatwg.org/C/#shared-workers-and-the-sharedworker-interface
++  task_runner_for_connect_event_ =
++      GetWorkerThread()->GetTaskRunner(TaskType::kDOMManipulation);
++
+   GetWorkerThread()->FetchAndRunClassicScript(
+       script_request_url, outside_settings_object->CopyData(),
+       nullptr /* outside_resource_timing_notifier */,
+diff --git a/third_party/blink/renderer/core/exported/web_shared_worker_impl.h b/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
+index 2c732995531f51e646808639c562eabd765ebd9f..52e0413ccfc0d6b8251b3bd13f5af11c9f1c117a 100644
+--- a/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
++++ b/third_party/blink/renderer/core/exported/web_shared_worker_impl.h
+@@ -103,6 +103,8 @@ class CORE_EXPORT WebSharedWorkerImpl final : public WebSharedWorker {
+   // |client_| owns |this|.
+   WebSharedWorkerClient* client_;
+ 
++  scoped_refptr<base::SingleThreadTaskRunner> task_runner_for_connect_event_;
++
+   bool asked_to_terminate_ = false;
+ 
+   base::WeakPtrFactory<WebSharedWorkerImpl> weak_ptr_factory_{this};
