@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 13665946e08abe7161b710b52d20307d9d248b84..eb530286d5e30691deee2285b6e78a8ee7dd6dd9 100644
+index 9a731f8522011424aa9bd18ad666aa3fa4aeff97..faf20410b7986d0fbfa6f185dc3ad8e8bb2b8b0d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -75,6 +75,7 @@ class ExternalBeginFrameController;

@@ -78,10 +78,10 @@ index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd2516
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 97f11b55ece56eda8c640e3909cdb31541afbe9b..b06cdebbd294714582b78aeb0f14bc21d3c01ff8 100644
+index 4c32b1d1ae04e021558605f24fda99c69a79ba1c..5c55c7e4e8ece720d3ddb9d6ca53180f0bb7010b 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -715,7 +715,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -729,7 +729,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -96,7 +96,7 @@ index 97f11b55ece56eda8c640e3909cdb31541afbe9b..b06cdebbd294714582b78aeb0f14bc21
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index 22cae5f668236438c9630287cbd5c6280e12d4b2..461243b4ddbcda4a7f1a3fd888b602a070706b24 100644
+index b4e7e2138dbd9d833d2d3cb465023211065fa110..e487ec6e29590132432d6c9585aeb80c88b24dac 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
