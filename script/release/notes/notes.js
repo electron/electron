@@ -131,7 +131,7 @@ const getNoteFromClerk = async (ghKey) => {
       // parsed in the markdown as part of the top-level list
       // (example: https://github.com/electron/electron/pull/25216)
       lines = lines.map(line => '  ' + line);
-      return [ firstLine, ...lines ]
+      return [firstLine, ...lines]
         .join('\n') // join the lines
         .trim();
     }
