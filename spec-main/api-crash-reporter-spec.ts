@@ -232,6 +232,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         await remotely((port: number) => {
           require('electron').crashReporter.start({
             submitURL: `http://127.0.0.1:${port}`,
+            compress: false,
             ignoreSystemCrashHandler: true
           });
         }, [port]);
@@ -271,6 +272,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true,
           extra: { longParam: 'a'.repeat(100000) }
         });
@@ -287,6 +289,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       remotely((port: number, kKeyLengthMax: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true,
           extra: {
             ['a'.repeat(kKeyLengthMax + 10)]: 'value',
@@ -399,6 +402,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       await remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true
         });
       }, [port]);
