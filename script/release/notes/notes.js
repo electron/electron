@@ -7,18 +7,10 @@ const path = require('path');
 
 const { GitProcess } = require('dugite');
 
-let octokit;
-if (!octokit) {
-  const octokitParams = { auth: process.env.ELECTRON_GITHUB_TOKEN };
-  try {
-    // octokit 17 and higher (electron >= 11)
-    const { Octokit } = require('@octokit/rest');
-    octokit = new Octokit(octokitParams);
-  } catch (e) {
-    // octokit 16 (electron <= 10)
-    octokit = require('@octokit/rest')(octokitParams);
-  }
-}
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+});
 
 const { ELECTRON_DIR } = require('../../lib/utils');
 
