@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Tue, 4 Aug 2020 16:13:40 +0000
+Subject: Use SupportWeakPtr in OfflineAudioDestinationHandler
+
+OfflineAudioDestinationHandler's render thread notifies the
+main thread when the rendering state changes. In this process,
+the associated audio context can be deleted when a posted task
+is performed sometime later in the task runner's queue.
+
+By using WeakPtr, the task runner will not perform a scheduled task
+in the queue when the target object is no longer valid.
+
+(cherry picked from commit 4f309b864587890acaefa9da5d580abb21ff9ca0)
+
+Bug: 1095584
+Test: Locally confirmed that the repro case does not crash after 30 min.
+Change-Id: Ic1814b97f8d9a8d1027ef04f475112874cfa8137
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2285473
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#786381}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2335487
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1019}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+index ec610b99c6758bc66cda07bd344f29825c8376a3..2b0d87395cef31793273ef69f61eb540be897fcf 100644
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+@@ -51,17 +51,14 @@ OfflineAudioDestinationHandler::OfflineAudioDestinationHandler(
+       frames_to_process_(frames_to_process),
+       is_rendering_started_(false),
+       number_of_channels_(number_of_channels),
+-      sample_rate_(sample_rate) {
+-  channel_count_ = number_of_channels;
++      sample_rate_(sample_rate),
++      main_thread_task_runner_(Context()->GetExecutionContext()->GetTaskRunner(
++          TaskType::kInternalMedia)) {
++  DCHECK(main_thread_task_runner_->BelongsToCurrentThread());
+ 
++  channel_count_ = number_of_channels;
+   SetInternalChannelCountMode(kExplicit);
+   SetInternalChannelInterpretation(AudioBus::kSpeakers);
+-
+-  if (Context()->GetExecutionContext()) {
+-    main_thread_task_runner_ = Context()->GetExecutionContext()->GetTaskRunner(
+-        TaskType::kMiscPlatformAPI);
+-    DCHECK(main_thread_task_runner_->BelongsToCurrentThread());
+-  }
+ }
+ 
+ scoped_refptr<OfflineAudioDestinationHandler>
+@@ -218,7 +215,7 @@ void OfflineAudioDestinationHandler::SuspendOfflineRendering() {
+   PostCrossThreadTask(
+       *main_thread_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&OfflineAudioDestinationHandler::NotifySuspend,
+-                          WrapRefCounted(this),
++                          GetWeakPtr(),
+                           Context()->CurrentSampleFrame()));
+ }
+ 
+@@ -229,7 +226,7 @@ void OfflineAudioDestinationHandler::FinishOfflineRendering() {
+   PostCrossThreadTask(
+       *main_thread_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&OfflineAudioDestinationHandler::NotifyComplete,
+-                          WrapRefCounted(this)));
++                          GetWeakPtr()));
+ }
+ 
+ void OfflineAudioDestinationHandler::NotifySuspend(size_t frame) {
+diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
+index e4d2d8bfcd5d90d233ca8c761f07e8f518f83018..07d80e4cff535ee7230ea14d96c292bacaa7c19e 100644
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.h
+@@ -28,6 +28,7 @@
+ 
+ #include <memory>
+ #include "base/memory/scoped_refptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_buffer.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_destination_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/offline_audio_context.h"
+@@ -124,6 +125,17 @@ class OfflineAudioDestinationHandler final : public AudioDestinationHandler {
+   // from AudioWorkletThread will be used until the rendering is finished.
+   void PrepareTaskRunnerForRendering();
+ 
++  // For cross-thread posting, this object uses two different targets.
++  // 1. rendering thread -> main thread: WeakPtr
++  //    When the main thread starts deleting this object, a task posted with
++  //    a WeakPtr from the rendering thread will be cancelled.
++  // 2. main thread -> rendering thread: scoped_refptr
++  //    |render_thread_| is owned by this object, so it is safe to target with
++  //    WrapRefCounted() instead of GetWeakPtr().
++  base::WeakPtr<OfflineAudioDestinationHandler> GetWeakPtr() {
++    return weak_factory_.GetWeakPtr();
++  }
++
+   // This AudioHandler renders into this SharedAudioBuffer.
+   std::unique_ptr<SharedAudioBuffer> shared_render_target_;
+   // Temporary AudioBus for each render quantum.
+@@ -148,6 +160,8 @@ class OfflineAudioDestinationHandler final : public AudioDestinationHandler {
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> render_thread_task_runner_;
+   scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_;
++
++  base::WeakPtrFactory<OfflineAudioDestinationHandler> weak_factory_{this};
+ };
+ 
+ class OfflineAudioDestinationNode final : public AudioDestinationNode {
