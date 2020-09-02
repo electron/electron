@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adrienne Walker <enne@chromium.org>
+Date: Wed, 5 Aug 2020 00:44:52 +0000
+Subject: indexeddb: reset async tasks in ~WebIDBGetDBNamesCallbacksImpl
+
+Since sometimes the WebIDBGetDBNamesCallbacksImpl can be destroyed when
+the promise is resolved, make sure that no code that could reference it
+is still around.  Store the async task as an optional member so it can
+be cleared during the destructor.
+
+Followup to:
+https://chromium-review.googlesource.com/c/chromium/src/+/2311620
+
+(cherry picked from commit 4422ec665ddca3ac05ad90bac5d5ebee7cfc5536)
+
+Bug: 1106682,1109467
+Change-Id: Id6a0ff0a3703fab94e9684e41f16d5a1bac20468
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2321332
+Reviewed-by: Daniel Murphy <dmurph@chromium.org>
+Commit-Queue: enne <enne@chromium.org>
+Auto-Submit: enne <enne@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#792121}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2337110
+Reviewed-by: enne <enne@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1029}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
+index 645e5cbf682c2a26f6a3e0742afb4e77c4388770..e2d0d49bed36e567a76c5610855a139774254b36 100644
+--- a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
++++ b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
+@@ -111,6 +111,7 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
+       Vector<mojom::blink::IDBNameAndVersionPtr> names_and_versions) override {
+     if (!promise_resolver_)
+       return;
++    DCHECK(!async_task_.has_value());
+ 
+     HeapVector<Member<IDBDatabaseInfo>> name_and_version_list;
+     name_and_version_list.ReserveInitialCapacity(name_and_version_list.size());
+@@ -124,11 +125,12 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
+       name_and_version_list.push_back(idb_info);
+     }
+ 
+-    probe::AsyncTask async_task(
++    async_task_.emplace(
+         ExecutionContext::From(promise_resolver_->GetScriptState()),
+         &async_task_id_, "success");
+     promise_resolver_->Resolve(name_and_version_list);
+-    // Note: Resolve may cause |this| to be deleted.
++    // Note: Resolve may cause |this| to be deleted.  async_task_ will be
++    // completed in the destructor.
+   }
+ 
+   void SuccessStringList(const Vector<String>&) override { NOTREACHED(); }
+@@ -190,6 +192,7 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
+ 
+  private:
+   probe::AsyncTaskId async_task_id_;
++  base::Optional<probe::AsyncTask> async_task_;
+   Persistent<ScriptPromiseResolver> promise_resolver_;
+ };
+ 
