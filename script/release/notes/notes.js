@@ -6,10 +6,19 @@ const fs = require('fs');
 const path = require('path');
 
 const { GitProcess } = require('dugite');
-const { Octokit } = require('@octokit/rest');
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
+
+let octokit;
+if (!octokit) {
+  const octokitParams = { auth: process.env.ELECTRON_GITHUB_TOKEN };
+  try {
+    // octokit 17 and higher (electron >= 11)
+    const { Octokit } = require('@octokit/rest');
+    octokit = new Octokit(octokitParams);
+  } catch (e) {
+    // octokit 16 (electron <= 10)
+    octokit = require('@octokit/rest')(octokitParams);
+  }
+}
 
 const { ELECTRON_DIR } = require('../../lib/utils');
 
@@ -109,13 +118,21 @@ const getNoteFromClerk = async (ghKey) => {
       return NO_NOTES;
     }
     if (comment.body.startsWith(PERSIST_LEAD)) {
-      return comment.body
+      let lines = comment.body
         .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
         .split(/\r?\n/) // split into lines
         .map(line => line.trim())
         .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
-        .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
-        .join(' ') // join the note lines
+        .map(line => line.slice(QUOTE_LEAD.length)); // unquote the lines
+
+      const firstLine = lines.shift();
+      // indent anything after the first line to ensure that
+      // multiline notes with their own sub-lists don't get
+      // parsed in the markdown as part of the top-level list
+      // (example: https://github.com/electron/electron/pull/25216)
+      lines = lines.map(line => '  ' + line);
+      return [ firstLine, ...lines ]
+        .join('\n') // join the lines
         .trim();
     }
   }
@@ -532,6 +549,15 @@ function renderTrops (commit, excludeBranch) {
 function renderDescription (commit) {
   let note = commit.note || commit.subject || '';
   note = note.trim();
+
+  // release notes bullet point every change, so if the note author
+  // manually started the content with a bullet point, that will confuse
+  // the markdown renderer -- remove the redundant bullet point
+  // (example: https://github.com/electron/electron/pull/25216)
+  if (note.startsWith('*')) {
+    note = note.slice(1).trim();
+  }
+
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1);
 
