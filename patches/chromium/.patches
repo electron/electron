@@ -123,3 +123,5 @@ backport_1074340.patch
 cherry-pick-70579363ce7b.patch
 indexeddb_fix_crash_in_webidbgetdbnamescallbacksimpl.patch
 indexeddb_reset_async_tasks_in_webidbgetdbnamescallbacksimpl.patch
+cherry-pick-138b748dd0a4.patch
+cherry-pick-bee371eeaf66.patch
