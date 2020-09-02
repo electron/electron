@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Wed, 22 Jul 2020 13:58:50 -0400
+Subject: D3D11: Fix bug with static vertex attributes.
+
+In some specific cases after binding a zero size buffer we could end
+up trying to use a buffer storage that was no longer valid. Fix this
+by ensuring we don't flush dirty bits when we have an early exit due
+to a zero size buffer.
+
+Also adds a regression test.
+
+Bug: chromium:1107433
+Change-Id: I9db560e8dd3699abed2bb7fe6d91060148ba1817
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2314216
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+index 8fbb77a3082254518034c1fce28e3a09442747e2..e07b61a0ca19aac62a5618f136c3548acbd4efec 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+@@ -249,8 +249,6 @@ angle::Result VertexArray11::updateDirtyAttribs(const gl::Context *context,
+ 
+     for (size_t dirtyAttribIndex : activeDirtyAttribs)
+     {
+-        mAttribsToTranslate.reset(dirtyAttribIndex);
+-
+         auto *translatedAttrib   = &mTranslatedAttribs[dirtyAttribIndex];
+         const auto &currentValue = glState.getVertexAttribCurrentValue(dirtyAttribIndex);
+ 
+@@ -278,6 +276,9 @@ angle::Result VertexArray11::updateDirtyAttribs(const gl::Context *context,
+                 UNREACHABLE();
+                 break;
+         }
++
++        // Make sure we reset the dirty bit after the switch because STATIC can early exit.
++        mAttribsToTranslate.reset(dirtyAttribIndex);
+     }
+ 
+     return angle::Result::Continue;
