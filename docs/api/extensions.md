@@ -28,6 +28,9 @@ session.loadExtension('path/to/unpacked/extension').then(({ id }) => {
 Loaded extensions will not be automatically remembered across exits; if you do
 not call `loadExtension` when the app runs, the extension will not be loaded.
 
+Note that loading extensions is only supported in persistent sessions.
+Attempting to load an extension into an in-memory session will throw an error.
+
 See the [`session`](session.md) documentation for more information about
 loading, unloading, and querying active extensions.
 
