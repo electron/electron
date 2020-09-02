@@ -112,4 +112,19 @@ describe('shell module', () => {
       expect(await fs.pathExists(tempPath)).to.be.false();
     });
   });
+
+  describe('shell.trashItem()', () => {
+    it('moves an item to the trash', async () => {
+      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
+      const filename = path.join(dir, 'temp-to-be-deleted');
+      await fs.writeFile(filename, 'dummy-contents');
+      await shell.trashItem(filename);
+      expect(fs.existsSync(filename)).to.be.false();
+    });
+
+    it('throws when called with a nonexistent path', async () => {
+      const filename = path.join(app.getPath('temp'), 'does-not-exist');
+      await expect(shell.trashItem(filename)).to.eventually.be.rejected();
+    });
+  });
 });
