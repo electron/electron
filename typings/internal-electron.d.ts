@@ -56,6 +56,7 @@ declare namespace Electron {
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
+    _initiallyShown: boolean;
   }
 
   interface WebPreferences {
