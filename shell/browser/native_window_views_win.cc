@@ -315,14 +315,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   // Here we handle the WM_SIZE event in order to figure out what is the current
   // window state and notify the user accordingly.
   switch (w_param) {
-    case SIZE_MAXIMIZED: {
-      last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
-      NotifyWindowMaximize();
-      break;
-    }
-    case SIZE_MINIMIZED:
-      last_window_state_ = ui::SHOW_STATE_MINIMIZED;
-
+    case SIZE_MAXIMIZED:
+    case SIZE_MINIMIZED: {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
 
@@ -330,8 +324,19 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
-      NotifyWindowMinimize();
+      // Note that SIZE_MAXIMIZED and SIZE_MINIMIZED might be emitted for
+      // multiple times for one resize because of the SetWindowPlacement call.
+      if (w_param == SIZE_MAXIMIZED &&
+          last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
+        last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
+        NotifyWindowMaximize();
+      } else if (w_param == SIZE_MINIMIZED &&
+                 last_window_state_ != ui::SHOW_STATE_MINIMIZED) {
+        last_window_state_ = ui::SHOW_STATE_MINIMIZED;
+        NotifyWindowMinimize();
+      }
       break;
+    }
     case SIZE_RESTORED:
       switch (last_window_state_) {
         case ui::SHOW_STATE_MAXIMIZED:
