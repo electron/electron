@@ -9,6 +9,7 @@
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
@@ -57,6 +58,11 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
   pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
       web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
+}
+
+ManagementAPIDelegate*
+ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
+  return new ElectronManagementAPIDelegate;
 }
 
 std::unique_ptr<MimeHandlerViewGuestDelegate>
