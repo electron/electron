@@ -13,5 +13,7 @@
 
   "src/electron/patches/skia": "src/third_party/skia",
 
+  "src/electron/patches/angle": "src/third_party/angle",
+
   "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
 }
