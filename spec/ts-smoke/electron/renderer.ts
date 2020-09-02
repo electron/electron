@@ -34,7 +34,7 @@ remote.getCurrentWindow().on('close', () => {
 })
 
 remote.getCurrentWindow().capturePage().then(buf => {
-  fs.writeFile('/tmp/screenshot.png', buf, err => {
+  fs.writeFile('/tmp/screenshot.png', (buf as any), err => {
     console.log(err)
   })
 })
@@ -109,7 +109,7 @@ crashReporter.start({
 
 const desktopCapturer = require('electron').desktopCapturer
 
-desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
+desktopCapturer.getSources({ types: ['window', 'screen'] }).then((sources: Electron.DesktopCapturerSource[]) => {
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name == 'Electron') {
       (navigator as any).webkitGetUserMedia({
@@ -128,6 +128,27 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
       return
     }
   }
+})
+
+desktopCapturer.getMediaSourceIdForWebContents(remote.getCurrentWebContents().id).then((mediaSourceId: any) => {
+  (navigator as any).webkitGetUserMedia({
+    audio:  {
+      mandatory: {
+        chromeMediaSource: 'tab',
+        chromeMediaSourceId: mediaSourceId
+      }
+    },
+    video: {
+      mandatory: {
+        chromeMediaSource: 'tab',
+        chromeMediaSourceId: mediaSourceId,
+        minWidth: 1280,
+        maxWidth: 1280,
+        minHeight: 720,
+        maxHeight: 720
+      }
+    }
+  }, gotStream, getUserMediaError)
 })
 
 function gotStream (stream: any) {

@@ -362,7 +362,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     delete this._urlLoaderOptions.extraHeaders[key];
   }
 
-  _write (chunk: Buffer, encoding: string, callback: () => void) {
+  _write (chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
     this._firstWrite = true;
     if (!this._body) {
       this._body = new SlurpStream();
