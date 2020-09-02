@@ -130,3 +130,4 @@ cherry-pick-9ad8c9610d0a.patch
 indexeddb_fix_crash_in_webidbgetdbnamescallbacksimpl.patch
 indexeddb_reset_async_tasks_in_webidbgetdbnamescallbacksimpl.patch
 reland_fix_uaf_in_selecttype.patch
+cherry-pick-f6cb89728f04.patch
