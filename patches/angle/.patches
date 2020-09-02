@@ -1,0 +1,2 @@
+fix_stale_validation_cache_on_buffer_deletion.patch
+d3d11_fix_bug_with_static_vertex_attributes.patch
