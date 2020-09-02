@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_native_theme.h"
 
-#include <iostream>
 #include <string>
 
 #include "base/task/post_task.h"
@@ -48,8 +47,6 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   ui_theme_->set_theme_source(override);
   web_theme_->set_theme_source(override);
-  std::cerr << __FILE__ << ':' << __LINE__ << ':' << __FUNCTION__
-            << " override[" << override << ']' << std::endl;
 #if defined(OS_MAC)
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);

@@ -4,8 +4,6 @@
 
 #include "shell/browser/native_window_views.h"
 
-#include <iostream>
-
 #include <dwmapi.h>
 #include <shellapi.h>
 
@@ -455,26 +453,8 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   return CallNextHookEx(NULL, n_code, w_param, l_param);
 }
 
-namespace {
-
-bool IsDarkPreferred(ui::NativeTheme::ThemeSource theme_source) {
-  switch (theme_source) {
-    case ui::NativeTheme::ThemeSource::kForcedLight:
-      return false;
-    case ui::NativeTheme::ThemeSource::kForcedDark:
-      return electron::win::IsDarkModeSupported();
-    case ui::NativeTheme::ThemeSource::kSystem:
-      return electron::win::IsDarkModeEnabled();
-  }
-}
-
-}  // namespace
-
-void NativeWindowViews::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
-  auto const use_dark = IsDarkPreferred(observed_theme->theme_source());
-  std::cerr << __FILE__ << ':' << __LINE__ << ':' << __FUNCTION__
-            << " use_dark[" << use_dark << ']' << std::endl;
-  win::AllowDarkModeForWindow(GetAcceleratedWidget(), use_dark);
+void NativeWindowViews::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+  win::SetDarkModeForWindow(GetAcceleratedWidget(), theme->theme_source());
 }
 
 }  // namespace electron
