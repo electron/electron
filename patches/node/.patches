@@ -43,3 +43,4 @@ fix_allow_preventing_setpromiserejectcallback.patch
 lib_use_non-symbols_in_isurlinstance_check.patch
 feat_add_implementation_of_v8_platform_postjob.patch
 fix_enable_tls_renegotiation.patch
+n-api_src_provide_asynchronous_cleanup_hooks.patch
