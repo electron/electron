@@ -1,0 +1,284 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Tue, 28 Jul 2020 22:47:48 +0000
+Subject: M85: Correctly retrieve the plugin when printing.
+
+The logic in PrintRenderFrameHelper to retrieve a plugin is out of sync
+with the logic in WebLocalFrameImpl::PrintBegin(). If
+PrintRenderFrameHelper thinks it is printing a webpage, while
+WebLocalFrameImpl thinks it is printing a plugin, bad things happen.
+
+Fix this by adding WebLocalFrame::GetPluginToPrint(), to expose the
+plugin finding logic in WebLocalFrameImpl. With GetPluginToPrint()
+available, PrintRenderFrameHelper can delete its own GetPlugin() helper,
+and switch the GetPlugin() callers to use GetPluginToPrint() instead.
+
+Once synchronized, some use cases for printing Flash now work correctly.
+
+(cherry picked from commit f8d7d428b1549ff1f87e3d34c5ca0b53d6ce4e84)
+
+Tbr: japhet@chromium.org
+Bug: 1098860
+Change-Id: I9500db9ed2d6da0f87dad84c197f738d3a1e3c84
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2317168
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#791564}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2324664
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4183@{#1009}
+Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
+
+diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
+index 5c23f9fba61c791365d9c69910ebb12154a6f238..0268475fc4532368c47034d7c7278fa261732516 100644
+--- a/components/printing/renderer/print_render_frame_helper.cc
++++ b/components/printing/renderer/print_render_frame_helper.cc
+@@ -59,8 +59,6 @@
+ #include "third_party/blink/public/web/web_local_frame_client.h"
+ #include "third_party/blink/public/web/web_navigation_control.h"
+ #include "third_party/blink/public/web/web_plugin.h"
+-#include "third_party/blink/public/web/web_plugin_container.h"
+-#include "third_party/blink/public/web/web_plugin_document.h"
+ #include "third_party/blink/public/web/web_print_params.h"
+ #include "third_party/blink/public/web/web_print_preset_options.h"
+ #include "third_party/blink/public/web/web_script_source.h"
+@@ -341,28 +339,14 @@ void ComputeWebKitPrintParamsInDesiredDpi(
+   webkit_print_params->pages_per_sheet = print_params.pages_per_sheet;
+ }
+ 
+-blink::WebPlugin* GetPlugin(const blink::WebLocalFrame* frame) {
+-  return frame->GetDocument().IsPluginDocument()
+-             ? frame->GetDocument().To<blink::WebPluginDocument>().Plugin()
+-             : nullptr;
+-}
+-
+-bool IsPrintingNodeOrPdfFrame(const blink::WebLocalFrame* frame,
++bool IsPrintingNodeOrPdfFrame(blink::WebLocalFrame* frame,
+                               const blink::WebNode& node) {
+-  if (!node.IsNull())
+-    return true;
+-  blink::WebPlugin* plugin = GetPlugin(frame);
++  blink::WebPlugin* plugin = frame->GetPluginToPrint(node);
+   return plugin && plugin->SupportsPaginatedPrint();
+ }
+ 
+ bool IsPrintingPdf(blink::WebLocalFrame* frame, const blink::WebNode& node) {
+-  blink::WebPlugin* plugin;
+-  if (node.IsNull()) {
+-    plugin = GetPlugin(frame);
+-  } else {
+-    blink::WebPluginContainer* plugin_container = node.PluginContainer();
+-    plugin = plugin_container ? plugin_container->Plugin() : nullptr;
+-  }
++  blink::WebPlugin* plugin = frame->GetPluginToPrint(node);
+   return plugin && plugin->IsPdfPlugin();
+ }
+ 
+@@ -2341,7 +2325,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+       // 2. PrintHostMsg_ShowScriptedPrintPreview shows preview once the
+       //    document has been loaded.
+       is_scripted_preview_delayed_ = true;
+-      if (is_loading_ && GetPlugin(print_preview_context_.source_frame())) {
++      if (is_loading_ && print_preview_context_.IsPlugin()) {
+         // Wait for DidStopLoading. Plugins may not know the correct
+         // |is_modifiable| value until they are fully loaded, which occurs when
+         // DidStopLoading() is called. Defer showing the preview until then.
+@@ -2368,7 +2352,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+       // Wait for DidStopLoading. Continuing with this function while
+       // |is_loading_| is true will cause print preview to hang when try to
+       // print a PDF document.
+-      if (is_loading_ && GetPlugin(print_preview_context_.source_frame())) {
++      if (is_loading_ && print_preview_context_.IsPlugin()) {
+         on_stop_loading_closure_ =
+             base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
+                            weak_ptr_factory_.GetWeakPtr(), type);
+@@ -2379,12 +2363,12 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+     }
+     case PRINT_PREVIEW_USER_INITIATED_SELECTION: {
+       DCHECK(has_selection);
+-      DCHECK(!GetPlugin(print_preview_context_.source_frame()));
++      DCHECK(!print_preview_context_.IsPlugin());
+       params.selection_only = has_selection;
+       break;
+     }
+     case PRINT_PREVIEW_USER_INITIATED_CONTEXT_NODE: {
+-      if (is_loading_ && GetPlugin(print_preview_context_.source_frame())) {
++      if (is_loading_ && print_preview_context_.IsPlugin()) {
+         on_stop_loading_closure_ =
+             base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
+                            weak_ptr_factory_.GetWeakPtr(), type);
+@@ -2453,8 +2437,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithFrame(
+   state_ = INITIALIZED;
+   source_frame_.Reset(web_frame);
+   source_node_.Reset();
+-  CalculateIsModifiable();
+-  CalculateIsPdf();
++  CalculatePluginAttributes();
+ }
+ 
+ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
+@@ -2465,8 +2448,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
+   state_ = INITIALIZED;
+   source_frame_.Reset(web_node.GetDocument().GetFrame());
+   source_node_ = web_node;
+-  CalculateIsModifiable();
+-  CalculateIsPdf();
++  CalculatePluginAttributes();
+ }
+ 
+ void PrintRenderFrameHelper::PrintPreviewContext::OnPrintPreview() {
+@@ -2604,6 +2586,11 @@ bool PrintRenderFrameHelper::PrintPreviewContext::IsForArc() const {
+   return is_for_arc_;
+ }
+ 
++bool PrintRenderFrameHelper::PrintPreviewContext::IsPlugin() const {
++  DCHECK(state_ != UNINITIALIZED);
++  return is_plugin_;
++}
++
+ bool PrintRenderFrameHelper::PrintPreviewContext::IsModifiable() const {
+   DCHECK(state_ != UNINITIALIZED);
+   return is_modifiable_;
+@@ -2694,11 +2681,9 @@ void PrintRenderFrameHelper::PrintPreviewContext::ClearContext() {
+   error_ = PREVIEW_ERROR_NONE;
+ }
+ 
+-void PrintRenderFrameHelper::PrintPreviewContext::CalculateIsModifiable() {
++void PrintRenderFrameHelper::PrintPreviewContext::CalculatePluginAttributes() {
++  is_plugin_ = !!source_frame()->GetPluginToPrint(source_node_);
+   is_modifiable_ = !IsPrintingNodeOrPdfFrame(source_frame(), source_node_);
+-}
+-
+-void PrintRenderFrameHelper::PrintPreviewContext::CalculateIsPdf() {
+   is_pdf_ = IsPrintingPdf(source_frame(), source_node_);
+ }
+ 
+diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
+index 3f66fd39345998fd11d0fd383b4262cca838abf8..c35a1735059927a30c4e901f95e9beb1aa280566 100644
+--- a/components/printing/renderer/print_render_frame_helper.h
++++ b/components/printing/renderer/print_render_frame_helper.h
+@@ -503,6 +503,7 @@ class PrintRenderFrameHelper
+     int GetNextPageNumber();
+     bool IsRendering() const;
+     bool IsForArc() const;
++    bool IsPlugin() const;
+     bool IsModifiable() const;
+     bool IsPdf() const;
+     bool HasSelection();
+@@ -543,9 +544,7 @@ class PrintRenderFrameHelper
+     // Reset some of the internal rendering context.
+     void ClearContext();
+ 
+-    void CalculateIsModifiable();
+-
+-    void CalculateIsPdf();
++    void CalculatePluginAttributes();
+ 
+     // Specifies what to render for print preview.
+     FrameReference source_frame_;
+@@ -563,6 +562,9 @@ class PrintRenderFrameHelper
+     // List of page indices that need to be rendered.
+     std::vector<int> pages_to_render_;
+ 
++    // True, if the document source is a plugin.
++    bool is_plugin_ = false;
++
+     // True, if the document source is modifiable. e.g. HTML and not PDF.
+     bool is_modifiable_ = true;
+ 
+diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
+index 0cd308b38a158a016b099beed6a31fa1c5a487ad..1b818378468c479d0cf92f4a34445ea12c95fe35 100644
+--- a/third_party/blink/public/web/web_local_frame.h
++++ b/third_party/blink/public/web/web_local_frame.h
+@@ -48,6 +48,7 @@ class WebLocalFrameClient;
+ class WebFrameWidget;
+ class WebInputMethodController;
+ class WebPerformance;
++class WebPlugin;
+ class WebRange;
+ class WebSecurityOrigin;
+ class WebScriptExecutionCallback;
+@@ -671,13 +672,16 @@ class WebLocalFrame : public WebFrame {
+   // This function should be called before pairs of PrintBegin() and PrintEnd().
+   virtual void DispatchBeforePrintEvent() = 0;
+ 
++  // Get the plugin to print, if any. The |constrain_to_node| parameter is the
++  // same as the one for PrintBegin() below.
++  virtual WebPlugin* GetPluginToPrint(const WebNode& constrain_to_node) = 0;
++
+   // Reformats the WebFrame for printing. WebPrintParams specifies the printable
+   // content size, paper size, printable area size, printer DPI and print
+-  // scaling option. If constrainToNode node is specified, then only the given
++  // scaling option. If |constrain_to_node| is specified, then only the given
+   // node is printed (for now only plugins are supported), instead of the entire
+   // frame.
+-  // Returns the number of pages that can be printed at the given
+-  // page size.
++  // Returns the number of pages that can be printed at the given page size.
+   virtual int PrintBegin(const WebPrintParams&,
+                          const WebNode& constrain_to_node = WebNode()) = 0;
+ 
+diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+index 105e1e92002adde207db5c770197547ab6b55f97..040d55a9da6dbc37d48943d9614b8f42d615ce70 100644
+--- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+@@ -1544,19 +1544,29 @@ void WebLocalFrameImpl::DispatchPrintEventRecursively(
+   }
+ }
+ 
+-int WebLocalFrameImpl::PrintBegin(const WebPrintParams& print_params,
+-                                  const WebNode& constrain_to_node) {
+-  WebPluginContainerImpl* plugin_container = nullptr;
++WebPluginContainerImpl* WebLocalFrameImpl::GetPluginToPrintHelper(
++    const WebNode& constrain_to_node) {
+   if (constrain_to_node.IsNull()) {
+     // If this is a plugin document, check if the plugin supports its own
+     // printing. If it does, we will delegate all printing to that.
+-    plugin_container = GetFrame()->GetWebPluginContainer();
+-  } else {
+-    // We only support printing plugin nodes for now.
+-    plugin_container =
+-        ToWebPluginContainerImpl(constrain_to_node.PluginContainer());
++    return GetFrame()->GetWebPluginContainer();
+   }
+ 
++  // We only support printing plugin nodes for now.
++  return ToWebPluginContainerImpl(constrain_to_node.PluginContainer());
++}
++
++WebPlugin* WebLocalFrameImpl::GetPluginToPrint(
++    const WebNode& constrain_to_node) {
++  WebPluginContainerImpl* plugin_container =
++      GetPluginToPrintHelper(constrain_to_node);
++  return plugin_container ? plugin_container->Plugin() : nullptr;
++}
++
++int WebLocalFrameImpl::PrintBegin(const WebPrintParams& print_params,
++                                  const WebNode& constrain_to_node) {
++  WebPluginContainerImpl* plugin_container =
++      GetPluginToPrintHelper(constrain_to_node);
+   if (plugin_container && plugin_container->SupportsPaginatedPrint()) {
+     print_context_ = MakeGarbageCollected<ChromePluginPrintContext>(
+         GetFrame(), plugin_container, print_params);
+diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
+index ad7fd6c34f10d10257ef5c6e5b4b916dc924f20c..097109b2fdc1e733fd63eb1f2ad26db91478b766 100644
+--- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
++++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
+@@ -293,6 +293,7 @@ class CORE_EXPORT WebLocalFrameImpl final
+   bool HasVisibleContent() const override;
+   WebRect VisibleContentRect() const override;
+   void DispatchBeforePrintEvent() override;
++  WebPlugin* GetPluginToPrint(const WebNode& constrain_to_node) override;
+   int PrintBegin(const WebPrintParams&,
+                  const WebNode& constrain_to_node) override;
+   float GetPrintPageShrink(int page) override;
+@@ -478,6 +479,9 @@ class CORE_EXPORT WebLocalFrameImpl final
+   // A helper for DispatchBeforePrintEvent() and DispatchAfterPrintEvent().
+   void DispatchPrintEventRecursively(const AtomicString& event_type);
+ 
++  WebPluginContainerImpl* GetPluginToPrintHelper(
++      const WebNode& constrain_to_node);
++
+   Node* ContextMenuNodeInner() const;
+ 
+   WebLocalFrameClient* client_;
