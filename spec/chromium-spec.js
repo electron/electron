@@ -17,6 +17,14 @@ const features = process._linkedBinding('electron_common_features');
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
 
+  describe('Badging API', () => {
+    it('does not crash', () => {
+      expect(() => {
+        navigator.setAppBadge(42);
+      }).to.not.throw();
+    });
+  });
+
   describe('heap snapshot', () => {
     it('does not crash', function () {
       process._linkedBinding('electron_common_v8_util').takeHeapSnapshot();
