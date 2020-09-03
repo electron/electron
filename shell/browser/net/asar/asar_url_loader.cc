@@ -216,9 +216,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
       std::string new_type;
-      net::SniffMimeType(initial_read_buffer.data(), read_result.bytes_read,
-                         request.url, head->mime_type,
-                         net::ForceSniffFileUrlsForHtml::kDisabled, &new_type);
+      net::SniffMimeType(
+          base::StringPiece(initial_read_buffer.data(), read_result.bytes_read),
+          request.url, head->mime_type,
+          net::ForceSniffFileUrlsForHtml::kDisabled, &new_type);
       head->mime_type.assign(new_type);
       head->did_mime_sniff = true;
     }
