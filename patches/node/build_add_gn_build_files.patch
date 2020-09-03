@@ -605,10 +605,10 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..11b20bfb235aa35cedc1091be89694f3981a41f2
+index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad51a8d557
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,191 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -644,6 +644,7 @@ index 0000000000000000000000000000000000000000..11b20bfb235aa35cedc1091be89694f3
 +  defines += [ "BUILDING_UV_SHARED=1" ]
 +
 +  cflags_c = [
++    "-Wno-incompatible-pointer-types",
 +    "-Wno-bitwise-op-parentheses",
 +    "-Wno-implicit-function-declaration",
 +    "-Wno-missing-braces",

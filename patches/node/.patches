@@ -33,3 +33,4 @@ crypto_update_certdata_to_nss_3_56.patch
 fix_-wincompatible-pointer-types-discards-qualifiers_error.patch
 fix_allow_preventing_initializeinspector_in_env.patch
 fix_passing_off_t_to_ssize_t_param.patch
+fix_emit_error_on_destroy_always.patch
