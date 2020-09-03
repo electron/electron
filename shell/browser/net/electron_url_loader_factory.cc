@@ -259,7 +259,8 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
-    auto new_method = ComputeMethodForRedirect(request.method, head->headers->response_code());
+    auto new_method = ComputeMethodForRedirect(request.method,
+                                               head->headers->response_code());
     auto new_location = request.url.Resolve(location);
     auto new_site_for_cookies = net::SiteForCookies::FromUrl(new_location);
 
