@@ -31,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 #endif
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 bool SystemPreferences::IsDarkMode() {
   return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
 }
@@ -69,7 +69,7 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
              SystemPreferences>::GetObjectTemplateBuilder(isolate)
-#if defined(OS_WIN) || defined(OS_MACOSX)
+#if defined(OS_WIN) || defined(OS_MAC)
       .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("getMediaAccessStatus",
@@ -78,7 +78,7 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
 
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)

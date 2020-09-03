@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 8ca7ccfad7d9d8f874f7a6a0507c787492f99ecb..40a17e6f4a0ee9e7490a32d1307dd74dd0f923d6 100644
+index 436d3628cc37df2612adbe2da6bbddd66c737ca4..51e0655bc3bce3640e26952513f1619f14cdf997 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -662,7 +662,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -663,7 +663,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  

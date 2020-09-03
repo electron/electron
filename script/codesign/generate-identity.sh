@@ -40,7 +40,7 @@ DevToolsSecurity -enable
 # security import "$dir"/public.key -k $KEY_CHAIN
 
 # Generate Trust Settings
-node "$(dirname $0)"/gen-trust.js "$dir"/certificate.cer "$dir"/trust.xml
+npx ts-node "$(dirname $0)"/gen-trust.ts "$dir"/certificate.cer "$dir"/trust.xml
 
 # Import Trust Settings
 sudo security trust-settings-import -d "$dir/trust.xml"

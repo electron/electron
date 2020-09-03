@@ -40,7 +40,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif
 

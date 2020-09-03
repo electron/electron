@@ -22,6 +22,7 @@
 #include "shell/common/v8_value_serializer.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
+#include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
@@ -212,7 +213,8 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 void ElectronApiServiceImpl::NotifyUserActivation() {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (frame)
-    frame->NotifyUserActivation();
+    frame->NotifyUserActivation(
+        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(

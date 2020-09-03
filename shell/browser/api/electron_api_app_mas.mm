@@ -32,12 +32,13 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
   // Create bookmarkUrl from NSData.
   BOOL isStale = false;
   NSError* error = nil;
-  NSURL* bookmarkUrl =
-      [NSURL URLByResolvingBookmarkData:bookmarkData
-                                options:NSURLBookmarkResolutionWithSecurityScope
-                          relativeToURL:nil
-                    bookmarkDataIsStale:&isStale
-                                  error:&error];
+  NSURL* bookmarkUrl = [NSURL
+      URLByResolvingBookmarkData:bookmarkData
+                         options:NSURLBookmarkResolutionWithSecurityScope |
+                                 NSURLBookmarkResolutionWithoutMounting
+                   relativeToURL:nil
+             bookmarkDataIsStale:&isStale
+                           error:&error];
 
   if (error != nil) {
     NSString* err =

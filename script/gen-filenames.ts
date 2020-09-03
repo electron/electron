@@ -1,7 +1,7 @@
-const cp = require('child_process');
-const fs = require('fs-extra');
-const os = require('os');
-const path = require('path');
+import * as cp from 'child_process';
+import * as fs from 'fs-extra';
+import * as os from 'os';
+import * as path from 'path';
 
 const rootPath = path.resolve(__dirname, '..');
 const gniPath = path.resolve(__dirname, '../filenames.auto.gni');
@@ -43,7 +43,7 @@ const main = async () => {
     }
   ];
 
-  await Promise.all(webpackTargets.map(async webpackTarget => {
+  const webpackTargetsWithDeps = await Promise.all(webpackTargets.map(async webpackTarget => {
     const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'));
     const child = cp.spawn('node', [
       'build/webpack/get-outputs.js',
@@ -66,20 +66,24 @@ const main = async () => {
       resolve();
     }));
 
-    webpackTarget.dependencies = JSON.parse(output)
-      // Remove whitespace
-      .map(line => line.trim())
-      // Get the relative path
-      .map(line => path.relative(rootPath, line).replace(/\\/g, '/'))
-      // Only care about files in //electron
-      .filter(line => !line.startsWith('..'))
-      // Only care about our own files
-      .filter(line => !line.startsWith('node_modules'))
-      // All webpack builds depend on the tsconfig  and package json files
-      .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json', ...typingFiles])
-      // Make the generated list easier to read
-      .sort();
+    const webpackTargetWithDeps = {
+      ...webpackTarget,
+      dependencies: (JSON.parse(output) as string[])
+        // Remove whitespace
+        .map(line => line.trim())
+        // Get the relative path
+        .map(line => path.relative(rootPath, line).replace(/\\/g, '/'))
+        // Only care about files in //electron
+        .filter(line => !line.startsWith('..'))
+        // Only care about our own files
+        .filter(line => !line.startsWith('node_modules'))
+        // All webpack builds depend on the tsconfig  and package json files
+        .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json', ...typingFiles])
+        // Make the generated list easier to read
+        .sort()
+    };
     await fs.remove(tmpDir);
+    return webpackTargetWithDeps;
   }));
 
   fs.writeFileSync(
@@ -90,7 +94,7 @@ auto_filenames = {
 ${allDocs.map(doc => `    "${doc}",`).join('\n')}
   ]
 
-${webpackTargets.map(target => `  ${target.name} = [
+${webpackTargetsWithDeps.map(target => `  ${target.name} = [
 ${target.dependencies.map(dep => `    "${dep}",`).join('\n')}
   ]`).join('\n\n')}
 }

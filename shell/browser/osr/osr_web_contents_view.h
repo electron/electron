@@ -13,7 +13,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #ifdef __OBJC__
 @class OffScreenView;
 #else
@@ -62,7 +62,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                              content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;
 #endif
 
@@ -81,7 +81,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   int GetFrameRate() const;
 
  private:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void PlatformCreate();
   void PlatformDestroy();
 #endif
@@ -98,7 +98,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   // Weak refs.
   content::WebContents* web_contents_ = nullptr;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   OffScreenView* offScreenView_;
 #endif
 };

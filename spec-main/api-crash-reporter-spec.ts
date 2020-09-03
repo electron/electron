@@ -23,6 +23,7 @@ type CrashInfo = {
   _productName: string
   _version: string
   upload_file_minidump: Buffer // eslint-disable-line camelcase
+  guid: string
   mainProcessSpecific: 'mps' | undefined
   rendererSpecific: 'rs' | undefined
   globalParam: 'globalValue' | undefined
@@ -174,6 +175,35 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.rendererSpecific).to.be.undefined();
     });
 
+    describe('with guid', () => {
+      for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
+        it(`when ${processType} crashes`, async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp(processType, port);
+          const crash = await waitForCrash();
+          expect(crash.guid).to.be.a('string');
+        });
+      }
+
+      it('is a consistent id', async () => {
+        let crash1Guid;
+        let crash2Guid;
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash1Guid = crash.guid;
+        }
+        {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('main', port);
+          const crash = await waitForCrash();
+          crash2Guid = crash.guid;
+        }
+        expect(crash2Guid).to.equal(crash1Guid);
+      });
+    });
+
     describe('with extra parameters', () => {
       it('when renderer crashes', async () => {
         const { port, waitForCrash } = await startServer();
@@ -215,7 +245,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
         const crash = await waitForCrash();
         expect(crash.prod).to.equal('Electron');
-        expect(crash._productName).to.equal('remote-control');
+        expect(crash._productName).to.equal('electron-test-remote-control');
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');

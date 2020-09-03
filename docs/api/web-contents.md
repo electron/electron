@@ -256,7 +256,7 @@ Returns:
 Emitted after a server side redirect occurs during navigation.  For example a 302
 redirect.
 
-This event can not be prevented, if you want to prevent redirects you should
+This event cannot be prevented, if you want to prevent redirects you should
 checkout out the `will-redirect` event above.
 
 #### Event: 'did-navigate'
@@ -348,7 +348,7 @@ Returns:
 Emitted when the renderer process crashes or is killed.
 
 **Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process dissapeared. It
+which contains more information about why the render process disappeared. It
 isn't always because it crashed.  The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
@@ -367,7 +367,7 @@ Returns:
     * `launch-failure` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
-Emitted when the renderer process unexpectedly dissapears.  This is normally
+Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
 
 #### Event: 'unresponsive'
@@ -720,7 +720,7 @@ This event can be used to configure `webPreferences` for the `webContents`
 of a `<webview>` before it's loaded, and provides the ability to set settings
 that can't be set via `<webview>` attributes.
 
-**Note:** The specified `preload` script option will be appear as `preloadURL`
+**Note:** The specified `preload` script option will appear as `preloadURL`
 (not `preload`) in the `webPreferences` object emitted with this event.
 
 #### Event: 'did-attach-webview'
@@ -1117,6 +1117,10 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
+> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> zoom level for a specific domain propagates across all instances of windows with
+> the same domain. Differentiating the window URLs will make zoom work per-window.
+
 #### `contents.getZoomLevel()`
 
 Returns `Number` - the current zoom level.
@@ -1255,7 +1259,7 @@ is large then 0.
 
 #### `contents.incrementCapturerCount([size, stayHidden])`
 
-* `size` [Size](structures/size.md) (optional) - The perferred size for the capturer.
+* `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
 
 Increase the capturer count by one. The page is considered visible when its browser window is
@@ -1296,9 +1300,9 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - the start page.
-    * `to` Number - the end page.
+  * `pageRanges` Object[]  (optional) - The page range to print. On macOS, only one range is honored.
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
@@ -1311,7 +1315,7 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `success` Boolean - Indicates success of the print call.
   * `failureReason` String - Error description called back if the print fails.
 
-When a custom `pageSize` is passed, Chromium attempts to validate platform specific minumum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
+When a custom `pageSize` is passed, Chromium attempts to validate platform specific minimum values for `width_microns` and `height_microns`. Width and height must both be minimum 353 microns but may be higher on some operating systems.
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
@@ -1324,10 +1328,10 @@ Example usage:
 const options = {
   silent: true,
   deviceName: 'My-Printer',
-  pageRanges: {
+  pageRanges: [{
     from: 0,
     to: 1
-  }
+  }]
 }
 win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
@@ -1345,8 +1349,8 @@ win.webContents.print(options, (success, errorType) => {
     default margin, 1 for no margin, and 2 for minimum margin.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
   * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - zero-based index of the first page to print.
-    * `to` Number - zero-based index of the last page to print (inclusive).
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width` in microns.
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.

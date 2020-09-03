@@ -174,6 +174,15 @@ describe('node feature', () => {
       });
     });
 
+    describe('URL handling in the renderer process', () => {
+      it('can successfully handle WHATWG URLs constructed by Blink', () => {
+        const url = new URL('file://' + path.resolve(fixtures, 'pages', 'base-page.html'));
+        expect(() => {
+          fs.createReadStream(url);
+        }).to.not.throw();
+      });
+    });
+
     describe('error thrown in main process node context', () => {
       it('gets emitted as a process uncaughtException event', () => {
         const error = ipcRenderer.sendSync('handle-uncaught-exception', 'hello');

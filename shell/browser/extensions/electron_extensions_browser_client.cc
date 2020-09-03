@@ -85,7 +85,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
 }
 
 bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
-  auto context_map = ElectronBrowserContext::browser_context_map();
+  auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)
       return true;
@@ -113,7 +113,7 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
   if (context->IsOffTheRecord()) {
-    return ElectronBrowserContext::From("", false).get();
+    return ElectronBrowserContext::From("", false);
   } else {
     return context;
   }
@@ -311,7 +311,7 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
 
   std::unique_ptr<extensions::Event> event(
       new extensions::Event(histogram_value, event_name, std::move(args)));
-  auto context_map = ElectronBrowserContext::browser_context_map();
+  auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {
       extensions::EventRouter::Get(entry.second.get())

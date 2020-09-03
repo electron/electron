@@ -262,7 +262,7 @@ void Browser::OnWindowAllClosed() {
   }
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void Browser::NewWindowForTab() {
   for (BrowserObserver& observer : observers_)
     observer.OnNewWindowForTab();

@@ -12,6 +12,7 @@ import { ifdescribe, ifit, delay, defer } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
@@ -760,7 +761,7 @@ describe('webContents module', () => {
       }).to.throw('Must specify non-empty \'icon\' option');
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename, icon: __filename });
+        w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
       }).to.throw('Must specify non-empty \'icon\' option');
     });
   });
