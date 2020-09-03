@@ -320,7 +320,7 @@ index 234f422e7b4cc0c424eefbfcb78eef8e7d7b446d..99b8f8ee8c9e9ca83728def1fccfe899
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index f7754394876d0d5a2613ed9bfd75a0ff220a7c42..1f8150f7c65a3d3ef51144a6589c9f78334564d1 100644
+index 0a8ead2ee790ed549136d6bb7e81c0d77e3e5ac2..06b5561f386efbeaa7474c3ccb2218d8694d0c9b 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
@@ -386,20 +386,20 @@ index f7754394876d0d5a2613ed9bfd75a0ff220a7c42..1f8150f7c65a3d3ef51144a6589c9f78
    if (!job_settings.is_dict() ||
        !job_settings.FindIntKey(kSettingPrinterType)) {
      // Reply with null query.
-@@ -264,7 +271,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
-     std::unique_ptr<PrinterQuery> printer_query,
+@@ -265,7 +272,9 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
      IPC::Message* reply_msg) {
-   PrintMsg_PrintPages_Params params;
--  if (!printer_query || printer_query->last_status() != PrintingContext::OK) {
+   mojom::PrintPagesParams params;
+   params.params = mojom::PrintParams::New();
+-  if (printer_query && printer_query->last_status() == PrintingContext::OK) {
 +  // We call update without first printing from defaults,
 +  // so the last printer status will still be defaulted to PrintingContext::FAILED
-+  if (!printer_query) {
-     params.Reset();
-   } else {
-     RenderParamsFromPrintSettings(printer_query->settings(), &params.params);
++  if (printer_query) {
+     RenderParamsFromPrintSettings(printer_query->settings(),
+                                   params.params.get());
+     params.params->document_cookie = printer_query->cookie();
 @@ -302,7 +311,7 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
- void PrintingMessageFilter::OnCheckForCancel(const PrintHostMsg_PreviewIds& ids,
+ void PrintingMessageFilter::OnCheckForCancel(const mojom::PreviewIds& ids,
                                               bool* cancel) {
 -  *cancel = PrintPreviewUI::ShouldCancelRequest(ids);
 +  *cancel = false;
@@ -407,11 +407,11 @@ index f7754394876d0d5a2613ed9bfd75a0ff220a7c42..1f8150f7c65a3d3ef51144a6589c9f78
  #endif
  
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index 478183cd3e5c2022ad3f484daf2f56b16f091203..951cedc75abb1e4a1e6da1a1371ba42a0ecd698c 100644
+index 1431e6c24b325bc32dd66f35895fdbd9a08f8eb6..13c4d30a2ac1bd2b1b589bddae49274ab4eef61e 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
-@@ -23,6 +23,10 @@
- struct PrintHostMsg_PreviewIds;
+@@ -22,6 +22,10 @@
+ 
  class Profile;
  
 +namespace content {
@@ -421,7 +421,7 @@ index 478183cd3e5c2022ad3f484daf2f56b16f091203..951cedc75abb1e4a1e6da1a1371ba42a
  namespace printing {
  
  class PrintQueriesQueue;
-@@ -43,7 +47,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
+@@ -42,7 +46,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
  
    static void SetDelegateForTesting(TestDelegate* delegate);
  
@@ -432,10 +432,10 @@ index 478183cd3e5c2022ad3f484daf2f56b16f091203..951cedc75abb1e4a1e6da1a1371ba42a
    // content::BrowserMessageFilter:
    bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 177a590b5f4586274ad60b83262567a87052838a..5e918f733179fd12f2544db0ff11d73d6af51155 100644
+index cf91b67451c9663085c27cbf919c216c171e9179..01a5465f6d81646a587f8caa44fb0259bbbe35a9 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -209,7 +209,7 @@ interface PrintPreviewUI {
+@@ -227,7 +227,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -445,7 +445,7 @@ index 177a590b5f4586274ad60b83262567a87052838a..5e918f733179fd12f2544db0ff11d73d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a313966708 100644
+index 0470f3aafbf3182f3330fbc5cb951360baee4311..153fd5d77d7accdac0acb8e1cb5ab740b082e2b5 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@
@@ -529,9 +529,9 @@ index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a3
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1873,8 +1881,11 @@ void PrintRenderFrameHelper::Print(
- 
-     PrintMsg_PrintPages_Params print_settings;
+@@ -1874,8 +1882,11 @@ void PrintRenderFrameHelper::Print(
+     mojom::PrintPagesParams print_settings;
+     print_settings.params = mojom::PrintParams::New();
      auto self = weak_ptr_factory_.GetWeakPtr();
 -    GetPrintSettingsFromUser(frame_ref.GetFrame(), node, expected_page_count,
 -                             print_request_type, &print_settings);
@@ -543,7 +543,7 @@ index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a3
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2120,10 +2131,23 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2121,11 +2132,24 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -551,13 +551,14 @@ index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a3
 +bool PrintRenderFrameHelper::InitPrintSettings(
 +    bool fit_to_paper_size,
 +    const base::DictionaryValue& new_settings) {
-   PrintMsg_PrintPages_Params settings;
+   mojom::PrintPagesParams settings;
+   settings.params = mojom::PrintParams::New();
 -  Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
--                                                &settings.params));
+-                                                settings.params.get()));
 +  if (new_settings.empty()) {
 +    // Send the default IPC message if caller is window.print()
 +    Send(new PrintHostMsg_GetDefaultPrintSettings(routing_id(),
-+                                                  &settings.params));
++                                                  settings.params.get()));
 +  } else {
 +    // Send the update IPC message if caller is webContents.print()
 +    bool canceled = false;
@@ -570,7 +571,7 @@ index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a3
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -2143,12 +2167,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2145,12 +2169,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -590,10 +591,10 @@ index a33f55540de28603273876ffbcb649a3ef8e008c..6d1ae5f05077ac02bca796828f9801a3
      Send(new PrintHostMsg_ShowInvalidPrinterSettingsError(routing_id()));
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index dcf833ec1ba661509b4046a2f16ee36611e6cb9b..c2b6739b268fdd05185dbee7ab40f91c3e54d413 100644
+index 04bb088463e33096b694a2f338f956b846b4fcd2..fe8fb0ec93f8b01687794fc56fb3a2bd2987423b 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -233,7 +233,7 @@ class PrintRenderFrameHelper
+@@ -231,7 +231,7 @@ class PrintRenderFrameHelper
        mojo::PendingAssociatedReceiver<mojom::PrintRenderFrame> receiver);
  
    // printing::mojom::PrintRenderFrame:
@@ -602,7 +603,7 @@ index dcf833ec1ba661509b4046a2f16ee36611e6cb9b..c2b6739b268fdd05185dbee7ab40f91c
    void PrintForSystemDialog() override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void SetPrintPreviewUI(
-@@ -301,6 +301,8 @@ class PrintRenderFrameHelper
+@@ -299,6 +299,8 @@ class PrintRenderFrameHelper
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
               PrintRequestType print_request_type,
@@ -611,7 +612,7 @@ index dcf833ec1ba661509b4046a2f16ee36611e6cb9b..c2b6739b268fdd05185dbee7ab40f91c
               std::unique_ptr<blink::WebScopedPagePauser> pauser);
  
    // Notification when printing is done - signal tear-down/free resources.
-@@ -310,12 +312,14 @@ class PrintRenderFrameHelper
+@@ -308,12 +310,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
@@ -629,18 +630,17 @@ index dcf833ec1ba661509b4046a2f16ee36611e6cb9b..c2b6739b268fdd05185dbee7ab40f91c
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 5f82472c0123c4a71be6c18561229ce2261b93e4..ed7db3d8463eb1353d7cadea33ded3c4d4ef21fe 100644
+index 14ec2b673afe6fc0ecfce8028a432f5bcfc9e104..5a1853c4f8e70143e9b1be3dcab7f1dff448346d 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -95,8 +95,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -95,7 +95,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
 -  ResetSettings();
--
-   if (!PrintSettingsFromJobSettings(job_settings, settings_.get())) {
-     NOTREACHED();
-     return OnError();
+   {
+     std::unique_ptr<PrintSettings> settings =
+         PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
 index 7ac9ce996ca7cbf8bcd21cb0c8161b63050ff684..43f5383bfed965c3d8cd3102dc18309a65c457ae 100644
 --- a/printing/printing_context.h

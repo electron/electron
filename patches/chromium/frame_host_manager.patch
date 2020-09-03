@@ -42,7 +42,7 @@ index 028c197b8f25e64bf8c9a7df7fbd22a94d2d9de0..b9fd96f5b3d5e3d461b55c92b7518e75
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index c7bccc666bc847608f83e37e0eb897ddd0b55a75..f914fc4f36c26ec5eec514710f286e6297230257 100644
+index 0d090277ac299330deec062d97c9781f2cbe3199..6524e7fef185d1b3d44b48933f74ab55965dbf5e 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
 @@ -1390,6 +1390,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index c7bccc666bc847608f83e37e0eb897ddd0b55a75..f914fc4f36c26ec5eec514710f286e62
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4985,6 +5000,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -4999,6 +5014,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index c7bccc666bc847608f83e37e0eb897ddd0b55a75..f914fc4f36c26ec5eec514710f286e62
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -4998,10 +5014,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5012,10 +5028,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,7 +91,7 @@ index c7bccc666bc847608f83e37e0eb897ddd0b55a75..f914fc4f36c26ec5eec514710f286e62
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index d855a141617f29bb005349720e262ba7fdfe32b8..c230daa6142ba2ff7d049a0f282c44c19a31f10c 100644
+index 597fd8a5a8ebd7b2f36400fc4e15f331313fec33..053e6d347458d44421ab55cb9dc70b9532b0c3d5 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
 @@ -129,6 +129,10 @@ class CONTENT_EXPORT NavigationRequest
@@ -106,7 +106,7 @@ index d855a141617f29bb005349720e262ba7fdfe32b8..c230daa6142ba2ff7d049a0f282c44c1
      READY_TO_COMMIT,
  
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 52cfe63b5417c198eb9ce5e0164b1e43fc6ea687..d02c8f2e088fb3ab4dbb8af18fc32f6b010196bf 100644
+index 707dfd525f8b38e5153ba8834d87fc6e8794fe96..53003ed1556023353ddf1b1c94afdc555d1e7a7f 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -2457,6 +2457,16 @@ bool RenderFrameHostManager::InitRenderView(

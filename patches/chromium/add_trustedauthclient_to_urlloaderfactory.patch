@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 113006d65c011bacd856c471d93dbff71254f034..d9e327e72ddf86f79387fa3c003e56379f3096a5 100644
+index aecca7fa0b7d7a4bd6c8f43e23e26a61dd8e9509..d6a92a7cb071057361d9fd85eb60c8aef07e46d2 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
@@ -49,7 +49,7 @@ index 113006d65c011bacd856c471d93dbff71254f034..d9e327e72ddf86f79387fa3c003e5637
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 2527d28a4af8116e410f286f8511b778d6db0f5b..9ded831c921c1f7e3eabac4549a70570c13bd5c2 100644
+index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c8ee10013 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -483,6 +483,7 @@ URLLoader::URLLoader(

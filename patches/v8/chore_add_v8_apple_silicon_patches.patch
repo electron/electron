@@ -6,10 +6,10 @@ Subject: chore: add v8 apple silicon patches
 Once these are available upstream we can remove this patch.
 
 diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
-index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02e5549e87 100644
+index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf17b290e88 100644
 --- a/src/codegen/arm64/macro-assembler-arm64.cc
 +++ b/src/codegen/arm64/macro-assembler-arm64.cc
-@@ -2973,6 +2973,35 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -2975,6 +2975,35 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
  
    int arg_count = kPrintfMaxArgCount;
  
@@ -45,7 +45,7 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
    // The PCS varargs registers for printf. Note that x0 is used for the printf
    // format string.
    static const CPURegList kPCSVarargs =
-@@ -3083,7 +3112,7 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -3085,7 +3114,7 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
      }
  #endif
    }
@@ -54,7 +54,7 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
    // Load the format string into x0, as per the procedure-call standard.
    //
    // To make the code as portable as possible, the format string is encoded
-@@ -3105,6 +3134,10 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -3107,6 +3136,10 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
    }
  
    CallPrintf(arg_count, pcs);
@@ -78,7 +78,7 @@ index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd2516
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 4c32b1d1ae04e021558605f24fda99c69a79ba1c..5c55c7e4e8ece720d3ddb9d6ca53180f0bb7010b 100644
+index b475f84eae00a0679514788e447b05ab8dd65df7..7dc68187663c352aa0645b8cf450ea8acde3bef6 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -729,7 +729,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,

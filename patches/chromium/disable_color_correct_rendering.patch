@@ -261,7 +261,7 @@ index 6ed96b809ab6b8ff0921dbaac97b9307c89577ac..f9141f43f019ee249609a86c993b6c54
      service_manager::switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
+index 0501709a855b9fae82ab06c4e143b42058ddc12e..e0a457aab29acda134d1da9c798b5472c9bdb627 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -280,7 +280,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  
  namespace blink {
  
-@@ -90,6 +92,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -95,6 +97,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -292,7 +292,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
    // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
    // will need to take into account whether or not this texture will be sampled
    // in linear or nonlinear space.
-@@ -97,6 +104,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -102,6 +109,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {

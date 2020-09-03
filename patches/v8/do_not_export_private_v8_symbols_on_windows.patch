@@ -27,7 +27,7 @@ index 1aa03e933d274c08618e7953908c0b1bc3f5831b..8ddb90e6ac83a640a7284c99ce4b2351
      defines += [ "BUILDING_V8_SHARED" ]
    }
 diff --git a/src/base/macros.h b/src/base/macros.h
-index cea15280a485cd6902500d3a20d85fb30eb3c449..1a5dd47c5fca640d8e3100b9f26067836460c758 100644
+index 37cab78f08fcbc859d549a3188afe234d1e03ad5..a7b628cae296c7c97e58b46502bafebe92963597 100644
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
 @@ -396,13 +396,17 @@ bool is_inbounds(float_t v) {
