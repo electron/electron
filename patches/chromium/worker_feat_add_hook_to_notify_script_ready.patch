@@ -78,10 +78,18 @@ index 614837662b2bf462e50c0bc702e4c29bcd42c8e2..8c643f40533b63cd3b6748d9acb44460
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index c0ed21b47e6b7808115b4ddfadea58ed5b5b4987..e7e5911b24c4a247f53061a1114384329e68810a 100644
+index c0ed21b47e6b7808115b4ddfadea58ed5b5b4987..3190a99973b5f42a5ebc700f1939cdb38056e0a6 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-@@ -331,6 +331,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+@@ -306,6 +306,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+   V8PerContextData* per_context_data = script_state_->PerContextData();
+   ignore_result(per_context_data->ConstructorForType(
+       global_scope_->GetWrapperTypeInfo()));
++  Platform::Current()->WorkerScriptReadyForEvaluation(script_state_->GetContext());
+ #else   // USE_BLINK_V8_BINDING_NEW_IDL_INTERFACE
+   ScriptState::Scope scope(script_state_);
+   v8::Local<v8::Context> context = script_state_->GetContext();
+@@ -331,6 +332,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    wrapper_type_info->InstallConditionalFeatures(
        context, *world_, global_object, v8::Local<v8::Object>(),
        v8::Local<v8::Function>(), global_interface_template);
