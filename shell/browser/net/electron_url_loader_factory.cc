@@ -189,6 +189,24 @@ void ElectronURLLoaderFactory::Clone(
   receivers_.Add(this, std::move(receiver));
 }
 
+std::string ComputeMethodForRedirect(const std::string& method,
+                                     int http_status_code) {
+  // For 303 redirects, all request methods except HEAD are converted to GET,
+  // as per the latest httpbis draft.  The draft also allows POST requests to
+  // be converted to GETs when following 301/302 redirects, for historical
+  // reasons. Most major browsers do this and so shall we.  Both RFC 2616 and
+  // the httpbis draft say to prompt the user to confirm the generation of new
+  // requests, other than GET and HEAD requests, but IE omits these prompts and
+  // so shall we.
+  // See: https://tools.ietf.org/html/rfc7231#section-6.4
+  if ((http_status_code == 303 && method != "HEAD") ||
+      ((http_status_code == 301 || http_status_code == 302) &&
+       method == "POST")) {
+    return "GET";
+  }
+  return method;
+}
+
 // static
 void ElectronURLLoaderFactory::StartLoading(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -236,16 +254,18 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
-    GURL new_location = GURL(location);
-    net::SiteForCookies new_site_for_cookies =
-        net::SiteForCookies::FromUrl(new_location);
+    auto new_method = ComputeMethodForRedirect(request.method, head->headers->response_code());
+    auto new_location = request.url.Resolve(location);
+    auto new_site_for_cookies = net::SiteForCookies::FromUrl(new_location);
+
     network::ResourceRequest new_request = request;
     new_request.url = new_location;
     new_request.site_for_cookies = new_site_for_cookies;
+    new_request.method = new_method;
 
     net::RedirectInfo redirect_info;
     redirect_info.status_code = head->headers->response_code();
-    redirect_info.new_method = request.method;
+    redirect_info.new_method = new_method;
     redirect_info.new_url = new_location;
     redirect_info.new_site_for_cookies = new_site_for_cookies;
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
@@ -253,7 +273,7 @@ void ElectronURLLoaderFactory::StartLoading(
 
     client_remote->OnReceiveRedirect(redirect_info, std::move(head));
 
-    // Unound client, so it an be passed to sub-methods
+    // Unound client, so it can be passed to sub-methods
     client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
     // |proxy_factory| passed), we askes the proxy factory to create a loader
