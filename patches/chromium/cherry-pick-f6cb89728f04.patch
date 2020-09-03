@@ -30,7 +30,7 @@ Cr-Commit-Position: refs/branch-heads/4183@{#1009}
 Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd8671231c58 100644
+index 5c23f9fba61c791365d9c69910ebb12154a6f238..0268475fc4532368c47034d7c7278fa261732516 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -59,8 +59,6 @@
@@ -42,7 +42,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
  #include "third_party/blink/public/web/web_print_params.h"
  #include "third_party/blink/public/web/web_print_preset_options.h"
  #include "third_party/blink/public/web/web_script_source.h"
-@@ -341,28 +340,14 @@ void ComputeWebKitPrintParamsInDesiredDpi(
+@@ -341,28 +339,14 @@ void ComputeWebKitPrintParamsInDesiredDpi(
    webkit_print_params->pages_per_sheet = print_params.pages_per_sheet;
  }
  
@@ -74,7 +74,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
    return plugin && plugin->IsPdfPlugin();
  }
  
-@@ -2341,7 +2326,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2341,7 +2325,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
        // 2. PrintHostMsg_ShowScriptedPrintPreview shows preview once the
        //    document has been loaded.
        is_scripted_preview_delayed_ = true;
@@ -83,7 +83,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
          // Wait for DidStopLoading. Plugins may not know the correct
          // |is_modifiable| value until they are fully loaded, which occurs when
          // DidStopLoading() is called. Defer showing the preview until then.
-@@ -2368,7 +2353,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2368,7 +2352,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
        // Wait for DidStopLoading. Continuing with this function while
        // |is_loading_| is true will cause print preview to hang when try to
        // print a PDF document.
@@ -92,7 +92,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
          on_stop_loading_closure_ =
              base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
                             weak_ptr_factory_.GetWeakPtr(), type);
-@@ -2379,12 +2364,12 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2379,12 +2363,12 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
      }
      case PRINT_PREVIEW_USER_INITIATED_SELECTION: {
        DCHECK(has_selection);
@@ -107,7 +107,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
          on_stop_loading_closure_ =
              base::BindOnce(&PrintRenderFrameHelper::RequestPrintPreview,
                             weak_ptr_factory_.GetWeakPtr(), type);
-@@ -2453,8 +2438,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithFrame(
+@@ -2453,8 +2437,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithFrame(
    state_ = INITIALIZED;
    source_frame_.Reset(web_frame);
    source_node_.Reset();
@@ -117,7 +117,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
  }
  
  void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
-@@ -2465,8 +2449,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
+@@ -2465,8 +2448,7 @@ void PrintRenderFrameHelper::PrintPreviewContext::InitWithNode(
    state_ = INITIALIZED;
    source_frame_.Reset(web_node.GetDocument().GetFrame());
    source_node_ = web_node;
@@ -127,7 +127,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
  }
  
  void PrintRenderFrameHelper::PrintPreviewContext::OnPrintPreview() {
-@@ -2604,6 +2587,11 @@ bool PrintRenderFrameHelper::PrintPreviewContext::IsForArc() const {
+@@ -2604,6 +2586,11 @@ bool PrintRenderFrameHelper::PrintPreviewContext::IsForArc() const {
    return is_for_arc_;
  }
  
@@ -139,7 +139,7 @@ index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd86
  bool PrintRenderFrameHelper::PrintPreviewContext::IsModifiable() const {
    DCHECK(state_ != UNINITIALIZED);
    return is_modifiable_;
-@@ -2694,11 +2682,9 @@ void PrintRenderFrameHelper::PrintPreviewContext::ClearContext() {
+@@ -2694,11 +2681,9 @@ void PrintRenderFrameHelper::PrintPreviewContext::ClearContext() {
    error_ = PREVIEW_ERROR_NONE;
  }
  
