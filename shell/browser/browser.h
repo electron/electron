@@ -317,6 +317,7 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_MACOSX)
   std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
+  base::Time last_dock_show_;
 #endif
 
 #if defined(OS_LINUX) || defined(OS_WIN)
