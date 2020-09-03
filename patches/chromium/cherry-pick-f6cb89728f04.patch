@@ -33,13 +33,12 @@ diff --git a/components/printing/renderer/print_render_frame_helper.cc b/compone
 index 5c23f9fba61c791365d9c69910ebb12154a6f238..35eedfe66bc12aa83351c4eb3fb0dd8671231c58 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -59,8 +59,7 @@
+@@ -59,8 +59,6 @@
  #include "third_party/blink/public/web/web_local_frame_client.h"
  #include "third_party/blink/public/web/web_navigation_control.h"
  #include "third_party/blink/public/web/web_plugin.h"
 -#include "third_party/blink/public/web/web_plugin_container.h"
 -#include "third_party/blink/public/web/web_plugin_document.h"
-+#include "third_party/blink/public/web/web_print_page_description.h"
  #include "third_party/blink/public/web/web_print_params.h"
  #include "third_party/blink/public/web/web_print_preset_options.h"
  #include "third_party/blink/public/web/web_script_source.h"
