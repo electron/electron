@@ -445,7 +445,7 @@ index cf91b67451c9663085c27cbf919c216c171e9179..01a5465f6d81646a587f8caa44fb0259
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 0470f3aafbf3182f3330fbc5cb951360baee4311..153fd5d77d7accdac0acb8e1cb5ab740b082e2b5 100644
+index 0470f3aafbf3182f3330fbc5cb951360baee4311..f92b95beb66b047771b20f24fb99d0f16d6b9ddb 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@
@@ -529,21 +529,52 @@ index 0470f3aafbf3182f3330fbc5cb951360baee4311..153fd5d77d7accdac0acb8e1cb5ab740
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1874,8 +1882,11 @@ void PrintRenderFrameHelper::Print(
+@@ -1872,10 +1880,41 @@ void PrintRenderFrameHelper::Print(
+         print_pages_params_->params->print_scaling_option;
+ 
      mojom::PrintPagesParams print_settings;
-     print_settings.params = mojom::PrintParams::New();
+-    print_settings.params = mojom::PrintParams::New();
++    
      auto self = weak_ptr_factory_.GetWeakPtr();
 -    GetPrintSettingsFromUser(frame_ref.GetFrame(), node, expected_page_count,
 -                             print_request_type, &print_settings);
 +    if (silent)
-+      print_settings = *print_pages_params_.get();
-+    else
++      print_settings.params = mojom::PrintParams::New(
++        print_pages_params_->params->page_size,
++        print_pages_params_->params->content_size,
++        print_pages_params_->params->printable_area,
++        print_pages_params_->params->margin_top,
++        print_pages_params_->params->margin_left,
++        print_pages_params_->params->page_orientation,
++        print_pages_params_->params->dpi,
++        print_pages_params_->params->scale_factor,
++        print_pages_params_->params->document_cookie,
++        print_pages_params_->params->selection_only,
++        print_pages_params_->params->supports_alpha_blend,
++        print_pages_params_->params->preview_ui_id,
++        print_pages_params_->params->preview_request_id,
++        print_pages_params_->params->is_first_request,
++        print_pages_params_->params->print_scaling_option,
++        print_pages_params_->params->print_to_pdf,
++        print_pages_params_->params->display_header_footer,
++        print_pages_params_->params->title,
++        print_pages_params_->params->url,
++        print_pages_params_->params->header_template,
++        print_pages_params_->params->footer_template,
++        print_pages_params_->params->rasterize_pdf,
++        print_pages_params_->params->should_print_backgrounds,
++        print_pages_params_->params->printed_doc_type,
++        print_pages_params_->params->prefer_css_page_size,
++        print_pages_params_->params->pages_per_sheet);
++    else {
++      print_settings.params = mojom::PrintParams::New();
 +      GetPrintSettingsFromUser(frame_ref.GetFrame(), node, expected_page_count,
 +                               print_request_type, &print_settings);
++    }
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2121,11 +2132,24 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2121,11 +2160,24 @@ void PrintRenderFrameHelper::IPCProcessed() {
      base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
  }
  
@@ -571,7 +602,7 @@ index 0470f3aafbf3182f3330fbc5cb951360baee4311..153fd5d77d7accdac0acb8e1cb5ab740
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
    // terminate.
-@@ -2145,12 +2169,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2145,12 +2197,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
