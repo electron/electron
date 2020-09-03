@@ -453,7 +453,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] })`);
+        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
 
         const [, webContents] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -471,7 +471,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'remote-require');
-        w.webContents.executeJavaScript(`require('electron').remote.require('test')`);
+        w.webContents.executeJavaScript('require(\'electron\').remote.require(\'test\')');
 
         const [, webContents, moduleName] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -488,7 +488,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'remote-get-global');
-        w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`);
+        w.webContents.executeJavaScript('require(\'electron\').remote.getGlobal(\'test\')');
 
         const [, webContents, globalName] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -505,7 +505,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'remote-get-builtin');
-        w.webContents.executeJavaScript(`require('electron').remote.app`);
+        w.webContents.executeJavaScript('require(\'electron\').remote.app');
 
         const [, webContents, moduleName] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -522,7 +522,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'remote-get-current-window');
-        w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWindow() }`);
+        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWindow() }');
 
         const [, webContents] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -538,7 +538,7 @@ describe('app module', () => {
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'remote-get-current-web-contents');
-        w.webContents.executeJavaScript(`{ require('electron').remote.getCurrentWebContents() }`);
+        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWebContents() }');
 
         const [, webContents] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -601,7 +601,7 @@ describe('app module', () => {
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
-      '--process-start-args', `"--hidden"`
+      '--process-start-args', '"--hidden"'
     ];
 
     before(function () {
@@ -814,7 +814,7 @@ describe('app module', () => {
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
-      '--process-start-args', `"--hidden"`
+      '--process-start-args', '"--hidden"'
     ];
 
     let Winreg: any;
@@ -1323,6 +1323,16 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.hide', () => {
+      it('should not throw', () => {
+        app.dock.hide();
+        expect(app.dock.isVisible()).to.equal(false);
+      });
+    });
+
+    // Note that dock.show tests should run after dock.hide tests, to work
+    // around a bug of macOS.
+    // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
         return app.dock.show().then(() => {
@@ -1336,13 +1346,6 @@ describe('app module', () => {
 
       it('eventually fulfills', async () => {
         await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
-      });
-    });
-
-    describe('dock.hide', () => {
-      it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
       });
     });
   });
