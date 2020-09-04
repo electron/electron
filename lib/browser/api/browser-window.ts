@@ -28,9 +28,11 @@ Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
   // Though this hack is only needed on macOS when the app is launched from
   // Finder, we still do it on all platforms in case of other bugs we don't
   // know.
-  this.webContents.once('load-url' as any, function (this: WebContents) {
-    this.focus();
-  });
+  if (this.webContents._initiallyShown) {
+    this.webContents.once('load-url' as any, function (this: WebContents) {
+      this.focus();
+    });
+  }
 
   // Redirect focus/blur event to app instance too.
   this.on('blur', (event: Event) => {
