@@ -34,7 +34,7 @@ $ code electron-quick-start
   ]
 }
 ```
-"args" should also have one parameter, a string of the path to your your Electron project's folder. In this example, it should be your path to electron-quick-start.
+"args" should also have one parameter, a string of the path to your Electron project's folder. In this example, it should be your path to electron-quick-start.
 
 ### 3. Debugging
 
