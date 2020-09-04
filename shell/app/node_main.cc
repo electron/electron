@@ -209,9 +209,6 @@ int NodeMain(int argc, char* argv[]) {
                                     (node::EnvironmentFlags::Flags)flags);
       CHECK_NE(nullptr, env);
 
-      // This needs to be called before the inspector is initialized.
-      env->InitializeDiagnostics();
-
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
 

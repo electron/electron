@@ -445,9 +445,6 @@ node::Environment* NodeBindings::CreateEnvironment(
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
   }
 
-  // This needs to be called before the inspector is initialized.
-  env->InitializeDiagnostics();
-
   node::SetIsolateUpForNode(context->GetIsolate(), is);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
