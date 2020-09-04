@@ -22,6 +22,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/net/node_stream_loader.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/url_pipe_loader.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -202,6 +203,22 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
 }
 
 // static
+void ElectronURLLoaderFactory::OnComplete(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    int32_t request_id,
+    const network::URLLoaderCompletionStatus& status,
+     ProxyingURLLoaderFactory* proxy_factory) {
+
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(status);
+
+    if (proxy_factory) {
+      proxy_factory->RemoveInterceptedRequest(request_id);
+    }
+}
+
+// static
 void ElectronURLLoaderFactory::StartLoading(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t routing_id,
@@ -210,7 +227,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    network::mojom::URLLoaderFactory* proxy_factory,
+    ProxyingURLLoaderFactory* proxy_factory,
     ProtocolType type,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -219,10 +236,8 @@ void ElectronURLLoaderFactory::StartLoading(
   // passed, to keep compatibility with old code.
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED), proxy_factory);
     return;
   }
 
@@ -231,9 +246,8 @@ void ElectronURLLoaderFactory::StartLoading(
   if (!dict.IsEmpty()) {
     int error_code;
     if (dict.Get("error", &error_code)) {
-      mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-          std::move(client));
-      client_remote->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      OnComplete(std::move(client), request_id,
+          network::URLLoaderCompletionStatus(error_code), proxy_factory);
       return;
     }
   }
@@ -294,10 +308,9 @@ void ElectronURLLoaderFactory::StartLoading(
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
+        proxy_factory);
     return;
   }
 
@@ -324,16 +337,18 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kFree:
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
-        mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-            std::move(client));
-        client_remote->OnComplete(
-            network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        OnComplete(std::move(client), request_id,
+            network::URLLoaderCompletionStatus(net::ERR_FAILED), proxy_factory);
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
                    std::move(client), traffic_annotation, proxy_factory, type,
                    args);
       break;
+  }
+
+  if (type != ProtocolType::kFree && proxy_factory) {
+      proxy_factory->RemoveInterceptedRequest(request_id);
   }
 }
 

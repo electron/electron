@@ -198,7 +198,7 @@ class ProxyingURLLoaderFactory
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
       override;
   void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory>
-                 loader_receiver) override;
+                 loader_receiver) override;      
 
   // network::mojom::TrustedURLLoaderHeaderClient:
   void OnLoaderCreated(
@@ -213,6 +213,8 @@ class ProxyingURLLoaderFactory
   WebRequestAPI* web_request_api() { return web_request_api_; }
 
   bool IsForServiceWorkerScript() const;
+
+  void RemoveInterceptedRequest(int32_t request_id);
 
  private:
   void OnTargetFactoryError();

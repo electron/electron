@@ -887,6 +887,12 @@ void ProxyingURLLoaderFactory::OnProxyBindingError() {
   MaybeDeleteThis();
 }
 
+void ProxyingURLLoaderFactory::RemoveInterceptedRequest(int32_t request_id) {
+  intercepted_requests_.erase(request_id);
+
+  MaybeDeleteThis();
+}
+
 void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
                                              uint64_t request_id) {
   network_request_id_to_web_request_id_.erase(network_service_request_id);
