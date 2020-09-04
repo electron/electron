@@ -397,7 +397,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ != BrowserEnvironment::BROWSER) {
     v8::TryCatch try_catch(context->GetIsolate());
     env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                              (node::EnvironmentFlags::Flags)flags);
+                                  (node::EnvironmentFlags::Flags)flags);
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all
@@ -408,7 +408,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     }
   } else {
     env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                              (node::EnvironmentFlags::Flags)flags);
+                                  (node::EnvironmentFlags::Flags)flags);
     DCHECK(env);
   }
 

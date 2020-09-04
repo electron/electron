@@ -1075,20 +1075,6 @@ describe('net module', () => {
       await emittedOnce(urlRequest, 'abort');
     });
 
-    it('should not follow redirect when mode is error', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 302;
-        response.setHeader('Location', '/200');
-        response.end();
-      });
-      const urlRequest = net.request({
-        url: serverUrl,
-        redirect: 'error'
-      });
-      urlRequest.end();
-      await emittedOnce(urlRequest, 'error');
-    });
-
     it('should follow redirect when handler calls callback', async () => {
       const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
@@ -1205,27 +1191,6 @@ describe('net module', () => {
       netRequest.end(Buffer.from('hello'));
       const [position, total] = await emittedOnce(netRequest, 'upload-progress');
       expect(netRequest.getUploadProgress()).to.deep.equal({ active: true, started: true, current: position, total });
-    });
-
-    it('should emit error event on server socket destroy', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request) => {
-        request.socket.destroy();
-      });
-      const urlRequest = net.request(serverUrl);
-      urlRequest.end();
-      const [error] = await emittedOnce(urlRequest, 'error');
-      expect(error.message).to.equal('net::ERR_EMPTY_RESPONSE');
-    });
-
-    it('should emit error event on server request destroy', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        request.destroy();
-        response.end();
-      });
-      const urlRequest = net.request(serverUrl);
-      urlRequest.end(randomBuffer(kOneMegaByte));
-      const [error] = await emittedOnce(urlRequest, 'error');
-      expect(error.message).to.be.oneOf(['net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
     });
 
     it('should not emit any event after close', async () => {
