@@ -376,6 +376,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
+  bool WasInitiallyShown();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
@@ -649,6 +650,8 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
+
+  bool initially_shown_ = true;
 
   // The ID of the process of the currently committed RenderViewHost.
   // -1 means no speculative RVH has been committed yet.

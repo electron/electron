@@ -32,6 +32,7 @@ declare namespace Electron {
   interface WebContents {
     _getURL(): string;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
+    _initiallyShown: boolean;
   }
 
   interface SerializedError {
