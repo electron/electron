@@ -400,9 +400,24 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   isolate_data_ =
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
-  node::Environment* env = node::CreateEnvironment(
-      isolate_data_, context, args.size(), c_argv.get(), 0, nullptr);
-  DCHECK(env);
+
+  node::Environment* env;
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    v8::TryCatch try_catch(context->GetIsolate());
+    env = node::CreateEnvironment(isolate_data_, context, args.size(),
+                                  c_argv.get(), 0, nullptr);
+    DCHECK(env);
+    // This will only be caught when something has gone terrible wrong as all
+    // electron scripts are wrapped in a try {} catch {} in run-compiler.js
+    if (try_catch.HasCaught()) {
+      LOG(ERROR) << "Failed to initialize node environment in process: "
+                 << process_type;
+    }
+  } else {
+    env = node::CreateEnvironment(isolate_data_, context, args.size(),
+                                  c_argv.get(), 0, nullptr);
+    DCHECK(env);
+  }
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
