@@ -66,10 +66,10 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd25165d5fb3e9 100644
+index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b299739459be7d4e 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1884,6 +1884,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1888,6 +1888,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd2516
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index b475f84eae00a0679514788e447b05ab8dd65df7..7dc68187663c352aa0645b8cf450ea8acde3bef6 100644
+index bc50e9bf46161989cdebe4682843d5c2ee868a07..4e0d9ec8b4b3fb804e71494f9075b1a5b255301b 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -729,7 +729,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -733,7 +733,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -96,7 +96,7 @@ index b475f84eae00a0679514788e447b05ab8dd65df7..7dc68187663c352aa0645b8cf450ea8a
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index b4e7e2138dbd9d833d2d3cb465023211065fa110..e487ec6e29590132432d6c9585aeb80c88b24dac 100644
+index d00ea5b31017e1da113040023f71d205ec3d2428..2d769ff526745927a7934fbe23d1ba8aabb40c50 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,

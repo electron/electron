@@ -285,7 +285,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       if formatted_patch != existing_patch:
         patch_count += 1
     if patch_count > 0:
-      sys.stderr.write("Patches not up to date: {} patches need update\n".format(patch_count))
+      sys.stderr.write("Patches in {} not up to date: {} patches need update\n".format(out_dir, patch_count))
       exit(1)
   else:
     # Remove old patches so that deleted commits are correctly reflected in the

@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 3c75954bdcff090fbda0e6ec6287da3d8f892152..e6c0841445a7f07a86abcc9f89cef474c8bc7e35 100644
+index 6dfbbbfca284142414c1554f3400542277061d21..1bc397be8dd7cbc041bc589cd3388ae2e672287c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -524,6 +524,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -21,7 +21,7 @@ index 3c75954bdcff090fbda0e6ec6287da3d8f892152..e6c0841445a7f07a86abcc9f89cef474
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 58ed589f77cbf9815934504134a05ac6eec7d1fe..b72054835d12aafd22eecfe5272ef6ebc7b24906 100644
+index 93f8e51e3c89550fa87367d4259a86054805fa2f..0dac39b0a9136a64226b4049f366442d8718b894 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl

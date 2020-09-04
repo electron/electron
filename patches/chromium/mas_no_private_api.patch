@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 2909c7873a2d3cbc6ef4f6efb0945331b7a814b7..441e9e52d715a332f606bb5a621817f411261c07 100644
+index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa46418f18588 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -297,7 +297,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -294,7 +294,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,16 +19,16 @@ index 2909c7873a2d3cbc6ef4f6efb0945331b7a814b7..441e9e52d715a332f606bb5a621817f4
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -308,7 +308,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -305,7 +305,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
-     return PopulateTextMarkerRange(value, line_indexes_map);
+     return PopulateTextMarkerRange(value, line_indexer);
    }
 -
 +#endif
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
-     return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -359,7 +359,7 @@ OptionalNSObject InvokeAttributeFor(
+     return base::Value(NodeToLineIndex(value, line_indexer));
+@@ -356,7 +356,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,21 +36,21 @@ index 2909c7873a2d3cbc6ef4f6efb0945331b7a814b7..441e9e52d715a332f606bb5a621817f4
 +#ifndef MAS_BUILD
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
-     const LineIndexesMap& line_indexes_map) const {
-@@ -374,7 +374,7 @@ OptionalNSObject InvokeAttributeFor(
-   dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
+     const LineIndexer* line_indexer) const {
+@@ -370,7 +370,7 @@ OptionalNSObject InvokeAttributeFor(
+   dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
 -
 +#endif
  base::Value AccessibilityTreeFormatterMac::PopulateArray(
      NSArray* node_array,
-     const LineIndexesMap& line_indexes_map) const {
+     const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb4084c8cb950 100644
+index 3141df728af7274814948b5e95da2e7b5c2d6db2..e9bf4c0cec862afc41e83e1a51f3d1eab8f2ffe6 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -152,6 +152,7 @@
+@@ -156,6 +156,7 @@
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -58,7 +58,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -159,6 +160,7 @@
+@@ -163,6 +164,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -66,7 +66,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -224,6 +226,7 @@
+@@ -228,6 +230,7 @@
    return uielement;
  }
  
@@ -74,7 +74,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -291,6 +294,7 @@
+@@ -295,6 +298,7 @@
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }

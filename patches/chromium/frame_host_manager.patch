@@ -42,10 +42,10 @@ index 028c197b8f25e64bf8c9a7df7fbd22a94d2d9de0..b9fd96f5b3d5e3d461b55c92b7518e75
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 0d090277ac299330deec062d97c9781f2cbe3199..6524e7fef185d1b3d44b48933f74ab55965dbf5e 100644
+index 9dc61afc2056653cd74053097d72f59f1f9aed83..e7d4a8d159c2d45b6ff8b65250624fc2edafbe88 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -1390,6 +1390,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1394,6 +1394,21 @@ void NavigationRequest::BeginNavigation() {
      // it immediately.
      EnterChildTraceEvent("ResponseStarted", this);
  
@@ -67,7 +67,7 @@ index 0d090277ac299330deec062d97c9781f2cbe3199..6524e7fef185d1b3d44b48933f74ab55
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -4999,6 +5014,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5003,6 +5018,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 0d090277ac299330deec062d97c9781f2cbe3199..6524e7fef185d1b3d44b48933f74ab55
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5012,10 +5028,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5016,10 +5032,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -229,7 +229,7 @@ index f5a2d1a50a6f5ef0fbd342c0c120c05c82f1b9ac..e82e2508c42d27dd32152b08abcdcfdb
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2d3f51b2c07254f5d87b48aa77aac21fc1e11d28..f97f458ca4a61f6b9d536a60fc04a0ef29a5882e 100644
+index d93fe54c2597f844f288c1cfcc26c875c27f2fd3..aa6bc472725a461ce2248f2e5bf9fb800e5b0676 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@
@@ -255,7 +255,7 @@ index 2d3f51b2c07254f5d87b48aa77aac21fc1e11d28..f97f458ca4a61f6b9d536a60fc04a0ef
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 203ae3449f4547d9ba304f8aebb66becbe70d79d..929c0873542b8eaeb2e3e05079e43cf7a3bd2fb9 100644
+index 7c897ae2ef758f6068cd7f3b0163d5015843404c..9960325f16a764db8a5acb8e849e585bd38a2fb0 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -250,8 +250,45 @@ class CONTENT_EXPORT ContentBrowserClient {
