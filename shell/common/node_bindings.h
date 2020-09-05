@@ -60,8 +60,8 @@ class UvHandle {
   void reset() {
     auto* h = handle();
     if (h != nullptr) {
-      DCHECK_EQ(0, uv_is_closing(handle()));
-      uv_close(handle(), OnClosed);
+      DCHECK_EQ(0, uv_is_closing(h));
+      uv_close(h, OnClosed);
       t_ = nullptr;
     }
   }
