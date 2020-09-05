@@ -116,7 +116,7 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
     if (uv_run(loop, UV_RUN_DEFAULT) == 0)
       break;
 
-  DCHECK(uv_loop_alive(loop) == 0);
+  DCHECK_EQ(0, uv_loop_alive(loop));
 }
 
 bool g_is_initialized = false;
