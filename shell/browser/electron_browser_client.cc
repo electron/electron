@@ -1424,20 +1424,18 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
   if (!web_request.get())
     return false;
-
+  
+  bool has_listener = web_request->HasListener();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (!frame) {
-    return false;
-  }
   const auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
 
   if (web_request_api)
-    return web_request->HasListener() || web_request_api->MayHaveProxies();
+    has_listener ||= web_request_api->MayHaveProxies();
 #endif
 
-  return web_request->HasListener();
+  return has_listener;
 }
 
 void ElectronBrowserClient::CreateWebSocket(
@@ -1453,9 +1451,6 @@ void ElectronBrowserClient::CreateWebSocket(
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (!frame) {
-    return;
-  }
   auto* web_request_api =
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
@@ -1496,19 +1491,16 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
 
-  // NOTE: Some unit test environments do not initialize
-  // BrowserContextKeyedAPI factories for e.g. WebRequest.
-  if (web_request_api) {
-    bool use_proxy_for_web_request =
-        web_request_api->MaybeProxyURLLoaderFactory(
-            browser_context, frame_host, render_process_id, type, navigation_id,
-            factory_receiver, header_client);
+  DCHECK(web_request_api);
+  bool use_proxy_for_web_request =
+      web_request_api->MaybeProxyURLLoaderFactory(
+          browser_context, frame_host, render_process_id, type, navigation_id,
+          factory_receiver, header_client);
 
-    if (bypass_redirect_checks)
-      *bypass_redirect_checks = use_proxy_for_web_request;
-    if (use_proxy_for_web_request)
-      return true;
-  }
+  if (bypass_redirect_checks)
+    *bypass_redirect_checks = use_proxy_for_web_request;
+  if (use_proxy_for_web_request)
+    return true;
 #endif
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
