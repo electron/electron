@@ -286,10 +286,10 @@ describe('chrome extensions', () => {
       w.loadURL(url);
       await emittedOnce(w.webContents, 'dom-ready');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com/*'] }, async (details, callback) => {
+      customSession.webRequest.onBeforeRequest({ urls: ['*://*.does.not.exist.com/*'] }, async (details, callback) => {
         callback({ cancel: true });
       });
-      await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
+      await expect(fetch(w.webContents, 'http://does.not.exist.com')).to.eventually.be.rejectedWith(TypeError);
     });
 
     it('takes precedence over Electron webRequest - WebSocket', async () => {
