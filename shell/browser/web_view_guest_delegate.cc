@@ -57,6 +57,10 @@ void WebViewGuestDelegate::AttachToIframe(
   api_web_contents_->Emit("did-attach");
 }
 
+void WebViewGuestDelegate::WillDestroy() {
+  ResetZoomController();
+}
+
 void WebViewGuestDelegate::DidDetach() {
   ResetZoomController();
 }

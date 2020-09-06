@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Taylor Brandstetter <deadbeef@chromium.org>
+Date: Wed, 12 Aug 2020 05:24:50 +0000
+Subject: Reconnect P2P socket dispatcher if network service dies.
+
+Bug: chromium:1113227
+Change-Id: Ifc8e856fde4cf4eee25149f0a1e86a3cad71ea83
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2344747
+Commit-Queue: Taylor <deadbeef@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#797125}
+
+diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
+index 6c3adda46f77bc15d7d1998871b0daeb34780a77..29884a255f24556f4dc8b41b22304938a4f0d775 100644
+--- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
++++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
+@@ -110,6 +110,18 @@ void P2PSocketDispatcher::RequestNetworkEventsIfNecessary() {
+ void P2PSocketDispatcher::OnConnectionError() {
+   base::AutoLock lock(p2p_socket_manager_lock_);
+   p2p_socket_manager_.reset();
++  // Attempt to reconnect in case the network service crashed in his being
++  // restarted.
++  PostCrossThreadTask(
++      *main_task_runner_.get(), FROM_HERE,
++      CrossThreadBindOnce(&P2PSocketDispatcher::ReconnectP2PSocketManager,
++                          scoped_refptr<P2PSocketDispatcher>(this)));
++}
++
++void P2PSocketDispatcher::ReconnectP2PSocketManager() {
++  network_notification_client_receiver_.reset();
++  GetP2PSocketManager()->StartNetworkNotifications(
++      network_notification_client_receiver_.BindNewPipeAndPassRemote());
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
+index de9b6690e0b27d3c4a263e8f908c0a95a675a089..c250d2af99d5291f34a7e3bfdb63fcbb70a5bd73 100644
+--- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
++++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
+@@ -83,6 +83,7 @@ class PLATFORM_EXPORT P2PSocketDispatcher
+   void RequestNetworkEventsIfNecessary();
+ 
+   void OnConnectionError();
++  void ReconnectP2PSocketManager();
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> main_task_runner_;
+ 

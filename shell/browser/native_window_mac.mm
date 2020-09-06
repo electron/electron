@@ -1351,8 +1351,24 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
+                                                bool visibleOnFullScreen) {
+  // In order for NSWindows to be visible on fullscreen we need to functionally
+  // mimic app.dock.hide() since Apple changed the underlying functionality of
+  // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
+  // fullscreen apps.
+  ProcessSerialNumber psn = {0, kCurrentProcess};
+  if (visibleOnFullScreen) {
+    [window_ setCanHide:NO];
+    TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+  } else {
+    [window_ setCanHide:YES];
+    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  }
+
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  SetCollectionBehavior(visibleOnFullScreen,
+                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -1451,7 +1467,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    [effect_view setState:NSVisualEffectStateActive];
+    [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
 
     // Make frameless Vibrant windows have rounded corners.
     if (!has_frame() && !is_modal()) {

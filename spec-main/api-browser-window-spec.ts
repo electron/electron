@@ -8,7 +8,7 @@ import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron';
 
 import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe } from './spec-helpers';
+import { delay, ifit, ifdescribe } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
 const features = process.electronBinding('features');
@@ -434,7 +434,13 @@ describe('BrowserWindow module', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
         before((done) => {
-          server = http.createServer((req, res) => { res.end(''); });
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate-top') {
+              res.end('<a target=_top href="/">navigate _top</a>');
+            } else {
+              res.end('');
+            }
+          });
           server.listen(0, '127.0.0.1', () => {
             url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
             done();
@@ -493,6 +499,38 @@ describe('BrowserWindow module', () => {
           });
           expect(navigatedTo).to.equal(url);
           expect(w.webContents.getURL()).to.equal('about:blank');
+        });
+
+        it('is triggered when a cross-origin iframe navigates _top', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await delay(1000);
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          let willNavigateEmitted = false;
+          w.webContents.on('will-navigate', () => {
+            willNavigateEmitted = true;
+          });
+          await emittedOnce(w.webContents, 'did-navigate');
+          expect(willNavigateEmitted).to.be.true();
         });
       });
 
@@ -969,6 +1007,26 @@ describe('BrowserWindow module', () => {
           w.show();
           w.maximize();
         });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
+          const bounds = w.getBounds();
+          w.once('maximize', () => {
+            w.unmaximize();
+          });
+          const unmaximize = emittedOnce(w, 'unmaximize');
+          w.show();
+          w.maximize();
+          await unmaximize;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
@@ -992,6 +1050,26 @@ describe('BrowserWindow module', () => {
           });
           w.show();
           w.minimize();
+        });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
+          const bounds = w.getBounds();
+          w.once('minimize', () => {
+            w.restore();
+          });
+          const restore = emittedOnce(w, 'restore');
+          w.show();
+          w.minimize();
+          await restore;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
         });
       });
 
@@ -2883,6 +2961,15 @@ describe('BrowserWindow module', () => {
       w.once('maximize', () => { done(); });
       w.show();
       w.maximize();
+    });
+
+    it('emits only one event when frameless window is maximized', () => {
+      const w = new BrowserWindow({ show: false, frame: false });
+      let emitted = 0;
+      w.on('maximize', () => emitted++);
+      w.show();
+      w.maximize();
+      expect(emitted).to.equal(1);
     });
 
     it('emits an event when window is unmaximized', (done) => {

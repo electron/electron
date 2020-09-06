@@ -1,0 +1,273 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: text fragment for user activation
+
+[1042986] [Low] [CVE-2020-6531]: iframe in victim page can detect Scroll To Text Fragment activation
+Backport https://chromium.googlesource.com/chromium/src/+/6ba752a6236a1adfff4b552bf141abd20f81fa4c
+
+diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
+index 5e47c91a5f5af59dfec21d4f1930d74cb05a55d9..f53b4c900f0e7786dcdb0824a34bf3720b301538 100644
+--- a/content/browser/frame_host/navigation_request.h
++++ b/content/browser/frame_host/navigation_request.h
+@@ -901,7 +901,9 @@ class CONTENT_EXPORT NavigationRequest
+   // be set in CreatedNavigationRequest.
+   // Note: |browser_initiated_| and |common_params_| may be mutated by
+   // ContentBrowserClient::OverrideNavigationParams at StartNavigation time
+-  // (i.e. before we actually kick off the navigation).
++  // (i.e. before we actually kick off the navigation). |browser_initiated|
++  // will always be true for history navigations, even if they began in the
++  // renderer using the history API.
+   mojom::CommonNavigationParamsPtr common_params_;
+   mojom::BeginNavigationParamsPtr begin_params_;
+   mojom::CommitNavigationParamsPtr commit_params_;
+diff --git a/content/browser/navigation_browsertest.cc b/content/browser/navigation_browsertest.cc
+index 0a8a18d178ded19600c33ca086d1c79fe30fa717..daffcb50bd9588e7b03d12cd245b6f8a3e9b065d 100644
+--- a/content/browser/navigation_browsertest.cc
++++ b/content/browser/navigation_browsertest.cc
+@@ -2023,7 +2023,8 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest, EnabledOnUserNavigation) {
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(
+       /*expected_scroll_offset_at_top=*/false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  RunUntilInputProcessed(GetWidgetHost());
++  EXPECT_EQ(true, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2039,7 +2040,8 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(
+       /*expected_scroll_offset_at_top=*/false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  RunUntilInputProcessed(GetWidgetHost());
++  EXPECT_EQ(true, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2064,7 +2066,8 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(
+       /*expected_scroll_offset_at_top=*/false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  RunUntilInputProcessed(GetWidgetHost());
++  EXPECT_EQ(true, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2091,7 +2094,7 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+       FROM_HERE, run_loop.QuitClosure(), TestTimeouts::tiny_timeout());
+   run_loop.Run();
+   RunUntilInputProcessed(GetWidgetHost());
+-  EXPECT_TRUE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  EXPECT_EQ(false, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2127,7 +2130,13 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+       FROM_HERE, run_loop.QuitClosure(), TestTimeouts::tiny_timeout());
+   run_loop.Run();
+   RunUntilInputProcessed(GetWidgetHost());
+-  EXPECT_TRUE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++
++  // Note: we use a scroll handler in the page to check whether any scrolls
++  // happened at all, rather than checking the current scroll offset. This is
++  // to ensure that if the offset is reset back to the top for other reasons
++  // (e.g. history restoration) we still fail this test. See
++  // https://crbug.com/1042986 for why this matters.
++  EXPECT_EQ(false, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2142,11 +2151,13 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+ 
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
+ 
+-  // Scroll the page back to top.
++  // Scroll the page back to top. Make sure we reset the |did_scroll| variable
++  // we'll use below to ensure the same-document navigation invokes the text
++  // fragment.
+   EXPECT_TRUE(ExecuteScript(main_contents, "window.scrollTo(0, 0)"));
+   frame_observer.WaitForScrollOffsetAtTop(true);
++  EXPECT_TRUE(ExecJs(main_contents, "did_scroll = false;"));
+ 
+   // Perform a same-document browser initiated navigation
+   GURL same_doc_url(embedded_test_server()->GetURL(
+@@ -2156,7 +2167,8 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(
+       /*expected_scroll_offset_at_top=*/false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  RunUntilInputProcessed(GetWidgetHost());
++  EXPECT_EQ(true, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2184,7 +2196,7 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+       FROM_HERE, run_loop.QuitClosure(), TestTimeouts::tiny_timeout());
+   run_loop.Run();
+   RunUntilInputProcessed(GetWidgetHost());
+-  EXPECT_TRUE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  EXPECT_EQ(false, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest, EnabledByDocumentPolicy) {
+@@ -2211,6 +2223,12 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest, EnabledByDocumentPolicy) {
+       "Content-Type: text/html; charset=utf-8\r\n"
+       "Document-Policy: no-force-load-at-top\r\n"
+       "\r\n"
++      "<script>"
++      "  let did_scroll = false;"
++      "  window.addEventListener('scroll', () => {"
++      "    did_scroll = true;"
++      "  });"
++      "</script>"
+       "<p style='position: absolute; top: 10000px;'>Some text</p>");
+   response.Done();
+ 
+@@ -2221,7 +2239,8 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest, EnabledByDocumentPolicy) {
+   WaitForPageLoad(main_contents);
+   frame_observer.WaitForScrollOffsetAtTop(
+       /*expected_scroll_offset_at_top=*/false);
+-  EXPECT_FALSE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  RunUntilInputProcessed(GetWidgetHost());
++  EXPECT_EQ(true, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+@@ -2248,6 +2267,12 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+       "Content-Type: text/html; charset=utf-8\r\n"
+       "Document-Policy: force-load-at-top\r\n"
+       "\r\n"
++      "<script>"
++      "  let did_scroll = false;"
++      "  window.addEventListener('scroll', () => {"
++      "    did_scroll = true;"
++      "  });"
++      "</script>"
+       "<p style='position: absolute; top: 10000px;'>Some text</p>");
+   response.Done();
+ 
+@@ -2262,7 +2287,7 @@ IN_PROC_BROWSER_TEST_F(TextFragmentAnchorBrowserTest,
+       FROM_HERE, run_loop.QuitClosure(), TestTimeouts::tiny_timeout());
+   run_loop.Run();
+   RunUntilInputProcessed(GetWidgetHost());
+-  EXPECT_TRUE(main_contents->GetMainFrame()->GetView()->IsScrollOffsetAtTop());
++  EXPECT_EQ(false, EvalJs(main_contents, "did_scroll;"));
+ }
+ 
+ // Regression test for https://crbug.com/996044
+diff --git a/content/test/data/scrollable_page_with_content.html b/content/test/data/scrollable_page_with_content.html
+index c37d095d22231d12faa19985e8e98b3f9368fab1..1ef150d3a4289caef3a883c92feb79216f77f457 100644
+--- a/content/test/data/scrollable_page_with_content.html
++++ b/content/test/data/scrollable_page_with_content.html
+@@ -1,6 +1,12 @@
+ <html>
+   <head>
+     <meta name="viewport" content="width=device-width, minimum-scale=1.0">
++    <script>
++      let did_scroll = false;
++      window.addEventListener('scroll', () => {
++        did_scroll = true;
++      });
++    </script>
+     <style>
+       p {
+         position: absolute;
+diff --git a/content/test/data/target_text_link.html b/content/test/data/target_text_link.html
+index 00f40bf042aed3476f07a9cc0575159c52cba9f2..ade7e42029f40b213c9110dd88ac270edb8d26f3 100644
+--- a/content/test/data/target_text_link.html
++++ b/content/test/data/target_text_link.html
+@@ -5,4 +5,4 @@
+   <body>
+     <a id="link" href="/scrollable_page_with_content.html#:~:text=text">link</a>
+   </body>
+-</html>>
++</html>
+diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
+index 31fc5754a02318ab5eb7b239cea1530baf80ecba..cbf0e87fd81e48f77dac052a7f5992cf0dbaa2e0 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.h
++++ b/third_party/blink/renderer/core/loader/document_loader.h
+@@ -294,6 +294,9 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+ 
+   bool HadTransientActivation() const { return had_transient_activation_; }
+ 
++  // Whether the navigation originated from the browser process. Note: history
++  // navigation is always considered to be browser initiated, even if the
++  // navigation was started using the history API in the renderer.
+   bool IsBrowserInitiated() const { return is_browser_initiated_; }
+ 
+   bool IsSameOriginNavigation() const { return is_same_origin_navigation_; }
+diff --git a/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor.cc b/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor.cc
+index ebdb5b14f8a36ee44f6f80e57c3221ac79f566e7..cc7cde84dcfd8543e7cc0bb5048c5225c13703e9 100644
+--- a/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor.cc
++++ b/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor.cc
+@@ -61,12 +61,25 @@ bool ParseTextDirective(const String& fragment,
+ bool CheckSecurityRestrictions(LocalFrame& frame,
+                                bool same_document_navigation) {
+   // This algorithm checks the security restrictions detailed in
+-  // https://wicg.github.io/ScrollToTextFragment/#should-allow-text-fragment
+-
+-  // We only allow text fragment anchors for user or browser initiated
+-  // navigations, i.e. no script navigations.
+-  if (!(frame.Loader().GetDocumentLoader()->HadTransientActivation() ||
+-        frame.Loader().GetDocumentLoader()->IsBrowserInitiated())) {
++  // https://wicg.github.io/ScrollToTextFragment/#should-allow-a-text-fragment
++  // TODO(bokan): These are really only relevant for observable actions like
++  // scrolling. We should consider allowing highlighting regardless of these
++  // conditions. See the TODO in the relevant spec section:
++  // https://wicg.github.io/ScrollToTextFragment/#restricting-the-text-fragment
++
++  // History navigation is special because it's considered to be browser
++  // initiated even if the navigation originated via use of the history API
++  // within the renderer. We avoid creating a text fragment for history
++  // navigations since history scroll restoration should take precedence but
++  // it'd be bad if we ever got here for a history navigation since the check
++  // below would pass even if the user took no action.
++  SECURITY_CHECK(frame.Loader().GetDocumentLoader()->GetNavigationType() !=
++                 kWebNavigationTypeBackForward);
++
++  // We only allow text fragment anchors for user navigations, e.g. link
++  // clicks, omnibox navigations, no script navigations.
++  if (!frame.Loader().GetDocumentLoader()->HadTransientActivation() &&
++      !frame.Loader().GetDocumentLoader()->IsBrowserInitiated()) {
+     return false;
+   }
+ 
+@@ -104,6 +117,17 @@ TextFragmentAnchor* TextFragmentAnchor::TryCreateFragmentDirective(
+   if (!frame.GetDocument()->GetFragmentDirective())
+     return nullptr;
+ 
++  // Avoid invoking the text fragment for history or reload navigations as
++  // they'll be clobbered by scroll restoration; this prevents a transient
++  // scroll as well as user gesture issues; see https://crbug.com/1042986 for
++  // details.
++  auto navigation_type =
++      frame.Loader().GetDocumentLoader()->GetNavigationType();
++  if (navigation_type == kWebNavigationTypeBackForward ||
++      navigation_type == kWebNavigationTypeReload) {
++    return nullptr;
++  }
++
+   if (!CheckSecurityRestrictions(frame, same_document_navigation))
+     return nullptr;
+ 
+diff --git a/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor_test.cc b/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor_test.cc
+index c8c87c95319a63d93a90123a4150cb3a4b2f95bf..258b9ac343a8fbcec635ddb6103cc485d540b50e 100644
+--- a/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor_test.cc
++++ b/third_party/blink/renderer/core/page/scrolling/text_fragment_anchor_test.cc
+@@ -1611,7 +1611,11 @@ TEST_F(TextFragmentAnchorTest, TextDirectiveInSvg) {
+ }
+ 
+ // Ensure we restore the text highlight on page reload
+-TEST_F(TextFragmentAnchorTest, HighlightOnReload) {
++// TODO(bokan): This test is disabled as this functionality was suppressed in
++// https://crrev.com/c/2135407; it would be better addressed by providing a
++// highlight-only function. See the TODO in
++// https://wicg.github.io/ScrollToTextFragment/#restricting-the-text-fragment
++TEST_F(TextFragmentAnchorTest, DISABLED_HighlightOnReload) {
+   SimRequest request("https://example.com/test.html#:~:text=test", "text/html");
+   LoadURL("https://example.com/test.html#:~:text=test");
+   const String& html = R"HTML(

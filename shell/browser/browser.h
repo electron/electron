@@ -309,6 +309,7 @@ class Browser : public WindowListObserver {
   base::Value about_panel_options_;
 #elif defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;
+  base::Time last_dock_show_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);

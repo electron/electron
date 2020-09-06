@@ -123,7 +123,8 @@ class NativeWindowViews : public NativeWindow,
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
 
-  void SetVisibleOnAllWorkspaces(bool visible) override;
+  void SetVisibleOnAllWorkspaces(bool visible,
+                                 bool visibleOnFullScreen) override;
 
   bool IsVisibleOnAllWorkspaces() override;
 
@@ -276,8 +277,8 @@ class NativeWindowViews : public NativeWindow,
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
 
-  // Whether to block Chromium from handling window messages.
-  bool block_chromium_message_handler_ = false;
+  // Whether we want to set window placement without side effect.
+  bool is_setting_window_placement_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

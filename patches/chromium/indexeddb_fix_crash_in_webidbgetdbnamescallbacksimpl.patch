@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adrienne Walker <enne@chromium.org>
+Date: Tue, 4 Aug 2020 20:10:23 +0000
+Subject: indexeddb: fix crash in WebIDBGetDBNamesCallbacksImpl
+
+Resolve() can end up freeing WebIDBGetDBNamesCallbacksImpl by throwing a
+mojo error that deletes the self-owned associated receiver that owns it.
+So, don't call any other functions after it.
+
+As the promise resolver can only resolve/reject once, it is safe to
+not clear it.
+
+(cherry picked from commit da90fc39f5ca0f8dc1c665fbabad8ec229826f89)
+
+Bug: 1106682
+Change-Id: Iea943f3c5c1e57adb6ad399baff49522f54d264b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2311620
+Commit-Queue: Daniel Murphy <dmurph@chromium.org>
+Reviewed-by: Daniel Murphy <dmurph@chromium.org>
+Auto-Submit: enne <enne@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#790857}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2337096
+Reviewed-by: enne <enne@chromium.org>
+Commit-Queue: enne <enne@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1023}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
+index 46c5b3432931f6caef98f05dbb6f3543b2711874..af1b4c4234c62671ed56b52d7bd13c3557d397e9 100644
+--- a/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
++++ b/third_party/blink/renderer/modules/indexeddb/idb_factory.cc
+@@ -104,7 +104,6 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
+     promise_resolver_->Reject(MakeGarbageCollected<DOMException>(
+         DOMExceptionCode::kUnknownError,
+         "The databases() promise was rejected."));
+-    promise_resolver_.Clear();
+   }
+ 
+   void SuccessNamesAndVersionsList(
+@@ -128,7 +127,7 @@ class WebIDBGetDBNamesCallbacksImpl : public WebIDBCallbacks {
+         ExecutionContext::From(promise_resolver_->GetScriptState()),
+         &async_task_id_, "success");
+     promise_resolver_->Resolve(name_and_version_list);
+-    promise_resolver_.Clear();
++    // Note: Resolve may cause |this| to be deleted.
+   }
+ 
+   void SuccessStringList(const Vector<String>&) override { NOTREACHED(); }

@@ -12,5 +12,7 @@
 	<string>APPL</string>
 	<key>LSBackgroundOnly</key>
 	<true/>
+	<key>LSRequiresNativeExecution</key>
+	<true/>
 </dict>
 </plist>

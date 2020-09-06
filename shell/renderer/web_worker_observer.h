@@ -21,7 +21,7 @@ class WebWorkerObserver {
   // Returns the WebWorkerObserver for current worker thread.
   static WebWorkerObserver* GetCurrent();
 
-  void ContextCreated(v8::Local<v8::Context> context);
+  void WorkerScriptReadyForEvaluation(v8::Local<v8::Context> context);
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
  private:
