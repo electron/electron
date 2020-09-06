@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var electron = require('./')
+var electron = require('./');
 
-var proc = require('child_process')
+var proc = require('child_process');
 
 var child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false })
 child.on('close', function (code, signal) {

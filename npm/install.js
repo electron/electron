@@ -59,9 +59,9 @@ function extractFile (zipPath) {
         if (err) return reject(err)
 
         resolve()
-      })
-    })
-  })
+      });
+    });
+  });
 }
 
 function getPlatformPath () {
