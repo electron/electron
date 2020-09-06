@@ -65,11 +65,6 @@ ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
   return new ElectronManagementAPIDelegate;
 }
 
-ManagementAPIDelegate*
-ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
-  return new ElectronManagementAPIDelegate;
-}
-
 std::unique_ptr<MimeHandlerViewGuestDelegate>
 ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
     MimeHandlerViewGuest* guest) const {
