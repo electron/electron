@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: stop leaking cross-origin post-redirect data using StackTrace
+
+[1074317] [High] [CVE-2020-6511]: Security: The CSP reports and stacktraces of errors leaks post-redirect URL for <script>
+Backport https://chromium.googlesource.com/chromium/src/+/0b707cbaa2cb806162797be55caf9f8074fbdccf
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_source_code.cc b/third_party/blink/renderer/bindings/core/v8/script_source_code.cc
+index 46148496dd4e71f5b2976fe24e17974111d09a89..38d117601d68112dfe0d9c41e384d04476e38e9c 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_source_code.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_source_code.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/bindings/core/v8/script_source_code.h"
+ 
++#include "base/feature_list.h"
+ #include "third_party/blink/renderer/core/loader/resource/script_resource.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/cached_metadata_handler.h"
+ 
+@@ -47,8 +48,16 @@ String SourceMapUrlFromResponse(const ResourceResponse& response) {
+   return response.HttpHeaderField(http_names::kXSourceMap);
+ }
+ 
++const base::Feature kUnsafeScriptReportPostRedirectURL{
++    "UnsafeScriptReportPostRedirectURL", base::FEATURE_DISABLED_BY_DEFAULT};
++
+ }  // namespace
+ 
++// static
++bool ScriptSourceCode::UsePostRedirectURL() {
++  return base::FeatureList::IsEnabled(kUnsafeScriptReportPostRedirectURL);
++}
++
+ ScriptSourceCode::ScriptSourceCode(
+     const ParkableString& source,
+     ScriptSourceLocationType source_location_type,
+@@ -84,8 +93,9 @@ ScriptSourceCode::ScriptSourceCode(ScriptStreamer* streamer,
+       cache_handler_(resource->CacheHandler()),
+       streamer_(streamer),
+       not_streaming_reason_(reason),
+-      url_(
+-          StripFragmentIdentifier(resource->GetResponse().CurrentRequestUrl())),
++      url_(StripFragmentIdentifier(
++          UsePostRedirectURL() ? resource->GetResponse().CurrentRequestUrl()
++                               : resource->Url())),
+       source_map_url_(SourceMapUrlFromResponse(resource->GetResponse())),
+       start_position_(TextPosition::MinimumPosition()),
+       source_location_type_(ScriptSourceLocationType::kExternalFile) {
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_source_code.h b/third_party/blink/renderer/bindings/core/v8/script_source_code.h
+index eff28959c340b47033f923751c721fab2b003a32..f7e38a00d20052a32f3c5bf4fef2f4baa6c874e1 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_source_code.h
++++ b/third_party/blink/renderer/bindings/core/v8/script_source_code.h
+@@ -49,6 +49,20 @@ class CORE_EXPORT ScriptSourceCode final {
+   DISALLOW_NEW();
+ 
+  public:
++  // Return whether chrome should use the request URL or the response URL as the
++  // 'url' of the script. This can be observed in:
++  // 1) The 'source-file' in CSP violations reports.
++  // 2) The URL(s) in javascript stack traces.
++  // 3) How relative source map are resolved.
++  //
++  // This returns false by default. This corresponds to the current
++  // specification and matches Firefox behavior. This also avoids leaking
++  // post-redirect data cross-origin. See https://crbug.com/1074317.
++  //
++  // This can be enabled using the switch:
++  // --enable-features=UnsafeScriptReportPostRedirectURL
++  static bool UsePostRedirectURL();
++
+   // For inline scripts.
+   ScriptSourceCode(
+       const String& source,
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index ee2b239577f2e76369492ce40beb690aa113e0bc..28b392f231f3bcb04c1f6e2fca50cf8c1550aaab 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -297,7 +297,9 @@ void WorkerGlobalScope::ImportScriptsInternal(const Vector<String>& urls,
+         source_code.length(), handler ? handler->GetCodeCacheSize() : 0);
+     ScriptController()->Evaluate(
+         ScriptSourceCode(source_code, ScriptSourceLocationType::kUnknown,
+-                         handler, response_url),
++                         handler,
++                         ScriptSourceCode::UsePostRedirectURL() ? response_url
++                                                                : complete_url),
+         sanitize_script_errors, &error_event, GetV8CacheOptions());
+     if (error_event) {
+       ScriptController()->RethrowExceptionFromImportedScript(error_event,

@@ -244,6 +244,14 @@ describe('web security', () => {
       <script src="${serverUrl}"></script>`);
     await p;
   });
+
+  it('does not crash when multiple WebContent are created with web security disabled', () => {
+    const options = { webPreferences: { webSecurity: false } };
+    const w1 = new BrowserWindow(options);
+    w1.loadURL(serverUrl);
+    const w2 = new BrowserWindow(options);
+    w2.loadURL(serverUrl);
+  });
 });
 
 describe('command line switches', () => {
@@ -386,6 +394,33 @@ describe('chromium features', () => {
           });
         }
       });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
+
+    it('should not crash when nodeIntegration is enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          partition: 'sw-file-scheme-worker-spec'
+        }
+      });
+
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
+        }
+      });
+
       w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });

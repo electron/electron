@@ -188,8 +188,8 @@ v8::Local<v8::Promise> Cookies::Get(const gin_helper::Dictionary& filter) {
   gin_helper::Promise<net::CookieList> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   base::DictionaryValue dict;
@@ -224,8 +224,8 @@ v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
   cookie_deletion_filter->url = url;
   cookie_deletion_filter->cookie_name = name;
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->DeleteCookies(
@@ -280,8 +280,8 @@ v8::Local<v8::Promise> Cookies::Set(base::DictionaryValue details) {
     options.set_include_httponly();
   }
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
   manager->SetCanonicalCookie(
       *canonical_cookie, url.scheme(), options,
@@ -303,8 +303,8 @@ v8::Local<v8::Promise> Cookies::FlushStore() {
   gin_helper::Promise<void> promise(isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* storage_partition = content::BrowserContext::GetDefaultStoragePartition(
-      browser_context_.get());
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_);
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
   manager->FlushCookieStore(base::BindOnce(

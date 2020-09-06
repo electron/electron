@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: drop SkTextBlobs with > 2M glyphs
+
+[1080481] [Medium] [CVE-2020-6523]: Security: Skia: Integer Overflow in GrTextBlob::Make
+Backport https://skia.googlesource.com/skia.git/+/8d2ebfffaf6ece9a7e9839dca2d7907f241c3460
+
+diff --git a/src/core/SkCanvas.cpp b/src/core/SkCanvas.cpp
+index 31dfff18337c260c5905f1e1843a1cc27ebead5b..0e145b998f81be223cc7256ca402cbb8d384f7f5 100644
+--- a/src/core/SkCanvas.cpp
++++ b/src/core/SkCanvas.cpp
+@@ -2654,6 +2654,19 @@ void SkCanvas::drawTextBlob(const SkTextBlob* blob, SkScalar x, SkScalar y,
+     TRACE_EVENT0("skia", TRACE_FUNC);
+     RETURN_ON_NULL(blob);
+     RETURN_ON_FALSE(blob->bounds().makeOffset(x, y).isFinite());
++
++    // Overflow if more than 2^21 glyphs stopping a buffer overflow latter in the stack.
++    // See chromium:1080481
++    // TODO: can consider unrolling a few at a time if this limit becomes a problem.
++    int totalGlyphCount = 0;
++    constexpr int kMaxGlyphCount = 1 << 21;
++    SkTextBlob::Iter i(*blob);
++    SkTextBlob::Iter::Run r;
++    while (i.next(&r)) {
++        int glyphsLeft = kMaxGlyphCount - totalGlyphCount;
++        RETURN_ON_FALSE(r.fGlyphCount <= glyphsLeft);
++        totalGlyphCount += r.fGlyphCount;
++    }
+     this->onDrawTextBlob(blob, x, y, paint);
+ }
+ 
+diff --git a/tests/TextBlobCacheTest.cpp b/tests/TextBlobCacheTest.cpp
+index 536b2c1273eeef0eac0e2018d5d438687832203d..c0cdcfebdd96d210112835fee0ae63d69312105b 100644
+--- a/tests/TextBlobCacheTest.cpp
++++ b/tests/TextBlobCacheTest.cpp
+@@ -229,6 +229,51 @@ static sk_sp<SkTextBlob> make_blob() {
+     return builder.make();
+ }
+ 
++// Turned off to pass on android and ios devices, which were running out of memory..
++#if 0
++static sk_sp<SkTextBlob> make_large_blob() {
++    auto tf = SkTypeface::MakeFromName("Roboto2-Regular", SkFontStyle());
++    SkFont font;
++    font.setTypeface(tf);
++    font.setSubpixel(false);
++    font.setEdging(SkFont::Edging::kAlias);
++    font.setSize(24);
++
++    const int mallocSize = 0x3c3c3bd; // x86 size
++    std::unique_ptr<char[]> text{new char[mallocSize + 1]};
++    if (text == nullptr) {
++        return nullptr;
++    }
++    for (int i = 0; i < mallocSize; i++) {
++        text[i] = 'x';
++    }
++    text[mallocSize] = 0;
++
++    static const int maxGlyphLen = mallocSize;
++    std::unique_ptr<SkGlyphID[]> glyphs{new SkGlyphID[maxGlyphLen]};
++    int glyphCount =
++            font.textToGlyphs(
++                    text.get(), mallocSize, SkTextEncoding::kUTF8, glyphs.get(), maxGlyphLen);
++    SkTextBlobBuilder builder;
++    const auto& runBuffer = builder.allocRun(font, glyphCount, 0, 0);
++    for (int i = 0; i < glyphCount; i++) {
++        runBuffer.glyphs[i] = glyphs[i];
++    }
++    return builder.make();
++}
++
++DEF_GPUTEST_FOR_RENDERING_CONTEXTS(TextBlobIntegerOverflowTest, reporter, ctxInfo) {
++    auto grContext = ctxInfo.grContext();
++    const SkImageInfo info =
++            SkImageInfo::Make(kScreenDim, kScreenDim, kN32_SkColorType, kPremul_SkAlphaType);
++    auto surface = SkSurface::MakeRenderTarget(grContext, SkBudgeted::kNo, info);
++
++    auto blob = make_large_blob();
++    int y = 40;
++    SkBitmap base = draw_blob(blob.get(), surface.get(), {40, y + 0.0f});
++}
++#endif
++
+ static const bool kDumpPngs = true;
+ // dump pngs needs a "good" and a "bad" directory to put the results in. This allows the use of the
+ // skdiff tool to visualize the differences.

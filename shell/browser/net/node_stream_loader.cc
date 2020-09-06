@@ -42,6 +42,12 @@ NodeStreamLoader::~NodeStreamLoader() {
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "removeListener",
                        node::arraysize(args), args, {0, 0});
   }
+
+  // Destroy the stream if not already ended
+  if (!ended_) {
+    node::MakeCallback(isolate_, emitter_.Get(isolate_), "destroy", 0, nullptr,
+                       {0, 0});
+  }
 }
 
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {

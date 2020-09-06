@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexis Hetu <sugoi@google.com>
+Date: Wed, 12 Aug 2020 17:43:18 -0400
+Subject: Fix copying cubemap textures out of bounds
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Cubemap textures are created with a border, which means that their
+size is larger. Their range is also different. Instead of [0, dim-1],
+they have a [-1, dim] range. This means that if we copy them starting
+at [0, 0] for their full size, we'll overflow at the end, since the
+buffer starts at [-1, -1]. This cl prevents going through the fast
+copy path when we have a border.
+
+Bug: chromium:1115345
+Change-Id: I333acfd6094645231eb111634359d82ed3d5c787
+Reviewed-on: https://swiftshader-review.googlesource.com/c/SwiftShader/+/47668
+Presubmit-Ready: Alexis Hétu <sugoi@google.com>
+Reviewed-by: Corentin Wallez <cwallez@google.com>
+Reviewed-by: Chris Forbes <chrisforbes@google.com>
+Tested-by: Alexis Hétu <sugoi@google.com>
+
+diff --git a/src/OpenGL/libGLESv2/Device.cpp b/src/OpenGL/libGLESv2/Device.cpp
+index 0758428fb8c2aa91a21539d533e8b32d78d15e2a..8d80db73d5e43cb7463455f85beabaaf0d773bff 100644
+--- a/src/OpenGL/libGLESv2/Device.cpp
++++ b/src/OpenGL/libGLESv2/Device.cpp
+@@ -575,7 +575,7 @@ namespace es2
+ 		bool fullCopy = (sRect.x0 == 0.0f) && (sRect.y0 == 0.0f) && (dRect.x0 == 0) && (dRect.y0 == 0) &&
+ 		                (sRect.x1 == (float)sWidth) && (sRect.y1 == (float)sHeight) && (dRect.x1 == dWidth) && (dRect.y1 == dHeight);
+ 		bool alpha0xFF = false;
+-		bool equalSlice = sourceSliceB == destSliceB;
++		bool equalSlice = (sourceSliceB == destSliceB) && (source->getBorder() == 0) && (dest->getBorder() == 0);
+ 		bool smallMargin = sourcePitchB <= source->getWidth() * Surface::bytes(source->getInternalFormat()) + 16;
+ 
+ 		if((source->getInternalFormat() == FORMAT_A8R8G8B8 && dest->getInternalFormat() == FORMAT_X8R8G8B8) ||

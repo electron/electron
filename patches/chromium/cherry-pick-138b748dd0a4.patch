@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexander Cooper <alcooper@chromium.org>
+Date: Tue, 4 Aug 2020 00:31:54 +0000
+Subject: Update FocusChanged notifiers to operate on a copy
+
+These focus changed calls ultimately trigger javascript events. These
+events could potentially run code that would modify the list of items
+that the FocusChanged notifiers are notifying, and thus invalidate their
+in-use iterators.
+
+Fix this by having these methods iterate over a copy instead of the
+member list.
+
+(cherry picked from commit d8f526f4e25c24ed29e60b46b3416bfabd5e8f11)
+
+Fixed: 1107815
+Change-Id: I03fa08eeadc60736f3a3fae079253dbd3ee26476
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2314158
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Klaus Weidner <klausw@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Auto-Submit: Alexander Cooper <alcooper@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#791261}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2335893
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Alexander Cooper <alcooper@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4147@{#1015}
+Cr-Branched-From: 16307825352720ae04d898f37efa5449ad68b606-refs/heads/master@{#768962}
+
+diff --git a/third_party/blink/renderer/core/page/focus_controller.cc b/third_party/blink/renderer/core/page/focus_controller.cc
+index 225ff4339c3a9b0bd79b3a188e28cf615e6ed97c..19215d532094c340dd146660b062aeb3293b7bc3 100644
+--- a/third_party/blink/renderer/core/page/focus_controller.cc
++++ b/third_party/blink/renderer/core/page/focus_controller.cc
+@@ -1335,7 +1335,12 @@ void FocusController::RegisterFocusChangedObserver(
+ }
+ 
+ void FocusController::NotifyFocusChangedObservers() const {
+-  for (const auto& it : focus_changed_observers_)
++  // Since this eventually dispatches an event to the page, the page could add
++  // new observer, which would invalidate our iterators; so iterate over a copy
++  // of the observer list.
++  HeapHashSet<WeakMember<FocusChangedObserver>> observers =
++      focus_changed_observers_;
++  for (const auto& it : observers)
+     it->FocusedFrameChanged();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/xr/xr_system.cc b/third_party/blink/renderer/modules/xr/xr_system.cc
+index a94164360dcfe0e0686e5d48e64ee8a4dc9ef125..8b22f66e7f0c9e905d9a6503abb557287c6e456b 100644
+--- a/third_party/blink/renderer/modules/xr/xr_system.cc
++++ b/third_party/blink/renderer/modules/xr/xr_system.cc
+@@ -682,7 +682,11 @@ XRSystem::XRSystem(LocalFrame& frame, int64_t ukm_source_id)
+ 
+ void XRSystem::FocusedFrameChanged() {
+   // Tell all sessions that focus changed.
+-  for (const auto& session : sessions_) {
++  // Since this eventually dispatches an event to the page, the page could
++  // create a new session which would invalidate our iterators; so iterate over
++  // a copy of the session map.
++  HeapHashSet<WeakMember<XRSession>> processing_sessions = sessions_;
++  for (const auto& session : processing_sessions) {
+     session->OnFocusChanged();
+   }
+ 

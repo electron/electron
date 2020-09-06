@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: replace memcopy with memmove for overlapping copies
+
+[1081722] [Medium] [CVE-2020-6524]: Security: memcpy-param-overlap in AudioBuffer::copyFromChannel
+Backport https://chromium.googlesource.com/chromium/src/+/2be9b1c27fb97e8a82e068794fc0fba555182c03
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+index 37a1650dfa295c7bf25acf8fa4146c2475105bf1..e587ec83a4728a02eb01ce58339e2cfad5a0c24d 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_buffer.cc
+@@ -254,7 +254,7 @@ void AudioBuffer::copyFromChannel(NotShared<DOMFloat32Array> destination,
+   DCHECK_LE(count, data_length);
+   DCHECK_LE(buffer_offset + count, data_length);
+ 
+-  memcpy(dst, src + buffer_offset, count * sizeof(*src));
++  memmove(dst, src + buffer_offset, count * sizeof(*src));
+ }
+ 
+ void AudioBuffer::copyToChannel(NotShared<DOMFloat32Array> source,
+@@ -297,7 +297,7 @@ void AudioBuffer::copyToChannel(NotShared<DOMFloat32Array> source,
+   DCHECK_LE(buffer_offset + count, channel_data->lengthAsSizeT());
+   DCHECK_LE(count, source.View()->lengthAsSizeT());
+ 
+-  memcpy(dst + buffer_offset, src, count * sizeof(*dst));
++  memmove(dst + buffer_offset, src, count * sizeof(*dst));
+ }
+ 
+ void AudioBuffer::Zero() {

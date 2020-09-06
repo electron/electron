@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julie Jeongeun Kim <jkim@igalia.com>
+Date: Wed, 8 Apr 2020 11:18:34 +0000
+Subject: a11y: AXPlatformNodeBase::GetIndexInParent() returns base::Optional
+
+This fixes the regression issue from the CL[1] which moved
+the logic of GetIndexInParent to AXPlatformNodeBase.
+
+Before the CL[1], atk_object::GetIndexInParent returns -1 as an
+invalid value but AXPlatformNodeBase::GetIndexInParent returns
+positive numbers or 0 except the case when it's not implemented
+or doesn't have |delegate_|. AXPlatformNodeBase::GetIndexInParent
+is also used for the internal logic in AXPlatformNodeBase with
+the assumption that the return value is not less than 0.
+The CL[1] moved the logic to AXPlatformNodeBase::GetIndexInParent
+with keeping the rule that the return value is not less than 0.
+
+The problem is that screen reader such as Orca expects that it
+returns -1 when it's invalid.
+
+With this CL, AXPlatformNodeBase::GetIndexInParent() returns
+base::Optional and the caller has -1 if GetIndexInParent() returns
+base::nullopt. It also uses GetFirstChild and GetNextSibling for
+children iteration in GetHypertextOffsetFromChild() and
+GetHypertextOffsetFromEndpoint() instead of GetIndexInParent and
+GetChildAt.
+
+[1]https://crrev.com/c/2087234
+
+Bug: 1065534
+Change-Id: I00e2ed421ed263cf379ba22f55049fd52d32df9b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2129667
+Commit-Queue: Julie Kim <jkim@igalia.com>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Reviewed-by: Martin Robinson <mrobinson@igalia.com>
+Reviewed-by: Joanmarie Diggs <jdiggs@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#757381}
+
+diff --git a/content/test/data/accessibility/event/css-flex-text-update-expected-auralinux.txt b/content/test/data/accessibility/event/css-flex-text-update-expected-auralinux.txt
+index c68cfe98572b9b2edf3658053be3dea2040524e4..483d5bb7eb7be40fa0dbd81cb336fe41fe665efe 100644
+--- a/content/test/data/accessibility/event/css-flex-text-update-expected-auralinux.txt
++++ b/content/test/data/accessibility/event/css-flex-text-update-expected-auralinux.txt
+@@ -1,3 +1,3 @@
+-CHILDREN-CHANGED index:0 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
++CHILDREN-CHANGED index:-1 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
+ NAME-CHANGED:new role=ROLE_STATIC name='new' ENABLED,SENSITIVE,SHOWING,VISIBLE
+ STATE-CHANGE:DEFUNCT:TRUE role=ROLE_INVALID name='(null)' DEFUNCT
+diff --git a/content/test/data/accessibility/event/text-changed-expected-auralinux.txt b/content/test/data/accessibility/event/text-changed-expected-auralinux.txt
+index b1573d5a3e84bc168403ad989632333473a5c0a8..0fe6700c90e82846aa862cc09a567d5ad36bccc6 100644
+--- a/content/test/data/accessibility/event/text-changed-expected-auralinux.txt
++++ b/content/test/data/accessibility/event/text-changed-expected-auralinux.txt
+@@ -1,7 +1,7 @@
++CHILDREN-CHANGED index:-1 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
++CHILDREN-CHANGED index:-1 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
+ CHILDREN-CHANGED index:0 CHILD:(role=ROLE_STATIC) role=ROLE_PARAGRAPH ENABLED,SENSITIVE,SHOWING,VISIBLE
+ CHILDREN-CHANGED index:0 CHILD:(role=ROLE_STATIC) role=ROLE_PARAGRAPH ENABLED,SENSITIVE,SHOWING,VISIBLE
+-CHILDREN-CHANGED index:0 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
+-CHILDREN-CHANGED index:0 CHILD:(role=ROLE_STATIC) role=ROLE_STATIC ENABLED,SENSITIVE,SHOWING,VISIBLE
+ NAME-CHANGED:Modified Div role=ROLE_STATIC name='Modified Div' ENABLED,SENSITIVE,SHOWING,VISIBLE
+ NAME-CHANGED:Modified Heading role=ROLE_STATIC name='Modified Heading' ENABLED,SENSITIVE,SHOWING,VISIBLE
+ STATE-CHANGE:DEFUNCT:TRUE role=ROLE_INVALID name='(null)' DEFUNCT
+diff --git a/ui/accessibility/platform/ax_platform_node_auralinux.cc b/ui/accessibility/platform/ax_platform_node_auralinux.cc
+index 2f150dbbae32f9faae0f8b55a65133fb333aa5e5..f3e9ab6b2bb8ab0c4a688fe84861fe9d7e766a5a 100644
+--- a/ui/accessibility/platform/ax_platform_node_auralinux.cc
++++ b/ui/accessibility/platform/ax_platform_node_auralinux.cc
+@@ -2077,7 +2077,7 @@ gint GetIndexInParent(AtkObject* atk_object) {
+   if (!obj)
+     return -1;
+ 
+-  return obj->GetIndexInParent();
++  return obj->GetIndexInParent().value_or(-1);
+ }
+ 
+ gint AtkGetIndexInParent(AtkObject* atk_object) {
+@@ -3774,7 +3774,7 @@ void AXPlatformNodeAuraLinux::OnSubtreeCreated() {
+     return;
+ 
+   g_signal_emit_by_name(GetParent(), "children-changed::add",
+-                        GetIndexInParent(), atk_object);
++                        GetIndexInParent().value_or(-1), atk_object);
+ }
+ 
+ void AXPlatformNodeAuraLinux::OnSubtreeWillBeDeleted() {
+@@ -3788,7 +3788,7 @@ void AXPlatformNodeAuraLinux::OnSubtreeWillBeDeleted() {
+     return;
+ 
+   g_signal_emit_by_name(GetParent(), "children-changed::remove",
+-                        GetIndexInParent(), atk_object);
++                        GetIndexInParent().value_or(-1), atk_object);
+ }
+ 
+ void AXPlatformNodeAuraLinux::OnParentChanged() {
+diff --git a/ui/accessibility/platform/ax_platform_node_base.cc b/ui/accessibility/platform/ax_platform_node_base.cc
+index 12ec1674a79bdc1f28d5d2b1bb4792b81cd8608f..d946b07612f55efebf85615063411d262552944b 100644
+--- a/ui/accessibility/platform/ax_platform_node_base.cc
++++ b/ui/accessibility/platform/ax_platform_node_base.cc
+@@ -149,15 +149,16 @@ base::string16 AXPlatformNodeBase::GetNameAsString16() const {
+   return base::UTF8ToUTF16(name);
+ }
+ 
+-int AXPlatformNodeBase::GetIndexInParent() {
++base::Optional<int> AXPlatformNodeBase::GetIndexInParent() {
+   AXPlatformNodeBase* parent = FromNativeViewAccessible(GetParent());
+   if (!parent)
+-    return 0;
++    return base::nullopt;
+ 
+   int child_count = parent->GetChildCount();
+   if (child_count == 0) {
+-    // |child_count| could be 0 if the node is PlatformIsLeaf.
+-    return 0;
++    // |child_count| could be 0 if the parent is IsLeaf.
++    DCHECK(parent->IsLeaf());
++    return base::nullopt;
+   }
+ 
+   // Ask the delegate for the index in parent, and return it if it's plausible.
+@@ -176,7 +177,9 @@ int AXPlatformNodeBase::GetIndexInParent() {
+     if (parent->ChildAtIndex(i) == current)
+       return i;
+   }
+-  return -1;
++  NOTREACHED()
++      << "Unable to find the child in the list of its parent's children.";
++  return base::nullopt;
+ }
+ 
+ // AXPlatformNode overrides.
+@@ -1429,12 +1432,8 @@ int32_t AXPlatformNodeBase::GetHypertextOffsetFromChild(
+   // cross-tree traversal is necessary.
+   if (child->IsTextOnlyObject()) {
+     int32_t hypertext_offset = 0;
+-    int32_t index_in_parent = child->GetIndexInParent();
+-    DCHECK_GE(index_in_parent, 0);
+-    DCHECK_LT(index_in_parent, static_cast<int32_t>(GetChildCount()));
+-    for (uint32_t i = 0; i < static_cast<uint32_t>(index_in_parent); ++i) {
+-      auto* sibling = static_cast<AXPlatformNodeBase*>(
+-          FromNativeViewAccessible(ChildAtIndex(i)));
++    for (AXPlatformNodeBase* sibling = GetFirstChild(); sibling != child;
++         sibling = sibling->GetNextSibling()) {
+       DCHECK(sibling);
+       if (sibling->IsTextOnlyObject()) {
+         hypertext_offset += (int32_t)sibling->GetHypertext().size();
+@@ -1510,7 +1509,7 @@ int AXPlatformNodeBase::GetHypertextOffsetFromEndpoint(
+   }
+ 
+   AXPlatformNodeBase* common_parent = this;
+-  int32_t index_in_common_parent = GetIndexInParent();
++  base::Optional<int> index_in_common_parent = GetIndexInParent();
+   while (common_parent && !endpoint_object->IsDescendantOf(common_parent)) {
+     index_in_common_parent = common_parent->GetIndexInParent();
+     common_parent = static_cast<AXPlatformNodeBase*>(
+@@ -1519,7 +1518,6 @@ int AXPlatformNodeBase::GetHypertextOffsetFromEndpoint(
+   if (!common_parent)
+     return -1;
+ 
+-  DCHECK_GE(index_in_common_parent, 0);
+   DCHECK(!(common_parent->IsTextOnlyObject()));
+ 
+   // Case 2. Is the selection endpoint inside a descendant of this object?
+@@ -1547,17 +1545,14 @@ int AXPlatformNodeBase::GetHypertextOffsetFromEndpoint(
+   //
+   // We can safely assume that the endpoint is in another part of the tree or
+   // at common parent, and that this object is a descendant of common parent.
+-  int32_t endpoint_index_in_common_parent = -1;
+-  for (int i = 0; i < common_parent->GetDelegate()->GetChildCount(); ++i) {
+-    auto* child = static_cast<AXPlatformNodeBase*>(FromNativeViewAccessible(
+-        common_parent->GetDelegate()->ChildAtIndex(i)));
+-    DCHECK(child);
++  base::Optional<int> endpoint_index_in_common_parent;
++  for (AXPlatformNodeBase* child = common_parent->GetFirstChild();
++       child != nullptr; child = child->GetNextSibling()) {
+     if (endpoint_object->IsDescendantOf(child)) {
+       endpoint_index_in_common_parent = child->GetIndexInParent();
+       break;
+     }
+   }
+-  DCHECK_GE(endpoint_index_in_common_parent, 0);
+ 
+   if (endpoint_index_in_common_parent < index_in_common_parent)
+     return 0;
+diff --git a/ui/accessibility/platform/ax_platform_node_base.h b/ui/accessibility/platform/ax_platform_node_base.h
+index 0355f281a600979f59a25086fd7400201693bf89..9cb3364d43cb93f5e612a3a076161b4f2e11adaf 100644
+--- a/ui/accessibility/platform/ax_platform_node_base.h
++++ b/ui/accessibility/platform/ax_platform_node_base.h
+@@ -69,8 +69,9 @@ class AX_EXPORT AXPlatformNodeBase : public AXPlatformNode {
+   std::string GetName() const;
+   base::string16 GetNameAsString16() const;
+ 
+-  // This returns 0 if there's no parent.
+-  virtual int GetIndexInParent();
++  // This returns nullopt if there's no parent, it's unable to find the child in
++  // the list of its parent's children, or its parent doesn't have children.
++  virtual base::Optional<int> GetIndexInParent();
+ 
+   // AXPlatformNode.
+   void Destroy() override;
+diff --git a/ui/accessibility/platform/ax_platform_node_mac.h b/ui/accessibility/platform/ax_platform_node_mac.h
+index a5624cb789a7b686c1b139d1845127114befd7e2..920f0a0536364d26b99dbe54cf372abaf7d34439 100644
+--- a/ui/accessibility/platform/ax_platform_node_mac.h
++++ b/ui/accessibility/platform/ax_platform_node_mac.h
+@@ -27,7 +27,6 @@ class AXPlatformNodeMac : public AXPlatformNodeBase {
+ 
+   // AXPlatformNodeBase.
+   void Destroy() override;
+-  int GetIndexInParent() override;
+ 
+  protected:
+   void AddAttributeToList(const char* name,
+diff --git a/ui/accessibility/platform/ax_platform_node_mac.mm b/ui/accessibility/platform/ax_platform_node_mac.mm
+index 0454164364c6a4a1b1c11011603af5978d2b8ef5..bd9e17f1e21bd17a68988ee3c9ab08f2a1d99b2e 100644
+--- a/ui/accessibility/platform/ax_platform_node_mac.mm
++++ b/ui/accessibility/platform/ax_platform_node_mac.mm
+@@ -1257,11 +1257,6 @@ void AXPlatformNodeMac::AnnounceText(const base::string16& text) {
+                                [native_node_ AXWindow], false);
+ }
+ 
+-int AXPlatformNodeMac::GetIndexInParent() {
+-  // TODO(dmazzoni): implement this.  http://crbug.com/396137
+-  return -1;
+-}
+-
+ bool IsNameExposedInAXValueForRole(ax::mojom::Role role) {
+   switch (role) {
+     case ax::mojom::Role::kListBoxOption:
+diff --git a/ui/accessibility/platform/ax_platform_node_win.cc b/ui/accessibility/platform/ax_platform_node_win.cc
+index a61d4121d9eeb336e72dbb6a3e2bf884a9b4e799..222c9358ca8e9958d6e89faf8779e706862e1f8c 100644
+--- a/ui/accessibility/platform/ax_platform_node_win.cc
++++ b/ui/accessibility/platform/ax_platform_node_win.cc
+@@ -1370,10 +1370,11 @@ IFACEMETHODIMP AXPlatformNodeWin::get_attributes(BSTR* attributes) {
+ IFACEMETHODIMP AXPlatformNodeWin::get_indexInParent(LONG* index_in_parent) {
+   WIN_ACCESSIBILITY_API_HISTOGRAM(UMA_API_GET_INDEX_IN_PARENT);
+   COM_OBJECT_VALIDATE_1_ARG(index_in_parent);
+-  *index_in_parent = GetIndexInParent();
+-  if (*index_in_parent < 0)
++  base::Optional<int> index = GetIndexInParent();
++  if (!index.has_value())
+     return E_FAIL;
+ 
++  *index_in_parent = index.value();
+   return S_OK;
+ }
+ 
+diff --git a/ui/accessibility/platform/ax_platform_node_win_unittest.cc b/ui/accessibility/platform/ax_platform_node_win_unittest.cc
+index 2092d5c263dafa452c4977d53678ad81aa6575e1..8e2cf3d13fd4f936dd7c1e0a21bd245b589857d0 100644
+--- a/ui/accessibility/platform/ax_platform_node_win_unittest.cc
++++ b/ui/accessibility/platform/ax_platform_node_win_unittest.cc
+@@ -1149,8 +1149,7 @@ TEST_F(AXPlatformNodeWinTest, TestIAccessible2IndexInParent) {
+   ComPtr<IAccessible2> right_iaccessible2 = ToIAccessible2(right_iaccessible);
+ 
+   LONG index;
+-  EXPECT_EQ(S_OK, root_iaccessible2->get_indexInParent(&index));
+-  EXPECT_EQ(0, index);
++  EXPECT_EQ(E_FAIL, root_iaccessible2->get_indexInParent(&index));
+ 
+   EXPECT_EQ(S_OK, left_iaccessible2->get_indexInParent(&index));
+   EXPECT_EQ(0, index);

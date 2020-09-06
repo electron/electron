@@ -42,7 +42,8 @@ WebWorkerObserver::~WebWorkerObserver() {
   asar::ClearArchives();
 }
 
-void WebWorkerObserver::ContextCreated(v8::Local<v8::Context> worker_context) {
+void WebWorkerObserver::WorkerScriptReadyForEvaluation(
+    v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
 
   // Start the embed thread.

@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Wed, 23 Oct 2019 12:54:32 -0700
+Subject: fix: make PDFium JS host object have immutable prototypes
+
+[1091404] [High] [CVE-2020-6513]: Google Chrome PDFium Javascript Active Document Memory Corruption Vulnerability - TALOS-2020-1092
+Backport https://pdfium.googlesource.com/pdfium.git/+/bee2261eab794536f236013fa8c9d01728ed326b.
+
+diff --git a/fxjs/cfxjs_engine.cpp b/fxjs/cfxjs_engine.cpp
+index 9624feb2dc91b03f9eb32bab772f235b682cf9a1..4a15ebe11ed7a82ded11ca0de031b8818811143b 100644
+--- a/fxjs/cfxjs_engine.cpp
++++ b/fxjs/cfxjs_engine.cpp
+@@ -145,6 +145,7 @@ class CFXJS_ObjDefinition {
+     v8::HandleScope handle_scope(isolate);
+     v8::Local<v8::FunctionTemplate> fn = v8::FunctionTemplate::New(isolate);
+     fn->InstanceTemplate()->SetInternalFieldCount(2);
++    fn->InstanceTemplate()->SetImmutableProto();
+     fn->SetCallHandler(CallHandler, v8::Number::New(isolate, eObjType));
+     if (eObjType == FXJSOBJTYPE_GLOBAL) {
+       fn->InstanceTemplate()->Set(v8::Symbol::GetToStringTag(isolate),
+diff --git a/testing/resources/javascript/immutable_proto.in b/testing/resources/javascript/immutable_proto.in
+new file mode 100644
+index 0000000000000000000000000000000000000000..61885c53758167cae5af47f8736014dcb0933aaf
+--- /dev/null
++++ b/testing/resources/javascript/immutable_proto.in
+@@ -0,0 +1,43 @@
++{{header}}
++{{object 1 0}} <<
++  /Type /Catalog
++  /Pages 2 0 R
++  /OpenAction 10 0 R
++>>
++endobj
++{{object 2 0}} <<
++  /Type /Pages
++  /Count 1
++  /Kids [
++    3 0 R
++  ]
++>>
++endobj
++{{object 3 0}} <<
++  /Type /Page
++  /Parent 2 0 R
++  /MediaBox [0 0 612 792]
++>>
++endobj
++% OpenAction action
++{{object 10 0}} <<
++  /Type /Action
++  /S /JavaScript
++  /JS 11 0 R
++>>
++endobj
++{{object 11 0}} <<
++  {{streamlen}}
++>>
++stream
++{{include expect.js}}
++expect("this.__proto__", "[object Object]");
++expect("app.__proto__", "[object Object]");
++expectError("this.__proto__ = {}");
++expectError("app.__proto__ = this");
++endstream
++endobj
++{{xref}}
++{{trailer}}
++{{startxref}}
++%%EOF
+diff --git a/testing/resources/javascript/immutable_proto_expected.txt b/testing/resources/javascript/immutable_proto_expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e7c6701e39592ec130ae52fc98f8af903b3152b
+--- /dev/null
++++ b/testing/resources/javascript/immutable_proto_expected.txt
+@@ -0,0 +1,4 @@
++Alert: PASS: this.__proto__ = [object Object]
++Alert: PASS: app.__proto__ = [object Object]
++Alert: PASS: this.__proto__ = {} threw TypeError: Immutable prototype object '[object global]' cannot have their prototype set
++Alert: PASS: app.__proto__ = this threw TypeError: Immutable prototype object '[object Object]' cannot have their prototype set

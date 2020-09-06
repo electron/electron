@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: check whether Fetch domain is enabled before handling commands
+
+[1016278] [Low] [CVE-2020-6530]: Security: EXC_BAD_ACCESS / KERN_INVALID_ADDRESS when exec chrome.debugger.sendCommand
+Backport https://chromium.googlesource.com/chromium/src/+/d4938b0019bc23f96e2c7d3659c0a4102973d8c2
+
+diff --git a/content/browser/devtools/protocol/fetch_handler.cc b/content/browser/devtools/protocol/fetch_handler.cc
+index a5af86b99b46bb1cc6e6cf2011bc90d82f1ff7f5..433f22ac30ffcb1d94ad2d9aeca44b1f1b7a5aba 100644
+--- a/content/browser/devtools/protocol/fetch_handler.cc
++++ b/content/browser/devtools/protocol/fetch_handler.cc
+@@ -315,6 +315,10 @@ void FetchHandler::ContinueWithAuth(
+ void FetchHandler::GetResponseBody(
+     const String& requestId,
+     std::unique_ptr<GetResponseBodyCallback> callback) {
++  if (!interceptor_) {
++    callback->sendFailure(Response::ServerError("Fetch domain is not enabled"));
++    return;
++  }
+   auto weapped_callback = std::make_unique<CallbackWrapper<
+       GetResponseBodyCallback,
+       DevToolsURLLoaderInterceptor::GetResponseBodyForInterceptionCallback,
+@@ -325,6 +329,10 @@ void FetchHandler::GetResponseBody(
+ void FetchHandler::TakeResponseBodyAsStream(
+     const String& requestId,
+     std::unique_ptr<TakeResponseBodyAsStreamCallback> callback) {
++  if (!interceptor_) {
++    callback->sendFailure(Response::ServerError("Fetch domain is not enabled"));
++    return;
++  }
+   interceptor_->TakeResponseBodyPipe(
+       requestId,
+       base::BindOnce(&FetchHandler::OnResponseBodyPipeTaken,
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled-expected.txt b/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..630e4db357dd43d0714c231983672368bc8f162d
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled-expected.txt
+@@ -0,0 +1,8 @@
++Tests that calls to methods of Fetch domain return proper error if the domain has not been enabled
++fulfillRequest: code: -32000 message: Fetch domain is not enabled
++failRequest: code: -32000 message: Fetch domain is not enabled
++continueRequest: code: -32000 message: Fetch domain is not enabled
++continueWithAuth: code: -32000 message: Fetch domain is not enabled
++getResponseBody: code: -32000 message: Fetch domain is not enabled
++takeResponseBodyAsStream: code: -32000 message: Fetch domain is not enabled
++
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled.js b/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..161867adc2ac2fb6e9abb93856eba3e097d78637
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/fetch/calls-while-not-enabled.js
+@@ -0,0 +1,29 @@
++(async function(testRunner) {
++  var {page, session, dp} = await testRunner.startBlank(
++      `Tests that calls to methods of Fetch domain return proper error if the domain has not been enabled`);
++
++  const methods = [
++    "fulfillRequest",
++    "failRequest",
++    "continueRequest",
++    "continueWithAuth",
++    "getResponseBody",
++    "takeResponseBodyAsStream",
++  ];
++  const params = {
++    requestId: "does not matter",
++    responseCode: 404,
++    errorReason: "not found",
++    authChallengeResponse: {response: 'kensentme'}
++  };
++  for (const methodName of methods) {
++    const method = dp.Fetch[methodName];
++    const response = await method.call(dp.Fetch, params);
++    if (!response.error)
++      testRunner.log(`${methodName}: FAIL: not an error response`);
++    else
++      testRunner.log(`${methodName}: code: ${response.error.code} message: ${response.error.message}`);
++  }
++
++  testRunner.completeTest();
++})

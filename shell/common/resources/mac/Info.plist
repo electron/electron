@@ -14,5 +14,7 @@
 	<true/>
 	<key>CFBundleVersion</key>
 	<string>${ELECTRON_VERSION}</string>
+	<key>LSRequiresNativeExecution</key>
+	<true/>
 </dict>
 </plist>
