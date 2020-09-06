@@ -19,6 +19,7 @@ bool IsCrashReporterEnabled();
 
 #if defined(OS_LINUX)
 const std::map<std::string, std::string>& GetGlobalCrashKeys();
+std::string GetClientId();
 #endif
 
 // JS bindings API; exposed publicly because it's also called from node_main.cc

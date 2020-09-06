@@ -40,6 +40,18 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // Tel windows we want to be notified with session events
   WTSRegisterSessionNotification(window_, NOTIFY_FOR_THIS_SESSION);
+
+  // For Windows 8 and later, a new "connected standy" mode has been added and
+  // we must explicitly register for its notifications.
+  auto RegisterSuspendResumeNotification =
+      reinterpret_cast<decltype(&::RegisterSuspendResumeNotification)>(
+          GetProcAddress(GetModuleHandle(L"user32.dll"),
+                         "RegisterSuspendResumeNotification"));
+
+  if (RegisterSuspendResumeNotification) {
+    RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
+                                      DEVICE_NOTIFY_WINDOW_HANDLE);
+  }
 }
 
 LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,

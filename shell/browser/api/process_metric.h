@@ -53,7 +53,7 @@ struct ProcessMetric {
 #if defined(OS_WIN)
   ProcessIntegrityLevel GetIntegrityLevel() const;
   static bool IsSandboxed(ProcessIntegrityLevel integrity_level);
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   bool IsSandboxed() const;
 #endif
 };

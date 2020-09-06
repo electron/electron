@@ -245,6 +245,14 @@ describe('web security', () => {
       <script src="${serverUrl}"></script>`);
     await p;
   });
+
+  it('does not crash when multiple WebContent are created with web security disabled', () => {
+    const options = { webPreferences: { webSecurity: false } };
+    const w1 = new BrowserWindow(options);
+    w1.loadURL(serverUrl);
+    const w2 = new BrowserWindow(options);
+    w2.loadURL(serverUrl);
+  });
 });
 
 describe('command line switches', () => {
@@ -447,7 +455,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          nodeIntegrationInWorker: true
+          nodeIntegrationInWorker: true,
+          partition: 'sw-file-scheme-worker-spec'
         }
       });
 
@@ -458,7 +467,9 @@ describe('chromium features', () => {
           done(`unexpected error : ${message}`);
         } else if (channel === 'response') {
           expect(message).to.equal('Hello from serviceWorker!');
-          done();
+          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
         }
       });
 

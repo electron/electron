@@ -8,8 +8,15 @@
 #include <string>
 
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
+#include "printing/buildflags/buildflags.h"
+#include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
+
+#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+#include "components/pdf/browser/pdf_web_contents_helper.h"
+#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
 
 namespace extensions {
 
@@ -46,6 +53,16 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
+
+#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
+      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
+#endif
+}
+
+ManagementAPIDelegate*
+ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
+  return new ElectronManagementAPIDelegate;
 }
 
 std::unique_ptr<MimeHandlerViewGuestDelegate>

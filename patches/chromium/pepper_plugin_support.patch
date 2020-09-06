@@ -68,7 +68,7 @@ index 82fa5b7026e62cfe69700f30fcc84731fc30afe8..f4ad9fbc72a5cb27ed22ab014ccb2fcb
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 084feb824e8383c0813691cd877e8fde3f6b095f..9c8158c92a6f780652afdccc588a56cfde3ee8cf 100644
+index c233e20b2395761ca5579381321add2b82474b8c..4fb81db59cc83f12af9a9dc77dd68451fa00bb36 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 @@ -7,9 +7,11 @@
@@ -186,7 +186,7 @@ index 6b13bae8def62d9a26d68ac8396b4bf6f7439c1a..d92b5a5855c0cebf94922a31f686e15e
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index 7b774366e2ebd2405e0b85cdfbf1885c394afd0d..26996b7540d652ddb454cbb2fe3510d2a8aa31bf 100644
+index a28c87320c7e262c0a179fd462222fa0a45b790e..9e170ebb97a150cd2a9f02473b5095955a36c643 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 @@ -20,6 +20,7 @@

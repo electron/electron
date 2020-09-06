@@ -159,5 +159,36 @@ describe('tray module', () => {
 
       expect(newTitle).to.equal(title);
     });
+
+    it('can have an options object passed in', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', {});
+      }).to.not.throw();
+    });
+
+    it('throws when the options parameter is not an object', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', 'test' as any);
+      }).to.throw(/setTitle options must be an object/);
+    });
+
+    it('can have a font type option set', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 'monospaced' });
+        tray.setTitle('Hello World!', { fontType: 'monospacedDigit' });
+      }).to.not.throw();
+    });
+
+    it('throws when the font type is specified but is not a string', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 5.4 as any });
+      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
+    });
+
+    it('throws on invalid font types', () => {
+      expect(() => {
+        tray.setTitle('Hello World!', { fontType: 'blep' as any });
+      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
+    });
   });
 });

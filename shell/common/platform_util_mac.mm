@@ -117,10 +117,13 @@ void OpenExternal(const GURL& url,
                  });
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+bool MoveItemToTrashWithError(const base::FilePath& full_path,
+                              bool delete_on_fail,
+                              std::string* error) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string) {
-    LOG(WARNING) << "Invalid file path " << full_path.value();
+    *error = "Invalid file path: " + full_path.value();
+    LOG(WARNING) << *error;
     return false;
   }
 
@@ -142,13 +145,26 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   }
 
   if (!did_trash) {
+    *error = base::SysNSStringToUTF8([err localizedDescription]);
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
-                 << " to trash: "
-                 << base::SysNSStringToUTF8([err localizedDescription]);
+                 << " to trash: " << *error;
   }
 
   return did_trash;
 }
+
+bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
+  std::string error;  // ignored
+  return MoveItemToTrashWithError(path, delete_on_fail, &error);
+}
+
+namespace internal {
+
+bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
+  return MoveItemToTrashWithError(full_path, false, error);
+}
+
+}  // namespace internal
 
 void Beep() {
   NSBeep();

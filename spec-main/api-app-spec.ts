@@ -1437,6 +1437,16 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.hide', () => {
+      it('should not throw', () => {
+        app.dock.hide();
+        expect(app.dock.isVisible()).to.equal(false);
+      });
+    });
+
+    // Note that dock.show tests should run after dock.hide tests, to work
+    // around a bug of macOS.
+    // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
         return app.dock.show().then(() => {
@@ -1450,13 +1460,6 @@ describe('app module', () => {
 
       it('eventually fulfills', async () => {
         await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
-      });
-    });
-
-    describe('dock.hide', () => {
-      it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
       });
     });
   });

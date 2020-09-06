@@ -9,7 +9,7 @@ diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
 index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a91027bf05 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
-@@ -28,12 +28,6 @@ CFTypeID SecKeyGetTypeID();
+@@ -28,12 +28,6 @@
  #if !defined(OS_IOS)
  CFTypeID SecACLGetTypeID();
  CFTypeID SecTrustedApplicationGetTypeID();
@@ -22,7 +22,7 @@ index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a9
  #endif
  }  // extern "C"
  
-@@ -326,8 +320,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
+@@ -326,8 +320,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -32,7 +32,7 @@ index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a9
    return ns_val;
  }
  
-@@ -398,9 +391,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
+@@ -398,9 +391,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  

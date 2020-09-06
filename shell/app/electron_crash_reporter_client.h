@@ -52,7 +52,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   bool GetCrashDumpLocation(base::FilePath* crash_dir) override;
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
   bool GetCrashMetricsLocation(base::FilePath* metrics_dir) override;
 #endif
 
@@ -66,11 +66,11 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   void GetProcessSimpleAnnotations(
       std::map<std::string, std::string>* annotations) override;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled) override;
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
   bool ShouldMonitorCrashHandlerExpensively() override;
 #endif
 

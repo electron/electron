@@ -173,7 +173,13 @@ describe('nativeImage module', () => {
       const imageB = nativeImage.createFromBitmap(imageA.toBitmap(), imageA.getSize());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      const imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
+      let imageC;
+      // TODO fix nativeImage.createFromBuffer from bitmaps on WOA.  See https://github.com/electron/electron/issues/25069
+      if (process.platform === 'win32' && process.arch === 'arm64') {
+        imageC = nativeImage.createFromBuffer(imageA.toPNG(), { ...imageA.getSize(), scaleFactor: 2.0 });
+      } else {
+        imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
+      }
       expect(imageC.getSize()).to.deep.equal({ width: 269, height: 95 });
     });
 
@@ -186,7 +192,8 @@ describe('nativeImage module', () => {
     });
   });
 
-  describe('createFromBuffer(buffer, options)', () => {
+  // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
+  ifdescribe(!(process.platform === 'win32' && process.arch === 'arm64'))('createFromBuffer(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
       expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true();
     });
@@ -340,7 +347,8 @@ describe('nativeImage module', () => {
   });
 
   describe('createFromPath(path)', () => {
-    it('returns an empty image for invalid paths', () => {
+    // TODO fix nativeImage.createFromPath on WOA.  See https://github.com/electron/electron/issues/25069
+    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns an empty image for invalid paths', () => {
       expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
@@ -369,13 +377,7 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
-    it('Gets an NSImage pointer on macOS', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('Gets an NSImage pointer on macOS', function () {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       const nsimage = image.getNativeHandle();
@@ -387,13 +389,7 @@ describe('nativeImage module', () => {
       expect(allBytesAreNotNull);
     });
 
-    it('loads images from .ico files on Windows', function () {
-      if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'win32')('loads images from .ico files on Windows', function () {
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico');
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
@@ -407,35 +403,17 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.true();
     });
 
-    it('returns empty on non-darwin platforms', function () {
-      if (process.platform === 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform !== 'darwin')('returns empty on non-darwin platforms', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.true();
     });
 
-    it('returns a valid image on darwin', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.false();
     });
 
-    it('returns allows an HSL shift for a valid image on darwin', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
       expect(image.isEmpty()).to.be.false();
     });
@@ -515,8 +493,35 @@ describe('nativeImage module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    it('throws when invalid size is passed', async () => {
+      const badSize = { width: -1, height: -1 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath('path', badSize)
+      ).to.eventually.be.rejectedWith('size must not be empty');
+    });
+
+    it('throws when a bad path is passed', async () => {
+      const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejected();
+    });
+
+    it('returns native image given valid params', async () => {
+      const goodPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
+    });
+  });
+
   describe('addRepresentation()', () => {
-    it('does not add representation when the buffer is too small', () => {
+    // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
+    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('does not add representation when the buffer is too small', () => {
       const image = nativeImage.createEmpty();
 
       image.addRepresentation({

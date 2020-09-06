@@ -59,7 +59,7 @@ The `crashReporter` module has the following methods:
   * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
     number of crashes uploaded to 1/hour. Default is `false`.
   * `compress` Boolean (optional) - If true, crash reports will be compressed
-    and uploaded with `Content-Encoding: gzip`. Default is `false`.
+    and uploaded with `Content-Encoding: gzip`. Default is `true`.
   * `extra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
@@ -170,7 +170,7 @@ your crash reporting backend you should stitch together keys in this format.
 
 * `key` String - Parameter key, must be no longer than 39 bytes.
 
-Remove a extra parameter from the current set of parameters. Future crashes
+Remove an extra parameter from the current set of parameters. Future crashes
 will not include this parameter.
 
 ### `crashReporter.getParameters()`

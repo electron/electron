@@ -109,7 +109,7 @@
 #include "net/ssl/client_cert_store_nss.h"
 #elif defined(OS_WIN)
 #include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
@@ -167,7 +167,7 @@
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
 #endif
@@ -696,7 +696,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
@@ -723,8 +723,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   bool enable_crash_reporter = false;
   enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   if (enable_crash_reporter) {
-    command_line->AppendSwitch(::switches::kEnableCrashReporter);
-    std::string switch_value;
+    std::string switch_value =
+        api::crash_reporter::GetClientId() + ",no_channel";
+    command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
+                                    switch_value);
     for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
       if (!switch_value.empty())
         switch_value += ",";
@@ -770,6 +772,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
       command_line->AppendSwitch("profile-electron-init");
     }
+
+    // Extension background pages don't have WebContentsPreferences, but they
+    // support WebSQL by default.
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    content::RenderProcessHost* process =
+        content::RenderProcessHost::FromID(process_id);
+    if (extensions::ProcessMap::Get(process->GetBrowserContext())
+            ->Contains(process_id))
+      command_line->AppendSwitch(switches::kEnableWebSQL);
+#endif
 
     content::WebContents* web_contents =
         GetWebContentsFromProcessID(process_id);
@@ -1024,7 +1036,7 @@ ElectronBrowserClient::CreateClientCertStore(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
 #elif defined(OS_WIN)
   return std::make_unique<net::ClientCertStoreWin>();
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
@@ -1253,6 +1265,7 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
+    base::UkmSourceId ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1261,7 +1274,8 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
-          context, false /* we don't support extensions::WebViewGuest */));
+          context, ukm_source_id,
+          false /* we don't support extensions::WebViewGuest */));
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
@@ -1541,15 +1555,10 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     const url::Origin& origin,
     bool is_for_isolated_world,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  for (const auto& iter : process_preferences_) {
-    if (iter.second.browser_context != browser_context)
-      continue;
-
-    if (!iter.second.web_security) {
-      // bypass CORB
-      factory_params->process_id = iter.first;
-      factory_params->is_corb_enabled = false;
-    }
+  // Bypass CORB when web security is disabled.
+  auto it = process_preferences_.find(factory_params->process_id);
+  if (it != process_preferences_.end() && !it->second.web_security) {
+    factory_params->is_corb_enabled = false;
   }
 
   extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(

@@ -40,13 +40,18 @@ class TrayIcon {
   // status icon (e.g. Ubuntu Unity).
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Set/Get flag determining whether to ignore double click events.
   virtual void SetIgnoreDoubleClickEvents(bool ignore) = 0;
   virtual bool GetIgnoreDoubleClickEvents() = 0;
 
+  struct TitleOptions {
+    std::string font_type;
+  };
+
   // Set/Get title displayed next to status icon in the status bar.
-  virtual void SetTitle(const std::string& title) = 0;
+  virtual void SetTitle(const std::string& title,
+                        const TitleOptions& options) = 0;
   virtual std::string GetTitle() = 0;
 #endif
 

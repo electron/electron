@@ -744,8 +744,10 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
-      window_->AddBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(window_.get());
+      if (browser_view->web_contents()) {
+        window_->AddBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(window_.get());
+      }
       browser_views_[browser_view->ID()].Reset(isolate(), value);
     }
   }
@@ -757,9 +759,10 @@ void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view != browser_views_.end()) {
-      window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
-
+      if (browser_view->web_contents()) {
+        window_->RemoveBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
+      }
       (*get_that_view).second.Reset(isolate(), value);
       browser_views_.erase(get_that_view);
     }
@@ -801,8 +804,13 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void BaseWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
+void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
+                                           gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
+  bool visibleOnFullScreen = false;
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool BaseWindow::IsVisibleOnAllWorkspaces() {
@@ -818,7 +826,7 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
@@ -907,6 +915,10 @@ void BaseWindow::PreviewFile(const std::string& path,
 
 void BaseWindow::CloseFilePreview() {
   window_->CloseFilePreview();
+}
+
+void BaseWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+  window_->SetGTKDarkThemeEnabled(use_dark_theme);
 }
 
 v8::Local<v8::Value> BaseWindow::GetContentView() const {
@@ -1045,8 +1057,10 @@ void BaseWindow::ResetBrowserViews() {
                            v8::Local<v8::Value>::New(isolate(), item.second),
                            &browser_view) &&
         !browser_view.IsEmpty()) {
-      window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
+      if (browser_view->web_contents()) {
+        window_->RemoveBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
+      }
     }
 
     item.second.Reset();
@@ -1174,11 +1188,11 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
@@ -1187,7 +1201,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)

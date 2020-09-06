@@ -12,6 +12,7 @@
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_view_host.h"
 #include "ui/accessibility/ax_enums.mojom.h"
+#include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/point.h"

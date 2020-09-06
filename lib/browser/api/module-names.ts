@@ -18,6 +18,7 @@ export const browserModuleNames = [
   'inAppPurchase',
   'Menu',
   'MenuItem',
+  'nativeImage',
   'nativeTheme',
   'net',
   'netLog',

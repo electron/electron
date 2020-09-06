@@ -55,6 +55,7 @@ template("electron_extra_paks") {
     output = "${invoker.output_dir}/resources.pak"
     sources = [
       "$root_gen_dir/chrome/dev_ui_browser_resources.pak",
+      "$root_gen_dir/chrome/print_preview_pdf_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/resources/media/media_internals_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
@@ -64,11 +65,13 @@ template("electron_extra_paks") {
       "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
+      "$root_gen_dir/third_party/blink/public/resources/inspector_overlay_resources.pak",
       "$root_gen_dir/ui/resources/webui_resources.pak",
       "$target_gen_dir/electron_resources.pak",
     ]
     deps = [
       "//chrome/browser:dev_ui_browser_resources",
+      "//chrome/browser/resources:print_preview_pdf_resources",
       "//components/resources",
       "//content:content_resources",
       "//content:dev_ui_content_resources",
@@ -78,6 +81,7 @@ template("electron_extra_paks") {
       "//electron:resources",
       "//mojo/public/js:resources",
       "//net:net_resources",
+      "//third_party/blink/public:devtools_inspector_resources",
       "//third_party/blink/public:resources",
       "//ui/resources",
     ]

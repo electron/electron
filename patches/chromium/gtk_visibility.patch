@@ -6,7 +6,7 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index a73160222398b0beb02a8f2c7f2e2f05a1b6e339..5a9ca1ca4f96a2a106eab3d92224a67d1620134f 100644
+index 0ba7dc322db2d48cb66d76630532c13ff02767e7..5721080a1b596095e42343be9c2f94004cbce4cd 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
 @@ -29,6 +29,8 @@ group("gtk") {

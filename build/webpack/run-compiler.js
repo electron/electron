@@ -10,10 +10,9 @@ config.output = {
   filename: path.basename(outPath)
 };
 
-const { wrapInitWithProfilingTimeout } = config;
-delete config.wrapInitWithProfilingTimeout;
+const { wrapInitWithProfilingTimeout, wrapInitWithTryCatch, ...webpackConfig } = config;
 
-webpack(config, (err, stats) => {
+webpack(webpackConfig, (err, stats) => {
   if (err) {
     console.error(err);
     process.exit(1);
@@ -21,9 +20,17 @@ webpack(config, (err, stats) => {
     console.error(stats.toString('normal'));
     process.exit(1);
   } else {
+    let contents = fs.readFileSync(outPath, 'utf8');
+    if (wrapInitWithTryCatch) {
+      contents = `try {
+${contents}
+} catch (err) {
+  console.error('Electron ${webpackConfig.output.filename} script failed to run');
+  console.error(err);
+}`;
+    }
     if (wrapInitWithProfilingTimeout) {
-      const contents = fs.readFileSync(outPath, 'utf8');
-      const newContents = `function ___electron_webpack_init__() {
+      contents = `function ___electron_webpack_init__() {
 ${contents}
 };
 if ((globalThis.process || binding.process).argv.includes("--profile-electron-init")) {
@@ -31,8 +38,8 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
 } else {
   ___electron_webpack_init__();
 }`;
-      fs.writeFileSync(outPath, newContents);
     }
+    fs.writeFileSync(outPath, contents);
     process.exit(0);
   }
 });
