@@ -184,28 +184,38 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.runtime', () => {
-    let content: any;
-    before(async () => {
+    let w: BrowserWindow;
+    const exec = async (name: string) => {
+      const p = emittedOnce(ipcMain, 'success');
+      await w.webContents.executeJavaScript(`exec('${name}')`);
+      const [, result] = await p;
+      return result;
+    };
+    beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      try {
-        w.loadURL(url);
-        await emittedOnce(w.webContents, 'dom-ready');
-        content = JSON.parse(await w.webContents.executeJavaScript('document.documentElement.textContent'));
-        expect(content).to.be.an('object');
-      } finally {
-        w.destroy();
-      }
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      w.loadURL(url);
+      await emittedOnce(w.webContents, 'dom-ready');
     });
-    it('getManifest()', () => {
-      expect(content.manifest).to.be.an('object').with.property('name', 'chrome-runtime');
+    it('getManifest()', async () => {
+      const result = await exec('getManifest');
+      expect(result).to.be.an('object').with.property('name', 'chrome-runtime');
     });
-    it('id', () => {
-      expect(content.id).to.be.a('string').with.lengthOf(32);
+    it('id', async () => {
+      const result = await exec('id');
+      expect(result).to.be.a('string').with.lengthOf(32);
     });
-    it('getURL()', () => {
-      expect(content.url).to.be.a('string').and.match(/^chrome-extension:\/\/.*main.js$/);
+    it('getURL()', async () => {
+      const result = await exec('getURL');
+      expect(result).to.be.a('string').and.match(/^chrome-extension:\/\/.*main.js$/);
+    });
+    it('getPlatformInfo()', async () => {
+      const result = await exec('getPlatformInfo');
+      expect(result).to.be.an('object');
+      expect(result.os).to.be.a('string');
+      expect(result.arch).to.be.a('string');
+      expect(result.nacl_arch).to.be.a('string');
     });
   });
 
