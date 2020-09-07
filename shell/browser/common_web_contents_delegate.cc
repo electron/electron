@@ -31,6 +31,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
+#include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"

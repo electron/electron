@@ -54,7 +54,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 

@@ -38,7 +38,7 @@
 #include "shell/browser/extensions/electron_extension_loader.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/browser/pdf/pdf_extension_util.h"
+#include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
 #endif
 
 using content::BrowserContext;
