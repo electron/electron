@@ -1432,7 +1432,7 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
           browser_context);
 
   if (web_request_api)
-    has_listener ||= web_request_api->MayHaveProxies();
+    has_listener |= web_request_api->MayHaveProxies();
 #endif
 
   return has_listener;
