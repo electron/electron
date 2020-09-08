@@ -69,7 +69,8 @@ module.exports = ({
   loadElectronFromAlternateTarget,
   targetDeletesNodeGlobals,
   target,
-  wrapInitWithProfilingTimeout
+  wrapInitWithProfilingTimeout,
+  wrapInitWithTryCatch
 }) => {
   let entry = path.resolve(electronRoot, 'lib', target, 'init.ts')
   if (!fs.existsSync(entry)) {
@@ -85,6 +86,7 @@ module.exports = ({
       filename: `${target}.bundle.js`
     },
     wrapInitWithProfilingTimeout,
+    wrapInitWithTryCatch,
     resolve: {
       alias: {
         '@electron/internal': path.resolve(electronRoot, 'lib'),
