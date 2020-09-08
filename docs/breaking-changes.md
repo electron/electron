@@ -81,6 +81,7 @@ const { BrowserWindow } = require('@electron/remote')
 
 // In the main process:
 require('@electron/remote/main').initialize()
+```
 
 ### Deprecated: `shell.moveItemToTrash()`
 
