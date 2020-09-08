@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 70a6d0ce92a0497c3fe05d2860eb1c092054e3b3..0280ebd29f07096cd47c0970b75a8717ee1d99b7 100644
+index 3ed07444857851b477915ac4f165e2d31633b6f6..9518c0d6af34d8273f0ea17fbc4254b517f9ac79 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -4892,6 +4892,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -4899,6 +4899,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 70a6d0ce92a0497c3fe05d2860eb1c092054e3b3..0280ebd29f07096cd47c0970b75a8717
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index daa42365464cef5ae314c62fce1eaf0ae40698a9..90169f9d3515a80b3d9e074bb8be1c27559f250e 100644
+index 705f6daa1e21a0df69a38e852025f16baeac56db..9e02fa5b25f95206fff68134770119895ee76f1f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3446,9 +3446,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3691,9 +3691,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -135,7 +135,7 @@ index a10c5caf5a4b7a30b7338c8b10ffa038e13dfd6a..938b6e622b52a05e6b7d626c4824e761
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 8d1b62918d688c1d6060ed997dc801d9c00c5c30..0bda7168094b09f14a2eaee3840cd3603536b2a9 100644
+index 63ec77b70588b31c48a8b2cfe83711cc62ef7da9..7c14668bafc4b80065936b69c463e9f02ac449f5 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -67,6 +67,7 @@
@@ -146,7 +146,7 @@ index 8d1b62918d688c1d6060ed997dc801d9c00c5c30..0bda7168094b09f14a2eaee3840cd360
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
-@@ -1192,6 +1193,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -1183,6 +1184,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
