@@ -14,7 +14,7 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '104e5da2a43b759732d5b94bfc750b3a9a639653',
+    'a4519ce657af25834e355315fd7fefa77b13426a',
   'node_version':
     'v14.9.0',
   'nan_version':
