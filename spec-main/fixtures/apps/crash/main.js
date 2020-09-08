@@ -12,6 +12,7 @@ const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split
 crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',
+  compress: false,
   uploadToServer,
   submitURL: url,
   ignoreSystemCrashHandler: true,

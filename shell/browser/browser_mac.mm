@@ -383,6 +383,20 @@ std::string Browser::DockGetBadgeText() {
 }
 
 void Browser::DockHide() {
+  // Transforming application state from UIElement to Foreground is an
+  // asyncronous operation, and unfortunately there is currently no way to know
+  // when it is finished.
+  // So if we call DockHide => DockShow => DockHide => DockShow in a very short
+  // time, we would triger a bug of macOS that, there would be multiple dock
+  // icons of the app left in system.
+  // To work around this, we make sure DockHide does nothing if it is called
+  // immediately after DockShow. After some experiments, 1 second seems to be
+  // a proper interval.
+  if (!last_dock_show_.is_null() &&
+      base::Time::Now() - last_dock_show_ < base::TimeDelta::FromSeconds(1)) {
+    return;
+  }
+
   for (auto* const& window : WindowList::GetWindows())
     [window->GetNativeWindow().GetNativeNSWindow() setCanHide:NO];
 
@@ -398,6 +412,7 @@ bool Browser::DockIsVisible() {
 }
 
 v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
+  last_dock_show_ = base::Time::Now();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
