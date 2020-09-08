@@ -86,18 +86,22 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
   return GetGlobalCrashKeysMutable();
 }
 
-base::FilePath GetClientIdPath() {
-  base::FilePath path;
-  base::PathService::Get(electron::DIR_CRASH_DUMPS, &path);
-  return path.Append("client_id");
+bool GetClientIdPath(base::FilePath* path) {
+  if (base::PathService::Get(electron::DIR_CRASH_DUMPS, path)) {
+    *path = path->Append("client_id");
+    return true;
+  }
+  return false;
 }
 
 std::string ReadClientId() {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   std::string client_id;
   // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
-  if (!base::ReadFileToStringWithMaxSize(GetClientIdPath(), &client_id, 36) ||
-      client_id.size() != 36)
+  base::FilePath client_id_path;
+  if (GetClientIdPath(&client_id_path) &&
+      (!base::ReadFileToStringWithMaxSize(client_id_path, &client_id, 36) ||
+       client_id.size() != 36))
     return std::string();
   return client_id;
 }
@@ -105,7 +109,9 @@ std::string ReadClientId() {
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::WriteFile(GetClientIdPath(), client_id);
+  base::FilePath client_id_path;
+  if (GetClientIdPath(&client_id_path))
+    base::WriteFile(client_id_path, client_id);
 }
 
 std::string GetClientId() {
