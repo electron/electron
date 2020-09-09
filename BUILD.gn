@@ -1155,6 +1155,7 @@ if (is_mac) {
       ]
 
       if (target_cpu == "arm64") {
+        ldflags -= [ "/guard:cf" ]
         ldflags += [ "/guard:cf,nolongjmp" ]
       }
 
