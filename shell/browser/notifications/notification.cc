@@ -35,9 +35,9 @@ void Notification::NotificationDismissed() {
   Destroy();
 }
 
-void Notification::NotificationFailed() {
+void Notification::NotificationFailed(const std::string& error) {
   if (delegate())
-    delegate()->NotificationFailed();
+    delegate()->NotificationFailed(error);
   Destroy();
 }
 
