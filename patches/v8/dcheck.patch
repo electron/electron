@@ -6,7 +6,7 @@ Subject: dcheck.patch
 https://github.com/auchenberg/volkswagen
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index ed8f0001de5ef08cb5b2a94140b8a138fe2e99dd..fa7cba5b539073657451d80f7b1acd3bcbb0136b 100644
+index 6445a7223a74bfb531bca0f55c212f5b4bf31d2b..db99a9e937ba759be423a935fb2a40201137775b 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -8789,7 +8789,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {

@@ -9,10 +9,10 @@ necessary for native modules to load.
 Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 67066a8064b8b661792aa40d6ceeafa3daee0a30..ab1a9f75f3cecaa27eb6d60125eb324c17996da3 100644
+index 0b8a0ea8f0c82363a7e553a6da963e74d4c892d7..c750f635c77efda21784fab08406bce5d9949688 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -403,7 +403,7 @@ config("internal_config") {
+@@ -404,7 +404,7 @@ config("internal_config") {
      ":v8_header_features",
    ]
  
@@ -21,7 +21,7 @@ index 67066a8064b8b661792aa40d6ceeafa3daee0a30..ab1a9f75f3cecaa27eb6d60125eb324c
      defines += [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -4454,7 +4454,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -4456,7 +4456,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  
@@ -30,7 +30,7 @@ index 67066a8064b8b661792aa40d6ceeafa3daee0a30..ab1a9f75f3cecaa27eb6d60125eb324c
  
      deps = [
        ":v8_libbase",
-@@ -4491,6 +4491,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
+@@ -4493,6 +4493,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  

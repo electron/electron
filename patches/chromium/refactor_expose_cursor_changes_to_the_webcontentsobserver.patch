@@ -43,7 +43,7 @@ index df7a0a78d6d84587dede58938e43f7cf3d732d16..af368828307df911ddc664ae2694a9de
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9c9aac319287122293478d781e9f11c0927bef17..3ca34d8010e841392e7a6547d6f8aec73ff33671 100644
+index cc1c4077add044db93a54ada5cc7fde6c68105ca..2c60c906b44582f9b9b14b79a7e73925fb058e3c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4273,6 +4273,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {

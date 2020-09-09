@@ -78,7 +78,7 @@ index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b2997394
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index bc50e9bf46161989cdebe4682843d5c2ee868a07..4e0d9ec8b4b3fb804e71494f9075b1a5b255301b 100644
+index d76d517b2ec6555c68b38e064360b23ab7323c62..d291c58ba71baf6c553399f8780a8d2bc81e74f9 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
 @@ -733,7 +733,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,

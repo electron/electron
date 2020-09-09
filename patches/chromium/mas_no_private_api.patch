@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa46418f18588 100644
+index 514b2334109857f5adab2688b18097bf96e52c7e..da6a794dda3fb5f8180c86706d27d29d83504614 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -294,7 +294,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -327,7 +327,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa464
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -305,7 +305,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -338,7 +338,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -28,7 +28,7 @@ index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa464
    // Accessible object
    if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
      return base::Value(NodeToLineIndex(value, line_indexer));
-@@ -356,7 +356,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -389,7 +389,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +37,7 @@ index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa464
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -370,7 +370,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -403,7 +403,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
@@ -47,10 +47,10 @@ index 073975f165200ccb00a5b0022c3eea81988951e8..bab43f53eeb94dbcb8d371e9a0efa464
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 3141df728af7274814948b5e95da2e7b5c2d6db2..e9bf4c0cec862afc41e83e1a51f3d1eab8f2ffe6 100644
+index f68a1e4fa99fe8dd49e7d69f19428e17e01575ee..291034a5b42999f908c4edf40b059a188730d565 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -156,6 +156,7 @@
+@@ -173,6 +173,7 @@
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -58,7 +58,7 @@ index 3141df728af7274814948b5e95da2e7b5c2d6db2..e9bf4c0cec862afc41e83e1a51f3d1ea
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -163,6 +164,7 @@
+@@ -180,6 +181,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -66,7 +66,7 @@ index 3141df728af7274814948b5e95da2e7b5c2d6db2..e9bf4c0cec862afc41e83e1a51f3d1ea
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -228,6 +230,7 @@
+@@ -245,6 +247,7 @@
    return uielement;
  }
  
@@ -74,7 +74,7 @@ index 3141df728af7274814948b5e95da2e7b5c2d6db2..e9bf4c0cec862afc41e83e1a51f3d1ea
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -295,6 +298,7 @@
+@@ -312,6 +315,7 @@
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
