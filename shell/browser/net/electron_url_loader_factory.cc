@@ -207,15 +207,14 @@ void ElectronURLLoaderFactory::OnComplete(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     int32_t request_id,
     const network::URLLoaderCompletionStatus& status,
-     ProxyingURLLoaderFactory* proxy_factory) {
+    ProxyingURLLoaderFactory* proxy_factory) {
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
+  client_remote->OnComplete(status);
 
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(status);
-
-    if (proxy_factory) {
-      proxy_factory->RemoveInterceptedRequest(request_id);
-    }
+  if (proxy_factory) {
+    proxy_factory->RemoveInterceptedRequest(request_id);
+  }
 }
 
 // static
@@ -237,7 +236,8 @@ void ElectronURLLoaderFactory::StartLoading(
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
     OnComplete(std::move(client), request_id,
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED), proxy_factory);
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
+               proxy_factory);
     return;
   }
 
@@ -247,7 +247,7 @@ void ElectronURLLoaderFactory::StartLoading(
     int error_code;
     if (dict.Get("error", &error_code)) {
       OnComplete(std::move(client), request_id,
-          network::URLLoaderCompletionStatus(error_code), proxy_factory);
+                 network::URLLoaderCompletionStatus(error_code), proxy_factory);
       return;
     }
   }
@@ -309,8 +309,8 @@ void ElectronURLLoaderFactory::StartLoading(
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
     OnComplete(std::move(client), request_id,
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
-        proxy_factory);
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
+               proxy_factory);
     return;
   }
 
@@ -338,7 +338,8 @@ void ElectronURLLoaderFactory::StartLoading(
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
         OnComplete(std::move(client), request_id,
-            network::URLLoaderCompletionStatus(net::ERR_FAILED), proxy_factory);
+                   network::URLLoaderCompletionStatus(net::ERR_FAILED),
+                   proxy_factory);
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
@@ -348,7 +349,7 @@ void ElectronURLLoaderFactory::StartLoading(
   }
 
   if (type != ProtocolType::kFree && proxy_factory) {
-      proxy_factory->RemoveInterceptedRequest(request_id);
+    proxy_factory->RemoveInterceptedRequest(request_id);
   }
 }
 

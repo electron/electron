@@ -904,7 +904,8 @@ void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
 void ProxyingURLLoaderFactory::MaybeDeleteThis() {
   // Even if all URLLoaderFactory pipes connected to this object have been
   // closed it has to stay alive until all active requests have completed.
-  if (target_factory_.is_bound() || !requests_.empty() || !intercepted_requests_.empty())
+  if (target_factory_.is_bound() || !requests_.empty() ||
+      !intercepted_requests_.empty())
     return;
 
   delete this;
