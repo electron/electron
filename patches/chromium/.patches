@@ -128,3 +128,4 @@ indexeddb_reset_async_tasks_in_webidbgetdbnamescallbacksimpl.patch
 cherry-pick-138b748dd0a4.patch
 cherry-pick-bee371eeaf66.patch
 cherry-pick-f6cb89728f04.patch
+backport_1111737.patch
