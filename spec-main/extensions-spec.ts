@@ -127,6 +127,23 @@ describe('chrome extensions', () => {
     }
   });
 
+  it('emits extension lifecycle events', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+
+    const loadedPromise = emittedOnce(customSession, 'extension-loaded');
+    const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const [, loadedExtension] = await loadedPromise;
+    const [, readyExtension] = await emittedOnce(customSession, 'extension-ready');
+
+    expect(loadedExtension.id).to.equal(extension.id);
+    expect(readyExtension.id).to.equal(extension.id);
+
+    const unloadedPromise = emittedOnce(customSession, 'extension-unloaded');
+    await customSession.removeExtension(extension.id);
+    const [, unloadedExtension] = await unloadedPromise;
+    expect(unloadedExtension.id).to.equal(extension.id);
+  });
+
   it('lists loaded extensions in getAllExtensions', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     const e = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));

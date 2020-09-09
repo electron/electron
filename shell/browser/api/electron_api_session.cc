@@ -281,6 +281,10 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     service->SetHunspellObserver(this);
   }
 #endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
+#endif
 }
 
 Session::~Session() {
@@ -293,6 +297,10 @@ Session::~Session() {
   if (service) {
     service->SetHunspellObserver(nullptr);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context())->RemoveObserver(this);
 #endif
 }
 
@@ -748,6 +756,22 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), extensions_vector);
+}
+
+void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
+                                const extensions::Extension* extension) {
+  Emit("extension-loaded", extension);
+}
+
+void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
+                                  const extensions::Extension* extension,
+                                  extensions::UnloadedExtensionReason reason) {
+  Emit("extension-unloaded", extension);
+}
+
+void Session::OnExtensionReady(content::BrowserContext* browser_context,
+                               const extensions::Extension* extension) {
+  Emit("extension-ready", extension);
 }
 #endif
 

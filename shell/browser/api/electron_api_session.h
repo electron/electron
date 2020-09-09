@@ -25,6 +25,12 @@
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "base/scoped_observer.h"
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_registry_observer.h"
+#endif
+
 class GURL;
 
 namespace base {
@@ -55,6 +61,9 @@ class Session : public gin::Wrappable<Session>,
                 public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                 public SpellcheckHunspellDictionary::Observer,
+#endif
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+                public extensions::ExtensionRegistryObserver,
 #endif
                 public content::DownloadManager::Observer {
  public:
@@ -126,6 +135,15 @@ class Session : public gin::Wrappable<Session>,
   void RemoveExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions();
+
+  // extensions::ExtensionRegistryObserver:
+  void OnExtensionLoaded(content::BrowserContext* browser_context,
+                         const extensions::Extension* extension) override;
+  void OnExtensionReady(content::BrowserContext* browser_context,
+                        const extensions::Extension* extension) override;
+  void OnExtensionUnloaded(content::BrowserContext* browser_context,
+                           const extensions::Extension* extension,
+                           extensions::UnloadedExtensionReason reason) override;
 #endif
 
  protected:
@@ -158,6 +176,12 @@ class Session : public gin::Wrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   ElectronBrowserContext* browser_context_;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  ScopedObserver<extensions::ExtensionRegistry,
+                 extensions::ExtensionRegistryObserver>
+      registry_observer_{this};
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };
