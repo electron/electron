@@ -74,6 +74,15 @@ void ElectronExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
       extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
 }
 
+void ElectronExtensionSystem::EnableExtension(const std::string& extension_id) {
+  extension_loader_->EnableExtension(extension_id);
+}
+
+void ElectronExtensionSystem::DisableExtension(
+    const std::string& extension_id) {
+  extension_loader_->DisableExtension(extension_id);
+}
+
 void ElectronExtensionSystem::Shutdown() {
   extension_loader_.reset();
 }

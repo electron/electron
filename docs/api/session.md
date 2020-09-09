@@ -615,6 +615,18 @@ Unloads an extension.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
+#### `ses.enableExtension(extensionId)`
+
+* `extensionId` String - ID of extension to enable
+
+Enables an extension. If the extension is already enabled, does nothing.
+
+#### `ses.disableExtension(extensionId)`
+
+* `extensionId` String - ID of extension to disable
+
+Disables an extension. If the extension is already disabled, does nothing.
+
 #### `ses.getExtension(extensionId)`
 
 * `extensionId` String - ID of extension to query

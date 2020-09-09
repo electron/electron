@@ -727,6 +727,18 @@ void Session::RemoveExtension(const std::string& extension_id) {
   extension_system->RemoveExtension(extension_id);
 }
 
+void Session::EnableExtension(const std::string& extension_id) {
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context()));
+  extension_system->EnableExtension(extension_id);
+}
+
+void Session::DisableExtension(const std::string& extension_id) {
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
+      extensions::ExtensionSystem::Get(browser_context()));
+  extension_system->DisableExtension(extension_id);
+}
+
 v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
   const extensions::Extension* extension =
@@ -1009,6 +1021,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)
+      .SetMethod("enableExtension", &Session::EnableExtension)
+      .SetMethod("disableExtension", &Session::DisableExtension)
       .SetMethod("getExtension", &Session::GetExtension)
       .SetMethod("getAllExtensions", &Session::GetAllExtensions)
 #endif

@@ -51,6 +51,9 @@ class ElectronExtensionSystem : public ExtensionSystem {
 
   void RemoveExtension(const ExtensionId& extension_id);
 
+  void EnableExtension(const ExtensionId& extension_id);
+  void DisableExtension(const ExtensionId& extension_id);
+
   // KeyedService implementation:
   void Shutdown() override;
 

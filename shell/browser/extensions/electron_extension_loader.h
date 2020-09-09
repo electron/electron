@@ -50,6 +50,12 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void UnloadExtension(const ExtensionId& extension_id,
                        extensions::UnloadedExtensionReason reason);
 
+  // Enables the extension. If the extension is already enabled, does nothing.
+  void EnableExtension(const std::string& extension_id);
+
+  // Disables the extension. If the extension is already disabled, does nothing.
+  void DisableExtension(const std::string& extension_id);
+
   ExtensionRegistrar* registrar() { return &extension_registrar_; }
 
  private:

@@ -103,6 +103,16 @@ void ElectronExtensionLoader::UnloadExtension(
   extension_registrar_.RemoveExtension(extension_id, reason);
 }
 
+void ElectronExtensionLoader::EnableExtension(const std::string& extension_id) {
+  extension_registrar_.EnableExtension(extension_id);
+}
+
+void ElectronExtensionLoader::DisableExtension(
+    const std::string& extension_id) {
+  extension_registrar_.DisableExtension(
+      extension_id, extensions::disable_reason::DISABLE_USER_ACTION);
+}
+
 void ElectronExtensionLoader::FinishExtensionLoad(
     base::OnceCallback<void(const Extension*, const std::string&)> cb,
     std::pair<scoped_refptr<const Extension>, std::string> result) {
@@ -168,8 +178,7 @@ bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
 }
 
 bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
-  // Extensions cannot be disabled by the user.
-  return false;
+  return true;
 }
 
 bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {

@@ -156,6 +156,22 @@ describe('chrome extensions', () => {
     await expect(customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session');
   });
 
+  it('toggles an extension', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+
+    (customSession as any).disableExtension(extension.id);
+    await w.loadURL(url);
+    let bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+    expect(bg).to.not.equal('red');
+
+    (customSession as any).enableExtension(extension.id);
+    await w.reload();
+    bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+    expect(bg).to.equal('red');
+  });
+
   describe('chrome.i18n', () => {
     let w: BrowserWindow;
     let extension: Extension;
