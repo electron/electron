@@ -1155,7 +1155,7 @@ if (is_mac) {
       ]
 
       if (target_cpu == "arm64") {
-        ldflags -= [ "/guard:cf" ]
+        configs -= [ "//build/config/win:cfi_linker" ]
         ldflags += [ "/guard:cf,nolongjmp" ]
       }
 
