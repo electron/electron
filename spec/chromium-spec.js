@@ -24,6 +24,14 @@ describe('chromium feature', () => {
     listener = null;
   });
 
+  describe('Badging API', () => {
+    it('does not crash', () => {
+      expect(() => {
+        navigator.setAppBadge(42);
+      }).to.not.throw();
+    });
+  });
+
   describe('heap snapshot', () => {
     it('does not crash', function () {
       process.electronBinding('v8_util').takeHeapSnapshot();
