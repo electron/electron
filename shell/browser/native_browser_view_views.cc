@@ -92,9 +92,33 @@ void NativeBrowserViewViews::ResetAutoResizeProportions() {
 }
 
 void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
+  // Previous implementation
+  /*
   auto* view = GetInspectableWebContentsView()->GetView();
   view->SetBoundsRect(bounds);
   ResetAutoResizeProportions();
+  */
+
+  /*
+  This implementation is attempting to ignore setting bounds
+  if the view has been destroyed, (ie invalid).
+  A different check is most likely needed as the destroyed
+  pointer cannot be guaranteed NULL.
+  */
+  auto* temp = GetInspectableWebContentsView();
+  LOG(INFO) << "NativeBrowserViewViews::SetBounds - temp: " << temp
+            << " null: " << NULL;
+
+  if (temp != NULL) {
+    LOG(INFO)
+        << "NativeBrowserViewViews::SetBounds - NOT NULL, proceed as usual";
+    auto* view = temp->GetView();
+    view->SetBoundsRect(bounds);
+    ResetAutoResizeProportions();
+  }
+
+  LOG(INFO) << "NativeBrowserViewViews::SetBounds - NULL, ignore action";
+  return;
 }
 
 gfx::Rect NativeBrowserViewViews::GetBounds() {
