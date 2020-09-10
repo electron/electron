@@ -104,8 +104,6 @@ Returns:
 
 Emitted when an error is encountered while creating and showing the native notification.
 
-#### Event: 'action' _macOS_
-
 ### Instance Methods
 
 Objects created with `new Notification` have the following instance methods:
@@ -174,7 +172,7 @@ If `timeoutType` is set to 'never', the notification never expires. It stays ope
 
 A [`NotificationAction[]`](structures/notification-action.md) property representing the actions of the notification.
 
-#### `notification.toastXml`
+#### `notification.toastXml` _Windows_
 
 A `String` property representing the custom Toast XML of the notification.
 

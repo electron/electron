@@ -105,7 +105,6 @@ WindowsToastNotification::~WindowsToastNotification() {
   // Remove the notification on exit.
   if (toast_notification_) {
     RemoveCallbacks(toast_notification_.Get());
-    // Dismiss();
   }
 }
 
