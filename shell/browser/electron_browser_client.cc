@@ -1280,17 +1280,17 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kNavigation, factories);
+      URLLoaderFactoryType::kNavigation, uniquely_owned_factories);
 }
 
 void ElectronBrowserClient::
     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
         content::BrowserContext* browser_context,
-        NonNetworkURLLoaderFactoryDeprecatedMap* factories) {
+        NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
   protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kWorkerMainResource, factories);
+      URLLoaderFactoryType::kWorkerMainResource, uniquely_owned_factories);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1352,7 +1352,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (web_contents) {
     ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
         ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                     factories);
+                                     uniquely_owned_factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
@@ -1383,7 +1383,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       extensions::Manifest::IsComponentLocation(extension->location())) {
     // Components of chrome that are implemented as extensions or platform apps
     // are allowed to use chrome://resources/ and chrome://theme/ URLs.
-    factories->emplace(
+    uniquely_owned_factories->emplace(
         content::kChromeUIScheme,
         content::CreateWebUIURLLoader(frame_host, content::kChromeUIScheme,
                                       {content::kChromeUIResourcesHost}));
@@ -1395,8 +1395,9 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       extensions::ProcessManager::Get(web_contents->GetBrowserContext())
           ->GetBackgroundHostForExtension(extension->id());
   if (host) {
-    factories->emplace(url::kFileScheme, std::make_unique<FileURLLoaderFactory>(
-                                             render_process_id));
+    uniquely_owned_factories->emplace(
+        url::kFileScheme,
+        std::make_unique<FileURLLoaderFactory>(render_process_id));
   }
 #endif
 }
