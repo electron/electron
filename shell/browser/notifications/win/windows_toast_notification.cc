@@ -31,7 +31,6 @@ using ABI::Windows::Data::Xml::Dom::IXmlNode;
 using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
 using ABI::Windows::Data::Xml::Dom::IXmlText;
 using Microsoft::WRL::Wrappers::HStringReference;
-using namespace Microsoft::WRL::Wrappers;
 
 #define RETURN_IF_FAILED(hr) \
   do {                       \
