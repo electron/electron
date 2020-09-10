@@ -104,6 +104,8 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   if the view has been destroyed, (ie invalid).
   A different check is most likely needed as the destroyed
   pointer cannot be guaranteed NULL.
+  When the pointer is NULL, the program does not crash, but when
+  it is not, it proceeds to still crash.
   */
   auto* temp = GetInspectableWebContentsView();
   LOG(INFO) << "NativeBrowserViewViews::SetBounds - temp: " << temp
