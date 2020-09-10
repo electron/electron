@@ -97,6 +97,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
+#include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
@@ -1573,6 +1574,12 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
 #endif
 }
 
+void BindBadgeManagerFrameReceiver(
+    content::RenderFrameHost* frame,
+    mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
+  LOG(WARNING) << "The Chromium Badging API is not available in Electron";
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void BindMimeHandlerService(
     content::RenderFrameHost* frame_host,
@@ -1609,6 +1616,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     mojo::BinderMapWithContext<content::RenderFrameHost*>* map) {
   map->Add<network_hints::mojom::NetworkHintsHandler>(
       base::BindRepeating(&BindNetworkHintsHandler));
+  map->Add<blink::mojom::BadgeService>(
+      base::BindRepeating(&BindBadgeManagerFrameReceiver));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));
