@@ -1584,6 +1584,10 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       const bv = new BrowserView();
       w.setBrowserView(bv);
+      defer(() => {
+        w.removeBrowserView(bv);
+        (bv.webContents as any).destroy();
+      });
       await bv.webContents.loadURL('about:blank');
       expect(BrowserWindow.fromWebContents(bv.webContents)!.id).to.equal(w.id);
     });
