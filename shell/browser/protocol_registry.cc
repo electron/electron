@@ -55,27 +55,29 @@ ProtocolRegistry::~ProtocolRegistry() = default;
 
 void ProtocolRegistry::RegisterURLLoaderFactories(
     URLLoaderFactoryType type,
-    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
+    content::ContentBrowserClient::NonNetworkURLLoaderFactoryDeprecatedMap*
+        uniquely_owned_factories) {
   // Override the default FileURLLoaderFactory to support asar archives.
   if (type == URLLoaderFactoryType::kNavigation) {
     // Always allow navigating to file:// URLs.
     //
     // Note that Chromium calls |emplace| to create the default file factory
     // after this call, so it won't override our asar factory.
-    DCHECK(!base::Contains(*factories, url::kFileScheme));
-    factories->emplace(url::kFileScheme,
-                       std::make_unique<AsarURLLoaderFactory>());
+    DCHECK(!base::Contains(*uniquely_owned_factories, url::kFileScheme));
+    uniquely_owned_factories->emplace(url::kFileScheme,
+                                      std::make_unique<AsarURLLoaderFactory>());
   } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
     // Only support requesting file:// subresource URLs when Chromium does so,
     // it is usually supported under file:// or about:blank documents.
-    auto file_factory = factories->find(url::kFileScheme);
-    if (file_factory != factories->end())
+    auto file_factory = uniquely_owned_factories->find(url::kFileScheme);
+    if (file_factory != uniquely_owned_factories->end())
       file_factory->second = std::make_unique<AsarURLLoaderFactory>();
   }
 
   for (const auto& it : handlers_) {
-    factories->emplace(it.first, std::make_unique<ElectronURLLoaderFactory>(
-                                     it.second.first, it.second.second));
+    uniquely_owned_factories->emplace(
+        it.first, std::make_unique<ElectronURLLoaderFactory>(it.second.first,
+                                                             it.second.second));
   }
 }
 
