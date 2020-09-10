@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import errno
 import os
-import platform
 import sys
 
 # URL to the mips64el sysroot image.
