@@ -446,9 +446,9 @@ WebContents.prototype.setWindowOpenOverride = function (handler: (details: { url
   this._windowOpenOverrideHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenOverride = function (event: any, url: string, frameName: string) {
+WebContents.prototype._callWindowOpenOverride = function (event: any, url: string, frameName: string, rawFeatures: string) {
   if (this._windowOpenOverrideHandler) {
-    const response = this._windowOpenOverrideHandler({ url, frameName });
+    const response = this._windowOpenOverrideHandler({ url, frameName, features: rawFeatures });
 
     switch (typeof response) {
       case 'boolean':
@@ -464,6 +464,7 @@ WebContents.prototype._callWindowOpenOverride = function (event: any, url: strin
         return null;
     }
   }
+  return null;
 };
 
 const addReplyToEvent = (event: any) => {
@@ -604,8 +605,8 @@ WebContents.prototype._init = function () {
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
-    this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string) => {
-      windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName);
+    this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string, rawFeatures: string) => {
+      windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName, rawFeatures);
       if (!event.defaultPrevented && windowOpenOverriddenOptions) {
         this._setNextChildWebPreferences({
           // Allow setting of backgroundColor as a webPreference even though

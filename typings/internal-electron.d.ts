@@ -114,7 +114,7 @@ declare namespace Electron {
 
   interface WebContentsInternal extends Electron.WebContents {
     _windowOpenOverrideHandler: any;
-    _callWindowOpenOverride(event: any, url: string, frameName: string): Electron.BrowserWindowConstructorOptions | null;
+    _callWindowOpenOverride(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
