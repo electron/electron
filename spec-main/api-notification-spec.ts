@@ -110,7 +110,7 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'win32')('inits, gets and sets custom xml', () => {
     const n = new Notification({
-      toastXml: '<xml/>',
+      toastXml: '<xml/>'
     });
 
     expect(n.toastXml).to.equal('<xml/>');
