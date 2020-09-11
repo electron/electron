@@ -161,10 +161,27 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
 
 }  // namespace
 
+// static
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ElectronURLLoaderFactory::Create(ProtocolType type,
+                                 const ProtocolHandler& handler) {
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
+
+  // The ElectronURLLoaderFactory will delete itself when there are no more
+  // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+  new ElectronURLLoaderFactory(type, handler,
+                               pending_remote.InitWithNewPipeAndPassReceiver());
+
+  return pending_remote;
+}
+
 ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
-    const ProtocolHandler& handler)
-    : type_(type), handler_(handler) {}
+    const ProtocolHandler& handler,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
+    : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)),
+      type_(type),
+      handler_(handler) {}
 
 ElectronURLLoaderFactory::~ElectronURLLoaderFactory() = default;
 
@@ -182,11 +199,6 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
       base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
                      routing_id, request_id, options, request,
                      std::move(client), traffic_annotation, nullptr, type_));
-}
-
-void ElectronURLLoaderFactory::Clone(
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
-  receivers_.Add(this, std::move(receiver));
 }
 
 // static

@@ -29,6 +29,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/browser/loader/non_network_url_loader_factory_base.h"
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -1280,10 +1281,12 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
 #endif
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
   protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kNavigation, uniquely_owned_factories);
+      URLLoaderFactoryType::kNavigation, factories);
 }
 
-void ElectronBrowserClient::
+// TODO(deepak1556): Pending on new api structure from
+// https://crrev.com/c/2357523
+/*void ElectronBrowserClient::
     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
         content::BrowserContext* browser_context,
         NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories) {
@@ -1291,18 +1294,35 @@ void ElectronBrowserClient::
       ProtocolRegistry::FromBrowserContext(browser_context);
   protocol_registry->RegisterURLLoaderFactories(
       URLLoaderFactoryType::kWorkerMainResource, uniquely_owned_factories);
-}
+}*/
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
 // The FileURLLoaderFactory provided to the extension background pages.
 // Checks with the ChildProcessSecurityPolicy to validate the file access.
-class FileURLLoaderFactory : public network::mojom::URLLoaderFactory {
+class FileURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
  public:
-  explicit FileURLLoaderFactory(int child_id) : child_id_(child_id) {}
+  static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
+      int child_id) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
+
+    // The FileURLLoaderFactory will delete itself when there are no more
+    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    new FileURLLoaderFactory(child_id,
+                             pending_remote.InitWithNewPipeAndPassReceiver());
+
+    return pending_remote;
+  }
 
  private:
+  explicit FileURLLoaderFactory(
+      int child_id,
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
+      : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)),
+        child_id_(child_id) {}
+  ~FileURLLoaderFactory() override = default;
+
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -1326,13 +1346,8 @@ class FileURLLoaderFactory : public network::mojom::URLLoaderFactory {
         /* allow_directory_listing */ true);
   }
 
-  void Clone(
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader) override {
-    receivers_.Add(this, std::move(loader));
-  }
-
   int child_id_;
-  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
+
   DISALLOW_COPY_AND_ASSIGN(FileURLLoaderFactory);
 };
 
@@ -1352,7 +1367,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (web_contents) {
     ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
         ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                     uniquely_owned_factories);
+                                     factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
@@ -1395,9 +1410,8 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       extensions::ProcessManager::Get(web_contents->GetBrowserContext())
           ->GetBackgroundHostForExtension(extension->id());
   if (host) {
-    uniquely_owned_factories->emplace(
-        url::kFileScheme,
-        std::make_unique<FileURLLoaderFactory>(render_process_id));
+    factories->emplace(url::kFileScheme,
+                       FileURLLoaderFactory::Create(render_process_id));
   }
 #endif
 }
