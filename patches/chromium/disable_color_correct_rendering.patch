@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index f1602225782d05be60fa55e9916cbadd11c05c36..5b5d03c9575cc3e32f01b75f260e68f99210486e 100644
+index 04e6025d6c174008a5303df5a9b23792753c4b30..9fef2969a4f3a36c6c533124562aad38d4046cf4 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1755,6 +1755,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -241,7 +241,7 @@ index de4eadaf7be8be95fc0ad454d66c8ec397cfc20a..d4c451ea992490befb34b3690a98d968
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 36ab6de7535aa602f65cf882f95d5b34269c4940..c967828dd996b73ba9314b0e8d296a97a5eb95ae 100644
+index 23be1102f60a064dc52650098154454e7dd99d50..922ddbb100ec7c79285f4d67dd0c8ccd19b1d17b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -228,6 +228,7 @@

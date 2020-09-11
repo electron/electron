@@ -16,10 +16,10 @@ example, the checks might be disabled for a whole build target, but actually
 only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
-diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 40b0b21ddfd6d89cc98c2f2ad6b76e682ae52806..88a8543eb335c941c197e74397d01c72640bbba2 100644
---- a/content/browser/frame_host/navigation_controller_impl.cc
-+++ b/content/browser/frame_host/navigation_controller_impl.cc
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index d4fd1aae5c4a101d255e76f2fb062b3953579c38..f2095270f9a77b1a24f7a6fa7257566f82f7b3da 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
 @@ -1279,8 +1279,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }

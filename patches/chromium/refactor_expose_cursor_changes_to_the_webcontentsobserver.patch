@@ -30,7 +30,7 @@ index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b74191956064
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index df7a0a78d6d84587dede58938e43f7cf3d732d16..af368828307df911ddc664ae2694a9def939b790 100644
+index e6d9414160c2e3c52fb34da867ed842943e5da1d..3194331d4dca12e7c4807635460064063709349d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1718,6 +1718,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
@@ -43,7 +43,7 @@ index df7a0a78d6d84587dede58938e43f7cf3d732d16..af368828307df911ddc664ae2694a9de
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cc1c4077add044db93a54ada5cc7fde6c68105ca..2c60c906b44582f9b9b14b79a7e73925fb058e3c 100644
+index becfc6f80874151357fb7291ccac2154c7280a33..344107f6640c91d02c5c0ca518c4f62289d7a757 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4273,6 +4273,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
@@ -60,7 +60,7 @@ index cc1c4077add044db93a54ada5cc7fde6c68105ca..2c60c906b44582f9b9b14b79a7e73925
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 0af5c4ed2f2fd8eb6635c6fcb306afe8e5b76bdb..7490eeeb52d9fd3782c7778f3cb020c3dce646fe 100644
+index 9f87c39d372e7e1150f839b6273236b02ec65e94..b33a95e8e9dd9c5386d152874c85ade6649142bb 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -943,6 +943,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

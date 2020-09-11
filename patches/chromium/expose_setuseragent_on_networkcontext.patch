@@ -33,10 +33,10 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 10ba3b1ad5d8bacbfd0f8b947db139058cd2d5f8..3bdd015d6192266b8facd5d8c2c954d3ea146d5a 100644
+index 939a61619476b38313243cbf822d1e3fced65bf0..5c2895a578cb13eff082b8275e92d603b13028d1 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1080,6 +1080,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1081,6 +1081,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,10 +51,10 @@ index 10ba3b1ad5d8bacbfd0f8b947db139058cd2d5f8..3bdd015d6192266b8facd5d8c2c954d3
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 3700f3ee61d4eb33a4574f3270c10a70b00057e3..00eacad5e1819b1710ab03ab1ef9428347e7f5a0 100644
+index 2e30ed846a8adf311d20ed376d24b9b66f8c242f..302a146ae673337fa9ed29abdbcfbd3e07c583c2 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -243,6 +243,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -242,6 +242,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;
