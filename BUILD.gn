@@ -1115,13 +1115,13 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      ldflags = []
+      
       libs = [
         "comctl32.lib",
         "uiautomationcore.lib",
         "wtsapi32.lib",
       ]
-
-      ldflags = []
 
       configs += [
         "//build/config/win:windowed",
