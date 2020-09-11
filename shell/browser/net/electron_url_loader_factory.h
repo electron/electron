@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include "content/browser/loader/non_network_url_loader_factory_base.h"
+#include "content/browser/loader/non_network_url_loader_factory_base.h"  // nogncheck
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"

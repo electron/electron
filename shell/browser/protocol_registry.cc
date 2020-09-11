@@ -5,7 +5,7 @@
 #include <memory>
 #include <utility>
 
-#include "content/browser/loader/non_network_url_loader_factory_base.h"
+#include "content/browser/loader/non_network_url_loader_factory_base.h"  // nogncheck
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
