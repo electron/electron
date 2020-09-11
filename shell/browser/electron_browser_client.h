@@ -180,10 +180,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       base::UkmSourceId ukm_source_id,
       NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
       NonNetworkURLLoaderFactoryMap* factories) override;
-  void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+  /*void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
       NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories)
-      override;
+      override;*/
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,

@@ -27,8 +27,7 @@ class ProtocolRegistry {
 
   void RegisterURLLoaderFactories(
       URLLoaderFactoryType type,
-      content::ContentBrowserClient::NonNetworkURLLoaderFactoryDeprecatedMap*
-          uniquely_owned_factories);
+      content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
 
