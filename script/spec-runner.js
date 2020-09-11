@@ -30,7 +30,6 @@ const utils = require('./lib/utils');
 const { YARN_VERSION } = require('./yarn');
 
 const BASE = path.resolve(__dirname, '../..');
-const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const runners = new Map([
