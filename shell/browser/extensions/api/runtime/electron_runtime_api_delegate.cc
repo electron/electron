@@ -66,10 +66,6 @@ bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
     info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_32;
   } else if (strcmp(arch, "x64") == 0) {
     info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_64;
-  } else if (strcmp(arch, "mipsel") == 0) {
-    info->arch = extensions::api::runtime::PLATFORM_ARCH_MIPS;
-  } else if (strcmp(arch, "mips64el") == 0) {
-    info->arch = extensions::api::runtime::PLATFORM_ARCH_MIPS64;
   } else {
     NOTREACHED();
     return false;
@@ -85,10 +81,6 @@ bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
     info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_32;
   } else if (strcmp(nacl_arch, "x86-64") == 0) {
     info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_64;
-  } else if (strcmp(nacl_arch, "mips32") == 0) {
-    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_MIPS;
-  } else if (strcmp(nacl_arch, "mips64") == 0) {
-    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_MIPS64;
   } else {
     NOTREACHED();
     return false;
