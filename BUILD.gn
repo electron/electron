@@ -1116,7 +1116,7 @@ if (is_mac) {
       ]
 
       ldflags = []
-      
+
       libs = [
         "comctl32.lib",
         "uiautomationcore.lib",
