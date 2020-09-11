@@ -103,7 +103,6 @@ added to the "enabled" set of extensions. This includes:
 - Extensions being loaded from `Session.loadExtension`.
 - Extensions being reloaded:
    * from a crash.
-   * from a disabled state (if the extension is disabled then enabled).
    * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
 
 #### Event: 'extension-unloaded'
@@ -113,9 +112,8 @@ Returns:
 * `event` Event
 * `extension` [Extension](structures/extension.md)
 
-Emitted after an extension is unloaded. The extension no longer exists in
-the group of enabled extensions, but it can still be a member of another
-group, like disabled, blocklisted, or terminated.
+Emitted after an extension is unloaded. This occurs when
+`Session.removeExtension` is called.
 
 #### Event: 'extension-ready'
 
