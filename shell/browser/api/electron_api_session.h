@@ -26,7 +26,6 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "base/scoped_observer.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_registry_observer.h"
 #endif
@@ -176,12 +175,6 @@ class Session : public gin::Wrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   ElectronBrowserContext* browser_context_;
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  ScopedObserver<extensions::ExtensionRegistry,
-                 extensions::ExtensionRegistryObserver>
-      registry_observer_{this};
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };
