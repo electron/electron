@@ -445,10 +445,10 @@ index c76d05c2634996fcad3cf511177bf8e0b23d62a9..d680ddddab6d38d633ebad0f37c2ba73
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a8b7c6d04fc64540dd7038129b0da16aa9e9721e..a7368a9c4a218ea53f76d35f9b4e3ba491a00f2e 100644
+index f2a1f491fc54e88b59c2f5ab77685b77916925f7..49d2e7d0395775ff4dac7a7b6e3994a68d59be9e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -39,6 +39,7 @@
+@@ -38,6 +38,7 @@
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
  #include "printing/mojom/print.mojom.h"

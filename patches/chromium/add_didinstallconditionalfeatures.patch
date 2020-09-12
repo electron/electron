@@ -23,7 +23,7 @@ index 8ab07f180b0e5d7baaa314cf1121c7182de7cce9..feb76f5278ba11f82c65e298d9772fc8
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index fde4315564e5ebc503fc0a540eecad4d4c3eeb76..74600dc05cc7ed0837c63f5e7e2b60ebd9d20813 100644
+index e9961d7dd48b5e40ae5959a37dc4b6f188f8aad8..b9c290091b06a0dbd0637739b7d0b1be7864aa6c 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4998,6 +4998,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
@@ -40,7 +40,7 @@ index fde4315564e5ebc503fc0a540eecad4d4c3eeb76..74600dc05cc7ed0837c63f5e7e2b60eb
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 0578b94ca2d4f35004e328cd594f8294b4443a83..0fbaba3993b97789966f00a776bd06d3801109dd 100644
+index 5ba5acdcd73ffbc1356d4b90454598b9f9f1ab48..24021dcfac28c7fe77cd0e7fbeb3cb7c789d1d2c 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -729,6 +729,8 @@ class CONTENT_EXPORT RenderFrameImpl
