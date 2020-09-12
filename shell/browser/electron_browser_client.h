@@ -90,7 +90,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::TtsPlatform* GetTtsPlatform() override;
 
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
-                           content::WebPreferences* prefs) override;
+                           blink::web_pref::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* current_rfh,
       content::RenderFrameHost* speculative_rfh,
