@@ -1305,17 +1305,15 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
       URLLoaderFactoryType::kNavigation, factories);
 }
 
-// TODO(deepak1556): Pending on new api structure from
-// https://crrev.com/c/2357523
-/*void ElectronBrowserClient::
+void ElectronBrowserClient::
     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
         content::BrowserContext* browser_context,
-        NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories) {
+        NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
   protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kWorkerMainResource, uniquely_owned_factories);
-}*/
+      URLLoaderFactoryType::kWorkerMainResource, factories);
+}
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
