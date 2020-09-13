@@ -182,10 +182,12 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && defined(OS_WIN)
+#include "chrome/browser/ui/views/overlay/overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/win/shell.h"
+#include "ui/views/widget/widget.h"
 #endif
 
 using content::BrowserThread;
@@ -922,9 +924,12 @@ ElectronBrowserClient::CreateWindowForPictureInPicture(
 #if defined(OS_WIN)
   base::string16 app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
-    ui::win::SetAppIdForWindow(
-        app_user_model_id,
-        overlay_window->GetNativeWindow()->GetHost()->GetAcceleratedWidget());
+    chrome::OverlayWindowViews* overlay_window_view =
+        static_cast<chrome::OverlayWindowViews*>(overlay_window.get());
+    ui::win::SetAppIdForWindow(app_user_model_id,
+                               overlay_window_view->GetNativeWindow()
+                                   ->GetHost()
+                                   ->GetAcceleratedWidget());
   }
 #endif
   return overlay_window;
