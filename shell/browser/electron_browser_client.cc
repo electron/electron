@@ -924,8 +924,8 @@ ElectronBrowserClient::CreateWindowForPictureInPicture(
 #if defined(OS_WIN)
   base::string16 app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
-    chrome::OverlayWindowViews* overlay_window_view =
-        static_cast<chrome::OverlayWindowViews*>(overlay_window.get());
+    OverlayWindowViews* overlay_window_view =
+        static_cast<OverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
