@@ -181,6 +181,13 @@
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && defined(OS_WIN)
+#include "shell/browser/browser.h"
+#include "ui/aura/window.h"
+#include "ui/aura/window_tree_host.h"
+#include "ui/base/win/shell.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -911,7 +918,16 @@ bool ElectronBrowserClient::CanCreateWindow(
 std::unique_ptr<content::OverlayWindow>
 ElectronBrowserClient::CreateWindowForPictureInPicture(
     content::PictureInPictureWindowController* controller) {
-  return content::OverlayWindow::Create(controller);
+  auto overlay_window = content::OverlayWindow::Create(controller);
+#if defined(OS_WIN)
+  base::string16 app_user_model_id = Browser::Get()->GetAppUserModelID();
+  if (!app_user_model_id.empty()) {
+    ui::win::SetAppIdForWindow(
+        app_user_model_id,
+        overlay_window->GetNativeWindow()->GetHost()->GetAcceleratedWidget());
+  }
+#endif
+  return overlay_window;
 }
 #endif
 
