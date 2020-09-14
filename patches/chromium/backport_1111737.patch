@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: remove references to launched device before it is reset
+
+[1111737] [High] [CVE-2020-6576]: Security: OffscreenCanvas - Use After Free in OffscreenCanvasRenderingContext2D::DrawTextInternal()
+Backport https://chromium.googlesource.com/chromium/src/+/1283160e334f78c5eed4668d95e04f2ed2e2a4a3.
+
+diff --git a/content/browser/renderer_host/media/video_capture_controller.cc b/content/browser/renderer_host/media/video_capture_controller.cc
+index 8a3f1c3be3d804e3879a8a6aa5921bee99b0879e..85ed13b0008c58ba45cc28be36441234d928ed30 100644
+--- a/content/browser/renderer_host/media/video_capture_controller.cc
++++ b/content/browser/renderer_host/media/video_capture_controller.cc
+@@ -709,6 +709,10 @@ void VideoCaptureController::ReleaseDeviceAsync(base::OnceClosure done_cb) {
+     device_launcher_->AbortLaunch();
+     return;
+   }
++  // |buffer_contexts_| contain references to |launched_device_| as observers.
++  // Clear those observer references prior to resetting |launced_device_|.
++  for (auto& entry : buffer_contexts_)
++    entry.set_consumer_feedback_observer(nullptr);
+   launched_device_.reset();
+ }
+ 

@@ -134,3 +134,4 @@ reland_fix_uaf_in_selecttype.patch
 cherry-pick-f6cb89728f04.patch
 backport_1081874.patch
 backport_1122684.patch
+backport_1111737.patch
