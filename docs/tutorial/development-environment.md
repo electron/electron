@@ -101,11 +101,11 @@ for JavaScript development.
 
 ## A Good Editor
 
-We might suggest two free popular editors built in Electron:
+We suggest two free popular editors built in Electron:
 GitHub's [Atom][atom] and Microsoft's [Visual Studio Code][code]. Both of
-them have excellent JavaScript support.
+which have excellent JavaScript support.
 
-If you are one of the many developers with a strong preference, know that
+If you are one of the many developers with a strong preference, 
 virtually all code editors and IDEs these days support JavaScript.
 
 [macincloud]: https://www.macincloud.com/
