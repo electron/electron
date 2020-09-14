@@ -13,6 +13,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "services/network/public/mojom/ssl_config.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -99,6 +100,7 @@ class Session : public gin::Wrappable<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin::Arguments* args);
   std::string GetUserAgent();
+  void SetSSLConfig(network::mojom::SSLConfigPtr config);
   bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
