@@ -26,7 +26,7 @@
     "walkdir": "^0.3.2",
     "winreg": "^1.2.4",
     "ws": "^6.1.4",
-    "yargs": "^12.0.5"
+    "yargs": "^16.0.3"
   },
   "dependencies": {
     "mocha-appveyor-reporter": "^0.4.2"
