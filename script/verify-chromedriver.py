@@ -5,10 +5,8 @@ from __future__ import print_function
 import argparse
 import os
 import re
-import shlex
 import subprocess
 import sys
-import time
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
