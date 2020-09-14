@@ -92,11 +92,7 @@ BrowserWindow.getFocusedWindow = () => {
 };
 
 BrowserWindow.fromWebContents = (webContents: WebContents) => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.webContents && window.webContents.equal(webContents)) return window;
-  }
-
-  return null;
+  return webContents.getOwnerBrowserWindow();
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
