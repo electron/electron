@@ -340,15 +340,15 @@ void ElectronURLLoaderFactory::StartLoading(
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED),
                    proxy_factory);
-        return;
+      } else {
+        StartLoading(std::move(loader), routing_id, request_id, options,
+                     request, std::move(client), traffic_annotation,
+                     proxy_factory, type, args);
       }
-      StartLoading(std::move(loader), routing_id, request_id, options, request,
-                   std::move(client), traffic_annotation, proxy_factory, type,
-                   args);
-      break;
+      return;
   }
 
-  if (type != ProtocolType::kFree && proxy_factory) {
+  if (proxy_factory) {
     proxy_factory->RemoveInterceptedRequest(request_id);
   }
 }
