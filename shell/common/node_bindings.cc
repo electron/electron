@@ -102,24 +102,26 @@ namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   uv_stop(loop);
-  int error = uv_loop_close(loop);
 
-  while (error) {
-    uv_run(loop, UV_RUN_DEFAULT);
-    uv_stop(loop);
-    uv_walk(
-        loop,
-        [](uv_handle_t* handle, void*) {
-          if (!uv_is_closing(handle)) {
-            uv_close(handle, nullptr);
-          }
-        },
-        nullptr);
-    uv_run(loop, UV_RUN_DEFAULT);
-    error = uv_loop_close(loop);
-  }
+  auto const ensure_closing = [](uv_handle_t* handle, void*) {
+    // We should be using the UvHandle wrapper everywhere, in which case
+    // all handles should already be in a closing state...
+    DCHECK(uv_is_closing(handle));
+    // ...but if a raw handle got through, through, do the right thing anyway
+    if (!uv_is_closing(handle)) {
+      uv_close(handle, nullptr);
+    }
+  };
 
-  DCHECK_EQ(error, 0);
+  uv_walk(loop, ensure_closing, nullptr);
+
+  // All remaining handles are in a closing state now.
+  // Pump the event loop so that they can finish closing.
+  for (;;)
+    if (uv_run(loop, UV_RUN_DEFAULT) == 0)
+      break;
+
+  DCHECK_EQ(0, uv_loop_alive(loop));
 }
 
 bool g_is_initialized = false;
@@ -292,7 +294,7 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
+  dummy_uv_handle_.reset();
 
   // Clean up worker loop
   if (in_worker_loop())
@@ -476,7 +478,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 void NodeBindings::PrepareMessageLoop() {
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
+  uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -533,8 +535,7 @@ void NodeBindings::WakeupMainThread() {
 }
 
 void NodeBindings::WakeupEmbedThread() {
-  if (!in_worker_loop())
-    uv_async_send(&dummy_uv_handle_);
+  uv_async_send(dummy_uv_handle_.get());
 }
 
 // static
