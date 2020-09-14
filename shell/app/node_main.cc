@@ -153,6 +153,7 @@ int NodeMain(int argc, char* argv[]) {
 
     exit_code = node::EmitExit(env);
     env->set_can_call_into_js(false);
+    node::Stop(env);
     node::RunAtExit(env);
 
     v8::Isolate* isolate = env->isolate();
