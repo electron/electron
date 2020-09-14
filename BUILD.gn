@@ -1154,6 +1154,11 @@ if (is_mac) {
         "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll",
       ]
 
+      if (target_cpu == "arm64") {
+        configs -= [ "//build/config/win:cfi_linker" ]
+        ldflags += [ "/guard:cf,nolongjmp" ]
+      }
+
       # This is to support renaming of electron.exe. node-gyp has hard-coded
       # executable names which it will recognise as node. This module definition
       # file claims that the electron executable is in fact named "node.exe",
