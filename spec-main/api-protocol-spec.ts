@@ -919,7 +919,7 @@ describe('protocol module', () => {
       await protocol.unregisterProtocol('stream');
     });
 
-    it('successfully plays videos when content is bufferred (stream: false)', async () => {
+    it('successfully plays videos when content is buffered (stream: false)', async () => {
       await streamsResponses(standardScheme, 'play');
     });
 
