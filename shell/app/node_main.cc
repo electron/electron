@@ -295,6 +295,7 @@ int NodeMain(int argc, char* argv[]) {
 
     node::RunAtExit(env);
     node::FreeEnvironment(env);
+    node::Stop(env);
     node::FreeIsolateData(isolate_data);
 
     gin_env.platform()->DrainTasks(isolate);
