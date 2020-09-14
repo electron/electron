@@ -1,0 +1,549 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: data race on NodeChannel destruction
+
+[1081874] [High] [CVE-2020-6575]: Double free on NodeChannel
+Backport https://chromium.googlesource.com/chromium/src/+/5e61913985df0cc621bf72f7fa75e76759ffde15.
+
+diff --git a/mojo/core/BUILD.gn b/mojo/core/BUILD.gn
+index e6fcb96256f6fdb867a362588547a7829f28efe8..6282eed9158c691a9ca49d1ec9a57cedc4392741 100644
+--- a/mojo/core/BUILD.gn
++++ b/mojo/core/BUILD.gn
+@@ -18,6 +18,7 @@ component("embedder_internal") {
+     ":test_sources",
+     "//mojo:*",
+     "//mojo/core/embedder",
++    "//mojo/core/test:test_support",
+   ]
+ }
+ 
+@@ -57,6 +58,7 @@ template("core_impl_source_set") {
+       "handle_table.h",
+       "invitation_dispatcher.h",
+       "message_pipe_dispatcher.h",
++      "node_channel.h",
+       "node_controller.h",
+       "options_validation.h",
+       "platform_handle_dispatcher.h",
+@@ -86,7 +88,6 @@ template("core_impl_source_set") {
+       "invitation_dispatcher.cc",
+       "message_pipe_dispatcher.cc",
+       "node_channel.cc",
+-      "node_channel.h",
+       "node_controller.cc",
+       "platform_handle_dispatcher.cc",
+       "platform_handle_in_transit.cc",
+@@ -289,6 +290,7 @@ source_set("test_sources") {
+     "handle_table_unittest.cc",
+     "message_pipe_unittest.cc",
+     "message_unittest.cc",
++    "node_channel_unittest.cc",
+     "options_validation_unittest.cc",
+     "platform_handle_dispatcher_unittest.cc",
+     "quota_unittest.cc",
+@@ -387,6 +389,7 @@ fuzzer_test("mojo_core_node_channel_fuzzer") {
+   deps = [
+     ":core_impl_for_fuzzers",
+     "//base",
++    "//mojo/core/test:test_support",
+     "//mojo/public/cpp/platform",
+   ]
+ }
+diff --git a/mojo/core/embedder/embedder.cc b/mojo/core/embedder/embedder.cc
+index ec68e37d09888f672759f79961e3e6e4d18f0c5c..f70c73be4df529cce09cb503dfce28f2a04e7e1a 100644
+--- a/mojo/core/embedder/embedder.cc
++++ b/mojo/core/embedder/embedder.cc
+@@ -35,7 +35,7 @@ void SetDefaultProcessErrorCallback(ProcessErrorCallback callback) {
+   Core::Get()->SetDefaultProcessErrorCallback(std::move(callback));
+ }
+ 
+-scoped_refptr<base::TaskRunner> GetIOTaskRunner() {
++scoped_refptr<base::SingleThreadTaskRunner> GetIOTaskRunner() {
+   return Core::Get()->GetNodeController()->io_task_runner();
+ }
+ 
+diff --git a/mojo/core/embedder/embedder.h b/mojo/core/embedder/embedder.h
+index 5d65400987728940a296ba2a84d40158f52d6d34..96dc44c0a78e0e6cb6e5aa511bd2fd4f1252cf16 100644
+--- a/mojo/core/embedder/embedder.h
++++ b/mojo/core/embedder/embedder.h
+@@ -13,7 +13,7 @@
+ #include "base/component_export.h"
+ #include "base/memory/ref_counted.h"
+ #include "base/process/process_handle.h"
+-#include "base/task_runner.h"
++#include "base/single_thread_task_runner.h"
+ #include "build/build_config.h"
+ #include "mojo/core/embedder/configuration.h"
+ 
+@@ -42,9 +42,10 @@ void SetDefaultProcessErrorCallback(ProcessErrorCallback callback);
+ 
+ // Initialialization/shutdown for interprocess communication (IPC) -------------
+ 
+-// Retrieves the TaskRunner used for IPC I/O, as set by ScopedIPCSupport.
++// Retrieves the SequencedTaskRunner used for IPC I/O, as set by
++// ScopedIPCSupport.
+ COMPONENT_EXPORT(MOJO_CORE_EMBEDDER)
+-scoped_refptr<base::TaskRunner> GetIOTaskRunner();
++scoped_refptr<base::SingleThreadTaskRunner> GetIOTaskRunner();
+ 
+ }  // namespace core
+ }  // namespace mojo
+diff --git a/mojo/core/node_channel.cc b/mojo/core/node_channel.cc
+index e898b044286e019b5e423b941502030ce3094582..061ea1026e95d1b1f80a762ce377aebdd97e1b42 100644
+--- a/mojo/core/node_channel.cc
++++ b/mojo/core/node_channel.cc
+@@ -228,7 +228,7 @@ void NodeChannel::NotifyBadMessage(const std::string& error) {
+ }
+ 
+ void NodeChannel::SetRemoteProcessHandle(ScopedProcessHandle process_handle) {
+-  DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
++  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
+   {
+     base::AutoLock lock(channel_lock_);
+     if (channel_)
+@@ -253,7 +253,7 @@ ScopedProcessHandle NodeChannel::CloneRemoteProcessHandle() {
+ }
+ 
+ void NodeChannel::SetRemoteNodeName(const ports::NodeName& name) {
+-  DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
++  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
+   remote_node_name_ = name;
+ }
+ 
+@@ -468,15 +468,15 @@ NodeChannel::NodeChannel(
+     Channel::HandlePolicy channel_handle_policy,
+     scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
+     const ProcessErrorCallback& process_error_callback)
+-    : delegate_(delegate),
+-      io_task_runner_(io_task_runner),
++    : base::RefCountedDeleteOnSequence<NodeChannel>(io_task_runner),
++      delegate_(delegate),
+       process_error_callback_(process_error_callback)
+ #if !defined(OS_NACL_SFI)
+       ,
+       channel_(Channel::Create(this,
+                                std::move(connection_params),
+                                channel_handle_policy,
+-                               io_task_runner_))
++                               std::move(io_task_runner)))
+ #endif
+ {
+ }
+@@ -499,15 +499,10 @@ void NodeChannel::CreateAndBindLocalBrokerHost(
+ void NodeChannel::OnChannelMessage(const void* payload,
+                                    size_t payload_size,
+                                    std::vector<PlatformHandle> handles) {
+-  DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
++  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
+ 
+   RequestContext request_context(RequestContext::Source::SYSTEM);
+ 
+-  // Ensure this NodeChannel stays alive through the extent of this method. The
+-  // delegate may have the only other reference to this object and it may choose
+-  // to drop it here in response to, e.g., a malformed message.
+-  scoped_refptr<NodeChannel> keepalive = this;
+-
+   if (payload_size <= sizeof(Header)) {
+     delegate_->OnChannelError(remote_node_name_, this);
+     return;
+@@ -739,7 +734,7 @@ void NodeChannel::OnChannelMessage(const void* payload,
+ }
+ 
+ void NodeChannel::OnChannelError(Channel::Error error) {
+-  DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
++  DCHECK(owning_task_runner()->RunsTasksInCurrentSequence());
+ 
+   RequestContext request_context(RequestContext::Source::SYSTEM);
+ 
+diff --git a/mojo/core/node_channel.h b/mojo/core/node_channel.h
+index ea91f927049befa258884b13e7f7966c09518687..04501da0fb6cd36df1b332135282104dd442b41e 100644
+--- a/mojo/core/node_channel.h
++++ b/mojo/core/node_channel.h
+@@ -11,7 +11,7 @@
+ #include "base/callback.h"
+ #include "base/containers/queue.h"
+ #include "base/macros.h"
+-#include "base/memory/ref_counted.h"
++#include "base/memory/ref_counted_delete_on_sequence.h"
+ #include "base/process/process_handle.h"
+ #include "base/single_thread_task_runner.h"
+ #include "base/synchronization/lock.h"
+@@ -21,13 +21,15 @@
+ #include "mojo/core/embedder/process_error_callback.h"
+ #include "mojo/core/ports/name.h"
+ #include "mojo/core/scoped_process_handle.h"
++#include "mojo/core/system_impl_export.h"
+ 
+ namespace mojo {
+ namespace core {
+ 
+ // Wraps a Channel to send and receive Node control messages.
+-class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
+-                    public Channel::Delegate {
++class MOJO_SYSTEM_IMPL_EXPORT NodeChannel
++    : public base::RefCountedDeleteOnSequence<NodeChannel>,
++      public Channel::Delegate {
+  public:
+   class Delegate {
+    public:
+@@ -92,8 +94,6 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
+                                   void** data,
+                                   size_t* num_data_bytes);
+ 
+-  Channel* channel() const { return channel_.get(); }
+-
+   // Start receiving messages.
+   void Start();
+ 
+@@ -155,7 +155,8 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
+ #endif
+ 
+  private:
+-  friend class base::RefCountedThreadSafe<NodeChannel>;
++  friend class base::RefCountedDeleteOnSequence<NodeChannel>;
++  friend class base::DeleteHelper<NodeChannel>;
+ 
+   using PendingMessageQueue = base::queue<Channel::MessagePtr>;
+   using PendingRelayMessageQueue =
+@@ -181,13 +182,12 @@ class NodeChannel : public base::RefCountedThreadSafe<NodeChannel>,
+   void WriteChannelMessage(Channel::MessagePtr message);
+ 
+   Delegate* const delegate_;
+-  const scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
+   const ProcessErrorCallback process_error_callback_;
+ 
+   base::Lock channel_lock_;
+-  scoped_refptr<Channel> channel_;
++  scoped_refptr<Channel> channel_ GUARDED_BY(channel_lock_);
+ 
+-  // Must only be accessed from |io_task_runner_|'s thread.
++  // Must only be accessed from the owning task runner's thread.
+   ports::NodeName remote_node_name_;
+ 
+   base::Lock remote_process_handle_lock_;
+diff --git a/mojo/core/node_channel_fuzzer.cc b/mojo/core/node_channel_fuzzer.cc
+index 99047c000dbe6be90f1d28b4b6817e608f9853a6..54fe757e0dec8aa138af96aa1a0afe596563c26c 100644
+--- a/mojo/core/node_channel_fuzzer.cc
++++ b/mojo/core/node_channel_fuzzer.cc
+@@ -14,6 +14,7 @@
+ #include "mojo/core/connection_params.h"
+ #include "mojo/core/entrypoints.h"
+ #include "mojo/core/node_channel.h"  // nogncheck
++#include "mojo/core/test/mock_node_channel_delegate.h"
+ #include "mojo/public/cpp/platform/platform_channel.h"
+ 
+ #if defined(OS_WIN)
+@@ -24,60 +25,6 @@ using mojo::core::Channel;
+ using mojo::core::ConnectionParams;
+ using mojo::core::ports::NodeName;
+ 
+-// Implementation of NodeChannel::Delegate which does nothing. All of the
+-// interesting NodeChannel control message message parsing is done by
+-// NodeChannel by the time any of the delegate methods are invoked, so there's
+-// no need for this to do any work.
+-class FakeNodeChannelDelegate : public mojo::core::NodeChannel::Delegate {
+- public:
+-  FakeNodeChannelDelegate() = default;
+-  ~FakeNodeChannelDelegate() override = default;
+-
+-  void OnAcceptInvitee(const NodeName& from_node,
+-                       const NodeName& inviter_name,
+-                       const NodeName& token) override {}
+-  void OnAcceptInvitation(const NodeName& from_node,
+-                          const NodeName& token,
+-                          const NodeName& invitee_name) override {}
+-  void OnAddBrokerClient(const NodeName& from_node,
+-                         const NodeName& client_name,
+-                         base::ProcessHandle process_handle) override {}
+-  void OnBrokerClientAdded(const NodeName& from_node,
+-                           const NodeName& client_name,
+-                           mojo::PlatformHandle broker_channel) override {}
+-  void OnAcceptBrokerClient(const NodeName& from_node,
+-                            const NodeName& broker_name,
+-                            mojo::PlatformHandle broker_channel) override {}
+-  void OnEventMessage(const NodeName& from_node,
+-                      Channel::MessagePtr message) override {}
+-  void OnRequestPortMerge(
+-      const NodeName& from_node,
+-      const mojo::core::ports::PortName& connector_port_name,
+-      const std::string& token) override {}
+-  void OnRequestIntroduction(const NodeName& from_node,
+-                             const NodeName& name) override {}
+-  void OnIntroduce(const NodeName& from_node,
+-                   const NodeName& name,
+-                   mojo::PlatformHandle channel_handle) override {}
+-  void OnBroadcast(const NodeName& from_node,
+-                   Channel::MessagePtr message) override {}
+-#if defined(OS_WIN)
+-  void OnRelayEventMessage(const NodeName& from_node,
+-                           base::ProcessHandle from_process,
+-                           const NodeName& destination,
+-                           Channel::MessagePtr message) override {}
+-  void OnEventMessageFromRelay(const NodeName& from_node,
+-                               const NodeName& source_node,
+-                               Channel::MessagePtr message) override {}
+-#endif
+-  void OnAcceptPeer(const NodeName& from_node,
+-                    const NodeName& token,
+-                    const NodeName& peer_name,
+-                    const mojo::core::ports::PortName& port_name) override {}
+-  void OnChannelError(const NodeName& node,
+-                      mojo::core::NodeChannel* channel) override {}
+-};
+-
+ // A fake delegate for the sending Channel endpoint. The sending Channel is not
+ // being fuzzed and won't receive any interesting messages, so this doesn't need
+ // to do anything.
+@@ -109,7 +56,7 @@ extern "C" int LLVMFuzzerTestOneInput(const unsigned char* data, size_t size) {
+   // used to carry messages between processes.
+   mojo::PlatformChannel channel;
+ 
+-  FakeNodeChannelDelegate receiver_delegate;
++  mojo::core::MockNodeChannelDelegate receiver_delegate;
+   auto receiver = mojo::core::NodeChannel::Create(
+       &receiver_delegate, ConnectionParams(channel.TakeLocalEndpoint()),
+       Channel::HandlePolicy::kRejectHandles,
+diff --git a/mojo/core/node_channel_unittest.cc b/mojo/core/node_channel_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..13c46f13fea6342316534a7a843debbf7586108d
+--- /dev/null
++++ b/mojo/core/node_channel_unittest.cc
+@@ -0,0 +1,72 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "mojo/core/node_channel.h"
++
++#include "base/bind_helpers.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/message_loop/message_pump_type.h"
++#include "base/test/task_environment.h"
++#include "base/threading/thread.h"
++#include "mojo/core/embedder/embedder.h"
++#include "mojo/core/test/mock_node_channel_delegate.h"
++#include "mojo/public/cpp/platform/platform_channel.h"
++#include "mojo/public/cpp/platform/platform_channel_endpoint.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace mojo {
++namespace core {
++namespace {
++
++using NodeChannelTest = testing::Test;
++using ports::NodeName;
++
++scoped_refptr<NodeChannel> CreateNodeChannel(NodeChannel::Delegate* delegate,
++                                             PlatformChannelEndpoint endpoint) {
++  return NodeChannel::Create(delegate, ConnectionParams(std::move(endpoint)),
++                             Channel::HandlePolicy::kAcceptHandles,
++                             GetIOTaskRunner(), base::NullCallback());
++}
++
++TEST_F(NodeChannelTest, DestructionIsSafe) {
++  // Regression test for https://crbug.com/1081874.
++  base::test::TaskEnvironment task_environment;
++
++  PlatformChannel channel;
++  MockNodeChannelDelegate local_delegate;
++  auto local_channel =
++      CreateNodeChannel(&local_delegate, channel.TakeLocalEndpoint());
++  local_channel->Start();
++  MockNodeChannelDelegate remote_delegate;
++  auto remote_channel =
++      CreateNodeChannel(&remote_delegate, channel.TakeRemoteEndpoint());
++  remote_channel->Start();
++
++  // Verify end-to-end operation
++  const NodeName kRemoteNodeName{123, 456};
++  const NodeName kToken{987, 654};
++  base::RunLoop loop;
++  EXPECT_CALL(local_delegate,
++              OnAcceptInvitee(ports::kInvalidNodeName, kRemoteNodeName, kToken))
++      .WillRepeatedly([&] { loop.Quit(); });
++  remote_channel->AcceptInvitee(kRemoteNodeName, kToken);
++  loop.Run();
++
++  // Now send another message to the local endpoint but tear it down
++  // immediately. This will race with the message being received on the IO
++  // thread, and although the corresponding delegate call may or may not
++  // dispatch as a result, the race should still be memory-safe.
++  remote_channel->AcceptInvitee(kRemoteNodeName, kToken);
++
++  base::RunLoop error_loop;
++  EXPECT_CALL(remote_delegate, OnChannelError).WillOnce([&] {
++    error_loop.Quit();
++  });
++  local_channel.reset();
++  error_loop.Run();
++}
++
++}  // namespace
++}  // namespace core
++}  // namespace mojo
+diff --git a/mojo/core/test/BUILD.gn b/mojo/core/test/BUILD.gn
+index 1abadfc503d5176d2af1dcecfde153f17488546d..9429c61853059e10ca2430ad79ec8d9a39d90906 100644
+--- a/mojo/core/test/BUILD.gn
++++ b/mojo/core/test/BUILD.gn
+@@ -7,6 +7,8 @@ import("//third_party/protobuf/proto_library.gni")
+ static_library("test_support") {
+   testonly = true
+   sources = [
++    "mock_node_channel_delegate.cc",
++    "mock_node_channel_delegate.h",
+     "mojo_test_base.cc",
+     "mojo_test_base.h",
+     "test_utils.h",
+@@ -27,8 +29,10 @@ static_library("test_support") {
+   public_deps = [
+     "//base",
+     "//base/test:test_support",
++    "//mojo/core:embedder_internal",
+     "//mojo/core/embedder",
+     "//mojo/public/cpp/system",
++    "//testing/gmock",
+     "//testing/gtest",
+   ]
+ }
+diff --git a/mojo/core/test/mock_node_channel_delegate.cc b/mojo/core/test/mock_node_channel_delegate.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..d257c3e1dc03857f91e94807328a0dc176f332f4
+--- /dev/null
++++ b/mojo/core/test/mock_node_channel_delegate.cc
+@@ -0,0 +1,15 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "mojo/core/test/mock_node_channel_delegate.h"
++
++namespace mojo {
++namespace core {
++
++MockNodeChannelDelegate::MockNodeChannelDelegate() = default;
++
++MockNodeChannelDelegate::~MockNodeChannelDelegate() = default;
++
++}  // namespace core
++}  // namespace mojo
+diff --git a/mojo/core/test/mock_node_channel_delegate.h b/mojo/core/test/mock_node_channel_delegate.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..06ca96857b9472682d577a802c68a56a7af0aacd
+--- /dev/null
++++ b/mojo/core/test/mock_node_channel_delegate.h
+@@ -0,0 +1,114 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef MOJO_CORE_TEST_MOCK_NODE_CHANNEL_DELEGATE_H_
++#define MOJO_CORE_TEST_MOCK_NODE_CHANNEL_DELEGATE_H_
++
++#include "build/build_config.h"
++#include "mojo/core/node_channel.h"
++#include "testing/gmock/include/gmock/gmock.h"
++
++namespace mojo {
++namespace core {
++
++// A NodeChannel Delegate implementation which can be used by NodeChannel unit
++// tests and fuzzers.
++class MockNodeChannelDelegate
++    : public testing::NiceMock<NodeChannel::Delegate> {
++ public:
++  using NodeName = ports::NodeName;
++  using PortName = ports::PortName;
++
++  MockNodeChannelDelegate();
++  MockNodeChannelDelegate(const MockNodeChannelDelegate&) = delete;
++  MockNodeChannelDelegate& operator=(const MockNodeChannelDelegate&) = delete;
++  ~MockNodeChannelDelegate() override;
++
++  // testing::NiceMock<NodeChannel::Delegate> implementation:
++  MOCK_METHOD(void,
++              OnAcceptInvitee,
++              (const NodeName& from_node,
++               const NodeName& inviter_name,
++               const NodeName& token),
++              (override));
++  MOCK_METHOD(void,
++              OnAcceptInvitation,
++              (const NodeName& from_node,
++               const NodeName& token,
++               const NodeName& invitee_name),
++              (override));
++  MOCK_METHOD(void,
++              OnAddBrokerClient,
++              (const NodeName& from_node,
++               const NodeName& client_name,
++               base::ProcessHandle process_handle),
++              (override));
++  MOCK_METHOD(void,
++              OnBrokerClientAdded,
++              (const NodeName& from_node,
++               const NodeName& client_name,
++               PlatformHandle broker_channel),
++              (override));
++  MOCK_METHOD(void,
++              OnAcceptBrokerClient,
++              (const NodeName& from_node,
++               const NodeName& broker_name,
++               PlatformHandle broker_channel),
++              (override));
++  MOCK_METHOD(void,
++              OnEventMessage,
++              (const NodeName& from_node, Channel::MessagePtr message),
++              (override));
++  MOCK_METHOD(void,
++              OnRequestPortMerge,
++              (const NodeName& from_node,
++               const PortName& connector_port_name,
++               const std::string& token),
++              (override));
++  MOCK_METHOD(void,
++              OnRequestIntroduction,
++              (const NodeName& from_node, const NodeName& name),
++              (override));
++  MOCK_METHOD(void,
++              OnIntroduce,
++              (const NodeName& from_node,
++               const NodeName& name,
++               PlatformHandle channel_handle),
++              (override));
++  MOCK_METHOD(void,
++              OnBroadcast,
++              (const NodeName& from_node, Channel::MessagePtr message),
++              (override));
++#if defined(OS_WIN)
++  MOCK_METHOD(void,
++              OnRelayEventMessage,
++              (const NodeName& from_node,
++               base::ProcessHandle from_process,
++               const NodeName& destination,
++               Channel::MessagePtr message),
++              (override));
++  MOCK_METHOD(void,
++              OnEventMessageFromRelay,
++              (const NodeName& from_node,
++               const NodeName& source_node,
++               Channel::MessagePtr message),
++              (override));
++#endif
++  MOCK_METHOD(void,
++              OnAcceptPeer,
++              (const NodeName& from_node,
++               const NodeName& token,
++               const NodeName& peer_name,
++               const PortName& port_name),
++              (override));
++  MOCK_METHOD(void,
++              OnChannelError,
++              (const NodeName& node, NodeChannel* channel),
++              (override));
++};
++
++}  // namespace core
++}  // namespace mojo
++
++#endif  // MOJO_CORE_TEST_MOCK_NODE_CHANNEL_DELEGATE_H_
