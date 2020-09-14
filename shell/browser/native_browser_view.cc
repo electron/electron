@@ -18,11 +18,21 @@ NativeBrowserView::NativeBrowserView(
 NativeBrowserView::~NativeBrowserView() = default;
 
 InspectableWebContentsView* NativeBrowserView::GetInspectableWebContentsView() {
+  if (!inspectable_web_contents_) {
+    return nullptr;
+  }
   return inspectable_web_contents_->GetView();
 }
 
 content::WebContents* NativeBrowserView::GetWebContents() {
+  if (!inspectable_web_contents_) {
+    return nullptr;
+  }
   return inspectable_web_contents_->GetWebContents();
+}
+
+void NativeBrowserView::WebContentsDestroyed() {
+  inspectable_web_contents_ = nullptr;
 }
 
 }  // namespace electron
