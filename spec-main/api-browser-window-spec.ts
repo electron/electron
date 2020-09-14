@@ -1579,6 +1579,30 @@ describe('BrowserWindow module', () => {
         contents.destroy();
       }
     });
+
+    it('returns the correct window for a BrowserView webcontents', async () => {
+      const w = new BrowserWindow({ show: false });
+      const bv = new BrowserView();
+      w.setBrowserView(bv);
+      defer(() => {
+        w.removeBrowserView(bv);
+        (bv.webContents as any).destroy();
+      });
+      await bv.webContents.loadURL('about:blank');
+      expect(BrowserWindow.fromWebContents(bv.webContents)!.id).to.equal(w.id);
+    });
+
+    it('returns the correct window for a WebView webcontents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+      w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+      // NOTE(nornagon): Waiting for 'did-attach-webview' is a workaround for
+      // https://github.com/electron/electron/issues/25413, and is not integral
+      // to the test.
+      const p = emittedOnce(w.webContents, 'did-attach-webview');
+      const [, webviewContents] = await emittedOnce(app, 'web-contents-created');
+      expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
+      await p;
+    });
   });
 
   describe('BrowserWindow.openDevTools()', () => {
