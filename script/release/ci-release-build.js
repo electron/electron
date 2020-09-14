@@ -91,7 +91,6 @@ async function circleCIcall (targetBranch, job, options) {
   try {
     const circleResponse = await circleCIRequest(CIRCLECI_PIPELINE_URL, 'POST', buildRequest);
     console.log(`CircleCI release build pipeline ${circleResponse.id} for ${job} triggered.`);
-    const pipelineInfoUrl = `https://circleci.com/api/v2/pipeline/${circleResponse.id}`;
     const workflowId = await getCircleCIWorkflowId(circleResponse.id);
     if (workflowId === -1) {
       return;
