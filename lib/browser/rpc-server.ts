@@ -71,10 +71,6 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
 
     return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event, options));
   });
-
-  ipcMainInternal.handle('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', function (event: IpcMainInvokeEvent, webContentsId: number) {
-    return desktopCapturer.getMediaSourceIdForWebContents(event, webContentsId);
-  });
 }
 
 const isRemoteModuleEnabled = BUILDFLAG(ENABLE_REMOTE_MODULE)
