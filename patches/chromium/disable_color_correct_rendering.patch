@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 04e6025d6c174008a5303df5a9b23792753c4b30..9fef2969a4f3a36c6c533124562aad38d4046cf4 100644
+index 896b4d1ac0946c0ab6532993ef53bd545ea31863..6d9264383c88e6b9a21735be27b98ef1802a1b8b 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1755,6 +1755,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
