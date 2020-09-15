@@ -7,6 +7,7 @@
 #include <string>
 
 #include "build/build_config.h"
+#include "components/update_client/update_query_params.h"
 #include "extensions/common/api/runtime.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 
@@ -42,10 +43,49 @@ bool ElectronRuntimeAPIDelegate::CheckForUpdates(
 void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
 
 bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
-  // TODO(nornagon): put useful information here.
-#if defined(OS_LINUX)
-  info->os = api::runtime::PLATFORM_OS_LINUX;
-#endif
+  const char* os = update_client::UpdateQueryParams::GetOS();
+  if (strcmp(os, "mac") == 0) {
+    info->os = extensions::api::runtime::PLATFORM_OS_MAC;
+  } else if (strcmp(os, "win") == 0) {
+    info->os = extensions::api::runtime::PLATFORM_OS_WIN;
+  } else if (strcmp(os, "linux") == 0) {
+    info->os = extensions::api::runtime::PLATFORM_OS_LINUX;
+  } else if (strcmp(os, "openbsd") == 0) {
+    info->os = extensions::api::runtime::PLATFORM_OS_OPENBSD;
+  } else {
+    NOTREACHED();
+    return false;
+  }
+
+  const char* arch = update_client::UpdateQueryParams::GetArch();
+  if (strcmp(arch, "arm") == 0) {
+    info->arch = extensions::api::runtime::PLATFORM_ARCH_ARM;
+  } else if (strcmp(arch, "arm64") == 0) {
+    info->arch = extensions::api::runtime::PLATFORM_ARCH_ARM64;
+  } else if (strcmp(arch, "x86") == 0) {
+    info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_32;
+  } else if (strcmp(arch, "x64") == 0) {
+    info->arch = extensions::api::runtime::PLATFORM_ARCH_X86_64;
+  } else {
+    NOTREACHED();
+    return false;
+  }
+
+  const char* nacl_arch = update_client::UpdateQueryParams::GetNaclArch();
+  if (strcmp(nacl_arch, "arm") == 0) {
+    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_ARM;
+  } else if (strcmp(nacl_arch, "arm64") == 0) {
+    // Use ARM for ARM64 NaCl, as ARM64 NaCl is not available.
+    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_ARM;
+  } else if (strcmp(nacl_arch, "x86-32") == 0) {
+    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_32;
+  } else if (strcmp(nacl_arch, "x86-64") == 0) {
+    info->nacl_arch = extensions::api::runtime::PLATFORM_NACL_ARCH_X86_64;
+  } else {
+    NOTREACHED();
+    return false;
+  }
+
   return true;
 }  // namespace extensions
 

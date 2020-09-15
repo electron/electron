@@ -1,27 +1,17 @@
-const { BrowserWindow } = require('electron').remote
-const shell = require('electron').shell
+const { shell, ipcRenderer } = require('electron')
 
 const manageWindowBtn = document.getElementById('manage-window')
 
 const links = document.querySelectorAll('a[href]')
 
-let win
+ipcRenderer.on('bounds-changed', (event, bounds) => {
+  const manageWindowReply = document.getElementById('manage-window-reply')
+  const message = `Size: ${bounds.size} Position: ${bounds.position}`
+  manageWindowReply.textContent = message
+})
 
 manageWindowBtn.addEventListener('click', (event) => {
-  const modalPath = 'https://electronjs.org'
-  win = new BrowserWindow({ width: 400, height: 275 })
-
-  win.on('resize', updateReply)
-  win.on('move', updateReply)
-  win.on('close', () => { win = null })
-  win.loadURL(modalPath)
-  win.show()
-
-  function updateReply () {
-    const manageWindowReply = document.getElementById('manage-window-reply')
-    const message = `Size: ${win.getSize()} Position: ${win.getPosition()}`
-    manageWindowReply.innerText = message
-  }
+  ipcRenderer.send('create-demo-window')
 })
 
 Array.prototype.forEach.call(links, (link) => {

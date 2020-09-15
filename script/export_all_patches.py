@@ -2,8 +2,6 @@
 
 import argparse
 import json
-import os
-import sys
 
 from lib import git
 

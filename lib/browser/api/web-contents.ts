@@ -461,6 +461,11 @@ const addReturnValueToEvent = (event: any) => {
   });
 };
 
+const loggingEnabled = () => {
+  return Object.prototype.hasOwnProperty.call(process.env, 'ELECTRON_ENABLE_LOGGING') ||
+    process.argv.some(arg => arg.toLowerCase().startsWith('--enable-logging'));
+};
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
@@ -543,6 +548,11 @@ WebContents.prototype._init = function () {
 
   this.on('crashed', (event, ...args) => {
     app.emit('renderer-process-crashed', event, this, ...args);
+
+    // Log out a hint to help users better debug renderer crashes.
+    if (loggingEnabled()) {
+      console.info('Renderer process crashed - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.');
+    }
   });
 
   this.on('render-process-gone', (event, ...args) => {

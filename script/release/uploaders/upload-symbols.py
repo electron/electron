@@ -14,8 +14,8 @@ def is_fs_case_sensitive():
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
-from lib.config import PLATFORM, s3_config, enable_verbose_mode
-from lib.util import get_electron_branding, execute, rm_rf, safe_mkdir, s3put, \
+from lib.config import PLATFORM, s3_config
+from lib.util import get_electron_branding, execute, s3put, \
                      get_out_dir, ELECTRON_DIR
 
 RELEASE_DIR = get_out_dir()
