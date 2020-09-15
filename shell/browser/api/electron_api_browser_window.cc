@@ -308,11 +308,11 @@ void BrowserWindow::OnWindowResize() {
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
-  TopLevelWindow::OnWindowLeaveFullScreen();
 #if defined(OS_MACOSX)
   if (web_contents()->IsFullscreenForCurrentTab())
     web_contents()->ExitFullscreen(true);
 #endif
+  TopLevelWindow::OnWindowLeaveFullScreen();
 }
 
 void BrowserWindow::Focus() {
