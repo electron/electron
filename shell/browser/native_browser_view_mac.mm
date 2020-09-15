@@ -162,9 +162,11 @@ namespace electron {
 NativeBrowserViewMac::NativeBrowserViewMac(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  view.autoresizingMask = kDefaultAutoResizingMask;
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetNativeView().GetNativeNSView();
+    view.autoresizingMask = kDefaultAutoResizingMask;
+  }
 }
 
 NativeBrowserViewMac::~NativeBrowserViewMac() {}
@@ -186,74 +188,87 @@ void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
         NSViewMaxYMargin | NSViewMinYMargin | NSViewHeightSizable;
   }
 
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  view.autoresizingMask = autoresizing_mask;
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetNativeView().GetNativeNSView();
+    view.autoresizingMask = autoresizing_mask;
+  }
 }
 
 void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  auto* superview = view.superview;
-  const auto superview_height = superview ? superview.frame.size.height : 0;
-  view.frame =
-      NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
-                 bounds.width(), bounds.height());
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetNativeView().GetNativeNSView();
+    auto* superview = view.superview;
+    const auto superview_height = superview ? superview.frame.size.height : 0;
+    view.frame =
+        NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
+                   bounds.width(), bounds.height());
+  }
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
-  NSView* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  const int superview_height =
-      (view.superview) ? view.superview.frame.size.height : 0;
-  return gfx::Rect(
-      view.frame.origin.x,
-      superview_height - view.frame.origin.y - view.frame.size.height,
-      view.frame.size.width, view.frame.size.height);
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    NSView* view = contents->GetNativeView().GetNativeNSView();
+    const int superview_height =
+        (view.superview) ? view.superview.frame.size.height : 0;
+    return gfx::Rect(
+        view.frame.origin.x,
+        superview_height - view.frame.origin.y - view.frame.size.height,
+        view.frame.size.width, view.frame.size.height);
+  }
+  return gfx::Rect();
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  view.wantsLayer = YES;
-  view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetNativeView().GetNativeNSView();
+    view.wantsLayer = YES;
+    view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
+  }
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
-  NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
-  NSView* inspectable_view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  NSView* window_content_view = inspectable_view.superview;
-  const auto window_content_view_height = NSHeight(window_content_view.bounds);
+  auto* inspectable_contents = GetInspectableWebContentsView();
+  auto* web_contents = GetWebContents();
+  if (inspectable_contents && web_contents) {
+    NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
+    NSView* inspectable_view = contents->GetNativeView().GetNativeNSView();
+    NSView* window_content_view = inspectable_view.superview;
+    const auto window_content_view_height =
+        NSHeight(window_content_view.bounds);
 
-  // Remove all DragRegionViews that were added last time. Note that we need
-  // to copy the `subviews` array to avoid mutation during iteration.
-  base::scoped_nsobject<NSArray> subviews([[web_view subviews] copy]);
-  for (NSView* subview in subviews.get()) {
-    if ([subview isKindOfClass:[DragRegionView class]]) {
-      [subview removeFromSuperview];
+    // Remove all DragRegionViews that were added last time. Note that we need
+    // to copy the `subviews` array to avoid mutation during iteration.
+    base::scoped_nsobject<NSArray> subviews([[web_view subviews] copy]);
+    for (NSView* subview in subviews.get()) {
+      if ([subview isKindOfClass:[DragRegionView class]]) {
+        [subview removeFromSuperview];
+      }
     }
-  }
 
-  // Create one giant NSView that is draggable.
-  base::scoped_nsobject<NSView> drag_region_view(
-      [[DragRegionView alloc] initWithFrame:web_view.bounds]);
-  [web_view addSubview:drag_region_view];
+    // Create one giant NSView that is draggable.
+    base::scoped_nsobject<NSView> drag_region_view(
+        [[DragRegionView alloc] initWithFrame:web_view.bounds]);
+    [web_view addSubview:drag_region_view];
 
-  // Then, on top of that, add "exclusion zones"
-  for (const auto& rect : drag_exclude_rects) {
-    const auto window_content_view_exclude_rect =
-        NSMakeRect(rect.x(), window_content_view_height - rect.bottom(),
-                   rect.width(), rect.height());
-    const auto drag_region_view_exclude_rect =
-        [window_content_view convertRect:window_content_view_exclude_rect
-                                  toView:drag_region_view];
+    // Then, on top of that, add "exclusion zones"
+    for (const auto& rect : drag_exclude_rects) {
+      const auto window_content_view_exclude_rect =
+          NSMakeRect(rect.x(), window_content_view_height - rect.bottom(),
+                     rect.width(), rect.height());
+      const auto drag_region_view_exclude_rect =
+          [window_content_view convertRect:window_content_view_exclude_rect
+                                    toView:drag_region_view];
 
-    base::scoped_nsobject<NSView> exclude_drag_region_view(
-        [[ExcludeDragRegionView alloc]
-            initWithFrame:drag_region_view_exclude_rect]);
-    [drag_region_view addSubview:exclude_drag_region_view];
+      base::scoped_nsobject<NSView> exclude_drag_region_view(
+          [[ExcludeDragRegionView alloc]
+              initWithFrame:drag_region_view_exclude_rect]);
+      [drag_region_view addSubview:exclude_drag_region_view];
+    }
   }
 }
 

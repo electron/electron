@@ -13,7 +13,9 @@ namespace electron {
 
 NativeBrowserView::NativeBrowserView(
     InspectableWebContents* inspectable_web_contents)
-    : inspectable_web_contents_(inspectable_web_contents) {}
+    : inspectable_web_contents_(inspectable_web_contents) {
+  Observe(inspectable_web_contents_->GetWebContents());
+}
 
 NativeBrowserView::~NativeBrowserView() = default;
 
