@@ -551,6 +551,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   node_debugger_->Stop();
   node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
+  node::Stop(node_env_->env());
   node_env_.reset();
 
   ElectronBrowserContext::browser_context_map().clear();
