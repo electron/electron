@@ -34,6 +34,7 @@ content::WebContents* NativeBrowserView::GetWebContents() {
 }
 
 void NativeBrowserView::WebContentsDestroyed() {
+  LOG(INFO) << "NativeBrowserView::WebContentsDestroyed";
   inspectable_web_contents_ = nullptr;
 }
 

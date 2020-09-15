@@ -104,11 +104,14 @@ void NativeBrowserViewViews::ResetAutoResizeProportions() {
 
 void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   auto* contents = GetInspectableWebContentsView();
-  if (contents) {
-    auto* view = contents->GetView();
-    view->SetBoundsRect(bounds);
-    ResetAutoResizeProportions();
+
+  if (!contents) {
+    LOG(INFO) << "No contents " << __LINE__;
+    return;
   }
+  auto* view = contents->GetView();
+  view->SetBoundsRect(bounds);
+  ResetAutoResizeProportions();
 }
 
 gfx::Rect NativeBrowserViewViews::GetBounds() {
