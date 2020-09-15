@@ -157,10 +157,30 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(
                      [](base::WeakPtr<BrowserWindow> self) {
-                       if (self)
+                       if (self && !self->did_ready_to_show_fired_) {
+                         self->did_ready_to_show_fired_ = true;
                          self->Emit("ready-to-show");
+                       }
                      },
                      GetWeakPtr()));
+}
+
+void BrowserWindow::DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                                  const GURL& validated_url) {
+  // The DidFirstVisuallyNonEmptyPaint event is not very stable that, sometimes
+  // on some machines it might not be fired, and the actual behavior depends on
+  // the version of Chromium.
+  // To work around this bug, we ensure the ready-to-show event is emitted if it
+  // has not been emitted in did-finish-load event.
+  // Note that we use did-finish-load event instead of dom-ready event because
+  // the latter may actually be emitted before the ready-to-show event.
+  // See also https://github.com/electron/electron/issues/7779.
+  if (window()->IsVisible() || did_ready_to_show_fired_)
+    return;
+  if (render_frame_host->GetParent())  // child frame
+    return;
+  did_ready_to_show_fired_ = true;
+  Emit("ready-to-show");
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
