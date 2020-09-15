@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 6bdd9cb82c95ae92d0a0bb2f55831b21612175bf..fed0c963ca9852de4c5d4473802f38ca25969fd3 100644
+index d50253cb9c4de436ac4ac4b5316834814aef248d..e1543e396a15abdbe4736ccb736bfb81294bbee5 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
-@@ -1279,8 +1279,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1274,8 +1274,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index 6bdd9cb82c95ae92d0a0bb2f55831b21612175bf..fed0c963ca9852de4c5d4473802f38ca
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1555,7 +1557,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1550,7 +1552,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
