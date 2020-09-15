@@ -359,7 +359,7 @@ describe('webContents module', () => {
       let resp = null as unknown as http.ServerResponse;
       const s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<iframe src="data:text/html,hi"></iframe>');
+        res.write('<iframe src="about:blank"></iframe>');
         resp = res;
         // don't end the response yet
       });

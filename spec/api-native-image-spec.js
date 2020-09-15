@@ -173,13 +173,7 @@ describe('nativeImage module', () => {
       const imageB = nativeImage.createFromBitmap(imageA.toBitmap(), imageA.getSize());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      let imageC;
-      // TODO fix nativeImage.createFromBuffer from bitmaps on WOA.  See https://github.com/electron/electron/issues/25069
-      if (process.platform === 'win32' && process.arch === 'arm64') {
-        imageC = nativeImage.createFromBuffer(imageA.toPNG(), { ...imageA.getSize(), scaleFactor: 2.0 });
-      } else {
-        imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
-      }
+      const imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
       expect(imageC.getSize()).to.deep.equal({ width: 269, height: 95 });
     });
 
@@ -192,8 +186,7 @@ describe('nativeImage module', () => {
     });
   });
 
-  // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
-  ifdescribe(!(process.platform === 'win32' && process.arch === 'arm64'))('createFromBuffer(buffer, options)', () => {
+  describe('createFromBuffer(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
       expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true();
     });
@@ -347,8 +340,7 @@ describe('nativeImage module', () => {
   });
 
   describe('createFromPath(path)', () => {
-    // TODO fix nativeImage.createFromPath on WOA.  See https://github.com/electron/electron/issues/25069
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns an empty image for invalid paths', () => {
+    it('returns an empty image for invalid paths', () => {
       expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
@@ -520,8 +512,7 @@ describe('nativeImage module', () => {
   });
 
   describe('addRepresentation()', () => {
-    // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('does not add representation when the buffer is too small', () => {
+    it('does not add representation when the buffer is too small', () => {
       const image = nativeImage.createEmpty();
 
       image.addRepresentation({

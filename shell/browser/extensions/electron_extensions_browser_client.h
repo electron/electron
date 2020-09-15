@@ -32,8 +32,6 @@ namespace electron {
 
 // An ExtensionsBrowserClient that supports a single content::BrowserContext
 // with no related incognito context.
-// Must be initialized via InitWithBrowserContext() once the BrowserContext is
-// created.
 class ElectronExtensionsBrowserClient
     : public extensions::ExtensionsBrowserClient {
  public:
@@ -121,11 +119,6 @@ class ElectronExtensionsBrowserClient
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
-
-  // |context| is the single BrowserContext used for IsValidContext().
-  // |pref_service| is used for GetPrefServiceForContext().
-  void InitWithBrowserContext(content::BrowserContext* context,
-                              PrefService* pref_service);
 
   // Sets the API client.
   void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);

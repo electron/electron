@@ -307,10 +307,10 @@ void OffScreenRenderWidgetHostView::Show() {
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), base::nullopt);
+      GetRootLayer()->bounds().size(), {});
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(base::nullopt);
+    render_widget_host_->WasShown({});
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
