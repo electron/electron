@@ -1,4 +1,5 @@
-const {app, BrowserWindow, BrowserView} = require('electron')
+const {app, BrowserWindow, BrowserView} = require('electron');
+const { expect } = require('chai');
 
 function createWindow () {
   // Create the browser window.
@@ -12,8 +13,10 @@ function createWindow () {
   const view = new BrowserView();
   mainWindow.addBrowserView(view);
   view.webContents.destroy()
-  //setTimeout(() => view.setBounds({ x: 0, y: 0, width: 300, height: 300 }), 10000) //Asynchronous Test
-  view.setBounds({ x: 0, y: 0, width: 300, height: 300 }) //Synchronous Test
+  view.setBounds({ x: 0, y: 0, width: 0, height: 0 })
+  const bounds = view.getBounds()
+  expect(bounds).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 })
+  view.setBackgroundColor(1)
 }
 
 app.on('ready', createWindow)
