@@ -26,59 +26,70 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
     const gfx::Size& window_size) {
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeHorizontal) &&
       !auto_horizontal_proportion_set_) {
-    auto* view = GetInspectableWebContentsView()->GetView();
-    auto view_bounds = view->bounds();
-    auto_horizontal_proportion_width_ =
-        static_cast<float>(window_size.width()) /
-        static_cast<float>(view_bounds.width());
-    auto_horizontal_proportion_left_ = static_cast<float>(window_size.width()) /
-                                       static_cast<float>(view_bounds.x());
-    auto_horizontal_proportion_set_ = true;
+    auto* contents = GetInspectableWebContentsView();
+    if (contents) {
+      auto* view = contents->GetView();
+      auto view_bounds = view->bounds();
+      auto_horizontal_proportion_width_ =
+          static_cast<float>(window_size.width()) /
+          static_cast<float>(view_bounds.width());
+      auto_horizontal_proportion_left_ =
+          static_cast<float>(window_size.width()) /
+          static_cast<float>(view_bounds.x());
+      auto_horizontal_proportion_set_ = true;
+    }
   }
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeVertical) &&
       !auto_vertical_proportion_set_) {
-    auto* view = GetInspectableWebContentsView()->GetView();
-    auto view_bounds = view->bounds();
-    auto_vertical_proportion_height_ =
-        static_cast<float>(window_size.height()) /
-        static_cast<float>(view_bounds.height());
-    auto_vertical_proportion_top_ = static_cast<float>(window_size.height()) /
-                                    static_cast<float>(view_bounds.y());
-    auto_vertical_proportion_set_ = true;
+    auto* contents = GetInspectableWebContentsView();
+    if (contents) {
+      auto* view = contents->GetView();
+      auto view_bounds = view->bounds();
+      auto_vertical_proportion_height_ =
+          static_cast<float>(window_size.height()) /
+          static_cast<float>(view_bounds.height());
+      auto_vertical_proportion_top_ = static_cast<float>(window_size.height()) /
+                                      static_cast<float>(view_bounds.y());
+      auto_vertical_proportion_set_ = true;
+    }
   }
 }
 
 void NativeBrowserViewViews::AutoResize(const gfx::Rect& new_window,
                                         int width_delta,
                                         int height_delta) {
-  auto* view = GetInspectableWebContentsView()->GetView();
-  const auto flags = GetAutoResizeFlags();
-  if (!(flags & kAutoResizeWidth)) {
-    width_delta = 0;
-  }
-  if (!(flags & kAutoResizeHeight)) {
-    height_delta = 0;
-  }
-  if (height_delta || width_delta) {
-    auto new_view_size = view->size();
-    new_view_size.set_width(new_view_size.width() + width_delta);
-    new_view_size.set_height(new_view_size.height() + height_delta);
-    view->SetSize(new_view_size);
-  }
-  auto new_view_bounds = view->bounds();
-  if (flags & kAutoResizeHorizontal) {
-    new_view_bounds.set_width(new_window.width() /
-                              auto_horizontal_proportion_width_);
-    new_view_bounds.set_x(new_window.width() /
-                          auto_horizontal_proportion_left_);
-  }
-  if (flags & kAutoResizeVertical) {
-    new_view_bounds.set_height(new_window.height() /
-                               auto_vertical_proportion_height_);
-    new_view_bounds.set_y(new_window.height() / auto_vertical_proportion_top_);
-  }
-  if ((flags & kAutoResizeHorizontal) || (flags & kAutoResizeVertical)) {
-    view->SetBoundsRect(new_view_bounds);
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetView();
+    const auto flags = GetAutoResizeFlags();
+    if (!(flags & kAutoResizeWidth)) {
+      width_delta = 0;
+    }
+    if (!(flags & kAutoResizeHeight)) {
+      height_delta = 0;
+    }
+    if (height_delta || width_delta) {
+      auto new_view_size = view->size();
+      new_view_size.set_width(new_view_size.width() + width_delta);
+      new_view_size.set_height(new_view_size.height() + height_delta);
+      view->SetSize(new_view_size);
+    }
+    auto new_view_bounds = view->bounds();
+    if (flags & kAutoResizeHorizontal) {
+      new_view_bounds.set_width(new_window.width() /
+                                auto_horizontal_proportion_width_);
+      new_view_bounds.set_x(new_window.width() /
+                            auto_horizontal_proportion_left_);
+    }
+    if (flags & kAutoResizeVertical) {
+      new_view_bounds.set_height(new_window.height() /
+                                 auto_vertical_proportion_height_);
+      new_view_bounds.set_y(new_window.height() /
+                            auto_vertical_proportion_top_);
+    }
+    if ((flags & kAutoResizeHorizontal) || (flags & kAutoResizeVertical)) {
+      view->SetBoundsRect(new_view_bounds);
+    }
   }
 }
 
@@ -92,45 +103,29 @@ void NativeBrowserViewViews::ResetAutoResizeProportions() {
 }
 
 void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
-  // Previous implementation
-  /*
-  auto* view = GetInspectableWebContentsView()->GetView();
-  view->SetBoundsRect(bounds);
-  ResetAutoResizeProportions();
-  */
-
-  /*
-  This implementation is attempting to ignore setting bounds
-  if the view has been destroyed, (ie invalid).
-  A different check is most likely needed as the destroyed
-  pointer cannot be guaranteed NULL.
-  When the pointer is NULL, the program does not crash, but when
-  it is not, it proceeds to still crash.
-  */
-  auto* temp = GetInspectableWebContentsView();
-  LOG(INFO) << "NativeBrowserViewViews::SetBounds - temp: " << temp
-            << " null: " << NULL;
-
-  if (temp != NULL) {
-    LOG(INFO)
-        << "NativeBrowserViewViews::SetBounds - NOT NULL, proceed as usual";
-    auto* view = temp->GetView();
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetView();
     view->SetBoundsRect(bounds);
     ResetAutoResizeProportions();
   }
-
-  LOG(INFO) << "NativeBrowserViewViews::SetBounds - NULL, ignore action";
-  return;
 }
 
 gfx::Rect NativeBrowserViewViews::GetBounds() {
-  return GetInspectableWebContentsView()->GetView()->bounds();
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    return contents->GetView()->bounds();
+  }
+  return gfx::Rect();
 }
 
 void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {
-  auto* view = GetInspectableWebContentsView()->GetView();
-  view->SetBackground(views::CreateSolidBackground(color));
-  view->SchedulePaint();
+  auto* contents = GetInspectableWebContentsView();
+  if (contents) {
+    auto* view = contents->GetView();
+    view->SetBackground(views::CreateSolidBackground(color));
+    view->SchedulePaint();
+  }
 }
 
 // static
