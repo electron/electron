@@ -222,6 +222,7 @@ auto_filenames = {
     "lib/browser/api/views/image-view.ts",
     "lib/browser/api/web-contents-view.ts",
     "lib/browser/api/web-contents.ts",
+    "lib/browser/api/web-frame-main.ts",
     "lib/browser/chrome-extension-shim.ts",
     "lib/browser/default-menu.ts",
     "lib/browser/desktop-capturer.ts",
