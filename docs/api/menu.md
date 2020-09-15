@@ -255,55 +255,29 @@ To create menus initiated by the renderer process, send the required
 information to the main process using IPC and have the main process display the
 menu on behalf of the renderer.
 
-Below is an example of creating a menu with dynamic information in a web page,
-and showing it when the user right clicks the page:
-
-```html
-<!-- index.html -->
-<script>
-const { ipcRenderer } = require('electron')
-
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-  const template = [
-    { label: 'Menu Item 1', id: 'menu-item-1' },
-    { type: 'separator' },
-    { label: 'Menu Item 2', type: 'checkbox', checked: true, id: 'menu-item-2' },
-  ]
-  ipcRenderer.invoke('show-menu', template).then((clickedId) => {
-    if (clickedId === 'menu-item-1') {
-      console.log('item 1 clicked')
-    }
-  })
-})
-</script>
-```
+Below is an example of showing a menu when the user right clicks the page:
 
 ```js
-// main.js
-const { BrowserWindow, ipcMain, Menu } = require('electron')
+// renderer
+window.addEventListener('contextmenu', (e) => {
+   e.preventDefault()
+   ipcRenderer.send('show-context-menu')
+ })
 
-ipcMain.handle('show-menu', (event, template) => {
+ipcRenderer.on('context-menu-command', (e, command) => {
+  // ...
+})
+
+// main
+ipcMain.on('show-context-menu', (event) => {
+  const template = [
+    { label: 'Menu Item 1',
+      click: () => { event.sender.send('context-menu-command', 'menu-item-1') } },
+    { type: 'separator' },
+    { label: 'Menu Item 2', type: 'checkbox', checked: true },
+  ]
   const menu = Menu.buildFromTemplate(template)
   menu.popup(BrowserWindow.fromWebContents(event.sender))
-  return new Promise((resolve, reject) => {
-    function handleClicks (menu) {
-      for (const item of menu.items) {
-        if (item.id) {
-          item.click = () => resolve(item.id)
-        }
-        if (item.submenu) {
-          handleClicks(item.submenu)
-        }
-      }
-    }
-    handleClicks(menu)
-    menu.on('menu-will-close', () => {
-      // This event is emitted before the 'click' callback above is called, so
-      // wait until the next tick before signaling that the menu was dismissed.
-      setTimeout(() => resolve(null))
-    })
-  })
 })
 ```
 
