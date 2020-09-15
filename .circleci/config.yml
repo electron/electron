@@ -1945,7 +1945,7 @@ jobs:
           checkout: false
 
   linux-arm-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm
@@ -2012,7 +2012,7 @@ jobs:
           checkout: false
 
   linux-arm64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm64

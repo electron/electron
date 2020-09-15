@@ -394,7 +394,7 @@ base::string16 GetDefaultPrinterAsync() {
 
   scoped_refptr<printing::PrintBackend> backend =
       printing::PrintBackend::CreateInstance(
-          nullptr, g_browser_process->GetApplicationLocale());
+          g_browser_process->GetApplicationLocale());
   std::string printer_name = backend->GetDefaultPrinterName();
   return base::UTF8ToUTF16(printer_name);
 }
@@ -1558,7 +1558,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
   if (rwh_impl->is_hidden()) {
-    rwh_impl->WasShown(base::nullopt);
+    rwh_impl->WasShown({});
   }
 }
 
@@ -2068,8 +2068,9 @@ void WebContents::Print(gin::Arguments* args) {
   // Set whether to print color or greyscale
   bool print_color = true;
   options.Get("color", &print_color);
-  int color_setting = print_color ? printing::COLOR : printing::GRAY;
-  settings.SetIntKey(printing::kSettingColor, color_setting);
+  auto const color_model = print_color ? printing::mojom::ColorModel::kColor
+                                       : printing::mojom::ColorModel::kGray;
+  settings.SetIntKey(printing::kSettingColor, static_cast<int>(color_model));
 
   // Is the orientation landscape or portrait.
   bool landscape = false;
@@ -2185,7 +2186,7 @@ void WebContents::Print(gin::Arguments* args) {
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
   auto print_backend = printing::PrintBackend::CreateInstance(
-      nullptr, g_browser_process->GetApplicationLocale());
+      g_browser_process->GetApplicationLocale());
   {
     // TODO(deepak1556): Deprecate this api in favor of an
     // async version and post a non blocing task call.
