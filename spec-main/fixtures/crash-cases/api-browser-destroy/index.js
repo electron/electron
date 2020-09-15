@@ -19,16 +19,7 @@ function createWindow () {
   view.setBackgroundColor(1)
 }
 
-app.on('ready', createWindow)
-
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', function () {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+app.on('ready', () => {
+  createWindow();
+  setTimeout(() => app.quit());
 })
