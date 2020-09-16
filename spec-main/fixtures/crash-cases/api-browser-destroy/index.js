@@ -8,7 +8,7 @@ function createWindow () {
     height: 600,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
   });
   const view = new BrowserView();
   mainWindow.addBrowserView(view);
@@ -16,7 +16,7 @@ function createWindow () {
   view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
   const bounds = view.getBounds();
   expect(bounds).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
-  view.setBackgroundColor(1);
+  view.setBackgroundColor('#56cc5b10');
 }
 
 app.on('ready', () => {
