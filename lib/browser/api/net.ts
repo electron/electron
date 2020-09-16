@@ -481,6 +481,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 
   _die (err?: Error) {
+    if ((this as any)._writableState.destroyed && err) {
+      this.emit('error', err);
+    }
+
     this.destroy(err);
     if (this._urlLoader) {
       this._urlLoader.cancel();

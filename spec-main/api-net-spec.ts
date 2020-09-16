@@ -1089,6 +1089,27 @@ describe('net module', () => {
       await emittedOnce(urlRequest, 'error');
     });
 
+    it('should emit error event on server socket destroy', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request) => {
+        request.socket.destroy();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.end();
+      const [error] = await emittedOnce(urlRequest, 'error');
+      expect(error.message).to.equal('net::ERR_EMPTY_RESPONSE');
+    });
+
+    it('should emit error event on server request destroy', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        request.destroy();
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.end(randomBuffer(kOneMegaByte));
+      const [error] = await emittedOnce(urlRequest, 'error');
+      expect(error.message).to.be.oneOf(['net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
+    });
+
     it('should follow redirect when handler calls callback', async () => {
       const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
