@@ -78,6 +78,9 @@ const char kType[] = "type";
 // Disable auto-hiding cursor.
 const char kDisableAutoHideCursor[] = "disableAutoHideCursor";
 
+// Disable TouchBar emoji picker for text fields.
+const char kDisableTouchbarEmojiPicker[] = "disableTouchbarEmojiPicker";
+
 // Use the macOS' standard window instead of the textured window.
 const char kStandardWindow[] = "standardWindow";
 

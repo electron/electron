@@ -47,6 +47,7 @@ extern const char kDarkTheme[];
 extern const char kTransparent[];
 extern const char kType[];
 extern const char kDisableAutoHideCursor[];
+extern const char kDisableTouchbarEmojiPicker[];
 extern const char kStandardWindow[];
 extern const char kBackgroundColor[];
 extern const char kHasShadow[];

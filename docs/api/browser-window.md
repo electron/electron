@@ -192,6 +192,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `false`.
   * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
     Default is `false`.
+  * `disableTouchBarEmojiPicker`  Boolean (optional) - Whether to automatically add an emoji picker to the touchBar
+    when inside a text input. Default is `false`.
   * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
@@ -1739,6 +1741,12 @@ Returns `BrowserWindow[]` - All child windows.
 * `autoHide` Boolean
 
 Controls whether to hide cursor when typing.
+
+#### `win.setDisableTouchbarEmojiPicker(disable)` _macOS_
+
+* `disable` Boolean
+
+Controls whether or not an emoji picker should be placed in the TouchBar when inside a text input.
 
 #### `win.selectPreviousTab()` _macOS_
 

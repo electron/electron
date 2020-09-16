@@ -26,6 +26,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize acceptsFirstMouse;
 @synthesize enableLargerThanScreen;
 @synthesize disableAutoHideCursor;
+@synthesize disableTouchbarEmojiPicker;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
 @synthesize cornerMask;

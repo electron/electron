@@ -498,6 +498,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
+  // Disable the emoji picker that Chrome automatically places in the touchbar
+  // when inside a text/text area/search/contenteditable.
+  bool disableTouchbarEmojiPicker = false;
+  options.Get(options::kDisableTouchbarEmojiPicker,
+              &disableTouchbarEmojiPicker);
+  [window_ setDisableTouchbarEmojiPicker:disableTouchbarEmojiPicker];
+
   // Use an NSEvent monitor to listen for the wheel event.
   BOOL __block began = NO;
   wheel_event_monitor_ = [NSEvent
@@ -1405,6 +1412,10 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 
 void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
   [window_ setDisableAutoHideCursor:!auto_hide];
+}
+
+void NativeWindowMac::SetDisableTouchbarEmojiPicker(bool disable) {
+  [window_ setDisableTouchbarEmojiPicker:disable];
 }
 
 void NativeWindowMac::SelectPreviousTab() {

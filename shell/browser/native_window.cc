@@ -332,6 +332,8 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
 
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
+void NativeWindow::SetDisableTouchbarEmojiPicker(bool disable) {}
+
 void NativeWindow::SelectPreviousTab() {}
 
 void NativeWindow::SelectNextTab() {}

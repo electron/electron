@@ -34,6 +34,7 @@ class ScopedDisableResize {
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;
 @property BOOL disableAutoHideCursor;
+@property BOOL disableTouchbarEmojiPicker;
 @property BOOL disableKeyOrMainWindow;
 @property(nonatomic, retain) NSView* vibrantView;
 @property(nonatomic, retain) NSImage* cornerMask;

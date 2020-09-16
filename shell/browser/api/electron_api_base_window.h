@@ -182,6 +182,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
+  void SetDisableTouchbarEmojiPicker(bool disable);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)

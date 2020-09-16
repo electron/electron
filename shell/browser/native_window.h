@@ -192,6 +192,8 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetAutoHideCursor(bool auto_hide);
 
+  virtual void SetDisableTouchbarEmojiPicker(bool disable);
+
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 

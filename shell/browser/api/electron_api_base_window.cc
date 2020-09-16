@@ -821,6 +821,10 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
+void BaseWindow::SetDisableTouchbarEmojiPicker(bool disable) {
+  window_->SetDisableTouchbarEmojiPicker(disable);
+}
+
 void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   std::string type = gin::V8ToString(isolate, value);
   window_->SetVibrancy(type);
@@ -1190,6 +1194,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MAC)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
+      .SetMethod("setDisableTouchbarEmojiPicker",
+                 &BaseWindow::SetDisableTouchbarEmojiPicker)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
 #if defined(OS_MAC)

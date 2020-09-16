@@ -124,6 +124,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
 
   void SetAutoHideCursor(bool auto_hide) override;
 
+  void SetDisableTouchbarEmojiPicker(bool disable) override;
+
   void SelectPreviousTab() override;
   void SelectNextTab() override;
   void MergeAllWindows() override;
