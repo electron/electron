@@ -5,8 +5,6 @@ import { Socket } from 'net';
 import * as path from 'path';
 import * as util from 'util';
 
-// Emit 'exit' event on quit.
-import { app } from 'electron/main';
 const Module = require('module');
 
 // We modified the original process.argv to let node.js load the init.js,
@@ -61,6 +59,9 @@ process.on('uncaughtException', function (error) {
       dialog.showErrorBox('A JavaScript error occurred in the main process', message);
     });
 });
+
+// Emit 'exit' event on quit.
+const { app } = require('electron');
 
 app.on('quit', (_event, exitCode) => {
   process.emit('exit', exitCode);

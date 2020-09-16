@@ -1075,6 +1075,20 @@ describe('net module', () => {
       await emittedOnce(urlRequest, 'abort');
     });
 
+    it('should not follow redirect when mode is error', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 302;
+        response.setHeader('Location', '/200');
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        redirect: 'error'
+      });
+      urlRequest.end();
+      await emittedOnce(urlRequest, 'error');
+    });
+
     it('should follow redirect when handler calls callback', async () => {
       const serverUrl = await respondOnce.toRoutes({
         '/redirectChain': (request, response) => {
