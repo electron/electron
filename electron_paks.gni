@@ -55,7 +55,6 @@ template("electron_extra_paks") {
     output = "${invoker.output_dir}/resources.pak"
     sources = [
       "$root_gen_dir/chrome/dev_ui_browser_resources.pak",
-      "$root_gen_dir/chrome/print_preview_pdf_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/resources/media/media_internals_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
@@ -71,7 +70,6 @@ template("electron_extra_paks") {
     ]
     deps = [
       "//chrome/browser:dev_ui_browser_resources",
-      "//chrome/browser/resources:print_preview_pdf_resources",
       "//components/resources",
       "//content:content_resources",
       "//content:dev_ui_content_resources",
@@ -96,6 +94,10 @@ template("electron_extra_paks") {
     sources +=
         [ "$root_gen_dir/content/browser/devtools/devtools_resources.pak" ]
     deps += [ "//content/browser/devtools:devtools_resources" ]
+    if (enable_pdf_viewer) {
+      sources += [ "$root_gen_dir/chrome/print_preview_pdf_resources.pak" ]
+      deps += [ "//chrome/browser/resources:print_preview_pdf_resources" ]
+    }
     if (enable_print_preview) {
       sources += [ "$root_gen_dir/chrome/print_preview_resources.pak" ]
       deps += [ "//chrome/browser/resources:print_preview_resources" ]
