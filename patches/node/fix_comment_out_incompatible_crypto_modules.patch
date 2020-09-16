@@ -9,7 +9,7 @@ with what's exposed through BoringSSL. I plan to upstream parts of this or
 otherwise introduce shims to reduce friction.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f592446170628c55 100644
+index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..0e8a63c38b23ede2003d8dabc1f72161726b53a6 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -5187,6 +5187,7 @@ bool DiffieHellman::Init(int primeLength, int g) {
@@ -28,14 +28,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
    BIGNUM* bn_p =
        BN_bin2bn(reinterpret_cast<const unsigned char*>(p), p_len, nullptr);
    BIGNUM* bn_g = BN_new();
-@@ -5204,12 +5206,14 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
-     BN_free(bn_g);
-     return false;
-   }
-+
-   return VerifyContext();
- }
- 
+@@ -5210,6 +5212,7 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
@@ -43,7 +36,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
    if (p_len <= 0) {
      BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
      return false;
-@@ -5232,6 +5236,7 @@ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
+@@ -5232,6 +5235,7 @@ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
      BN_free(bn_g);
      return false;
    }
@@ -51,7 +44,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
    return VerifyContext();
  }
  
-@@ -5714,8 +5719,9 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
+@@ -5714,8 +5718,9 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
  
    if (!EC_KEY_set_public_key(new_key.get(), pub.get()))
      return env->ThrowError("Failed to set generated public key");
@@ -62,7 +55,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
-@@ -6203,6 +6209,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6203,6 +6208,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
    EVPKeyCtxPointer Setup() override {
      EVPKeyPointer params;
      if (prime_info_.fixed_value_) {
@@ -70,7 +63,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
        DHPointer dh(DH_new());
        if (!dh)
          return nullptr;
-@@ -6219,6 +6226,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6219,6 +6225,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        params = EVPKeyPointer(EVP_PKEY_new());
        CHECK(params);
        EVP_PKEY_assign_DH(params.get(), dh.release());
@@ -78,7 +71,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
      } else {
        EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
        if (!param_ctx)
-@@ -6226,7 +6234,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6226,7 +6233,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
  
        if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
          return nullptr;
@@ -87,7 +80,7 @@ index c87b00ad87cf133ed30227b8dfd3b8e8d02e9963..c7762f01a98874ef0e8125d0f5924461
        if (EVP_PKEY_CTX_set_dh_paramgen_prime_len(param_ctx.get(),
                                                   prime_info_.prime_size_) <= 0)
          return nullptr;
-@@ -6234,7 +6242,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6234,7 +6241,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        if (EVP_PKEY_CTX_set_dh_paramgen_generator(param_ctx.get(),
                                                   generator_) <= 0)
          return nullptr;
