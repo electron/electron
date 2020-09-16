@@ -1275,7 +1275,7 @@ describe('BrowserWindow module', () => {
 
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
-      w.loadURL('about:blank');
+      w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
       await emittedOnce(w, 'ready-to-show');
       w.show();
 
