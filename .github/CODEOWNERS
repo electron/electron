@@ -15,6 +15,6 @@ DEPS                                    @electron/wg-upgrades
 /lib/browser/rpc-server.ts              @electron/wg-security
 
 # Remote Change Disliker
-/lib/browser/remote/                    nornagon
-/lib/renderer/remote/                   nornagon
-/lib/renderer/api/remote.ts             nornagon
+/lib/browser/remote/                    @nornagon
+/lib/renderer/remote/                   @nornagon
+/lib/renderer/api/remote.ts             @nornagon
