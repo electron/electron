@@ -22,7 +22,6 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/net/node_stream_loader.h"
-#include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/url_pipe_loader.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -195,26 +194,22 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  handler_.Run(
-      request,
-      base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
-                     routing_id, request_id, options, request,
-                     std::move(client), traffic_annotation, nullptr, type_));
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory;
+  handler_.Run(request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                                       std::move(loader), routing_id,
+                                       request_id, options, request,
+                                       std::move(client), traffic_annotation,
+                                       std::move(proxy_factory), type_));
 }
 
 // static
 void ElectronURLLoaderFactory::OnComplete(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     int32_t request_id,
-    const network::URLLoaderCompletionStatus& status,
-    ProxyingURLLoaderFactory* proxy_factory) {
+    const network::URLLoaderCompletionStatus& status) {
   mojo::Remote<network::mojom::URLLoaderClient> client_remote(
       std::move(client));
   client_remote->OnComplete(status);
-
-  if (proxy_factory) {
-    proxy_factory->RemoveInterceptedRequest(request_id);
-  }
 }
 
 // static
@@ -226,7 +221,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    ProxyingURLLoaderFactory* proxy_factory,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
     ProtocolType type,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -236,8 +231,7 @@ void ElectronURLLoaderFactory::StartLoading(
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
     OnComplete(std::move(client), request_id,
-               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
-               proxy_factory);
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -247,7 +241,7 @@ void ElectronURLLoaderFactory::StartLoading(
     int error_code;
     if (dict.Get("error", &error_code)) {
       OnComplete(std::move(client), request_id,
-                 network::URLLoaderCompletionStatus(error_code), proxy_factory);
+                 network::URLLoaderCompletionStatus(error_code));
       return;
     }
   }
@@ -294,10 +288,14 @@ void ElectronURLLoaderFactory::StartLoading(
     // module.
     //
     // I'm not sure whether this is an intended behavior in Chromium.
-    if (proxy_factory) {
-      proxy_factory->CreateLoaderAndStart(
+    mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
+        std::move(proxy_factory));
+
+    if (proxy_factory_remote.is_bound()) {
+      proxy_factory_remote->CreateLoaderAndStart(
           std::move(loader), routing_id, request_id, options, new_request,
           std::move(client), traffic_annotation);
+      proxy_factory = proxy_factory_remote.Unbind();
     } else {
       StartLoadingHttp(std::move(loader), new_request, std::move(client),
                        traffic_annotation,
@@ -309,8 +307,7 @@ void ElectronURLLoaderFactory::StartLoading(
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
     OnComplete(std::move(client), request_id,
-               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED),
-               proxy_factory);
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -338,18 +335,13 @@ void ElectronURLLoaderFactory::StartLoading(
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
         OnComplete(std::move(client), request_id,
-                   network::URLLoaderCompletionStatus(net::ERR_FAILED),
-                   proxy_factory);
-      } else {
-        StartLoading(std::move(loader), routing_id, request_id, options,
-                     request, std::move(client), traffic_annotation,
-                     proxy_factory, type, args);
+                   network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        return;
       }
-      return;
-  }
-
-  if (proxy_factory) {
-    proxy_factory->RemoveInterceptedRequest(request_id);
+      StartLoading(std::move(loader), routing_id, request_id, options, request,
+                   std::move(client), traffic_annotation,
+                   std::move(proxy_factory), type, args);
+      break;
   }
 }
 

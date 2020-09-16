@@ -801,14 +801,16 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
-    intercepted_requests_.emplace(request_id);
+    mojo::Remote<network::mojom::URLLoaderFactory> loader_remote;
+    this->Clone(loader_remote.BindNewPipeAndPassReceiver());
 
     // <scheme, <type, handler>>
     it->second.second.Run(
-        request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                                std::move(loader), routing_id, request_id,
-                                options, request, std::move(client),
-                                traffic_annotation, this, it->second.first));
+        request,
+        base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                       std::move(loader), routing_id, request_id, options,
+                       request, std::move(client), traffic_annotation,
+                       loader_remote.Unbind(), it->second.first));
     return;
   }
 
@@ -887,12 +889,6 @@ void ProxyingURLLoaderFactory::OnProxyBindingError() {
   MaybeDeleteThis();
 }
 
-void ProxyingURLLoaderFactory::RemoveInterceptedRequest(int32_t request_id) {
-  intercepted_requests_.erase(request_id);
-
-  MaybeDeleteThis();
-}
-
 void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
                                              uint64_t request_id) {
   network_request_id_to_web_request_id_.erase(network_service_request_id);
@@ -905,7 +901,7 @@ void ProxyingURLLoaderFactory::MaybeDeleteThis() {
   // Even if all URLLoaderFactory pipes connected to this object have been
   // closed it has to stay alive until all active requests have completed.
   if (target_factory_.is_bound() || !requests_.empty() ||
-      !intercepted_requests_.empty())
+      !proxy_receivers_.empty())
     return;
 
   delete this;

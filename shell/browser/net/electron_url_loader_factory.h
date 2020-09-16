@@ -31,8 +31,6 @@ enum class ProtocolType {
   kFree,  // special type for returning arbitrary type of response.
 };
 
-class ProxyingURLLoaderFactory;
-
 using StartLoadingCallback = base::OnceCallback<void(gin::Arguments*)>;
 using ProtocolHandler =
     base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
@@ -68,7 +66,7 @@ class ElectronURLLoaderFactory
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-      ProxyingURLLoaderFactory* proxy_factory,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
       ProtocolType type,
       gin::Arguments* args);
 
@@ -82,8 +80,7 @@ class ElectronURLLoaderFactory
   static void OnComplete(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       int32_t request_id,
-      const network::URLLoaderCompletionStatus& status,
-      ProxyingURLLoaderFactory* proxy_factory);
+      const network::URLLoaderCompletionStatus& status);
   static void StartLoadingBuffer(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
