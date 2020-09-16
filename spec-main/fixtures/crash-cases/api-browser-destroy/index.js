@@ -8,7 +8,7 @@ function createWindow () {
     height: 600,
     webPreferences: {
       nodeIntegration: true
-    },
+    }
   });
   const view = new BrowserView();
   mainWindow.addBrowserView(view);
