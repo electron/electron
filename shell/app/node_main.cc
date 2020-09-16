@@ -284,7 +284,7 @@ int NodeMain(int argc, char* argv[]) {
 
     node::ResetStdio();
 
-    env->set_can_call_into_js(false);
+    node::Stop(env);
     env->stop_sub_worker_contexts();
     env->RunCleanup();
 
