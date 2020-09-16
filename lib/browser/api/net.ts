@@ -37,12 +37,14 @@ class IncomingMessage extends Readable {
   _shouldPush: boolean;
   _data: (Buffer | null)[];
   _responseHead: NodeJS.ResponseHead;
+  _resume: (() => void) | null;
 
   constructor (responseHead: NodeJS.ResponseHead) {
     super();
     this._shouldPush = false;
     this._data = [];
     this._responseHead = responseHead;
+    this._resume = null;
   }
 
   get statusCode () {
@@ -102,8 +104,9 @@ class IncomingMessage extends Readable {
     throw new Error('HTTP trailers are not supported');
   }
 
-  _storeInternalData (chunk: Buffer | null, resume /* TODO*/) {
-    // TODO: save |resume| function somewhere? on this._resume?
+  _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
+    // save the network callback for use in _pushInternalData
+    this._resume = resume;
     this._data.push(chunk);
     this._pushInternalData();
   }
@@ -113,7 +116,12 @@ class IncomingMessage extends Readable {
       const chunk = this._data.shift();
       this._shouldPush = this.push(chunk);
     }
-    // TODO: call |this._resume| here if _shouldPush is true?
+    if (this._shouldPush && this._resume) {
+      this._resume();
+      // Reset the callback, so that a new one is used for each
+      // batch of throttled data
+      this._resume = null;
+    }
   }
 
   _read () {
@@ -404,13 +412,13 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       const response = this._response = new IncomingMessage(responseHead);
       this.emit('response', response);
     });
-    this._urlLoader.on('data', (event, data, resume) => {
-      // TODO: we need to call |resume| in order to get the next chunk from the
-      // network. 
-      this._response!._storeInternalData(Buffer.from(data));
+    // @ts-ignore
+    this._urlLoader.on('data', (event, data, resume: () => void) => {
+      // TODO: we need to call |resume| to get the next chunk from the network.
+      this._response!._storeInternalData(Buffer.from(data), resume);
     });
     this._urlLoader.on('complete', () => {
-      if (this._response) { this._response._storeInternalData(null); }
+      if (this._response) { this._response._storeInternalData(null, null); }
     });
     this._urlLoader.on('error', (event, netErrorString) => {
       const error = new Error(netErrorString);
