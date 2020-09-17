@@ -263,7 +263,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                            bool silent,
                            base::string16 default_printer);
   void Print(gin::Arguments* args);
-  std::vector<printing::PrinterBasicInfo> GetPrinterList();
+  printing::PrinterList GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
