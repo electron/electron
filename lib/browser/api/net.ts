@@ -481,6 +481,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 
   _die (err?: Error) {
+    // Node.js assumes that any stream which is ended is no longer capable of emitted events
+    // which is a faulty assumption for the case of an object that is acting like a stream
+    // (our urlRequest). If we don't emit here, this causes errors since we *do* expect
+    // that error events can be emitted after urlRequest.end().
     if ((this as any)._writableState.destroyed && err) {
       this.emit('error', err);
     }
