@@ -154,7 +154,7 @@ class NativeWindowViews : public NativeWindow,
                     LPARAM l_param,
                     LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 

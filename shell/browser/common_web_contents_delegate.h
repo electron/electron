@@ -130,7 +130,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   void GetDevToolsWindowWMClass(std::string* name,
                                 std::string* class_name) override;
 #endif

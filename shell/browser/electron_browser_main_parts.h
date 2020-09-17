@@ -29,7 +29,7 @@ class WMState;
 }
 #endif
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 namespace ui {
 class GtkUiDelegate;
 }
@@ -59,7 +59,7 @@ class ViewsDelegate;
 class ViewsDelegateMac;
 #endif
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 class DarkThemeObserver;
 #endif
 
