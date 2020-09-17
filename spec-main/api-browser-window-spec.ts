@@ -3970,6 +3970,22 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreen state', () => {
+      it('should not cause a crash if called when exiting fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+
+        await delay();
+
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+
+        w.close();
+      });
+
       it('can be changed with setFullScreen method', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
