@@ -285,7 +285,7 @@ describe('ipc module', () => {
           w.loadURL('about:blank');
           await w.webContents.executeJavaScript(`(${function () {
             const { ipcRenderer } = require('electron');
-            ipcRenderer.on('port', (e: any) => {
+            ipcRenderer.on('port', e => {
               const [port] = e.ports;
               port.start();
               (port as any).onclose = () => {
@@ -349,7 +349,7 @@ describe('ipc module', () => {
         w.loadURL('about:blank');
         await w.webContents.executeJavaScript(`(${function () {
           const { ipcRenderer } = require('electron');
-          ipcRenderer.on('port', (ev: any) => {
+          ipcRenderer.on('port', ev => {
             const [port] = ev.ports;
             port.onmessage = () => {
               ipcRenderer.send('done');
@@ -367,9 +367,9 @@ describe('ipc module', () => {
         w.loadURL('about:blank');
         await w.webContents.executeJavaScript(`(${function () {
           const { ipcRenderer } = require('electron');
-          ipcRenderer.on('port', (e1: any) => {
-            e1.ports[0].onmessage = (e2: any) => {
-              e2.ports[0].onmessage = (e3: any) => {
+          ipcRenderer.on('port', e1 => {
+            e1.ports[0].onmessage = e2 => {
+              e2.ports[0].onmessage = e3 => {
                 ipcRenderer.send('done', e3.data);
               };
             };
@@ -455,7 +455,7 @@ describe('ipc module', () => {
         w.loadURL('about:blank');
         await w.webContents.executeJavaScript(`(${function () {
           const { ipcRenderer } = require('electron');
-          ipcRenderer.on('foo', (_e: Event, msg: string) => {
+          ipcRenderer.on('foo', (_e, msg) => {
             ipcRenderer.send('bar', msg);
           });
         }})()`);
