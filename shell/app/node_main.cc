@@ -152,7 +152,6 @@ int NodeMain(int argc, char* argv[]) {
     env->set_trace_sync_io(false);
 
     exit_code = node::EmitExit(env);
-    env->set_can_call_into_js(false);
     node::Stop(env);
     node::RunAtExit(env);
 
