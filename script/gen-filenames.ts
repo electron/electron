@@ -101,7 +101,7 @@ ${target.dependencies.map(dep => `    "${dep}",`).join('\n')}
 `);
 };
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);

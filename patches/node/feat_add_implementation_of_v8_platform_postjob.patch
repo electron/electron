@@ -9,10 +9,10 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2315981
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2304812
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 5b878f886a13204a3a53f1e57ab2434d68fc9d21..a0ea118861867277d8f5f15625227d49505d1c6a 100644
+index 4bb9b919f60a91225ddb531e5e5e8acb1bc6a5b5..802c49cf027735302a8c5c504635a1f15e647c78 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -500,6 +500,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -541,6 +541,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  
@@ -24,10 +24,10 @@ index 5b878f886a13204a3a53f1e57ab2434d68fc9d21..a0ea118861867277d8f5f15625227d49
  TaskQueue<T>::TaskQueue()
      : lock_(), tasks_available_(), tasks_drained_(),
 diff --git a/src/node_platform.h b/src/node_platform.h
-index 3c855afeb4019adfb5389721357abe3cd620a01c..1e14daa711ba62f9619ca83a8655482b11cef41d 100644
+index dc512ddf08facf1ebb0d8c9e7677d349d0d2c87c..a274be6bbea19a4488bca393712a9ac8b50fe16a 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
-@@ -158,6 +158,7 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -162,6 +162,7 @@ class NodePlatform : public MultiIsolatePlatform {
    void UnregisterIsolate(v8::Isolate* isolate) override;
    void AddIsolateFinishedCallback(v8::Isolate* isolate,
                                    void (*callback)(void*), void* data) override;
