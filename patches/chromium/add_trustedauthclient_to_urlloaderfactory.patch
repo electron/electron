@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index aecca7fa0b7d7a4bd6c8f43e23e26a61dd8e9509..d6a92a7cb071057361d9fd85eb60c8aef07e46d2 100644
+index 9f28d8d57bac01369a7496faf5478ffd052be6df..fad7ff117d8965be4b730604fdd1b3c8d4de0ade 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
@@ -39,7 +39,7 @@ index aecca7fa0b7d7a4bd6c8f43e23e26a61dd8e9509..d6a92a7cb071057361d9fd85eb60c8ae
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -659,6 +678,8 @@ struct URLLoaderFactoryParams {
+@@ -652,6 +671,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
@@ -148,10 +148,10 @@ index 75ae8488efa7e5acfda0b21029657b525fa95f86..5dce71ee5efc97f9f63d0b5f236dccdf
        std::move(cookie_observer));
  
 diff --git a/services/network/url_loader_factory.h b/services/network/url_loader_factory.h
-index 8b29b67a5b0663778df3169e09bf818e6bbcec3f..e504fa3d41066907a3fbc41e69daac968415dfa6 100644
+index 182b26816da9e82d83c47c3c73ecfdcf3003b967..903a3ad083201ed85e82169698041152278697fa 100644
 --- a/services/network/url_loader_factory.h
 +++ b/services/network/url_loader_factory.h
-@@ -75,6 +75,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
+@@ -74,6 +74,7 @@ class URLLoaderFactory : public mojom::URLLoaderFactory {
    scoped_refptr<ResourceSchedulerClient> resource_scheduler_client_;
    mojo::Remote<mojom::TrustedURLLoaderHeaderClient> header_client_;
    mojo::Remote<mojom::CrossOriginEmbedderPolicyReporter> coep_reporter_;

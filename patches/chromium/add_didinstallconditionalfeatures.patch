@@ -23,10 +23,10 @@ index 8ab07f180b0e5d7baaa314cf1121c7182de7cce9..feb76f5278ba11f82c65e298d9772fc8
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 40f800d173c7c08f1cef810d96dadbb97d4bb7c6..e7abdec11d9c256acd847970dfc5479b7b0838e2 100644
+index 70f52180f68435fc081b0797393ab4e0b48f498c..b18647095bb375b8b6663a49a1cf264b95646af1 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4998,6 +4998,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4995,6 +4995,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index 40f800d173c7c08f1cef810d96dadbb97d4bb7c6..e7abdec11d9c256acd847970dfc5479b
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 8d93428a91d8b70f2da89e75e4872c7915965800..bcee0f3c509ddfb8cd2eb147f8629514260bdc59 100644
+index c09a38f8178e83b8d3cea1127b0d0f2a95b914fe..4c4c12648aef5f4dd3d1d04260f227e3e42fcc6a 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -722,6 +722,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -717,6 +717,8 @@ class CONTENT_EXPORT RenderFrameImpl
    bool ShouldTrackUseCounter(const blink::WebURL& url) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
@@ -53,7 +53,7 @@ index 8d93428a91d8b70f2da89e75e4872c7915965800..bcee0f3c509ddfb8cd2eb147f8629514
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 5f9ea5e694d52d49fa4db80c4ec453469b9e03f0..e870547a782ce2642bca088e627feb03d453fbf3 100644
+index eecf846eabce6429ef61f9ef333572644dcbe129..e490f7d5977f946e36a3a824ad60acc0d5629780 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -535,6 +535,9 @@ class BLINK_EXPORT WebLocalFrameClient {
