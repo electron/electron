@@ -17,7 +17,7 @@
 
 #if defined(OS_WIN)
 typedef GUID UUID;
-const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+const GUID GUID_NULL = {};
 #else
 typedef struct {
 } UUID;
@@ -57,7 +57,7 @@ struct Converter<UUID> {
   }
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, UUID val) {
 #if defined(OS_WIN)
-    if (val == CLSID_NULL) {
+    if (val == GUID_NULL) {
       return StringToV8(isolate, "");
     } else {
       std::wstring uid = base::win::WStringFromGUID(val);
