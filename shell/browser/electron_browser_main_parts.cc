@@ -552,6 +552,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
   node_env_->env()->set_trace_sync_io(false);
+  node::Stop(node_env_->env());
   node_env_.reset();
   js_env_->OnMessageLoopDestroying();
 
