@@ -39,6 +39,8 @@ type CrashInfo = {
   globalParam: 'globalValue' | undefined
   addedThenRemoved: 'to-be-removed' | undefined
   longParam: string | undefined
+  'electron.v8-fatal.location': string | undefined
+  'electron.v8-fatal.message': string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
@@ -278,6 +280,32 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash.mainProcessSpecific).to.be.undefined();
         expect(crash.rendererSpecific).to.equal('rs');
         expect(crash.addedThenRemoved).to.be.undefined();
+      });
+
+      it('contains v8 crash keys when a v8 crash occurs', async () => {
+        const { remotely } = await startRemoteControlApp();
+        const { port, waitForCrash } = await startServer();
+
+        await remotely((port: number) => {
+          require('electron').crashReporter.start({
+            submitURL: `http://127.0.0.1:${port}`,
+            ignoreSystemCrashHandler: true
+          });
+        }, [port]);
+
+        remotely(() => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          bw.loadURL('about:blank');
+          bw.webContents.executeJavaScript('process.electronBinding(\'v8_util\').triggerFatalErrorForTesting()');
+        });
+
+        const crash = await waitForCrash();
+        expect(crash.prod).to.equal('Electron');
+        expect(crash._productName).to.equal('remote-control');
+        expect(crash.process_type).to.equal('renderer');
+        expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
+        expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
       });
     });
   });
