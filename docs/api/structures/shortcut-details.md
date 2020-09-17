@@ -13,3 +13,5 @@ target's icon.
 DLL or EXE. Default is 0.
 * `appUserModelId` String (optional) - The Application User Model ID. Default
 is empty.
+* `toastActivatorClsid` String (optional) - The Application Toast Activator CLSID. Needed
+for participating in Action Center.

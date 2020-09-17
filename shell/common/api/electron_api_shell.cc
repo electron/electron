@@ -6,6 +6,7 @@
 
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -127,6 +128,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   base::win::ShortcutProperties properties;
   base::FilePath path;
   base::string16 str;
+  UUID toastActivatorClsid;
   int index;
   if (options.Get("target", &path))
     properties.set_target(path);
@@ -140,6 +142,8 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
     properties.set_icon(path, index);
   if (options.Get("appUserModelId", &str))
     properties.set_app_id(str);
+  if (options.Get("toastActivatorClsid", &toastActivatorClsid))
+    properties.set_toast_activator_clsid(toastActivatorClsid);
 
   base::win::ScopedCOMInitializer com_initializer;
   return base::win::CreateOrUpdateShortcutLink(shortcut_path, properties,
@@ -164,6 +168,7 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
+  options.Set("toastActivatorClsid", properties.toast_activator_clsid);
   return gin::ConvertToV8(thrower.isolate(), options);
 }
 #endif
