@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 17 Sep 2020 14:18:30 -0700
+Subject: fix: add v8_enable_reverse_jsargs defines in common.gypi
+
+This can be removed once node upgrades V8 and inevitably has to do this exact same thing.  Also hi node people if you are looking at this.
+
+diff --git a/common.gypi b/common.gypi
+index 38e7b2802f6225ac0e1ff4789b9ff8f4fb04cb79..eb081877ec1a2075377507091cdd85faccaca671 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -73,6 +73,7 @@
+ 
+     'v8_enable_pointer_compression%': 0,
+     'v8_enable_31bit_smis_on_64bit_arch': 1,
++    'v8_enable_reverse_jsargs': 1,
+ 
+     ##### end V8 defaults #####
+ 
+@@ -390,6 +391,9 @@
+       ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
+         'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
+       }],
++      ['v8_enable_reverse_jsargs == 1', {
++        'defines': ['V8_REVERSE_JSARGS'],
++      }],
+       ['OS == "win"', {
+         'defines': [
+           'WIN32',

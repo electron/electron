@@ -33,3 +33,4 @@ crypto_update_certdata_to_nss_3_56.patch
 fix_-wincompatible-pointer-types-discards-qualifiers_error.patch
 fix_allow_preventing_initializeinspector_in_env.patch
 test_make_some_tests_embedder_agnostic.patch
+fix_add_v8_enable_reverse_jsargs_defines_in_common_gypi.patch
