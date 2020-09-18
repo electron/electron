@@ -40,7 +40,6 @@ class NativeBrowserView : public content::WebContentsObserver {
   }
 
   InspectableWebContentsView* GetInspectableWebContentsView();
-  content::WebContents* GetWebContents();
 
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
