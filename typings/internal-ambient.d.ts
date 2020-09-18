@@ -118,7 +118,7 @@ declare namespace NodeJS {
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
-    on(eventName: 'data', listener: (event: any, data: ArrayBuffer) => void): this;
+    on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(eventName: 'response-started', listener: (event: any, finalUrl: string, responseHead: ResponseHead) => void): this;
     on(eventName: 'complete', listener: (event: any) => void): this;
     on(eventName: 'error', listener: (event: any, netErrorString: string) => void): this;

@@ -412,9 +412,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       const response = this._response = new IncomingMessage(responseHead);
       this.emit('response', response);
     });
-    // @ts-ignore
-    this._urlLoader.on('data', (event, data, resume: () => void) => {
-      // TODO: we need to call |resume| to get the next chunk from the network.
+    this._urlLoader.on('data', (event, data, resume) => {
       this._response!._storeInternalData(Buffer.from(data), resume);
     });
     this._urlLoader.on('complete', () => {
