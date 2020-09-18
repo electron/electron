@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
@@ -228,6 +229,10 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
+
+  auto ssl_config = network::mojom::SSLConfig::New();
+  ssl_config->version_min = switches::kSSLVersionTLSv12;
+  network_context_params->ssl_config = std::move(ssl_config);
 
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params.get());
 
