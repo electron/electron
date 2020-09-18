@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b741919560649f64b531 100644
+index f56e27d3b0def3c4b58acd8d12a544f4912f78a5..682dba8763df58e6a6a2d52b5c46e6b82344a196 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -16,10 +16,10 @@ index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b74191956064
  #include "components/viz/common/vertical_scroll_direction.h"
  #include "content/common/content_export.h"
 +#include "content/common/cursors/webcursor.h"
- #include "content/common/drag_event_source_info.h"
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
-@@ -281,6 +282,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+ #include "third_party/blink/public/common/input/web_input_event.h"
+@@ -280,6 +281,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Allow the delegate to handle the cursor update. Returns true if handled.
    virtual bool OnUpdateDragCursor();
  
@@ -30,10 +30,10 @@ index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b74191956064
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 297f6eb8c61d26b9893eb8435ad4318bcb518532..fde97bb05715b57f81d8905a37daf08617d4cf95 100644
+index 9dfabaf262152c8b31b15a294ed7204917c7f5e1..0df907a83ff99afa36e70fc8a847f92b4e8d4564 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1750,6 +1750,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1690,6 +1690,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);

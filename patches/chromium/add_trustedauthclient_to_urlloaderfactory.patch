@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 9f28d8d57bac01369a7496faf5478ffd052be6df..fad7ff117d8965be4b730604fdd1b3c8d4de0ade 100644
+index b4d200164829d0d34c2511a07eb0cc3d046d6fa3..e15635d66859211ac91b5beff36beffd4dfe4807 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -214,6 +214,25 @@ struct CTPolicy {
