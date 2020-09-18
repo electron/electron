@@ -90,7 +90,7 @@ index 52efa2037a31f84a261502107bfebc69ae5a419e..4834e92ae99f12043e5ce476370f6434
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 8a743d0dd74b087059ff812019ae568a22c5fa01..617b246ab41a42990e191c6ab548679a240416bd 100644
+index 8a743d0dd74b087059ff812019ae568a22c5fa01..7224fa1556205c224db8326ca048f42939ac0580 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -27,10 +27,7 @@
@@ -244,7 +244,7 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..617b246ab41a42990e191c6ab548679a
    printing_succeeded_ = false;
    return true;
  }
-@@ -632,6 +654,15 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -632,14 +654,21 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -260,7 +260,15 @@ index 8a743d0dd74b087059ff812019ae568a22c5fa01..617b246ab41a42990e191c6ab548679a
    if (!print_job_)
      return;
  
-@@ -675,7 +706,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+   if (rfh)
+     GetPrintRenderFrame(rfh)->PrintingDone(printing_succeeded_);
+ 
+-  registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
+-                    content::Source<PrintJob>(print_job_.get()));
+   // Don't close the worker thread.
+   print_job_ = nullptr;
+ }
+@@ -675,7 +704,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
