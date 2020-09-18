@@ -15,7 +15,7 @@
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_web_contents_helper.h"
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
 #endif
 
