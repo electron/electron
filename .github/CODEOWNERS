@@ -18,3 +18,4 @@ DEPS                                    @electron/wg-upgrades
 /lib/browser/remote/                    @nornagon
 /lib/renderer/remote/                   @nornagon
 /lib/renderer/api/remote.ts             @nornagon
+/docs/api/remote.md                     @nornagon
