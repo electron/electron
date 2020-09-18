@@ -1945,7 +1945,7 @@ jobs:
           checkout: false
 
   linux-arm-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1960,7 +1960,7 @@ jobs:
           use-out-cache: false
 
   linux-arm-chromedriver:
-    <<: *machine-linux-medium
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-arm
