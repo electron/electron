@@ -306,7 +306,7 @@ Returns `Promise<Object>` - resolves with a promise containing the following pro
   * `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
-Shows a message box, it will block the process until the message box is closed.
+Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
