@@ -32,6 +32,11 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
+  // Cleanup observers when window is getting closed. Note that the destructor
+  // can be called much later after window gets closed, so we should not do
+  // cleanup in destructor.
+  void Cleanup();
+
   // NativeWindow:
   void SetContentView(views::View* view) override;
   void Close() override;

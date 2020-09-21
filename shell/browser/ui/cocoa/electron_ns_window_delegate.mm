@@ -283,6 +283,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
+  shell_->Cleanup();
   shell_->NotifyWindowClosed();
 
   // Something called -[NSWindow close] on a sheet rather than calling
