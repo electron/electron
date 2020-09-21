@@ -29,10 +29,10 @@ index f947c6bf27e80c534a8f72265d0139a8b5b3f13a..d7e56d9c3fe5a56897989915984cb823
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index c633daa2b3557c98b05cca5f428d87775ef8a02a..4846370adb5206c53d57deef303b2c3f02342d24 100644
+index 7067737952a5002899071bb4a434a93ec92103ce..3430cac5bb858c9abfe094b458f590096fc36dce 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1049,6 +1049,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1050,6 +1050,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -46,6 +46,25 @@ index c633daa2b3557c98b05cca5f428d87775ef8a02a..4846370adb5206c53d57deef303b2c3f
        if (process.argv[1]) {
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+diff --git a/src/env-inl.h b/src/env-inl.h
+index c1853f81b68bd22d20fb99877f4c500a384e9545..623e9d4e429c03bb267539a318166f3ef3b9c501 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -550,6 +550,14 @@ inline bool Environment::force_context_aware() const {
+   return options_->force_context_aware;
+ }
+ 
++inline void Environment::set_warn_context_aware(bool value) {
++  options_->warn_context_aware = value;
++}
++
++inline bool Environment::warn_context_aware() const {
++  return options_->warn_context_aware;
++}
++
+ inline void Environment::set_abort_on_uncaught_exception(bool value) {
+   options_->abort_on_uncaught_exception = value;
+ }
 diff --git a/src/env.h b/src/env.h
 index f89365a1aa7ffacbb423e01a68f484992751f76f..38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51 100644
 --- a/src/env.h
@@ -94,25 +113,6 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
        }
        mp->nm_dso_handle = dlib->handle_;
        dlib->SaveInGlobalHandleMap(mp);
-diff --git a/src/env-inl.h b/src/env-inl.h
-index c1853f81b68bd22d20fb99877f4c500a384e9545..623e9d4e429c03bb267539a318166f3ef3b9c501 100644
---- a/src/env-inl.h
-+++ b/src/env-inl.h
-@@ -550,6 +550,14 @@ inline bool Environment::force_context_aware() const {
-   return options_->force_context_aware;
- }
- 
-+inline void Environment::set_warn_context_aware(bool value) {
-+  options_->warn_context_aware = value;
-+}
-+
-+inline bool Environment::warn_context_aware() const {
-+  return options_->warn_context_aware;
-+}
-+
- inline void Environment::set_abort_on_uncaught_exception(bool value) {
-   options_->abort_on_uncaught_exception = value;
- }
 diff --git a/src/node_options.cc b/src/node_options.cc
 index 2854ec072bf1c68810373c61673269f86fad442b..7319d7ec4541211571f0e60d94d0d28788f0631b 100644
 --- a/src/node_options.cc

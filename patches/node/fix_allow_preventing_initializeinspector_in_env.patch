@@ -12,7 +12,7 @@ EnvironmentFlags option which allows preventing that invocation.
 This will be upstreamed.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index ac6b47e0f327ca0ffe28e97f747c72ebaa5d7005..97610a12be47cdbf0d39d61e5982bab09ff09e95 100644
+index 4fa2d4175fb318f560b7b9a8ed8baa091d3ed6a2..7bd899c5933ac2e6178d650632699e19e85c00c9 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -358,12 +358,14 @@ Environment* CreateEnvironment(
@@ -37,10 +37,10 @@ index ac6b47e0f327ca0ffe28e97f747c72ebaa5d7005..97610a12be47cdbf0d39d61e5982bab0
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index ddae5766127119f727f52212d5147d29eb72ebc0..a4f48dd1f7e5f765858dbce4a080a775c0d6a124 100644
+index 623e9d4e429c03bb267539a318166f3ef3b9c501..8fc5f720764dd4ca536ae01ca78b2c7e3e9fd007 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -817,6 +817,10 @@ inline bool Environment::owns_inspector() const {
+@@ -833,6 +833,10 @@ inline bool Environment::owns_inspector() const {
    return flags_ & EnvironmentFlags::kOwnsInspector;
  }
  
@@ -52,10 +52,10 @@ index ddae5766127119f727f52212d5147d29eb72ebc0..a4f48dd1f7e5f765858dbce4a080a775
    return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
  }
 diff --git a/src/env.h b/src/env.h
-index dea62b38cb20a0a0913128e17e8904c4ca71ac1a..18305853a4f0da3382f827e38f3b120d807a67c6 100644
+index 38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51..4b9c2780f9736cb8bde60f40abb9aac9d53160a1 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1023,6 +1023,7 @@ class Environment : public MemoryRetainer {
+@@ -1019,6 +1019,7 @@ class Environment : public MemoryRetainer {
  
    inline bool is_main_thread() const;
    inline bool should_not_register_esm_loader() const;

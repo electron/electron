@@ -22,7 +22,7 @@ index 6d6ca2af629c41df68fe1a4652cf94fef30be038..e1f70addc28e4fe31d3a7089ecec3b58
  process.config = JSONParse(internalBinding('native_module').config);
  require('internal/worker/js_transferable').setup();
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index cab75bce3624cc74a87283d86c30277c82292982..c633daa2b3557c98b05cca5f428d87775ef8a02a 100644
+index edd5972002d7ad4d6932dfbed591a96d5b3f6fab..7067737952a5002899071bb4a434a93ec92103ce 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -67,7 +67,7 @@ const internalFS = require('internal/fs/utils');
@@ -34,7 +34,7 @@ index cab75bce3624cc74a87283d86c30277c82292982..c633daa2b3557c98b05cca5f428d8777
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -159,7 +159,7 @@ function stat(filename) {
+@@ -160,7 +160,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
@@ -44,7 +44,7 @@ index cab75bce3624cc74a87283d86c30277c82292982..c633daa2b3557c98b05cca5f428d8777
    return result;
  }
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
-index 25edfee027c35baba9d8add054895d0aa48bbafa..d545e24e72b2a6fb91b7aa35a576712e831ff937 100644
+index 4a2b0e6ddb3ed8881f896c6f556c9debaf778b81..209df9033a26c29c6e60bd173f71055884a0db89 100644
 --- a/lib/internal/modules/package_json_reader.js
 +++ b/lib/internal/modules/package_json_reader.js
 @@ -1,7 +1,7 @@
@@ -56,7 +56,7 @@ index 25edfee027c35baba9d8add054895d0aa48bbafa..d545e24e72b2a6fb91b7aa35a576712e
  const { pathToFileURL } = require('url');
  const { toNamespacedPath } = require('path');
  
-@@ -16,7 +16,7 @@ function read(jsonPath) {
+@@ -18,7 +18,7 @@ function read(jsonPath) {
      return cache.get(jsonPath);
    }
  
