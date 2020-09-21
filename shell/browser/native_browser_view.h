@@ -9,6 +9,7 @@
 
 #include "base/macros.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace gfx {
@@ -27,9 +28,9 @@ enum AutoResizeFlags {
 class InspectableWebContents;
 class InspectableWebContentsView;
 
-class NativeBrowserView {
+class NativeBrowserView : public content::WebContentsObserver {
  public:
-  virtual ~NativeBrowserView();
+  ~NativeBrowserView() override;
 
   static NativeBrowserView* Create(
       InspectableWebContents* inspectable_web_contents);
@@ -52,6 +53,8 @@ class NativeBrowserView {
 
  protected:
   explicit NativeBrowserView(InspectableWebContents* inspectable_web_contents);
+  // content::WebContentsObserver:
+  void WebContentsDestroyed() override;
 
   InspectableWebContents* inspectable_web_contents_;
 
