@@ -7,7 +7,7 @@ const WrapperPlugin = require('wrapper-webpack-plugin');
 const electronRoot = path.resolve(__dirname, '../..');
 
 class AccessDependenciesPlugin {
-  apply(compiler) {
+  apply (compiler) {
     compiler.hooks.compilation.tap('AccessDependenciesPlugin', compilation => {
       compilation.hooks.finishModules.tap('AccessDependenciesPlugin', modules => {
         const filePaths = modules.map(m => m.resource).filter(p => p).map(p => path.relative(electronRoot, p));
@@ -34,9 +34,9 @@ module.exports = ({
   const pluginDeleteNodeGlobals = targetDeletesNodeGlobals ? [
   ] : [];
 
-  return (env, argv) => {
+  return (env = {}, argv = {}) => {
     const onlyPrintingGraph = !!env.PRINT_WEBPACK_GRAPH;
-    const outputFilename = argv && argv['output-filename'] || `${target}.bundle.js`;
+    const outputFilename = argv['output-filename'] || `${target}.bundle.js`;
 
     const defines = {
       BUILDFLAG: onlyPrintingGraph ? '(a => a)' : ''
@@ -79,7 +79,7 @@ module.exports = ({
     const plugins = [];
 
     if (onlyPrintingGraph) {
-      plugins.push(new AccessDependenciesPlugin())
+      plugins.push(new AccessDependenciesPlugin());
     }
 
     if (targetDeletesNodeGlobals) {
@@ -87,7 +87,7 @@ module.exports = ({
         process: ['@electron/internal/common/webpack-provider', 'process'],
         global: ['@electron/internal/common/webpack-provider', '_global'],
         Buffer: ['@electron/internal/common/webpack-provider', 'Buffer']
-      }))
+      }));
     }
 
     plugins.push(new webpack.ProvidePlugin({
@@ -98,7 +98,7 @@ module.exports = ({
 
     if (wrapInitWithProfilingTimeout) {
       plugins.push(new WrapperPlugin({
-        header: `function ___electron_webpack_init__() {`,
+        header: 'function ___electron_webpack_init__() {',
         footer: `
 };
 if ((globalThis.process || binding.process).argv.includes("--profile-electron-init")) {
@@ -111,7 +111,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
 
     if (wrapInitWithTryCatch) {
       plugins.push(new WrapperPlugin({
-        header: `try {`,
+        header: 'try {',
         footer: `
 } catch (err) {
   console.error('Electron ${outputFilename} script failed to run');
@@ -175,7 +175,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           })
         ]
       },
-      plugins 
-    }
+      plugins
+    };
   };
 };
