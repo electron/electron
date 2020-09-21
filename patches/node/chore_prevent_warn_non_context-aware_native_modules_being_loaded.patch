@@ -112,7 +112,6 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
          }
        }
        mp->nm_dso_handle = dlib->handle_;
-       dlib->SaveInGlobalHandleMap(mp);
 diff --git a/src/node_options.cc b/src/node_options.cc
 index 2854ec072bf1c68810373c61673269f86fad442b..7319d7ec4541211571f0e60d94d0d28788f0631b 100644
 --- a/src/node_options.cc
