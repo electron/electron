@@ -51,7 +51,7 @@ const main = async () => {
       '--display', 'errors-only',
       `--output-path=${tmpDir}`,
       `--output-filename=${webpackTarget.name}.measure.js`,
-      '--env.PRINT_WEBPACK_GRAPH',
+      '--env.PRINT_WEBPACK_GRAPH'
     ], {
       cwd: path.resolve(__dirname, '..')
     });
