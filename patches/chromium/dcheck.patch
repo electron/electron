@@ -16,11 +16,11 @@ example, the checks might be disabled for a whole build target, but actually
 only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
-diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index 5735af8289f2e23c22135485ceb6d54cee298f74..485bfc35227ea8a9147888fe5040c7bfd57d7dce 100644
---- a/content/browser/frame_host/navigation_controller_impl.cc
-+++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1279,8 +1279,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index d50253cb9c4de436ac4ac4b5316834814aef248d..e1543e396a15abdbe4736ccb736bfb81294bbee5 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -1274,8 +1274,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,7 +33,7 @@ index 5735af8289f2e23c22135485ceb6d54cee298f74..485bfc35227ea8a9147888fe5040c7bf
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1555,7 +1557,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1550,7 +1552,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  

@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 89c4355b48796f7336c4fd3c949c2fbce290e92b..eb81480c353229501ce992a4fdc2e70d9d01955b 100644
+index dcc20fa96eddf4fe07911e5e87e9c24cd651f49b..ac4f8cc8fbd03701f6856f87cbd5c59ee6738824 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1766,6 +1766,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1756,6 +1756,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -81,7 +81,7 @@ index b06ea5f9fe36162dc9bcec32f604b1a8fc10f825..d53e7a0055dbdfe937a51939a3122723
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 21265c5bbbeb38ab58338519964fc598f8eed8e2..2be364cfc4482a5905b98e978e1d58fee272c356 100644
+index 60912b5f9246af5ea404db58aa1af9de7a75ae37..87af5e5b1bad76d06f9f281cda8154c53f891f6a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -229,7 +229,7 @@ index 21265c5bbbeb38ab58338519964fc598f8eed8e2..2be364cfc4482a5905b98e978e1d58fe
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index aeae01a0958f7909e4c9273e90110ca3b6f40bdf..9340c828ab583d2b42f93c3471b7c56339045764 100644
+index de4eadaf7be8be95fc0ad454d66c8ec397cfc20a..d4c451ea992490befb34b3690a98d968bb50b899 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -221,6 +221,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index aeae01a0958f7909e4c9273e90110ca3b6f40bdf..9340c828ab583d2b42f93c3471b7c563
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 01ed5881a0f6a492c6b5fdae515e139a0281f432..be2039e7250ae3834ddae721f4d54963e293cba4 100644
+index 3ed577f733fcf91b59e72fa40129b06f4fab1112..913e861ede4e9ffe80af08f021a4a89aa843e5fc 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -226,6 +226,7 @@
@@ -252,7 +252,7 @@ index 01ed5881a0f6a492c6b5fdae515e139a0281f432..be2039e7250ae3834ddae721f4d54963
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3318,6 +3319,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3311,6 +3312,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -261,7 +261,7 @@ index 01ed5881a0f6a492c6b5fdae515e139a0281f432..be2039e7250ae3834ddae721f4d54963
      service_manager::switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade53156f0a688 100644
+index 0501709a855b9fae82ab06c4e143b42058ddc12e..e0a457aab29acda134d1da9c798b5472c9bdb627 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -280,7 +280,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
  
  namespace blink {
  
-@@ -90,6 +92,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -95,6 +97,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -292,7 +292,7 @@ index 3dc0fb19b33daf14cbf8550cbb58e3e146830f26..da34be87f36c6e50286d0ef24cade531
    // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
    // will need to take into account whether or not this texture will be sampled
    // in linear or nonlinear space.
-@@ -97,6 +104,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -102,6 +109,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -327,7 +327,7 @@ index 95e818f1406eb1a73a746b73a608137ab5c6e894..6e1d3b3b1add4eda90560856b6915d46
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 4f780768e5c606e08aad96d87c309d53154bcecd..8ddbb922399265f5d525274e7c2d01dbecfdf5a9 100644
+index 2347630011a8c8772f6f898cb218b7b40752e757..34c058e62c073ee3b3e0b5c838ce88c78cffdd11 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
@@ -338,7 +338,7 @@ index 4f780768e5c606e08aad96d87c309d53154bcecd..8ddbb922399265f5d525274e7c2d01db
  
  namespace gfx {
  
-@@ -127,6 +128,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -126,6 +127,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {

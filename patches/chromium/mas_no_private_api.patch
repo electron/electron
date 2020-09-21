@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index f60a93dd95c451d262bd61383af965a3d6068aa8..a1ecc3010413b1c51ea24bb8fe5a9dd562e32fe9 100644
+index f2fb5aabf511cb16275f9925a21b83013d268a7b..b0b137ae454418296376bb650eb6b6134b66d83b 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -297,7 +297,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -334,7 +334,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,16 +19,16 @@ index f60a93dd95c451d262bd61383af965a3d6068aa8..a1ecc3010413b1c51ea24bb8fe5a9dd5
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -308,7 +308,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -345,7 +345,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
-     return PopulateTextMarkerRange(value, line_indexes_map);
+     return PopulateTextMarkerRange(value, line_indexer);
    }
 -
 +#endif
    // Accessible object
-   if ([value isKindOfClass:[BrowserAccessibilityCocoa class]]) {
-     return base::Value(NodeToLineIndex(value, line_indexes_map));
-@@ -359,7 +359,7 @@ OptionalNSObject InvokeAttributeFor(
+   if (IsBrowserAccessibilityCocoa(value) || IsAXUIElement(value)) {
+     return base::Value(NodeToLineIndex(value, line_indexer));
+@@ -396,7 +396,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,21 +36,21 @@ index f60a93dd95c451d262bd61383af965a3d6068aa8..a1ecc3010413b1c51ea24bb8fe5a9dd5
 +#ifndef MAS_BUILD
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
-     const LineIndexesMap& line_indexes_map) const {
-@@ -374,7 +374,7 @@ OptionalNSObject InvokeAttributeFor(
-   dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexes_map));
+     const LineIndexer* line_indexer) const {
+@@ -410,7 +410,7 @@ OptionalNSObject InvokeAttributeFor(
+   dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
 -
 +#endif
  base::Value AccessibilityTreeFormatterMac::PopulateArray(
      NSArray* node_array,
-     const LineIndexesMap& line_indexes_map) const {
+     const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb4084c8cb950 100644
+index 540afa34eb0ab6597f799767988b3d8cb8f4bb9c..feb109c62708d107cc475d8332cd1f969969733b 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -152,6 +152,7 @@
+@@ -267,6 +267,7 @@ id ParameterizedAttributeValueOf(const id node,
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -58,7 +58,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -159,6 +160,7 @@
+@@ -274,6 +275,7 @@ id ParameterizedAttributeValueOf(const id node,
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -66,7 +66,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -224,6 +226,7 @@
+@@ -339,6 +341,7 @@ id ParameterizedAttributeValueOf(const id node,
    return uielement;
  }
  
@@ -74,7 +74,7 @@ index 71126d0224fd796469d7865cffe336ba3178e796..e255c225c4d4202966e76594af2fb408
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -291,6 +294,7 @@
+@@ -406,6 +409,7 @@ id ParameterizedAttributeValueOf(const id node,
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
@@ -389,7 +389,7 @@ index f77433fff5426dd174865aad3d290d787764174c..d64e4fbcf44590e9132c2338819d2aa7
    }
  
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a5a492397 100644
+index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830ad1c5cb59 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@
@@ -412,10 +412,10 @@ index 28ca1646af0b0cce40d27baec71cbe65adc334fa..bae65c1f485bc02eb9ef2ebf7018af4a
    // Tell the WindowServer that we don't want to make any future connections.
    // This will return Success as long as there are no open connections, which
    // is what we want.
-@@ -29,6 +32,7 @@ void DisableSystemServices() {
-   CHECK_EQ(result, kCGErrorSuccess);
+@@ -30,6 +33,7 @@ void DisableSystemServices() {
  
    sandbox::DisableLaunchServices();
+   sandbox::DisableCoreServicesCheckFix();
 +#endif
  }
  
