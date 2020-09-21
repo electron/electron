@@ -3,7 +3,6 @@ const path = require('path');
 const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 const WrapperPlugin = require('wrapper-webpack-plugin');
-const { outputFile } = require('fs-extra');
 
 const electronRoot = path.resolve(__dirname, '../..');
 
@@ -123,7 +122,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
 
     return {
       mode: 'development',
-      devtool: 'inline-source-map',
+      devtool: false,
       entry,
       target: alwaysHasNode ? 'node' : 'web',
       output: {
@@ -166,15 +165,15 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         setImmediate: false
       },
       optimization: {
-        // minimize: true,
-        // minimizer: [
-        //   new TerserPlugin({
-        //     terserOptions: {
-        //       keep_classnames: true,
-        //       keep_fnames: true
-        //     }
-        //   })
-        // ]
+        minimize: true,
+        minimizer: [
+          new TerserPlugin({
+            terserOptions: {
+              keep_classnames: true,
+              keep_fnames: true
+            }
+          })
+        ]
       },
       plugins 
     }
