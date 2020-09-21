@@ -1095,12 +1095,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if defined(USE_X11)
-  XDisplay* xdisplay = gfx::GetXDisplay();
-  XSetTransientForHint(
-      xdisplay, static_cast<uint32_t>(GetAcceleratedWidget()),
-      static_cast<uint32_t>(
-          parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
-                 : ui::GetX11RootWindow()));
+  ui::SetProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                  x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
+                  parent
+                      ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
+                      : ui::GetX11RootWindow());
 #elif defined(OS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent

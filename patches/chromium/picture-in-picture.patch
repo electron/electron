@@ -35,10 +35,21 @@ index e9b64a823ae7e25361f37190d247af0fa6a6f68a..43fdb0ad50d2b11a1bc28aa0f358c6dd
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 31ea06a7cee464ee4074c80279f5bb2a02aef21c..4ee4be3ba12f7cd18b62fe72c00be10d382a4caa 100644
+index b7a09819e1c0ec0bbffe199fbdbcff6d9f21a7b1..a4d5e6dd61468253b60dcca53c51d824166e6c58 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-@@ -19,7 +19,7 @@
+@@ -13,16 +13,18 @@
+ #include "base/timer/timer.h"
+ #include "build/build_config.h"
+ #include "chrome/app/vector_icons/vector_icons.h"
++#if 0
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
++#endif
+ #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
+ #include "chrome/browser/ui/views/overlay/close_image_button.h"
+ #include "chrome/browser/ui/views/overlay/playback_image_button.h"
  #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
  #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
@@ -47,6 +58,24 @@ index 31ea06a7cee464ee4074c80279f5bb2a02aef21c..4ee4be3ba12f7cd18b62fe72c00be10d
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/picture_in_picture_window_controller.h"
  #include "content/public/browser/web_contents.h"
+@@ -47,7 +49,7 @@
+ #include "ui/aura/window.h"
+ #endif
+ 
+-#if defined(OS_WIN)
++#if 0
+ #include "chrome/browser/shell_integration_win.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_tree_host.h"
+@@ -218,7 +220,7 @@ std::unique_ptr<content::OverlayWindow> OverlayWindowViews::Create(
+   overlay_window->Init(std::move(params));
+   overlay_window->OnRootViewReady();
+ 
+-#if defined(OS_WIN)
++#if 0
+   base::string16 app_user_model_id;
+   Browser* browser =
+       chrome::FindBrowserWithWebContents(controller->GetWebContents());
 diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
 index d9e5174ed622fb030bc37d32fbb40b132d7c4c23..1bf19c344721e74bb29c11a4c5c762a75e5cd821 100644
 --- a/chrome/browser/ui/views/overlay/playback_image_button.cc

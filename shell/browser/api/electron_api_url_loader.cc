@@ -252,7 +252,8 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderFactory* url_loader_factory)
+    network::mojom::URLLoaderFactory* url_loader_factory,
+    int options)
     : id_(GetAllRequests().Add(this)) {
   // We slightly abuse the |render_frame_id| field in ResourceRequest so that
   // we can correlate any authentication events that arrive with this request.
@@ -269,6 +270,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   }
 
   loader_->SetAllowHttpErrorResults(true);
+  loader_->SetURLLoaderFactoryOptions(options);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
@@ -367,8 +369,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
+  int options = 0;
   if (!use_session_cookies) {
-    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
+    request->credentials_mode = network::mojom::CredentialsMode::kInclude;
+    options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
@@ -411,7 +415,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   auto ret = gin::CreateHandle(
       args->isolate(),
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get()));
+      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get(),
+                                 options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);

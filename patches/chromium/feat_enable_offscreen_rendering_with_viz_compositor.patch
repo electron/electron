@@ -94,10 +94,10 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d991c2126b239622f5712cfde6a78139faab2ad9..b52a92991ceea74fd2153ea86ad97e25e53827e0 100644
+index c93313243875bb9bfda5b7379283b39a4213ec93..581dfb346d6a1a283e9ceee2dfa24ecbc67d83ca 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -115,6 +115,8 @@ viz_component("service") {
+@@ -117,6 +117,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -107,7 +107,7 @@ index d991c2126b239622f5712cfde6a78139faab2ad9..b52a92991ceea74fd2153ea86ad97e25
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 649ecffb549639ab88ba6eba7bb720b3b56f9f82..5e7d0651b18bd3c3b29891d90e5e7631288ca262 100644
+index 2da653cc9c3c9c54fbfcd1ae92ea381bb3d0022f..3442a2d52443c5b17dacd642cbe1538b92ceca8c 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -22,6 +22,7 @@
@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 13665946e08abe7161b710b52d20307d9d248b84..eb530286d5e30691deee2285b6e78a8ee7dd6dd9 100644
+index 9a731f8522011424aa9bd18ad666aa3fa4aeff97..faf20410b7986d0fbfa6f185dc3ad8e8bb2b8b0d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -75,6 +75,7 @@ class ExternalBeginFrameController;

@@ -531,7 +531,9 @@ source_set("electron_lib") {
       ]
     }
     configs += [ ":gio_unix" ]
-    configs += [ "//build/config/linux:x11" ]
+    if (use_x11) {
+      deps += [ "//ui/gfx/x" ]
+    }
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
