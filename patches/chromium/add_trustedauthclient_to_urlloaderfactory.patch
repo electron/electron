@@ -49,7 +49,7 @@ index b4d200164829d0d34c2511a07eb0cc3d046d6fa3..e15635d66859211ac91b5beff36beffd
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c8ee10013 100644
+index 9d3daa8bb41f46587808a555282f5c9210cebe32..1a4c92acec82daada2a633af71b4e033a91b1017 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -483,6 +483,7 @@ URLLoader::URLLoader(
@@ -60,7 +60,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -546,6 +547,11 @@ URLLoader::URLLoader(
+@@ -545,6 +546,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1119,7 +1125,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1118,7 +1124,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1135,11 +1141,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1134,11 +1140,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index a624b8c43f49a7db975d8deda753b18583db5d72..cce8d7e0b8847528715aca4704db5194829c5bbc 100644
+index ed6dfca8e0afe6697759e54d78f65d896be24347..619d025c1c0f192c7d3f7107f5aab7791b9843b4 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -118,6 +118,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
