@@ -31,8 +31,6 @@ module.exports = ({
   }
 
   const electronAPIFile = path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts');
-  const pluginDeleteNodeGlobals = targetDeletesNodeGlobals ? [
-  ] : [];
 
   return (env = {}, argv = {}) => {
     const onlyPrintingGraph = !!env.PRINT_WEBPACK_GRAPH;
