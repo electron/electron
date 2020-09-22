@@ -310,6 +310,10 @@ double NativeWindow::GetSheetOffsetY() {
   return sheet_offset_y_;
 }
 
+bool NativeWindow::IsTabletMode() const {
+  return false;
+}
+
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {}
 
 std::string NativeWindow::GetRepresentedFilename() {

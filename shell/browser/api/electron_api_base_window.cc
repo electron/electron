@@ -622,6 +622,10 @@ bool BaseWindow::IsKiosk() {
   return window_->IsKiosk();
 }
 
+bool BaseWindow::IsTabletMode() const {
+  return window_->IsTabletMode();
+}
+
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseHexColor(color_name);
   window_->SetBackgroundColor(color);
@@ -1160,6 +1164,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
       .SetMethod("setKiosk", &BaseWindow::SetKiosk)
       .SetMethod("isKiosk", &BaseWindow::IsKiosk)
+      .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
       .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
       .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
