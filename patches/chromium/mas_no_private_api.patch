@@ -7,7 +7,7 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index f2fb5aabf511cb16275f9925a21b83013d268a7b..b0b137ae454418296376bb650eb6b6134b66d83b 100644
+index 16b9a4b1236ad416ef8e0df1644f6ae741e1c7ae..608a463155638f3f02eebd4a99a6f48c2f1fdc55 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 @@ -334,7 +334,7 @@ OptionalNSObject InvokeAttributeFor(
