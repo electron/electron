@@ -70,23 +70,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
 
-  // this.emit(name, new Event(sender, message), args...);
-  template <typename... Args>
-  bool EmitWithSender(base::StringPiece name,
-                      content::RenderFrameHost* sender,
-                      electron::mojom::ElectronBrowser::InvokeCallback callback,
-                      Args&&... args) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    v8::Locker locker(isolate());
-    v8::HandleScope handle_scope(isolate());
-    v8::Local<v8::Object> wrapper = GetWrapper();
-    if (wrapper.IsEmpty())
-      return false;
-    v8::Local<v8::Object> event = internal::CreateNativeEvent(
-        isolate(), wrapper, sender, std::move(callback));
-    return EmitWithEvent(name, event, std::forward<Args>(args)...);
-  }
-
  protected:
   EventEmitter() {}
 

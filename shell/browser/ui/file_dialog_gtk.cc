@@ -10,6 +10,7 @@
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -136,8 +137,9 @@ class FileChooserDialog {
 
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
-    int time = ui::X11EventSource::GetInstance()->GetTimestamp();
-    gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
+    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+    gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                 static_cast<uint32_t>(time));
   }
 
   void RunSaveAsynchronous(
@@ -204,7 +206,7 @@ class FileChooserDialog {
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   if (save_promise_) {
     gin_helper::Dictionary dict =

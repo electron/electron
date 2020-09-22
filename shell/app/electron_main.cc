@@ -42,7 +42,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include "shell/app/electron_library_main.h"
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
@@ -274,4 +274,4 @@ int main(int argc, char* argv[]) {
   return ElectronMain(argc, argv);
 }
 
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)

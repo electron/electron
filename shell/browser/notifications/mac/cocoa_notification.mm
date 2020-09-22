@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -111,8 +112,6 @@ void CocoaNotification::Dismiss() {
 
   NotificationDismissed();
 
-  this->LogAction("dismissed");
-
   notification_.reset(nil);
 }
 
@@ -163,8 +162,9 @@ void CocoaNotification::NotificationDismissed() {
 }
 
 void CocoaNotification::LogAction(const char* action) {
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS") && notification_) {
     NSString* identifier = [notification_ valueForKey:@"identifier"];
+    DCHECK(identifier);
     LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String]
               << ")";
   }

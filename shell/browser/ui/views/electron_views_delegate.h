@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "base/compiler_specific.h"
@@ -43,7 +44,7 @@ class ViewsDelegate : public views::ViewsDelegate {
 #elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
   gfx::ImageSkia* GetDefaultWindowIcon() const override;
 #endif
-  views::NonClientFrameView* CreateDefaultNonClientFrameView(
+  std::unique_ptr<views::NonClientFrameView> CreateDefaultNonClientFrameView(
       views::Widget* widget) override;
   void AddRef() override;
   void ReleaseRef() override;

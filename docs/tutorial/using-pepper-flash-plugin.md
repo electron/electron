@@ -42,7 +42,7 @@ app.commandLine.appendSwitch('ppapi-flash-path', path.join(__dirname, pluginName
 app.commandLine.appendSwitch('ppapi-flash-version', '17.0.0.169')
 
 app.whenReady().then(() => {
-  let win = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {

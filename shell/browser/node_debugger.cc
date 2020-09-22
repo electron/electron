@@ -36,6 +36,9 @@ void NodeDebugger::Start() {
                        true /* is_main */))
     DCHECK(inspector->IsListening());
 
+  v8::HandleScope handle_scope(env_->isolate());
+  node::profiler::StartProfilers(env_);
+
   if (inspector->options().break_node_first_line) {
     inspector->PauseOnNextJavascriptStatement("Break at bootstrap");
   }

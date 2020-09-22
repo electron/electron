@@ -28,25 +28,6 @@ view.webContents.loadURL('https://electronjs.org')
 * `options` Object (optional)
   * `webPreferences` Object (optional) - See [BrowserWindow](browser-window.md).
 
-### Static Methods
-
-#### `BrowserView.getAllViews()`
-
-Returns `BrowserView[]` - An array of all opened BrowserViews.
-
-#### `BrowserView.fromWebContents(webContents)`
-
-* `webContents` [WebContents](web-contents.md)
-
-Returns `BrowserView | null` - The BrowserView that owns the given `webContents`
-or `null` if the contents are not owned by a BrowserView.
-
-#### `BrowserView.fromId(id)`
-
-* `id` Integer
-
-Returns `BrowserView` - The view with the given `id`.
-
 ### Instance Properties
 
 Objects created with `new BrowserView` have the following properties:
@@ -55,23 +36,9 @@ Objects created with `new BrowserView` have the following properties:
 
 A [`WebContents`](web-contents.md) object owned by this view.
 
-#### `view.id` _Experimental_
-
-A `Integer` representing the unique ID of the view.
-
 ### Instance Methods
 
 Objects created with `new BrowserView` have the following instance methods:
-
-#### `view.destroy()`
-
-Force closing the view, the `unload` and `beforeunload` events won't be emitted
-for the web page. After you're done with a view, call this function in order to
-free memory and other resources as soon as possible.
-
-#### `view.isDestroyed()`
-
-Returns `Boolean` - Whether the view is destroyed.
 
 #### `view.setAutoResize(options)` _Experimental_
 

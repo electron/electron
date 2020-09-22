@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 #include "shell/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
+
 #include <UIAutomation.h>
+
+#include "base/check_op.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
 
 #pragma comment(lib, "uiautomationcore.lib")

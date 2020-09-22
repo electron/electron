@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
+import { delay } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -32,12 +33,6 @@ const postData = {
   name: 'post test',
   type: 'string'
 };
-
-function delay (ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
 
 function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
@@ -310,8 +305,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.registerHttpProtocol(protocolName, (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax(protocolName + '://fake-host');
     });
@@ -440,6 +439,30 @@ describe('protocol module', () => {
       const hasEndedPromise = emittedOnce(events, 'end');
       ajax(protocolName + '://fake-host');
       await hasEndedPromise;
+    });
+
+    it('destroys response streams when aborted before completion', async () => {
+      const events = new EventEmitter();
+      registerStreamProtocol(protocolName, (request, callback) => {
+        const responseStream = new stream.PassThrough();
+        responseStream.push('data\r\n');
+        responseStream.on('close', () => {
+          events.emit('close');
+        });
+        callback({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/plain' },
+          data: responseStream
+        });
+        events.emit('respond');
+      });
+
+      const hasRespondedPromise = emittedOnce(events, 'respond');
+      const hasClosedPromise = emittedOnce(events, 'close');
+      ajax(protocolName + '://fake-host');
+      await hasRespondedPromise;
+      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+      await hasClosedPromise;
     });
   });
 
@@ -602,8 +625,12 @@ describe('protocol module', () => {
 
     it('can access request headers', (done) => {
       protocol.interceptHttpProtocol('http', (request) => {
-        expect(request).to.have.property('headers');
-        done();
+        try {
+          expect(request).to.have.property('headers');
+          done();
+        } catch (e) {
+          done(e);
+        }
       });
       ajax('http://fake-host');
     });

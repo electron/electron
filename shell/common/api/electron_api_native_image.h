@@ -11,8 +11,8 @@
 
 #include "base/values.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -35,11 +35,15 @@ namespace gin_helper {
 class Dictionary;
 }
 
+namespace gin {
+class Arguments;
+}
+
 namespace electron {
 
 namespace api {
 
-class NativeImage : public gin_helper::Wrappable<NativeImage> {
+class NativeImage : public gin::Wrappable<NativeImage> {
  public:
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
@@ -64,9 +68,20 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
                                                     const GURL& url);
   static gin::Handle<NativeImage> CreateFromNamedImage(gin::Arguments* args,
                                                        std::string name);
+#if !defined(OS_LINUX)
+  static v8::Local<v8::Promise> CreateThumbnailFromPath(
+      v8::Isolate* isolate,
+      const base::FilePath& path,
+      const gfx::Size& size);
+#endif
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
 #if defined(OS_WIN)
   HICON GetHICON(int size);
@@ -108,6 +123,8 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
 #endif
 
   gfx::Image image_;
+
+  v8::Isolate* isolate_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };

@@ -8,8 +8,10 @@
 #include <winuser.h>
 
 #include "base/bind.h"
+#include "base/logging.h"
 #include "base/stl_util.h"
 #include "base/win/win_util.h"
+#include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/browser/ui/win/notify_icon.h"
 #include "ui/events/event_constants.h"
@@ -68,7 +70,7 @@ NotifyIconHost::NotifyIconHost() {
   // "TaskbarCreated".
   window_ = CreateWindow(MAKEINTATOM(atom_), 0, WS_POPUP, 0, 0, 0, 0, 0, 0,
                          instance_, 0);
-  gfx::CheckWindowCreated(window_);
+  gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 }
 

@@ -137,7 +137,7 @@ This option is disabled by default in the guest page.
 ```
 
 A `Boolean`. When this attribute is `false` the guest page in `webview` will not have access
-to the [`remote`](remote.md) module. The remote module is available by default.
+to the [`remote`](remote.md) module. The remote module is unavailable by default.
 
 ### `plugins`
 
@@ -560,9 +560,9 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - the start page.
-    * `to` Number - the end page.
+  * `pageRanges` Object[] (optional) - The page range to print.
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
@@ -587,9 +587,9 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
     default margin, 1 for no margin, and 2 for minimum margin.
     and `width` in microns.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
-  * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - the first page to print.
-    * `to` Number - the last page to print (inclusive).
+  * `pageRanges` Record<string, number> (optional) - The page range to print. On macOS, only the first range is honored.
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
@@ -647,6 +647,10 @@ Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
+
+> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> zoom level for a specific domain propagates across all instances of windows with
+> the same domain. Differentiating the window URLs will make zoom work per-window.
 
 ### `<webview>.getZoomFactor()`
 
@@ -816,7 +820,7 @@ const { shell } = require('electron')
 const webview = document.querySelector('webview')
 
 webview.addEventListener('new-window', async (e) => {
-  const protocol = require('url').parse(e.url).protocol
+  const protocol = (new URL(e.url)).protocol
   if (protocol === 'http:' || protocol === 'https:') {
     await shell.openExternal(e.url)
   }

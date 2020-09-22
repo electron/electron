@@ -2,21 +2,6 @@
   "baseUrl": "https://electron-build-tools.s3-us-west-2.amazonaws.com/build-dependencies",
   "files": [
     {
-      "name": "Mantle.zip",
-      "platform": "darwin",
-      "sha": "f9865e115c03871b45d3a2d8734220cb147a02dace46c92f766ca5d3059281dd"
-    },
-    {
-      "name": "ReactiveCocoa.zip",
-      "platform": "darwin",
-      "sha": "8ae85cd226fa4076472bfdfcda4745b5c7edf31fbe695868068eeaf62e7fa962"
-    },
-    {
-      "name": "Squirrel.zip",
-      "platform": "darwin",
-      "sha": "e516fd5c24c0ad267fd854848b04be0552be977aa846fa7f3c65ef4618699511"
-    },
-    {
       "name": "sccache-darwin-x64.zip",
       "platform": "darwin",
       "sha": "3bfe114b49a15e4f15e2e3a9ee6699f1acdb89446badbaa4144869c72a7690ca"

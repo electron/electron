@@ -92,8 +92,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
   // If |tab_id| is specified, look for the tab. Otherwise default to selected
   // tab in the current window.
   CHECK_GE(execute_tab_id_, 0);
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), execute_tab_id_);
+  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
   if (!contents) {
     return false;
   }
@@ -146,8 +145,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
 
 ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
     std::string* error) {
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), execute_tab_id_);
+  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
   if (!contents)
     return nullptr;
   return contents->script_executor();
@@ -170,8 +168,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
   int tab_id = params->tab_id;
 
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -193,8 +190,7 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -222,8 +218,7 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -239,8 +234,7 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -265,8 +259,7 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents)
     return RespondNow(Error("No such tab"));
 

@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/logging.h"
+
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
 
 #include "shell/browser/notifications/mac/cocoa_notification.h"

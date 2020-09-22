@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 
 #include <string>
+#include <utility>
 
 #include "base/logging.h"
 #include "base/path_service.h"
@@ -13,6 +14,12 @@
 #include "build/build_config.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/component_extension_resources_map.h"
+#include "electron/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
+#include "extensions/common/constants.h"
+#endif
 
 namespace extensions {
 
@@ -20,6 +27,19 @@ ElectronComponentExtensionResourceManager::
     ElectronComponentExtensionResourceManager() {
   AddComponentResourceEntries(kComponentExtensionResources,
                               kComponentExtensionResourcesSize);
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  // Register strings for the PDF viewer, so that $i18n{} replacements work.
+  base::Value pdf_strings(base::Value::Type::DICTIONARY);
+  pdf_extension_util::AddStrings(
+      pdf_extension_util::PdfViewerContext::kPdfViewer, &pdf_strings);
+  pdf_extension_util::AddAdditionalData(&pdf_strings);
+
+  ui::TemplateReplacements pdf_viewer_replacements;
+  ui::TemplateReplacementsFromDictionaryValue(
+      base::Value::AsDictionaryValue(pdf_strings), &pdf_viewer_replacements);
+  extension_template_replacements_[extension_misc::kPdfExtensionId] =
+      std::move(pdf_viewer_replacements);
+#endif
 }
 
 ElectronComponentExtensionResourceManager::

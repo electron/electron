@@ -99,12 +99,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
+  void SetWindowFrameInScreen(const gfx::Rect& rect) override;
   bool UpdateNSViewAndDisplay();
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
   // content::RenderWidgetHostViewBase:
 
@@ -114,7 +115,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void InitAsFullscreen(content::RenderWidgetHostView*) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
-  void TextInputStateChanged(const content::TextInputState& params) override;
+  void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
   void Destroy(void) override;
@@ -124,7 +125,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(content::ScreenInfo* results) override;
+  void GetScreenInfo(blink::ScreenInfo* results) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;

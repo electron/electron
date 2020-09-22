@@ -1,4 +1,4 @@
-const { fromPartition } = process.electronBinding('session');
+const { fromPartition } = process._linkedBinding('electron_browser_session');
 
 export default {
   fromPartition,

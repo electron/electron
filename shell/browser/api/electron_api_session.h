@@ -15,6 +15,7 @@
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -51,6 +52,7 @@ namespace api {
 class Session : public gin::Wrappable<Session>,
                 public gin_helper::Pinnable<Session>,
                 public gin_helper::EventEmitterMixin<Session>,
+                public gin_helper::CleanedUpAtExit,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                 public SpellcheckHunspellDictionary::Observer,
 #endif
@@ -69,9 +71,7 @@ class Session : public gin::Wrappable<Session>,
       const std::string& partition,
       base::DictionaryValue options = base::DictionaryValue());
 
-  ElectronBrowserContext* browser_context() const {
-    return browser_context_.get();
-  }
+  ElectronBrowserContext* browser_context() const { return browser_context_; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -157,7 +157,7 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

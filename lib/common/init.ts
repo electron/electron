@@ -1,10 +1,6 @@
 import * as util from 'util';
 
-import { electronBindingSetup } from '@electron/internal/common/electron-binding-setup';
-
 const timers = require('timers');
-
-process.electronBinding = electronBindingSetup(process._linkedBinding, process.type);
 
 type AnyFn = (...args: any[]) => any
 

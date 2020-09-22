@@ -24,7 +24,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     int frame_tree_node_id,
     int render_process_id,
     int render_frame_id,
-    content::mojom::TransferrableURLLoaderPtr transferrable_loader,
+    blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
@@ -58,8 +58,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
       extensions::Extension::GetBaseURLFromExtensionId(extension_id).spec() +
       handler->handler_url());
   int tab_id = -1;
-  auto* api_contents = electron::api::WebContents::FromWrappedClass(
-      v8::Isolate::GetCurrent(), web_contents);
+  auto* api_contents = electron::api::WebContents::From(web_contents);
   if (api_contents)
     tab_id = api_contents->ID();
   std::unique_ptr<extensions::StreamContainer> stream_container(

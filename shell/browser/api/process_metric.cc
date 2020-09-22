@@ -16,7 +16,7 @@
 #include "base/win/win_util.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include <mach/mach.h>
 #include "base/process/port_provider_mac.h"
 #include "content/public/browser/browser_child_process_host.h"
@@ -46,15 +46,17 @@ base::Optional<mach_task_basic_info_data_t> GetTaskInfo(mach_port_t task) {
 
 }  // namespace
 
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
 namespace electron {
 
 ProcessMetric::ProcessMetric(int type,
                              base::ProcessHandle handle,
-                             std::unique_ptr<base::ProcessMetrics> metrics) {
+                             std::unique_ptr<base::ProcessMetrics> metrics,
+                             const std::string& name) {
   this->type = type;
   this->metrics = std::move(metrics);
+  this->name = name;
 
 #if defined(OS_WIN)
   HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
@@ -142,7 +144,7 @@ bool ProcessMetric::IsSandboxed(ProcessIntegrityLevel integrity_level) {
          integrity_level < ProcessIntegrityLevel::Medium;
 }
 
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
 
 ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
   ProcessMemoryInfo result;
@@ -163,6 +165,6 @@ bool ProcessMetric::IsSandboxed() const {
 #endif
 }
 
-#endif  // defined(OS_MACOSX)
+#endif  // defined(OS_MAC)
 
 }  // namespace electron

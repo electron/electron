@@ -360,7 +360,7 @@ page.
 
 Emitted whenever there is a GPU info update.
 
-### Event: 'gpu-process-crashed'
+### Event: 'gpu-process-crashed' _Deprecated_
 
 Returns:
 
@@ -369,7 +369,12 @@ Returns:
 
 Emitted when the GPU process crashes or is killed.
 
-### Event: 'renderer-process-crashed'
+**Deprecated:** This event is superceded by the `child-process-gone` event
+which contains more information about why the child process disappeared. It
+isn't always because it crashed. The `killed` boolean can be replaced by
+checking `reason === 'killed'` when you switch to that event.
+
+### Event: 'renderer-process-crashed' _Deprecated_
 
 Returns:
 
@@ -380,7 +385,7 @@ Returns:
 Emitted when the renderer process of `webContents` crashes or is killed.
 
 **Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process dissapeared. It
+which contains more information about why the render process disappeared. It
 isn't always because it crashed.  The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
@@ -400,8 +405,38 @@ Returns:
     * `launch-failure` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
-Emitted when the renderer process unexpectedly dissapears.  This is normally
+Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
+
+#### Event: 'child-process-gone'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `type` String - Process type. One of the following values:
+    * `Utility`
+    * `Zygote`
+    * `Sandbox helper`
+    * `GPU`
+    * `Pepper Plugin`
+    * `Pepper Plugin Broker`
+    * `Unknown`
+  * `reason` String - The reason the child process is gone. Possible values:
+    * `clean-exit` - Process exited with an exit code of zero
+    * `abnormal-exit` - Process exited with a non-zero exit code
+    * `killed` - Process was sent a SIGTERM or otherwise killed externally
+    * `crashed` - Process crashed
+    * `oom` - Process ran out of memory
+    * `launch-failure` - Process never successfully launched
+    * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Number - The exit code for the process
+      (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
+  * `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
+    Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
+
+Emitted when the child process unexpectedly disappears. This is normally
+because it was crashed or killed. It does not include renderer processes.
 
 ### Event: 'accessibility-support-changed' _macOS_ _Windows_
 
@@ -466,7 +501,7 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will make it return empty sources.
 
-### Event: 'remote-require'
+### Event: 'remote-require' _Deprecated_
 
 Returns:
 
@@ -478,7 +513,7 @@ Emitted when `remote.require()` is called in the renderer process of `webContent
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-global'
+### Event: 'remote-get-global' _Deprecated_
 
 Returns:
 
@@ -490,7 +525,7 @@ Emitted when `remote.getGlobal()` is called in the renderer process of `webConte
 Calling `event.preventDefault()` will prevent the global from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-builtin'
+### Event: 'remote-get-builtin' _Deprecated_
 
 Returns:
 
@@ -502,7 +537,7 @@ Emitted when `remote.getBuiltin()` is called in the renderer process of `webCont
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-current-window'
+### Event: 'remote-get-current-window' _Deprecated_
 
 Returns:
 
@@ -513,7 +548,7 @@ Emitted when `remote.getCurrentWindow()` is called in the renderer process of `w
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-current-web-contents'
+### Event: 'remote-get-current-web-contents' _Deprecated_
 
 Returns:
 
@@ -817,6 +852,20 @@ Returns `String` - Name of the application handling the protocol, or an empty
 This method returns the application name of the default handler for the protocol
 (aka URI scheme) of a URL.
 
+### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
+
+* `url` String - a URL with the protocol name to check. Unlike the other
+  methods in this family, this accepts an entire URL, including `://` at a
+  minimum (e.g. `https://`).
+
+Returns `Promise<Object>` - Resolve with an object containing the following:
+  * `icon` NativeImage - the display icon of the app handling the protocol.
+  * `path` String  - installation path of the app handling the protocol.
+  * `name` String - display name of the app handling the protocol.
+
+This method returns a promise that contains the application name, icon and path of the default handler for the protocol
+(aka URI scheme) of a URL.
+
 ### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` [Task[]](structures/task.md) - Array of `Task` objects
@@ -978,6 +1027,7 @@ if (!gotTheLock) {
 
   // Create myWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
+    myWindow = createWindow()
   })
 }
 ```
@@ -1093,8 +1143,10 @@ For `infoType` equal to `complete`:
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
 ```js
-{ auxAttributes:
-   { amdSwitchable: true,
+{
+  auxAttributes:
+   {
+     amdSwitchable: true,
      canSupportThreadedTextureMailbox: false,
      directComposition: false,
      directRendering: true,
@@ -1107,12 +1159,14 @@ For `infoType` equal to `basic`:
      sandboxed: false,
      softwareRendering: false,
      supportsOverlays: false,
-     videoDecodeAcceleratorFlags: 0 },
-gpuDevice:
-   [ { active: true, deviceId: 26657, vendorId: 4098 },
-     { active: false, deviceId: 3366, vendorId: 32902 } ],
-machineModelName: 'MacBookPro',
-machineModelVersion: '11.5' }
+     videoDecodeAcceleratorFlags: 0
+   },
+  gpuDevice:
+   [{ active: true, deviceId: 26657, vendorId: 4098 },
+     { active: false, deviceId: 3366, vendorId: 32902 }],
+  machineModelName: 'MacBookPro',
+  machineModelVersion: '11.5'
+}
 ```
 
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
@@ -1164,6 +1218,13 @@ Returns `Object`:
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed. This setting is not available on [MAS builds][mas-builds].
+* `executableWillLaunchAtLogin` Boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated. This differs from `openAtLogin` as it ignores the `args` option, this property will be true if the given executable would be launched at login with **any** arguments.
+* `launchItems` Object[] _Windows_
+  * `name` String _Windows_ - name value of a registry entry.
+  * `path` String _Windows_ - The executable to an app that corresponds to a registry entry.
+  * `args` String[] _Windows_ - the command-line arguments to pass to the executable.
+  * `scope` String _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
+  * `enabled` Boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
@@ -1179,7 +1240,9 @@ Returns `Object`:
   * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
     the executable. Defaults to an empty array. Take care to wrap paths in
     quotes.
-
+  * `enabled` Boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
+    Defaults to `true`.
+  * `name` String (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
 Set the app's login item settings.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
@@ -1295,7 +1358,7 @@ method returns false. If we fail to perform the copy, then this method will
 throw an error. The message in the error should be informative and tell
 you exactly what went wrong.
 
-By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
+By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
 
 For example:
 

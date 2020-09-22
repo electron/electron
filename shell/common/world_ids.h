@@ -16,8 +16,7 @@ enum WorldIDs : int32_t {
   // IDs created internally by Chrome.
   ISOLATED_WORLD_ID = 999,
 
-  // Numbers for isolated worlds for extensions are set in
-  // lib/renderer/content-script-injector.ts, and are greater than or equal to
+  // Numbers for isolated worlds for extensions are greater than or equal to
   // this number, up to ISOLATED_WORLD_ID_EXTENSIONS_END.
   ISOLATED_WORLD_ID_EXTENSIONS = 1 << 20,
 

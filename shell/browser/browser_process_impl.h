@@ -79,6 +79,7 @@ class BrowserProcessImpl : public BrowserProcess {
   safe_browsing::SafeBrowsingService* safe_browsing_service() override;
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
+  federated_learning::FlocBlocklistService* floc_blocklist_service() override;
   optimization_guide::OptimizationGuideService* optimization_guide_service()
       override;
   component_updater::ComponentUpdateService* component_updater() override;

@@ -3,12 +3,9 @@
 from __future__ import print_function
 import atexit
 import contextlib
-import datetime
 import errno
 import json
 import os
-import platform
-import re
 import shutil
 import ssl
 import stat
@@ -23,8 +20,7 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode, PLATFORM
-from lib.env_util import get_vs_env
+from lib.config import is_verbose_mode
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

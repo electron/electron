@@ -13,6 +13,7 @@
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -111,7 +112,7 @@ void MessagePort::Close() {
   if (!HasPendingActivity())
     Unpin();
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;
   if (GetWrapper(isolate).ToLocal(&self))
@@ -122,7 +123,7 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   DCHECK(port.IsValid());
   DCHECK(!connector_);
   port_ = std::move(port);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   connector_ = std::make_unique<mojo::Connector>(
       port_.TakeHandleToEntangleWithEmbedder(),
@@ -212,7 +213,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
 void MessagePort::Pin() {
   if (!pinned_.IsEmpty())
     return;
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Value> self;
   if (GetWrapper(isolate).ToLocal(&self)) {
@@ -231,7 +232,7 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
     return false;
   }
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
   auto ports = EntanglePorts(isolate, std::move(message.ports));

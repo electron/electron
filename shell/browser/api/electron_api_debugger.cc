@@ -14,6 +14,7 @@
 #include "content/public/browser/web_contents.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -41,7 +42,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        base::span<const uint8_t> message) {
   DCHECK(agent_host == agent_host_);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -60,11 +61,13 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     std::string method;
     if (!dict->GetString("method", &method))
       return;
+    std::string session_id;
+    dict->GetString("sessionId", &session_id);
     base::DictionaryValue* params_value = nullptr;
     base::DictionaryValue params;
     if (dict->GetDictionary("params", &params_value))
       params.Swap(params_value);
-    Emit("message", method, params);
+    Emit("message", method, params, session_id);
   } else {
     auto it = pending_requests_.find(id);
     if (it == pending_requests_.end())
@@ -152,14 +155,25 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   base::DictionaryValue command_params;
   args->GetNext(&command_params);
 
+  std::string session_id;
+  if (args->GetNext(&session_id) && session_id.empty()) {
+    promise.RejectWithErrorMessage("Empty session id is not allowed");
+    return handle;
+  }
+
   base::DictionaryValue request;
   int request_id = ++previous_request_id_;
   pending_requests_.emplace(request_id, std::move(promise));
   request.SetInteger("id", request_id);
   request.SetString("method", method);
-  if (!command_params.empty())
+  if (!command_params.empty()) {
     request.Set("params",
                 base::Value::ToUniquePtrValue(command_params.Clone()));
+  }
+
+  if (!session_id.empty()) {
+    request.SetString("sessionId", session_id);
+  }
 
   std::string json_args;
   base::JSONWriter::Write(request, &json_args);

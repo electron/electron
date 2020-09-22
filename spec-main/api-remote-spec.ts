@@ -9,7 +9,7 @@ import { NativeImage } from 'electron/common';
 import { serialize, deserialize } from '../lib/common/type-utils';
 import { nativeImage } from 'electron';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const expectPathsEqual = (path1: string, path2: string) => {
   if (process.platform === 'win32') {
@@ -344,7 +344,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   });
 
   describe('remote objects registry', () => {
-    it('does not dereference until the render view is deleted (regression)', (done) => {
+    it('does not dereference until the render view is deleted (regression)', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -353,12 +353,10 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         }
       });
 
-      ipcMain.once('error-message', (event, message) => {
-        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/);
-        done();
-      });
-
+      const message = emittedOnce(ipcMain, 'error-message');
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+      const [, msg] = await message;
+      expect(msg).to.match(/^Cannot call method 'getURL' on missing remote object/);
     });
   });
 
@@ -500,11 +498,17 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     it('should search module from the user app', async () => {
       expectPathsEqual(
-        path.normalize(await remotely(() => require('electron').remote.process.mainModule!.filename)),
+        path.normalize(await remotely(() => {
+          const { remote } = require('electron');
+          return (remote as any).process.mainModule.filename;
+        })),
         path.resolve(__dirname, 'index.js')
       );
       expectPathsEqual(
-        path.normalize(await remotely(() => require('electron').remote.process.mainModule!.paths[0])),
+        path.normalize(await remotely(() => {
+          const { remote } = require('electron');
+          return (remote as any).process.mainModule.paths[0];
+        })),
         path.resolve(__dirname, 'node_modules')
       );
     });
@@ -1016,7 +1020,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         event.returnValue = obj;
       });
       await remotely(() => {
-        const { ipc } = process.electronBinding('ipc');
+        const { ipc } = process._linkedBinding('electron_renderer_ipc');
         const originalSendSync = ipc.sendSync.bind(ipc) as any;
         ipc.sendSync = (...args: any[]): any => {
           const ret = originalSendSync(...args);

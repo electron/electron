@@ -29,7 +29,7 @@ class WMState;
 }
 #endif
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 namespace ui {
 class GtkUiDelegate;
 }
@@ -55,11 +55,11 @@ class ElectronExtensionsBrowserClient;
 class ViewsDelegate;
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 class ViewsDelegateMac;
 #endif
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 class DarkThemeObserver;
 #endif
 
@@ -116,13 +116,13 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void HandleShutdownSignals();
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void FreeAppDelegate();
   void RegisterURLHandler();
   void InitializeMainNib();
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   std::unique_ptr<ViewsDelegateMac> views_delegate_;
 #else
   std::unique_ptr<ViewsDelegate> views_delegate_;

@@ -8,7 +8,7 @@ import { syncMethods, asyncMethods, properties } from '@electron/internal/common
 import { deserialize } from '@electron/internal/common/type-utils';
 const { webFrame } = electron;
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // ID generator.
 let nextId = 0;
@@ -196,8 +196,6 @@ export class WebViewImpl {
       this.internalElement.contentWindow!
     );
 
-    // ResizeObserver is a browser global not recognized by "standard".
-    /* globals ResizeObserver */
     // TODO(zcbenz): Should we deprecate the "resize" event? Wait, it is not
     // even documented.
     this.resizeObserver = new ResizeObserver(this.onElementResize.bind(this));

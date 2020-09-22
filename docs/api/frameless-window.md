@@ -15,7 +15,7 @@ To create a frameless window, you need to set `frame` to `false` in
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({ width: 800, height: 600, frame: false })
+const win = new BrowserWindow({ width: 800, height: 600, frame: false })
 win.show()
 ```
 
@@ -33,7 +33,7 @@ Results in a hidden title bar and a full size content window, yet the title bar 
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({ titleBarStyle: 'hidden' })
+const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 win.show()
 ```
 
@@ -43,7 +43,7 @@ Results in a hidden title bar with an alternative look where the traffic light b
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
+const win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
 win.show()
 ```
 
@@ -58,7 +58,7 @@ This option is only applicable for frameless windows.
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: false })
+const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: false })
 win.show()
 ```
 
@@ -69,7 +69,7 @@ window transparent:
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow({ transparent: true, frame: false })
+const win = new BrowserWindow({ transparent: true, frame: false })
 win.show()
 ```
 
@@ -100,7 +100,7 @@ API:
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow()
+const win = new BrowserWindow()
 win.setIgnoreMouseEvents(true)
 ```
 
@@ -112,13 +112,19 @@ optional parameter can be used to forward mouse move messages to the web page,
 allowing events such as `mouseleave` to be emitted:
 
 ```javascript
-let win = require('electron').remote.getCurrentWindow()
-let el = document.getElementById('clickThroughElement')
+const { ipcRenderer } = require('electron')
+const el = document.getElementById('clickThroughElement')
 el.addEventListener('mouseenter', () => {
-  win.setIgnoreMouseEvents(true, { forward: true })
+  ipcRenderer.send('set-ignore-mouse-events', true, { forward: true })
 })
 el.addEventListener('mouseleave', () => {
-  win.setIgnoreMouseEvents(false)
+  ipcRenderer.send('set-ignore-mouse-events', false)
+})
+
+// Main process
+const { ipcMain } = require('electron')
+ipcMain.on('set-ignore-mouse-events', (event, ...args) => {
+  BrowserWindow.fromWebContents(event.sender).setIgnoreMouseEvents(...args)
 })
 ```
 

@@ -10,6 +10,7 @@
 
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -60,6 +61,9 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("price", val.price);
     dict.Set("formattedPrice", val.formattedPrice);
 
+    // Currency Information
+    dict.Set("currencyCode", val.currencyCode);
+
     // Downloadable Content Information
     dict.Set("isDownloadable", val.isDownloadable);
 
@@ -73,17 +77,18 @@ namespace electron {
 
 namespace api {
 
-#if defined(OS_MACOSX)
+gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+#if defined(OS_MAC)
 // static
 gin::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new InAppPurchase(isolate));
+  return gin::CreateHandle(isolate, new InAppPurchase());
 }
 
-// static
-void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
-                                   v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "InAppPurchase"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<InAppPurchase>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
       .SetMethod("restoreCompletedTransactions",
                  &in_app_purchase::RestoreCompletedTransactions)
@@ -96,9 +101,11 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getProducts", &InAppPurchase::GetProducts);
 }
 
-InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
-  Init(isolate);
+const char* InAppPurchase::GetTypeName() {
+  return "InAppPurchase";
 }
+
+InAppPurchase::InAppPurchase() {}
 
 InAppPurchase::~InAppPurchase() {}
 
@@ -154,13 +161,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
-  dict.Set("InAppPurchase", InAppPurchase::GetConstructor(isolate)
-                                ->GetFunction(context)
-                                .ToLocalChecked());
 #endif
 }
 

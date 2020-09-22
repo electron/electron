@@ -15,8 +15,8 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
+#include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
@@ -64,7 +64,6 @@
 #include "base/environment.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "ui/base/x/x11_util.h"
-#include "ui/base/x/x11_util_internal.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/x11_types.h"
@@ -85,7 +84,7 @@
 #include "ui/strings/grit/app_locale_settings.h"
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -155,10 +154,12 @@ bool g_in_x11_io_error_handler = false;
 // the background thread.
 const int kWaitForUIThreadSeconds = 10;
 
-int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
+int BrowserX11ErrorHandler(Display* d, XErrorEvent* e) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
+        FROM_HERE,
+        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
+                       e->request_code, e->minor_code));
   }
   return 0;
 }
@@ -219,7 +220,7 @@ void UpdateDarkThemeSetting() {
 
 }  // namespace
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 class DarkThemeObserver : public ui::NativeThemeObserver {
  public:
   DarkThemeObserver() = default;
@@ -240,7 +241,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
       browser_(new Browser),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
-      electron_bindings_(new ElectronBindings(uv_default_loop())) {
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -313,6 +314,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_debugger_ = std::make_unique<NodeDebugger>(env);
   node_debugger_->Start();
 
+  env->set_trace_sync_io(env->options()->trace_sync_io);
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
@@ -337,7 +340,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
@@ -355,7 +358,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   ui::InitIdleMonitor();
 #endif
 
@@ -388,7 +391,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(USE_X11)
   // In Aura/X11, Gtk-based LinuxUI implementation is used.
-  gtk_ui_delegate_ = std::make_unique<ui::GtkUiDelegateX11>(gfx::GetXDisplay());
+  gtk_ui_delegate_ =
+      std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
   ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
   views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
   views::LinuxUI::SetInstance(linux_ui);
@@ -418,7 +422,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   views_delegate_.reset(new ViewsDelegateMac);
 #else
   views_delegate_ = std::make_unique<ViewsDelegate>();
@@ -472,7 +476,7 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
     DevToolsManagerDelegate::StartHttpHandler();
   }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching(base::DictionaryValue());
@@ -516,7 +520,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   FreeAppDelegate();
 #endif
 
@@ -535,21 +539,25 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_debugger_->Stop();
+  node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
+  node::Stop(node_env_->env());
   node_env_.reset();
+
+  ElectronBrowserContext::browser_context_map().clear();
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   PreMainMessageLoopStartCommon();
 }
 #endif
 
 void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();
 #endif

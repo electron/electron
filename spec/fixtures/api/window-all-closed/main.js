@@ -15,6 +15,10 @@ app.on('quit', () => {
 });
 
 app.whenReady().then(() => {
-  const win = new BrowserWindow();
+  const win = new BrowserWindow({
+    webPreferences: {
+      contextIsolation: true
+    }
+  });
   win.close();
 });

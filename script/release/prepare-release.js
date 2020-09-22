@@ -5,9 +5,7 @@ const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 });
 const ciReleaseBuild = require('./ci-release-build');
-const octokit = require('@octokit/rest')({
-  auth: process.env.ELECTRON_GITHUB_TOKEN
-});
+const { Octokit } = require('@octokit/rest');
 const { execSync } = require('child_process');
 const { GitProcess } = require('dugite');
 
@@ -17,6 +15,10 @@ const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const bumpType = args._[0];
 const targetRepo = bumpType === 'nightly' ? 'nightlies' : 'electron';
+
+const octokit = new Octokit({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+});
 
 require('colors');
 const pass = '✓'.green;
@@ -89,7 +91,7 @@ async function createRelease (branchToTarget, isBeta) {
     if (newVersion.indexOf('nightly') > 0) {
       releaseBody = 'Note: This is a nightly release.  Please file new issues ' +
         'for any bugs you find in it.\n \n This release is published to npm ' +
-        'under the nightly tag and can be installed via `npm install electron@nightly`, ' +
+        'under the electron-nightly package and can be installed via `npm install electron-nightly`, ' +
         `or \`npm install electron-nightly@${newVersion.substr(1)}\`.\n \n ${releaseNotes.text}`;
     } else {
       releaseBody = 'Note: This is a beta release.  Please file new issues ' +
@@ -211,4 +213,8 @@ async function prepareRelease (isBeta, notesOnly) {
   }
 }
 
-prepareRelease(!args.stable, args.notesOnly);
+prepareRelease(!args.stable, args.notesOnly)
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

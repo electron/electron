@@ -12,6 +12,7 @@
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
+#include "net/base/features.h"
 
 namespace electron {
 
@@ -26,7 +27,14 @@ void InitializeFeatureList() {
   // Can be reenabled when our site instance policy is aligned with chromium
   // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name;
+      std::string(",") + features::kSpareRendererForSitePerProcess.name +
+      // Disable SameSite-by-default, this will be a breaking change for many
+      // apps which cannot land in master until 11-x-y is branched out. For more
+      // info
+      // https://groups.google.com/a/chromium.org/g/embedder-dev/c/4yJi4Twj2NM/m/9bhpWureCAAJ
+      std::string(",") + net::features::kSameSiteByDefaultCookies.name +
+      std::string(",") +
+      net::features::kCookiesWithoutSameSiteMustBeSecure.name;
 
   // https://www.polymer-project.org/blog/2018-10-02-webcomponents-v0-deprecations
   // https://chromium-review.googlesource.com/c/chromium/src/+/1869562

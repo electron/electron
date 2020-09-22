@@ -11,14 +11,6 @@ const { dialog } = require('electron')
 console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 ```
 
-The Dialog is opened from Electron's main thread. If you want to use the dialog
-object from a renderer process, remember to access it using the remote:
-
-```javascript
-const { dialog } = require('electron').remote
-console.log(dialog)
-```
-
 ## Methods
 
 The `dialog` module has the following methods:
@@ -269,7 +261,7 @@ Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
-If `browserWindow` is not shown dialog will not be attached to it. In such case It will be displayed as independed window.
+If `browserWindow` is not shown dialog will not be attached to it. In such case it will be displayed as an independent window.
 
 ### `dialog.showMessageBox([browserWindow, ]options)`
 

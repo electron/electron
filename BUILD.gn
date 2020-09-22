@@ -49,6 +49,10 @@ if (is_linux) {
   }
 }
 
+declare_args() {
+  use_prebuilt_v8_context_snapshot = false
+}
+
 branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
@@ -92,6 +96,15 @@ npm_action("build_electron_definitions") {
   inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+}
+
+webpack_build("electron_asar_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.asar_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.asar.js"
+  out_file = "$target_gen_dir/js2c/asar_bundle.js"
 }
 
 webpack_build("electron_browser_bundle") {
@@ -139,25 +152,18 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-copy("electron_js2c_copy") {
-  sources = [
-    "lib/common/asar.js",
-    "lib/common/asar_init.js",
-  ]
-  outputs = [ "$target_gen_dir/js2c/{{source_file_part}}" ]
-}
-
 action("electron_js2c") {
   deps = [
+    ":electron_asar_bundle",
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
-    ":electron_js2c_copy",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_worker_bundle",
   ]
 
-  webpack_sources = [
+  sources = [
+    "$target_gen_dir/js2c/asar_bundle.js",
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
@@ -165,15 +171,10 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
-  sources = webpack_sources + [
-              "$target_gen_dir/js2c/asar.js",
-              "$target_gen_dir/js2c/asar_init.js",
-            ]
-
   inputs = sources + [ "//third_party/electron_node/tools/js2c.py" ]
   outputs = [ "$root_gen_dir/electron_natives.cc" ]
 
-  script = "tools/js2c.py"
+  script = "build/js2c.py"
   args = [ rebase_path("//third_party/electron_node") ] +
          rebase_path(outputs, root_build_dir) +
          rebase_path(sources, root_build_dir)
@@ -363,6 +364,7 @@ source_set("electron_lib") {
     "//services/viz/privileged/mojom/compositing",
     "//skia",
     "//third_party/blink/public:blink",
+    "//third_party/blink/public:blink_devtools_inspector_resources",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
     "//third_party/inspector_protocol:crdtp",
@@ -468,7 +470,7 @@ source_set("electron_lib") {
       deps += [ "//third_party/crashpad/crashpad/client" ]
     }
 
-    libs = [
+    frameworks = [
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",
@@ -495,18 +497,19 @@ source_set("electron_lib") {
         "shell/common/crash_keys.h",
       ]
     } else {
-      libs += [
+      frameworks += [
         "Squirrel.framework",
-        "ReactiveCocoa.framework",
+        "ReactiveObjC.framework",
         "Mantle.framework",
       ]
-      cflags_objcc = [
-        "-F",
-        rebase_path("external_binaries", root_build_dir),
+
+      deps += [
+        "//third_party/squirrel.mac:reactiveobjc_framework+link",
+        "//third_party/squirrel.mac:squirrel_framework+link",
       ]
 
-      # ReactiveCocoa which is used by Squirrel requires using __weak.
-      cflags_objcc += [ "-fobjc-weak" ]
+      # ReactiveObjC which is used by Squirrel requires using __weak.
+      cflags_objcc = [ "-fobjc-weak" ]
     }
   }
   if (is_linux) {
@@ -528,7 +531,9 @@ source_set("electron_lib") {
       ]
     }
     configs += [ ":gio_unix" ]
-    configs += [ "//build/config/linux:x11" ]
+    if (use_x11) {
+      deps += [ "//ui/gfx/x" ]
+    }
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
@@ -639,6 +644,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api",
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
+      "//components/update_client:update_client",
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser:core_api_provider",
@@ -660,6 +666,7 @@ source_set("electron_lib") {
     deps += [
       "//components/pdf/browser",
       "//components/pdf/renderer",
+      "//pdf:pdf_ppapi",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
@@ -688,6 +695,15 @@ if (is_mac) {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
   }
 
+  action("fake_v8_context_snapshot_generator") {
+    script = "build/fake_v8_context_snapshot_generator.py"
+    args = [
+      rebase_path("$root_out_dir/v8_context_snapshot.bin"),
+      rebase_path("$root_out_dir/fake/v8_context_snapshot.bin"),
+    ]
+    outputs = [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+  }
+
   bundle_data("electron_framework_resources") {
     public_deps = [ ":packed_resources" ]
     sources = []
@@ -698,8 +714,13 @@ if (is_mac) {
     if (v8_use_external_startup_data) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
-        sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
-        public_deps += [ "//tools/v8_context_snapshot" ]
+        if (use_prebuilt_v8_context_snapshot) {
+          sources += [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+          public_deps += [ ":fake_v8_context_snapshot_generator" ]
+        } else {
+          sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+          public_deps += [ "//tools/v8_context_snapshot" ]
+        }
       } else {
         sources += [ "$root_out_dir/snapshot_blob.bin" ]
       }
@@ -804,18 +825,19 @@ if (is_mac) {
 
     include_dirs = [ "." ]
     sources = filenames.framework_sources
-    libs = []
+    frameworks = []
 
     if (enable_osr) {
-      libs += [ "IOSurface.framework" ]
+      frameworks += [ "IOSurface.framework" ]
     }
 
     ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # Required for exporting all symbols of libuv.
+      "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
     ]
     if (is_component_build) {
       ldflags += [
@@ -863,17 +885,49 @@ if (is_mac) {
     }
   }
 
+  template("stripped_framework") {
+    action(target_name) {
+      assert(defined(invoker.framework))
+
+      script = "//electron/build/strip_framework.py"
+
+      forward_variables_from(invoker, [ "deps" ])
+      inputs = [ "$root_out_dir/" + invoker.framework ]
+      outputs = [ "$target_out_dir/stripped_frameworks/" + invoker.framework ]
+
+      args = rebase_path(inputs) + rebase_path(outputs)
+    }
+  }
+
+  stripped_framework("stripped_mantle_framework") {
+    framework = "Mantle.framework"
+    deps = [ "//third_party/squirrel.mac:mantle_framework" ]
+  }
+
+  stripped_framework("stripped_reactiveobjc_framework") {
+    framework = "ReactiveObjC.framework"
+    deps = [ "//third_party/squirrel.mac:reactiveobjc_framework" ]
+  }
+
+  stripped_framework("stripped_squirrel_framework") {
+    framework = "Squirrel.framework"
+    deps = [ "//third_party/squirrel.mac:squirrel_framework" ]
+  }
+
   bundle_data("electron_app_framework_bundle_data") {
     sources = [ "$root_out_dir/$electron_framework_name.framework" ]
     if (!is_mas_build) {
-      sources += [
-        "external_binaries/Mantle.framework",
-        "external_binaries/ReactiveCocoa.framework",
-        "external_binaries/Squirrel.framework",
-      ]
+      sources += get_target_outputs(":stripped_mantle_framework") +
+                 get_target_outputs(":stripped_reactiveobjc_framework") +
+                 get_target_outputs(":stripped_squirrel_framework")
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
-    public_deps = [ ":electron_framework+link" ]
+    public_deps = [
+      ":electron_framework+link",
+      ":stripped_mantle_framework",
+      ":stripped_reactiveobjc_framework",
+      ":stripped_squirrel_framework",
+    ]
 
     foreach(helper_params, content_mac_helpers) {
       sources +=
@@ -886,7 +940,7 @@ if (is_mac) {
     output_name = electron_login_helper_name
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
-    libs = [ "AppKit.framework" ]
+    frameworks = [ "AppKit.framework" ]
     info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
         [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
@@ -1071,7 +1125,9 @@ if (is_mac) {
       data += [ "$root_out_dir/resources/default_app.asar" ]
     }
 
-    public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    if (use_v8_context_snapshot) {
+      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    }
 
     if (is_win) {
       sources += [
@@ -1085,21 +1141,23 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      ldflags = []
+
       libs = [
         "comctl32.lib",
         "uiautomationcore.lib",
         "wtsapi32.lib",
       ]
 
-      configs += [ "//build/config/win:windowed" ]
-
-      ldflags = [
-        # Windows 7 doesn't have these DLLs.
-        # TODO: are there other DLLs we need to list here to be win7
-        # compatible?
-        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-        "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll",
+      configs += [
+        "//build/config/win:windowed",
+        "//build/config/win:delayloads",
       ]
+
+      if (target_cpu == "arm64") {
+        configs -= [ "//build/config/win:cfi_linker" ]
+        ldflags += [ "/guard:cf,nolongjmp" ]
+      }
 
       # This is to support renaming of electron.exe. node-gyp has hard-coded
       # executable names which it will recognise as node. This module definition
@@ -1113,7 +1171,14 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
-      ldflags = [ "-pie" ]
+      ldflags = [
+        "-pie",
+
+        # Required for exporting all symbols of libuv.
+        "-Wl,--whole-archive",
+        "obj/third_party/electron_node/deps/uv/libuv.a",
+        "-Wl,--no-whole-archive",
+      ]
 
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
@@ -1179,18 +1244,6 @@ test("shell_browser_ui_unittests") {
     "//ui/base",
     "//ui/strings",
   ]
-
-  if (is_mac) {
-    # Resolve paths owing to different test executable locations
-    ldflags = [
-      "-F",
-      rebase_path("external_binaries", root_build_dir),
-      "-rpath",
-      "@loader_path",
-      "-rpath",
-      "@executable_path/" + rebase_path("external_binaries", root_build_dir),
-    ]
-  }
 }
 
 template("dist_zip") {
@@ -1288,9 +1341,12 @@ dist_zip("electron_chromedriver_zip") {
 
 mksnapshot_deps = [
   ":licenses",
-  "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)",
   "//v8:mksnapshot($v8_snapshot_toolchain)",
 ]
+
+if (use_v8_context_snapshot) {
+  mksnapshot_deps += [ "//tools/v8_context_snapshot:v8_context_snapshot_generator($v8_snapshot_toolchain)" ]
+}
 
 group("electron_mksnapshot") {
   public_deps = mksnapshot_deps

@@ -13,6 +13,10 @@ if (!process.mainModule) {
   throw new Error('Must call the nan spec runner directly');
 }
 
+const args = require('minimist')(process.argv.slice(2), {
+  string: ['only']
+});
+
 async function main () {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   const env = Object.assign({}, process.env, {
@@ -20,7 +24,7 @@ async function main () {
     npm_config_msvs_version: '2019',
     npm_config_arch: process.env.NPM_CONFIG_ARCH
   });
-  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test'], {
+  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test', '-j', 'max'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit'
@@ -40,9 +44,14 @@ async function main () {
     return process.exit(installStatus);
   }
 
+  const onlyTests = args.only && args.only.split(',');
+
   const DISABLED_TESTS = ['nannew-test.js'];
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.includes(test))
+    .filter(test => {
+      return !onlyTests || onlyTests.includes(test) || onlyTests.includes(test.replace('.js', '')) || onlyTests.includes(test.replace('-test.js', ''));
+    })
     .map(test => `test/js/${test}`);
 
   const testChild = cp.spawn(utils.getAbsoluteElectronExec(), ['node_modules/.bin/tap', ...testsToRun], {

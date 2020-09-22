@@ -111,10 +111,10 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
     regions.push_back(std::move(region));
   }
 
-  mojom::ElectronBrowserPtr browser_ptr;
+  mojo::Remote<mojom::ElectronBrowser> browser_remote;
   render_frame_->GetRemoteInterfaces()->GetInterface(
-      mojo::MakeRequest(&browser_ptr));
-  browser_ptr->UpdateDraggableRegions(std::move(regions));
+      browser_remote.BindNewPipeAndPassReceiver());
+  browser_remote->UpdateDraggableRegions(std::move(regions));
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(
@@ -137,7 +137,7 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
       blink::WebString::FromUTF8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
   info.security_origin = frame->GetDocument().GetSecurityOrigin();
-  frame->SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);
+  blink::SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");

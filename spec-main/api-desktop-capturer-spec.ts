@@ -5,7 +5,7 @@ import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
   if (!features.isDesktopCapturerEnabled()) {
@@ -144,29 +144,6 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       return source.id === mediaSourceId;
     });
     expect(mediaSourceId).to.equal(foundSource!.id);
-  });
-
-  describe('getMediaSourceIdForWebContents', () => {
-    const getMediaSourceIdForWebContents: typeof desktopCapturer.getMediaSourceIdForWebContents = (webContentsId: number) => {
-      return w.webContents.executeJavaScript(`
-        require('electron').desktopCapturer.getMediaSourceIdForWebContents(${JSON.stringify(webContentsId)}).then(r => JSON.parse(JSON.stringify(r)))
-      `);
-    };
-
-    it('should return a stream id for web contents', async () => {
-      const result = await getMediaSourceIdForWebContents(w.webContents.id);
-      expect(result).to.be.a('string').that.is.not.empty();
-    });
-
-    it('throws an error for invalid options', async () => {
-      const promise = getMediaSourceIdForWebContents('not-an-id' as unknown as number);
-      await expect(promise).to.be.eventually.rejectedWith(Error, 'TypeError: Error processing argument');
-    });
-
-    it('throws an error for invalid web contents id', async () => {
-      const promise = getMediaSourceIdForWebContents(-200);
-      await expect(promise).to.be.eventually.rejectedWith(Error, 'Failed to find WebContents');
-    });
   });
 
   // TODO(deepak1556): currently fails on all ci, enable it after upgrade.

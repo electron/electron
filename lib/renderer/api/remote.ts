@@ -3,12 +3,14 @@ import { isPromise, isSerializableObject, serialize, deserialize } from '../../c
 import { MetaTypeFromRenderer, ObjectMember, ObjProtoDescriptor, MetaType } from '../../common/remote/types';
 import { ipcRendererInternal } from '../ipc-renderer-internal';
 import type { BrowserWindow, WebContents } from 'electron/main';
+import deprecate from '@electron/internal/common/api/deprecate';
 import { browserModuleNames } from '@electron/internal/browser/api/module-names';
 import { commonModuleList } from '@electron/internal/common/api/module-list';
 
-const v8Util = process.electronBinding('v8_util');
-const { hasSwitch } = process.electronBinding('command_line');
-const { NativeImage } = process.electronBinding('native_image');
+deprecate.log('The remote module is deprecated. Use https://github.com/electron/remote instead.');
+
+const v8Util = process._linkedBinding('electron_common_v8_util');
+const { hasSwitch } = process._linkedBinding('electron_common_command_line');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();
@@ -59,7 +61,7 @@ function wrapArgs (args: any[], visited = new Set()): any {
       };
     }
 
-    if (value instanceof NativeImage) {
+    if (value && value.constructor && value.constructor.name === 'NativeImage') {
       return { type: 'nativeimage', value: serialize(value) };
     } else if (Array.isArray(value)) {
       visited.add(value);

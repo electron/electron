@@ -54,6 +54,7 @@ extern const char kOpacity[];
 extern const char kFocusable[];
 extern const char kWebPreferences[];
 extern const char kVibrancyType[];
+extern const char kVisualEffectState[];
 extern const char kTrafficLightPosition[];
 
 // WebPreferences.
@@ -62,6 +63,7 @@ extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
+extern const char kWorldSafeExecuteJavaScript[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kOpenerID[];
@@ -121,6 +123,7 @@ extern const char kPreloadScript[];
 extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
+extern const char kWorldSafeExecuteJavaScript[];
 extern const char kGuestInstanceID[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];

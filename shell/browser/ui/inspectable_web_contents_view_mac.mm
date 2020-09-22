@@ -15,12 +15,12 @@
 namespace electron {
 
 InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContentsImpl* inspectable_web_contents) {
+    InspectableWebContents* inspectable_web_contents) {
   return new InspectableWebContentsViewMac(inspectable_web_contents);
 }
 
 InspectableWebContentsViewMac::InspectableWebContentsViewMac(
-    InspectableWebContentsImpl* inspectable_web_contents)
+    InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
       view_([[ElectronInspectableWebContentsView alloc]
           initWithInspectableWebContentsViewMac:this]) {}

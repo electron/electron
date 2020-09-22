@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/files/file_util.h"
-#include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -41,6 +40,12 @@ void RunQuitClosure(base::OnceClosure quit) {
 }
 
 }  // namespace
+
+#if defined(OS_WIN)
+Browser::LaunchItem::LaunchItem() = default;
+Browser::LaunchItem::~LaunchItem() = default;
+Browser::LaunchItem::LaunchItem(const LaunchItem& other) = default;
+#endif
 
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
@@ -74,7 +79,7 @@ void Browser::Quit() {
     electron::WindowList::CloseAllWindows();
 }
 
-void Browser::Exit(gin_helper::Arguments* args) {
+void Browser::Exit(gin::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
 
@@ -280,7 +285,7 @@ void Browser::OnWindowAllClosed() {
   }
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void Browser::NewWindowForTab() {
   for (BrowserObserver& observer : observers_)
     observer.OnNewWindowForTab();

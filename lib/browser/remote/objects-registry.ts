@@ -1,8 +1,8 @@
 'use strict';
 
-import { WebContents } from 'electron';
+import { WebContents } from 'electron/main';
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const getOwnerKey = (webContents: WebContents, contextId: string) => {
   return `${webContents.id}-${contextId}`;

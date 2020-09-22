@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 2 Jul 2020 00:27:40 -0700
+Subject: use electron resources in icon_reader_service
+
+Without this, the ID for IDS_UTILITY_PROCESS_UTILITY_WIN_NAME will be wrong on windows
+and cause a DCHECK() failure
+
+diff --git a/chrome/browser/win/icon_reader_service.cc b/chrome/browser/win/icon_reader_service.cc
+index 721e1a863cc6925908f8343002df056f2373bf0b..10b2a95162541a8ff4d010c7be864f3f41dae378 100644
+--- a/chrome/browser/win/icon_reader_service.cc
++++ b/chrome/browser/win/icon_reader_service.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/win/icon_reader_service.h"
+ 
+ #include "chrome/browser/service_sandbox_type.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "content/public/browser/service_process_host.h"
+ 
+ mojo::Remote<chrome::mojom::UtilReadIcon> LaunchIconReaderInstance() {

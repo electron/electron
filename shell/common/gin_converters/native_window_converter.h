@@ -6,7 +6,7 @@
 #define SHELL_COMMON_GIN_CONVERTERS_NATIVE_WINDOW_CONVERTER_H_
 
 #include "gin/converter.h"
-#include "shell/browser/api/electron_api_top_level_window.h"
+#include "shell/browser/api/electron_api_base_window.h"
 
 namespace gin {
 
@@ -21,9 +21,9 @@ struct Converter<electron::NativeWindow*> {
       return true;
     }
 
-    electron::api::TopLevelWindow* window;
-    if (!gin::Converter<electron::api::TopLevelWindow*>::FromV8(isolate, val,
-                                                                &window))
+    electron::api::BaseWindow* window;
+    if (!gin::Converter<electron::api::BaseWindow*>::FromV8(isolate, val,
+                                                            &window))
       return false;
     *out = window->window();
     return true;

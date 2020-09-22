@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-const { ipc } = process.electronBinding('ipc');
+const { ipc } = process._linkedBinding('electron_renderer_ipc');
 
 const internal = false;
 

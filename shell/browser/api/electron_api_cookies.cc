@@ -21,6 +21,7 @@
 #include "net/cookies/cookie_util.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -152,12 +153,13 @@ void FilterCookies(const base::Value& filter,
   promise.Resolve(result);
 }
 
-void FilterCookieWithStatuses(const base::Value& filter,
-                              gin_helper::Promise<net::CookieList> promise,
-                              const net::CookieStatusList& list,
-                              const net::CookieStatusList& excluded_list) {
+void FilterCookieWithStatuses(
+    const base::Value& filter,
+    gin_helper::Promise<net::CookieList> promise,
+    const net::CookieAccessResultList& list,
+    const net::CookieAccessResultList& excluded_list) {
   FilterCookies(filter, std::move(promise),
-                net::cookie_util::StripStatuses(list));
+                net::cookie_util::StripAccessResults(list));
 }
 
 // Parse dictionary property to CanonicalCookie time correctly.
@@ -337,12 +339,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   manager->SetCanonicalCookie(
       *canonical_cookie, url, options,
       base::BindOnce(
-          [](gin_helper::Promise<void> promise,
-             net::CookieInclusionStatus status) {
-            if (status.IsInclude()) {
+          [](gin_helper::Promise<void> promise, net::CookieAccessResult r) {
+            if (r.status.IsInclude()) {
               promise.Resolve();
             } else {
-              promise.RejectWithErrorMessage(InclusionStatusToString(status));
+              promise.RejectWithErrorMessage(InclusionStatusToString(r.status));
             }
           },
           std::move(promise)));
@@ -365,7 +366,7 @@ v8::Local<v8::Promise> Cookies::FlushStore(v8::Isolate* isolate) {
 }
 
 void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   Emit("changed", gin::ConvertToV8(isolate, change.cookie),
        gin::ConvertToV8(isolate, change.cause),

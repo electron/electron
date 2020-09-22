@@ -87,9 +87,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
-  content::TtsControllerDelegate* GetTtsControllerDelegate() override;
+  content::TtsPlatform* GetTtsPlatform() override;
+
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
-                           content::WebPreferences* prefs) override;
+                           blink::web_pref::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* current_rfh,
       content::RenderFrameHost* speculative_rfh,
@@ -176,10 +177,16 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
+      base::UkmSourceId ukm_source_id,
+      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
+      NonNetworkURLLoaderFactoryMap* factories) override;
+  void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+      content::BrowserContext* browser_context,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,
+      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void CreateWebSocket(
       content::RenderFrameHost* frame,

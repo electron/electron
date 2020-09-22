@@ -55,6 +55,8 @@ class SpellCheckClient::SpellcheckRequest {
       const base::string16& text,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion)
       : text_(text), completion_(std::move(completion)) {}
+  SpellcheckRequest(const SpellcheckRequest&) = delete;
+  SpellcheckRequest& operator=(const SpellcheckRequest&) = delete;
   ~SpellcheckRequest() = default;
 
   const base::string16& text() const { return text_; }
@@ -66,8 +68,6 @@ class SpellCheckClient::SpellcheckRequest {
   std::vector<Word> word_list_;  // List of Words found in text
   // The interface to send the misspelled ranges to WebKit.
   std::unique_ptr<blink::WebTextCheckingCompletion> completion_;
-
-  DISALLOW_COPY_AND_ASSIGN(SpellcheckRequest);
 };
 
 SpellCheckClient::SpellCheckClient(const std::string& language,

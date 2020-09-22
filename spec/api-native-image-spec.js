@@ -369,13 +369,7 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
-    it('Gets an NSImage pointer on macOS', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('Gets an NSImage pointer on macOS', function () {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       const nsimage = image.getNativeHandle();
@@ -387,13 +381,7 @@ describe('nativeImage module', () => {
       expect(allBytesAreNotNull);
     });
 
-    it('loads images from .ico files on Windows', function () {
-      if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'win32')('loads images from .ico files on Windows', function () {
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico');
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
@@ -407,35 +395,17 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.true();
     });
 
-    it('returns empty on non-darwin platforms', function () {
-      if (process.platform === 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform !== 'darwin')('returns empty on non-darwin platforms', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.true();
     });
 
-    it('returns a valid image on darwin', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.false();
     });
 
-    it('returns allows an HSL shift for a valid image on darwin', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return;
-      }
-
+    ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
       expect(image.isEmpty()).to.be.false();
     });
@@ -512,6 +482,32 @@ describe('nativeImage module', () => {
 
       const image = nativeImage.createFromPath(imageData.path);
       expect(image.getAspectRatio()).to.equal(expectedAspectRatio);
+    });
+  });
+
+  ifdescribe(process.platform !== 'linux')('createThumbnailFromPath(path, size)', () => {
+    it('throws when invalid size is passed', async () => {
+      const badSize = { width: -1, height: -1 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath('path', badSize)
+      ).to.eventually.be.rejectedWith('size must not be empty');
+    });
+
+    it('throws when a bad path is passed', async () => {
+      const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
+      const goodSize = { width: 100, height: 100 };
+
+      await expect(
+        nativeImage.createThumbnailFromPath(badPath, goodSize)
+      ).to.eventually.be.rejected();
+    });
+
+    it('returns native image given valid params', async () => {
+      const goodPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+      const goodSize = { width: 100, height: 100 };
+      const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
+      expect(result.isEmpty()).to.equal(false);
     });
   });
 

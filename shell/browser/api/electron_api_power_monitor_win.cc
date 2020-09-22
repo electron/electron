@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
@@ -34,11 +35,23 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   // session lock and unlock events.
   window_ = CreateWindow(MAKEINTATOM(atom_), 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0,
                          instance_, 0);
-  gfx::CheckWindowCreated(window_);
+  gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 
   // Tel windows we want to be notified with session events
   WTSRegisterSessionNotification(window_, NOTIFY_FOR_THIS_SESSION);
+
+  // For Windows 8 and later, a new "connected standy" mode has been added and
+  // we must explicitly register for its notifications.
+  auto RegisterSuspendResumeNotification =
+      reinterpret_cast<decltype(&::RegisterSuspendResumeNotification)>(
+          GetProcAddress(GetModuleHandle(L"user32.dll"),
+                         "RegisterSuspendResumeNotification"));
+
+  if (RegisterSuspendResumeNotification) {
+    RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
+                                      DEVICE_NOTIFY_WINDOW_HANDLE);
+  }
 }
 
 LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,
@@ -72,6 +85,12 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
       } else if (wparam == WTS_SESSION_UNLOCK) {
         Emit("unlock-screen");
       }
+    }
+  } else if (message == WM_POWERBROADCAST) {
+    if (wparam == PBT_APMRESUMEAUTOMATIC) {
+      Emit("resume");
+    } else if (wparam == PBT_APMSUSPEND) {
+      Emit("suspend");
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);

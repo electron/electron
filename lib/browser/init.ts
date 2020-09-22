@@ -17,7 +17,7 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-process.electronBinding('event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
+process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 if (process.platform === 'win32') {
   // Redirect node's console to use our own implementations, since node can not
@@ -63,7 +63,7 @@ process.on('uncaughtException', function (error) {
 // Emit 'exit' event on quit.
 const { app } = require('electron');
 
-app.on('quit', function (event, exitCode) {
+app.on('quit', (_event, exitCode) => {
   process.emit('exit', exitCode);
 });
 

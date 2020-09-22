@@ -1,6 +1,6 @@
-import { app, deprecate } from 'electron';
+import { app, deprecate } from 'electron/main';
 
-const binding = process.electronBinding('crash_reporter');
+const binding = process._linkedBinding('electron_browser_crash_reporter');
 
 class CrashReporter {
   start (options: Electron.CrashReporterStartOptions) {
@@ -13,7 +13,7 @@ class CrashReporter {
       submitURL,
       uploadToServer = true,
       rateLimit = false,
-      compress = false
+      compress = true
     } = options || {};
 
     if (submitURL == null) throw new Error('submitURL is a required option to crashReporter.start');

@@ -1,4 +1,4 @@
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const enableRemoteModule = v8Util.getHiddenValue<boolean>(global, 'enableRemoteModule');
 
@@ -7,6 +7,7 @@ export const rendererModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'contextBridge', loader: () => require('./context-bridge') },
   { name: 'crashReporter', loader: () => require('./crash-reporter') },
   { name: 'ipcRenderer', loader: () => require('./ipc-renderer') },
+  { name: 'nativeImage', loader: () => require('./native-image') },
   { name: 'webFrame', loader: () => require('./web-frame') }
 ];
 

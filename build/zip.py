@@ -32,6 +32,8 @@ PATHS_TO_SKIP = [
   # On Linux, we don't use crashpad, but this binary is still built for some
   # reason. Exclude it from the zip.
   './crashpad_handler',
+
+  'resources/inspector', #Skipping because these are outputs that we don't need
 ]
 
 def skip_path(dep, dist_zip, target_cpu):

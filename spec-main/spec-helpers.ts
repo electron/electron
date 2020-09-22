@@ -6,7 +6,7 @@ import * as v8 from 'v8';
 export const ifit = (condition: boolean) => (condition ? it : it.skip);
 export const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip);
 
-export const delay = (time: number) => new Promise(resolve => setTimeout(resolve, time));
+export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
 
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];

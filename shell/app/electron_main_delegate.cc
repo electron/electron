@@ -26,8 +26,8 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/service_manager/embedder/switches.h"
-#include "services/service_manager/sandbox/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/app/electron_default_paths.h"
@@ -44,7 +44,7 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "shell/app/electron_main_delegate_mac.h"
 #endif
 
@@ -81,7 +81,7 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
 
 bool IsSandboxEnabled(base::CommandLine* command_line) {
   return command_line->HasSwitch(switches::kEnableSandbox) ||
-         !command_line->HasSwitch(service_manager::switches::kNoSandbox);
+         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
@@ -92,7 +92,7 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       // The zygote process opens the resources for the renderers.
       process_type == service_manager::switches::kZygoteProcess ||
 #endif
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
       process_type == ::switches::kPpapiPluginProcess ||
@@ -133,7 +133,7 @@ void LoadResourceBundle(const std::string& locale) {
 
   // Load other resource files.
   base::FilePath pak_dir;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   pak_dir =
       base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
@@ -205,7 +205,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
     base::debug::EnableInProcessStackDumping();
 
   if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
@@ -218,7 +218,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
   SetUpBundleOverrides();
@@ -239,7 +239,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Check for --no-sandbox parameter when running as root.
   if (getuid() == 0 && IsSandboxEnabled(command_line))
     LOG(FATAL) << "Running as root without --"
-               << service_manager::switches::kNoSandbox
+               << sandbox::policy::switches::kNoSandbox
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
@@ -283,7 +283,7 @@ void ElectronMainDelegate::PostEarlyInitialization(bool is_running_tests) {
     }
   }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   if (custom_locale.empty())
     l10n_util::OverrideLocaleWithCocoaLocale();
 #endif
@@ -312,7 +312,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if defined(OS_WIN) || (defined(OS_MACOSX) && !defined(MAS_BUILD))
+#if defined(OS_WIN) || (defined(OS_MAC) && !defined(MAS_BUILD))
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
@@ -341,7 +341,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     // Allow file:// URIs to read other file:// URIs by default.
     command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     // Enable AVFoundation.
     command_line->AppendSwitch("enable-avfoundation");
 #endif
@@ -353,7 +353,7 @@ void ElectronMainDelegate::PreCreateMainMessageLoop() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   InitializeFeatureList();
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   RegisterAtomCrApp();
 #endif
 }

@@ -40,7 +40,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif
 
@@ -54,7 +54,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 

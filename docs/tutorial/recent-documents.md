@@ -39,6 +39,29 @@ will be started with the path of the file added as a command line argument.
 
 ## macOS Notes
 
+### Adding the Recent Documents list to the application menu:
+
+![macOS Recent Documents menu item][menu-item-image]
+
+You can add menu items to access and clear recent documents by adding the following code snippet to your menu's template.
+
+```json
+{
+  "submenu":[
+    {
+      "label":"Open Recent",
+      "role":"recentdocuments",
+      "submenu":[
+        {
+          "label":"Clear Recent",
+          "role":"clearrecentdocuments"
+        }
+      ]
+    }
+  ]
+}
+```
+
 When a file is requested from the recent documents menu, the `open-file` event
 of `app` module will be emitted for it.
 
@@ -47,3 +70,4 @@ of `app` module will be emitted for it.
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-macos-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-macos-windows
 [app-registration]: https://msdn.microsoft.com/en-us/library/cc144104(VS.85).aspx
+[menu-item-image]: https://user-images.githubusercontent.com/3168941/33003655-ea601c3a-cd70-11e7-97fa-7c062149cfb1.png

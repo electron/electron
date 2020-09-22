@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 0d752de291c071e9a6054d7ced3ac1930fa38471..05e1e711e1a4abc1aab79fdbb4cda63cbf282e94 100644
+index 2491c673cfe97a35119009b9030daaae66bea718..30e9e2cb3acfe1852e26fdf21b441746d999f4e2 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -656,7 +656,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -645,7 +645,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -32,7 +32,7 @@ index 0d752de291c071e9a6054d7ced3ac1930fa38471..05e1e711e1a4abc1aab79fdbb4cda63c
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index c00901a2a4ef59a63033c6669171ec9e3ffd2686..d637b79d9df82ad44b1eed8529024a21e0b3555b 100644
+index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d4a00bde3 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
@@ -44,7 +44,7 @@ index c00901a2a4ef59a63033c6669171ec9e3ffd2686..d637b79d9df82ad44b1eed8529024a21
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -105,7 +105,8 @@ void RegisterContentSchemes() {
+@@ -106,7 +106,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.
@@ -68,10 +68,10 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index ed5b0e2c0b4d453560ee9e2e4a55780b409eeea9..46e29dca5d13691bcf9494c0f90b68d6219a75ef 100644
+index e6379748886956da819523200aa35f8f95d523ee..46110a92ba9849112889f3e93c1dccbbd4911dda 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -37,6 +37,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
+@@ -36,6 +36,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
    return 0;
  }
  
@@ -79,14 +79,14 @@ index ed5b0e2c0b4d453560ee9e2e4a55780b409eeea9..46e29dca5d13691bcf9494c0f90b68d6
 +  return true;
 +}
 +
- service_manager::ProcessType ContentMainDelegate::OverrideProcessType() {
-   return service_manager::ProcessType::kDefault;
+ bool ContentMainDelegate::ShouldCreateFeatureList() {
+   return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 2d9ee9fa20a9aba1de168cc86bfeea5eab71e6d3..4b163c3fa2ddd258b5527e0ccaf9fc9d2621ef75 100644
+index abb46995385fccddf8363296fb0253624a4111c7..715d0818c03cfa7e5b9877b3ab83d1488f2f040f 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -77,6 +77,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -65,6 +65,20 @@ class CONTENT_EXPORT ContentMainDelegate {
    // returning initialization error code. Default behavior is CHECK(false).
    virtual int TerminateForFatalInitializationError();
  
@@ -104,6 +104,6 @@ index 2d9ee9fa20a9aba1de168cc86bfeea5eab71e6d3..4b163c3fa2ddd258b5527e0ccaf9fc9d
 +  // from being locked.
 +  virtual bool ShouldLockSchemeRegistry();
 +
-   // Overrides the Service Manager process type to use for the currently running
-   // process.
-   virtual service_manager::ProcessType OverrideProcessType();
+   // Allows the embedder to perform platform-specific initialization before
+   // creating the main message loop.
+   virtual void PreCreateMainMessageLoop() {}

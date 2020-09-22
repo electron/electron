@@ -1,8 +1,12 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
-import { app } from 'electron';
-import { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
-const { net, Net, isValidHeaderName, isValidHeaderValue, createURLLoader } = process.electronBinding('net');
+import { app } from 'electron/main';
+import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+const {
+  isValidHeaderName,
+  isValidHeaderValue,
+  createURLLoader
+} = process._linkedBinding('electron_browser_net');
 
 const kSupportedProtocols = new Set(['http:', 'https:']);
 
@@ -128,6 +132,7 @@ class SlurpStream extends Writable {
     this._data = Buffer.concat([this._data, chunk]);
     callback();
   }
+
   data () { return this._data; }
 }
 
@@ -265,7 +270,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   return urlLoaderOptions;
 }
 
-class ClientRequest extends Writable implements Electron.ClientRequest {
+export class ClientRequest extends Writable implements Electron.ClientRequest {
   _started: boolean = false;
   _firstWrite: boolean = false;
   _aborted: boolean = false;
@@ -292,6 +297,10 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
+  }
+
+  get chunkedEncoding () {
+    return this._chunkedEncoding || false;
   }
 
   set chunkedEncoding (value: boolean) {
@@ -353,7 +362,7 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
     delete this._urlLoaderOptions.extraHeaders[key];
   }
 
-  _write (chunk: Buffer, encoding: string, callback: () => void) {
+  _write (chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
     this._firstWrite = true;
     if (!this._body) {
       this._body = new SlurpStream();
@@ -472,6 +481,14 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 
   _die (err?: Error) {
+    // Node.js assumes that any stream which is ended is no longer capable of emitted events
+    // which is a faulty assumption for the case of an object that is acting like a stream
+    // (our urlRequest). If we don't emit here, this causes errors since we *do* expect
+    // that error events can be emitted after urlRequest.end().
+    if ((this as any)._writableState.destroyed && err) {
+      this.emit('error', err);
+    }
+
     this.destroy(err);
     if (this._urlLoader) {
       this._urlLoader.cancel();
@@ -484,10 +501,6 @@ class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 }
 
-Net.prototype.request = function (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
+export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   return new ClientRequest(options, callback);
-};
-
-net.ClientRequest = ClientRequest;
-
-module.exports = net;
+}

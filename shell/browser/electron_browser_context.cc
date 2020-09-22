@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -43,7 +44,7 @@
 #include "shell/browser/pref_store_delegate.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
@@ -91,15 +92,17 @@ std::string MakePartitionName(const std::string& input) {
 }  // namespace
 
 // static
-ElectronBrowserContext::BrowserContextMap
-    ElectronBrowserContext::browser_context_map_;
+ElectronBrowserContext::BrowserContextMap&
+ElectronBrowserContext::browser_context_map() {
+  static base::NoDestructor<ElectronBrowserContext::BrowserContextMap>
+      browser_context_map;
+  return *browser_context_map;
+}
 
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : base::RefCountedDeleteOnSequence<ElectronBrowserContext>(
-          base::ThreadTaskRunnerHandle::Get()),
-      in_memory_pref_store_(nullptr),
+    : in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
@@ -186,7 +189,7 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-  InspectableWebContentsImpl::RegisterPrefs(registry.get());
+  InspectableWebContents::RegisterPrefs(registry.get());
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
@@ -435,19 +438,21 @@ ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
 }
 
 // static
-scoped_refptr<ElectronBrowserContext> ElectronBrowserContext::From(
+ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictionaryValue options) {
   PartitionKey key(partition, in_memory);
-  auto* browser_context = browser_context_map_[key].get();
-  if (browser_context)
-    return scoped_refptr<ElectronBrowserContext>(browser_context);
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
+  if (browser_context) {
+    return browser_context;
+  }
 
   auto* new_context =
       new ElectronBrowserContext(partition, in_memory, std::move(options));
-  browser_context_map_[key] = new_context->GetWeakPtr();
-  return scoped_refptr<ElectronBrowserContext>(new_context);
+  browser_context_map()[key] =
+      std::unique_ptr<ElectronBrowserContext>(new_context);
+  return new_context;
 }
 
 }  // namespace electron

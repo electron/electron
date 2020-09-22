@@ -21,7 +21,7 @@ MenuViews::MenuViews(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
 
 MenuViews::~MenuViews() = default;
 
-void MenuViews::PopupAt(TopLevelWindow* window,
+void MenuViews::PopupAt(BaseWindow* window,
                         int x,
                         int y,
                         int positioning_item,

@@ -14,6 +14,7 @@
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/node_bindings.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 
 namespace gin_helper {
@@ -36,7 +37,7 @@ class ElectronBindings {
   explicit ElectronBindings(uv_loop_t* loop);
   virtual ~ElectronBindings();
 
-  // Add process.electronBinding function, which behaves like process.binding
+  // Add process._linkedBinding function, which behaves like process.binding
   // but load native code from Electron instead.
   void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
@@ -74,7 +75,7 @@ class ElectronBindings {
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 
-  uv_async_t call_next_tick_async_;
+  UvHandle<uv_async_t> call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;
 

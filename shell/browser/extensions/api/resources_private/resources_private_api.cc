@@ -51,8 +51,6 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
       {"tooltipPrint", IDS_PDF_TOOLTIP_PRINT},
       {"tooltipFitToPage", IDS_PDF_TOOLTIP_FIT_PAGE},
       {"tooltipFitToWidth", IDS_PDF_TOOLTIP_FIT_WIDTH},
-      {"tooltipTwoUpViewDisable", IDS_PDF_TOOLTIP_TWO_UP_VIEW_DISABLE},
-      {"tooltipTwoUpViewEnable", IDS_PDF_TOOLTIP_TWO_UP_VIEW_ENABLE},
       {"tooltipZoomIn", IDS_PDF_TOOLTIP_ZOOM_IN},
       {"tooltipZoomOut", IDS_PDF_TOOLTIP_ZOOM_OUT},
   };
@@ -68,12 +66,7 @@ void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
   dict->SetKey("pdfFormSaveEnabled",
                base::Value(base::FeatureList::IsEnabled(
                    chrome_pdf::features::kSaveEditedPDFForm)));
-  dict->SetKey("pdfAnnotationsEnabled",
-               base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kPDFAnnotations)));
-  dict->SetKey("pdfTwoUpViewEnabled",
-               base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kPDFTwoUpView)));
+  dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
   dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
 }

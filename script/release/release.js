@@ -21,6 +21,7 @@ const path = require('path');
 const sumchecker = require('sumchecker');
 const temp = require('temp').track();
 const { URL } = require('url');
+const { Octokit } = require('@octokit/rest');
 
 require('colors');
 const pass = '✓'.green;
@@ -28,7 +29,7 @@ const fail = '✗'.red;
 
 const { ELECTRON_DIR } = require('../lib/utils');
 
-const octokit = require('@octokit/rest')({
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
@@ -97,17 +98,22 @@ function check (condition, statement, exitIfFail = false) {
 function assetsForVersion (version, validatingRelease) {
   const patterns = [
     `chromedriver-${version}-darwin-x64.zip`,
+    `chromedriver-${version}-darwin-arm64.zip`,
     `chromedriver-${version}-linux-arm64.zip`,
     `chromedriver-${version}-linux-armv7l.zip`,
     `chromedriver-${version}-linux-ia32.zip`,
     `chromedriver-${version}-linux-x64.zip`,
     `chromedriver-${version}-mas-x64.zip`,
+    `chromedriver-${version}-mas-arm64.zip`,
     `chromedriver-${version}-win32-ia32.zip`,
     `chromedriver-${version}-win32-x64.zip`,
     `chromedriver-${version}-win32-arm64.zip`,
     `electron-${version}-darwin-x64-dsym.zip`,
     `electron-${version}-darwin-x64-symbols.zip`,
     `electron-${version}-darwin-x64.zip`,
+    `electron-${version}-darwin-arm64-dsym.zip`,
+    `electron-${version}-darwin-arm64-symbols.zip`,
+    `electron-${version}-darwin-arm64.zip`,
     `electron-${version}-linux-arm64-symbols.zip`,
     `electron-${version}-linux-arm64.zip`,
     `electron-${version}-linux-armv7l-symbols.zip`,
@@ -120,6 +126,9 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-mas-x64-dsym.zip`,
     `electron-${version}-mas-x64-symbols.zip`,
     `electron-${version}-mas-x64.zip`,
+    `electron-${version}-mas-arm64-dsym.zip`,
+    `electron-${version}-mas-arm64-symbols.zip`,
+    `electron-${version}-mas-arm64.zip`,
     `electron-${version}-win32-ia32-pdb.zip`,
     `electron-${version}-win32-ia32-symbols.zip`,
     `electron-${version}-win32-ia32.zip`,
@@ -133,20 +142,24 @@ function assetsForVersion (version, validatingRelease) {
     'electron.d.ts',
     'hunspell_dictionaries.zip',
     `ffmpeg-${version}-darwin-x64.zip`,
+    `ffmpeg-${version}-darwin-arm64.zip`,
     `ffmpeg-${version}-linux-arm64.zip`,
     `ffmpeg-${version}-linux-armv7l.zip`,
     `ffmpeg-${version}-linux-ia32.zip`,
     `ffmpeg-${version}-linux-x64.zip`,
     `ffmpeg-${version}-mas-x64.zip`,
+    `ffmpeg-${version}-mas-arm64.zip`,
     `ffmpeg-${version}-win32-ia32.zip`,
     `ffmpeg-${version}-win32-x64.zip`,
     `ffmpeg-${version}-win32-arm64.zip`,
     `mksnapshot-${version}-darwin-x64.zip`,
+    `mksnapshot-${version}-darwin-arm64.zip`,
     `mksnapshot-${version}-linux-arm64-x64.zip`,
     `mksnapshot-${version}-linux-armv7l-x64.zip`,
     `mksnapshot-${version}-linux-ia32.zip`,
     `mksnapshot-${version}-linux-x64.zip`,
     `mksnapshot-${version}-mas-x64.zip`,
+    `mksnapshot-${version}-mas-arm64.zip`,
     `mksnapshot-${version}-win32-ia32.zip`,
     `mksnapshot-${version}-win32-x64.zip`,
     `mksnapshot-${version}-win32-arm64-x64.zip`,
@@ -239,7 +252,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
       'content-type': 'text/plain',
       'content-length': fs.statSync(filePath).size
     },
-    file: fs.createReadStream(filePath),
+    data: fs.createReadStream(filePath),
     name: fileName
   }).catch(err => {
     console.log(`${fail} Error uploading ${filePath} to GitHub:`, err);

@@ -28,7 +28,8 @@ app.whenReady().then(() => {
   win = new BrowserWindow({
     show: false,
     webPreferences: {
-      preload: path.resolve(__dirname, 'preload.js')
+      preload: path.resolve(__dirname, 'preload.js'),
+      contextIsolation: true
     }
   });
   win.loadFile('index.html');

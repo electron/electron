@@ -14,8 +14,8 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
 namespace base {
@@ -84,10 +84,10 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
       const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
       override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
-                      std::unique_ptr<content::FileSelectListener> listener,
+                      scoped_refptr<content::FileSelectListener> listener,
                       const blink::mojom::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
-                          std::unique_ptr<content::FileSelectListener> listener,
+                          scoped_refptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
   void EnterFullscreenModeForTab(
       content::RenderFrameHost* requesting_frame,
@@ -127,10 +127,10 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
                             const std::string& query) override;
 
   // InspectableWebContentsViewDelegate:
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   void GetDevToolsWindowWMClass(std::string* name,
                                 std::string* class_name) override;
 #endif
@@ -171,8 +171,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
-  // Make sure BrowserContext is alwasys destroyed after WebContents.
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   // The stored InspectableWebContents object.
   // Notice that web_contents_ must be placed after dialog_manager_, so we can

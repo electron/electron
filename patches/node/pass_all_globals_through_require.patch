@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index a8adb63a2e42929d040f6cdea6f01bd4c2cb1d2d..b1f453442bc2a35fabaa6f259091660aedad9a07 100644
+index efe537fca514c3d558527c9f4fc8ebb8a4de367c..edd5972002d7ad4d6932dfbed591a96d5b3f6fab 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -104,6 +104,13 @@ const {
+@@ -106,6 +106,13 @@ const {
    CHAR_COLON
  } = require('internal/constants');
  
@@ -20,10 +20,10 @@ index a8adb63a2e42929d040f6cdea6f01bd4c2cb1d2d..b1f453442bc2a35fabaa6f259091660a
 +// Do the same for "Buffer".
 +const localBuffer = Buffer;
 +
- const isWindows = process.platform === 'win32';
- 
- const relativeResolveCache = ObjectCreate(null);
-@@ -1133,10 +1140,12 @@ Module.prototype._compile = function(content, filename) {
+ const {
+   isProxy
+ } = require('internal/util/types');
+@@ -1071,10 +1078,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new Map();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,

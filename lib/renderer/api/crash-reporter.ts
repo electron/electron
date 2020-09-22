@@ -1,7 +1,7 @@
 import { invokeSync } from '../ipc-renderer-internal-utils';
 import { deprecate } from 'electron';
 
-const binding = process.electronBinding('crash_reporter');
+const binding = process._linkedBinding('electron_renderer_crash_reporter');
 
 export default {
   start (options: Electron.CrashReporterStartOptions) {

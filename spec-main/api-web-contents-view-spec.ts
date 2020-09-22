@@ -4,14 +4,14 @@ import * as path from 'path';
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
-import { TopLevelWindow, WebContentsView } from 'electron/main';
+import { BaseWindow, WebContentsView } from 'electron/main';
 
 describe('WebContentsView', () => {
-  let w: TopLevelWindow;
-  afterEach(() => closeWindow(w as any).then(() => { w = null as unknown as TopLevelWindow; }));
+  let w: BaseWindow;
+  afterEach(() => closeWindow(w as any).then(() => { w = null as unknown as BaseWindow; }));
 
   it('can be used as content view', () => {
-    w = new TopLevelWindow({ show: false });
+    w = new BaseWindow({ show: false });
     w.setContentView(new WebContentsView({}));
   });
 

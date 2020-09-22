@@ -1,6 +1,7 @@
-import { shell, Menu } from 'electron';
+import { Menu } from 'electron/main';
+import { shell } from 'electron/common';
 
-const v8Util = process.electronBinding('v8_util');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const isMac = process.platform === 'darwin';
 

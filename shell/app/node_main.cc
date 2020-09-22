@@ -144,7 +144,7 @@ int NodeMain(int argc, char* argv[]) {
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_WIN) || (defined(OS_MACOSX) && !defined(MAS_BUILD))
+#if defined(OS_WIN) || (defined(OS_MAC) && !defined(MAS_BUILD))
   crash_reporter::InitializeCrashpad(false, "node");
 #endif
 
@@ -167,10 +167,6 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    // We do not want to double-set the error level and promise rejection
-    // callback.
-    node::g_standalone_mode = false;
-
     // Explicitly register electron's builtin modules.
     NodeBindings::RegisterBuiltinModules();
 
@@ -184,8 +180,12 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
 
-    // V8 requires a task scheduler apparently
+    // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
+
+    // Allow Node.js to track the amount of time the event loop has spent
+    // idle in the kernel’s event provider .
+    uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
@@ -202,12 +202,16 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                    exec_argc, exec_argv);
-      CHECK_NE(nullptr, env);
+      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kNoInitializeInspector;
 
-      // This needs to be called before the inspector is initialized.
-      env->InitializeDiagnostics();
+      std::vector<std::string> args(argv, argv + argc);  // NOLINT
+      std::vector<std::string> exec_args(exec_argv,
+                                         exec_argv + exec_argc);  // NOLINT
+      env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
+                                    exec_args,
+                                    (node::EnvironmentFlags::Flags)flags);
+      CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
@@ -256,9 +260,13 @@ int NodeMain(int argc, char* argv[]) {
       node::LoadEnvironment(env);
     }
 
+    env->set_trace_sync_io(env->options()->trace_sync_io);
+
     {
       v8::SealHandleScope seal(isolate);
       bool more;
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
       do {
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
@@ -276,18 +284,19 @@ int NodeMain(int argc, char* argv[]) {
         // event, or after running some callbacks.
         more = uv_loop_alive(env->event_loop());
       } while (more && !env->is_stopping());
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
     }
 
     node_debugger.Stop();
+
+    env->set_trace_sync_io(false);
+
     exit_code = node::EmitExit(env);
 
     node::ResetStdio();
 
-    env->set_can_call_into_js(false);
-    env->stop_sub_worker_contexts();
-    env->RunCleanup();
-
-    node::RunAtExit(env);
+    node::Stop(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
 

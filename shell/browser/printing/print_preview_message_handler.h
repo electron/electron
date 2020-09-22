@@ -19,7 +19,7 @@
 #include "v8/include/v8.h"
 
 struct PrintHostMsg_DidPreviewDocument_Params;
-struct PrintHostMsg_PreviewIds;
+struct PrintHostMsg_DidPreviewPage_Params;
 
 namespace content {
 class RenderFrameHost;
@@ -50,12 +50,26 @@ class PrintPreviewMessageHandler
 
   void OnMetafileReadyForPrinting(
       content::RenderFrameHost* render_frame_host,
-      const PrintHostMsg_DidPreviewDocument_Params& params,
-      const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(
-      const PrintHostMsg_PreviewIds& ids,
+      const printing::mojom::DidPreviewDocumentParams& params,
+      const printing::mojom::PreviewIds& ids);
+  void OnCompositeDocumentToPdfDone(
+      const printing::mojom::PreviewIds& ids,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
+  void OnPrepareForDocumentToPdfDone(
+      const printing::mojom::PreviewIds& ids,
+      printing::mojom::PrintCompositor::Status status);
+  void OnDidPrepareForDocumentToPdf(content::RenderFrameHost* render_frame_host,
+                                    int document_cookie,
+                                    const printing::mojom::PreviewIds& ids);
+  void OnCompositePdfPageDone(int page_number,
+                              int document_cookie,
+                              const printing::mojom::PreviewIds& ids,
+                              printing::mojom::PrintCompositor::Status status,
+                              base::ReadOnlySharedMemoryRegion region);
+  void OnDidPreviewPage(content::RenderFrameHost* render_frame_host,
+                        const printing::mojom::DidPreviewPageParams& params,
+                        const printing::mojom::PreviewIds& ids);
 
   // printing::mojo::PrintPreviewUI:
   void SetOptionsFromDocument(
@@ -66,8 +80,6 @@ class PrintPreviewMessageHandler
                              int32_t request_id) override;
   void PrinterSettingsInvalid(int32_t document_cookie,
                               int32_t request_id) override {}
-  void CheckForCancel(int32_t request_id,
-                      CheckForCancelCallback callback) override;
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 
