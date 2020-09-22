@@ -130,6 +130,7 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/script_executor.h"
+#include "extensions/browser/view_type_utils.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -390,11 +391,44 @@ base::string16 GetDefaultPrinterAsync() {
 
 }  // namespace
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
+  switch (view_type) {
+    case extensions::VIEW_TYPE_EXTENSION_BACKGROUND_PAGE:
+      return WebContents::Type::BACKGROUND_PAGE;
+
+    case extensions::VIEW_TYPE_APP_WINDOW:
+    case extensions::VIEW_TYPE_COMPONENT:
+    case extensions::VIEW_TYPE_EXTENSION_DIALOG:
+    case extensions::VIEW_TYPE_EXTENSION_POPUP:
+    case extensions::VIEW_TYPE_BACKGROUND_CONTENTS:
+    case extensions::VIEW_TYPE_EXTENSION_GUEST:
+    case extensions::VIEW_TYPE_TAB_CONTENTS:
+    case extensions::VIEW_TYPE_INVALID:
+      return WebContents::Type::REMOTE;
+  }
+}
+
+#endif
+
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       weak_factory_(this) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // WebContents created by extension host will have valid ViewType set.
+  extensions::ViewType view_type = extensions::GetViewType(web_contents);
+  if (view_type != extensions::VIEW_TYPE_INVALID) {
+    InitWithExtensionView(isolate, web_contents, view_type);
+  }
+
+  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
+      web_contents);
+  script_executor_.reset(new extensions::ScriptExecutor(web_contents));
+#endif
+
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
@@ -404,11 +438,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   Init(isolate);
   AttachAsUserData(web_contents);
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
-      web_contents);
-  script_executor_.reset(new extensions::ScriptExecutor(web_contents));
-#endif
+
   registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
                                              base::Unretained(this)));
   receivers_.set_disconnect_handler(base::BindRepeating(
@@ -613,12 +643,38 @@ void WebContents::InitWithSessionAndOptions(
   AttachAsUserData(web_contents());
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+void WebContents::InitWithExtensionView(v8::Isolate* isolate,
+                                        content::WebContents* web_contents,
+                                        extensions::ViewType view_type) {
+  // Must reassign type prior to calling `Init`.
+  type_ = GetTypeFromViewType(view_type);
+  if (GetType() == Type::REMOTE)
+    return;
+
+  // Allow toggling DevTools for background pages
+  Observe(web_contents);
+  InitWithWebContents(web_contents, GetBrowserContext(), IsGuest());
+  managed_web_contents()->GetView()->SetDelegate(this);
+  SecurityStateTabHelper::CreateForWebContents(web_contents);
+}
+#endif
+
 WebContents::~WebContents() {
   // The destroy() is called.
   if (managed_web_contents()) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    if (type_ == Type::BACKGROUND_PAGE) {
+      // Background pages are owned by extensions::ExtensionHost
+      managed_web_contents()->ReleaseWebContents();
+    }
+#endif
+
     managed_web_contents()->GetView()->SetDelegate(nullptr);
 
-    RenderViewDeleted(web_contents()->GetRenderViewHost());
+    if (web_contents()) {
+      RenderViewDeleted(web_contents()->GetRenderViewHost());
+    }
 
     if (type_ == Type::BROWSER_WINDOW && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
@@ -1362,6 +1418,7 @@ void WebContents::DevToolsFocused() {
 void WebContents::DevToolsOpened() {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
+  DCHECK(managed_web_contents());
   auto handle =
       FromOrCreate(isolate(), managed_web_contents()->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
@@ -1686,7 +1743,8 @@ void WebContents::OpenDevTools(gin_helper::Arguments* args) {
     return;
 
   std::string state;
-  if (type_ == Type::WEB_VIEW || !owner_window()) {
+  if (type_ == Type::WEB_VIEW || type_ == Type::BACKGROUND_PAGE ||
+      !owner_window()) {
     state = "detach";
   }
   bool activate = true;
@@ -1697,6 +1755,8 @@ void WebContents::OpenDevTools(gin_helper::Arguments* args) {
       options.Get("activate", &activate);
     }
   }
+
+  DCHECK(managed_web_contents());
   managed_web_contents()->SetDockState(state);
   managed_web_contents()->ShowDevTools(activate);
 }
@@ -1705,6 +1765,7 @@ void WebContents::CloseDevTools() {
   if (type_ == Type::REMOTE)
     return;
 
+  DCHECK(managed_web_contents());
   managed_web_contents()->CloseDevTools();
 }
 
@@ -1712,6 +1773,7 @@ bool WebContents::IsDevToolsOpened() {
   if (type_ == Type::REMOTE)
     return false;
 
+  DCHECK(managed_web_contents());
   return managed_web_contents()->IsDevToolsViewShowing();
 }
 
@@ -1719,6 +1781,7 @@ bool WebContents::IsDevToolsFocused() {
   if (type_ == Type::REMOTE)
     return false;
 
+  DCHECK(managed_web_contents());
   return managed_web_contents()->GetView()->IsDevToolsViewFocused();
 }
 
@@ -1727,6 +1790,7 @@ void WebContents::EnableDeviceEmulation(
   if (type_ == Type::REMOTE)
     return;
 
+  DCHECK(web_contents());
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     auto* widget_host =
@@ -1742,6 +1806,7 @@ void WebContents::DisableDeviceEmulation() {
   if (type_ == Type::REMOTE)
     return;
 
+  DCHECK(web_contents());
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     auto* widget_host =
@@ -1767,6 +1832,7 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_)
     return;
 
+  DCHECK(managed_web_contents());
   if (!managed_web_contents()->GetDevToolsWebContents())
     OpenDevTools(nullptr);
   managed_web_contents()->InspectElement(x, y);
