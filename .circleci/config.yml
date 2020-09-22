@@ -85,17 +85,17 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.0.0-large"
+    xcode: "12.2.0"
 
 # Build configurations options.
 env-testing-build: &env-testing-build

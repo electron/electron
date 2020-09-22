@@ -34,6 +34,8 @@ async function checkIfDocOnlyChange () {
         owner: 'electron', repo: 'electron', pull_number: pullRequestNumber
       });
 
+      console.log('Changed Files:', filesChanged.data.map(fileInfo => fileInfo.filename));
+
       const nonDocChange = filesChanged.data.find((fileInfo) => {
         const fileDirs = fileInfo.filename.split('/');
         if (fileDirs[0] !== 'docs') {
