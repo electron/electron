@@ -109,7 +109,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
                                     : nullptr,
       routing_id_, request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
-      factory_->IsForServiceWorkerScript(), factory_->navigation_id_));
+      factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
+      base::kInvalidUkmSourceId));
 
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
