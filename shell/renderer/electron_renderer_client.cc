@@ -130,8 +130,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
-    env->ForceOnlyContextAwareNativeModules();
-  env->WarnNonContextAwareNativeModules();
+    env->set_force_context_aware(true);
+  env->set_warn_context_aware(true);
 
   environments_.insert(env);
 

@@ -180,8 +180,12 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
 
-    // V8 requires a task scheduler apparently
+    // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
+
+    // Allow Node.js to track the amount of time the event loop has spent
+    // idle in the kernel’s event provider .
+    uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
@@ -261,6 +265,8 @@ int NodeMain(int argc, char* argv[]) {
     {
       v8::SealHandleScope seal(isolate);
       bool more;
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
       do {
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
@@ -278,6 +284,8 @@ int NodeMain(int argc, char* argv[]) {
         // event, or after running some callbacks.
         more = uv_loop_alive(env->event_loop());
       } while (more && !env->is_stopping());
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
     }
 
     node_debugger.Stop();

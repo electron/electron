@@ -29,10 +29,10 @@ index f947c6bf27e80c534a8f72265d0139a8b5b3f13a..d7e56d9c3fe5a56897989915984cb823
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index c633daa2b3557c98b05cca5f428d87775ef8a02a..4846370adb5206c53d57deef303b2c3f02342d24 100644
+index 7067737952a5002899071bb4a434a93ec92103ce..3430cac5bb858c9abfe094b458f590096fc36dce 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1049,6 +1049,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1050,6 +1050,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.
@@ -46,38 +46,40 @@ index c633daa2b3557c98b05cca5f428d87775ef8a02a..4846370adb5206c53d57deef303b2c3f
        if (process.argv[1]) {
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+diff --git a/src/env-inl.h b/src/env-inl.h
+index c1853f81b68bd22d20fb99877f4c500a384e9545..623e9d4e429c03bb267539a318166f3ef3b9c501 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -550,6 +550,14 @@ inline bool Environment::force_context_aware() const {
+   return options_->force_context_aware;
+ }
+ 
++inline void Environment::set_warn_context_aware(bool value) {
++  options_->warn_context_aware = value;
++}
++
++inline bool Environment::warn_context_aware() const {
++  return options_->warn_context_aware;
++}
++
+ inline void Environment::set_abort_on_uncaught_exception(bool value) {
+   options_->abort_on_uncaught_exception = value;
+ }
 diff --git a/src/env.h b/src/env.h
-index bc222804010a035333cf6d7becc9a0a8f385af85..dea62b38cb20a0a0913128e17e8904c4ca71ac1a 100644
+index f89365a1aa7ffacbb423e01a68f484992751f76f..38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -885,6 +885,15 @@ class Environment : public MemoryRetainer {
-               ThreadId thread_id);
-   ~Environment() override;
+@@ -949,6 +949,8 @@ class Environment : public MemoryRetainer {
  
-+  void ForceOnlyContextAwareNativeModules() {
-+    force_context_aware_ = true;
-+  }
-+  void WarnNonContextAwareNativeModules() {
-+    warn_non_context_aware_ = true;
-+  }
-+  bool force_context_aware() { return force_context_aware_; }
-+  bool warn_non_context_aware() { return warn_non_context_aware_; }
-+
-   void InitializeLibuv();
-   inline const std::vector<std::string>& exec_argv();
-   inline const std::vector<std::string>& argv();
-@@ -1235,6 +1244,9 @@ class Environment : public MemoryRetainer {
-   inline void ThrowError(v8::Local<v8::Value> (*fun)(v8::Local<v8::String>),
-                          const char* errmsg);
+   inline void set_force_context_aware(bool value);
+   inline bool force_context_aware() const;
++  inline void set_warn_context_aware(bool value);
++  inline bool warn_context_aware() const;
  
-+  bool force_context_aware_ = false;
-+  bool warn_non_context_aware_ = false;
-+
-   std::list<binding::DLib> loaded_addons_;
-   v8::Isolate* const isolate_;
-   IsolateData* const isolate_data_;
+   // This stores whether the --abort-on-uncaught-exception flag was passed
+   // to Node.
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 0ab18f7aeda3511338cbf115a4b636a6c72437b2..51ae4c89a61a176a9629e537f9409b38c3397aa2 100644
+index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e0705784ccee7f 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -3,6 +3,7 @@
@@ -88,22 +90,19 @@ index 0ab18f7aeda3511338cbf115a4b636a6c72437b2..51ae4c89a61a176a9629e537f9409b38
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -461,10 +462,22 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
- 
-     if (mp != nullptr) {
+@@ -463,8 +464,19 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
--        if (env->options()->force_context_aware) {
-+        if (env->force_context_aware()) {
+         if (env->force_context_aware()) {
            dlib->Close();
 -          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
+-          return false;
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
 +                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
-           return false;
-+        } else if (env->warn_non_context_aware()) {
++        } else if (env->warn_context_aware()) {
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
@@ -113,3 +112,30 @@ index 0ab18f7aeda3511338cbf115a4b636a6c72437b2..51ae4c89a61a176a9629e537f9409b38
          }
        }
        mp->nm_dso_handle = dlib->handle_;
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 2854ec072bf1c68810373c61673269f86fad442b..7319d7ec4541211571f0e60d94d0d28788f0631b 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -386,6 +386,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+             "disable loading non-context-aware addons",
+             &EnvironmentOptions::force_context_aware,
+             kAllowedInEnvironment);
++  AddOption("--warn-context-aware",
++          "warn when loading non-context-aware addons",
++          &EnvironmentOptions::warn_context_aware,
++          kAllowedInEnvironment);
+   AddOption("--pending-deprecation",
+             "emit pending deprecation warnings",
+             &EnvironmentOptions::pending_deprecation,
+diff --git a/src/node_options.h b/src/node_options.h
+index 3258d4b3f0df0c57b055c652d3391c2196ad5075..734e80aa7d35235ffe503056e14205b94f807d60 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -122,6 +122,7 @@ class EnvironmentOptions : public Options {
+   bool no_force_async_hooks_checks = false;
+   bool no_warnings = false;
+   bool force_context_aware = false;
++  bool warn_context_aware = false;
+   bool pending_deprecation = false;
+   bool preserve_symlinks = false;
+   bool preserve_symlinks_main = false;
