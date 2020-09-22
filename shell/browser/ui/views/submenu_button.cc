@@ -49,7 +49,7 @@ std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
   std::unique_ptr<views::InkDropRipple> ripple(
       new views::FloodFillInkDropRipple(
           size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          ink_drop_visible_opacity()));
+          GetInkDropVisibleOpacity()));
   return ripple;
 }
 
