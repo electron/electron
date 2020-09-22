@@ -42,7 +42,7 @@ index bc0c8821f6a871a5d09f6e9fd97f52abe126370b..06a6b7805f710be51c84a3882922d960
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 6c6e3f5d11a480c18e4fbe92f163315b4deac4fb..9ccda32152c2d16cd5ca6eeaafd96adcb6adf25c 100644
+index 9e83a156d7e1341054817765c347a9f91e31c669..071dc64c664d07796c420483813fd9bd36c8e170 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1394,6 +1394,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 6c6e3f5d11a480c18e4fbe92f163315b4deac4fb..9ccda32152c2d16cd5ca6eeaafd96adc
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5010,6 +5025,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5041,6 +5056,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 6c6e3f5d11a480c18e4fbe92f163315b4deac4fb..9ccda32152c2d16cd5ca6eeaafd96adc
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5023,10 +5039,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5054,10 +5070,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,7 +91,7 @@ index 6c6e3f5d11a480c18e4fbe92f163315b4deac4fb..9ccda32152c2d16cd5ca6eeaafd96adc
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
-index 0cafd8ae4f3c1f3405ede5f007e10a40d0949f45..57bd0caaad84de4420f3f4249b16ea4a1a8821ff 100644
+index f5fc71cd7755dd0dc700649cd7796d242c22e770..c21074f16ad89751fd3962bf1c6b5bfc98516314 100644
 --- a/content/browser/renderer_host/navigation_request.h
 +++ b/content/browser/renderer_host/navigation_request.h
 @@ -129,6 +129,10 @@ class CONTENT_EXPORT NavigationRequest
@@ -229,7 +229,7 @@ index ecebcc5d30f66ef30325bb3cc0b367d3d9de2c82..f1a27bf06e416d876efe095f6f81acf2
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ca22e2dbdfbd4b4c3bf60464cbdcd2104cbe5a7e..03f669bd50213946355bd9d16bc44efd4ef7e9b3 100644
+index 0c15d9a28e9b54f7adbe303c341cda42a6cffb73..2d2c8e61063ed3c34e4eb40a31ec62affcbe1f66 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@
@@ -255,7 +255,7 @@ index ca22e2dbdfbd4b4c3bf60464cbdcd2104cbe5a7e..03f669bd50213946355bd9d16bc44efd
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index bd81fcd224d4cad545265be2dd1fa4a65b3248eb..f0fb9e8b9db4078c53ba6baa16812c838943d0f7 100644
+index 2b8c354a39677e91d25451044cc06d6343a510f9..464df770f76bacd7556dae52c7d59aa07d19762e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -252,8 +252,45 @@ class CONTENT_EXPORT ContentBrowserClient {

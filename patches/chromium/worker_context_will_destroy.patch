@@ -26,10 +26,10 @@ index 04e4329a5886e782422258c0713bd48bac1bcf4e..9349a3755f824630904bcd044a6ba403
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index dc5b1fd43a31f01a87d0ee50ed3d4816377ae68f..643c5b3f57329b20f8af780211bf3316a2e21abf 100644
+index 96a17eefe35de81aecb77b3ed57cff1326fb4f5b..c929900122ac4f8b0dd2f490e1c9bc195b09e01a 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -870,6 +870,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -876,6 +876,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,10 +43,10 @@ index dc5b1fd43a31f01a87d0ee50ed3d4816377ae68f..643c5b3f57329b20f8af780211bf3316
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index cfced914c88d81df2396aa5b87cc9f52c8ba5448..aa31e030f34a66ac2fee79b09b99c2dd3aaa1c8a 100644
+index 30af7f4fed5fe2e1aaa231d379c91253b55890aa..50ad183c039c492947c127fe1cafb6a908d1e65d 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -191,6 +191,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -192,6 +192,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -55,10 +55,10 @@ index cfced914c88d81df2396aa5b87cc9f52c8ba5448..aa31e030f34a66ac2fee79b09b99c2dd
        const blink::WebSecurityOrigin& script_origin) override;
    bool IsExcludedHeaderForServiceWorkerFetchEvent(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index abfcd20b894191138dc0ffab48ef8749b08c69a1..614837662b2bf462e50c0bc702e4c29bcd42c8e2 100644
+index 4c05fb9099e27e4a668d8dd10c2e1a7bdfa70517..27cefad2c07d604acfdcb23181b3b8b14b3228c1 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -642,6 +642,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -643,6 +643,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
