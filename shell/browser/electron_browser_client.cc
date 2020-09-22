@@ -1286,7 +1286,7 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
 void ElectronBrowserClient::
     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
         content::BrowserContext* browser_context,
-        NonNetworkURLLoaderFactoryDeprecatedMap* factories) {
+        NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
   protocol_registry->RegisterURLLoaderFactories(

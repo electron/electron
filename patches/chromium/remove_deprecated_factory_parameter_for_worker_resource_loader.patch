@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sat, 12 Sep 2020 20:15:43 -0700
+Subject: Remove deprecated factory parameter for worker resource loader
+
+This can be removed once https://chromium-review.googlesource.com/c/chromium/src/+/2357523 lands.
+
+diff --git a/content/browser/worker_host/worker_script_fetch_initiator.cc b/content/browser/worker_host/worker_script_fetch_initiator.cc
+index af9e46326d0b11825354a079e6510d0ec2fc2ff8..8149aa99ad3614b5719b64b3d1aabdd3628ff78f 100644
+--- a/content/browser/worker_host/worker_script_fetch_initiator.cc
++++ b/content/browser/worker_host/worker_script_fetch_initiator.cc
+@@ -226,8 +226,7 @@ WorkerScriptFetchInitiator::CreateFactoryBundle(
+       GetContentClient()
+           ->browser()
+           ->RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+-              storage_partition->browser_context(),
+-              &non_network_uniquely_owned_factories);
++              storage_partition->browser_context(), &non_network_factories);
+       break;
+     case LoaderType::kSubResource:
+       GetContentClient()
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index 8ce0b9a4e16d21cd0b5ceac45fd83e3b08352aba..b42558fff887bf816034982ac89dd198a18907d7 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -777,7 +777,7 @@ void ContentBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
+ void ContentBrowserClient::
+     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+         BrowserContext* browser_context,
+-        NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories) {}
++        NonNetworkURLLoaderFactoryMap* factories) {}
+ 
+ void ContentBrowserClient::
+     RegisterNonNetworkServiceWorkerUpdateURLLoaderFactories(
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 48863077c6832226a53a56fd365cfd6e5ae90913..c711286a21602b35ffd8c94f237671769a4d370b 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -1316,7 +1316,7 @@ class CONTENT_EXPORT ContentBrowserClient {
+   // lifetimes.
+   virtual void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+       BrowserContext* browser_context,
+-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories);
++      NonNetworkURLLoaderFactoryMap* factories);
+ 
+   // Allows the embedder to register per-scheme URLLoaderFactory
+   // implementations to handle service worker main/imported script requests

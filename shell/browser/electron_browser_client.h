@@ -182,8 +182,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories)
-      override;
+      NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,
