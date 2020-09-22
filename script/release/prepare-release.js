@@ -199,7 +199,7 @@ async function prepareRelease (isBeta, notesOnly) {
       const releaseNotes = await getReleaseNotes(currentBranch, newVersion);
       console.log(`Draft release notes are: \n${releaseNotes.text}`);
     } else {
-      const changes = await changesToRelease(currentBranch);
+      const changes = await changesToRelease();
       if (changes) {
         await verifyNewVersion();
         await createRelease(currentBranch, isBeta);
