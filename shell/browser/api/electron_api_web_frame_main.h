@@ -8,10 +8,19 @@
 #include <memory>
 #include <string>
 
-#include "content/public/browser/render_frame_host.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
+
+class GURL;
+
+namespace content {
+class RenderFrameHost;
+}
+
+namespace gin {
+class Arguments;
+}
 
 namespace gin_helper {
 class Dictionary;
@@ -30,7 +39,11 @@ class WebFrame : public gin::Wrappable<WebFrame> {
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
 
+  static void RenderFrameDeleted(content::RenderFrameHost* rfh);
+
   content::RenderFrameHost* render_frame() const { return render_frame_; }
+
+  void ReleaseRenderFrame();
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -43,11 +56,16 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   ~WebFrame() override;
 
  private:
-  bool Reload();
+  //   v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code, bool
+  //   has_user_gesture);
+  void ExecuteJavaScript(const base::string16& code, bool has_user_gesture);
+  bool Reload(gin::Arguments* args);
   int GetFrameTreeNodeID() const;
   int GetRoutingID() const;
   GURL GetURL() const;
+  content::RenderFrameHost* GetTop();
   content::RenderFrameHost* GetParent();
+  std::vector<content::RenderFrameHost*> GetChildren();
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
