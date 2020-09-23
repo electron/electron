@@ -390,9 +390,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  int options = 0;
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
+  int options = 0;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
     // specified and useSessionCoookies is false. credentials_mode will be

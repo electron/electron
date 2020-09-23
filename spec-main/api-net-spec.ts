@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { net, session, ClientRequest, BrowserWindow } from 'electron/main';
+import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
@@ -215,117 +215,191 @@ describe('net module', () => {
       expect(chunkIndex).to.be.equal(chunkCount);
     });
 
-    it('should emit the login event when 401', async () => {
-      const [user, pass] = ['user', 'pass'];
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        if (!request.headers.authorization) {
-          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
-        }
-        response.writeHead(200).end('ok');
-      });
-      let loginAuthInfo: Electron.AuthInfo;
-      const request = net.request({ method: 'GET', url: serverUrl });
-      request.on('login', (authInfo, cb) => {
-        loginAuthInfo = authInfo;
-        cb(user, pass);
-      });
-      const response = await getResponse(request);
-      expect(response.statusCode).to.equal(200);
-      expect(loginAuthInfo!.realm).to.equal('Foo');
-      expect(loginAuthInfo!.scheme).to.equal('basic');
-    });
+    for (const extraOptions of [{}, { credentials: 'include' }, { useSessionCookies: false, credentials: 'include' }] as ClientRequestConstructorOptions[]) {
+      describe(`authentication when ${JSON.stringify(extraOptions)}`, () => {
+        it('should emit the login event when 401', async () => {
+          const [user, pass] = ['user', 'pass'];
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            if (!request.headers.authorization) {
+              return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+            }
+            response.writeHead(200).end('ok');
+          });
+          let loginAuthInfo: Electron.AuthInfo;
+          const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+          request.on('login', (authInfo, cb) => {
+            loginAuthInfo = authInfo;
+            cb(user, pass);
+          });
+          const response = await getResponse(request);
+          expect(response.statusCode).to.equal(200);
+          expect(loginAuthInfo!.realm).to.equal('Foo');
+          expect(loginAuthInfo!.scheme).to.equal('basic');
+        });
 
-    it('should response when cancelling authentication', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        if (!request.headers.authorization) {
-          response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' });
-          response.end('unauthenticated');
-        } else {
+        it('should receive 401 response when cancelling authentication', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            if (!request.headers.authorization) {
+              response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' });
+              response.end('unauthenticated');
+            } else {
+              response.writeHead(200).end('ok');
+            }
+          });
+          const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+          request.on('login', (authInfo, cb) => {
+            cb();
+          });
+          const response = await getResponse(request);
+          const body = await collectStreamBody(response);
+          expect(response.statusCode).to.equal(401);
+          expect(body).to.equal('unauthenticated');
+        });
+
+        it('should share credentials with WebContents', async () => {
+          const [user, pass] = ['user', 'pass'];
+          const serverUrl = await respondNTimes.toSingleURL((request, response) => {
+            if (!request.headers.authorization) {
+              return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+            }
+            return response.writeHead(200).end('ok');
+          }, 2);
+          const bw = new BrowserWindow({ show: false });
+          bw.webContents.on('login', (event, details, authInfo, cb) => {
+            event.preventDefault();
+            cb(user, pass);
+          });
+          await bw.loadURL(serverUrl);
+          bw.close();
+          const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+          let logInCount = 0;
+          request.on('login', () => {
+            logInCount++;
+          });
+          const response = await getResponse(request);
+          await collectStreamBody(response);
+          expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
+        });
+
+        it('should share proxy credentials with WebContents', async () => {
+          const [user, pass] = ['user', 'pass'];
+          const proxyUrl = await respondNTimes((request, response) => {
+            if (!request.headers['proxy-authorization']) {
+              return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end();
+            }
+            return response.writeHead(200).end('ok');
+          }, 2);
+          const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
+          await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
+          const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+          bw.webContents.on('login', (event, details, authInfo, cb) => {
+            event.preventDefault();
+            cb(user, pass);
+          });
+          await bw.loadURL('http://127.0.0.1:9999');
+          bw.close();
+          const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession, ...extraOptions });
+          let logInCount = 0;
+          request.on('login', () => {
+            logInCount++;
+          });
+          const response = await getResponse(request);
+          const body = await collectStreamBody(response);
+          expect(response.statusCode).to.equal(200);
+          expect(body).to.equal('ok');
+          expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
+        });
+
+        it('should upload body when 401', async () => {
+          const [user, pass] = ['user', 'pass'];
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            if (!request.headers.authorization) {
+              return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+            }
+            response.writeHead(200);
+            request.on('data', (chunk) => response.write(chunk));
+            request.on('end', () => response.end());
+          });
+          const requestData = randomString(kOneKiloByte);
+          const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+          request.on('login', (authInfo, cb) => {
+            cb(user, pass);
+          });
+          request.write(requestData);
+          const response = await getResponse(request);
+          const responseData = await collectStreamBody(response);
+          expect(responseData).to.equal(requestData);
+        });
+      });
+    }
+
+    describe('authentication when {"credentials":"omit"}', () => {
+      it('should not emit the login event when 401', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          if (!request.headers.authorization) {
+            return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+          }
           response.writeHead(200).end('ok');
-        }
+        });
+        const request = net.request({ method: 'GET', url: serverUrl, credentials: 'omit' });
+        request.on('login', () => {
+          expect.fail('unexpected login event');
+        });
+        const response = await getResponse(request);
+        expect(response.statusCode).to.equal(401);
+        expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
       });
-      const request = net.request({ method: 'GET', url: serverUrl });
-      request.on('login', (authInfo, cb) => {
-        cb();
-      });
-      const response = await getResponse(request);
-      const body = await collectStreamBody(response);
-      expect(body).to.equal('unauthenticated');
-    });
 
-    it('should share credentials with WebContents', async () => {
-      const [user, pass] = ['user', 'pass'];
-      const serverUrl = await respondNTimes.toSingleURL((request, response) => {
-        if (!request.headers.authorization) {
-          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
-        }
-        return response.writeHead(200).end('ok');
-      }, 2);
-      const bw = new BrowserWindow({ show: false });
-      bw.webContents.on('login', (event, details, authInfo, cb) => {
-        event.preventDefault();
-        cb(user, pass);
+      it('should not share credentials with WebContents', async () => {
+        const [user, pass] = ['user', 'pass'];
+        const serverUrl = await respondNTimes.toSingleURL((request, response) => {
+          if (!request.headers.authorization) {
+            return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+          }
+          return response.writeHead(200).end('ok');
+        }, 2);
+        const bw = new BrowserWindow({ show: false });
+        bw.webContents.on('login', (event, details, authInfo, cb) => {
+          event.preventDefault();
+          cb(user, pass);
+        });
+        await bw.loadURL(serverUrl);
+        bw.close();
+        const request = net.request({ method: 'GET', url: serverUrl, credentials: 'omit' });
+        request.on('login', () => {
+          expect.fail();
+        });
+        const response = await getResponse(request);
+        expect(response.statusCode).to.equal(401);
+        expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
       });
-      await bw.loadURL(serverUrl);
-      bw.close();
-      const request = net.request({ method: 'GET', url: serverUrl });
-      let logInCount = 0;
-      request.on('login', () => {
-        logInCount++;
-      });
-      const response = await getResponse(request);
-      await collectStreamBody(response);
-      expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
-    });
 
-    it('should share proxy credentials with WebContents', async () => {
-      const [user, pass] = ['user', 'pass'];
-      const proxyUrl = await respondNTimes((request, response) => {
-        if (!request.headers['proxy-authorization']) {
-          return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end();
-        }
-        return response.writeHead(200).end('ok');
-      }, 2);
-      const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
-      await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
-      const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      bw.webContents.on('login', (event, details, authInfo, cb) => {
-        event.preventDefault();
-        cb(user, pass);
+      it('should share proxy credentials with WebContents', async () => {
+        const [user, pass] = ['user', 'pass'];
+        const proxyUrl = await respondNTimes((request, response) => {
+          if (!request.headers['proxy-authorization']) {
+            return response.writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' }).end();
+          }
+          return response.writeHead(200).end('ok');
+        }, 2);
+        const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
+        await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
+        const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        bw.webContents.on('login', (event, details, authInfo, cb) => {
+          event.preventDefault();
+          cb(user, pass);
+        });
+        await bw.loadURL('http://127.0.0.1:9999');
+        bw.close();
+        const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession, credentials: 'omit' });
+        request.on('login', () => {
+          expect.fail();
+        });
+        const response = await getResponse(request);
+        const body = await collectStreamBody(response);
+        expect(response.statusCode).to.equal(200);
+        expect(body).to.equal('ok');
       });
-      await bw.loadURL('http://127.0.0.1:9999');
-      bw.close();
-      const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession });
-      let logInCount = 0;
-      request.on('login', () => {
-        logInCount++;
-      });
-      const response = await getResponse(request);
-      const body = await collectStreamBody(response);
-      expect(response.statusCode).to.equal(200);
-      expect(body).to.equal('ok');
-      expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
-    });
-
-    it('should upload body when 401', async () => {
-      const [user, pass] = ['user', 'pass'];
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        if (!request.headers.authorization) {
-          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
-        }
-        response.writeHead(200);
-        request.on('data', (chunk) => response.write(chunk));
-        request.on('end', () => response.end());
-      });
-      const requestData = randomString(kOneKiloByte);
-      const request = net.request({ method: 'GET', url: serverUrl });
-      request.on('login', (authInfo, cb) => {
-        cb(user, pass);
-      });
-      request.write(requestData);
-      const response = await getResponse(request);
-      const responseData = await collectStreamBody(response);
-      expect(responseData).to.equal(requestData);
     });
   });
 
@@ -466,7 +540,7 @@ describe('net module', () => {
     it('should be able to set cookie header line', async () => {
       const cookieHeaderName = 'Cookie';
       const cookieHeaderValue = 'test=12345';
-      const customSession = session.fromPartition('test-cookie-header');
+      const customSession = session.fromPartition(`test-cookie-header-${Math.random()}`);
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         expect(request.headers[cookieHeaderName.toLowerCase()]).to.equal(cookieHeaderValue);
         response.statusCode = 200;
@@ -511,7 +585,7 @@ describe('net module', () => {
         response.setHeader('x-cookie', `${request.headers.cookie!}`);
         response.end();
       });
-      const sess = session.fromPartition('cookie-tests-1');
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
       const cookieVal = `${Date.now()}`;
       await sess.cookies.set({
         url: serverUrl,
@@ -526,151 +600,160 @@ describe('net module', () => {
       expect(response.headers['x-cookie']).to.equal('undefined');
     });
 
-    it('should be able to use the sessions cookie store', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 200;
-        response.statusMessage = 'OK';
-        response.setHeader('x-cookie', request.headers.cookie!);
-        response.end();
-      });
-      const sess = session.fromPartition('cookie-tests-2');
-      const cookieVal = `${Date.now()}`;
-      await sess.cookies.set({
-        url: serverUrl,
-        name: 'wild_cookie',
-        value: cookieVal
-      });
-      const urlRequest = net.request({
-        url: serverUrl,
-        session: sess,
-        useSessionCookies: true
-      });
-      const response = await getResponse(urlRequest);
-      expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieVal}`);
-    });
+    for (const extraOptions of [{ useSessionCookies: true }, { credentials: 'include' }] as ClientRequestConstructorOptions[]) {
+      describe(`when ${JSON.stringify(extraOptions)}`, () => {
+        it('should be able to use the sessions cookie store', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.statusCode = 200;
+            response.statusMessage = 'OK';
+            response.setHeader('x-cookie', request.headers.cookie!);
+            response.end();
+          });
+          const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+          const cookieVal = `${Date.now()}`;
+          await sess.cookies.set({
+            url: serverUrl,
+            name: 'wild_cookie',
+            value: cookieVal
+          });
+          const urlRequest = net.request({
+            url: serverUrl,
+            session: sess,
+            ...extraOptions
+          });
+          const response = await getResponse(urlRequest);
+          expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieVal}`);
+        });
 
-    it('should be able to use the sessions cookie store with set-cookie', async () => {
-      const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        response.statusCode = 200;
-        response.statusMessage = 'OK';
-        response.setHeader('set-cookie', 'foo=bar');
-        response.end();
-      });
-      const sess = session.fromPartition('cookie-tests-3');
-      let cookies = await sess.cookies.get({});
-      expect(cookies).to.have.lengthOf(0);
-      const urlRequest = net.request({
-        url: serverUrl,
-        session: sess,
-        useSessionCookies: true
-      });
-      await collectStreamBody(await getResponse(urlRequest));
-      cookies = await sess.cookies.get({});
-      expect(cookies).to.have.lengthOf(1);
-      expect(cookies[0]).to.deep.equal({
-        name: 'foo',
-        value: 'bar',
-        domain: '127.0.0.1',
-        hostOnly: true,
-        path: '/',
-        secure: false,
-        httpOnly: false,
-        session: true,
-        sameSite: 'unspecified'
-      });
-    });
+        it('should be able to use the sessions cookie store with set-cookie', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.statusCode = 200;
+            response.statusMessage = 'OK';
+            response.setHeader('set-cookie', 'foo=bar');
+            response.end();
+          });
+          const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+          let cookies = await sess.cookies.get({});
+          expect(cookies).to.have.lengthOf(0);
+          const urlRequest = net.request({
+            url: serverUrl,
+            session: sess,
+            ...extraOptions
+          });
+          await collectStreamBody(await getResponse(urlRequest));
+          cookies = await sess.cookies.get({});
+          expect(cookies).to.have.lengthOf(1);
+          expect(cookies[0]).to.deep.equal({
+            name: 'foo',
+            value: 'bar',
+            domain: '127.0.0.1',
+            hostOnly: true,
+            path: '/',
+            secure: false,
+            httpOnly: false,
+            session: true,
+            sameSite: 'unspecified'
+          });
+        });
 
-    ['Lax', 'Strict'].forEach((mode) => {
-      it(`should be able to use the sessions cookie store with same-site ${mode} cookies`, async () => {
-        const serverUrl = await respondNTimes.toSingleURL((request, response) => {
-          response.statusCode = 200;
-          response.statusMessage = 'OK';
-          response.setHeader('set-cookie', `same=site; SameSite=${mode}`);
-          response.setHeader('x-cookie', `${request.headers.cookie}`);
-          response.end();
-        }, 2);
-        const sess = session.fromPartition(`cookie-tests-same-site-${mode}`);
-        let cookies = await sess.cookies.get({});
-        expect(cookies).to.have.lengthOf(0);
-        const urlRequest = net.request({
-          url: serverUrl,
-          session: sess,
-          useSessionCookies: true
+        ['Lax', 'Strict'].forEach((mode) => {
+          it(`should be able to use the sessions cookie store with same-site ${mode} cookies`, async () => {
+            const serverUrl = await respondNTimes.toSingleURL((request, response) => {
+              response.statusCode = 200;
+              response.statusMessage = 'OK';
+              response.setHeader('set-cookie', `same=site; SameSite=${mode}`);
+              response.setHeader('x-cookie', `${request.headers.cookie}`);
+              response.end();
+            }, 2);
+            const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+            let cookies = await sess.cookies.get({});
+            expect(cookies).to.have.lengthOf(0);
+            const urlRequest = net.request({
+              url: serverUrl,
+              session: sess,
+              ...extraOptions
+            });
+            const response = await getResponse(urlRequest);
+            expect(response.headers['x-cookie']).to.equal('undefined');
+            await collectStreamBody(response);
+            cookies = await sess.cookies.get({});
+            expect(cookies).to.have.lengthOf(1);
+            expect(cookies[0]).to.deep.equal({
+              name: 'same',
+              value: 'site',
+              domain: '127.0.0.1',
+              hostOnly: true,
+              path: '/',
+              secure: false,
+              httpOnly: false,
+              session: true,
+              sameSite: mode.toLowerCase()
+            });
+            const urlRequest2 = net.request({
+              url: serverUrl,
+              session: sess,
+              ...extraOptions
+            });
+            const response2 = await getResponse(urlRequest2);
+            expect(response2.headers['x-cookie']).to.equal('same=site');
+          });
         });
-        const response = await getResponse(urlRequest);
-        expect(response.headers['x-cookie']).to.equal('undefined');
-        await collectStreamBody(response);
-        cookies = await sess.cookies.get({});
-        expect(cookies).to.have.lengthOf(1);
-        expect(cookies[0]).to.deep.equal({
-          name: 'same',
-          value: 'site',
-          domain: '127.0.0.1',
-          hostOnly: true,
-          path: '/',
-          secure: false,
-          httpOnly: false,
-          session: true,
-          sameSite: mode.toLowerCase()
-        });
-        const urlRequest2 = net.request({
-          url: serverUrl,
-          session: sess,
-          useSessionCookies: true
-        });
-        const response2 = await getResponse(urlRequest2);
-        expect(response2.headers['x-cookie']).to.equal('same=site');
-      });
-    });
 
-    it('should be able to use the sessions cookie store safely across redirects', async () => {
-      const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
-        response.statusCode = 302;
-        response.statusMessage = 'Moved';
-        const newUrl = await respondOnce.toSingleURL((req, res) => {
-          res.statusCode = 200;
-          res.statusMessage = 'OK';
-          res.setHeader('x-cookie', req.headers.cookie!);
-          res.end();
+        it('should be able to use the sessions cookie store safely across redirects', async () => {
+          const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
+            response.statusCode = 302;
+            response.statusMessage = 'Moved';
+            const newUrl = await respondOnce.toSingleURL((req, res) => {
+              res.statusCode = 200;
+              res.statusMessage = 'OK';
+              res.setHeader('x-cookie', req.headers.cookie!);
+              res.end();
+            });
+            response.setHeader('x-cookie', request.headers.cookie!);
+            response.setHeader('location', newUrl.replace('127.0.0.1', 'localhost'));
+            response.end();
+          });
+          const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+          const cookie127Val = `${Date.now()}-127`;
+          const cookieLocalVal = `${Date.now()}-local`;
+          const localhostUrl = serverUrl.replace('127.0.0.1', 'localhost');
+          expect(localhostUrl).to.not.equal(serverUrl);
+          await Promise.all([
+            sess.cookies.set({
+              url: serverUrl,
+              name: 'wild_cookie',
+              value: cookie127Val
+            }), sess.cookies.set({
+              url: localhostUrl,
+              name: 'wild_cookie',
+              value: cookieLocalVal
+            })
+          ]);
+          const urlRequest = net.request({
+            url: serverUrl,
+            session: sess,
+            ...extraOptions
+          });
+          urlRequest.on('redirect', (status, method, url, headers) => {
+            // The initial redirect response should have received the 127 value here
+            expect(headers['x-cookie'][0]).to.equal(`wild_cookie=${cookie127Val}`);
+            urlRequest.followRedirect();
+          });
+          const response = await getResponse(urlRequest);
+          // We expect the server to have received the localhost value here
+          // The original request was to a 127.0.0.1 URL
+          // That request would have the cookie127Val cookie attached
+          // The request is then redirect to a localhost URL (different site)
+          // Because we are using the session cookie store it should do the safe / secure thing
+          // and attach the cookies for the new target domain
+          expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieLocalVal}`);
         });
-        response.setHeader('x-cookie', request.headers.cookie!);
-        response.setHeader('location', newUrl.replace('127.0.0.1', 'localhost'));
-        response.end();
       });
-      const sess = session.fromPartition('cookie-tests-4');
-      const cookie127Val = `${Date.now()}-127`;
-      const cookieLocalVal = `${Date.now()}-local`;
-      const localhostUrl = serverUrl.replace('127.0.0.1', 'localhost');
-      expect(localhostUrl).to.not.equal(serverUrl);
-      await Promise.all([
-        sess.cookies.set({
-          url: serverUrl,
-          name: 'wild_cookie',
-          value: cookie127Val
-        }), sess.cookies.set({
-          url: localhostUrl,
-          name: 'wild_cookie',
-          value: cookieLocalVal
-        })
-      ]);
-      const urlRequest = net.request({
-        url: serverUrl,
-        session: sess,
-        useSessionCookies: true
-      });
-      urlRequest.on('redirect', (status, method, url, headers) => {
-        // The initial redirect response should have received the 127 value here
-        expect(headers['x-cookie'][0]).to.equal(`wild_cookie=${cookie127Val}`);
-        urlRequest.followRedirect();
-      });
-      const response = await getResponse(urlRequest);
-      // We expect the server to have received the localhost value here
-      // The original request was to a 127.0.0.1 URL
-      // That request would have the cookie127Val cookie attached
-      // The request is then redirect to a localhost URL (different site)
-      // Because we are using the session cookie store it should do the safe / secure thing
-      // and attach the cookies for the new target domain
-      expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieLocalVal}`);
+    }
+
+    describe('when {"credentials":"omit"}', () => {
+      it('should not send cookies');
+      it('should not store cookies');
     });
 
     it('should be able to abort an HTTP request before first write', async () => {
@@ -916,7 +999,7 @@ describe('net module', () => {
       it('should to able to create and intercept a request using a custom session object', async () => {
         const requestUrl = '/requestUrl';
         const redirectUrl = '/redirectUrl';
-        const customPartitionName = 'custom-partition';
+        const customPartitionName = `custom-partition-${Math.random()}`;
         let requestIsRedirected = false;
         const serverUrl = await respondOnce.toURL(redirectUrl, (request, response) => {
           requestIsRedirected = true;
@@ -957,7 +1040,7 @@ describe('net module', () => {
       it('should to able to create and intercept a request using a custom partition name', async () => {
         const requestUrl = '/requestUrl';
         const redirectUrl = '/redirectUrl';
-        const customPartitionName = 'custom-partition';
+        const customPartitionName = `custom-partition-${Math.random()}`;
         let requestIsRedirected = false;
         const serverUrl = await respondOnce.toURL(redirectUrl, (request, response) => {
           requestIsRedirected = true;
