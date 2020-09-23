@@ -129,9 +129,8 @@ DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
 }
 
 std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
-  return ui::ResourceBundle::GetSharedInstance()
-      .GetRawDataResource(IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE)
-      .as_string();
+  return ui::ResourceBundle::GetSharedInstance().LoadDataResourceString(
+      IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE);
 }
 
 bool DevToolsManagerDelegate::HasBundledFrontendResources() {
