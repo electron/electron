@@ -101,7 +101,7 @@ describe('Menu module', function () {
     describe('Menu sorting and building', () => {
       describe('sorts groups', () => {
         it('does a simple sort', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               label: 'two',
               id: '2',
@@ -146,7 +146,7 @@ describe('Menu module', function () {
         });
 
         it('resolves cycles by ignoring things that conflict', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '2',
               label: 'two',
@@ -178,7 +178,7 @@ describe('Menu module', function () {
         });
 
         it('ignores references to commands that do not exist', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -208,7 +208,7 @@ describe('Menu module', function () {
         });
 
         it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -260,7 +260,7 @@ describe('Menu module', function () {
 
       describe('moves an item to a different group by merging groups', () => {
         it('can move a group of one item', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -300,7 +300,7 @@ describe('Menu module', function () {
         });
 
         it("moves all items in the moving item's group", () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -348,7 +348,7 @@ describe('Menu module', function () {
         });
 
         it("ignores positions relative to commands that don't exist", () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -436,7 +436,7 @@ describe('Menu module', function () {
         });
 
         it('can merge multiple groups when given a list of before/after commands', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -474,7 +474,7 @@ describe('Menu module', function () {
         });
 
         it('can merge multiple groups based on both before/after commands', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -597,6 +597,32 @@ describe('Menu module', function () {
         expect(menuTwo.items[0].label).to.equal('a');
         expect(menuTwo.items[1].label).to.equal('b');
         expect(menuTwo.items[2].label).to.equal('c');
+      });
+
+      it('should only filter excess menu separators AFTER the re-ordering for before/after is done', () => {
+        const menuOne = Menu.buildFromTemplate([
+          {
+            type: 'separator'
+          },
+          {
+            type: 'normal',
+            label: 'Foo',
+            id: 'foo'
+          },
+          {
+            type: 'normal',
+            label: 'Bar',
+            id: 'bar'
+          },
+          {
+            type: 'separator',
+            before: ['bar']
+          }]);
+
+        expect(menuOne.items).to.have.length(3);
+        expect(menuOne.items[0].label).to.equal('Foo');
+        expect(menuOne.items[1].type).to.equal('separator');
+        expect(menuOne.items[2].label).to.equal('Bar');
       });
 
       it('should continue inserting items at next index when no specifier is present', () => {
