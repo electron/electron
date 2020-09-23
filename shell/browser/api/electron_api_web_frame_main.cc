@@ -5,31 +5,35 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "base/lazy_instance.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
 
 namespace api {
 
+typedef std::unordered_map<content::RenderFrameHost*, WebFrame*> RenderFrameMap;
+base::LazyInstance<RenderFrameMap>::DestructorAtExit g_render_frame_map =
+    LAZY_INSTANCE_INITIALIZER;
+
 gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-WebFrame::WebFrame(content::RenderFrameHost* render_frame)
-    : render_frame_(render_frame) {
-  // TODO
+WebFrame::WebFrame(content::RenderFrameHost* rfh) : render_frame_(rfh) {
+  g_render_frame_map.Get().emplace(rfh, this);
 }
 
 WebFrame::~WebFrame() {
-  // TODO
+  g_render_frame_map.Get().erase(render_frame_);
 }
 
 bool WebFrame::Reload() {
@@ -53,24 +57,23 @@ content::RenderFrameHost* WebFrame::GetParent() {
 }
 
 // static
-gin::Handle<WebFrame> WebFrame::FromID(v8::Isolate* isolate,
-                                       int render_process_id,
-                                       int render_frame_id) {
-  content::RenderFrameHost* render_frame =
-      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
-
-  auto handle = gin::CreateHandle(isolate, new WebFrame(render_frame));
-
+gin::Handle<WebFrame> WebFrame::From(v8::Isolate* isolate,
+                                     content::RenderFrameHost* rfh) {
+  auto frame_map = g_render_frame_map.Get();
+  auto iter = frame_map.find(rfh);
+  WebFrame* web_frame =
+      iter == frame_map.end() ? new WebFrame(rfh) : iter->second;
+  auto handle = gin::CreateHandle(isolate, web_frame);
   return handle;
 }
 
 // static
-gin::Handle<WebFrame> WebFrame::From(
-    v8::Isolate* isolate,
-    content::RenderFrameHost* render_frame_host) {
-  auto handle = gin::CreateHandle(isolate, new WebFrame(render_frame_host));
-
-  return handle;
+gin::Handle<WebFrame> WebFrame::FromID(v8::Isolate* isolate,
+                                       int render_process_id,
+                                       int render_frame_id) {
+  auto* rfh =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  return From(isolate, rfh);
 }
 
 gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
