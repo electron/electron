@@ -31,7 +31,7 @@ index 4f3b68135f9bb29f2c36055f50e1725a9b36a856..ece3d14f3b7c585b52676ad9b8dde0b3
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 49894fbab5d7cd265cce27e49debf747c188bbd3..db4923ce99f3c78bc15bed7cfdf9a71adb516adf 100644
+index 89c7798d8ddf21eb74e726c142377afa05b59c26..dd75b8e82552a54868ce86caf90ba175af64e937 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
