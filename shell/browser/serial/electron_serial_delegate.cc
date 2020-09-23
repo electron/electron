@@ -6,12 +6,19 @@
 
 #include <utility>
 
+#include "base/feature_list.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_context_factory.h"
 #include "shell/browser/serial/serial_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
+
+namespace features {
+
+const base::Feature kElectronSerialChooser{"ElectronSerialChooser",
+                                           base::FEATURE_DISABLED_BY_DEFAULT};
+}
 
 namespace electron {
 
@@ -29,11 +36,16 @@ std::unique_ptr<content::SerialChooser> ElectronSerialDelegate::RunChooser(
     content::RenderFrameHost* frame,
     std::vector<blink::mojom::SerialPortFilterPtr> filters,
     content::SerialChooser::Callback callback) {
-  SerialChooserController* controller = ControllerForFrame(frame);
-  if (controller) {
-    DeleteControllerForFrame(frame);
+  if (base::FeatureList::IsEnabled(features::kElectronSerialChooser)) {
+    SerialChooserController* controller = ControllerForFrame(frame);
+    if (controller) {
+      DeleteControllerForFrame(frame);
+    }
+    AddControllerForFrame(frame, std::move(filters), std::move(callback));
+  } else {
+    // If feature is disabled, immediately return back with no port selected.
+    std::move(callback).Run(nullptr);
   }
-  AddControllerForFrame(frame, std::move(filters), std::move(callback));
 
   // Return a nullptr because the return value isn't used for anything, eg
   // there is no mechanism to cancel navigator.serial.requestPort(). The return
@@ -75,7 +87,10 @@ void ElectronSerialDelegate::AddObserver(content::RenderFrameHost* frame,
 
 void ElectronSerialDelegate::RemoveObserver(content::RenderFrameHost* frame,
                                             Observer* observer) {
-  return GetChooserContext(frame)->RemovePortObserver(observer);
+  SerialChooserContext* serial_chooser_context = GetChooserContext(frame);
+  if (serial_chooser_context) {
+    return serial_chooser_context->RemovePortObserver(observer);
+  }
 }
 
 SerialChooserController* ElectronSerialDelegate::ControllerForFrame(
