@@ -64,6 +64,7 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "ui/base/x/x11_error_handler.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
@@ -147,14 +148,7 @@ base::string16 MediaStringProvider(media::MessageId id) {
   }
 }
 
-#if defined(USE_X11)
-// Indicates that we're currently responding to an IO error (by shutting down).
-bool g_in_x11_io_error_handler = false;
-
-// Number of seconds to wait for UI thread to get an IO error if we get it on
-// the background thread.
-const int kWaitForUIThreadSeconds = 10;
-
+#if defined(OS_LINUX)
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (base::PathService::Get(DIR_APP_DATA, &path))
@@ -163,55 +157,6 @@ void OverrideLinuxAppDataPath() {
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
   base::PathService::Override(DIR_APP_DATA, path);
-}
-
-int BrowserX11ErrorHandler(Display* d, XErrorEvent* e) {
-  if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
-                       e->request_code, e->minor_code));
-  }
-  return 0;
-}
-
-// This function is used to help us diagnose crash dumps that happen
-// during the shutdown process.
-NOINLINE void WaitingForUIThreadToHandleIOError() {
-  // Ensure function isn't optimized away.
-  asm("");
-  sleep(kWaitForUIThreadSeconds);
-}
-
-int BrowserX11IOErrorHandler(Display* d) {
-  if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-    // Wait for the UI thread (which has a different connection to the X server)
-    // to get the error. We can't call shutdown from this thread without
-    // tripping an error. Doing it through a function so that we'll be able
-    // to see it in any crash dumps.
-    WaitingForUIThreadToHandleIOError();
-    return 0;
-  }
-
-  // If there's an IO error it likely means the X server has gone away.
-  // If this DCHECK fails, then that means SessionEnding() below triggered some
-  // code that tried to talk to the X server, resulting in yet another error.
-  DCHECK(!g_in_x11_io_error_handler);
-
-  g_in_x11_io_error_handler = true;
-  LOG(ERROR) << "X IO error received (X server probably went away)";
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-
-  return 0;
-}
-
-int X11EmptyErrorHandler(Display* d, XErrorEvent* error) {
-  return 0;
-}
-
-int X11EmptyIOErrorHandler(Display* d) {
-  return 0;
 }
 
 // GTK does not provide a way to check if current theme is dark, so we compare
@@ -289,13 +234,15 @@ void ElectronBrowserMainParts::RegisterDestructionCallback(
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   OverrideLinuxAppDataPath();
+#endif
 
+#if defined(USE_X11)
   // Installs the X11 error handlers for the browser process used during
   // startup. They simply print error messages and exit because
   // we can't shutdown properly while creating and initializing services.
-  ui::SetX11ErrorHandlers(nullptr, nullptr);
+  ui::SetNullErrorHandlers();
 #endif
 
 #if defined(OS_POSIX)
@@ -514,7 +461,8 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
   // Installs the X11 error handlers for the browser process after the
   // main message loop has started. This will allow us to exit cleanly
   // if X exits before us.
-  ui::SetX11ErrorHandlers(BrowserX11ErrorHandler, BrowserX11IOErrorHandler);
+  ui::SetErrorHandlers(
+      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated()));
 #endif
 #if defined(OS_LINUX)
   bluez::DBusBluezManagerWrapperLinux::Initialize();
@@ -529,7 +477,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Unset the X11 error handlers. The X11 error handlers log the errors using a
   // |PostTask()| on the message-loop. But since the message-loop is in the
   // process of terminating, this can cause errors.
-  ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
+  ui::SetEmptyErrorHandlers();
 #endif
 
 #if defined(OS_MAC)
