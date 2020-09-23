@@ -256,8 +256,6 @@ filenames = {
     "shell/browser/net/web_request_api_interface.h",
     "shell/browser/network_hints_handler_impl.cc",
     "shell/browser/network_hints_handler_impl.h",
-    "shell/browser/node_debugger.cc",
-    "shell/browser/node_debugger.h",
     "shell/browser/notifications/linux/libnotify_notification.cc",
     "shell/browser/notifications/linux/libnotify_notification.h",
     "shell/browser/notifications/linux/notification_presenter_linux.cc",

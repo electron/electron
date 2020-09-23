@@ -41,7 +41,6 @@
 #include "shell/browser/feature_list.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
-#include "shell/browser/node_debugger.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
@@ -322,10 +321,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
       js_env_->context(), js_env_->platform());
   node_env_ = std::make_unique<NodeEnvironment>(env);
 
-  // Enable support for v8 inspector
-  node_debugger_ = std::make_unique<NodeDebugger>(env);
-  node_debugger_->Start();
-
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // Add Electron extended APIs.
@@ -550,7 +545,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_debugger_->Stop();
   node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
   node::Stop(node_env_->env());
