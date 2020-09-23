@@ -19,6 +19,7 @@
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/download/public/common/download_url_parameters.h"
@@ -176,6 +177,55 @@ struct Converter<ClearStorageDataOptions> {
       out->storage_types = GetStorageMask(types);
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
+    return true;
+  }
+};
+
+bool SSLProtocolVersionFromString(const std::string& version_str,
+                                  network::mojom::SSLVersion* version) {
+  if (version_str == switches::kSSLVersionTLSv1) {
+    *version = network::mojom::SSLVersion::kTLS1;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv11) {
+    *version = network::mojom::SSLVersion::kTLS11;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv12) {
+    *version = network::mojom::SSLVersion::kTLS12;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv13) {
+    *version = network::mojom::SSLVersion::kTLS13;
+    return true;
+  }
+  return false;
+}
+
+template <>
+struct Converter<network::mojom::SSLConfigPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::SSLConfigPtr* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    *out = network::mojom::SSLConfig::New();
+    std::string version_min_str;
+    if (options.Get("minVersion", &version_min_str)) {
+      if (!SSLProtocolVersionFromString(version_min_str, &(*out)->version_min))
+        return false;
+    }
+    std::string version_max_str;
+    if (options.Get("maxVersion", &version_max_str)) {
+      if (!SSLProtocolVersionFromString(version_max_str,
+                                        &(*out)->version_max) ||
+          (*out)->version_max < network::mojom::SSLVersion::kTLS12)
+        return false;
+    }
+
+    // TODO(nornagon): also support client_cert_pooling_policy and
+    // disabled_cipher_suites. Maybe other SSLConfig properties too?
     return true;
   }
 };
@@ -617,6 +667,10 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  browser_context_->SetSSLConfig(std::move(config));
+}
+
 bool Session::IsPersistent() {
   return !browser_context_->IsOffTheRecord();
 }
@@ -1024,6 +1078,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",

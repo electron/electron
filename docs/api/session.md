@@ -492,6 +492,20 @@ will be temporary.
 
 Returns `String` - The user agent for this session.
 
+#### `ses.setSSLConfig(config)`
+
+* `config` Object
+  * `minVersion` String - Can be `tls1`, `tls1.1`, `tls1.2` or `tls1.3`. The
+    minimum SSL version to allow when connecting to remote servers. Defaults to
+    `tls1`.
+  * `maxVersion` String - Can be `tls1.2` or `tls1.3`. The maximum SSL version
+    to allow when connecting to remote servers. Defaults to `tls1.3`.
+
+Sets the SSL configuration for the session. All subsequent network requests
+will use the new configuration. Existing network connections (such as WebSocket
+connections) will not be terminated, but old sockets in the pool will not be
+reused for new connections.
+
 #### `ses.getBlobData(identifier)`
 
 * `identifier` String - Valid UUID.

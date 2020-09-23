@@ -4,6 +4,8 @@
 
 #include "shell/browser/net/network_context_service.h"
 
+#include <utility>
+
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
 #include "net/net_buildflags.h"
@@ -28,6 +30,13 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
   g_browser_process->system_network_context_manager()
       ->ConfigureDefaultNetworkContextParams(network_context_params);
+
+  mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client;
+  network_context_params->ssl_config_client_receiver =
+      ssl_config_client.BindNewPipeAndPassReceiver();
+  browser_context_->SetSSLConfigClient(std::move(ssl_config_client));
+
+  network_context_params->initial_ssl_config = browser_context_->GetSSLConfig();
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
