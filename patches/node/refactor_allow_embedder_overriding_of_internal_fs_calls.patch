@@ -22,7 +22,7 @@ index 6d6ca2af629c41df68fe1a4652cf94fef30be038..e1f70addc28e4fe31d3a7089ecec3b58
  process.config = JSONParse(internalBinding('native_module').config);
  require('internal/worker/js_transferable').setup();
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index edd5972002d7ad4d6932dfbed591a96d5b3f6fab..7067737952a5002899071bb4a434a93ec92103ce 100644
+index 922dd136f655e9ef3b6812964146789b0a372ac4..c614adc508c37b7f8250d53a6e113a973008933c 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -67,7 +67,7 @@ const internalFS = require('internal/fs/utils');

@@ -29,7 +29,7 @@ index f947c6bf27e80c534a8f72265d0139a8b5b3f13a..d7e56d9c3fe5a56897989915984cb823
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 7067737952a5002899071bb4a434a93ec92103ce..3430cac5bb858c9abfe094b458f590096fc36dce 100644
+index c614adc508c37b7f8250d53a6e113a973008933c..99e1258b8e2939bdc0fa8881fa15b642ef352384 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1050,6 +1050,13 @@ Module.prototype._compile = function(content, filename) {
@@ -113,10 +113,10 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
        }
        mp->nm_dso_handle = dlib->handle_;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 2854ec072bf1c68810373c61673269f86fad442b..7319d7ec4541211571f0e60d94d0d28788f0631b 100644
+index 87f547da1de1c4b0d5913f0af461ee229b18aa02..c12ec1d13864b1aca227aa06b75339c14ebc5b4e 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -386,6 +386,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -371,6 +371,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              "disable loading non-context-aware addons",
              &EnvironmentOptions::force_context_aware,
              kAllowedInEnvironment);
@@ -128,10 +128,10 @@ index 2854ec072bf1c68810373c61673269f86fad442b..7319d7ec4541211571f0e60d94d0d287
              "emit pending deprecation warnings",
              &EnvironmentOptions::pending_deprecation,
 diff --git a/src/node_options.h b/src/node_options.h
-index 3258d4b3f0df0c57b055c652d3391c2196ad5075..734e80aa7d35235ffe503056e14205b94f807d60 100644
+index bd63fcb0485c77e24becdf2392c453f3b2c4cdba..2af8f82ec5e6995b9ba340fddbc4943f0374198f 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -122,6 +122,7 @@ class EnvironmentOptions : public Options {
+@@ -121,6 +121,7 @@ class EnvironmentOptions : public Options {
    bool no_force_async_hooks_checks = false;
    bool no_warnings = false;
    bool force_context_aware = false;
