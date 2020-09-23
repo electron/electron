@@ -42,7 +42,7 @@ index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index c0c37674e99b9d04c983dda8312433a37dbd5170..282bdb964cb4e3fb03d53768b3212fe2b84e3bd7 100644
+index 977cefd87de616ac97c687f7fbe350cc703b84b3..286768de5756b446fafe9a9af33364270cf0e583 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -63,7 +63,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -70,7 +70,7 @@ index c0c37674e99b9d04c983dda8312433a37dbd5170..282bdb964cb4e3fb03d53768b3212fe2
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -560,6 +569,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -564,6 +573,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -89,7 +89,7 @@ index c0c37674e99b9d04c983dda8312433a37dbd5170..282bdb964cb4e3fb03d53768b3212fe2
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -663,7 +684,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -667,7 +688,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -115,10 +115,10 @@ index dde0f977c676b6914f206ca7022290887257622b..67fe14f482dcbdf884711e3b283f9d61
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 91c5532be895114ac532d270cb5e00cbfd4abf89..1ff5451c10c4843557746df9daf879d422b9855a 100644
+index d6fa761fafbc7cfea744a34b1101fb33a5ac1ba2..74afe95ebec7f14836b4a5f4c3689f5acc5774cb 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -646,6 +646,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -647,6 +647,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

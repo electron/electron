@@ -6,10 +6,10 @@ Subject: fix: build and expose inspector agent
 Node inspector initialization happens in a different start-up function in node.cc, which we don't call in Electron. This allows for us to use the inspector agent in electron/atom/browser/node_debugger.cc
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 7712a62d7cbeb0975f00877be36b55da150f1459..1e990059198de3fedc912bfbd5eb6eae8e5c3eea 100644
+index e6ab76abf56168041108972d54d741af988342b4..7de9d75e49a08625bbd37f5bfcee3f88c5fa978d 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -220,7 +220,7 @@ const int CONTEXT_GROUP_ID = 1;
+@@ -203,7 +203,7 @@ const int CONTEXT_GROUP_ID = 1;
  
  std::string GetWorkerLabel(node::Environment* env) {
    std::ostringstream result;
@@ -18,7 +18,7 @@ index 7712a62d7cbeb0975f00877be36b55da150f1459..1e990059198de3fedc912bfbd5eb6eae
    return result.str();
  }
  
-@@ -468,7 +468,7 @@ class NodeInspectorClient : public V8InspectorClient {
+@@ -458,7 +458,7 @@ class NodeInspectorClient : public V8InspectorClient {
      client_ = V8Inspector::create(env->isolate(), this);
      // TODO(bnoordhuis) Make name configurable from src/node.cc.
      std::string name =
@@ -28,7 +28,7 @@ index 7712a62d7cbeb0975f00877be36b55da150f1459..1e990059198de3fedc912bfbd5eb6eae
      info.is_default = true;
      contextCreated(env->context(), info);
 diff --git a/src/inspector_agent.h b/src/inspector_agent.h
-index 089077370db049a7e6d00ff2bf4d6b61cbc427d9..5594f4ba637c5c890a8226d9face18815c41a97b 100644
+index efd090c49b4311bcf3d8b717d6e5c65553849aed..a508ddd43ce613441eae759cd6110b6cc15819e4 100644
 --- a/src/inspector_agent.h
 +++ b/src/inspector_agent.h
 @@ -6,7 +6,9 @@
@@ -51,10 +51,10 @@ index 089077370db049a7e6d00ff2bf4d6b61cbc427d9..5594f4ba637c5c890a8226d9face1881
    explicit Agent(node::Environment* env);
    ~Agent();
 diff --git a/src/inspector_io.cc b/src/inspector_io.cc
-index 75290317d2fcae8585ac8d91f49add5fdd0d79c0..8af7427c463e98705dc7a6a4c86341faec3620b2 100644
+index d3bd1911214f83fbf841a91bf01072d4c12fe870..01b92d5b6b17015eb6037978b36ab20b7d2ad651 100644
 --- a/src/inspector_io.cc
 +++ b/src/inspector_io.cc
-@@ -13,6 +13,8 @@
+@@ -14,6 +14,8 @@
  #include "util-inl.h"
  #include "zlib.h"
  

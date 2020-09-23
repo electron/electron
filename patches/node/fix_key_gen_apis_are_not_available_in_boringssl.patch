@@ -6,10 +6,10 @@ Subject: fix: key gen APIs are not available in BoringSSL
 This will make Node's key pair generation APIs fail.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index c132e6a089b3cb7119910131fe740574d7917b89..82afaee6e2b929faac76fc5d930a8c0fd6558df3 100644
+index 05da3af09c63dcec2a4b20a4ffd8cb73c2c96982..fc780a4387c9a838a80b063276043f6087ce8259 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -267,24 +267,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -288,24 +288,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -34,7 +34,7 @@ index c132e6a089b3cb7119910131fe740574d7917b89..82afaee6e2b929faac76fc5d930a8c0f
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -6085,6 +6075,7 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6131,6 +6121,7 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
      if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
        return nullptr;
  
@@ -42,7 +42,7 @@ index c132e6a089b3cb7119910131fe740574d7917b89..82afaee6e2b929faac76fc5d930a8c0f
      if (EVP_PKEY_CTX_set_dsa_paramgen_bits(param_ctx.get(), modulus_bits_) <= 0)
        return nullptr;
  
-@@ -6095,6 +6086,7 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6141,6 +6132,7 @@ class DSAKeyPairGenerationConfig : public KeyPairGenerationConfig {
          return nullptr;
        }
      }
@@ -51,10 +51,10 @@ index c132e6a089b3cb7119910131fe740574d7917b89..82afaee6e2b929faac76fc5d930a8c0f
      EVP_PKEY* raw_params = nullptr;
      if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
 diff --git a/src/node_crypto_common.cc b/src/node_crypto_common.cc
-index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99cbd7a106d 100644
+index 6473b652ac95609aff555d99be38b48a5aa513a5..caaaf19dc02101c2024b511780c94fc85476b7a2 100644
 --- a/src/node_crypto_common.cc
 +++ b/src/node_crypto_common.cc
-@@ -239,10 +239,10 @@ int UseSNIContext(const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
+@@ -240,10 +240,10 @@ int UseSNIContext(const SSLPointer& ssl, BaseObjectPtr<SecureContext> context) {
  }
  
  const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -66,7 +66,7 @@ index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99c
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -251,17 +251,18 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -252,17 +252,18 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
        rem < 2) {
      return nullptr;
    }
@@ -87,7 +87,7 @@ index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99c
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -283,6 +284,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -284,6 +285,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -96,7 +96,7 @@ index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99c
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -290,7 +293,10 @@ const char* GetServerName(SSL* ssl) {
+@@ -291,7 +294,10 @@ const char* GetServerName(SSL* ssl) {
  }
  
  bool SetGroups(SecureContext* sc, const char* groups) {
@@ -107,7 +107,7 @@ index 3b35ee1ff7ba8a6aac6419ba6ca13ea33e7bcf42..83f4c1127081542aad2d12b9dc45f99c
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -772,13 +778,13 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -768,13 +774,13 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());

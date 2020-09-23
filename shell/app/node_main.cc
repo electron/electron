@@ -198,12 +198,16 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                    exec_argc, exec_argv);
-      CHECK_NE(nullptr, env);
+      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kNoInitializeInspector;
 
-      // This needs to be called before the inspector is initialized.
-      env->InitializeDiagnostics();
+      std::vector<std::string> args(argv, argv + argc);  // NOLINT
+      std::vector<std::string> exec_args(exec_argv,
+                                         exec_argv + exec_argc);  // NOLINT
+      env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
+                                    exec_args,
+                                    (node::EnvironmentFlags::Flags)flags);
+      CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
@@ -285,10 +289,6 @@ int NodeMain(int argc, char* argv[]) {
     node::ResetStdio();
 
     node::Stop(env);
-    env->stop_sub_worker_contexts();
-    env->RunCleanup();
-
-    node::RunAtExit(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
 

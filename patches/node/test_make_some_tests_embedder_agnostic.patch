@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 3 Sep 2020 13:35:35 -0700
+Subject: test: make some tests embedder agnostic
+
+Make the .out checks process-agnostic.
+
+Upstreamed at https://github.com/nodejs/node/pull/35040.
+
+diff --git a/test/message/esm_loader_not_found.out b/test/message/esm_loader_not_found.out
+index 60abb529a3c87152087f4a2c52f79ac5dfdf7f25..26292512d9b00225100d2af91f0f7507072099e2 100644
+--- a/test/message/esm_loader_not_found.out
++++ b/test/message/esm_loader_not_found.out
+@@ -1,5 +1,5 @@
+ (node:*) ExperimentalWarning: --experimental-loader is an experimental feature. This feature could change at any time
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+ internal/process/esm_loader.js:*
+     internalBinding('errors').triggerUncaughtException(
+                               ^
+diff --git a/test/message/esm_loader_not_found_cjs_hint_relative.out b/test/message/esm_loader_not_found_cjs_hint_relative.out
+index f7460c31416dc97ca971d5a88cc8d424276f6d42..1c43c0d3a2eb31e31fbb2cf2496e2bd0ef3bea1d 100644
+--- a/test/message/esm_loader_not_found_cjs_hint_relative.out
++++ b/test/message/esm_loader_not_found_cjs_hint_relative.out
+@@ -1,5 +1,5 @@
+ (node:*) ExperimentalWarning: --experimental-loader is an experimental feature. This feature could change at any time
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+ internal/process/esm_loader.js:*
+     internalBinding('errors').triggerUncaughtException(
+                               ^
+diff --git a/test/message/esm_loader_syntax_error.out b/test/message/esm_loader_syntax_error.out
+index 6201de95208ff3e08c58cfe2cab5bcda2218fbf3..d6c6df0a338c848127ba0cfa11a98d13b0326848 100644
+--- a/test/message/esm_loader_syntax_error.out
++++ b/test/message/esm_loader_syntax_error.out
+@@ -1,5 +1,5 @@
+ (node:*) ExperimentalWarning: --experimental-loader is an experimental feature. This feature could change at any time
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+ file://*/test/fixtures/es-module-loaders/syntax-error.mjs:2
+ await async () => 0;
+ ^^^^^^^^^^^^^
+diff --git a/test/message/promise_unhandled_warn_with_error.out b/test/message/promise_unhandled_warn_with_error.out
+index b539adb2d1e76931a41f73b606c6e1611b998883..66c98c57f71717046d26e6672897030dfd770da6 100644
+--- a/test/message/promise_unhandled_warn_with_error.out
++++ b/test/message/promise_unhandled_warn_with_error.out
+@@ -6,5 +6,5 @@
+     at *
+     at *
+     at *
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+ *UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+\ No newline at end of file
+diff --git a/test/pseudo-tty/test-tty-color-support-warning-2.out b/test/pseudo-tty/test-tty-color-support-warning-2.out
+index d17fa99b96974a54ad443a37b5f828fe7bd33152..37b470a5f108f9cffc8a08cfb15bf04bbea4d9d5 100644
+--- a/test/pseudo-tty/test-tty-color-support-warning-2.out
++++ b/test/pseudo-tty/test-tty-color-support-warning-2.out
+@@ -1,3 +1,3 @@
+ 
+ (node:*) Warning: The 'NODE_DISABLE_COLORS' env is ignored due to the 'FORCE_COLOR' env being set.
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+diff --git a/test/pseudo-tty/test-tty-color-support-warning.out b/test/pseudo-tty/test-tty-color-support-warning.out
+index 7a9df4725486d28062ebbcfa4269bf543a051c00..b25d2e42cf7244a6513de2f29c2f647d91983782 100644
+--- a/test/pseudo-tty/test-tty-color-support-warning.out
++++ b/test/pseudo-tty/test-tty-color-support-warning.out
+@@ -1,3 +1,3 @@
+ 
+ (node:*) Warning: The 'NODE_DISABLE_COLORS' and 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)
+diff --git a/test/pseudo-tty/test-tty-color-support.out b/test/pseudo-tty/test-tty-color-support.out
+index 86ed488ee8c1b292c43434f869e19d190e19cf66..df5831c555be1914e28986df62bbb4421a29d68a 100644
+--- a/test/pseudo-tty/test-tty-color-support.out
++++ b/test/pseudo-tty/test-tty-color-support.out
+@@ -1,2 +1,2 @@
+ (node:*) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+-(Use `node --trace-warnings ...` to show where the warning was created)
++(Use `* --trace-warnings ...` to show where the warning was created)

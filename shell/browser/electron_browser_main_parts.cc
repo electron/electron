@@ -165,10 +165,12 @@ void OverrideLinuxAppDataPath() {
   base::PathService::Override(DIR_APP_DATA, path);
 }
 
-int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
+int BrowserX11ErrorHandler(Display* d, XErrorEvent* e) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
+        FROM_HERE,
+        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
+                       e->request_code, e->minor_code));
   }
   return 0;
 }
@@ -229,7 +231,7 @@ void UpdateDarkThemeSetting() {
 
 }  // namespace
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 class DarkThemeObserver : public ui::NativeThemeObserver {
  public:
   DarkThemeObserver() = default;
@@ -350,7 +352,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif

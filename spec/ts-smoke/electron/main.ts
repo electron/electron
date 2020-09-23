@@ -1068,21 +1068,19 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 // cookies
 // https://github.com/electron/electron/blob/master/docs/api/cookies.md
 {
-  const { session } = require('electron')
-
   // Query all cookies.
   session.defaultSession.cookies.get({})
-    .then((cookies) => {
+    .then(cookies => {
       console.log(cookies)
-    }).catch((error) => {
+    }).catch((error: Error) => {
       console.log(error)
     })
 
   // Query all cookies associated with a specific url.
   session.defaultSession.cookies.get({ url: 'http://www.github.com' })
-    .then((cookies) => {
+    .then(cookies => {
       console.log(cookies)
-    }).catch((error) => {
+    }).catch((error: Error) => {
       console.log(error)
     })
 
@@ -1092,7 +1090,7 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
   session.defaultSession.cookies.set(cookie)
     .then(() => {
       // success
-    }, (error) => {
+    }, (error: Error) => {
       console.error(error)
     })
 }

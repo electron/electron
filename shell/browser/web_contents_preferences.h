@@ -50,7 +50,7 @@ class WebContentsPreferences
                                  bool is_subframe);
 
   // Modify the WebPreferences according to preferences.
-  void OverrideWebkitPrefs(content::WebPreferences* prefs);
+  void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs);
 
   // Clear the current WebPreferences.
   void Clear();

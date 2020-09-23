@@ -5,7 +5,6 @@
 #include "shell/browser/ui/gtk/menu_util.h"
 
 #include <gdk/gdk.h>
-#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
 #include <map>
