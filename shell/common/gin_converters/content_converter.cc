@@ -237,6 +237,12 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
 bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               content::WebContents** out) {
+  if (!val->IsObject())
+    return false;
+  // gin's unwrapping converter doesn't expect the pointer inside to ever be
+  // nullptr, so we check here first before attempting to unwrap.
+  if (gin_helper::Destroyable::IsDestroyed(val.As<v8::Object>()))
+    return false;
   electron::api::WebContents* web_contents = nullptr;
   if (!gin::ConvertFromV8(isolate, val, &web_contents) || !web_contents)
     return false;
