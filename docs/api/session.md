@@ -91,6 +91,40 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 })
 ```
 
+#### Event: 'extension-loaded'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is loaded. This occurs whenever an extension is
+added to the "enabled" set of extensions. This includes:
+- Extensions being loaded from `Session.loadExtension`.
+- Extensions being reloaded:
+   * from a crash.
+   * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
+
+#### Event: 'extension-unloaded'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is unloaded. This occurs when
+`Session.removeExtension` is called.
+
+#### Event: 'extension-ready'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is loaded and all necessary browser state is
+initialized to support the start of the extension's background page.
+
 #### Event: 'preconnect'
 
 Returns:
