@@ -1615,10 +1615,10 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..9be5ffae55057c4072599d17384735984851de5a
+index 0000000000000000000000000000000000000000..e5fd79da5323e7039730fd8cca66caae8c84e903
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,70 @@
 +#!/usr/bin/env python
 +import json
 +import os
@@ -1653,21 +1653,28 @@ index 0000000000000000000000000000000000000000..9be5ffae55057c4072599d1738473598
 +  node_gyp_path = os.path.join(node_root_dir, 'node.gyp')
 +  out = {}
 +  node_gyp = LoadPythonDictionary(node_gyp_path)
-+  out['library_files'] = node_gyp['variables']['library_files']
 +  node_lib_target = next(
 +      t for t in node_gyp['targets']
 +      if t['target_name'] == '<(node_lib_target_name)')
-+  node_source_blacklist = {
++  node_source_blocklist = {
 +      '<@(library_files)',
 +      'common.gypi',
 +      '<(SHARED_INTERMEDIATE_DIR)/node_javascript.cc',
 +  }
-+  out['node_sources'] = [
++
++  def filter_v8_files(files):
++    if any(f.startswith('deps/v8/') for f in files):
++      files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
++    return files
++
++  out['library_files'] = filter_v8_files(node_gyp['variables']['library_files'])
++
++  blocklisted_sources = [
 +      f for f in node_lib_target['sources']
-+      if f not in node_source_blacklist]
++      if f not in node_source_blocklist]
++  out['node_sources'] = filter_v8_files(blocklisted_sources)
 +
 +  out['headers'] = []
-+
 +  def add_headers(files, dest_dir):
 +    if 'src/node.h' in files:
 +      files = [f for f in files if f.endswith('.h') and f != 'src/node_version.h']
