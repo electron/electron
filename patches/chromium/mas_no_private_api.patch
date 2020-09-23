@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 16b9a4b1236ad416ef8e0df1644f6ae741e1c7ae..608a463155638f3f02eebd4a99a6f48c2f1fdc55 100644
+index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..3452e9e3932327de79575ed2e624359d3faa71f0 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -334,7 +334,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -379,7 +379,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,16 +19,15 @@ index 16b9a4b1236ad416ef8e0df1644f6ae741e1c7ae..608a463155638f3f02eebd4a99a6f48c
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -345,7 +345,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -390,6 +390,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
--
 +#endif
-   // Accessible object
-   if (IsBrowserAccessibilityCocoa(value) || IsAXUIElement(value)) {
-     return base::Value(NodeToLineIndex(value, line_indexer));
-@@ -396,7 +396,7 @@ OptionalNSObject InvokeAttributeFor(
+ 
+   // AXValue
+   if (CFGetTypeID(value) == AXValueGetTypeID()) {
+@@ -500,7 +501,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +36,7 @@ index 16b9a4b1236ad416ef8e0df1644f6ae741e1c7ae..608a463155638f3f02eebd4a99a6f48c
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -410,7 +410,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -514,7 +515,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }

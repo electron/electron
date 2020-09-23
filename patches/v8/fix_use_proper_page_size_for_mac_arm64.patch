@@ -7,7 +7,7 @@ This fix temporarily sets page size to 16k for mac arm64 so that mksnapshot can 
 and generate a mac arm64 snapshot
 
 diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
-index 42eb0ccc1e8deedbdf7129e9762506d9447c4e2e..3657104ec6f6d34ebbb6987e6d5b16ce77825185 100644
+index 89173b593a6ce887c0f3cea082f2d31e17f8f5db..f233d83286dd82559ee3573b7adc525adf7ce377 100644
 --- a/src/base/platform/platform-posix.cc
 +++ b/src/base/platform/platform-posix.cc
 @@ -167,9 +167,19 @@ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,

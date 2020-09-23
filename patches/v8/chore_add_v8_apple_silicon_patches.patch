@@ -66,10 +66,10 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b299739459be7d4e 100644
+index 1bc090b2a941c81db05ca72ae2de633ee0e28488..e3916d52a1683167fef83916395c8657541e036b 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1888,6 +1888,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1894,6 +1894,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b2997394
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index e6ac86c625548f9adec4b9496f434711ec4d086d..741a20bc3e9141d23b659c06895b970ae2129a6b 100644
+index d7fbd96fb9f255e6cc110d15289281922e238387..4befa19700c44625ccaa4fca90f6a9cc432feaaf 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -760,7 +760,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -758,7 +758,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")

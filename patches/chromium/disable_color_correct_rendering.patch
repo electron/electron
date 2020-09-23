@@ -327,7 +327,7 @@ index 95e818f1406eb1a73a746b73a608137ab5c6e894..6e1d3b3b1add4eda90560856b6915d46
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 2347630011a8c8772f6f898cb218b7b40752e757..34c058e62c073ee3b3e0b5c838ce88c78cffdd11 100644
+index 3e80dc40c83bd4eb96f9029643c4a0856253494e..8e19a78f106daf4185ee69970832ea1237d3d03b 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
