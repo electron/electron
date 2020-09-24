@@ -18,6 +18,7 @@
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -31,18 +32,29 @@ base::LazyInstance<RenderFrameMap>::DestructorAtExit g_render_frame_map =
 
 gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
 
+// WebFrame can outlive its RenderFrameHost pointer so we need to check whether
+// its been disposed of prior to accessing it.
+#define CHECK_RENDER_FRAME(funcname, args, value)                   \
+  if (render_frame_disposed_) {                                     \
+    args->isolate()->ThrowException(v8::Exception::Error(           \
+        gin::StringToV8(args->isolate(),                            \
+                        "Render frame was disposed before "         \
+                        "WebFrame.##funcname could be executed"))); \
+    return value;                                                   \
+  }
+
 WebFrame::WebFrame(content::RenderFrameHost* rfh) : render_frame_(rfh) {
   g_render_frame_map.Get().emplace(rfh, this);
-  LOG(INFO) << "Added WebFrame to map: " << GetFrameTreeNodeID();
+  // LOG(INFO) << "Added WebFrame to map: " << GetFrameTreeNodeID();
 }
 
 WebFrame::~WebFrame() {
   g_render_frame_map.Get().erase(render_frame_);
-  LOG(INFO) << "Removed WebFrame from map: " << GetFrameTreeNodeID();
+  // LOG(INFO) << "Removed WebFrame from map: " << GetFrameTreeNodeID();
 }
 
-void WebFrame::ReleaseRenderFrame() {
-  render_frame_ = nullptr;
+void WebFrame::MarkRenderFrameDisposed() {
+  render_frame_disposed_ = true;
 }
 
 void WebFrame::ExecuteJavaScript(const base::string16& code,
@@ -58,49 +70,58 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
 }
 
 bool WebFrame::Reload(gin::Arguments* args) {
-  if (render_frame_ == nullptr) {
-    args->isolate()->ThrowException(v8::Exception::Error(
-        gin::StringToV8(args->isolate(),
-                        "Render frame was torn down before WebFrame.reload "
-                        "could be executed")));
-    // return v8::Null(args->isolate());
-    return false;
-  }
+  CHECK_RENDER_FRAME(reload, args, false);
   return render_frame_->Reload();
 }
 
-int WebFrame::GetFrameTreeNodeID() const {
+int WebFrame::GetFrameTreeNodeID(gin::Arguments* args) const {
+  CHECK_RENDER_FRAME(frameTreeNodeId, args, -1);
   return render_frame_->GetFrameTreeNodeId();
 }
 
-int WebFrame::GetRoutingID() const {
+int WebFrame::GetProcessID(gin::Arguments* args) const {
+  CHECK_RENDER_FRAME(processId, args, -1);
+  return render_frame_->GetProcess()->GetID();
+}
+
+int WebFrame::GetRoutingID(gin::Arguments* args) const {
+  CHECK_RENDER_FRAME(routingId, args, -1);
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrame::GetURL() const {
+GURL WebFrame::GetURL(gin::Arguments* args) const {
+  CHECK_RENDER_FRAME(url, args, GURL::EmptyGURL());
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrame::GetTop() {
+content::RenderFrameHost* WebFrame::GetTop(gin::Arguments* args) {
+  CHECK_RENDER_FRAME(top, args, nullptr);
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrame::GetParent() {
+content::RenderFrameHost* WebFrame::GetParent(gin::Arguments* args) {
+  CHECK_RENDER_FRAME(parent, args, nullptr);
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrame::GetChildren() {
+std::vector<content::RenderFrameHost*> WebFrame::GetFrames(
+    gin::Arguments* args) {
   std::vector<content::RenderFrameHost*> frame_hosts;
+  CHECK_RENDER_FRAME(frames, args, frame_hosts);
+
   for (auto* rfh : render_frame_->GetFramesInSubtree()) {
-    if (rfh != render_frame_)
+    if (rfh->GetParent() == render_frame_)
       frame_hosts.push_back(rfh);
   }
+
   return frame_hosts;
 }
 
 // static
 gin::Handle<WebFrame> WebFrame::From(v8::Isolate* isolate,
                                      content::RenderFrameHost* rfh) {
+  if (rfh == nullptr)
+    return gin::Handle<WebFrame>();
   auto frame_map = g_render_frame_map.Get();
   auto iter = frame_map.find(rfh);
   WebFrame* web_frame =
@@ -125,7 +146,7 @@ void WebFrame::RenderFrameDeleted(content::RenderFrameHost* rfh) {
   if (iter == frame_map.end())
     return;
   WebFrame* web_frame = iter->second;
-  web_frame->ReleaseRenderFrame();
+  web_frame->MarkRenderFrameDisposed();
 }
 
 gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
@@ -134,11 +155,12 @@ gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("reload", &WebFrame::Reload)
       .SetProperty("frameTreeNodeId", &WebFrame::GetFrameTreeNodeID)
+      .SetProperty("processId", &WebFrame::GetProcessID)
       .SetProperty("routingId", &WebFrame::GetRoutingID)
       .SetProperty("url", &WebFrame::GetURL)
       .SetProperty("top", &WebFrame::GetTop)
       .SetProperty("parent", &WebFrame::GetParent)
-      .SetProperty("frames", &WebFrame::GetChildren);
+      .SetProperty("frames", &WebFrame::GetFrames);
 }
 
 const char* WebFrame::GetTypeName() {

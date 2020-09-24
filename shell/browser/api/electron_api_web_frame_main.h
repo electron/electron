@@ -7,10 +7,10 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/common/gin_helper/error_thrower.h"
 
 class GURL;
 
@@ -43,7 +43,7 @@ class WebFrame : public gin::Wrappable<WebFrame> {
 
   content::RenderFrameHost* render_frame() const { return render_frame_; }
 
-  void ReleaseRenderFrame();
+  void MarkRenderFrameDisposed();
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -52,7 +52,7 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   const char* GetTypeName() override;
 
  protected:
-  WebFrame(content::RenderFrameHost* render_frame);
+  explicit WebFrame(content::RenderFrameHost* render_frame);
   ~WebFrame() override;
 
  private:
@@ -60,14 +60,16 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   //   has_user_gesture);
   void ExecuteJavaScript(const base::string16& code, bool has_user_gesture);
   bool Reload(gin::Arguments* args);
-  int GetFrameTreeNodeID() const;
-  int GetRoutingID() const;
-  GURL GetURL() const;
-  content::RenderFrameHost* GetTop();
-  content::RenderFrameHost* GetParent();
-  std::vector<content::RenderFrameHost*> GetChildren();
+  int GetFrameTreeNodeID(gin::Arguments* args) const;
+  int GetProcessID(gin::Arguments* args) const;
+  int GetRoutingID(gin::Arguments* args) const;
+  GURL GetURL(gin::Arguments* args) const;
+  content::RenderFrameHost* GetTop(gin::Arguments* args);
+  content::RenderFrameHost* GetParent(gin::Arguments* args);
+  std::vector<content::RenderFrameHost*> GetFrames(gin::Arguments* args);
 
   content::RenderFrameHost* render_frame_ = nullptr;
+  bool render_frame_disposed_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(WebFrame);
 };

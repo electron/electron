@@ -1328,6 +1328,10 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  // A WebFrame can outlive its RenderFrameHost so we need to mark it as
+  // disposed to prevent access to it.
+  WebFrame::RenderFrameDeleted(render_frame_host);
+
   // A RenderFrameHost can be destroyed before the related Mojo binding is
   // closed, which can result in Mojo calls being sent for RenderFrameHosts
   // that no longer exist. To prevent this from happening, when a
@@ -1339,8 +1343,6 @@ void WebContents::RenderFrameDeleted(
   for (auto id : it->second)
     receivers_.Remove(id);
   frame_to_receivers_map_.erase(it);
-
-  WebFrame::RenderFrameDeleted(render_frame_host);
 }
 
 void WebContents::DidStartNavigation(
@@ -2817,7 +2819,7 @@ bool WebContents::WasInitiallyShown() {
   return initially_shown_;
 }
 
-content::RenderFrameHost* WebContents::GetMainFrame() {
+content::RenderFrameHost* WebContents::GetWebFrame() {
   return web_contents()->GetMainFrame();
 }
 
@@ -3015,7 +3017,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
-      .SetProperty("mainFrame", &WebContents::GetMainFrame)
+      .SetProperty("webFrame", &WebContents::GetWebFrame)
       .Build();
 }
 
