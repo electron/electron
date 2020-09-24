@@ -1,22 +1,28 @@
 import { expect } from 'chai';
+import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './events-helpers';
+import { AddressInfo } from 'net';
 
 type TODO = any;
 
-describe.only('webFrameMain module', () => {
+describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
+  const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
+
   afterEach(closeAllWindows);
 
-  describe('WebFrame traversal api', () => {
+  describe('WebFrame traversal APIs', () => {
+    let w: BrowserWindow;
     let webFrame: TODO;
 
     beforeEach(async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       webFrame = (w.webContents as TODO).webFrame;
     });
@@ -46,6 +52,46 @@ describe.only('webFrameMain module', () => {
       expect(nestedSubframe).not.to.equal(subframe);
       expect(nestedSubframe.parent).to.equal(subframe);
     });
+
+    describe('cross-origin', () => {
+      type Server = { server: http.Server, url: string }
+
+      /** Creates an HTTP server whose handler embeds the given iframe src. */
+      const createServer = () => new Promise<Server>(resolve => {
+        const server = http.createServer((req, res) => {
+          const params = new URLSearchParams(url.parse(req.url || '').search || '');
+          if (params.has('frameSrc')) {
+            res.end(`<iframe src="${params.get('frameSrc')}"></iframe>`);
+          } else {
+            res.end('');
+          }
+        });
+        server.listen(0, '127.0.0.1', () => {
+          const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+          resolve({ server, url });
+        });
+      });
+
+      let serverA = null as unknown as Server;
+      let serverB = null as unknown as Server;
+
+      before(async () => {
+        serverA = await createServer();
+        serverB = await createServer();
+      });
+
+      after(() => {
+        serverA.server.close();
+        serverB.server.close();
+      });
+
+      it('can access cross-origin frames', async () => {
+        await w.loadURL(`${serverA.url}?frameSrc=${serverB.url}`);
+        webFrame = (w.webContents as TODO).webFrame;
+        expect(webFrame.url.startsWith(serverA.url)).to.be.true();
+        expect(webFrame.frames[0].url).to.equal(serverB.url);
+      });
+    });
   });
 
   describe('WebFrame.url', () => {
@@ -54,10 +100,46 @@ describe.only('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const webFrame = (w.webContents as TODO).webFrame;
 
-      const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
       expect(webFrame.url).to.equal(fileUrl('frame-with-frame-container.html'));
       expect(webFrame.frames[0].url).to.equal(fileUrl('frame-with-frame.html'));
       expect(webFrame.frames[0].frames[0].url).to.equal(fileUrl('frame.html'));
+    });
+  });
+
+  describe('WebFrame IDs', () => {
+    it('has properties for various identifiers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = (w.webContents as TODO).webFrame;
+      expect(webFrame).to.haveOwnProperty('frameTreeNodeId');
+      expect(webFrame).to.haveOwnProperty('processId');
+      expect(webFrame).to.haveOwnProperty('routingId');
+    });
+  });
+
+  describe('WebFrame.executeJavaScript', () => {
+    it('can inject code into any subframe', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+      const webFrame = (w.webContents as TODO).webFrame;
+
+      const getUrl = (frame: TODO) => frame.executeJavaScript('location.href', false);
+      expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
+      expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
+      expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
+    });
+  });
+
+  describe('WebFrame.reload', () => {
+    it('reloads a frame', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = (w.webContents as TODO).webFrame;
+
+      await webFrame.executeJavaScript('window.TEMP = 1', false);
+      expect(webFrame.reload()).to.be.true();
+      await emittedOnce(w.webContents, 'dom-ready');
+      expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
     });
   });
 });
