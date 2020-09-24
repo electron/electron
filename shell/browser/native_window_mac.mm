@@ -1247,8 +1247,11 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-  auto* native_view =
-      view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = view->GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+
+  auto* native_view = iwc_view->GetNativeView().GetNativeNSView();
   [[window_ contentView] addSubview:native_view
                          positioned:NSWindowAbove
                          relativeTo:nil];
@@ -1266,8 +1269,11 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-      removeFromSuperview];
+  auto* iwc_view = view->GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+
+  [iwc_view->GetNativeView().GetNativeNSView() removeFromSuperview];
   remove_browser_view(view);
 
   [CATransaction commit];
