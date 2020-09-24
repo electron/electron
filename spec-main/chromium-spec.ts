@@ -1457,7 +1457,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
 });
 
 describe('navigator.serial', () => {
-  app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+  app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 
   let w: BrowserWindow;
   before(async () => {
