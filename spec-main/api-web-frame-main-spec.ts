@@ -142,4 +142,22 @@ describe('webFrameMain module', () => {
       expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
     });
   });
+
+  describe('disposed WebFrames', () => {
+    let w: BrowserWindow;
+    let webFrame: TODO;
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+      webFrame = (w.webContents as TODO).webFrame;
+      w.destroy();
+      // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    it('throws upon accessing properties', () => {
+      expect(() => webFrame.url).to.throw();
+    });
+  });
 });
