@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 97938c38320678c05d1812574fe6afa9a1c15297..69975a39ec49de551353ae3bab47341e92074c22 100644
+index 8da4a2c699b6e5574e04891695cb39e952a04e4e..92e2064577aee673b72ae9cc7716e49d103f59a6 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -4881,6 +4881,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 97938c38320678c05d1812574fe6afa9a1c15297..69975a39ec49de551353ae3bab47341e
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d13b9cd849c531fea59e8d7e46bd1b006b6f5659..93065a4d6e41498b0f358935cecf7ecedaf0d829 100644
+index 6ff42afff78f62f37c21ea1d09c796ce16708612..022e4a2aa0442939ef7bd5fde67470c2847f116f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3695,9 +3695,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -206,7 +206,7 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 67aa21cea83c4e05dcce76241d66897e0f9f788d..27d4a6e32e17be65a12fb19fe1eb9e559921a466 100644
+index af08a5041570403b4054bb4e1dedf2af6a9d9c88..23d4aa7b35db6a21ce5ecae5b831262fd65b1805 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1953,6 +1953,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

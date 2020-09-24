@@ -43,7 +43,7 @@ index 92353f412ba6d4c25e93f22b9a43442db974b31f..991cbec859c7c005aab75c30fb2a9cb8
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3fb77b5e0ed7701bd8cf00079288e28af7885308..4d64d994503483c65e6902578579683d5475ca2e 100644
+index 07ae134c8f6ba5aa03b9db35b4cea9e8e1668b5a..4b65b5aabf7481102493e20cde9ca17d901eceaa 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4280,6 +4280,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
@@ -60,10 +60,10 @@ index 3fb77b5e0ed7701bd8cf00079288e28af7885308..4d64d994503483c65e6902578579683d
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index c13cabcf7188fc26f10f74f2d5f0e26840c5548b..200c7903c44455959ecbc1312b6bfbbdaf084ef9 100644
+index d2f3048bca219770a5c0606e4cb8fc0591a5a981..938dd84593f9aa445a3842b8af39941a5264d61e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -943,6 +943,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -945,6 +945,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;

@@ -66,10 +66,10 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 1bc090b2a941c81db05ca72ae2de633ee0e28488..e3916d52a1683167fef83916395c8657541e036b 100644
+index dc4fdb4d2ef1a327dab529a5aa5990f6705bbd43..2a11ac9e6ab70cc3556cefc95f38b2cec72a2304 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1894,6 +1894,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1898,6 +1898,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -96,7 +96,7 @@ index d7fbd96fb9f255e6cc110d15289281922e238387..4befa19700c44625ccaa4fca90f6a9cc
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index f90df86be380f827dcec5ce79988cc4bddcd8410..96d14bf15a203144228d6d1cdbaf3649778bc52a 100644
+index a37d11db2fb8ee162152d62d7cca0130eacbf3fa..edaabf588c0fdf0d693b32ee2410f677afc20e74 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,

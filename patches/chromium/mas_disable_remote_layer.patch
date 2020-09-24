@@ -72,10 +72,10 @@ index 67e0efb23c717c3194f27695215a8bd20dbbb957..cf02fab328d9fe7a6e9f53c712a7c1c8
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 0db8f3e223e3cb8e289af63a50104fb6823ed46a..d7969cf08317731bf8e1c8545a07734412593e37 100644
+index a55934320e475af475f7169a5b30954c7e98d775..78d626f2c5be20106ebd54b71a9b0663c55086da 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -98,6 +98,7 @@ - (void)setContentsChanged;
+@@ -99,6 +99,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -83,7 +83,7 @@ index 0db8f3e223e3cb8e289af63a50104fb6823ed46a..d7969cf08317731bf8e1c8545a077344
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -122,6 +123,9 @@ - (void)setContentsChanged;
+@@ -123,6 +124,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }
