@@ -461,8 +461,11 @@ const addReturnValueToEvent = (event: any) => {
   });
 };
 
+const commandLine = process._linkedBinding('electron_common_command_line');
+const environment = process._linkedBinding('electron_common_environment');
+
 const loggingEnabled = () => {
-  return process.env.ELECTRON_ENABLE_LOGGING || app.commandLine.hasSwitch('enable-logging');
+  return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
 };
 
 // Add JavaScript wrappers for WebContents class.
