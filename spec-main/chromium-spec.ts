@@ -1457,11 +1457,14 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
 });
 
 describe('navigator.serial', () => {
-  app.commandLine.appendSwitch('enable-blink-features', 'Serial');
-
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false });
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
@@ -1478,7 +1481,6 @@ describe('navigator.serial', () => {
   });
 
   it('does not return a port if select-serial-port event is not defined', async () => {
-    w = new BrowserWindow({ show: false });
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
     expect(port).to.equal('NotFoundError: No port selected by the user.');
