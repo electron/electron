@@ -17,9 +17,11 @@
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
 namespace electron {
@@ -57,8 +59,19 @@ void WebFrame::MarkRenderFrameDisposed() {
   render_frame_disposed_ = true;
 }
 
-void WebFrame::ExecuteJavaScript(const base::string16& code,
-                                 bool has_user_gesture) {
+v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
+                                                   bool has_user_gesture,
+                                                   gin::Arguments* args) {
+  gin_helper::Promise<base::Value> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrame.executeJavaScript could be "
+        "executed");
+    return handle;
+  }
+
   if (has_user_gesture) {
     auto* ftn = content::FrameTreeNode::From(render_frame_);
     ftn->UpdateUserActivationState(
@@ -66,7 +79,12 @@ void WebFrame::ExecuteJavaScript(const base::string16& code,
         blink::mojom::UserActivationNotificationType::kTest);
   }
 
-  render_frame_->ExecuteJavaScriptForTests(code, base::NullCallback());
+  render_frame_->ExecuteJavaScriptForTests(
+      code, base::BindOnce([](gin_helper::Promise<base::Value> promise,
+                              base::Value value) { promise.Resolve(value); },
+                           std::move(promise)));
+
+  return handle;
 }
 
 bool WebFrame::Reload(gin::Arguments* args) {

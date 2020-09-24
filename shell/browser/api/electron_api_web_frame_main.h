@@ -56,9 +56,9 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   ~WebFrame() override;
 
  private:
-  //   v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code, bool
-  //   has_user_gesture);
-  void ExecuteJavaScript(const base::string16& code, bool has_user_gesture);
+  v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code,
+                                           bool has_user_gesture,
+                                           gin::Arguments* args);
   bool Reload(gin::Arguments* args);
   int GetFrameTreeNodeID(gin::Arguments* args) const;
   int GetProcessID(gin::Arguments* args) const;
@@ -69,6 +69,7 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   std::vector<content::RenderFrameHost*> GetFrames(gin::Arguments* args);
 
   content::RenderFrameHost* render_frame_ = nullptr;
+
   bool render_frame_disposed_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(WebFrame);
