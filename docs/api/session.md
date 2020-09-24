@@ -197,7 +197,7 @@ with the `serial` permission.
 
 Because this is an experimental feature it is disabled by default.  To enable this feature, you
 will need to use the following command line switches: `--enable-experimental-web-platform-features` and
-`enable-features=ElectronSerialChooser`.
+`--enable-features=ElectronSerialChooser`.
 
 ```javascript
 const { app, BrowserWindow } = require('electron')
