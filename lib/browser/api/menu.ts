@@ -41,6 +41,12 @@ Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
   return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
 };
 
+if (process.platform === 'darwin') {
+  Menu.prototype._getSharingItemForCommandId = function (id) {
+    return this.commandsMap[id] ? this.commandsMap[id].sharingItem : null;
+  };
+}
+
 Menu.prototype._executeCommand = function (event, id) {
   const command = this.commandsMap[id];
   if (!command) return;

@@ -5,6 +5,7 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
+#include <string>
 #include <utility>
 
 #include "base/logging.h"
@@ -14,8 +15,11 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/electron_application.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/ui/electron_menu_model.h"
+#include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
@@ -24,6 +28,7 @@
 #include "ui/strings/grit/ui_strings.h"
 
 using content::BrowserThread;
+using SharingItem = electron::ElectronMenuModel::SharingItem;
 
 namespace {
 
@@ -84,6 +89,24 @@ NSMenu* MakeEmptySubmenu() {
   [submenu addItemWithTitle:empty_menu_title action:NULL keyEquivalent:@""];
   [[submenu itemAtIndex:0] setEnabled:NO];
   return submenu.autorelease();
+}
+
+// Convert an SharingItem to an array of NSObjects.
+NSArray* ConvertSharingItemToNS(const SharingItem& item) {
+  NSMutableArray* result = [NSMutableArray array];
+  if (item.texts) {
+    for (const std::string& str : *item.texts)
+      [result addObject:base::SysUTF8ToNSString(str)];
+  }
+  if (item.file_paths) {
+    for (const base::FilePath& path : *item.file_paths)
+      [result addObject:base::mac::FilePathToNSURL(path)];
+  }
+  if (item.urls) {
+    for (const GURL& url : *item.urls)
+      [result addObject:net::NSURLWithGURL(url)];
+  }
+  return result;
 }
 
 }  // namespace
@@ -267,6 +290,31 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   recentDocumentsMenuItem_.reset([item retain]);
 }
 
+// Fill the menu with Share Menu items.
+- (NSMenu*)createShareMenuForItem:(const SharingItem&)item {
+  NSArray* items = ConvertSharingItemToNS(item);
+  if ([items count] == 0)
+    return MakeEmptySubmenu();
+  base::scoped_nsobject<NSMenu> menu([[NSMenu alloc] init]);
+  NSArray* services = [NSSharingService sharingServicesForItems:items];
+  for (NSSharingService* service in services)
+    [menu addItem:[self menuItemForService:service withItems:items]];
+  return menu.autorelease();
+}
+
+// Creates a menu item that calls |service| when invoked.
+- (NSMenuItem*)menuItemForService:(NSSharingService*)service
+                        withItems:(NSArray*)items {
+  base::scoped_nsobject<NSMenuItem> item([[NSMenuItem alloc]
+      initWithTitle:service.menuItemTitle
+             action:@selector(performShare:)
+      keyEquivalent:@""]);
+  [item setTarget:self];
+  [item setImage:service.image];
+  [item setRepresentedObject:@{@"service" : service, @"items" : items}];
+  return item.autorelease();
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
@@ -300,6 +348,12 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
+  } else if (role == base::ASCIIToUTF16("sharemenu")) {
+    SharingItem sharing_item;
+    model->GetSharingItemAt(index, &sharing_item);
+    [item setTarget:nil];
+    [item setAction:nil];
+    [item setSubmenu:[self createShareMenuForItem:sharing_item]];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
     // We need to specifically check that the submenu top-level item has been
@@ -372,6 +426,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // radio, etc) of each item in the menu.
 - (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
   SEL action = [item action];
+  if (action == @selector(performShare:))
+    return YES;
   if (action != @selector(itemSelected:))
     return NO;
 
@@ -405,14 +461,30 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   }
 }
 
+// Performs the share action using the sharing service represented by |sender|.
+- (void)performShare:(NSMenuItem*)sender {
+  NSDictionary* object =
+      base::mac::ObjCCastStrict<NSDictionary>([sender representedObject]);
+  NSSharingService* service =
+      base::mac::ObjCCastStrict<NSSharingService>(object[@"service"]);
+  NSArray* items = base::mac::ObjCCastStrict<NSArray>(object[@"items"]);
+  [service setDelegate:self];
+  [service performWithItems:items];
+}
+
 - (NSMenu*)menu {
   if (menu_)
     return menu_.get();
 
-  menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+  if (model_ && model_->GetSharingItem()) {
+    NSMenu* menu = [self createShareMenuForItem:*model_->GetSharingItem()];
+    menu_.reset([menu retain]);
+  } else {
+    menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+    if (model_)
+      [self populateWithModel:model_.get()];
+  }
   [menu_ setDelegate:self];
-  if (model_)
-    [self populateWithModel:model_.get()];
   return menu_.get();
 }
 
@@ -437,6 +509,20 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
     }
   }
+}
+
+// NSSharingServiceDelegate
+
+- (NSWindow*)sharingService:(NSSharingService*)service
+    sourceWindowForShareItems:(NSArray*)items
+          sharingContentScope:(NSSharingContentScope*)scope {
+  // Return the current active window.
+  const auto& list = electron::WindowList::GetWindows();
+  for (electron::NativeWindow* window : list) {
+    if (window->IsFocused())
+      return window->GetNativeWindow().GetNativeNSWindow();
+  }
+  return nil;
 }
 
 @end
