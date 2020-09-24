@@ -1909,3 +1909,7 @@ A [`Debugger`](debugger.md) instance for this webContents.
 
 A `Boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.webFrame` _Readonly_
+
+A [`WebFrame`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
