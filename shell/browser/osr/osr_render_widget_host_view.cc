@@ -697,16 +697,18 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
 
       if (popup_host_view_ && !popup_host_view_->GetBacking().drawsNothing()) {
         gfx::Rect rect = popup_host_view_->popup_position_;
-        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
-            current_device_scale_factor_, rect.origin());
+        gfx::Point origin_in_pixels =
+            gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
+                rect.origin(), current_device_scale_factor_));
         canvas.writePixels(popup_host_view_->GetBacking(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
 
       for (auto* proxy_view : proxy_views_) {
         gfx::Rect rect = proxy_view->GetBounds();
-        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
-            current_device_scale_factor_, rect.origin());
+        gfx::Point origin_in_pixels =
+            gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
+                rect.origin(), current_device_scale_factor_));
         canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
