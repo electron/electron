@@ -36,26 +36,25 @@ gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 // WebFrame can outlive its RenderFrameHost pointer so we need to check whether
 // its been disposed of prior to accessing it.
-#define CHECK_RENDER_FRAME(funcname, args, value)                   \
-  if (render_frame_disposed_) {                                     \
-    args->isolate()->ThrowException(v8::Exception::Error(           \
-        gin::StringToV8(args->isolate(),                            \
-                        "Render frame was disposed before "         \
-                        "WebFrame.##funcname could be executed"))); \
-    return value;                                                   \
+#define CHECK_RENDER_FRAME(funcname, args, value)                      \
+  if (render_frame_disposed_) {                                        \
+    args->isolate()->ThrowException(v8::Exception::Error(              \
+        gin::StringToV8(args->isolate(),                               \
+                        "Render frame was disposed before "            \
+                        "WebFrame." #funcname " could be executed"))); \
+    return value;                                                      \
   }
 
 WebFrame::WebFrame(content::RenderFrameHost* rfh) : render_frame_(rfh) {
   g_render_frame_map.Get().emplace(rfh, this);
-  // LOG(INFO) << "Added WebFrame to map: " << GetFrameTreeNodeID();
 }
 
 WebFrame::~WebFrame() {
-  g_render_frame_map.Get().erase(render_frame_);
-  // LOG(INFO) << "Removed WebFrame from map: " << GetFrameTreeNodeID();
+  MarkRenderFrameDisposed();
 }
 
 void WebFrame::MarkRenderFrameDisposed() {
+  g_render_frame_map.Get().erase(render_frame_);
   render_frame_disposed_ = true;
 }
 
