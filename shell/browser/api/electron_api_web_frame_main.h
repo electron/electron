@@ -30,6 +30,7 @@ namespace electron {
 
 namespace api {
 
+// Bindings for accessing frames from the main process.
 class WebFrame : public gin::Wrappable<WebFrame> {
  public:
   static gin::Handle<WebFrame> FromID(v8::Isolate* isolate,
@@ -39,10 +40,12 @@ class WebFrame : public gin::Wrappable<WebFrame> {
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
 
+  // Called to mark any RenderFrameHost as disposed by any WebFrame that may
+  // be holding a weak reference.
   static void RenderFrameDeleted(content::RenderFrameHost* rfh);
 
-  content::RenderFrameHost* render_frame() const { return render_frame_; }
-
+  // Mark RenderFrameHost as disposed and to no longer access it. This can
+  // occur upon frame navigation.
   void MarkRenderFrameDisposed();
 
   // gin::Wrappable
@@ -60,16 +63,20 @@ class WebFrame : public gin::Wrappable<WebFrame> {
                                            bool has_user_gesture,
                                            gin::Arguments* args);
   bool Reload(gin::Arguments* args);
+
   int FrameTreeNodeID(gin::Arguments* args) const;
   int ProcessID(gin::Arguments* args) const;
   int RoutingID(gin::Arguments* args) const;
   GURL URL(gin::Arguments* args) const;
+
   content::RenderFrameHost* Top(gin::Arguments* args);
   content::RenderFrameHost* Parent(gin::Arguments* args);
   std::vector<content::RenderFrameHost*> Frames(gin::Arguments* args);
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
+  // Whether the RenderFrameHost has been removed and that it should no longer
+  // be accessed.
   bool render_frame_disposed_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(WebFrame);
