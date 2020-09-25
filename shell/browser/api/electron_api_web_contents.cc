@@ -26,7 +26,6 @@
 #include "content/browser/frame_host/render_frame_host_manager.h"   // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
-#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"

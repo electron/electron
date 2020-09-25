@@ -618,7 +618,7 @@ WebContents.prototype._init = function () {
   this.on('ready-to-show' as any, () => {
     const owner = this.getOwnerBrowserWindow();
     if (owner && !owner.isDestroyed()) {
-      process.nextTick( () => {
+      process.nextTick(() => {
         owner.emit('ready-to-show');
       });
     }
