@@ -26,6 +26,7 @@
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"
@@ -1238,6 +1239,12 @@ void WebContents::Invoke(bool internal,
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", receivers_.current_context(),
                  std::move(callback), internal, channel, std::move(arguments));
+}
+
+void WebContents::OnFirstNonEmptyLayout() {
+  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+    Emit("ready-to-show");
+  }
 }
 
 void WebContents::ReceivePostMessage(const std::string& channel,
