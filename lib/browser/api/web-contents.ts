@@ -615,10 +615,12 @@ WebContents.prototype._init = function () {
     app.emit('login', event, this, ...args);
   });
 
-  this.on('ready-to-show' as any, (event) => {
+  this.on('ready-to-show' as any, () => {
     const owner = this.getOwnerBrowserWindow();
     if (owner && !owner.isDestroyed()) {
-      owner.emit('ready-to-show');
+      process.nextTick( () => {
+        owner.emit('ready-to-show');
+      });
     }
   });
 
