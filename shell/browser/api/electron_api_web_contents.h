@@ -396,7 +396,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   bool WasInitiallyShown();
-  content::RenderFrameHost* GetWebFrame();
+  content::RenderFrameHost* WebFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 

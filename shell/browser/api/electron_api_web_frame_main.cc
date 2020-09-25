@@ -91,38 +91,37 @@ bool WebFrame::Reload(gin::Arguments* args) {
   return render_frame_->Reload();
 }
 
-int WebFrame::GetFrameTreeNodeID(gin::Arguments* args) const {
+int WebFrame::FrameTreeNodeID(gin::Arguments* args) const {
   CHECK_RENDER_FRAME(frameTreeNodeId, args, -1);
   return render_frame_->GetFrameTreeNodeId();
 }
 
-int WebFrame::GetProcessID(gin::Arguments* args) const {
+int WebFrame::ProcessID(gin::Arguments* args) const {
   CHECK_RENDER_FRAME(processId, args, -1);
   return render_frame_->GetProcess()->GetID();
 }
 
-int WebFrame::GetRoutingID(gin::Arguments* args) const {
+int WebFrame::RoutingID(gin::Arguments* args) const {
   CHECK_RENDER_FRAME(routingId, args, -1);
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrame::GetURL(gin::Arguments* args) const {
+GURL WebFrame::URL(gin::Arguments* args) const {
   CHECK_RENDER_FRAME(url, args, GURL::EmptyGURL());
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrame::GetTop(gin::Arguments* args) {
+content::RenderFrameHost* WebFrame::Top(gin::Arguments* args) {
   CHECK_RENDER_FRAME(top, args, nullptr);
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrame::GetParent(gin::Arguments* args) {
+content::RenderFrameHost* WebFrame::Parent(gin::Arguments* args) {
   CHECK_RENDER_FRAME(parent, args, nullptr);
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrame::GetFrames(
-    gin::Arguments* args) {
+std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
   std::vector<content::RenderFrameHost*> frame_hosts;
   CHECK_RENDER_FRAME(frames, args, frame_hosts);
 
@@ -171,13 +170,13 @@ gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
   return gin::Wrappable<WebFrame>::GetObjectTemplateBuilder(isolate)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
       .SetMethod("reload", &WebFrame::Reload)
-      .SetProperty("frameTreeNodeId", &WebFrame::GetFrameTreeNodeID)
-      .SetProperty("processId", &WebFrame::GetProcessID)
-      .SetProperty("routingId", &WebFrame::GetRoutingID)
-      .SetProperty("url", &WebFrame::GetURL)
-      .SetProperty("top", &WebFrame::GetTop)
-      .SetProperty("parent", &WebFrame::GetParent)
-      .SetProperty("frames", &WebFrame::GetFrames);
+      .SetProperty("frameTreeNodeId", &WebFrame::FrameTreeNodeID)
+      .SetProperty("processId", &WebFrame::ProcessID)
+      .SetProperty("routingId", &WebFrame::RoutingID)
+      .SetProperty("url", &WebFrame::URL)
+      .SetProperty("top", &WebFrame::Top)
+      .SetProperty("parent", &WebFrame::Parent)
+      .SetProperty("frames", &WebFrame::Frames);
 }
 
 const char* WebFrame::GetTypeName() {

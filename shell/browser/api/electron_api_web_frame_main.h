@@ -60,13 +60,13 @@ class WebFrame : public gin::Wrappable<WebFrame> {
                                            bool has_user_gesture,
                                            gin::Arguments* args);
   bool Reload(gin::Arguments* args);
-  int GetFrameTreeNodeID(gin::Arguments* args) const;
-  int GetProcessID(gin::Arguments* args) const;
-  int GetRoutingID(gin::Arguments* args) const;
-  GURL GetURL(gin::Arguments* args) const;
-  content::RenderFrameHost* GetTop(gin::Arguments* args);
-  content::RenderFrameHost* GetParent(gin::Arguments* args);
-  std::vector<content::RenderFrameHost*> GetFrames(gin::Arguments* args);
+  int FrameTreeNodeID(gin::Arguments* args) const;
+  int ProcessID(gin::Arguments* args) const;
+  int RoutingID(gin::Arguments* args) const;
+  GURL URL(gin::Arguments* args) const;
+  content::RenderFrameHost* Top(gin::Arguments* args);
+  content::RenderFrameHost* Parent(gin::Arguments* args);
+  std::vector<content::RenderFrameHost*> Frames(gin::Arguments* args);
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
