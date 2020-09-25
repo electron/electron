@@ -2,14 +2,12 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, WebFrameMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { AddressInfo } from 'net';
 
-type TODO = any;
-
-describe.only('webFrameMain module', () => {
+describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
@@ -19,12 +17,12 @@ describe.only('webFrameMain module', () => {
 
   describe('WebFrame traversal APIs', () => {
     let w: BrowserWindow;
-    let webFrame: TODO;
+    let webFrame: WebFrameMain;
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      webFrame = (w.webContents as TODO).webFrame;
+      webFrame = w.webContents.webFrame;
     });
 
     it('can access top frame', () => {
@@ -54,7 +52,7 @@ describe.only('webFrameMain module', () => {
     });
 
     it('can traverse all frames in root', () => {
-      const urls = webFrame.framesInSubtree.map((frame: TODO) => frame.url);
+      const urls = webFrame.framesInSubtree.map(frame => frame.url);
       expect(urls).to.deep.equal([
         fileUrl('frame-with-frame-container.html'),
         fileUrl('frame-with-frame.html'),
@@ -63,7 +61,7 @@ describe.only('webFrameMain module', () => {
     });
 
     it('can traverse all frames in subtree', () => {
-      const urls = webFrame.frames[0].framesInSubtree.map((frame: TODO) => frame.url);
+      const urls = webFrame.frames[0].framesInSubtree.map(frame => frame.url);
       expect(urls).to.deep.equal([
         fileUrl('frame-with-frame.html'),
         fileUrl('frame.html')
@@ -104,7 +102,7 @@ describe.only('webFrameMain module', () => {
 
       it('can access cross-origin frames', async () => {
         await w.loadURL(`${serverA.url}?frameSrc=${serverB.url}`);
-        webFrame = (w.webContents as TODO).webFrame;
+        webFrame = w.webContents.webFrame;
         expect(webFrame.url.startsWith(serverA.url)).to.be.true();
         expect(webFrame.frames[0].url).to.equal(serverB.url);
       });
@@ -115,7 +113,7 @@ describe.only('webFrameMain module', () => {
     it('should report correct address for each subframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      const webFrame = (w.webContents as TODO).webFrame;
+      const webFrame = w.webContents.webFrame;
 
       expect(webFrame.url).to.equal(fileUrl('frame-with-frame-container.html'));
       expect(webFrame.frames[0].url).to.equal(fileUrl('frame-with-frame.html'));
@@ -127,7 +125,7 @@ describe.only('webFrameMain module', () => {
     it('has properties for various identifiers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
-      const webFrame = (w.webContents as TODO).webFrame;
+      const webFrame = w.webContents.webFrame;
       expect(webFrame).to.haveOwnProperty('frameTreeNodeId');
       expect(webFrame).to.haveOwnProperty('processId');
       expect(webFrame).to.haveOwnProperty('routingId');
@@ -138,9 +136,9 @@ describe.only('webFrameMain module', () => {
     it('can inject code into any subframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      const webFrame = (w.webContents as TODO).webFrame;
+      const webFrame = w.webContents.webFrame;
 
-      const getUrl = (frame: TODO) => frame.executeJavaScript('location.href', false);
+      const getUrl = (frame: WebFrameMain) => frame.executeJavaScript('location.href', false);
       expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
       expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
       expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
@@ -151,7 +149,7 @@ describe.only('webFrameMain module', () => {
     it('reloads a frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
-      const webFrame = (w.webContents as TODO).webFrame;
+      const webFrame = w.webContents.webFrame;
 
       await webFrame.executeJavaScript('window.TEMP = 1', false);
       expect(webFrame.reload()).to.be.true();
@@ -162,12 +160,12 @@ describe.only('webFrameMain module', () => {
 
   describe('disposed WebFrames', () => {
     let w: BrowserWindow;
-    let webFrame: TODO;
+    let webFrame: WebFrameMain;
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      webFrame = (w.webContents as TODO).webFrame;
+      webFrame = w.webContents.webFrame;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
       await new Promise(resolve => setTimeout(resolve, 0));
