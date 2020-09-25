@@ -11,7 +11,7 @@
 
 #include "base/lazy_instance.h"
 #include "base/logging.h"
-#include "content/browser/renderer_host/frame_tree_node.h"
+#include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
