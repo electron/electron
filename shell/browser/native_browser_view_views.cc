@@ -26,7 +26,10 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
     const gfx::Size& window_size) {
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeHorizontal) &&
       !auto_horizontal_proportion_set_) {
-    auto* view = GetInspectableWebContentsView()->GetView();
+    auto* iwc_view = GetInspectableWebContentsView();
+    if (iwc_view)
+      return;
+    auto* view = iwc_view->GetView();
     auto view_bounds = view->bounds();
     auto_horizontal_proportion_width_ =
         static_cast<float>(window_size.width()) /
@@ -37,7 +40,10 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
   }
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeVertical) &&
       !auto_vertical_proportion_set_) {
-    auto* view = GetInspectableWebContentsView()->GetView();
+    auto* iwc_view = GetInspectableWebContentsView();
+    if (iwc_view)
+      return;
+    auto* view = iwc_view->GetView();
     auto view_bounds = view->bounds();
     auto_vertical_proportion_height_ =
         static_cast<float>(window_size.height()) /
@@ -51,7 +57,10 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
 void NativeBrowserViewViews::AutoResize(const gfx::Rect& new_window,
                                         int width_delta,
                                         int height_delta) {
-  auto* view = GetInspectableWebContentsView()->GetView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (iwc_view)
+    return;
+  auto* view = iwc_view->GetView();
   const auto flags = GetAutoResizeFlags();
   if (!(flags & kAutoResizeWidth)) {
     width_delta = 0;
@@ -92,17 +101,26 @@ void NativeBrowserViewViews::ResetAutoResizeProportions() {
 }
 
 void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
-  auto* view = GetInspectableWebContentsView()->GetView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetView();
   view->SetBoundsRect(bounds);
   ResetAutoResizeProportions();
 }
 
 gfx::Rect NativeBrowserViewViews::GetBounds() {
-  return GetInspectableWebContentsView()->GetView()->bounds();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return gfx::Rect();
+  return iwc_view->GetView()->bounds();
 }
 
 void NativeBrowserViewViews::SetBackgroundColor(SkColor color) {
-  auto* view = GetInspectableWebContentsView()->GetView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetView();
   view->SetBackground(views::CreateSolidBackground(color));
   view->SchedulePaint();
 }
