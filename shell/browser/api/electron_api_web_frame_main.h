@@ -72,6 +72,7 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   content::RenderFrameHost* Top(gin::Arguments* args);
   content::RenderFrameHost* Parent(gin::Arguments* args);
   std::vector<content::RenderFrameHost*> Frames(gin::Arguments* args);
+  std::vector<content::RenderFrameHost*> FramesInSubtree(gin::Arguments* args);
 
   content::RenderFrameHost* render_frame_ = nullptr;
 

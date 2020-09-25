@@ -63,7 +63,12 @@ A `WebFrameMain | null` representing parent frame of `frame`, the property would
 
 #### `frame.frames` _Readonly_
 
-A `WebFrameMain[]` collection representing the frame's direct children.
+A `WebFrameMain[]` collection containing the direct descendents of `frame`.
+
+#### `frame.framesInSubtree` _Readonly_
+
+A `WebFrameMain[]` collection containing every frame in the subtree of `frame`,
+including itself. This can be useful when traversing through all frames.
 
 #### `frame.frameTreeNodeId` _Readonly_
 

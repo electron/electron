@@ -133,6 +133,18 @@ std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
   return frame_hosts;
 }
 
+std::vector<content::RenderFrameHost*> WebFrame::FramesInSubtree(
+    gin::Arguments* args) {
+  std::vector<content::RenderFrameHost*> frame_hosts;
+  CHECK_RENDER_FRAME(frames, args, frame_hosts);
+
+  for (auto* rfh : render_frame_->GetFramesInSubtree()) {
+    frame_hosts.push_back(rfh);
+  }
+
+  return frame_hosts;
+}
+
 // static
 gin::Handle<WebFrame> WebFrame::From(v8::Isolate* isolate,
                                      content::RenderFrameHost* rfh) {
@@ -176,7 +188,8 @@ gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetProperty("url", &WebFrame::URL)
       .SetProperty("top", &WebFrame::Top)
       .SetProperty("parent", &WebFrame::Parent)
-      .SetProperty("frames", &WebFrame::Frames);
+      .SetProperty("frames", &WebFrame::Frames)
+      .SetProperty("framesInSubtree", &WebFrame::FramesInSubtree);
 }
 
 const char* WebFrame::GetTypeName() {

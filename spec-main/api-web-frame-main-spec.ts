@@ -9,7 +9,7 @@ import { AddressInfo } from 'net';
 
 type TODO = any;
 
-describe('webFrameMain module', () => {
+describe.only('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
@@ -51,6 +51,23 @@ describe('webFrameMain module', () => {
       expect(nestedSubframe).not.to.equal(webFrame);
       expect(nestedSubframe).not.to.equal(subframe);
       expect(nestedSubframe.parent).to.equal(subframe);
+    });
+
+    it('can traverse all frames in root', () => {
+      const urls = webFrame.framesInSubtree.map((frame: TODO) => frame.url);
+      expect(urls).to.deep.equal([
+        fileUrl('frame-with-frame-container.html'),
+        fileUrl('frame-with-frame.html'),
+        fileUrl('frame.html')
+      ]);
+    });
+
+    it('can traverse all frames in subtree', () => {
+      const urls = webFrame.frames[0].framesInSubtree.map((frame: TODO) => frame.url);
+      expect(urls).to.deep.equal([
+        fileUrl('frame-with-frame.html'),
+        fileUrl('frame.html')
+      ]);
     });
 
     describe('cross-origin', () => {
