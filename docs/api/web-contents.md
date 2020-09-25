@@ -1912,4 +1912,4 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 #### `contents.webFrame` _Readonly_
 
-A [`WebFrame`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
+A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
