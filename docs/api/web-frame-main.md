@@ -25,6 +25,8 @@ Returns `WebFrameMain` - A frame with the given process and routing IDs.
 
 ## Class: WebFrameMain
 
+Process: [Main](../glossary.md#main-process)
+
 ### Instance Methods
 
 #### `frame.executeJavaScript(code, userGesture)`

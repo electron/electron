@@ -175,4 +175,29 @@ describe('webFrameMain module', () => {
       expect(() => webFrame.url).to.throw();
     });
   });
+
+  // TODO: see https://github.com/electron/typescript-definitions/pull/175
+  const { webFrameMain } = require('electron') as any;
+
+  it('webFrameMain.fromId can find each frame from navigation events', (done) => {
+    const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+
+    w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+
+    let eventCount = 0;
+    w.webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {
+      const frame = (webFrameMain).fromId(frameProcessId, frameRoutingId) as WebFrameMain | null;
+      expect(frame).not.to.be.null();
+      expect(frame?.processId).to.be.equal(frameProcessId);
+      expect(frame?.routingId).to.be.equal(frameRoutingId);
+      expect(frame?.top === frame).to.be.equal(isMainFrame);
+
+      eventCount++;
+
+      // frame-with-frame-container.html, frame-with-frame.html, frame.html
+      if (eventCount === 3) {
+        done();
+      }
+    });
+  });
 });
