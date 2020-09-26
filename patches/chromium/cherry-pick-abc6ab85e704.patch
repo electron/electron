@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Mon, 31 Aug 2020 09:01:16 +0000
+Subject: Do not produce frames if media player is tainted
+
+This prevents potential cross-origin mid-stream redirects from
+braking the cross-origin restrictions.
+
+Bug: 1111149
+Change-Id: I18d05a5836b9a390dec50e10c43d3d2b9ec5915a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2377811
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Dan Sanders <sandersd@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#803036}
+(cherry picked from commit abc6ab85e704f599fa366344f9c5ce35585f3217)
+
+diff --git a/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source.cc b/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source.cc
+index 900d4534bc2c3f54d53cf4db3b2c3b6eb675b83a..a712281d52726c156035b00b3408f0f6baa18a5f 100644
+--- a/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source.cc
++++ b/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source.cc
+@@ -116,8 +116,10 @@ void HtmlVideoElementCapturerSource::sendNewFrame() {
+   TRACE_EVENT0("media", "HtmlVideoElementCapturerSource::sendNewFrame");
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+ 
+-  if (!web_media_player_ || new_frame_callback_.is_null())
++  if (!web_media_player_ || new_frame_callback_.is_null() ||
++      web_media_player_->WouldTaintOrigin()) {
+     return;
++  }
+ 
+   const base::TimeTicks current_time = base::TimeTicks::Now();
+   if (start_capture_time_.is_null())
+diff --git a/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source_unittest.cc b/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source_unittest.cc
+index 4d24f214880bfad608dbd151ed4fe00bb22c1aad..6e9960f4bbf60eb72097406ef4e835dcba6fba78 100644
+--- a/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source_unittest.cc
++++ b/third_party/blink/renderer/modules/mediacapturefromelement/html_video_element_capturer_source_unittest.cc
+@@ -71,7 +71,7 @@ class MockWebMediaPlayer : public WebMediaPlayer {
+   WebString GetErrorMessage() const override { return WebString(); }
+ 
+   bool DidLoadingProgress() override { return true; }
+-  bool WouldTaintOrigin() const override { return false; }
++  bool WouldTaintOrigin() const override { return would_taint_origin_; }
+   double MediaTimeForTimeValue(double timeValue) const override { return 0.0; }
+   unsigned DecodedFrameCount() const override { return 0; }
+   unsigned DroppedFrameCount() const override { return 0; }
+@@ -79,6 +79,8 @@ class MockWebMediaPlayer : public WebMediaPlayer {
+   uint64_t AudioDecodedByteCount() const override { return 0; }
+   uint64_t VideoDecodedByteCount() const override { return 0; }
+ 
++  void SetWouldTaintOrigin(bool taint) { would_taint_origin_ = taint; }
++
+   void Paint(cc::PaintCanvas* canvas,
+              const WebRect& rect,
+              cc::PaintFlags&,
+@@ -98,6 +100,7 @@ class MockWebMediaPlayer : public WebMediaPlayer {
+ 
+   bool is_video_opaque_ = true;
+   gfx::Size size_ = gfx::Size(16, 10);
++  bool would_taint_origin_ = false;
+ 
+   base::WeakPtrFactory<MockWebMediaPlayer> weak_factory_{this};
+ };
+@@ -326,4 +329,36 @@ TEST_F(HTMLVideoElementCapturerSourceTest, SizeChange) {
+   Mock::VerifyAndClearExpectations(this);
+ }
+ 
++// Checks that the usual sequence of GetPreferredFormats() ->
++// StartCapture() -> StopCapture() works as expected and let it capture two
++// frames, that are tested for format vs the expected source opacity.
++TEST_F(HTMLVideoElementCapturerSourceTest, TaintedPlayerDoesNotDeliverFrames) {
++  InSequence s;
++  media::VideoCaptureFormats formats =
++      html_video_capturer_->GetPreferredFormats();
++  ASSERT_EQ(1u, formats.size());
++  EXPECT_EQ(web_media_player_->NaturalSize(), formats[0].frame_size);
++  web_media_player_->SetWouldTaintOrigin(true);
++
++  media::VideoCaptureParams params;
++  params.requested_format = formats[0];
++
++  EXPECT_CALL(*this, DoOnRunning(true)).Times(1);
++
++  // No frames should be delivered.
++  EXPECT_CALL(*this, DoOnDeliverFrame(_, _)).Times(0);
++  html_video_capturer_->StartCapture(
++      params,
++      WTF::BindRepeating(&HTMLVideoElementCapturerSourceTest::OnDeliverFrame,
++                         base::Unretained(this)),
++      WTF::BindRepeating(&HTMLVideoElementCapturerSourceTest::OnRunning,
++                         base::Unretained(this)));
++
++  // Wait for frames to be potentially sent in a follow-up task.
++  base::RunLoop().RunUntilIdle();
++
++  html_video_capturer_->StopCapture();
++  Mock::VerifyAndClearExpectations(this);
++}
++
+ }  // namespace blink
