@@ -1,0 +1,750 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ramin Halavati <rhalavati@chromium.org>
+Date: Wed, 9 Sep 2020 05:10:19 +0000
+Subject: Reland Run ObfuscatedFileUtilMemoryDelegate entirely on TaskRunner.
+
+MemoryFileStreamWriter called some ObfuscatedFileUtilMemoryDelegate
+functions through IO thread while other functions in OFUMD are called
+on a threadpool sequence. This could result in races in updating
+directory structure.
+
+To fix the issue, MemoryFileStreamWriter and MemoryFileStreamReader are
+updated to call all OFUMD on the default task runner of the file system
+context.
+
+This CL was landed in crrev.com/c/2308721 and reverted due to flakiness.
+The flaky crashes are believed to be because the buffer passed to
+MemoryFileStreamReader::Read and MemoryFileStreamWrite::Write are not
+thread safe.
+
+Patchset1 is a copy of the previous CL and the issue is fixed in the
+next patchsets.
+
+Bug: 1100136
+Change-Id: I619b82c2f4d23a020e9ce7e5e6c16980907b501b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2398701
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Ramin Halavati <rhalavati@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#805198}
+(cherry picked from commit 0e61c69ebd476e5b688f341f8d0bf69fe814c515)
+
+diff --git a/storage/browser/file_system/file_stream_reader.h b/storage/browser/file_system/file_stream_reader.h
+index b3cfc7f751be2e8654ba6d5e51849a4f35863d7a..d9ac296c94a4df765417d71b0c80b798ff7c888c 100644
+--- a/storage/browser/file_system/file_stream_reader.h
++++ b/storage/browser/file_system/file_stream_reader.h
+@@ -60,6 +60,7 @@ class FileStreamReader {
+   // ERR_UPLOAD_FILE_CHANGED error.
+   COMPONENT_EXPORT(STORAGE_BROWSER)
+   static std::unique_ptr<FileStreamReader> CreateForMemoryFile(
++      scoped_refptr<base::TaskRunner> task_runner,
+       base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+       const base::FilePath& file_path,
+       int64_t initial_offset,
+diff --git a/storage/browser/file_system/file_stream_test_utils.cc b/storage/browser/file_system/file_stream_test_utils.cc
+index 835a423c9c913ed46e8b68e7a9d3b323b3263695..e66dfc716aae031cc9c6e00d660753d4487cb60a 100644
+--- a/storage/browser/file_system/file_stream_test_utils.cc
++++ b/storage/browser/file_system/file_stream_test_utils.cc
+@@ -40,6 +40,14 @@ void ReadFromReader(FileStreamReader* reader,
+   }
+ }
+ 
++int64_t GetLengthFromReader(FileStreamReader* reader) {
++  EXPECT_NE(nullptr, reader);
++  net::TestInt64CompletionCallback callback;
++
++  int rv = reader->GetLength(callback.callback());
++  return callback.GetResult(rv);
++}
++
+ int WriteStringToWriter(FileStreamWriter* writer, const std::string& data) {
+   scoped_refptr<net::StringIOBuffer> buffer =
+       base::MakeRefCounted<net::StringIOBuffer>(data);
+diff --git a/storage/browser/file_system/file_stream_test_utils.h b/storage/browser/file_system/file_stream_test_utils.h
+index 5714f7a1e7a1f6e91628e9f958a1b13324d7ec8e..d6425f15af6309a0891a10ca54cc092b8c1180f1 100644
+--- a/storage/browser/file_system/file_stream_test_utils.h
++++ b/storage/browser/file_system/file_stream_test_utils.h
+@@ -20,8 +20,12 @@ void ReadFromReader(FileStreamReader* reader,
+                     size_t size,
+                     int* result);
+ 
+-// Writes |data| to |writer|, an intialized FileStreamWriter. Returns net::OK if
+-// successful, otherwise a net error.
++// Returns the length of the file if it could be successfully retrieved,
++// otherwise a net error.
++int64_t GetLengthFromReader(FileStreamReader* reader);
++
++// Writes |data| to |writer|, an initialized FileStreamWriter. Returns net::OK
++// if successful, otherwise a net error.
+ int WriteStringToWriter(FileStreamWriter* writer, const std::string& data);
+ 
+ }  // namespace storage
+diff --git a/storage/browser/file_system/file_stream_writer.h b/storage/browser/file_system/file_stream_writer.h
+index 2ddbecc6587d94d16ad547e3b2249c103621ee7e..11ce21c64d9b0f43d761b45ae7a710be60f03316 100644
+--- a/storage/browser/file_system/file_stream_writer.h
++++ b/storage/browser/file_system/file_stream_writer.h
+@@ -48,10 +48,9 @@ class FileStreamWriter {
+ 
+   // Creates a writer for the existing memory file in the path |file_path|
+   // starting from |initial_offset|.
+-  // TODO(mek): Remove or use |open_or_create| field here, as it is not
+-  // currently used. https://crbug.com/1041048
+   COMPONENT_EXPORT(STORAGE_BROWSER)
+   static std::unique_ptr<FileStreamWriter> CreateForMemoryFile(
++      scoped_refptr<base::TaskRunner> task_runner,
+       base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+       const base::FilePath& file_path,
+       int64_t initial_offset);
+diff --git a/storage/browser/file_system/file_system_file_stream_reader.cc b/storage/browser/file_system/file_system_file_stream_reader.cc
+index 8a3b85166bf85fb9661953c37b2942eddd5a61e1..9d37b8075199fe5c93c058610bb1f9d99730b526 100644
+--- a/storage/browser/file_system/file_system_file_stream_reader.cc
++++ b/storage/browser/file_system/file_system_file_stream_reader.cc
+@@ -112,6 +112,7 @@ void FileSystemFileStreamReader::DidCreateSnapshot(
+           file_system_context_->sandbox_delegate()->memory_file_util_delegate();
+     }
+     file_reader_ = FileStreamReader::CreateForMemoryFile(
++        file_system_context_->default_file_task_runner(),
+         memory_file_util_delegate, platform_path, initial_offset_,
+         expected_modification_time_);
+   } else {
+diff --git a/storage/browser/file_system/memory_file_stream_reader.cc b/storage/browser/file_system/memory_file_stream_reader.cc
+index f5d895c6cc97e883024e854395a24f094c797ed4..0ca229bb8e8e853d96710fc5946e7a5d854c2180 100644
+--- a/storage/browser/file_system/memory_file_stream_reader.cc
++++ b/storage/browser/file_system/memory_file_stream_reader.cc
+@@ -8,68 +8,114 @@
+ #include <utility>
+ 
+ #include "base/memory/ptr_util.h"
++#include "base/task_runner_util.h"
++#include "net/base/io_buffer.h"
+ #include "net/base/net_errors.h"
+ 
+ namespace storage {
+ 
+ std::unique_ptr<FileStreamReader> FileStreamReader::CreateForMemoryFile(
++    scoped_refptr<base::TaskRunner> task_runner,
+     base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+     const base::FilePath& file_path,
+     int64_t initial_offset,
+     const base::Time& expected_modification_time) {
+-  return base::WrapUnique(
+-      new MemoryFileStreamReader(std::move(memory_file_util), file_path,
+-                                 initial_offset, expected_modification_time));
++  return base::WrapUnique(new MemoryFileStreamReader(
++      std::move(task_runner), std::move(memory_file_util), file_path,
++      initial_offset, expected_modification_time));
+ }
+ 
+ MemoryFileStreamReader::MemoryFileStreamReader(
++    scoped_refptr<base::TaskRunner> task_runner,
+     base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+     const base::FilePath& file_path,
+     int64_t initial_offset,
+     const base::Time& expected_modification_time)
+     : memory_file_util_(std::move(memory_file_util)),
++      task_runner_(std::move(task_runner)),
+       file_path_(file_path),
+       expected_modification_time_(expected_modification_time),
+       offset_(initial_offset) {
+-  DCHECK(memory_file_util_);
++  DCHECK(memory_file_util_.MaybeValid());
+ }
+ 
+ MemoryFileStreamReader::~MemoryFileStreamReader() = default;
+ 
+ int MemoryFileStreamReader::Read(net::IOBuffer* buf,
+                                  int buf_len,
+-                                 net::CompletionOnceCallback /*callback*/) {
+-  base::File::Info file_info;
+-  if (memory_file_util_->GetFileInfo(file_path_, &file_info) !=
+-      base::File::FILE_OK) {
+-    return net::ERR_FILE_NOT_FOUND;
+-  }
+-
+-  if (!FileStreamReader::VerifySnapshotTime(expected_modification_time_,
+-                                            file_info)) {
+-    return net::ERR_UPLOAD_FILE_CHANGED;
+-  }
+-
+-  int result = memory_file_util_->ReadFile(file_path_, offset_, buf, buf_len);
++                                 net::CompletionOnceCallback callback) {
++  task_runner_->PostTaskAndReplyWithResult(
++      FROM_HERE,
++      base::BindOnce(
++          [](base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> util,
++             const base::FilePath& path, base::Time expected_modification_time,
++             int64_t offset, scoped_refptr<net::IOBuffer> buf,
++             int buf_len) -> int {
++            if (!util)
++              return net::ERR_FILE_NOT_FOUND;
++            base::File::Info file_info;
++            if (util->GetFileInfo(path, &file_info) != base::File::FILE_OK)
++              return net::ERR_FILE_NOT_FOUND;
++
++            if (!FileStreamReader::VerifySnapshotTime(
++                    expected_modification_time, file_info)) {
++              return net::ERR_UPLOAD_FILE_CHANGED;
++            }
++
++            return util->ReadFile(path, offset, std::move(buf), buf_len);
++          },
++          memory_file_util_, file_path_, expected_modification_time_, offset_,
++          base::WrapRefCounted(buf), buf_len),
++      base::BindOnce(&MemoryFileStreamReader::OnReadCompleted,
++                     weak_factory_.GetWeakPtr(), std::move(callback)));
++
++  return net::ERR_IO_PENDING;
++}
++
++void MemoryFileStreamReader::OnReadCompleted(
++    net::CompletionOnceCallback callback,
++    int result) {
+   if (result > 0)
+     offset_ += result;
+-  return result;
++
++  std::move(callback).Run(result);
+ }
+ 
+ int64_t MemoryFileStreamReader::GetLength(
+-    net::Int64CompletionOnceCallback /*callback*/) {
+-  base::File::Info file_info;
+-  if (memory_file_util_->GetFileInfo(file_path_, &file_info) !=
+-      base::File::FILE_OK) {
+-    return net::ERR_FILE_NOT_FOUND;
+-  }
+-
+-  if (!FileStreamReader::VerifySnapshotTime(expected_modification_time_,
+-                                            file_info)) {
+-    return net::ERR_UPLOAD_FILE_CHANGED;
+-  }
+-
+-  return file_info.size;
++    net::Int64CompletionOnceCallback callback) {
++  task_runner_->PostTaskAndReplyWithResult(
++      FROM_HERE,
++      base::BindOnce(
++          [](base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> util,
++             const base::FilePath& path,
++             base::Time expected_modification_time) -> int64_t {
++            if (!util)
++              return net::ERR_FILE_NOT_FOUND;
++            base::File::Info file_info;
++            if (util->GetFileInfo(path, &file_info) != base::File::FILE_OK) {
++              return net::ERR_FILE_NOT_FOUND;
++            }
++
++            if (!FileStreamReader::VerifySnapshotTime(
++                    expected_modification_time, file_info)) {
++              return net::ERR_UPLOAD_FILE_CHANGED;
++            }
++
++            return file_info.size;
++          },
++          memory_file_util_, file_path_, expected_modification_time_),
++      // |callback| is not directly used to make sure that it is not called if
++      // stream is deleted while this function is in flight.
++      base::BindOnce(&MemoryFileStreamReader::OnGetLengthCompleted,
++                     weak_factory_.GetWeakPtr(), std::move(callback)));
++
++  return net::ERR_IO_PENDING;
++}
++
++void MemoryFileStreamReader::OnGetLengthCompleted(
++    net::Int64CompletionOnceCallback callback,
++    int64_t result) {
++  std::move(callback).Run(result);
+ }
+ 
+ }  // namespace storage
+diff --git a/storage/browser/file_system/memory_file_stream_reader.h b/storage/browser/file_system/memory_file_stream_reader.h
+index 909db6b1178bc329af5e4694538045bba243310b..4f05d450522613e668549e59d58c36552650773e 100644
+--- a/storage/browser/file_system/memory_file_stream_reader.h
++++ b/storage/browser/file_system/memory_file_stream_reader.h
+@@ -32,17 +32,25 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) MemoryFileStreamReader
+   friend class FileStreamReader;
+ 
+   MemoryFileStreamReader(
++      scoped_refptr<base::TaskRunner> task_runner,
+       base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+       const base::FilePath& file_path,
+       int64_t initial_offset,
+       const base::Time& expected_modification_time);
+ 
++  void OnReadCompleted(net::CompletionOnceCallback callback, int result);
++  void OnGetLengthCompleted(net::Int64CompletionOnceCallback callback,
++                            int64_t result);
++
+   base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util_;
+ 
++  const scoped_refptr<base::TaskRunner> task_runner_;
+   const base::FilePath file_path_;
+   const base::Time expected_modification_time_;
+   int64_t offset_;
+ 
++  base::WeakPtrFactory<MemoryFileStreamReader> weak_factory_{this};
++
+   DISALLOW_COPY_AND_ASSIGN(MemoryFileStreamReader);
+ };
+ 
+diff --git a/storage/browser/file_system/memory_file_stream_reader_unittest.cc b/storage/browser/file_system/memory_file_stream_reader_unittest.cc
+index 7cbaf6e06f82e792a52d549f963a0044a0a5fbd5..99bcfcbeb7e5dcdced47be3df1820f518558a78b 100644
+--- a/storage/browser/file_system/memory_file_stream_reader_unittest.cc
++++ b/storage/browser/file_system/memory_file_stream_reader_unittest.cc
+@@ -17,6 +17,7 @@
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
+ #include "base/macros.h"
++#include "base/test/task_environment.h"
+ #include "net/base/io_buffer.h"
+ #include "net/base/net_errors.h"
+ #include "storage/browser/file_system/file_stream_reader.h"
+@@ -62,9 +63,9 @@ class MemoryFileStreamReaderTest : public testing::Test {
+       const base::FilePath& path,
+       int64_t initial_offset,
+       const base::Time& expected_modification_time) {
+-    return FileStreamReader::CreateForMemoryFile(file_util_->GetWeakPtr(), path,
+-                                                 initial_offset,
+-                                                 expected_modification_time);
++    return FileStreamReader::CreateForMemoryFile(
++        base::ThreadTaskRunnerHandle::Get(), file_util_->GetWeakPtr(), path,
++        initial_offset, expected_modification_time);
+   }
+ 
+   void TouchTestFile(base::TimeDelta delta) {
+@@ -83,6 +84,7 @@ class MemoryFileStreamReaderTest : public testing::Test {
+   }
+ 
+  private:
++  base::test::TaskEnvironment task_environment_;
+   base::ScopedTempDir file_system_directory_;
+   std::unique_ptr<ObfuscatedFileUtilMemoryDelegate> file_util_;
+   base::Time test_file_modification_time_;
+@@ -113,14 +115,14 @@ TEST_F(MemoryFileStreamReaderTest, Empty) {
+   ASSERT_EQ(net::OK, result);
+   ASSERT_EQ(0U, data.size());
+ 
+-  int64_t length_result = reader->GetLength(base::DoNothing());
++  int64_t length_result = GetLengthFromReader(reader.get());
+   ASSERT_EQ(0, length_result);
+ }
+ 
+ TEST_F(MemoryFileStreamReaderTest, GetLengthNormal) {
+   std::unique_ptr<FileStreamReader> reader(
+       CreateFileReader(test_path(), 0, test_file_modification_time()));
+-  int64_t result = reader->GetLength(base::DoNothing());
++  int64_t result = GetLengthFromReader(reader.get());
+   ASSERT_EQ(kTestDataSize, result);
+ }
+ 
+@@ -131,7 +133,7 @@ TEST_F(MemoryFileStreamReaderTest, GetLengthAfterModified) {
+ 
+   std::unique_ptr<FileStreamReader> reader(
+       CreateFileReader(test_path(), 0, test_file_modification_time()));
+-  int64_t result = reader->GetLength(base::DoNothing());
++  int64_t result = GetLengthFromReader(reader.get());
+   ASSERT_EQ(net::ERR_UPLOAD_FILE_CHANGED, result);
+ }
+ 
+@@ -142,14 +144,14 @@ TEST_F(MemoryFileStreamReaderTest, GetLengthAfterModifiedWithNoExpectedTime) {
+ 
+   std::unique_ptr<FileStreamReader> reader(
+       CreateFileReader(test_path(), 0, base::Time()));
+-  int64_t result = reader->GetLength(base::DoNothing());
++  int64_t result = GetLengthFromReader(reader.get());
+   ASSERT_EQ(kTestDataSize, result);
+ }
+ 
+ TEST_F(MemoryFileStreamReaderTest, GetLengthWithOffset) {
+   std::unique_ptr<FileStreamReader> reader(
+       CreateFileReader(test_path(), 3, base::Time()));
+-  int64_t result = reader->GetLength(base::DoNothing());
++  int64_t result = GetLengthFromReader(reader.get());
+   // Initial offset does not affect the result of GetLength.
+   ASSERT_EQ(kTestDataSize, result);
+ }
+diff --git a/storage/browser/file_system/memory_file_stream_writer.cc b/storage/browser/file_system/memory_file_stream_writer.cc
+index 9c421145866cd4425f752e343abcfca6260178a2..b36c4b5e4bbb5d7280fba11ab73e8c4a4d39c088 100644
+--- a/storage/browser/file_system/memory_file_stream_writer.cc
++++ b/storage/browser/file_system/memory_file_stream_writer.cc
+@@ -8,43 +8,68 @@
+ #include <utility>
+ 
+ #include "base/memory/ptr_util.h"
++#include "base/task_runner_util.h"
++#include "net/base/io_buffer.h"
+ #include "net/base/net_errors.h"
+ 
+ namespace storage {
+ 
+ std::unique_ptr<FileStreamWriter> FileStreamWriter::CreateForMemoryFile(
++    scoped_refptr<base::TaskRunner> task_runner,
+     base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+     const base::FilePath& file_path,
+     int64_t initial_offset) {
+   return base::WrapUnique(new MemoryFileStreamWriter(
+-      std::move(memory_file_util), file_path, initial_offset));
++      std::move(task_runner), std::move(memory_file_util), file_path,
++      initial_offset));
+ }
+ 
+ MemoryFileStreamWriter::MemoryFileStreamWriter(
++    scoped_refptr<base::TaskRunner> task_runner,
+     base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+     const base::FilePath& file_path,
+     int64_t initial_offset)
+     : memory_file_util_(std::move(memory_file_util)),
++      task_runner_(std::move(task_runner)),
+       file_path_(file_path),
+       offset_(initial_offset) {
+-  DCHECK(memory_file_util_);
++  DCHECK(memory_file_util_.MaybeValid());
+ }
+ 
+ MemoryFileStreamWriter::~MemoryFileStreamWriter() = default;
+ 
+ int MemoryFileStreamWriter::Write(net::IOBuffer* buf,
+                                   int buf_len,
+-                                  net::CompletionOnceCallback /*callback*/) {
+-  base::File::Info file_info;
+-  if (memory_file_util_->GetFileInfo(file_path_, &file_info) !=
+-      base::File::FILE_OK) {
+-    return net::ERR_FILE_NOT_FOUND;
+-  }
+-
+-  int result = memory_file_util_->WriteFile(file_path_, offset_, buf, buf_len);
++                                  net::CompletionOnceCallback callback) {
++  task_runner_->PostTaskAndReplyWithResult(
++      FROM_HERE,
++      base::BindOnce(
++          [](base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> util,
++             const base::FilePath& path, int64_t offset,
++             scoped_refptr<net::IOBuffer> buf, int buf_len) -> int {
++            if (!util)
++              return net::ERR_FILE_NOT_FOUND;
++            base::File::Info file_info;
++            if (util->GetFileInfo(path, &file_info) != base::File::FILE_OK)
++              return net::ERR_FILE_NOT_FOUND;
++
++            return util->WriteFile(path, offset, std::move(buf), buf_len);
++          },
++          memory_file_util_, file_path_, offset_, base::WrapRefCounted(buf),
++          buf_len),
++      base::BindOnce(&MemoryFileStreamWriter::OnWriteCompleted,
++                     weak_factory_.GetWeakPtr(), std::move(callback)));
++
++  return net::ERR_IO_PENDING;
++}
++
++void MemoryFileStreamWriter::OnWriteCompleted(
++    net::CompletionOnceCallback callback,
++    int result) {
+   if (result > 0)
+     offset_ += result;
+-  return result;
++
++  std::move(callback).Run(result);
+ }
+ 
+ int MemoryFileStreamWriter::Cancel(net::CompletionOnceCallback /*callback*/) {
+diff --git a/storage/browser/file_system/memory_file_stream_writer.h b/storage/browser/file_system/memory_file_stream_writer.h
+index fe1c9d17932e2c4398295bc0ed6359f86281be91..74f6213f0f80b619083779184d04a62c0f983835 100644
+--- a/storage/browser/file_system/memory_file_stream_writer.h
++++ b/storage/browser/file_system/memory_file_stream_writer.h
+@@ -30,15 +30,21 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) MemoryFileStreamWriter
+  private:
+   friend class FileStreamWriter;
+   MemoryFileStreamWriter(
++      scoped_refptr<base::TaskRunner> task_runner,
+       base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util,
+       const base::FilePath& file_path,
+       int64_t initial_offset);
+ 
++  void OnWriteCompleted(net::CompletionOnceCallback callback, int result);
++
+   base::WeakPtr<ObfuscatedFileUtilMemoryDelegate> memory_file_util_;
+ 
++  const scoped_refptr<base::TaskRunner> task_runner_;
+   const base::FilePath file_path_;
+   int64_t offset_;
+ 
++  base::WeakPtrFactory<MemoryFileStreamWriter> weak_factory_{this};
++
+   DISALLOW_COPY_AND_ASSIGN(MemoryFileStreamWriter);
+ };
+ 
+diff --git a/storage/browser/file_system/memory_file_stream_writer_unittest.cc b/storage/browser/file_system/memory_file_stream_writer_unittest.cc
+index 7fcda3dfd5e533e8d501a5b56ae5b2abd9486f2f..44342a33c66f21eed35287a4bb9b94f82de21521 100644
+--- a/storage/browser/file_system/memory_file_stream_writer_unittest.cc
++++ b/storage/browser/file_system/memory_file_stream_writer_unittest.cc
+@@ -13,6 +13,7 @@
+ #include "base/bind_helpers.h"
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
++#include "base/test/task_environment.h"
+ #include "net/base/io_buffer.h"
+ #include "net/base/net_errors.h"
+ #include "storage/browser/file_system/file_stream_test_utils.h"
+@@ -59,11 +60,13 @@ class MemoryFileStreamWriterTest : public testing::Test {
+ 
+   std::unique_ptr<FileStreamWriter> CreateWriter(const base::FilePath& path,
+                                                  int64_t offset) {
+-    return FileStreamWriter::CreateForMemoryFile(file_util_->GetWeakPtr(), path,
+-                                                 offset);
++    return FileStreamWriter::CreateForMemoryFile(
++        base::ThreadTaskRunnerHandle::Get(), file_util_->GetWeakPtr(), path,
++        offset);
+   }
+ 
+  private:
++  base::test::TaskEnvironment task_environment_;
+   base::ScopedTempDir file_system_directory_;
+   std::unique_ptr<ObfuscatedFileUtilMemoryDelegate> file_util_;
+ };
+diff --git a/storage/browser/file_system/obfuscated_file_util_memory_delegate.cc b/storage/browser/file_system/obfuscated_file_util_memory_delegate.cc
+index 5919d1f1c2c4c80fd73cfbb0586af0e505d43152..3a3d8563e3c91d3b9ca15a980a709a8fd96e8c6c 100644
+--- a/storage/browser/file_system/obfuscated_file_util_memory_delegate.cc
++++ b/storage/browser/file_system/obfuscated_file_util_memory_delegate.cc
+@@ -56,13 +56,17 @@ struct ObfuscatedFileUtilMemoryDelegate::DecomposedPath {
+ ObfuscatedFileUtilMemoryDelegate::ObfuscatedFileUtilMemoryDelegate(
+     const base::FilePath& file_system_directory)
+     : root_(std::make_unique<Entry>(Entry::kDirectory)) {
++  DETACH_FROM_SEQUENCE(sequence_checker_);
+   file_system_directory.GetComponents(&root_path_components_);
+ }
+ 
+-ObfuscatedFileUtilMemoryDelegate::~ObfuscatedFileUtilMemoryDelegate() = default;
++ObfuscatedFileUtilMemoryDelegate::~ObfuscatedFileUtilMemoryDelegate() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++}
+ 
+ base::Optional<ObfuscatedFileUtilMemoryDelegate::DecomposedPath>
+ ObfuscatedFileUtilMemoryDelegate::ParsePath(const base::FilePath& path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DecomposedPath dp;
+ 
+   path.GetComponents(&dp.components);
+@@ -118,6 +122,7 @@ ObfuscatedFileUtilMemoryDelegate::ParsePath(const base::FilePath& path) {
+ 
+ bool ObfuscatedFileUtilMemoryDelegate::DirectoryExists(
+     const base::FilePath& path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   return dp && dp->entry && dp->entry->type == Entry::kDirectory;
+ }
+@@ -126,6 +131,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CreateDirectory(
+     const base::FilePath& path,
+     bool exclusive,
+     bool recursive) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp)
+     return base::File::FILE_ERROR_NOT_FOUND;
+@@ -169,6 +175,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CreateDirectory(
+ bool ObfuscatedFileUtilMemoryDelegate::DeleteFileOrDirectory(
+     const base::FilePath& path,
+     bool recursive) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp)
+     return false;
+@@ -185,11 +192,13 @@ bool ObfuscatedFileUtilMemoryDelegate::DeleteFileOrDirectory(
+ }
+ 
+ bool ObfuscatedFileUtilMemoryDelegate::IsLink(const base::FilePath& file_path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   // In-memory file system does not support links.
+   return false;
+ }
+ 
+ bool ObfuscatedFileUtilMemoryDelegate::PathExists(const base::FilePath& path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   return dp && dp->entry;
+ }
+@@ -197,6 +206,7 @@ bool ObfuscatedFileUtilMemoryDelegate::PathExists(const base::FilePath& path) {
+ base::File ObfuscatedFileUtilMemoryDelegate::CreateOrOpen(
+     const base::FilePath& path,
+     int file_flags) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   // TODO:(https://crbug.com/936722): Once the output of this function is
+   // changed to base::File::Error, it can use CreateOrOpenInternal to perform
+   // the task and return the result.
+@@ -206,6 +216,7 @@ base::File ObfuscatedFileUtilMemoryDelegate::CreateOrOpen(
+ void ObfuscatedFileUtilMemoryDelegate::CreateOrOpenInternal(
+     const DecomposedPath& dp,
+     int file_flags) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   if (!dp.entry) {
+     dp.parent->directory_content.emplace(dp.components.back(), Entry::kFile);
+     return;
+@@ -221,6 +232,7 @@ void ObfuscatedFileUtilMemoryDelegate::CreateOrOpenInternal(
+ 
+ base::File::Error ObfuscatedFileUtilMemoryDelegate::DeleteFile(
+     const base::FilePath& path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || !dp->entry)
+     return base::File::FILE_ERROR_NOT_FOUND;
+@@ -235,6 +247,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::DeleteFile(
+ base::File::Error ObfuscatedFileUtilMemoryDelegate::EnsureFileExists(
+     const base::FilePath& path,
+     bool* created) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   *created = false;
+   if (!dp || !dp->parent)
+@@ -253,6 +266,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::EnsureFileExists(
+ base::File::Error ObfuscatedFileUtilMemoryDelegate::GetFileInfo(
+     const base::FilePath& path,
+     base::File::Info* file_info) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || !dp->entry)
+     return base::File::FILE_ERROR_NOT_FOUND;
+@@ -272,6 +286,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::Touch(
+     const base::FilePath& path,
+     const base::Time& last_access_time,
+     const base::Time& last_modified_time) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || !dp->entry)
+     return base::File::FILE_ERROR_FAILED;
+@@ -285,6 +300,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::Touch(
+ base::File::Error ObfuscatedFileUtilMemoryDelegate::Truncate(
+     const base::FilePath& path,
+     int64_t length) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || !dp->entry || dp->entry->type != Entry::kFile)
+     return base::File::FILE_ERROR_NOT_FOUND;
+@@ -297,6 +313,7 @@ NativeFileUtil::CopyOrMoveMode
+ ObfuscatedFileUtilMemoryDelegate::CopyOrMoveModeForDestination(
+     const FileSystemURL& /*dest_url*/,
+     bool copy) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   return copy ? NativeFileUtil::CopyOrMoveMode::COPY_SYNC
+               : NativeFileUtil::CopyOrMoveMode::MOVE;
+ }
+@@ -306,6 +323,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CopyOrMoveFile(
+     const base::FilePath& dest_path,
+     FileSystemOperation::CopyOrMoveOption option,
+     NativeFileUtil::CopyOrMoveMode mode) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> src_dp = ParsePath(src_path);
+   base::Optional<DecomposedPath> dest_dp = ParsePath(dest_path);
+ 
+@@ -361,6 +379,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CopyOrMoveFile(
+ bool ObfuscatedFileUtilMemoryDelegate::MoveDirectoryInternal(
+     const DecomposedPath& src_dp,
+     const DecomposedPath& dest_dp) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(src_dp.entry->type == Entry::kDirectory);
+   if (!dest_dp.entry) {
+     dest_dp.parent->directory_content.insert(
+@@ -379,6 +398,7 @@ bool ObfuscatedFileUtilMemoryDelegate::CopyOrMoveFileInternal(
+     const DecomposedPath& src_dp,
+     const DecomposedPath& dest_dp,
+     bool move) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(src_dp.entry->type == Entry::kFile);
+   if (dest_dp.entry)
+     dest_dp.parent->directory_content.erase(dest_dp.components.back());
+@@ -404,6 +424,7 @@ bool ObfuscatedFileUtilMemoryDelegate::CopyOrMoveFileInternal(
+ 
+ size_t ObfuscatedFileUtilMemoryDelegate::ComputeDirectorySize(
+     const base::FilePath& path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || !dp->entry || dp->entry->type != Entry::kDirectory)
+     return 0;
+@@ -427,8 +448,9 @@ size_t ObfuscatedFileUtilMemoryDelegate::ComputeDirectorySize(
+ 
+ int ObfuscatedFileUtilMemoryDelegate::ReadFile(const base::FilePath& path,
+                                                int64_t offset,
+-                                               net::IOBuffer* buf,
++                                               scoped_refptr<net::IOBuffer> buf,
+                                                int buf_len) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+   if (!dp || dp->entry->type != Entry::kFile)
+     return net::ERR_FILE_NOT_FOUND;
+@@ -445,13 +467,15 @@ int ObfuscatedFileUtilMemoryDelegate::ReadFile(const base::FilePath& path,
+   return buf_len;
+ }
+ 
+-int ObfuscatedFileUtilMemoryDelegate::WriteFile(const base::FilePath& path,
+-                                                int64_t offset,
+-                                                net::IOBuffer* buf,
+-                                                int buf_len) {
++int ObfuscatedFileUtilMemoryDelegate::WriteFile(
++    const base::FilePath& path,
++    int64_t offset,
++    scoped_refptr<net::IOBuffer> buf,
++    int buf_len) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dp = ParsePath(path);
+ 
+-  if (!dp || dp->entry->type != Entry::kFile)
++  if (!dp || !dp->entry || dp->entry->type != Entry::kFile)
+     return net::ERR_FILE_NOT_FOUND;
+ 
+   size_t offset_u = static_cast<size_t>(offset);
+@@ -479,6 +503,7 @@ int ObfuscatedFileUtilMemoryDelegate::WriteFile(const base::FilePath& path,
+ base::File::Error ObfuscatedFileUtilMemoryDelegate::CreateFileForTesting(
+     const base::FilePath& path,
+     base::span<const char> content) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   bool created;
+   base::File::Error result = EnsureFileExists(path, &created);
+   if (result != base::File::FILE_OK)
+@@ -498,6 +523,7 @@ base::File::Error ObfuscatedFileUtilMemoryDelegate::CopyInForeignFile(
+     const base::FilePath& dest_path,
+     FileSystemOperation::CopyOrMoveOption /* option */,
+     NativeFileUtil::CopyOrMoveMode /* mode */) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   base::Optional<DecomposedPath> dest_dp = ParsePath(dest_path);
+ 
+   if (!dest_dp || !dest_dp->parent)
+diff --git a/storage/browser/file_system/obfuscated_file_util_memory_delegate.h b/storage/browser/file_system/obfuscated_file_util_memory_delegate.h
+index 4dd25b48affa901251ec4ec54dc6221a60626d19..d1240511303860e67603543e5795c893ef0db482 100644
+--- a/storage/browser/file_system/obfuscated_file_util_memory_delegate.h
++++ b/storage/browser/file_system/obfuscated_file_util_memory_delegate.h
+@@ -88,7 +88,7 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) ObfuscatedFileUtilMemoryDelegate
+   // bytes are returned. Otherwise a net::Error value is returned.
+   int ReadFile(const base::FilePath& path,
+                int64_t offset,
+-               net::IOBuffer* buf,
++               scoped_refptr<net::IOBuffer> buf,
+                int buf_len);
+ 
+   // Writes |buf_len| bytes to the file at |path|, starting from |offset|.
+@@ -96,7 +96,7 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) ObfuscatedFileUtilMemoryDelegate
+   // net::Error value is returned.
+   int WriteFile(const base::FilePath& path,
+                 int64_t offset,
+-                net::IOBuffer* buf,
++                scoped_refptr<net::IOBuffer> buf,
+                 int buf_len);
+ 
+   base::File::Error CreateFileForTesting(const base::FilePath& path,
+@@ -126,6 +126,8 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) ObfuscatedFileUtilMemoryDelegate
+                               const DecomposedPath& dest_dp,
+                               bool move);
+ 
++  SEQUENCE_CHECKER(sequence_checker_);
++
+   // The root of the directory tree.
+   std::unique_ptr<Entry> root_;
+ 
+diff --git a/storage/browser/file_system/sandbox_file_stream_writer.cc b/storage/browser/file_system/sandbox_file_stream_writer.cc
+index 21495aee42684fcbe7c79fa5d26ad4f2006da875..d344e8ae71e254c2fc758e6a8f6b219d4b145805 100644
+--- a/storage/browser/file_system/sandbox_file_stream_writer.cc
++++ b/storage/browser/file_system/sandbox_file_stream_writer.cc
+@@ -155,6 +155,7 @@ void SandboxFileStreamWriter::DidCreateSnapshotFile(
+           file_system_context_->sandbox_delegate()->memory_file_util_delegate();
+     }
+     file_writer_ = FileStreamWriter::CreateForMemoryFile(
++        file_system_context_->default_file_task_runner(),
+         memory_file_util_delegate, platform_path, initial_offset_);
+ 
+   } else {
