@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Mon, 10 Feb 2020 10:37:48 -0800
+Subject: use electron resources in pdf_util
+
+Without this, the ID for IDR_PDF_MANIFEST will be wrong on linux
+and cause a DCHECK(), since the resource will be loaded as an empty
+string.
+
+diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
+index 7a8e05b4944da8ddc78342e1953d74670f04be0b..f65364ab0d917a6956e4e425a2bbf775d720410e 100644
+--- a/chrome/browser/pdf/pdf_extension_util.cc
++++ b/chrome/browser/pdf/pdf_extension_util.cc
+@@ -8,8 +8,7 @@
+ #include "base/values.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/common/chrome_content_client.h"
+-#include "chrome/grit/browser_resources.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/strings/grit/components_strings.h"
+ #include "components/zoom/page_zoom_constants.h"
+ #include "pdf/pdf_features.h"

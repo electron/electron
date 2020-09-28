@@ -14,7 +14,7 @@ tradeoff is that switching from MAS_BUILD to !MAS_BUILD or vice-versa will
 rebuild the entire tree.
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 1251d5142f5e2c9a8ef5dd3ba3cea3f6bc7d7e98..0a585f1edeac6ddae0100e5a0091d63d819c14a4 100644
+index 3082046a91da5fe400d8405da61f55ad66fa5e74..e0e90bcd7bb4741dfe792336d59028c500f59b39 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -27,7 +27,7 @@ index 1251d5142f5e2c9a8ef5dd3ba3cea3f6bc7d7e98..0a585f1edeac6ddae0100e5a0091d63d
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -348,6 +351,7 @@ default_compiler_configs = [
+@@ -335,6 +338,7 @@ default_compiler_configs = [
    "//build/config/compiler/pgo:default_pgo_flags",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
