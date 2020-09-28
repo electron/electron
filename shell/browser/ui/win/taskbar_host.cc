@@ -11,6 +11,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/string_lookup.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
@@ -29,20 +30,21 @@ const int kButtonIdBase = 40001;
 
 bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
                            THUMBBUTTONFLAGS* out) {
+  static constexpr StringLookup<THUMBBUTTONFLAGS, 5> flagmap{
+      {{{"disabled", THBF_DISABLED},
+        {"dismissonclick", THBF_DISMISSONCLICK},
+        {"hidden", THBF_HIDDEN},
+        {"nobackground", THBF_NOBACKGROUND},
+        {"noninteractive", THBF_NONINTERACTIVE}}}};
+  static_assert(flagmap.IsSorted(), "please sort flagmap");
+
   THUMBBUTTONFLAGS result = THBF_ENABLED;  // THBF_ENABLED == 0
-  for (const auto& flag : flags) {
-    if (flag == "disabled")
-      result |= THBF_DISABLED;
-    else if (flag == "dismissonclick")
-      result |= THBF_DISMISSONCLICK;
-    else if (flag == "nobackground")
-      result |= THBF_NOBACKGROUND;
-    else if (flag == "hidden")
-      result |= THBF_HIDDEN;
-    else if (flag == "noninteractive")
-      result |= THBF_NONINTERACTIVE;
-    else
+  for (const auto& name : flags) {
+    const auto flag = flagmap.lookup(name);
+    if (!flag) {
       return false;
+    }
+    result |= *flag;
   }
   *out = result;
   return true;

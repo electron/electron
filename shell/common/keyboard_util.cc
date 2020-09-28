@@ -7,6 +7,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "shell/common/keyboard_util.h"
+#include "shell/common/string_lookup.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "ui/events/event_constants.h"
 
@@ -14,126 +15,110 @@ namespace electron {
 
 namespace {
 
+#if defined(OS_MAC)
+#define VKEY_CONTROL_OR_COMMAND ui::VKEY_COMMAND
+#else
+#define VKEY_CONTROL_OR_COMMAND ui::VKEY_CONTROL
+#endif
+
 // Return key code represented by |str|.
 ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
                                                bool* shifted) {
-  std::string str = base::ToLowerASCII(s);
-  if (str == "ctrl" || str == "control") {
-    return ui::VKEY_CONTROL;
-  } else if (str == "super" || str == "cmd" || str == "command" ||
-             str == "meta") {
-    return ui::VKEY_COMMAND;
-  } else if (str == "commandorcontrol" || str == "cmdorctrl") {
-#if defined(OS_MAC)
-    return ui::VKEY_COMMAND;
-#else
-    return ui::VKEY_CONTROL;
-#endif
-  } else if (str == "alt" || str == "option") {
-    return ui::VKEY_MENU;
-  } else if (str == "shift") {
-    return ui::VKEY_SHIFT;
-  } else if (str == "altgr") {
-    return ui::VKEY_ALTGR;
-  } else if (str == "plus") {
-    *shifted = true;
-    return ui::VKEY_OEM_PLUS;
-  } else if (str == "capslock") {
-    return ui::VKEY_CAPITAL;
-  } else if (str == "numlock") {
-    return ui::VKEY_NUMLOCK;
-  } else if (str == "scrolllock") {
-    return ui::VKEY_SCROLL;
-  } else if (str == "tab") {
-    return ui::VKEY_TAB;
-  } else if (str == "num0") {
-    return ui::VKEY_NUMPAD0;
-  } else if (str == "num1") {
-    return ui::VKEY_NUMPAD1;
-  } else if (str == "num2") {
-    return ui::VKEY_NUMPAD2;
-  } else if (str == "num3") {
-    return ui::VKEY_NUMPAD3;
-  } else if (str == "num4") {
-    return ui::VKEY_NUMPAD4;
-  } else if (str == "num5") {
-    return ui::VKEY_NUMPAD5;
-  } else if (str == "num6") {
-    return ui::VKEY_NUMPAD6;
-  } else if (str == "num7") {
-    return ui::VKEY_NUMPAD7;
-  } else if (str == "num8") {
-    return ui::VKEY_NUMPAD8;
-  } else if (str == "num9") {
-    return ui::VKEY_NUMPAD9;
-  } else if (str == "numadd") {
-    return ui::VKEY_ADD;
-  } else if (str == "nummult") {
-    return ui::VKEY_MULTIPLY;
-  } else if (str == "numdec") {
-    return ui::VKEY_DECIMAL;
-  } else if (str == "numsub") {
-    return ui::VKEY_SUBTRACT;
-  } else if (str == "numdiv") {
-    return ui::VKEY_DIVIDE;
-  } else if (str == "space") {
-    return ui::VKEY_SPACE;
-  } else if (str == "backspace") {
-    return ui::VKEY_BACK;
-  } else if (str == "delete") {
-    return ui::VKEY_DELETE;
-  } else if (str == "insert") {
-    return ui::VKEY_INSERT;
-  } else if (str == "enter" || str == "return") {
-    return ui::VKEY_RETURN;
-  } else if (str == "up") {
-    return ui::VKEY_UP;
-  } else if (str == "down") {
-    return ui::VKEY_DOWN;
-  } else if (str == "left") {
-    return ui::VKEY_LEFT;
-  } else if (str == "right") {
-    return ui::VKEY_RIGHT;
-  } else if (str == "home") {
-    return ui::VKEY_HOME;
-  } else if (str == "end") {
-    return ui::VKEY_END;
-  } else if (str == "pageup") {
-    return ui::VKEY_PRIOR;
-  } else if (str == "pagedown") {
-    return ui::VKEY_NEXT;
-  } else if (str == "esc" || str == "escape") {
-    return ui::VKEY_ESCAPE;
-  } else if (str == "volumemute") {
-    return ui::VKEY_VOLUME_MUTE;
-  } else if (str == "volumeup") {
-    return ui::VKEY_VOLUME_UP;
-  } else if (str == "volumedown") {
-    return ui::VKEY_VOLUME_DOWN;
-  } else if (str == "medianexttrack") {
-    return ui::VKEY_MEDIA_NEXT_TRACK;
-  } else if (str == "mediaprevioustrack") {
-    return ui::VKEY_MEDIA_PREV_TRACK;
-  } else if (str == "mediastop") {
-    return ui::VKEY_MEDIA_STOP;
-  } else if (str == "mediaplaypause") {
-    return ui::VKEY_MEDIA_PLAY_PAUSE;
-  } else if (str == "printscreen") {
-    return ui::VKEY_SNAPSHOT;
-  } else if (str.size() > 1 && str[0] == 'f') {
-    // F1 - F24.
-    int n;
-    if (base::StringToInt(str.c_str() + 1, &n) && n > 0 && n < 25) {
-      return static_cast<ui::KeyboardCode>(ui::VKEY_F1 + n - 1);
-    } else {
-      LOG(WARNING) << str << "is not available on keyboard";
-      return ui::VKEY_UNKNOWN;
-    }
-  } else {
-    if (str.size() > 2)
-      LOG(WARNING) << "Invalid accelerator token: " << str;
+  static constexpr StringLookup<ui::KeyboardCode, 80> keymap{
+      {{{"alt", ui::VKEY_MENU},
+        {"altgr", ui::VKEY_ALTGR},
+        {"backspace", ui::VKEY_BACK},
+        {"capslock", ui::VKEY_CAPITAL},
+        {"cmd", ui::VKEY_COMMAND},
+        {"cmdorctrl", VKEY_CONTROL_OR_COMMAND},
+        {"command", ui::VKEY_COMMAND},
+        {"commandorcontrol", VKEY_CONTROL_OR_COMMAND},
+        {"control", ui::VKEY_CONTROL},
+        {"ctrl", ui::VKEY_CONTROL},
+        {"delete", ui::VKEY_DELETE},
+        {"down", ui::VKEY_DOWN},
+        {"end", ui::VKEY_END},
+        {"enter", ui::VKEY_RETURN},
+        {"esc", ui::VKEY_ESCAPE},
+        {"escape", ui::VKEY_ESCAPE},
+        {"f1", ui::VKEY_F1},
+        {"f10", ui::VKEY_F10},
+        {"f11", ui::VKEY_F11},
+        {"f12", ui::VKEY_F12},
+        {"f13", ui::VKEY_F13},
+        {"f14", ui::VKEY_F14},
+        {"f15", ui::VKEY_F15},
+        {"f16", ui::VKEY_F16},
+        {"f17", ui::VKEY_F17},
+        {"f18", ui::VKEY_F18},
+        {"f19", ui::VKEY_F19},
+        {"f2", ui::VKEY_F2},
+        {"f20", ui::VKEY_F20},
+        {"f21", ui::VKEY_F21},
+        {"f22", ui::VKEY_F22},
+        {"f23", ui::VKEY_F23},
+        {"f24", ui::VKEY_F24},
+        {"f3", ui::VKEY_F3},
+        {"f4", ui::VKEY_F4},
+        {"f5", ui::VKEY_F5},
+        {"f6", ui::VKEY_F6},
+        {"f7", ui::VKEY_F7},
+        {"f8", ui::VKEY_F8},
+        {"f9", ui::VKEY_F9},
+        {"home", ui::VKEY_HOME},
+        {"insert", ui::VKEY_INSERT},
+        {"left", ui::VKEY_LEFT},
+        {"medianexttrack", ui::VKEY_MEDIA_NEXT_TRACK},
+        {"mediaplaypause", ui::VKEY_MEDIA_PLAY_PAUSE},
+        {"mediaprevioustrack", ui::VKEY_MEDIA_PREV_TRACK},
+        {"mediastop", ui::VKEY_MEDIA_STOP},
+        {"meta", ui::VKEY_COMMAND},
+        {"num0", ui::VKEY_NUMPAD0},
+        {"num1", ui::VKEY_NUMPAD1},
+        {"num2", ui::VKEY_NUMPAD2},
+        {"num3", ui::VKEY_NUMPAD3},
+        {"num4", ui::VKEY_NUMPAD4},
+        {"num5", ui::VKEY_NUMPAD5},
+        {"num6", ui::VKEY_NUMPAD6},
+        {"num7", ui::VKEY_NUMPAD7},
+        {"num8", ui::VKEY_NUMPAD8},
+        {"num9", ui::VKEY_NUMPAD9},
+        {"numadd", ui::VKEY_ADD},
+        {"numdec", ui::VKEY_DECIMAL},
+        {"numdiv", ui::VKEY_DIVIDE},
+        {"numlock", ui::VKEY_NUMLOCK},
+        {"nummult", ui::VKEY_MULTIPLY},
+        {"numsub", ui::VKEY_SUBTRACT},
+        {"option", ui::VKEY_MENU},
+        {"pagedown", ui::VKEY_NEXT},
+        {"pageup", ui::VKEY_PRIOR},
+        {"plus", ui::VKEY_OEM_PLUS},
+        {"printscreen", ui::VKEY_SNAPSHOT},
+        {"return", ui::VKEY_RETURN},
+        {"right", ui::VKEY_RIGHT},
+        {"scrolllock", ui::VKEY_SCROLL},
+        {"shift", ui::VKEY_SHIFT},
+        {"space", ui::VKEY_SPACE},
+        {"super", ui::VKEY_COMMAND},
+        {"tab", ui::VKEY_TAB},
+        {"up", ui::VKEY_UP},
+        {"volumedown", ui::VKEY_VOLUME_DOWN},
+        {"volumemute", ui::VKEY_VOLUME_MUTE},
+        {"volumeup", ui::VKEY_VOLUME_UP}}}};
+  static_assert(keymap.IsSorted(), "please sort keymap");
+
+  auto const keycode = keymap.lookup(base::ToLowerASCII(s));
+  if (!keycode) {
+    if (s.size() > 2)
+      LOG(WARNING) << "Invalid accelerator token: " << s;
     return ui::VKEY_UNKNOWN;
   }
+
+  if (*keycode == ui::VKEY_OEM_PLUS) {
+    *shifted = true;
+  }
+
+  return *keycode;
 }
 
 }  // namespace

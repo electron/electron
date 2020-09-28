@@ -16,6 +16,8 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
+#include "shell/common/string_lookup.h"
+
 #include "shell/common/v8_value_serializer.h"
 #include "third_party/blink/public/common/context_menu_data/edit_flags.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
@@ -60,35 +62,29 @@ struct Converter<blink::WebInputEvent::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Type* out) {
-    std::string type = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (type == "mousedown")
-      *out = blink::WebInputEvent::Type::kMouseDown;
-    else if (type == "mouseup")
-      *out = blink::WebInputEvent::Type::kMouseUp;
-    else if (type == "mousemove")
-      *out = blink::WebInputEvent::Type::kMouseMove;
-    else if (type == "mouseenter")
-      *out = blink::WebInputEvent::Type::kMouseEnter;
-    else if (type == "mouseleave")
-      *out = blink::WebInputEvent::Type::kMouseLeave;
-    else if (type == "contextmenu")
-      *out = blink::WebInputEvent::Type::kContextMenu;
-    else if (type == "mousewheel")
-      *out = blink::WebInputEvent::Type::kMouseWheel;
-    else if (type == "keydown")
-      *out = blink::WebInputEvent::Type::kRawKeyDown;
-    else if (type == "keyup")
-      *out = blink::WebInputEvent::Type::kKeyUp;
-    else if (type == "char")
-      *out = blink::WebInputEvent::Type::kChar;
-    else if (type == "touchstart")
-      *out = blink::WebInputEvent::Type::kTouchStart;
-    else if (type == "touchmove")
-      *out = blink::WebInputEvent::Type::kTouchMove;
-    else if (type == "touchend")
-      *out = blink::WebInputEvent::Type::kTouchEnd;
-    else if (type == "touchcancel")
-      *out = blink::WebInputEvent::Type::kTouchCancel;
+    static constexpr electron::StringLookup<blink::WebInputEvent::Type, 14>
+        evmap{{{
+            {"char", blink::WebInputEvent::Type::kChar},
+            {"contextmenu", blink::WebInputEvent::Type::kContextMenu},
+            {"keydown", blink::WebInputEvent::Type::kRawKeyDown},
+            {"keyup", blink::WebInputEvent::Type::kKeyUp},
+            {"mousedown", blink::WebInputEvent::Type::kMouseDown},
+            {"mouseenter", blink::WebInputEvent::Type::kMouseEnter},
+            {"mouseleave", blink::WebInputEvent::Type::kMouseLeave},
+            {"mousemove", blink::WebInputEvent::Type::kMouseMove},
+            {"mouseup", blink::WebInputEvent::Type::kMouseUp},
+            {"mousewheel", blink::WebInputEvent::Type::kMouseWheel},
+            {"touchcancel", blink::WebInputEvent::Type::kTouchCancel},
+            {"touchend", blink::WebInputEvent::Type::kTouchEnd},
+            {"touchmove", blink::WebInputEvent::Type::kTouchMove},
+            {"touchstart", blink::WebInputEvent::Type::kTouchStart},
+        }}};
+    static_assert(evmap.IsSorted(), "please sort evmap");
+    auto const event =
+        evmap.lookup(base::ToLowerASCII(gin::V8ToString(isolate, val)));
+    if (event) {
+      *out = *event;
+    }
     return true;
   }
 };
@@ -98,16 +94,18 @@ struct Converter<blink::WebMouseEvent::Button> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
-    std::string button = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (button == "left")
-      *out = blink::WebMouseEvent::Button::kLeft;
-    else if (button == "middle")
-      *out = blink::WebMouseEvent::Button::kMiddle;
-    else if (button == "right")
-      *out = blink::WebMouseEvent::Button::kRight;
-    else
-      return false;
-    return true;
+    static constexpr electron::StringLookup<blink::WebMouseEvent::Button, 3>
+        evmap{{{{"left", blink::WebMouseEvent::Button::kLeft},
+                {"middle", blink::WebMouseEvent::Button::kMiddle},
+                {"right", blink::WebMouseEvent::Button::kRight}}}};
+    static_assert(evmap.IsSorted(), "please sort evmap");
+    auto const event =
+        evmap.lookup(base::ToLowerASCII(gin::V8ToString(isolate, val)));
+    if (event) {
+      *out = *event;
+      return true;
+    }
+    return false;
   }
 };
 
@@ -116,33 +114,34 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
-    std::string modifier = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (modifier == "shift")
-      *out = blink::WebInputEvent::Modifiers::kShiftKey;
-    else if (modifier == "control" || modifier == "ctrl")
-      *out = blink::WebInputEvent::Modifiers::kControlKey;
-    else if (modifier == "alt")
-      *out = blink::WebInputEvent::Modifiers::kAltKey;
-    else if (modifier == "meta" || modifier == "command" || modifier == "cmd")
-      *out = blink::WebInputEvent::Modifiers::kMetaKey;
-    else if (modifier == "iskeypad")
-      *out = blink::WebInputEvent::Modifiers::kIsKeyPad;
-    else if (modifier == "isautorepeat")
-      *out = blink::WebInputEvent::Modifiers::kIsAutoRepeat;
-    else if (modifier == "leftbuttondown")
-      *out = blink::WebInputEvent::Modifiers::kLeftButtonDown;
-    else if (modifier == "middlebuttondown")
-      *out = blink::WebInputEvent::Modifiers::kMiddleButtonDown;
-    else if (modifier == "rightbuttondown")
-      *out = blink::WebInputEvent::Modifiers::kRightButtonDown;
-    else if (modifier == "capslock")
-      *out = blink::WebInputEvent::Modifiers::kCapsLockOn;
-    else if (modifier == "numlock")
-      *out = blink::WebInputEvent::Modifiers::kNumLockOn;
-    else if (modifier == "left")
-      *out = blink::WebInputEvent::Modifiers::kIsLeft;
-    else if (modifier == "right")
-      *out = blink::WebInputEvent::Modifiers::kIsRight;
+    static constexpr electron::StringLookup<blink::WebMouseEvent::Modifiers, 16>
+        modmap{{{
+            {"alt", blink::WebInputEvent::Modifiers::kAltKey},
+            {"capslock", blink::WebInputEvent::Modifiers::kCapsLockOn},
+            {"cmd", blink::WebInputEvent::Modifiers::kMetaKey},
+            {"command", blink::WebInputEvent::Modifiers::kMetaKey},
+            {"control", blink::WebInputEvent::Modifiers::kControlKey},
+            {"ctrl", blink::WebInputEvent::Modifiers::kControlKey},
+            {"isautorepeat", blink::WebInputEvent::Modifiers::kIsAutoRepeat},
+            {"iskeypad", blink::WebInputEvent::Modifiers::kIsKeyPad},
+            {"left", blink::WebInputEvent::Modifiers::kIsLeft},
+            {"leftbuttondown",
+             blink::WebInputEvent::Modifiers::kLeftButtonDown},
+            {"meta", blink::WebInputEvent::Modifiers::kMetaKey},
+            {"middlebuttondown",
+             blink::WebInputEvent::Modifiers::kMiddleButtonDown},
+            {"numlock", blink::WebInputEvent::Modifiers::kNumLockOn},
+            {"right", blink::WebInputEvent::Modifiers::kIsRight},
+            {"rightbuttondown",
+             blink::WebInputEvent::Modifiers::kRightButtonDown},
+            {"shift", blink::WebInputEvent::Modifiers::kShiftKey},
+        }}};
+    static_assert(modmap.IsSorted(), "please sort mods");
+    auto const mod =
+        modmap.lookup(base::ToLowerASCII(gin::V8ToString(isolate, val)));
+    if (mod) {
+      *out = *mod;
+    }
     return true;
   }
 };
@@ -462,26 +461,27 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
     v8::Isolate* isolate,
     v8::Handle<v8::Value> val,
     network::mojom::ReferrerPolicy* out) {
-  std::string policy = base::ToLowerASCII(gin::V8ToString(isolate, val));
-  if (policy == "default")
-    *out = network::mojom::ReferrerPolicy::kDefault;
-  else if (policy == "unsafe-url")
-    *out = network::mojom::ReferrerPolicy::kAlways;
-  else if (policy == "no-referrer-when-downgrade")
-    *out = network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade;
-  else if (policy == "no-referrer")
-    *out = network::mojom::ReferrerPolicy::kNever;
-  else if (policy == "origin")
-    *out = network::mojom::ReferrerPolicy::kOrigin;
-  else if (policy == "strict-origin-when-cross-origin")
-    *out = network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin;
-  else if (policy == "same-origin")
-    *out = network::mojom::ReferrerPolicy::kSameOrigin;
-  else if (policy == "strict-origin")
-    *out = network::mojom::ReferrerPolicy::kStrictOrigin;
-  else
-    return false;
-  return true;
+  static constexpr electron::StringLookup<network::mojom::ReferrerPolicy, 8>
+      polmap{{{
+          {"default", network::mojom::ReferrerPolicy::kDefault},
+          {"no-referrer", network::mojom::ReferrerPolicy::kNever},
+          {"no-referrer-when-downgrade",
+           network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade},
+          {"origin", network::mojom::ReferrerPolicy::kOrigin},
+          {"same-origin", network::mojom::ReferrerPolicy::kSameOrigin},
+          {"strict-origin", network::mojom::ReferrerPolicy::kStrictOrigin},
+          {"strict-origin-when-cross-origin",
+           network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin},
+          {"unsafe-url", network::mojom::ReferrerPolicy::kAlways},
+      }}};
+  static_assert(polmap.IsSorted(), "please sort polmap");
+  auto const policy =
+      polmap.lookup(base::ToLowerASCII(gin::V8ToString(isolate, val)));
+  if (policy) {
+    *out = *policy;
+    return true;
+  }
+  return false;
 }
 
 v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(

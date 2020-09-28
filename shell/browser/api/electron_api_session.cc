@@ -71,6 +71,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "shell/common/string_lookup.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -120,27 +121,25 @@ struct ClearStorageDataOptions {
 };
 
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
+  static constexpr electron::StringLookup<uint32_t, 9> typemap{{{
+      {"appcache", StoragePartition::REMOVE_DATA_MASK_APPCACHE},
+      {"cachestorage", StoragePartition::REMOVE_DATA_MASK_CACHE_STORAGE},
+      {"cookies", StoragePartition::REMOVE_DATA_MASK_COOKIES},
+      {"filesystem", StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS},
+      {"indexdb", StoragePartition::REMOVE_DATA_MASK_INDEXEDDB},
+      {"localstorage", StoragePartition::REMOVE_DATA_MASK_LOCAL_STORAGE},
+      {"serviceworkers", StoragePartition::REMOVE_DATA_MASK_SERVICE_WORKERS},
+      {"shadercache", StoragePartition::REMOVE_DATA_MASK_SHADER_CACHE},
+      {"websql", StoragePartition::REMOVE_DATA_MASK_WEBSQL},
+  }}};
+  static_assert(typemap.IsSorted(), "please sort typemap");
+
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
-    auto type = base::ToLowerASCII(it);
-    if (type == "appcache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    else if (type == "cookies")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
-    else if (type == "filesystem")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
-    else if (type == "indexdb")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_INDEXEDDB;
-    else if (type == "localstorage")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_LOCAL_STORAGE;
-    else if (type == "shadercache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_SHADER_CACHE;
-    else if (type == "websql")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_WEBSQL;
-    else if (type == "serviceworkers")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_SERVICE_WORKERS;
-    else if (type == "cachestorage")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_CACHE_STORAGE;
+    const auto type = typemap.lookup(base::ToLowerASCII(it));
+    if (type) {
+      storage_mask |= *type;
+    }
   }
   return storage_mask;
 }
