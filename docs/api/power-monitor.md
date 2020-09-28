@@ -39,6 +39,14 @@ Emitted when the system is about to lock the screen.
 
 Emitted as soon as the systems screen is unlocked.
 
+### Event: 'user-did-become-active' _macOS_
+
+Emitted when a login session is activated. See [documentation](https://developer.apple.com/documentation/appkit/nsworkspacesessiondidbecomeactivenotification?language=objc) for more information.
+
+### Event: 'user-did-resign-active' _macOS_
+
+Emitted when a login session is deactivated. See [documentation](https://developer.apple.com/documentation/appkit/nsworkspacesessiondidresignactivenotification?language=objc) for more information.
+
 ## Methods
 
 The `powerMonitor` module has the following methods:

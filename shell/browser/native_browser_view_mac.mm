@@ -231,11 +231,11 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
-  auto* iwc_view = GetInspectableWebContentsView();
-  auto* web_contents = GetWebContents();
-  if (!(iwc_view && web_contents))
+  if (!inspectable_web_contents_)
     return;
-  NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
+  auto* web_contents = inspectable_web_contents_->GetWebContents();
+  auto* iwc_view = GetInspectableWebContentsView();
+  NSView* web_view = web_contents->GetNativeView().GetNativeNSView();
   NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
