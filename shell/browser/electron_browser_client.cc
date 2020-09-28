@@ -1300,7 +1300,9 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   content::BrowserContext* context = web_contents->GetBrowserContext();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  uniquely_owned_factories->emplace(
+  DCHECK(uniquely_owned_factories);
+  DCHECK(factories);
+  factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
           context, ukm_source_id,
@@ -1395,11 +1397,11 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
                                      factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
-                                                             render_frame_id);
-  if (factory)
-    uniquely_owned_factories->emplace(extensions::kExtensionScheme,
-                                      std::move(factory));
+  DCHECK(uniquely_owned_factories);
+  DCHECK(factories);
+  factories->emplace(extensions::kExtensionScheme,
+                     extensions::CreateExtensionURLLoaderFactory(
+                         render_process_id, render_frame_id));
 
   if (!web_contents)
     return;
