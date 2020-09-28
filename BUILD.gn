@@ -1,3 +1,10 @@
+# This file depends on the legacy global sources assignment filter. It should
+# be converted to check target platform before assigning source files to the
+# sources variable. Remove this import and set_sources_assignment_filter call
+# when the file has been converted. See https://crbug.com/1018739 for details.
+import("//build/config/deprecated_default_sources_assignment_filter.gni")
+sources_assignment_filter = deprecated_default_sources_assignment_filter
+
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
@@ -440,9 +447,9 @@ source_set("electron_lib") {
   }
 
   set_sources_assignment_filter(
-      sources_assignment_filter + extra_source_filters)
+      deprecated_default_sources_assignment_filter + extra_source_filters)
   sources = filenames.lib_sources
-  set_sources_assignment_filter(sources_assignment_filter)
+  set_sources_assignment_filter(deprecated_default_sources_assignment_filter)
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
