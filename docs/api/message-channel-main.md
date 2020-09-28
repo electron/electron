@@ -13,9 +13,19 @@ Process: [Main](../glossary.md#main-process)
 
 Example:
 ```js
+// Main process
 const { port1, port2 } = new MessageChannelMain()
 w.webContents.postMessage('port', null, [port2])
 port1.postMessage({ some: 'message' })
+
+// Renderer process
+const { ipcRenderer } = require('electron')
+ipcRenderer.on('port', (e) => {
+  // e.ports is a list of ports sent along with this message
+  e.ports[0].on('message', (messageEvent) => {
+    console.log(messageEvent.data)
+  })
+})
 ```
 
 ### Instance Properties
