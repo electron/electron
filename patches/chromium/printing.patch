@@ -431,7 +431,7 @@ index 4b140a2a0f431cd7b06a8d1b6f9e84981f4ce7e7..14779debdacc7b5f78aa0799f197241d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 8e76a80c4357b0da0c03c160fc89141557ec485f..a1e18fb9f8364061ca5964726bcc5a77d370525c 100644
+index 8e76a80c4357b0da0c03c160fc89141557ec485f..9d567313bac3a020f0d4fee8957b49e8aa7715cb 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -499,15 +499,17 @@ index 8e76a80c4357b0da0c03c160fc89141557ec485f..a1e18fb9f8364061ca5964726bcc5a77
      // Check if |this| is still valid.
      if (!weak_this)
        return;
-@@ -1803,6 +1809,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -1803,7 +1809,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
+-                                   PrintRequestType print_request_type) {
++                                   PrintRequestType print_request_type,
 +                                   bool silent,
-+                                   base::Value settings,
-                                    PrintRequestType print_request_type) {
++                                   base::Value settings) {
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
+     return;
 @@ -1811,7 +1819,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
@@ -593,7 +595,7 @@ index 8e76a80c4357b0da0c03c160fc89141557ec485f..a1e18fb9f8364061ca5964726bcc5a77
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..2271229fa41e43b87b0a4c5f015e18a2ac192d8e 100644
+index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..d7d316df470300bd99559e6f5aaaf0f196b06cb1 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -230,7 +230,7 @@ class PrintRenderFrameHelper
@@ -612,7 +614,7 @@ index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..2271229fa41e43b87b0a4c5f015e18a2
 -             PrintRequestType print_request_type);
 +             PrintRequestType print_request_type,
 +             bool silent,
-+             base::Value settings,);
++             base::Value settings);
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
