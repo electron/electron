@@ -25,6 +25,7 @@
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
 #include "third_party/blink/public/platform/web_size.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
@@ -197,7 +198,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   ui::DomKey domKey;
   ui::KeyboardCode dummy_code;
-  int flags = electron::WebEventModifiersToEventFlags(out->GetModifiers());
+  int flags = ui::WebEventModifiersToEventFlags(out->GetModifiers());
   if (ui::DomCodeToUsLayoutDomKey(domCode, flags, &domKey, &dummy_code))
     out->dom_key = static_cast<int>(domKey);
 
