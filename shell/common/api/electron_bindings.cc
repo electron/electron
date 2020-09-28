@@ -56,14 +56,12 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 }  // namespace
 
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
-  uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
-  call_next_tick_async_.data = this;
+  uv_async_init(loop, call_next_tick_async_.get(), OnCallNextTick);
+  call_next_tick_async_.get()->data = this;
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-ElectronBindings::~ElectronBindings() {
-  uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
-}
+ElectronBindings::~ElectronBindings() {}
 
 // static
 void ElectronBindings::BindProcess(v8::Isolate* isolate,
@@ -131,7 +129,7 @@ void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
     return;
 
   pending_next_ticks_.push_back(env);
-  uv_async_send(&call_next_tick_async_);
+  uv_async_send(call_next_tick_async_.get());
 }
 
 // static
