@@ -536,7 +536,7 @@ index 706c9cf26cb65b7874b88ed1015c18a1ef3f0ea7..e28267802a3349920e417cf31f588bc9
  class ContextProvider;
 +class HostDisplayClient;
  class HostFrameSinkManager;
- class LocalSurfaceIdAllocation;
+ class LocalSurfaceId;
  class RasterContextProvider;
 @@ -128,6 +129,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
