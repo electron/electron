@@ -199,6 +199,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "fullscreen");
     case PermissionType::OPEN_EXTERNAL:
       return StringToV8(isolate, "openExternal");
+    case PermissionType::SERIAL:
+      return StringToV8(isolate, "serial");
     default:
       return StringToV8(isolate, "unknown");
   }
