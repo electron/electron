@@ -8,7 +8,7 @@ and cause a DCHECK(), since the resource will be loaded as an empty
 string.
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index b1252ff0c7caa0916e5655e54b06965a982a7f06..03713a90d884153634535ef363943939c7e823a8 100644
+index 7a8e05b4944da8ddc78342e1953d74670f04be0b..f65364ab0d917a6956e4e425a2bbf775d720410e 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -8,8 +8,7 @@

@@ -14,10 +14,10 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 64b869238f77b398fa30828de64891f9ee292e93..7c98fd5a36a8e6789d5baf37b21283adaee00c60 100644
+index e35eb49ce8ecccb2d7231bd3d6bd24bcc0a2fd9e..4db6561c0885ab394b17189aa4ba1eeb4ddecf57 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -580,10 +580,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -582,10 +582,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -28,7 +28,7 @@ index 64b869238f77b398fa30828de64891f9ee292e93..7c98fd5a36a8e6789d5baf37b21283ad
    if (!Client())
      return;
  
-@@ -600,6 +596,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -602,6 +598,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    // Notify ScriptController that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetScriptController().ClearForClose();
