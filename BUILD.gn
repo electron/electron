@@ -440,10 +440,11 @@ source_set("electron_lib") {
     deps += [ "//components/crash/core/app" ]
   }
 
+  sources_assignment_filter = deprecated_default_sources_assignment_filter
   set_sources_assignment_filter(
-      deprecated_default_sources_assignment_filter + extra_source_filters)
+      sources_assignment_filter + extra_source_filters)
   sources = filenames.lib_sources
-  set_sources_assignment_filter(deprecated_default_sources_assignment_filter)
+  set_sources_assignment_filter(sources_assignment_filter)
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
