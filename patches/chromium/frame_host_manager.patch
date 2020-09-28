@@ -106,7 +106,7 @@ index 8d82710542bce9cd7491221c59071b1b9f32c24b..1c6e0d8ed3798be6ad0bd70d719c9c88
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index a137a1755cb1f24171e504f38676a4eb282cc88d..ff2b260327a7f84c38397158619fb0830571dca6 100644
+index abe9ae05e7b505c8c0cddbee7bf3d5e186548458..bf58d0f65e161e61d8303f5652f2d348ba2cbd6a 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
 @@ -2550,6 +2550,16 @@ void RenderFrameHostManager::GetCoopCoepCrossOriginIsolationInfo(
@@ -202,10 +202,10 @@ index a137a1755cb1f24171e504f38676a4eb282cc88d..ff2b260327a7f84c38397158619fb083
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 7eb2353d1a793ab06d3bd999d13505f68f8c2755..c55a23e0fbf38b7b1109be8870fc42298ad05740 100644
+index ed973ac9ee40abc70ead81fba83573592dfd3efc..40c57cadaae712495bf28f0065ff4751c06629db 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -606,6 +606,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
+@@ -600,6 +600,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
    return browsing_instance_->HasSiteInstance(site_info);
  }
  
@@ -217,7 +217,7 @@ index 7eb2353d1a793ab06d3bd999d13505f68f8c2755..c55a23e0fbf38b7b1109be8870fc4229
      const GURL& url) {
    return browsing_instance_->GetSiteInstanceForURL(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index c8ae97da1852b8162f71e240370c1416f69cb8b2..091116497c8e48d5a4a9d1fa5b7386218cbf7222 100644
+index ecebcc5d30f66ef30325bb3cc0b367d3d9de2c82..f1a27bf06e416d876efe095f6f81acf26183fb83 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -231,6 +231,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
@@ -229,7 +229,7 @@ index c8ae97da1852b8162f71e240370c1416f69cb8b2..091116497c8e48d5a4a9d1fa5b738621
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 26b0c265287a67e476db91ee9965da236c4a5f70..c39c5e8d82acdcbdd5321e86631d59ede15d18de 100644
+index 0c15d9a28e9b54f7adbe303c341cda42a6cffb73..2d2c8e61063ed3c34e4eb40a31ec62affcbe1f66 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@
@@ -255,7 +255,7 @@ index 26b0c265287a67e476db91ee9965da236c4a5f70..c39c5e8d82acdcbdd5321e86631d59ed
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2a3f9be0a62265a638f963a74184ef34696d1f46..6fe8b2a10260de5e3d5a2007a20e27f92383d39a 100644
+index 2b8c354a39677e91d25451044cc06d6343a510f9..464df770f76bacd7556dae52c7d59aa07d19762e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -252,8 +252,45 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -305,10 +305,10 @@ index 2a3f9be0a62265a638f963a74184ef34696d1f46..6fe8b2a10260de5e3d5a2007a20e27f9
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
 diff --git a/content/public/browser/site_instance.h b/content/public/browser/site_instance.h
-index a721f2fbab6e621085a8c7806abd92b8077340a8..e9b936e05e1d6ac8ea6eb5eb4d412b37ae4acc86 100644
+index 0e6c3d076a02cd1b356745e514b9de9d32e4b00c..76647f1c5e9ee401fbf3def6ccfe73372f622548 100644
 --- a/content/public/browser/site_instance.h
 +++ b/content/public/browser/site_instance.h
-@@ -135,6 +135,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
+@@ -134,6 +134,11 @@ class CONTENT_EXPORT SiteInstance : public base::RefCounted<SiteInstance> {
    //   corresponds to a site URL with the host "example.com".
    virtual const GURL& GetSiteURL() = 0;
  
