@@ -29,10 +29,10 @@ Process: [Main](../glossary.md#main-process)
 
 ### Instance Methods
 
-#### `frame.executeJavaScript(code, userGesture)`
+#### `frame.executeJavaScript(code[, userGesture])`
 
 * `code` String
-* `userGesture` Boolean
+* `userGesture` Boolean (optional) - Default is `false`.
 
 Returns `Promise<unknown>` - A promise that resolves with the result of the executed
 code or is rejected if execution throws or results in a rejected promise.

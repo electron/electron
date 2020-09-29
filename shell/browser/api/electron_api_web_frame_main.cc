@@ -67,11 +67,23 @@ bool WebFrame::CheckRenderFrame() const {
   return true;
 }
 
-v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
-                                                   bool has_user_gesture,
-                                                   gin::Arguments* args) {
+v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(gin::Arguments* args,
+                                                   const base::string16& code) {
   gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // Optional userGesture parameter
+  bool user_gesture;
+  if (!args->PeekNext().IsEmpty()) {
+    if (args->PeekNext()->IsBoolean()) {
+      args->GetNext(&user_gesture);
+    } else {
+      args->ThrowTypeError("userGesture must be a boolean");
+      return handle;
+    }
+  } else {
+    user_gesture = false;
+  }
 
   if (render_frame_disposed_) {
     promise.RejectWithErrorMessage(
@@ -79,7 +91,7 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
     return handle;
   }
 
-  if (has_user_gesture) {
+  if (user_gesture) {
     auto* ftn = content::FrameTreeNode::From(render_frame_);
     ftn->UpdateUserActivationState(
         blink::mojom::UserActivationUpdateType::kNotifyActivation,

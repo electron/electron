@@ -63,9 +63,8 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
 
-  v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code,
-                                           bool has_user_gesture,
-                                           gin::Arguments* args);
+  v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
+                                           const base::string16& code);
   bool Reload(v8::Isolate* isolate);
 
   int FrameTreeNodeID(v8::Isolate* isolate) const;

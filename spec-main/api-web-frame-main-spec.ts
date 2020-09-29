@@ -138,7 +138,7 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const webFrame = w.webContents.webFrame;
 
-      const getUrl = (frame: WebFrameMain) => frame.executeJavaScript('location.href', false);
+      const getUrl = (frame: WebFrameMain) => frame.executeJavaScript('location.href');
       expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
       expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
       expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
