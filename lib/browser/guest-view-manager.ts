@@ -5,6 +5,7 @@ import { parseWebViewWebPreferences } from '@electron/internal/common/parse-feat
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/common/web-view-events';
 import { serialize } from '@electron/internal/common/type-utils';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
   elementInstanceId?: number;
@@ -83,7 +84,7 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   // Dispatch events to embedder.
   const fn = function (event: string) {
     guest.on(event as any, function (_, ...args: any[]) {
-      sendToEmbedder('ELECTRON_GUEST_VIEW_INTERNAL_DISPATCH_EVENT', event, ...args);
+      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, ...args);
     });
   };
   for (const event of supportedWebViewEvents) {
@@ -93,14 +94,14 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   }
 
   guest.on('new-window', function (event, url, frameName, disposition, options, additionalFeatures, referrer) {
-    sendToEmbedder('ELECTRON_GUEST_VIEW_INTERNAL_DISPATCH_EVENT', 'new-window', url,
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', url,
       frameName, disposition, sanitizeOptionsForGuest(options),
       additionalFeatures, referrer);
   });
 
   // Dispatch guest's IPC messages to embedder.
   guest.on('ipc-message-host' as any, function (_: Electron.Event, channel: string, args: any[]) {
-    sendToEmbedder('ELECTRON_GUEST_VIEW_INTERNAL_IPC_MESSAGE', channel, ...args);
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE, channel, ...args);
   });
 
   // Notify guest of embedder window visibility when it is ready
@@ -108,7 +109,7 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   guest.on('dom-ready', function () {
     const guestInstance = guestInstances[guestInstanceId];
     if (guestInstance != null && guestInstance.visibilityState != null) {
-      guest._sendInternal('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', guestInstance.visibilityState);
+      guest._sendInternal(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, guestInstance.visibilityState);
     }
   });
 
@@ -152,7 +153,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
     // Remove guest from embedder if moving across web views
     if (guest.viewInstanceId !== params.instanceId) {
       webViewManager.removeGuest(guestInstance.embedder, guestInstanceId);
-      guestInstance.embedder._sendInternal(`ELECTRON_GUEST_VIEW_INTERNAL_DESTROY_GUEST-${guest.viewInstanceId}`);
+      guestInstance.embedder._sendInternal(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${guest.viewInstanceId}`);
     }
   }
 
@@ -253,7 +254,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       const guestInstance = guestInstances[guestInstanceId];
       guestInstance.visibilityState = visibilityState;
       if (guestInstance.embedder === embedder) {
-        guestInstance.guest._sendInternal('ELECTRON_GUEST_INSTANCE_VISIBILITY_CHANGE', visibilityState);
+        guestInstance.guest._sendInternal(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, visibilityState);
       }
     }
   };
@@ -305,11 +306,11 @@ const handleMessageSync = function (channel: string, handler: (event: ElectronIn
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
 
-handleMessage('ELECTRON_GUEST_VIEW_MANAGER_CREATE_GUEST', function (event, params) {
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_GUEST, function (event, params) {
   return createGuest(event.sender, params);
 });
 
-handleMessage('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', function (event, embedderFrameId: number, elementInstanceId: number, guestInstanceId: number, params) {
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_ATTACH_GUEST, function (event, embedderFrameId: number, elementInstanceId: number, guestInstanceId: number, params) {
   try {
     attachGuest(event, embedderFrameId, elementInstanceId, guestInstanceId, params);
   } catch (error) {
@@ -317,12 +318,12 @@ handleMessage('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', function (event, embed
   }
 });
 
-handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_DETACH_GUEST', function (event, guestInstanceId: number) {
+handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event, guestInstanceId: number) {
   return detachGuest(event.sender, guestInstanceId);
 });
 
 // this message is sent by the actual <webview>
-ipcMainInternal.on('ELECTRON_GUEST_VIEW_MANAGER_FOCUS_CHANGE', function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean, guestInstanceId: number) {
+ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean, guestInstanceId: number) {
   const guest = getGuest(guestInstanceId);
   if (guest === event.sender) {
     event.sender.emit('focus-change', {}, focus, guestInstanceId);
@@ -331,7 +332,7 @@ ipcMainInternal.on('ELECTRON_GUEST_VIEW_MANAGER_FOCUS_CHANGE', function (event: 
   }
 });
 
-handleMessage('ELECTRON_GUEST_VIEW_MANAGER_CALL', function (event, guestInstanceId: number, method: string, args: any[]) {
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
   if (!asyncMethods.has(method)) {
     throw new Error(`Invalid method: ${method}`);
@@ -340,7 +341,7 @@ handleMessage('ELECTRON_GUEST_VIEW_MANAGER_CALL', function (event, guestInstance
   return (guest as any)[method](...args);
 });
 
-handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_CALL', function (event, guestInstanceId: number, method: string, args: any[]) {
+handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
   if (!syncMethods.has(method)) {
     throw new Error(`Invalid method: ${method}`);
@@ -349,7 +350,7 @@ handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_CALL', function (event, guestInst
   return (guest as any)[method](...args);
 });
 
-handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_GET', function (event, guestInstanceId: number, property: string) {
+handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, function (event, guestInstanceId: number, property: string) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
   if (!properties.has(property)) {
     throw new Error(`Invalid property: ${property}`);
@@ -358,7 +359,7 @@ handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_GET', function (event, g
   return (guest as any)[property];
 });
 
-handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_SET', function (event, guestInstanceId: number, property: string, val: any) {
+handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, function (event, guestInstanceId: number, property: string, val: any) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
   if (!properties.has(property)) {
     throw new Error(`Invalid property: ${property}`);
@@ -367,7 +368,7 @@ handleMessageSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_SET', function (event, g
   (guest as any)[property] = val;
 });
 
-handleMessage('ELECTRON_GUEST_VIEW_MANAGER_CAPTURE_PAGE', async function (event, guestInstanceId: number, args: any[]) {
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (event, guestInstanceId: number, args: any[]) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
 
   return serialize(await guest.capturePage(...args));
