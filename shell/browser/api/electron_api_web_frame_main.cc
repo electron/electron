@@ -94,49 +94,50 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
   return handle;
 }
 
-bool WebFrame::Reload(gin::Arguments* args) {
+bool WebFrame::Reload(v8::Isolate* isolate) {
   if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
 }
 
-int WebFrame::FrameTreeNodeID(gin::Arguments* args) const {
+int WebFrame::FrameTreeNodeID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetFrameTreeNodeId();
 }
 
-int WebFrame::ProcessID(gin::Arguments* args) const {
+int WebFrame::ProcessID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetProcess()->GetID();
 }
 
-int WebFrame::RoutingID(gin::Arguments* args) const {
+int WebFrame::RoutingID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrame::URL(gin::Arguments* args) const {
+GURL WebFrame::URL(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return GURL::EmptyGURL();
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrame::Top(gin::Arguments* args) {
+content::RenderFrameHost* WebFrame::Top(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrame::Parent(gin::Arguments* args) {
+content::RenderFrameHost* WebFrame::Parent(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
+std::vector<content::RenderFrameHost*> WebFrame::Frames(
+    v8::Isolate* isolate) const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;
@@ -150,7 +151,7 @@ std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
 }
 
 std::vector<content::RenderFrameHost*> WebFrame::FramesInSubtree(
-    gin::Arguments* args) {
+    v8::Isolate* isolate) const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;

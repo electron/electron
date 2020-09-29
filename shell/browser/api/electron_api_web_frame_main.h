@@ -66,17 +66,18 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code,
                                            bool has_user_gesture,
                                            gin::Arguments* args);
-  bool Reload(gin::Arguments* args);
+  bool Reload(v8::Isolate* isolate);
 
-  int FrameTreeNodeID(gin::Arguments* args) const;
-  int ProcessID(gin::Arguments* args) const;
-  int RoutingID(gin::Arguments* args) const;
-  GURL URL(gin::Arguments* args) const;
+  int FrameTreeNodeID(v8::Isolate* isolate) const;
+  int ProcessID(v8::Isolate* isolate) const;
+  int RoutingID(v8::Isolate* isolate) const;
+  GURL URL(v8::Isolate* isolate) const;
 
-  content::RenderFrameHost* Top(gin::Arguments* args);
-  content::RenderFrameHost* Parent(gin::Arguments* args);
-  std::vector<content::RenderFrameHost*> Frames(gin::Arguments* args);
-  std::vector<content::RenderFrameHost*> FramesInSubtree(gin::Arguments* args);
+  content::RenderFrameHost* Top(v8::Isolate* isolate) const;
+  content::RenderFrameHost* Parent(v8::Isolate* isolate) const;
+  std::vector<content::RenderFrameHost*> Frames(v8::Isolate* isolate) const;
+  std::vector<content::RenderFrameHost*> FramesInSubtree(
+      v8::Isolate* isolate) const;
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
