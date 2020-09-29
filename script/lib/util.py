@@ -197,7 +197,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   env = os.environ.copy()
   env['AWS_ACCESS_KEY_ID'] = access_key
   env['AWS_SECRET_ACCESS_KEY'] = secret_key
-  execute([
+  output = execute([
     'node',
     os.path.join(os.path.dirname(__file__), 's3put.js'),
     '--bucket', bucket,
@@ -205,6 +205,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--key_prefix', key_prefix,
     '--grant', 'public-read',
   ] + files, env)
+  print(output)
 
 
 def add_exec_bit(filename):

@@ -20,9 +20,11 @@ let anErrorOccurred = false;
 function next (done) {
   const file = files.shift();
   if (!file) return done();
+  const key = filenameToKey(file);
+  console.log(`Uploading '${file}' to bucket '${bucket}' with key '${key}'...`);
   s3.upload({
     Bucket: bucket,
-    Key: filenameToKey(file),
+    Key: key,
     Body: fs.createReadStream(file),
     ACL: grant
   }, (err, data) => {
