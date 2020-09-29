@@ -21,7 +21,12 @@ declare namespace Electron {
 
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
+  interface BaseWindow {
+    _init(): void;
+  }
+
   interface BrowserWindow {
+    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
@@ -47,7 +52,7 @@ declare namespace Electron {
 
   interface WebContents {
     _getURL(): string;
-    _loadURL(url: string, options: Electron.LoadURLOptions): void;
+    _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     _stop(): void;
     _goBack(): void;
     _goForward(): void;
@@ -61,7 +66,7 @@ declare namespace Electron {
     browserWindowOptions: BrowserWindowConstructorOptions;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
-    _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
+    _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
@@ -123,6 +128,10 @@ declare namespace Electron {
     acceleratorWorksWhenHidden?: boolean;
   }
 
+  interface IpcMainInvokeEvent {
+    _reply(value: any): void;
+    _throw(error: Error): void;
+  }
 
   const deprecate: ElectronInternal.DeprecationUtil;
 
@@ -177,8 +186,8 @@ declare namespace ElectronInternal {
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
     log(message: string): void;
-    removeFunction(fn: Function, removedName: string): Function;
-    renameFunction(fn: Function, newName: string | Function): Function;
+    removeFunction<T extends Function>(fn: T, removedName: string): T;
+    renameFunction<T extends Function>(fn: T, newName: string): T;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K, onlyForValues?: any[]): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
@@ -220,6 +229,10 @@ declare namespace ElectronInternal {
     handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
+  }
+
+  interface LoadURLOptions extends Electron.LoadURLOptions {
+    reloadIgnoringCache?: boolean;
   }
 
   type ModuleLoader = () => any;

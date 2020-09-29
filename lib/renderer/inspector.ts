@@ -19,7 +19,7 @@ function completeURL (project: string, path: string) {
 }
 
 // The DOM implementation expects (message?: string) => boolean
-(window.confirm as any) = function (message: string, title: string) {
+window.confirm = function (message?: string, title?: string) {
   return ipcRendererUtils.invokeSync('ELECTRON_INSPECTOR_CONFIRM', message, title) as boolean;
 };
 

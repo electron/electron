@@ -266,8 +266,8 @@ export function internalWindowOpen (event: ElectronInternal.IpcMainInternalEvent
   }
 }
 
-const makeSafeHandler = function<T> (handler: (event: Electron.IpcMainInvokeEvent, guestContents: Electron.webContents, ...args: any[]) => T) {
-  return (event: Electron.IpcMainInvokeEvent, guestId: number, ...args: any[]) => {
+const makeSafeHandler = function<T, Event> (handler: (event: Event, guestContents: Electron.webContents, ...args: any[]) => T) {
+  return (event: Event, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
     const guestContents = electron.webContents.fromId(guestId);
     if (!guestContents) {
@@ -282,7 +282,7 @@ const handleMessage = function (channel: string, handler: (event: Electron.IpcMa
   ipcMainInternal.handle(channel, makeSafeHandler(handler));
 };
 
-const handleMessageSync = function (channel: string, handler: (event: Electron.IpcMainInvokeEvent, guestContents: Electron.webContents, ...args: any[]) => any) {
+const handleMessageSync = function (channel: string, handler: (event: ElectronInternal.IpcMainInternalEvent, guestContents: Electron.webContents, ...args: any[]) => any) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(handler));
 };
 

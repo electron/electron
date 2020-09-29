@@ -262,7 +262,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   for (const property of properties) {
     Object.defineProperty(WebViewElement.prototype, property, {
-      get: createPropertyGetter(property) as any,
+      get: createPropertyGetter(property),
       set: createPropertySetter(property)
     });
   }
