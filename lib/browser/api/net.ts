@@ -2,6 +2,7 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+
 const {
   isValidHeaderName,
   isValidHeaderValue,
@@ -243,7 +244,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     redirectPolicy,
     extraHeaders: options.headers || {},
     body: null as any,
-    useSessionCookies: options.useSessionCookies || false
+    useSessionCookies: options.useSessionCookies,
+    credentials: options.credentials
   };
   for (const [name, value] of Object.entries(urlLoaderOptions.extraHeaders!)) {
     if (!isValidHeaderName(name)) {
