@@ -21,7 +21,7 @@ index 8678e319f619b329fa41b93b909c1d9a4e9f357b..cf0cbf9d3463eaa63925aa3c319bb001
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 64a5c0610eb0e5eb6e5b6770a77feae2c5da9f25..f513269de12e211082f98f0932077aa49d7d2739 100644
+index fb9bdd764722d9ff7588f5c64997b16919b1f311..03990b9d52e8408f5de75da46e6b45c99d8548b7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3693,9 +3693,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -135,7 +135,7 @@ index ee6b87d40496591935cef789bab9c1de8e60cee9..dd7f018be164b250f0b2408ce309219d
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 5205a196a2d7c0c706dec92c3f4d861f575bfad5..38a30b42ca4bb56ee10d7cebc319d560480d2127 100644
+index 2a7f845f8f01767b7842617777646fa48417dca5..058168dbde02cb78609c40c4a30dfec01c82b454 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -66,6 +66,7 @@
@@ -146,7 +146,7 @@ index 5205a196a2d7c0c706dec92c3f4d861f575bfad5..38a30b42ca4bb56ee10d7cebc319d560
  #include "content/renderer/render_frame_impl.h"
  #include "content/renderer/render_frame_proxy.h"
  #include "content/renderer/render_process.h"
-@@ -644,6 +645,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -645,6 +646,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -206,10 +206,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index af08a5041570403b4054bb4e1dedf2af6a9d9c88..23d4aa7b35db6a21ce5ecae5b831262fd65b1805 100644
+index 58c922f8da2a85f4354df61cf1ac7c454fd12359..d7903ef7b6e8dd458b14d13a24d7f9423a55707f 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1953,6 +1953,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1957,6 +1957,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);
