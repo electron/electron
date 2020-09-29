@@ -12,7 +12,7 @@ if (prefix && !prefix.endsWith(path.sep)) prefix = path.resolve(prefix) + path.s
 
 function filenameToKey (file) {
   file = path.resolve(file);
-  if (file.startsWith(prefix)) file = file.substr(prefix.length);
+  if (file.startsWith(prefix)) file = file.substr(prefix.length - 1);
   return key_prefix + file.replace(path.sep, '/');
 }
 
