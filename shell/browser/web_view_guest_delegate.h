@@ -28,10 +28,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
  protected:
   // content::BrowserPluginGuestDelegate:
-  void DidDetach() final;
   content::WebContents* GetOwnerWebContents() final;
-  content::RenderWidgetHost* GetOwnerRenderWidgetHost() final;
-  content::SiteInstance* GetOwnerSiteInstance() final;
   content::WebContents* CreateNewGuestWindow(
       const content::WebContents::CreateParams& create_params) final;
 
