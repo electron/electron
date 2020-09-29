@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension } from 'electron/main';
+import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import * as http from 'http';
 import { AddressInfo } from 'net';
@@ -265,33 +265,29 @@ describe('chrome extensions', () => {
       return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
     }
 
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true, contextIsolation: true } });
+    });
+
     describe('onBeforeRequest', () => {
       it('can cancel http requests', async () => {
-        const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-        const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-        w.loadURL(url);
-        await emittedOnce(w.webContents, 'dom-ready');
+        await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
         await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
       });
 
       it('does not cancel http requests when no extension loaded', async () => {
-        const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-        const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-        w.loadURL(url);
-        await emittedOnce(w.webContents, 'dom-ready');
+        await w.loadURL(url);
         await expect(fetch(w.webContents, url)).to.not.be.rejectedWith(TypeError);
       });
     });
 
     it('takes precedence over Electron webRequest - http', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-      w.loadURL(url);
-      await emittedOnce(w.webContents, 'dom-ready');
+      await w.loadURL(url);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
       customSession.webRequest.onBeforeRequest(() => {
         throw new Error('Electron onBeforeRequest callback has been called');
@@ -300,11 +296,7 @@ describe('chrome extensions', () => {
     });
 
     it('does not take precedence over Electron webRequest with different filter - http', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-      w.loadURL(url);
-      await emittedOnce(w.webContents, 'dom-ready');
+      await w.loadURL(url);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
       customSession.webRequest.onBeforeRequest({ urls: ['*://*.does.not.exist.com/*'] }, async (details, callback) => {
         callback({ cancel: true });
@@ -313,11 +305,7 @@ describe('chrome extensions', () => {
     });
 
     it('takes precedence over Electron webRequest - WebSocket', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-      w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
-      await emittedOnce(w.webContents, 'dom-ready');
+      await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
       customSession.webRequest.onBeforeSendHeaders(() => {
         throw new Error('Electron onBeforeSendHeaders callback has been called');
@@ -330,11 +318,7 @@ describe('chrome extensions', () => {
     });
 
     it('does not take precedence over Electron webRequest with different filter - WebSocket', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-      w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
-      await emittedOnce(w.webContents, 'dom-ready');
+      await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
       customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com/*'] }, (details, callback) => {
         callback({ cancel: true });
@@ -344,11 +328,7 @@ describe('chrome extensions', () => {
 
     describe('WebSocket', () => {
       it('can be proxied', async () => {
-        const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-        const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
-
-        w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
-        await emittedOnce(w.webContents, 'dom-ready');
+        await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
         customSession.webRequest.onSendHeaders((details) => {
           if (details.url.startsWith('ws://')) {
