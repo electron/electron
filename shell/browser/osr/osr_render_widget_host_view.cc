@@ -304,9 +304,8 @@ void OffScreenRenderWidgetHostView::Show() {
   is_showing_ = true;
 
   delegated_frame_host_->AttachToCompositor(compositor_.get());
-  delegated_frame_host_->WasShown(
-      GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), {});
+  delegated_frame_host_->WasShown(GetLocalSurfaceId(),
+                                  GetRootLayer()->bounds().size(), {});
 
   if (render_widget_host_)
     render_widget_host_->WasShown({});
@@ -944,7 +943,7 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
 
 const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
     const {
-  return current_local_surface_id_;
+  return delegated_frame_host_surface_id_;
 }
 
 content::DelegatedFrameHost*
@@ -1001,18 +1000,17 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   if (compositor_) {
     compositor_allocator_.GenerateId();
-    compositor_allocation_ =
-        compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+    compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
     compositor_->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                 compositor_allocation_);
+                                 compositor_surface_id_);
   }
 
   delegated_frame_host_allocator_.GenerateId();
-  delegated_frame_host_allocation_ =
-      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_surface_id_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
 
   GetDelegatedFrameHost()->EmbedSurface(
-      delegated_frame_host_allocation_.local_surface_id(), size,
+      delegated_frame_host_surface_id_, size,
       cc::DeadlinePolicy::UseDefaultDeadline());
 
   // Note that |render_widget_host_| will retrieve resize parameters from the
