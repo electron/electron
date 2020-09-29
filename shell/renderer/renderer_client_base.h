@@ -30,7 +30,14 @@ class SpellCheck;
 namespace extensions {
 class ExtensionsClient;
 }
+namespace content {
+struct WebPluginInfo;
+}
 #endif
+
+namespace guest_view {
+class GuestViewContainer;
+}
 
 namespace electron {
 
@@ -100,11 +107,11 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
-  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+  guest_view::GuestViewContainer* CreateBrowserPluginDelegate(
       content::RenderFrame* render_frame,
       const content::WebPluginInfo& info,
       const std::string& mime_type,
-      const GURL& original_url) override;
+      const GURL& original_url);
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
