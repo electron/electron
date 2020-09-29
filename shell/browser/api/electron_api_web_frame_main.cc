@@ -15,6 +15,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -41,17 +42,6 @@ WebFrame* FromRenderFrameHost(content::RenderFrameHost* rfh) {
 
 gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-// WebFrame can outlive its RenderFrameHost pointer so we need to check whether
-// its been disposed of prior to accessing it.
-#define CHECK_RENDER_FRAME(funcname, args, value)                      \
-  if (render_frame_disposed_) {                                        \
-    args->isolate()->ThrowException(v8::Exception::Error(              \
-        gin::StringToV8(args->isolate(),                               \
-                        "Render frame was disposed before "            \
-                        "WebFrame." #funcname " could be executed"))); \
-    return value;                                                      \
-  }
-
 WebFrame::WebFrame(content::RenderFrameHost* rfh) : render_frame_(rfh) {
   g_render_frame_map.Get().emplace(rfh, this);
 }
@@ -65,6 +55,18 @@ void WebFrame::MarkRenderFrameDisposed() {
   render_frame_disposed_ = true;
 }
 
+bool WebFrame::CheckRenderFrame() const {
+  if (render_frame_disposed_) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::Locker locker(isolate);
+    v8::HandleScope scope(isolate);
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Render frame was disposed before WebFrame could be accessed");
+    return false;
+  }
+  return true;
+}
+
 v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
                                                    bool has_user_gesture,
                                                    gin::Arguments* args) {
@@ -73,8 +75,7 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
 
   if (render_frame_disposed_) {
     promise.RejectWithErrorMessage(
-        "Render frame was disposed before WebFrame.executeJavaScript could be "
-        "executed");
+        "Render frame was disposed before WebFrame could be accessed");
     return handle;
   }
 
@@ -94,43 +95,51 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(const base::string16& code,
 }
 
 bool WebFrame::Reload(gin::Arguments* args) {
-  CHECK_RENDER_FRAME(reload, args, false);
+  if (!CheckRenderFrame())
+    return false;
   return render_frame_->Reload();
 }
 
 int WebFrame::FrameTreeNodeID(gin::Arguments* args) const {
-  CHECK_RENDER_FRAME(frameTreeNodeId, args, -1);
+  if (!CheckRenderFrame())
+    return -1;
   return render_frame_->GetFrameTreeNodeId();
 }
 
 int WebFrame::ProcessID(gin::Arguments* args) const {
-  CHECK_RENDER_FRAME(processId, args, -1);
+  if (!CheckRenderFrame())
+    return -1;
   return render_frame_->GetProcess()->GetID();
 }
 
 int WebFrame::RoutingID(gin::Arguments* args) const {
-  CHECK_RENDER_FRAME(routingId, args, -1);
+  if (!CheckRenderFrame())
+    return -1;
   return render_frame_->GetRoutingID();
 }
 
 GURL WebFrame::URL(gin::Arguments* args) const {
-  CHECK_RENDER_FRAME(url, args, GURL::EmptyGURL());
+  if (!CheckRenderFrame())
+    return GURL::EmptyGURL();
   return render_frame_->GetLastCommittedURL();
 }
 
 content::RenderFrameHost* WebFrame::Top(gin::Arguments* args) {
-  CHECK_RENDER_FRAME(top, args, nullptr);
+  if (!CheckRenderFrame())
+    return nullptr;
   return render_frame_->GetMainFrame();
 }
 
 content::RenderFrameHost* WebFrame::Parent(gin::Arguments* args) {
-  CHECK_RENDER_FRAME(parent, args, nullptr);
+  if (!CheckRenderFrame())
+    return nullptr;
   return render_frame_->GetParent();
 }
 
 std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
   std::vector<content::RenderFrameHost*> frame_hosts;
-  CHECK_RENDER_FRAME(frames, args, frame_hosts);
+  if (!CheckRenderFrame())
+    return frame_hosts;
 
   for (auto* rfh : render_frame_->GetFramesInSubtree()) {
     if (rfh->GetParent() == render_frame_)
@@ -143,7 +152,8 @@ std::vector<content::RenderFrameHost*> WebFrame::Frames(gin::Arguments* args) {
 std::vector<content::RenderFrameHost*> WebFrame::FramesInSubtree(
     gin::Arguments* args) {
   std::vector<content::RenderFrameHost*> frame_hosts;
-  CHECK_RENDER_FRAME(frames, args, frame_hosts);
+  if (!CheckRenderFrame())
+    return frame_hosts;
 
   for (auto* rfh : render_frame_->GetFramesInSubtree()) {
     frame_hosts.push_back(rfh);

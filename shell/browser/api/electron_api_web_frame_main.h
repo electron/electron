@@ -59,6 +59,10 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   ~WebFrame() override;
 
  private:
+  // WebFrame can outlive its RenderFrameHost pointer so we need to check
+  // whether its been disposed of prior to accessing it.
+  bool CheckRenderFrame() const;
+
   v8::Local<v8::Promise> ExecuteJavaScript(const base::string16& code,
                                            bool has_user_gesture,
                                            gin::Arguments* args);
