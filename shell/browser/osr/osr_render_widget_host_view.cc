@@ -43,6 +43,7 @@
 #include "ui/events/event_constants.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
@@ -667,11 +668,11 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
 
 gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
   if (IsPopupWidget()) {
-    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
-                                   popup_position_.size());
+    return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
+        popup_position_.size(), current_device_scale_factor_));
   } else {
-    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
-                                   GetViewBounds().size());
+    return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
+        GetViewBounds().size(), current_device_scale_factor_));
   }
 }
 
@@ -995,8 +996,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
 
-  const gfx::Size& size_in_pixels =
-      gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
+  const gfx::Size& size_in_pixels = gfx::ToFlooredSize(
+      gfx::ConvertSizeToPixels(size, current_device_scale_factor_));
 
   if (compositor_) {
     compositor_allocator_.GenerateId();
