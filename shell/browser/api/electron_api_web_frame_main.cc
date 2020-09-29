@@ -32,6 +32,13 @@ typedef std::unordered_map<content::RenderFrameHost*, WebFrame*> RenderFrameMap;
 base::LazyInstance<RenderFrameMap>::DestructorAtExit g_render_frame_map =
     LAZY_INSTANCE_INITIALIZER;
 
+WebFrame* FromRenderFrameHost(content::RenderFrameHost* rfh) {
+  auto frame_map = g_render_frame_map.Get();
+  auto iter = frame_map.find(rfh);
+  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
+  return web_frame;
+}
+
 gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 // WebFrame can outlive its RenderFrameHost pointer so we need to check whether
@@ -150,11 +157,9 @@ gin::Handle<WebFrame> WebFrame::From(v8::Isolate* isolate,
                                      content::RenderFrameHost* rfh) {
   if (rfh == nullptr)
     return gin::Handle<WebFrame>();
-  auto frame_map = g_render_frame_map.Get();
-  auto iter = frame_map.find(rfh);
-  WebFrame* web_frame =
-      iter == frame_map.end() ? new WebFrame(rfh) : iter->second;
-  auto handle = gin::CreateHandle(isolate, web_frame);
+  auto* web_frame = FromRenderFrameHost(rfh);
+  auto handle = gin::CreateHandle(
+      isolate, web_frame == nullptr ? new WebFrame(rfh) : web_frame);
   return handle;
 }
 
@@ -169,12 +174,9 @@ gin::Handle<WebFrame> WebFrame::FromID(v8::Isolate* isolate,
 
 // static
 void WebFrame::RenderFrameDeleted(content::RenderFrameHost* rfh) {
-  auto frame_map = g_render_frame_map.Get();
-  auto iter = frame_map.find(rfh);
-  if (iter == frame_map.end())
-    return;
-  WebFrame* web_frame = iter->second;
-  web_frame->MarkRenderFrameDisposed();
+  auto* web_frame = FromRenderFrameHost(rfh);
+  if (web_frame)
+    web_frame->MarkRenderFrameDisposed();
 }
 
 gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
