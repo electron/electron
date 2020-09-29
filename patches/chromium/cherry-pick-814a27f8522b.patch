@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Fri, 28 Aug 2020 18:55:17 +0000
+Subject: Delegate TargetHandler::Session permission checks to the root client
+
+Bug: 1114636
+Change-Id: Iba3865206d7e80b363ec69180ac05e20b56aade2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2380855
+Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+Reviewed-by: Devlin <rdevlin.cronin@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#802736}
+(cherry picked from commit 814a27f8522b6ccddcce1a8f6a3b8fb37128ecf9)
+
+diff --git a/content/browser/devtools/protocol/target_handler.cc b/content/browser/devtools/protocol/target_handler.cc
+index 4614ecae2110e5577539cffba02fcab153af301f..bcd054f2dc388908cf92bae3ff0254422960dc12 100644
+--- a/content/browser/devtools/protocol/target_handler.cc
++++ b/content/browser/devtools/protocol/target_handler.cc
+@@ -436,7 +436,7 @@ class TargetHandler::Session : public DevToolsAgentHostClient {
+       // was introduced. Try a DCHECK instead and possibly remove the check.
+       if (!handler_->root_session_->HasChildSession(id_))
+         return;
+-      handler_->root_session_->GetClient()->DispatchProtocolMessage(
++      GetRootClient()->DispatchProtocolMessage(
+           handler_->root_session_->GetAgentHost(), message);
+       return;
+     }
+@@ -454,6 +454,26 @@ class TargetHandler::Session : public DevToolsAgentHostClient {
+     Detach(true);
+   }
+ 
++  bool MayAttachToURL(const GURL& url, bool is_webui) override {
++    return GetRootClient()->MayAttachToURL(url, is_webui);
++  }
++
++  bool MayAttachToBrowser() override {
++    return GetRootClient()->MayAttachToBrowser();
++  }
++
++  bool MayReadLocalFiles() override {
++    return GetRootClient()->MayReadLocalFiles();
++  }
++
++  bool MayWriteLocalFiles() override {
++    return GetRootClient()->MayWriteLocalFiles();
++  }
++
++  content::DevToolsAgentHostClient* GetRootClient() {
++    return handler_->root_session_->GetClient();
++  }
++
+   TargetHandler* handler_;
+   scoped_refptr<DevToolsAgentHost> agent_host_;
+   std::string id_;
