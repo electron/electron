@@ -198,6 +198,14 @@ logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
 
+### --force_high_performance_gpu
+
+Force using discrete GPU when there are multiple GPUs available.
+
+### --force_low_power_gpu
+
+Force using integrated GPU when there are multiple GPUs available.
+
 ## Node.js Flags
 
 Electron supports some of the [CLI flags][node-cli] supported by Node.js.
