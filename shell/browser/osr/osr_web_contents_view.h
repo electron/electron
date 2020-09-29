@@ -68,12 +68,12 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   // content::RenderViewHostDelegateView
   void StartDragging(const content::DropData& drop_data,
-                     blink::WebDragOperationsMask allowed_ops,
+                     blink::mojom::WebDragOperationsMask allowed_ops,
                      const gfx::ImageSkia& image,
                      const gfx::Vector2d& image_offset,
                      const blink::mojom::DragEventSourceInfo& event_info,
                      content::RenderWidgetHostImpl* source_rwh) override;
-  void UpdateDragCursor(blink::WebDragOperation operation) override;
+  void UpdateDragCursor(blink::mojom::WebDragOperation operation) override;
 
   void SetPainting(bool painting);
   bool IsPainting() const;

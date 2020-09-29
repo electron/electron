@@ -162,7 +162,7 @@ bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
 
 void OffScreenWebContentsView::StartDragging(
     const content::DropData& drop_data,
-    blink::WebDragOperationsMask allowed_ops,
+    blink::mojom::WebDragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
     const blink::mojom::DragEventSourceInfo& event_info,
@@ -173,7 +173,7 @@ void OffScreenWebContentsView::StartDragging(
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(
-    blink::WebDragOperation operation) {}
+    blink::mojom::WebDragOperation operation) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();
