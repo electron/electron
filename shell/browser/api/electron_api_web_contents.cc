@@ -1240,6 +1240,12 @@ void WebContents::Invoke(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
+void WebContents::OnFirstNonEmptyLayout() {
+  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+    Emit("ready-to-show");
+  }
+}
+
 void WebContents::ReceivePostMessage(const std::string& channel,
                                      blink::TransferableMessage message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

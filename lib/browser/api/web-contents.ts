@@ -615,6 +615,15 @@ WebContents.prototype._init = function () {
     app.emit('login', event, this, ...args);
   });
 
+  this.on('ready-to-show' as any, () => {
+    const owner = this.getOwnerBrowserWindow();
+    if (owner && !owner.isDestroyed()) {
+      process.nextTick(() => {
+        owner.emit('ready-to-show');
+      });
+    }
+  });
+
   const event = process._linkedBinding('electron_browser_event').createEmpty();
   app.emit('web-contents-created', event, this);
 
