@@ -28,10 +28,10 @@ index e35eb49ce8ecccb2d7231bd3d6bd24bcc0a2fd9e..4db6561c0885ab394b17189aa4ba1eeb
    if (!Client())
      return;
  
-@@ -602,6 +598,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
-   // Notify ScriptController that the frame is closing, since its cleanup ends
+@@ -601,6 +601,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+   // Notify WindowProxyManager that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
-   GetScriptController().ClearForClose();
+   GetWindowProxyManager()->ClearForClose();
 +  // This is the earliest that scripting can be disabled:
 +  // - FrameLoader::Detach() can fire XHR abort events
 +  // - Document::Shutdown() can dispose plugins which can run script.
