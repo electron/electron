@@ -193,11 +193,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   current_device_scale_factor_ = kDefaultScaleFactor;
 
   delegated_frame_host_allocator_.GenerateId();
-  delegated_frame_host_allocation_ =
-      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_surface_id_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
   compositor_allocator_.GenerateId();
-  compositor_allocation_ =
-      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
   delegated_frame_host_client_ =
       std::make_unique<ElectronDelegatedFrameHostClient>(this);
@@ -943,9 +942,9 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
 }
 
-const viz::LocalSurfaceIdAllocation&
-OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
-  return delegated_frame_host_allocation_;
+const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
+    const {
+  return current_local_surface_id_;
 }
 
 content::DelegatedFrameHost*
