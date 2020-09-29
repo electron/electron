@@ -52,6 +52,7 @@ class Notification : public gin::Wrappable<Notification>,
   void NotificationDisplayed() override;
   void NotificationDestroyed() override;
   void NotificationClosed() override;
+  void NotificationFailed(const std::string& error) override;
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -75,6 +76,7 @@ class Notification : public gin::Wrappable<Notification>,
   base::string16 GetSound() const;
   std::vector<electron::NotificationAction> GetActions() const;
   base::string16 GetCloseButtonText() const;
+  base::string16 GetToastXml() const;
 
   // Prop Setters
   void SetTitle(const base::string16& new_title);
@@ -88,6 +90,7 @@ class Notification : public gin::Wrappable<Notification>,
   void SetSound(const base::string16& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
   void SetCloseButtonText(const base::string16& text);
+  void SetToastXml(const base::string16& text);
 
  private:
   base::string16 title_;
@@ -104,6 +107,7 @@ class Notification : public gin::Wrappable<Notification>,
   base::string16 urgency_;
   std::vector<electron::NotificationAction> actions_;
   base::string16 close_button_text_;
+  base::string16 toast_xml_;
 
   electron::NotificationPresenter* presenter_;
 

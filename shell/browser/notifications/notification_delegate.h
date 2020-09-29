@@ -15,7 +15,7 @@ class NotificationDelegate {
   virtual void NotificationDestroyed() {}
 
   // Failed to send the notification.
-  virtual void NotificationFailed() {}
+  virtual void NotificationFailed(const std::string& error) {}
 
   // Notification was replied to
   virtual void NotificationReplied(const std::string& reply) {}
