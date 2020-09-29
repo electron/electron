@@ -25,7 +25,6 @@
 #include "gin/v8_initializer.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
@@ -180,8 +179,12 @@ int NodeMain(int argc, char* argv[]) {
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
 
-    // V8 requires a task scheduler apparently
+    // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
+
+    // Allow Node.js to track the amount of time the event loop has spent
+    // idle in the kernel’s event provider .
+    uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
     JavascriptEnvironment gin_env(loop);
@@ -198,12 +201,12 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(), argc, argv,
-                                    exec_argc, exec_argv);
+      std::vector<std::string> args(argv, argv + argc);  // NOLINT
+      std::vector<std::string> exec_args(exec_argv,
+                                         exec_argv + exec_argc);  // NOLINT
+      env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
+                                    exec_args);
       CHECK_NE(nullptr, env);
-
-      // This needs to be called before the inspector is initialized.
-      env->InitializeDiagnostics();
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
@@ -239,10 +242,6 @@ int NodeMain(int argc, char* argv[]) {
       }
     }
 
-    // Enable support for v8 inspector.
-    NodeDebugger node_debugger(env);
-    node_debugger.Start();
-
     // TODO(codebytere): we should try to handle this upstream.
     {
       v8::HandleScope scope(isolate);
@@ -257,6 +256,8 @@ int NodeMain(int argc, char* argv[]) {
     {
       v8::SealHandleScope seal(isolate);
       bool more;
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
       do {
         uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
@@ -274,9 +275,9 @@ int NodeMain(int argc, char* argv[]) {
         // event, or after running some callbacks.
         more = uv_loop_alive(env->event_loop());
       } while (more && !env->is_stopping());
+      env->performance_state()->Mark(
+          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
     }
-
-    node_debugger.Stop();
 
     env->set_trace_sync_io(false);
 
@@ -284,11 +285,7 @@ int NodeMain(int argc, char* argv[]) {
 
     node::ResetStdio();
 
-    env->set_can_call_into_js(false);
-    env->stop_sub_worker_contexts();
-    env->RunCleanup();
-
-    node::RunAtExit(env);
+    node::Stop(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
 

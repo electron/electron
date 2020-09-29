@@ -36,6 +36,7 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
     // Linux has only a single persistent slot compared to ChromeOS's separate
     // public and private slot.
     // Redirect any slot usage to this persistent slot on Linux.
+    crypto::EnsureNSSInit();
     g_nss_cert_database = new net::NSSCertDatabase(
         crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* public slot */,
         crypto::ScopedPK11Slot(PK11_GetInternalKeySlot()) /* private slot */);

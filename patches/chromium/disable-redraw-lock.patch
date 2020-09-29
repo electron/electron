@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 4cfdfcc93b4da0497271fd31e01db8485b2ec7b2..e7be846616e58631ed2a89530d02930d64336b70 100644
+index 5e8d267d868d4a8d90b7c4652c3be4d4df87d500..6838a9bb1b17d66f3653dd81dca616fee7c2ba41 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -306,6 +306,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -62,7 +62,7 @@ index 7118ff56f0dd1c6291e4095ce7f3d8fc723f0398..5dbaab15ee1667ed1caf0b746b8e31d1
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 98efa2b7c4033c9ce8c73f7201e68e85baf05bba..4f0897ecc675d3e366ec07df28e09698c6b6e4cf 100644
+index 7344cdd4cf7d68da617b81cbdf464a859a40fb09..9ec1f23b26b41e10a46be0ca5d254583b6534ecb 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {

@@ -1,5 +1,6 @@
 
 import {
+  desktopCapturer,
   ipcRenderer,
   remote,
   webFrame,
@@ -33,16 +34,16 @@ remote.getCurrentWindow().on('close', () => {
   // blabla...
 })
 
-remote.getCurrentWindow().capturePage().then(buf => {
-  fs.writeFile('/tmp/screenshot.png', buf, err => {
+remote.getCurrentWindow().capturePage().then(image => {
+  fs.writeFile('/tmp/screenshot.png', image.toBitmap(), err => {
     console.log(err)
   })
 })
 
 remote.getCurrentWebContents().print()
 
-remote.getCurrentWindow().capturePage().then(buf => {
-  remote.require('fs').writeFile('/tmp/screenshot.png', buf, (err: Error) => {
+remote.getCurrentWindow().capturePage().then(image => {
+  remote.require('fs').writeFile('/tmp/screenshot.png', image.toBitmap(), (err: Error) => {
     console.log(err)
   })
 })
@@ -107,8 +108,6 @@ crashReporter.start({
 // desktopCapturer
 // https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md
 
-const desktopCapturer = require('electron').desktopCapturer
-
 desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name == 'Electron') {
@@ -128,27 +127,6 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
       return
     }
   }
-})
-
-desktopCapturer.getMediaSourceIdForWebContents(remote.getCurrentWebContents().id).then(mediaSourceId => {
-  (navigator as any).webkitGetUserMedia({
-    audio:  {
-      mandatory: {
-        chromeMediaSource: 'tab',
-        chromeMediaSourceId: mediaSourceId
-      }
-    },
-    video: {
-      mandatory: {
-        chromeMediaSource: 'tab',
-        chromeMediaSourceId: mediaSourceId,
-        minWidth: 1280,
-        maxWidth: 1280,
-        minHeight: 720,
-        maxHeight: 720
-      }
-    }
-  }, gotStream, getUserMediaError)
 })
 
 function gotStream (stream: any) {

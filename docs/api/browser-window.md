@@ -8,9 +8,6 @@ Process: [Main](../glossary.md#main-process)
 // In the main process.
 const { BrowserWindow } = require('electron')
 
-// Or use `remote` from the renderer process.
-// const { BrowserWindow } = require('electron').remote
-
 const win = new BrowserWindow({ width: 800, height: 600 })
 
 // Load a remote URL
@@ -1348,6 +1345,17 @@ Enters or leaves kiosk mode.
 #### `win.isKiosk()`
 
 Returns `Boolean` - Whether the window is in kiosk mode.
+
+#### `win.isTabletMode()` _Windows_
+
+Returns `Boolean` - Whether the window is in Windows 10 tablet mode.
+
+Since Windows 10 users can [use their PC as tablet](https://support.microsoft.com/en-us/help/17210/windows-10-use-your-pc-like-a-tablet),
+under this mode apps can choose to optimize their UI for tablets, such as
+enlarging the titlebar and hiding titlebar buttons.
+
+This API returns whether the window is in tablet mode, and the `resize` event
+can be be used to listen to changes to tablet mode.
 
 #### `win.getMediaSourceId()`
 

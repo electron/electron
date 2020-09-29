@@ -11,14 +11,6 @@ const { dialog } = require('electron')
 console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 ```
 
-The Dialog is opened from Electron's main thread. If you want to use the dialog
-object from a renderer process, remember to access it using the remote:
-
-```javascript
-const { dialog } = require('electron').remote
-console.log(dialog)
-```
-
 ## Methods
 
 The `dialog` module has the following methods:
@@ -314,7 +306,7 @@ Returns `Promise<Object>` - resolves with a promise containing the following pro
   * `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
-Shows a message box, it will block the process until the message box is closed.
+Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 

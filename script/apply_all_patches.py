@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import sys
 
 from lib import git
 from lib.patches import patch_from_dir

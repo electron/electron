@@ -15,7 +15,8 @@ describe('shell module', () => {
     args: 'args',
     appUserModelId: 'appUserModelId',
     icon: 'icon',
-    iconIndex: 1
+    iconIndex: 1,
+    toastActivatorClsid: '{0E3CFA27-6FEA-410B-824F-A174B6E865E5}'
   };
 
   describe('shell.readShortcutLink(shortcutPath)', () => {
@@ -76,7 +77,8 @@ describe('shell module', () => {
         args: 'args2',
         appUserModelId: 'appUserModelId2',
         icon: 'icon2',
-        iconIndex: 2
+        iconIndex: 2,
+        toastActivatorClsid: '{C51A3996-CAD9-4934-848B-16285D4A1496}'
       };
       expect(shell.writeShortcutLink(tmpShortcut, 'replace', change)).to.be.true();
       expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(change);

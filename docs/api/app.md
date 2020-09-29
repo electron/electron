@@ -501,7 +501,7 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will make it return empty sources.
 
-### Event: 'remote-require'
+### Event: 'remote-require' _Deprecated_
 
 Returns:
 
@@ -513,7 +513,7 @@ Emitted when `remote.require()` is called in the renderer process of `webContent
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-global'
+### Event: 'remote-get-global' _Deprecated_
 
 Returns:
 
@@ -525,7 +525,7 @@ Emitted when `remote.getGlobal()` is called in the renderer process of `webConte
 Calling `event.preventDefault()` will prevent the global from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-builtin'
+### Event: 'remote-get-builtin' _Deprecated_
 
 Returns:
 
@@ -537,7 +537,7 @@ Emitted when `remote.getBuiltin()` is called in the renderer process of `webCont
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-current-window'
+### Event: 'remote-get-current-window' _Deprecated_
 
 Returns:
 
@@ -548,7 +548,7 @@ Emitted when `remote.getCurrentWindow()` is called in the renderer process of `w
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-### Event: 'remote-get-current-web-contents'
+### Event: 'remote-get-current-web-contents' _Deprecated_
 
 Returns:
 

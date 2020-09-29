@@ -32,7 +32,7 @@ index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab99
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index a33ff046e940880f9c1ad15769325b0dac22ee43..a4cf5dd70cd2ab6a5246b06790f2f7f6c9fd8631 100644
+index 45e3cf52684d8ce58a33f61c32a2fdfff40d5a4f..b0a34b13cd521754ce8ff630d2fdd15ddbda35f9 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
 @@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {

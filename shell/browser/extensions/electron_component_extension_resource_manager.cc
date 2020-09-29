@@ -17,7 +17,7 @@
 #include "electron/buildflags/buildflags.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/browser/pdf/pdf_extension_util.h"
+#include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
 #include "extensions/common/constants.h"
 #endif
 

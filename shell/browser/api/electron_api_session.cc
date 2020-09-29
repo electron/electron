@@ -19,6 +19,7 @@
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/download/public/common/download_url_parameters.h"
@@ -180,6 +181,55 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+bool SSLProtocolVersionFromString(const std::string& version_str,
+                                  network::mojom::SSLVersion* version) {
+  if (version_str == switches::kSSLVersionTLSv1) {
+    *version = network::mojom::SSLVersion::kTLS1;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv11) {
+    *version = network::mojom::SSLVersion::kTLS11;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv12) {
+    *version = network::mojom::SSLVersion::kTLS12;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv13) {
+    *version = network::mojom::SSLVersion::kTLS13;
+    return true;
+  }
+  return false;
+}
+
+template <>
+struct Converter<network::mojom::SSLConfigPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::SSLConfigPtr* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    *out = network::mojom::SSLConfig::New();
+    std::string version_min_str;
+    if (options.Get("minVersion", &version_min_str)) {
+      if (!SSLProtocolVersionFromString(version_min_str, &(*out)->version_min))
+        return false;
+    }
+    std::string version_max_str;
+    if (options.Get("maxVersion", &version_max_str)) {
+      if (!SSLProtocolVersionFromString(version_max_str,
+                                        &(*out)->version_max) ||
+          (*out)->version_max < network::mojom::SSLVersion::kTLS12)
+        return false;
+    }
+
+    // TODO(nornagon): also support client_cert_pooling_policy and
+    // disabled_cipher_suites. Maybe other SSLConfig properties too?
+    return true;
+  }
+};
+
 }  // namespace gin
 
 namespace electron {
@@ -281,6 +331,10 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     service->SetHunspellObserver(this);
   }
 #endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
+#endif
 }
 
 Session::~Session() {
@@ -293,6 +347,10 @@ Session::~Session() {
   if (service) {
     service->SetHunspellObserver(nullptr);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context())->RemoveObserver(this);
 #endif
 }
 
@@ -570,7 +628,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
-          base::Time(),
+          base::Time(), base::Time::Max(),
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)));
 
@@ -607,6 +665,10 @@ void Session::SetUserAgent(const std::string& user_agent,
 
 std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
+}
+
+void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  browser_context_->SetSSLConfig(std::move(config));
 }
 
 bool Session::IsPersistent() {
@@ -748,6 +810,22 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), extensions_vector);
+}
+
+void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
+                                const extensions::Extension* extension) {
+  Emit("extension-loaded", extension);
+}
+
+void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
+                                  const extensions::Extension* extension,
+                                  extensions::UnloadedExtensionReason reason) {
+  Emit("extension-unloaded", extension);
+}
+
+void Session::OnExtensionReady(content::BrowserContext* browser_context,
+                               const extensions::Extension* extension) {
+  Emit("extension-ready", extension);
 }
 #endif
 
@@ -1000,6 +1078,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",

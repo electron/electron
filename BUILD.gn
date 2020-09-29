@@ -531,7 +531,9 @@ source_set("electron_lib") {
       ]
     }
     configs += [ ":gio_unix" ]
-    configs += [ "//build/config/linux:x11" ]
+    if (use_x11) {
+      deps += [ "//ui/gfx/x" ]
+    }
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
@@ -642,6 +644,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api",
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
+      "//components/update_client:update_client",
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser:core_api_provider",
@@ -1138,21 +1141,23 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      ldflags = []
+
       libs = [
         "comctl32.lib",
         "uiautomationcore.lib",
         "wtsapi32.lib",
       ]
 
-      configs += [ "//build/config/win:windowed" ]
-
-      ldflags = [
-        # Windows 7 doesn't have these DLLs.
-        # TODO: are there other DLLs we need to list here to be win7
-        # compatible?
-        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-        "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll",
+      configs += [
+        "//build/config/win:windowed",
+        "//build/config/win:delayloads",
       ]
+
+      if (target_cpu == "arm64") {
+        configs -= [ "//build/config/win:cfi_linker" ]
+        ldflags += [ "/guard:cf,nolongjmp" ]
+      }
 
       # This is to support renaming of electron.exe. node-gyp has hard-coded
       # executable names which it will recognise as node. This module definition

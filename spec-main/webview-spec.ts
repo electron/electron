@@ -625,7 +625,7 @@ describe('<webview> tag', function () {
             sandbox: sandbox.toString()
           });
           const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-          const [, , message] = await emittedOnce(webViewContents, 'console-message');
+          const [, , message] = await emittedUntil(webViewContents, 'console-message', (event: any, level: any, message: string) => !/deprecated/.test(message));
 
           const typeOfRemote = JSON.parse(message);
           expect(typeOfRemote).to.equal('object');

@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 
-from lib.config import get_target_arch
 from lib.util import get_electron_branding, rm_rf, scoped_cwd
 
 PROJECT_NAME = get_electron_branding()['project_name']

@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "content/public/browser/non_network_url_loader_factory_base.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -39,10 +40,12 @@ using HandlersMap =
     std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
-class ElectronURLLoaderFactory : public network::mojom::URLLoaderFactory {
+class ElectronURLLoaderFactory
+    : public content::NonNetworkURLLoaderFactoryBase {
  public:
-  ElectronURLLoaderFactory(ProtocolType type, const ProtocolHandler& handler);
-  ~ElectronURLLoaderFactory() override;
+  static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
+      ProtocolType type,
+      const ProtocolHandler& handler);
 
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
@@ -53,8 +56,6 @@ class ElectronURLLoaderFactory : public network::mojom::URLLoaderFactory {
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
-      override;
-  void Clone(mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver)
       override;
 
   static void StartLoading(
@@ -70,6 +71,12 @@ class ElectronURLLoaderFactory : public network::mojom::URLLoaderFactory {
       gin::Arguments* args);
 
  private:
+  ElectronURLLoaderFactory(
+      ProtocolType type,
+      const ProtocolHandler& handler,
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
+  ~ElectronURLLoaderFactory() override;
+
   static void StartLoadingBuffer(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
@@ -105,11 +112,6 @@ class ElectronURLLoaderFactory : public network::mojom::URLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
       std::string data);
-
-  // TODO(zcbenz): This comes from extensions/browser/extension_protocols.cc
-  // but I don't know what it actually does, find out the meanings of |Clone|
-  // and |bindings_| and add comments for them.
-  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
 
   ProtocolType type_;
   ProtocolHandler handler_;

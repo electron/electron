@@ -41,7 +41,6 @@
 #include "shell/browser/feature_list.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
-#include "shell/browser/node_debugger.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
@@ -165,10 +164,12 @@ void OverrideLinuxAppDataPath() {
   base::PathService::Override(DIR_APP_DATA, path);
 }
 
-int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
+int BrowserX11ErrorHandler(Display* d, XErrorEvent* e) {
   if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(&x11::LogErrorEventDescription, *error));
+        FROM_HERE,
+        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
+                       e->request_code, e->minor_code));
   }
   return 0;
 }
@@ -229,7 +230,7 @@ void UpdateDarkThemeSetting() {
 
 }  // namespace
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 class DarkThemeObserver : public ui::NativeThemeObserver {
  public:
   DarkThemeObserver() = default;
@@ -320,10 +321,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
       js_env_->context(), js_env_->platform());
   node_env_ = std::make_unique<NodeEnvironment>(env);
 
-  // Enable support for v8 inspector
-  node_debugger_ = std::make_unique<NodeDebugger>(env);
-  node_debugger_->Start();
-
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // Add Electron extended APIs.
@@ -350,7 +347,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   display::Screen* screen = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen);
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
@@ -548,9 +545,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_debugger_->Stop();
   node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
+  node::Stop(node_env_->env());
   node_env_.reset();
 
   ElectronBrowserContext::browser_context_map().clear();

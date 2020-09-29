@@ -165,7 +165,7 @@ void OffScreenWebContentsView::StartDragging(
     blink::WebDragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
-    const content::DragEventSourceInfo& event_info,
+    const blink::mojom::DragEventSourceInfo& event_info,
     content::RenderWidgetHostImpl* source_rwh) {
   if (web_contents_)
     static_cast<content::WebContentsImpl*>(web_contents_)

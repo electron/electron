@@ -162,8 +162,10 @@ namespace electron {
 NativeBrowserViewMac::NativeBrowserViewMac(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.autoresizingMask = kDefaultAutoResizingMask;
 }
 
@@ -186,14 +188,18 @@ void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
         NSViewMaxYMargin | NSViewMinYMargin | NSViewHeightSizable;
   }
 
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.autoresizingMask = autoresizing_mask;
 }
 
 void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   auto* superview = view.superview;
   const auto superview_height = superview ? superview.frame.size.height : 0;
   view.frame =
@@ -202,8 +208,10 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
-  NSView* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return gfx::Rect();
+  NSView* view = iwc_view->GetNativeView().GetNativeNSView();
   const int superview_height =
       (view.superview) ? view.superview.frame.size.height : 0;
   return gfx::Rect(
@@ -213,17 +221,22 @@ gfx::Rect NativeBrowserViewMac::GetBounds() {
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.wantsLayer = YES;
   view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
-  NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
-  NSView* inspectable_view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  if (!inspectable_web_contents_)
+    return;
+  auto* web_contents = inspectable_web_contents_->GetWebContents();
+  auto* iwc_view = GetInspectableWebContentsView();
+  NSView* web_view = web_contents->GetNativeView().GetNativeNSView();
+  NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
 

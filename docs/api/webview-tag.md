@@ -137,7 +137,7 @@ This option is disabled by default in the guest page.
 ```
 
 A `Boolean`. When this attribute is `false` the guest page in `webview` will not have access
-to the [`remote`](remote.md) module. The remote module is available by default.
+to the [`remote`](remote.md) module. The remote module is unavailable by default.
 
 ### `plugins`
 
@@ -519,12 +519,6 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean (optional) - Whether to look only at the start of words.
-    defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean (optional) - When combined with `wordStart`,
-    accepts a match in the middle of a word if the match begins with an
-    uppercase letter followed by a lowercase or non-letter.
-    Accepts several other intra-word matches, defaults to `false`.
 
 Returns `Integer` - The request id used for the request.
 
