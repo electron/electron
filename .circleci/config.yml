@@ -294,13 +294,13 @@ step-restore-brew-cache: &step-restore-brew-cache
     paths:
       - /usr/local/Homebrew
     keys:
-      - v1-brew-cache-{{ arch }}
+      - v2-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Homebrew
-    key: v1-brew-cache-{{ arch }}
+    key: v2-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
