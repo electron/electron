@@ -297,7 +297,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
     [item setTarget:nil];
     [item setAction:nil];
-    NSMenu* submenu = [[NSMenu alloc] initWithTitle:label];
+    NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
