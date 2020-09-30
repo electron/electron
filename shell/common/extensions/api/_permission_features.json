@@ -6,64 +6,10 @@
     ],
     "location": "component"
   },
-  "management": [
-    {
-      "channel": "stable",
-      "extension_types": [
-        "extension",
-        "legacy_packaged_app"
-      ]
-    },
-    {
-      "channel": "stable",
-      "extension_types": [
-        "platform_app"
-      ],
-      "whitelist": [
-        "AE27D69DBE571F4B1694F05C89B710C646792231", // Published ADT
-        // TODO(grv): clean up once Apps developer tool is published.
-        "5107DE9024C329EEA9C9A72D94C16723790C6422", // Apps Developer Tool.
-        "8C0B1873FFFB65E4D0F4D772879F7304CEF125C2", // Apps Editor old.
-        "FA0501B579070BB9CBD4FCAEC8CB0EDF22BA2F04", // Apps Editor published.
-        "EE17C698905F7F2E6DDC87C9C30F11E164C829F4", // Watchdog (Activity Log)
-        "90113DA9516526D24DAF156C629CC41C049E8882", // Watchdog Test Version
-        "4A4EA121622FCA3D78ED2AB534197F43D7189EE0", // Spark nightly build.
-        "9FDE6E7F06FCFA11D9A05041C7FF6D8AE662F5D1", // Spark release.
-        "50B4A905D522C06E27CA6D099E3E54BDA1F152C5", // Spark Beta channel.
-        "BA0C8BB92084C9741312D90D3EA882526853455F", // Spark dev channel.
-        "5F57A9AE8DFF5D6BB09DF8606270402612E871E5", // http://crbug.com/422624
-        "46578A13607D38F1DC8E280C4F499FB0A2F9565C", // http://crbug.com/819404
-        "898FB5A39687D210766B8998BA4530B99C9E6586", // http://crbug.com/819404
-        "82F30B65397BC3E4ADE627BBD857AB8A58210648", // http://crbug.com/819404
-        "C74B2AF138F9EDECD04D0965AB36CA66C8290466" // http://crbug.com/957772
-      ]
-    },
-    {
-      "channel": "stable",
-      "extension_types": [
-        "hosted_app"
-      ],
-      "whitelist": [
-        "B44D08FD98F1523ED5837D78D0A606EA9D6206E5" // Web Store
-      ]
-    },
-    {
-      "channel": "stable",
-      "extension_types": [
-        "platform_app"
-      ],
-      "session_types": [
-        "kiosk"
-      ]
-    },
-    {
-      "channel": "stable",
-      "dependencies": [
-        "behavior:imprivata_login_screen_extension"
-      ],
-      "extension_types": [
-        "login_screen_extension"
-      ]
-    }
-  ]
+  "management": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ]
+  }
 }
