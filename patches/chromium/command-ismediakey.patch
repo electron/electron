@@ -32,7 +32,7 @@ index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab99
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index f43494af6f5ef89917b2c088a533ad1dabbf3b2b..185f9f07e5953a267bc2c0fa850bf0866f8cccc1 100644
+index f43494af6f5ef89917b2c088a533ad1dabbf3b2b..a9506c394cdeff36dd03b50cd19c4ffe5a1ed249 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
 @@ -39,7 +39,8 @@ x11::ModMask GetNativeModifiers(const ui::Accelerator& accelerator) {
@@ -41,7 +41,7 @@ index f43494af6f5ef89917b2c088a533ad1dabbf3b2b..185f9f07e5953a267bc2c0fa850bf086
           (accelerator.IsCtrlDown() ? x11::ModMask::Control : kNoMods) |
 -         (accelerator.IsAltDown() ? x11::ModMask::c_1 : kNoMods);
 +         (accelerator.IsAltDown() ? x11::ModMask::c_1 : kNoMods) |
-+         (accelerator.IsCmdDown() ? x11::KeyButMask::Mod4 : kNoMods);
++         (accelerator.IsCmdDown() ? x11::ModMask::c_4 : kNoMods);
  }
  
  }  // namespace
