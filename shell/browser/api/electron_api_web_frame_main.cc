@@ -233,7 +233,7 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
                             int render_process_id,
                             int render_frame_id) {
   if (!electron::Browser::Get()->is_ready()) {
-    thrower.ThrowError("WebFrame can only be received when app is ready");
+    thrower.ThrowError("WebFrame is available only after app ready");
     return v8::Null(thrower.isolate());
   }
 
