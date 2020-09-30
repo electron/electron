@@ -8,8 +8,8 @@
 :memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹 🇵🇱.
 View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
-The Electron framework lets you write cross-platform desktop applications
-using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
+The Electron is a powerful open source framework that allows development of cross-platform desktop GUI applications using JavaScript, HTML, and CSS.
+It is based on [Node.js](https://nodejs.org/) and
 [Chromium](https://www.chromium.org) and is used by the [Atom
 editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
