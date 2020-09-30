@@ -57,57 +57,6 @@ declare namespace Electron {
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
-  }
-
-  interface WebPreferences {
-    guestInstanceId?: number;
-    openerId?: number;
-  }
-
-  interface SerializedError {
-    message: string;
-    stack?: string,
-    name: string,
-    from: Electron.ProcessType,
-    cause: SerializedError,
-    __ELECTRON_SERIALIZED_ERROR__: true
-  }
-
-  interface ErrorWithCause extends Error {
-    from?: string;
-    cause?: ErrorWithCause;
-  }
-
-  interface InjectionBase {
-    url: string;
-    code: string
-  }
-
-  interface ContentScript {
-    js: Array<InjectionBase>;
-    css: Array<InjectionBase>;
-    runAt: string;
-    matches: {
-      some: (input: (pattern: string) => boolean | RegExpMatchArray | null) => boolean;
-    }
-    /**
-     * Whether to match all frames, or only the top one.
-     * https://developer.chrome.com/extensions/content_scripts#frames
-     */
-    allFrames: boolean
-  }
-
-  type ContentScriptEntry = {
-    extensionId: string;
-    contentScripts: ContentScript[];
-  }
-
-  interface IpcRendererInternal extends Electron.IpcRenderer {
-    invoke<T>(channel: string, ...args: any[]): Promise<T>;
-    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
-  }
-
-  interface WebContentsInternal extends Electron.WebContents {
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
@@ -121,6 +70,16 @@ declare namespace Electron {
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
     length(): number;
+  }
+
+  interface WebFrame {
+    getWebFrameId(window: Window): number;
+    allowGuestViewElementDefinition(window: Window, context: any): void;
+  }
+
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number;
   }
 
   interface Menu {
@@ -169,7 +128,7 @@ declare namespace Electron {
   }
 
   class View {}
-  
+
   // Experimental views API
   class BaseWindow {
     constructor(args: {show: boolean})
@@ -244,11 +203,9 @@ declare namespace ElectronInternal {
     appIcon: Electron.NativeImage | null;
   }
 
-  interface KeyWeakMap<K, V> {
-    set(key: K, value: V): void;
-    get(key: K): V | undefined;
-    has(key: K): boolean;
-    remove(key: K): void;
+  interface IpcRendererInternal extends Electron.IpcRenderer {
+    invoke<T>(channel: string, ...args: any[]): Promise<T>;
+    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
   }
 
   // Internal IPC has _replyInternal and NO reply method
@@ -268,11 +225,6 @@ declare namespace ElectronInternal {
     name: string;
     private?: boolean;
     loader: ModuleLoader;
-  }
-
-  interface WebFrameInternal extends Electron.WebFrame {
-    getWebFrameId(window: Window): number;
-    allowGuestViewElementDefinition(window: Window, context: any): void;
   }
 
   interface WebFrameResizeEvent extends Electron.Event {

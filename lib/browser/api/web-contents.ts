@@ -121,7 +121,7 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
+const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
@@ -200,7 +200,7 @@ for (const method of webFrameMethods) {
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContentsInternal) => {
+const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -491,7 +491,7 @@ WebContents.prototype._init = function () {
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
       addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
@@ -516,7 +516,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
       addReplyInternalToEvent(event);
@@ -559,7 +559,7 @@ WebContents.prototype._init = function () {
   });
 
   // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: Electron.WebContentsInternal) {
+  this.on('devtools-reload-page', function (this: Electron.WebContents) {
     this.reload();
   });
 
@@ -582,7 +582,7 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContentsInternal, disposition: string,
+    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
       userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
       referrer: string, rawFeatures: string, postData: string) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&

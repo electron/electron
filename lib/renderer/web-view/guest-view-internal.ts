@@ -99,7 +99,7 @@ export function createGuest (params: Record<string, any>): Promise<number> {
 export function attachGuest (
   elementInstanceId: number, guestInstanceId: number, params: Record<string, any>, contentWindow: Window
 ) {
-  const embedderFrameId = (webFrame as ElectronInternal.WebFrameInternal).getWebFrameId(contentWindow);
+  const embedderFrameId = webFrame.getWebFrameId(contentWindow);
   if (embedderFrameId < 0) { // this error should not happen.
     throw new Error('Invalid embedder frame');
   }
