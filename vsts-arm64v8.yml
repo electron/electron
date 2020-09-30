@@ -1,7 +1,7 @@
 resources:
   containers:
   - container: arm64v8-test-container
-    image: electronjs/build:arm64v8-697b894f36d127155e020f4e8ad4b2e5f6a09613
+    image: electron.azurecr.io/build:arm64v8-4cec2c5ab66765caa724e37bae2bffb9b29722a5
     options: --shm-size 128m
 
 jobs:
