@@ -46,7 +46,7 @@ FileSelectHelper::FileSelectHelper(
 
   web_contents_ = content::WebContents::FromRenderFrameHost(render_frame_host);
   DCHECK(web_contents_);
-  observer_.RemoveAll();
+
   content::WebContentsObserver::Observe(web_contents_);
   observer_.Add(render_frame_host_->GetRenderViewHost()->GetWidget());
 }
@@ -62,12 +62,11 @@ void FileSelectHelper::ShowOpenDialog(
   // Will be released in one of the following
   // OnFilesSelected - Callback flow completed with response
   // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
-  // destroyed WebContentsDestroyed
+  // destroyed (and thus WebContentsDestroyed was called)
   AddRefWithCheck();
   DCHECK(HasAtLeastOneRef());
 
-  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone,
-                                 base::Unretained(this));
+  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowOpenDialog(settings, std::move(promise));
@@ -82,12 +81,11 @@ void FileSelectHelper::ShowSaveDialog(
   // Will be released in one of the following
   // OnFilesSelected - Callback flow completed with response
   // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
-  // destroyed WebContentsDestroyed
+  // destroyed (and thus WebContentsDestroyed was called)
   AddRefWithCheck();
   DCHECK(HasAtLeastOneRef());
 
-  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone,
-                                 base::Unretained(this));
+  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
