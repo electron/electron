@@ -4,22 +4,64 @@
 
 Process: [Main](../glossary.md#main-process)
 
+The `webFrameMain` module can be used to lookup frames across existing
+[`WebContents`](web-contents.md) instances. Navigation events are the common
+use case.
+
+```javascript
+const { BrowserWindow, webFrameMain } = require('electron')
+
+const win = new BrowserWindow({ width: 800, height: 1500 })
+win.loadURL('https://twitter.com')
+
+win.webContents.on(
+  'did-frame-navigate',
+  (event, url, isMainFrame, frameProcessId, frameRoutingId) => {
+    const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
+    if (frame) {
+      const code = 'document.body.innerHTML = document.body.innerHTML.replaceAll("heck", "h*ck")'
+      frame.executeJavaScript(code)
+    }
+  }
+)
+```
+
+You can also access frames of existing pages by using the `webFrame` property
+of [`WebContents`](web-contents.md).
+
+```javascript
+const { BrowserWindow } = require('electron')
+
+async function main () {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+  await win.loadURL('https://reddit.com')
+
+  const youtubeEmbeds = win.webContents.webFrame.frames.filter((frame) => {
+    try {
+      const url = new URL(frame.url)
+      return url.host === 'www.youtube.com'
+    } catch {
+      return false
+    }
+  })
+
+  console.log(youtubeEmbeds)
+}
+
+main()
+```
+
 ## Methods
 
 These methods can be accessed from the `webFrameMain` module:
-
-```javascript
-const { webFrameMain } = require('electron')
-console.log(webFrameMain)
-```
 
 ### `webFrameMain.fromId(processId, routingId)`
 
 * `processId` Integer - An `Integer` representing the id of the process which owns the frame.
 * `routingId` Integer - An `Integer` representing the unique frame id in the
-   current renderer process. Routing IDs can be retrieved from `WebFrameMain`
-   instances (`frame.routingId`) and are also passed by frame
-   specific `WebContents` navigation events (e.g. `did-frame-navigate`).
+  current renderer process. Routing IDs can be retrieved from `WebFrameMain`
+  instances (`frame.routingId`) and are also passed by frame
+  specific `WebContents` navigation events (e.g. `did-frame-navigate`).
 
 Returns `WebFrameMain` - A frame with the given process and routing IDs.
 
