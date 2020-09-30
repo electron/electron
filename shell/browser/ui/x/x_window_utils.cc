@@ -4,6 +4,9 @@
 
 #include "shell/browser/ui/x/x_window_utils.h"
 
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
 #include <memory>
 
 #include "base/environment.h"
