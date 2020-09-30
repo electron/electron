@@ -26,6 +26,7 @@ declare namespace Electron {
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
+    frameName: string;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
   }
@@ -57,6 +58,7 @@ declare namespace Electron {
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
+    browserWindowOptions: BrowserWindowConstructorOptions;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
@@ -80,6 +82,7 @@ declare namespace Electron {
   interface WebPreferences {
     guestInstanceId?: number;
     openerId?: number;
+    disablePopups?: boolean
   }
 
   interface Menu {

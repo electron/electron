@@ -1,14 +1,13 @@
-'use strict';
+import * as electron from 'electron/main';
+import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
+import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { parseFeatures } from '@electron/internal/common/parse-features-string';
 
-const electron = require('electron');
-const { BrowserWindow } = electron;
 const { isSameOrigin } = process._linkedBinding('electron_common_v8_util');
-const { ipcMainInternal } = require('@electron/internal/browser/ipc-main-internal');
-const ipcMainUtils = require('@electron/internal/browser/ipc-main-internal-utils');
-const { parseFeatures } = require('@electron/internal/common/parse-features-string');
 
+const { BrowserWindow } = electron;
 const hasProp = {}.hasOwnProperty;
-const frameToGuest = new Map();
+const frameToGuest = new Map<string, Electron.BrowserWindow>();
 
 // Security options that child windows will always inherit from parent windows
 const inheritedWebPreferences = new Map([
@@ -24,7 +23,7 @@ const inheritedWebPreferences = new Map([
 ]);
 
 // Copy attribute of |parent| to |child| if it is not defined in |child|.
-const mergeOptions = function (child, parent, visited) {
+const mergeOptions = function (child: Record<string, any>, parent: Record<string, any>, visited?: Set<Record<string, any>>) {
   // Check for circular reference.
   if (visited == null) visited = new Set();
   if (visited.has(parent)) return;
@@ -48,7 +47,7 @@ const mergeOptions = function (child, parent, visited) {
 };
 
 // Merge |options| with the |embedder|'s window's options.
-const mergeBrowserWindowOptions = function (embedder, options) {
+const mergeBrowserWindowOptions = function (embedder: Electron.WebContents, options: Record<string, any>) {
   if (options.webPreferences == null) {
     options.webPreferences = {};
   }
@@ -75,7 +74,7 @@ const mergeBrowserWindowOptions = function (embedder, options) {
   // Inherit certain option values from parent window
   const webPreferences = embedder.getLastWebPreferences();
   for (const [name, value] of inheritedWebPreferences) {
-    if (webPreferences[name] === value) {
+    if ((webPreferences as any)[name] === value) {
       options.webPreferences[name] = value;
     }
   }
@@ -90,7 +89,7 @@ const mergeBrowserWindowOptions = function (embedder, options) {
 
 const MULTIPART_CONTENT_TYPE = 'multipart/form-data';
 const URL_ENCODED_CONTENT_TYPE = 'application/x-www-form-urlencoded';
-function makeContentTypeHeader ({ contentType, boundary }) {
+function makeContentTypeHeader ({ contentType, boundary }: { contentType: string, boundary?: string }) {
   const header = `content-type: ${contentType};`;
   if (contentType === MULTIPART_CONTENT_TYPE) {
     return `${header} boundary=${boundary}`;
@@ -99,7 +98,7 @@ function makeContentTypeHeader ({ contentType, boundary }) {
 }
 
 // Figure out appropriate headers for post data.
-const parseContentTypeFormat = function (postData) {
+const parseContentTypeFormat = function (postData: Electron.UploadRawData[]) {
   if (postData.length) {
     // For multipart forms, the first element will start with the boundary
     // notice, which looks something like `------WebKitFormBoundary12345678`
@@ -123,7 +122,7 @@ const parseContentTypeFormat = function (postData) {
 };
 
 // Setup a new guest with |embedder|
-const setupGuest = function (embedder, frameName, guest, options) {
+const setupGuest = function (embedder: Electron.WebContents, frameName: string, guest: Electron.BrowserWindow) {
   // When |embedder| is destroyed we should also destroy attached guest, and if
   // guest is closed by user then we should prevent |embedder| from double
   // closing guest.
@@ -134,9 +133,9 @@ const setupGuest = function (embedder, frameName, guest, options) {
   };
   const closedByUser = function () {
     embedder._sendInternal('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_' + guestId);
-    embedder.removeListener('current-render-view-deleted', closedByEmbedder);
+    embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
   };
-  embedder.once('current-render-view-deleted', closedByEmbedder);
+  embedder.once('current-render-view-deleted' as any, closedByEmbedder);
   guest.once('closed', closedByUser);
   if (frameName) {
     frameToGuest.set(frameName, guest);
@@ -149,7 +148,8 @@ const setupGuest = function (embedder, frameName, guest, options) {
 };
 
 // Create a new guest created by |embedder| with |options|.
-const createGuest = function (embedder, url, referrer, frameName, options, postData) {
+const createGuest = function (embedder: Electron.webContents, url: string, referrer: string | Electron.Referrer,
+  frameName: string, options: Record<string, any>, postData?: Electron.UploadRawData[]) {
   let guest = frameToGuest.get(frameName);
   if (frameName && (guest != null)) {
     guest.loadURL(url);
@@ -168,7 +168,7 @@ const createGuest = function (embedder, url, referrer, frameName, options, postD
     //
     // Navigating to the url when creating the window from an existing
     // webContents is not necessary (it will navigate there anyway).
-    const loadOptions = {
+    const loadOptions: Electron.LoadURLOptions = {
       httpReferrer: referrer
     };
     if (postData != null) {
@@ -178,10 +178,10 @@ const createGuest = function (embedder, url, referrer, frameName, options, postD
     guest.loadURL(url, loadOptions);
   }
 
-  return setupGuest(embedder, frameName, guest, options);
+  return setupGuest(embedder, frameName, guest);
 };
 
-const getGuestWindow = function (guestContents) {
+const getGuestWindow = function (guestContents: Electron.WebContents) {
   let guestWindow = BrowserWindow.fromWebContents(guestContents);
   if (guestWindow == null) {
     const hostContents = guestContents.hostWebContents;
@@ -195,31 +195,31 @@ const getGuestWindow = function (guestContents) {
   return guestWindow;
 };
 
-const isChildWindow = function (sender, target) {
+const isChildWindow = function (sender: Electron.WebContents, target: Electron.WebContents) {
   return target.getLastWebPreferences().openerId === sender.id;
 };
 
-const isRelatedWindow = function (sender, target) {
+const isRelatedWindow = function (sender: Electron.WebContents, target: Electron.WebContents) {
   return isChildWindow(sender, target) || isChildWindow(target, sender);
 };
 
-const isScriptableWindow = function (sender, target) {
+const isScriptableWindow = function (sender: Electron.WebContents, target: Electron.WebContents) {
   return isRelatedWindow(sender, target) && isSameOrigin(sender.getURL(), target.getURL());
 };
 
-const isNodeIntegrationEnabled = function (sender) {
+const isNodeIntegrationEnabled = function (sender: Electron.WebContents) {
   return sender.getLastWebPreferences().nodeIntegration === true;
 };
 
 // Checks whether |sender| can access the |target|:
-const canAccessWindow = function (sender, target) {
+const canAccessWindow = function (sender: Electron.WebContents, target: Electron.WebContents) {
   return isChildWindow(sender, target) ||
          isScriptableWindow(sender, target) ||
          isNodeIntegrationEnabled(sender);
 };
 
 // Routed window.open messages with raw options
-ipcMainInternal.on('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, url, frameName, features) => {
+ipcMainInternal.on('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, url: string, frameName: string, features: string) => {
   // This should only be allowed for senders that have nativeWindowOpen: false
   const lastWebPreferences = event.sender.getLastWebPreferences();
   if (lastWebPreferences.nativeWindowOpen || lastWebPreferences.sandbox) {
@@ -233,14 +233,15 @@ ipcMainInternal.on('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, url, fra
   const disposition = 'new-window';
   const { options, webPreferences, additionalFeatures } = parseFeatures(features);
   if (!options.title) options.title = frameName;
-  options.webPreferences = webPreferences;
+  (options as Electron.BrowserWindowConstructorOptions).webPreferences = webPreferences;
 
-  const referrer = { url: '', policy: 'default' };
-  internalWindowOpen(event, url, referrer, frameName, disposition, options, additionalFeatures, null);
+  const referrer: Electron.Referrer = { url: '', policy: 'default' };
+  internalWindowOpen(event, url, referrer, frameName, disposition, options, additionalFeatures);
 });
 
 // Routed window.open messages with fully parsed options
-function internalWindowOpen (event, url, referrer, frameName, disposition, options, additionalFeatures, postData) {
+export function internalWindowOpen (event: ElectronInternal.IpcMainInternalEvent, url: string, referrer: string | Electron.Referrer,
+  frameName: string, disposition: string, options: Record<string, any>, additionalFeatures: string[], postData?: Electron.UploadRawData[]) {
   options = mergeBrowserWindowOptions(event.sender, options);
   const postBody = postData ? {
     data: postData,
@@ -248,15 +249,15 @@ function internalWindowOpen (event, url, referrer, frameName, disposition, optio
   } : null;
 
   event.sender.emit('new-window', event, url, frameName, disposition, options, additionalFeatures, referrer, postBody);
-  const { newGuest } = event;
+  const { newGuest } = event as unknown as { newGuest: Electron.BrowserWindow };
   if ((event.sender.getType() === 'webview' && event.sender.getLastWebPreferences().disablePopups) || event.defaultPrevented) {
     if (newGuest != null) {
       if (options.webContents === newGuest.webContents) {
         // the webContents is not changed, so set defaultPrevented to false to
         // stop the callers of this event from destroying the webContents.
-        event.defaultPrevented = false;
+        (event as any).defaultPrevented = false;
       }
-      event.returnValue = setupGuest(event.sender, frameName, newGuest, options);
+      event.returnValue = setupGuest(event.sender, frameName, newGuest);
     } else {
       event.returnValue = null;
     }
@@ -265,8 +266,8 @@ function internalWindowOpen (event, url, referrer, frameName, disposition, optio
   }
 }
 
-const makeSafeHandler = function (handler) {
-  return (event, guestId, ...args) => {
+const makeSafeHandler = function<T> (handler: (event: Electron.IpcMainInvokeEvent, guestContents: Electron.webContents, ...args: any[]) => T) {
+  return (event: Electron.IpcMainInvokeEvent, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
     const guestContents = electron.webContents.fromId(guestId);
     if (!guestContents) {
@@ -277,15 +278,15 @@ const makeSafeHandler = function (handler) {
   };
 };
 
-const handleMessage = function (channel, handler) {
+const handleMessage = function (channel: string, handler: (event: Electron.IpcMainInvokeEvent, guestContents: Electron.webContents, ...args: any[]) => any) {
   ipcMainInternal.handle(channel, makeSafeHandler(handler));
 };
 
-const handleMessageSync = function (channel, handler) {
+const handleMessageSync = function (channel: string, handler: (event: Electron.IpcMainInvokeEvent, guestContents: Electron.webContents, ...args: any[]) => any) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(handler));
 };
 
-const securityCheck = function (contents, guestContents, check) {
+const securityCheck = function (contents: Electron.WebContents, guestContents: Electron.WebContents, check: (sender: Electron.WebContents, target: Electron.WebContents) => boolean) {
   if (!check(contents, guestContents)) {
     console.error(`Blocked ${contents.getURL()} from accessing guestId: ${guestContents.id}`);
     throw new Error(`Access denied to guestId: ${guestContents.id}`);
@@ -298,7 +299,7 @@ const windowMethods = new Set([
   'blur'
 ]);
 
-handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestContents, method, ...args) => {
+handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!windowMethods.has(method)) {
@@ -306,7 +307,7 @@ handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestConten
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return getGuestWindow(guestContents)[method](...args);
+  return (getGuestWindow(guestContents) as any)[method](...args);
 });
 
 handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestContents, message, targetOrigin, sourceOrigin) => {
@@ -331,7 +332,7 @@ const webContentsMethodsAsync = new Set([
   'print'
 ]);
 
-handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method, ...args) => {
+handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!webContentsMethodsAsync.has(method)) {
@@ -339,14 +340,14 @@ handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guest
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return guestContents[method](...args);
+  return (guestContents as any)[method](...args);
 });
 
 const webContentsMethodsSync = new Set([
   'getURL'
 ]);
 
-handleMessageSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method, ...args) => {
+handleMessageSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!webContentsMethodsSync.has(method)) {
@@ -354,7 +355,5 @@ handleMessageSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, g
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return guestContents[method](...args);
+  return (guestContents as any)[method](...args);
 });
-
-exports.internalWindowOpen = internalWindowOpen;
