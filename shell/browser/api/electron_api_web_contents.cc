@@ -392,10 +392,20 @@ base::string16 GetDefaultPrinterAsync() {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
 
-  scoped_refptr<printing::PrintBackend> backend =
+  scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
           g_browser_process->GetApplicationLocale());
-  std::string printer_name = backend->GetDefaultPrinterName();
+  std::string printer_name = print_backend->GetDefaultPrinterName();
+
+  // Some devices won't have a default printer, so we should
+  // also check for existing printers and pick the first
+  // one should it exist.
+  if (printer_name.empty()) {
+    printing::PrinterList printers;
+    print_backend->EnumeratePrinters(&printers);
+    if (printers.size() > 0)
+      printer_name = printers.front().printer_name;
+  }
   return base::UTF8ToUTF16(printer_name);
 }
 #endif
@@ -1228,6 +1238,12 @@ void WebContents::Invoke(bool internal,
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
   EmitWithSender("-ipc-invoke", receivers_.current_context(),
                  std::move(callback), internal, channel, std::move(arguments));
+}
+
+void WebContents::OnFirstNonEmptyLayout() {
+  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+    Emit("ready-to-show");
+  }
 }
 
 void WebContents::ReceivePostMessage(const std::string& channel,
@@ -2183,8 +2199,8 @@ void WebContents::Print(gin::Arguments* args) {
                      std::move(callback), device_name, silent));
 }
 
-std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
-  std::vector<printing::PrinterBasicInfo> printers;
+printing::PrinterList WebContents::GetPrinterList() {
+  printing::PrinterList printers;
   auto print_backend = printing::PrintBackend::CreateInstance(
       g_browser_process->GetApplicationLocale());
   {

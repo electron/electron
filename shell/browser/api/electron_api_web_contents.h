@@ -263,7 +263,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                            bool silent,
                            base::string16 default_printer);
   void Print(gin::Arguments* args);
-  std::vector<printing::PrinterBasicInfo> GetPrinterList();
+  printing::PrinterList GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
@@ -631,6 +631,7 @@ class WebContents : public gin::Wrappable<WebContents>,
               const std::string& channel,
               blink::CloneableMessage arguments,
               InvokeCallback callback) override;
+  void OnFirstNonEmptyLayout() override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void MessageSync(bool internal,
