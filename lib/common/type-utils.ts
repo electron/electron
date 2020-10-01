@@ -38,21 +38,10 @@ function serializeNativeImage (image: any) {
   const representations = [];
   const scaleFactors = image.getScaleFactors();
 
-  // Use Buffer when there's only one representation for better perf.
-  // This avoids compressing to/from PNG where it's not necessary to
-  // ensure uniqueness of dataURLs (since there's only one).
-  if (scaleFactors.length === 1) {
-    const scaleFactor = scaleFactors[0];
+  for (const scaleFactor of scaleFactors) {
     const size = image.getSize(scaleFactor);
     const buffer = image.toBitmap({ scaleFactor });
     representations.push({ scaleFactor, size, buffer });
-  } else {
-    // Construct from dataURLs to ensure that they are not lost in creation.
-    for (const scaleFactor of scaleFactors) {
-      const size = image.getSize(scaleFactor);
-      const dataURL = image.toDataURL({ scaleFactor });
-      representations.push({ scaleFactor, size, dataURL });
-    }
   }
   return { __ELECTRON_SERIALIZED_NativeImage__: true, representations };
 }
@@ -60,20 +49,10 @@ function serializeNativeImage (image: any) {
 function deserializeNativeImage (value: any) {
   const image = nativeImage.createEmpty();
 
-  // Use Buffer when there's only one representation for better perf.
-  // This avoids compressing to/from PNG where it's not necessary to
-  // ensure uniqueness of dataURLs (since there's only one).
-  if (value.representations.length === 1) {
-    const { buffer, size, scaleFactor } = value.representations[0];
+  for (const rep of value.representations) {
+    const { buffer, size, scaleFactor } = rep;
     const { width, height } = size;
     image.addRepresentation({ buffer, scaleFactor, width, height });
-  } else {
-    // Construct from dataURLs to ensure that they are not lost in creation.
-    for (const rep of value.representations) {
-      const { dataURL, size, scaleFactor } = rep;
-      const { width, height } = size;
-      image.addRepresentation({ dataURL, scaleFactor, width, height });
-    }
   }
 
   return image;
