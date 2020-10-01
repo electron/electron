@@ -1412,8 +1412,8 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('response', () => {});
       urlRequest.end();
-      await delay(1000);
-      expect(numChunksSent).to.be.at.most(10);
+      await delay(2000);
+      expect(numChunksSent).to.be.at.most(20);
     });
   });
 
