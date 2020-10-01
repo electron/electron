@@ -18,6 +18,7 @@ const { app, protocol } = require('electron');
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
+app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser');
 // Prevent the spec runner quiting when the first window closes
 app.on('window-all-closed', () => null);
 
@@ -124,4 +125,8 @@ app.whenReady().then(async () => {
   chai.use(require('dirty-chai'));
 
   const runner = mocha.run(cb);
+}).catch((err) => {
+  console.error('An error occurred while running the spec-main spec runner');
+  console.error(err);
+  process.exit(1);
 });

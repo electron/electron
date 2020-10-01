@@ -6,10 +6,10 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index d34b836b842cb5c82f79bf2aa9d8334077422cbf..c56d26581500de448ded221a7b872b1d7d365aac 100644
+index aeb9f114b7306a54813584d9c074a0569ad10039..56aeaa5a8182551ead6418009c5687161fbc158c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -511,6 +511,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -587,6 +587,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -21,19 +21,19 @@ index d34b836b842cb5c82f79bf2aa9d8334077422cbf..c56d26581500de448ded221a7b872b1d
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index e00204b089349c6356acaac6a8918c8b74936486..b77b8028772f9e1afdc62606094defbe40074fbe 100644
+index 1f01a5e961e8659b9fa3cbf7198dcff98d52c010..460fb0b3e4b8747b5673c2b9e692d7d48a5ef082 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -110,6 +110,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -126,6 +126,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    SiteInstanceImpl* GetSiteInstance() override;
    bool IsRenderViewLive() override;
    void NotifyMoveOrResizeStarted() override;
 +  void SetSchedulerThrottling(bool allowed) override;
-   WebPreferences GetWebkitPreferences() override;
-   void UpdateWebkitPreferences(const WebPreferences& prefs) override;
-   void OnWebkitPreferencesChanged() override;
+ 
+   void SendWebPreferencesToRenderer();
+ 
 diff --git a/content/common/view_messages.h b/content/common/view_messages.h
-index 19fa7ac26926231b01fe19f7adf62dd0e08edb1b..d4d3b97811a656d40884d7e4b872fdf72dfb11fa 100644
+index 3f7794f80f67cfdf410d3cef6a30ff5ebd451c89..f83ee36f0031807dddb80e48121e6382a85280e9 100644
 --- a/content/common/view_messages.h
 +++ b/content/common/view_messages.h
 @@ -94,6 +94,9 @@ IPC_STRUCT_TRAITS_END()
@@ -45,35 +45,35 @@ index 19fa7ac26926231b01fe19f7adf62dd0e08edb1b..d4d3b97811a656d40884d7e4b872fdf7
 +
  // This passes a set of webkit preferences down to the renderer.
  IPC_MESSAGE_ROUTED1(ViewMsg_UpdateWebPreferences,
-                     content::WebPreferences)
+                     blink::web_pref::WebPreferences)
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index dfd856eb481114fea9da3e26b4080c9a8473acf6..604a95a0427705eca523e91b08a136f806da68f0 100644
+index 50601f801e08a90d8556007617a0310bc3bfe2e3..f1f03eb2eb91567cbda2f8b9abe9979ec7ba3e57 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -96,6 +96,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
+@@ -95,6 +95,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
    // started.
    virtual void NotifyMoveOrResizeStarted() = 0;
  
 +  // Disable/Enable scheduler throttling.
 +  virtual void SetSchedulerThrottling(bool allowed) = 0;
 +
-   // TODO(mustaq): Replace "Webkit" from the following three method names.
-   //
-   // Returns the current WebKit preferences. Note: WebPreferences is cached, so
+  private:
+   // This interface should only be implemented inside content.
+   friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index d9792ba47cf8621549676564ef4c162b0714d45d..d57a8432e8638036f309f317e6f857757ed54549 100644
+index 425dde974830bf8a669d799da1e695734ebe46aa..a76a9bb9516a1c34c1dd3c7f37bc41821530097a 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -1165,6 +1165,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -584,6 +584,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
 +    IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
 +                        OnSetSchedulerThrottling)
-     IPC_MESSAGE_HANDLER(ViewMsg_UpdateTargetURL_ACK, OnUpdateTargetURLAck)
      IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-@@ -1660,6 +1662,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
+ 
+@@ -1010,6 +1012,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
    return send_content_state_immediately_;
  }
  
@@ -83,26 +83,26 @@ index d9792ba47cf8621549676564ef4c162b0714d45d..d57a8432e8638036f309f317e6f85775
 +  GetWebView()->SetSchedulerThrottling(allowed);
 +}
 +
- void RenderViewImpl::OnUpdateWebPreferences(const WebPreferences& prefs) {
-   webkit_preferences_ = prefs;
-   ApplyWebPreferences(webkit_preferences_, GetWebView());
+ void RenderViewImpl::OnUpdateWebPreferences(
+     const blink::web_pref::WebPreferences& prefs) {
+   webview_->SetWebPreferences(prefs);
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 8f81196e2f173fc5d055122ae510c236628cd6b5..f49baf8aad5ffc020f456cdc4c05d983066f32f3 100644
+index 63c3e9bf77f46c25e0f573a76e6d1347933e9d73..d817a444a43e5df3241208a4565e6e6c1c23e0b6 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -391,6 +391,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
-   void OnSetHistoryOffsetAndLength(int history_offset, int history_length);
+@@ -375,6 +375,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+   void OnExitFullscreen();
    void OnSetRendererPrefs(
        const blink::mojom::RendererPreferences& renderer_prefs);
 +  void OnSetSchedulerThrottling(bool allowed);
    void OnSuppressDialogsUntilSwapOut();
-   void OnUpdateTargetURLAck();
-   void OnUpdateWebPreferences(const WebPreferences& prefs);
+   void OnUpdateWebPreferences(const blink::web_pref::WebPreferences& prefs);
+ 
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index b5562d3ea4cec46f2a763caab823db3160331084..e88ae7c76397f51d07ccdb680ce2344a61c9aa38 100644
+index 8e8e90c6b43bf46dfa45a90fcc98207bbacf0666..6335b524883f871d4561e4d5c820f02fee37d74e 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -388,6 +388,7 @@ class WebView {
+@@ -407,6 +407,7 @@ class WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -111,10 +111,10 @@ index b5562d3ea4cec46f2a763caab823db3160331084..e88ae7c76397f51d07ccdb680ce2344a
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index fc961dd8c7e5285dc04c5e8e5f6f8eeecb49b50b..7ae0213d684f950a3f123ab3dff7343a675babf9 100644
+index b1607cc6600d79ef57193b6bde87f6276aff4660..9c0eacea5eb06980be844f89c145363710833a55 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3369,6 +3369,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4173,6 +4173,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -128,7 +128,7 @@ index fc961dd8c7e5285dc04c5e8e5f6f8eeecb49b50b..7ae0213d684f950a3f123ab3dff7343a
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3379,7 +3386,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -4183,7 +4190,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -139,10 +139,10 @@ index fc961dd8c7e5285dc04c5e8e5f6f8eeecb49b50b..7ae0213d684f950a3f123ab3dff7343a
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 395899d96358e2af8f7c6ca7f44ae1ec38bbe0ed..aee2b40effb2050f309e09642edf56e44859e714 100644
+index f34f96312c55e181736b1e41385888e3b9d1cbdc..a32f06d71495bf0486c99f91861428dbe2d9b60a 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -329,6 +329,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -350,6 +350,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -150,7 +150,7 @@ index 395899d96358e2af8f7c6ca7f44ae1ec38bbe0ed..aee2b40effb2050f309e09642edf56e4
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -681,6 +682,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -761,6 +762,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // WebViewImpl::Close while handling an input event.
    bool debug_inside_input_handling_ = false;
  

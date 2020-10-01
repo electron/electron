@@ -451,7 +451,13 @@ describe('BrowserWindow module', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
         before((done) => {
-          server = http.createServer((req, res) => { res.end(''); });
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate-top') {
+              res.end('<a target=_top href="/">navigate _top</a>');
+            } else {
+              res.end('');
+            }
+          });
           server.listen(0, '127.0.0.1', () => {
             url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
             done();
@@ -514,6 +520,38 @@ describe('BrowserWindow module', () => {
           });
           expect(navigatedTo).to.equal(url);
           expect(w.webContents.getURL()).to.equal('about:blank');
+        });
+
+        it('is triggered when a cross-origin iframe navigates _top', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await delay(1000);
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          let willNavigateEmitted = false;
+          w.webContents.on('will-navigate', () => {
+            willNavigateEmitted = true;
+          });
+          await emittedOnce(w.webContents, 'did-navigate');
+          expect(willNavigateEmitted).to.be.true();
         });
       });
 
@@ -983,6 +1021,26 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
+          const bounds = w.getBounds();
+          w.once('maximize', () => {
+            w.unmaximize();
+          });
+          const unmaximize = emittedOnce(w, 'unmaximize');
+          w.show();
+          w.maximize();
+          await unmaximize;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
@@ -995,6 +1053,26 @@ describe('BrowserWindow module', () => {
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
         it('checks normal bounds when restored', async () => {
+          const bounds = w.getBounds();
+          w.once('minimize', () => {
+            w.restore();
+          });
+          const restore = emittedOnce(w, 'restore');
+          w.show();
+          w.minimize();
+          await restore;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
+        it('does not change size for a frameless window with min size', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            width: 300,
+            height: 300,
+            minWidth: 300,
+            minHeight: 300
+          });
           const bounds = w.getBounds();
           w.once('minimize', () => {
             w.restore();
@@ -1210,7 +1288,7 @@ describe('BrowserWindow module', () => {
 
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
-      w.loadURL('about:blank');
+      w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
       await emittedOnce(w, 'ready-to-show');
       w.show();
 
@@ -1500,6 +1578,30 @@ describe('BrowserWindow module', () => {
       } finally {
         contents.destroy();
       }
+    });
+
+    it('returns the correct window for a BrowserView webcontents', async () => {
+      const w = new BrowserWindow({ show: false });
+      const bv = new BrowserView();
+      w.setBrowserView(bv);
+      defer(() => {
+        w.removeBrowserView(bv);
+        (bv.webContents as any).destroy();
+      });
+      await bv.webContents.loadURL('about:blank');
+      expect(BrowserWindow.fromWebContents(bv.webContents)!.id).to.equal(w.id);
+    });
+
+    it('returns the correct window for a WebView webcontents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+      w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+      // NOTE(nornagon): Waiting for 'did-attach-webview' is a workaround for
+      // https://github.com/electron/electron/issues/25413, and is not integral
+      // to the test.
+      const p = emittedOnce(w.webContents, 'did-attach-webview');
+      const [, webviewContents] = await emittedOnce(app, 'web-contents-created');
+      expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
+      await p;
     });
   });
 
@@ -2942,6 +3044,15 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
+    it('emits only one event when frameless window is maximized', () => {
+      const w = new BrowserWindow({ show: false, frame: false });
+      let emitted = 0;
+      w.on('maximize', () => emitted++);
+      w.show();
+      w.maximize();
+      expect(emitted).to.equal(1);
+    });
+
     it('emits an event when window is unmaximized', async () => {
       const w = new BrowserWindow({ show: false });
       const unmaximize = emittedOnce(w, 'unmaximize');
@@ -3866,6 +3977,22 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreen state', () => {
+      it('should not cause a crash if called when exiting fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+
+        await delay();
+
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+
+        w.close();
+      });
+
       it('can be changed with setFullScreen method', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');

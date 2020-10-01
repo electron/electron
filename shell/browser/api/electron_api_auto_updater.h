@@ -8,25 +8,30 @@
 #include <string>
 
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/gin_helper/event_emitter.h"
 
 namespace electron {
 
 namespace api {
 
-class AutoUpdater : public gin_helper::EventEmitter<AutoUpdater>,
+class AutoUpdater : public gin::Wrappable<AutoUpdater>,
+                    public gin_helper::EventEmitterMixin<AutoUpdater>,
                     public auto_updater::Delegate,
                     public WindowListObserver {
  public:
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
-  explicit AutoUpdater(v8::Isolate* isolate);
+  AutoUpdater();
   ~AutoUpdater() override;
 
   // Delegate implementations.
@@ -47,7 +52,7 @@ class AutoUpdater : public gin_helper::EventEmitter<AutoUpdater>,
 
  private:
   std::string GetFeedURL();
-  void SetFeedURL(gin_helper::Arguments* args);
+  void SetFeedURL(gin::Arguments* args);
   void QuitAndInstall();
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);

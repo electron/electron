@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -91,18 +92,21 @@ std::string MakePartitionName(const std::string& input) {
 }  // namespace
 
 // static
-ElectronBrowserContext::BrowserContextMap
-    ElectronBrowserContext::browser_context_map_;
+ElectronBrowserContext::BrowserContextMap&
+ElectronBrowserContext::browser_context_map() {
+  static base::NoDestructor<ElectronBrowserContext::BrowserContextMap>
+      browser_context_map;
+  return *browser_context_map;
+}
 
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : base::RefCountedDeleteOnSequence<ElectronBrowserContext>(
-          base::ThreadTaskRunnerHandle::Get()),
-      in_memory_pref_store_(nullptr),
+    : in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
+      ssl_config_(network::mojom::SSLConfig::New()),
       weak_factory_(this) {
   // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
   base::ScopedAllowBlockingForTesting allow_blocking;
@@ -443,20 +447,38 @@ ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   return resolve_proxy_helper_.get();
 }
 
+network::mojom::SSLConfigPtr ElectronBrowserContext::GetSSLConfig() {
+  return ssl_config_.Clone();
+}
+
+void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  ssl_config_ = std::move(config);
+  if (ssl_config_client_) {
+    ssl_config_client_->OnSSLConfigUpdated(ssl_config_.Clone());
+  }
+}
+
+void ElectronBrowserContext::SetSSLConfigClient(
+    mojo::Remote<network::mojom::SSLConfigClient> client) {
+  ssl_config_client_ = std::move(client);
+}
+
 // static
-scoped_refptr<ElectronBrowserContext> ElectronBrowserContext::From(
+ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictionaryValue options) {
   PartitionKey key(partition, in_memory);
-  auto* browser_context = browser_context_map_[key].get();
-  if (browser_context)
-    return scoped_refptr<ElectronBrowserContext>(browser_context);
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
+  if (browser_context) {
+    return browser_context;
+  }
 
   auto* new_context =
       new ElectronBrowserContext(partition, in_memory, std::move(options));
-  browser_context_map_[key] = new_context->GetWeakPtr();
-  return scoped_refptr<ElectronBrowserContext>(new_context);
+  browser_context_map()[key] =
+      std::unique_ptr<ElectronBrowserContext>(new_context);
+  return new_context;
 }
 
 }  // namespace electron

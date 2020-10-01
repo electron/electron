@@ -47,7 +47,7 @@ namespace electron {
 class ElectronMenuModel;
 class NativeBrowserView;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 typedef NSView* NativeWindowHandle;
 #else
 typedef gfx::AcceleratedWidget NativeWindowHandle;
@@ -148,6 +148,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual bool IsTabletMode() const;
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() = 0;
   virtual void SetHasShadow(bool has_shadow) = 0;
@@ -185,7 +186,8 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen = false) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
@@ -195,7 +197,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Traffic Light API
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
@@ -232,6 +234,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name);
   virtual void CloseFilePreview();
+
+  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) = 0;
 
   // Converts between content bounds and window bounds.
   virtual gfx::Rect ContentBoundsToWindowBounds(

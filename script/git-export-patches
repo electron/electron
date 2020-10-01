@@ -1,9 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import argparse
-import os
-import re
-import subprocess
 import sys
 
 from lib import git

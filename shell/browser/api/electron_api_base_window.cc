@@ -14,6 +14,7 @@
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -296,9 +297,12 @@ void BaseWindow::OnNewWindowForTab() {
 #if defined(OS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::Locker locker(isolate);
+    v8::HandleScope scope(isolate);
     messages_callback_map_[message].Run(
-        ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
-        ToBuffer(isolate(), static_cast<void*>(&l_param), sizeof(LPARAM)));
+        ToBuffer(isolate, static_cast<void*>(&w_param), sizeof(WPARAM)),
+        ToBuffer(isolate, static_cast<void*>(&l_param), sizeof(LPARAM)));
   }
 }
 #endif
@@ -618,6 +622,10 @@ bool BaseWindow::IsKiosk() {
   return window_->IsKiosk();
 }
 
+bool BaseWindow::IsTabletMode() const {
+  return window_->IsTabletMode();
+}
+
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseHexColor(color_name);
   window_->SetBackgroundColor(color);
@@ -740,8 +748,10 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
-      window_->AddBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(window_.get());
+      if (browser_view->web_contents()) {
+        window_->AddBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(window_.get());
+      }
       browser_views_[browser_view->ID()].Reset(isolate(), value);
     }
   }
@@ -753,9 +763,10 @@ void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view != browser_views_.end()) {
-      window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
-
+      if (browser_view->web_contents()) {
+        window_->RemoveBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
+      }
       (*get_that_view).second.Reset(isolate(), value);
       browser_views_.erase(get_that_view);
     }
@@ -797,8 +808,13 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void BaseWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
+void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
+                                           gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
+  bool visibleOnFullScreen = false;
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool BaseWindow::IsVisibleOnAllWorkspaces() {
@@ -814,7 +830,7 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
@@ -903,6 +919,10 @@ void BaseWindow::PreviewFile(const std::string& path,
 
 void BaseWindow::CloseFilePreview() {
   window_->CloseFilePreview();
+}
+
+void BaseWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+  window_->SetGTKDarkThemeEnabled(use_dark_theme);
 }
 
 v8::Local<v8::Value> BaseWindow::GetContentView() const {
@@ -1041,8 +1061,10 @@ void BaseWindow::ResetBrowserViews() {
                            v8::Local<v8::Value>::New(isolate(), item.second),
                            &browser_view) &&
         !browser_view.IsEmpty()) {
-      window_->RemoveBrowserView(browser_view->view());
-      browser_view->web_contents()->SetOwnerWindow(nullptr);
+      if (browser_view->web_contents()) {
+        window_->RemoveBrowserView(browser_view->view());
+        browser_view->web_contents()->SetOwnerWindow(nullptr);
+      }
     }
 
     item.second.Reset();
@@ -1142,6 +1164,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
       .SetMethod("setKiosk", &BaseWindow::SetKiosk)
       .SetMethod("isKiosk", &BaseWindow::IsKiosk)
+      .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
       .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
       .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
@@ -1170,11 +1193,11 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
@@ -1183,7 +1206,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)

@@ -2,49 +2,55 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <stddef.h>
-
 #include <vector>
 
+#include "base/numerics/safe_math.h"
+#include "gin/handle.h"
+#include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+
 namespace {
 
-class Archive : public gin_helper::Wrappable<Archive> {
+class Archive : public gin::Wrappable<Archive> {
  public:
-  static v8::Local<v8::Value> Create(v8::Isolate* isolate,
+  static gin::Handle<Archive> Create(v8::Isolate* isolate,
                                      const base::FilePath& path) {
     auto archive = std::make_unique<asar::Archive>(path);
     if (!archive->Init())
-      return v8::False(isolate);
-    return (new Archive(isolate, std::move(archive)))->GetWrapper();
+      return gin::Handle<Archive>();
+    return gin::CreateHandle(isolate, new Archive(isolate, std::move(archive)));
   }
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype) {
-    prototype->SetClassName(gin::StringToV8(isolate, "Archive"));
-    gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::ObjectTemplateBuilder(isolate)
         .SetProperty("path", &Archive::GetPath)
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD);
+        .SetMethod("read", &Archive::Read)
+        .SetMethod("readSync", &Archive::ReadSync);
   }
+
+  const char* GetTypeName() override { return "Archive"; }
 
  protected:
   Archive(v8::Isolate* isolate, std::unique_ptr<asar::Archive> archive)
-      : archive_(std::move(archive)) {
-    Init(isolate);
-  }
+      : archive_(std::move(archive)) {}
 
   // Returns the path of the file.
   base::FilePath GetPath() { return archive_->path(); }
@@ -103,18 +109,74 @@ class Archive : public gin_helper::Wrappable<Archive> {
     return gin::ConvertToV8(isolate, new_path);
   }
 
-  // Return the file descriptor.
-  int GetFD() const {
-    if (!archive_)
-      return -1;
-    return archive_->GetFD();
+  v8::Local<v8::ArrayBuffer> ReadSync(gin_helper::ErrorThrower thrower,
+                                      uint64_t offset,
+                                      uint64_t length) {
+    base::CheckedNumeric<uint64_t> safe_offset(offset);
+    base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
+    if (!safe_end.IsValid() ||
+        safe_end.ValueOrDie() > archive_->file()->length()) {
+      thrower.ThrowError("Out of bounds read");
+      return v8::Local<v8::ArrayBuffer>();
+    }
+    auto array_buffer = v8::ArrayBuffer::New(thrower.isolate(), length);
+    auto backing_store = array_buffer->GetBackingStore();
+    memcpy(backing_store->Data(), archive_->file()->data() + offset, length);
+    return array_buffer;
+  }
+
+  v8::Local<v8::Promise> Read(v8::Isolate* isolate,
+                              uint64_t offset,
+                              uint64_t length) {
+    gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise(isolate);
+    v8::Local<v8::Promise> handle = promise.GetHandle();
+
+    base::CheckedNumeric<uint64_t> safe_offset(offset);
+    base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
+    if (!safe_end.IsValid() ||
+        safe_end.ValueOrDie() > archive_->file()->length()) {
+      promise.RejectWithErrorMessage("Out of bounds read");
+      return handle;
+    }
+
+    auto backing_store = v8::ArrayBuffer::NewBackingStore(isolate, length);
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+        base::BindOnce(&Archive::ReadOnIO, isolate, archive_,
+                       std::move(backing_store), offset, length),
+        base::BindOnce(&Archive::ResolveReadOnUI, std::move(promise)));
+
+    return handle;
   }
 
  private:
-  std::unique_ptr<asar::Archive> archive_;
+  static std::unique_ptr<v8::BackingStore> ReadOnIO(
+      v8::Isolate* isolate,
+      std::shared_ptr<asar::Archive> archive,
+      std::unique_ptr<v8::BackingStore> backing_store,
+      uint64_t offset,
+      uint64_t length) {
+    memcpy(backing_store->Data(), archive->file()->data() + offset, length);
+    return backing_store;
+  }
+
+  static void ResolveReadOnUI(
+      gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise,
+      std::unique_ptr<v8::BackingStore> backing_store) {
+    v8::HandleScope scope(promise.isolate());
+    v8::Context::Scope context_scope(promise.GetContext());
+    auto array_buffer =
+        v8::ArrayBuffer::New(promise.isolate(), std::move(backing_store));
+    promise.Resolve(array_buffer);
+  }
+
+  std::shared_ptr<asar::Archive> archive_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
+
+// static
+gin::WrapperInfo Archive::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 void InitAsarSupport(v8::Isolate* isolate, v8::Local<v8::Value> require) {
   // Evaluate asar_bundle.js.

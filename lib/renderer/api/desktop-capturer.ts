@@ -16,7 +16,3 @@ function getCurrentStack () {
 export async function getSources (options: Electron.SourcesOptions) {
   return deserialize(await ipcRendererInternal.invoke('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', options, getCurrentStack()));
 }
-
-export function getMediaSourceIdForWebContents (webContentsId: number) {
-  return ipcRendererInternal.invoke<string>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', webContentsId, getCurrentStack());
-}

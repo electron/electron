@@ -7,10 +7,10 @@ async hooks are hella broken in Electron. This was checking that they weren't,
 but they are, so we just disabled the check. YOLO.
 
 diff --git a/src/api/callback.cc b/src/api/callback.cc
-index 9f52c25cf0d9005c2e70b76eb52eae1bd15f0a53..e151871dc90b6c29dc3fc3db162e24baeb45923d 100644
+index 84664c089594eb44a8752ab17852157782fb4d62..6ebe2ec08a1bc875f5e26ba5fedce132596835da 100644
 --- a/src/api/callback.cc
 +++ b/src/api/callback.cc
-@@ -117,12 +117,14 @@ void InternalCallbackScope::Close() {
+@@ -116,12 +116,14 @@ void InternalCallbackScope::Close() {
      perform_stopping_check();
    }
  

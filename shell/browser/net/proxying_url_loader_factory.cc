@@ -668,36 +668,19 @@ void ProxyingURLLoaderFactory::InProgressRequest::
       "Non-Authoritative-Reason: WebRequest API\n\n",
       kInternalRedirectStatusCode, redirect_url_.spec().c_str());
 
-  if (factory_->browser_context_->ShouldEnableOutOfBlinkCors()) {
-    // Cross-origin requests need to modify the Origin header to 'null'. Since
-    // CorsURLLoader sets |request_initiator| to the Origin request header in
-    // NetworkService, we need to modify |request_initiator| here to craft the
-    // Origin header indirectly.
-    // Following checks implement the step 10 of "4.4. HTTP-redirect fetch",
-    // https://fetch.spec.whatwg.org/#http-redirect-fetch
-    if (request_.request_initiator &&
-        (!url::Origin::Create(redirect_url_)
-              .IsSameOriginWith(url::Origin::Create(request_.url)) &&
-         !request_.request_initiator->IsSameOriginWith(
-             url::Origin::Create(request_.url)))) {
-      // Reset the initiator to pretend tainted origin flag of the spec is set.
-      request_.request_initiator = url::Origin();
-    }
-  } else {
-    // If this redirect is used in a cross-origin request, add CORS headers to
-    // make sure that the redirect gets through the Blink CORS. Note that the
-    // destination URL is still subject to the usual CORS policy, i.e. the
-    // resource will only be available to web pages if the server serves the
-    // response with the required CORS response headers. Matches the behavior in
-    // url_request_redirect_job.cc.
-    std::string http_origin;
-    if (request_.headers.GetHeader("Origin", &http_origin)) {
-      headers += base::StringPrintf(
-          "\n"
-          "Access-Control-Allow-Origin: %s\n"
-          "Access-Control-Allow-Credentials: true",
-          http_origin.c_str());
-    }
+  // Cross-origin requests need to modify the Origin header to 'null'. Since
+  // CorsURLLoader sets |request_initiator| to the Origin request header in
+  // NetworkService, we need to modify |request_initiator| here to craft the
+  // Origin header indirectly.
+  // Following checks implement the step 10 of "4.4. HTTP-redirect fetch",
+  // https://fetch.spec.whatwg.org/#http-redirect-fetch
+  if (request_.request_initiator &&
+      (!url::Origin::Create(redirect_url_)
+            .IsSameOriginWith(url::Origin::Create(request_.url)) &&
+       !request_.request_initiator->IsSameOriginWith(
+           url::Origin::Create(request_.url)))) {
+    // Reset the initiator to pretend tainted origin flag of the spec is set.
+    request_.request_initiator = url::Origin();
   }
   head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
       net::HttpUtil::AssembleRawHeaders(headers));
@@ -755,7 +738,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
-    content::BrowserContext* browser_context,
     int render_process_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
@@ -767,7 +749,6 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
-      browser_context_(browser_context),
       render_process_id_(render_process_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),

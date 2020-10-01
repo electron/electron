@@ -8,9 +8,6 @@ Process: [Main](../glossary.md#main-process)
 // In the main process.
 const { BrowserWindow } = require('electron')
 
-// Or use `remote` from the renderer process.
-// const { BrowserWindow } = require('electron').remote
-
 const win = new BrowserWindow({ width: 800, height: 600 })
 
 // Load a remote URL
@@ -207,11 +204,15 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
   * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
-    some GTK desktop environments. Default is [`nativeTheme.shouldUseDarkColors`](native-theme.md).
+    some GTK+3 desktop environments. Default is `false`.
   * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md#transparent-window).
     Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` String (optional) - The type of window, default is normal window. See more about
     this below.
+  * `visualEffectState` String (optional) - Specify how the material appearance should reflect window activity state on macOS. Must be used with the `vibrancy` property. Possible values are:
+    * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
+    * `active` - The backdrop should always appear active.
+    * `inactive` - The backdrop should always appear inactive.
   * `titleBarStyle` String (optional) - The style of window title bar.
     Default is `default`. Possible values are:
     * `default` - Results in the standard gray opaque Mac title
@@ -271,7 +272,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the `nodeIntegration` option and the APIs available to the preload script
       are more limited. Read more about the option [here](sandbox-option.md).
     * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
-      Default is `true`.
+      Default is `false`.
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
@@ -1345,6 +1346,17 @@ Enters or leaves kiosk mode.
 
 Returns `Boolean` - Whether the window is in kiosk mode.
 
+#### `win.isTabletMode()` _Windows_
+
+Returns `Boolean` - Whether the window is in Windows 10 tablet mode.
+
+Since Windows 10 users can [use their PC as tablet](https://support.microsoft.com/en-us/help/17210/windows-10-use-your-pc-like-a-tablet),
+under this mode apps can choose to optimize their UI for tablets, such as
+enlarging the titlebar and hiding titlebar buttons.
+
+This API returns whether the window is in tablet mode, and the `resize` event
+can be be used to listen to changes to tablet mode.
+
 #### `win.getMediaSourceId()`
 
 Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
@@ -1669,9 +1681,12 @@ Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
 
 Returns `Boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible)`
+#### `win.setVisibleOnAllWorkspaces(visible[, options])`
 
 * `visible` Boolean
+* `options` Object (optional)
+  * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
+    the window should be visible above fullscreen windows
 
 Sets whether the window should be visible on all workspaces.
 

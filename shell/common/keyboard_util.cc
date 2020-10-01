@@ -24,7 +24,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
              str == "meta") {
     return ui::VKEY_COMMAND;
   } else if (str == "commandorcontrol" || str == "cmdorctrl") {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
     return ui::VKEY_COMMAND;
 #else
     return ui::VKEY_CONTROL;
@@ -324,35 +324,6 @@ ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
     return KeyboardCodeFromCharCode(str[0], shifted);
   else
     return KeyboardCodeFromKeyIdentifier(str, shifted);
-}
-
-int WebEventModifiersToEventFlags(int modifiers) {
-  int flags = 0;
-
-  if (modifiers & blink::WebInputEvent::Modifiers::kShiftKey)
-    flags |= ui::EF_SHIFT_DOWN;
-  if (modifiers & blink::WebInputEvent::Modifiers::kControlKey)
-    flags |= ui::EF_CONTROL_DOWN;
-  if (modifiers & blink::WebInputEvent::Modifiers::kAltKey)
-    flags |= ui::EF_ALT_DOWN;
-  if (modifiers & blink::WebInputEvent::Modifiers::kMetaKey)
-    flags |= ui::EF_COMMAND_DOWN;
-  if (modifiers & blink::WebInputEvent::Modifiers::kCapsLockOn)
-    flags |= ui::EF_CAPS_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kNumLockOn)
-    flags |= ui::EF_NUM_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kScrollLockOn)
-    flags |= ui::EF_SCROLL_LOCK_ON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kLeftButtonDown)
-    flags |= ui::EF_LEFT_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kMiddleButtonDown)
-    flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kRightButtonDown)
-    flags |= ui::EF_RIGHT_MOUSE_BUTTON;
-  if (modifiers & blink::WebInputEvent::Modifiers::kIsAutoRepeat)
-    flags |= ui::EF_IS_REPEAT;
-
-  return flags;
 }
 
 }  // namespace electron

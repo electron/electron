@@ -13,7 +13,7 @@ class CrashReporter {
       submitURL,
       uploadToServer = true,
       rateLimit = false,
-      compress = false
+      compress = true
     } = options || {};
 
     if (submitURL == null) throw new Error('submitURL is a required option to crashReporter.start');

@@ -619,7 +619,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
     });
 
-    it('sets and returns the app as a login item', done => {
+    ifit(process.platform !== 'win32')('sets and returns the app as a login item', function () {
       app.setLoginItemSettings({ openAtLogin: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -628,10 +628,28 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       });
-      done();
     });
 
-    it('adds a login item that loads in hidden mode', done => {
+    ifit(process.platform === 'win32')('sets and returns the app as a login item (windows)', function () {
+      app.setLoginItemSettings({ openAtLogin: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+    });
+
+    ifit(process.platform !== 'win32')('adds a login item that loads in hidden mode', function () {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -640,7 +658,25 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       });
-      done();
+    });
+
+    ifit(process.platform === 'win32')('adds a login item that loads in hidden mode (windows)', function () {
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
     });
 
     it('correctly sets and unsets the LoginItem', function () {
@@ -668,16 +704,77 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
     });
 
-    it('allows you to pass a custom executable and arguments', function () {
-      if (process.platform !== 'win32') this.skip();
-
-      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs });
-
+    ifit(process.platform === 'win32')('allows you to pass a custom executable and arguments', function () {
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: true });
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
-      expect(app.getLoginItemSettings({
+      const openAtLoginTrueEnabledTrue = app.getLoginItemSettings({
         path: updateExe,
         args: processStartArgs
-      }).openAtLogin).to.equal(true);
+      });
+
+      expect(openAtLoginTrueEnabledTrue.openAtLogin).to.equal(true);
+      expect(openAtLoginTrueEnabledTrue.executableWillLaunchAtLogin).to.equal(true);
+
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginTrueEnabledFalse = app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      });
+
+      expect(openAtLoginTrueEnabledFalse.openAtLogin).to.equal(true);
+      expect(openAtLoginTrueEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginFalseEnabledFalse = app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      });
+
+      expect(openAtLoginFalseEnabledFalse.openAtLogin).to.equal(false);
+      expect(openAtLoginFalseEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+    });
+
+    ifit(process.platform === 'win32')('allows you to pass a custom name', function () {
+      app.setLoginItemSettings({ openAtLogin: true });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: false
+        }, {
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+
+      app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
     });
   });
 
@@ -1340,6 +1437,16 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.hide', () => {
+      it('should not throw', () => {
+        app.dock.hide();
+        expect(app.dock.isVisible()).to.equal(false);
+      });
+    });
+
+    // Note that dock.show tests should run after dock.hide tests, to work
+    // around a bug of macOS.
+    // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
         return app.dock.show().then(() => {
@@ -1353,13 +1460,6 @@ describe('app module', () => {
 
       it('eventually fulfills', async () => {
         await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
-      });
-    });
-
-    describe('dock.hide', () => {
-      it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
       });
     });
   });

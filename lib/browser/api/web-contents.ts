@@ -8,7 +8,6 @@ import { NavigationController } from '@electron/internal/browser/navigation-cont
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import { EventEmitter } from 'events';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -124,8 +123,6 @@ const defaultPrintingSetting = {
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
-
-Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
@@ -490,6 +487,10 @@ const addReturnValueToEvent = (event: any) => {
   });
 };
 
+const loggingEnabled = () => {
+  return process.env.ELECTRON_ENABLE_LOGGING || app.commandLine.hasSwitch('enable-logging');
+};
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   // The navigation controller.
@@ -576,8 +577,13 @@ WebContents.prototype._init = function () {
     app.emit('renderer-process-crashed', event, this, ...args);
   });
 
-  this.on('render-process-gone', (event, ...args) => {
-    app.emit('render-process-gone', event, this, ...args);
+  this.on('render-process-gone', (event, details) => {
+    app.emit('render-process-gone', event, this, details);
+
+    // Log out a hint to help users better debug renderer crashes.
+    if (loggingEnabled()) {
+      console.info(`Renderer process ${details.reason} - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.`);
+    }
   });
 
   // The devtools requests the webContents to reload.
@@ -655,6 +661,15 @@ WebContents.prototype._init = function () {
 
   this.on('login', (event, ...args) => {
     app.emit('login', event, this, ...args);
+  });
+
+  this.on('ready-to-show' as any, () => {
+    const owner = this.getOwnerBrowserWindow();
+    if (owner && !owner.isDestroyed()) {
+      process.nextTick(() => {
+        owner.emit('ready-to-show');
+      });
+    }
   });
 
   const event = process._linkedBinding('electron_browser_event').createEmpty();

@@ -157,9 +157,12 @@ function sortGroups<T> (groups: {id?: T}[][]) {
   return sortedGroupIndexes.map(i => groups[i]);
 }
 
-export function sortMenuItems (menuItems: {type?: string, id?: string}[]) {
-  const isSeparator = (item: {type?: string}) => item.type === 'separator';
-  const separators = menuItems.filter(i => i.type === 'separator');
+export function sortMenuItems (menuItems: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]) {
+  const isSeparator = (i: Electron.MenuItemConstructorOptions | Electron.MenuItem) => {
+    const opts = i as Electron.MenuItemConstructorOptions;
+    return i.type === 'separator' && !opts.before && !opts.after && !opts.beforeGroupContaining && !opts.afterGroupContaining;
+  };
+  const separators = menuItems.filter(isSeparator);
 
   // Split the items into their implicit groups based upon separators.
   const groups = splitArray(menuItems, isSeparator);

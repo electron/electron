@@ -128,8 +128,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
   if (prefs.disable_electron_site_instance_overrides)
-    env->ForceOnlyContextAwareNativeModules();
-  env->WarnNonContextAwareNativeModules();
+    env->set_force_context_aware(true);
+  env->set_warn_context_aware(true);
 
   environments_.insert(env);
 
@@ -172,10 +172,17 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // for existing users.
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
+<<<<<<< HEAD
   auto prefs = render_frame->GetWebkitPreferences();
   if (prefs.node_integration_in_sub_frames ||
       prefs.disable_electron_site_instance_overrides) {
     node::RunAtExit(env);
+=======
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
+      command_line->HasSwitch(
+          switches::kDisableElectronSiteInstanceOverrides)) {
+>>>>>>> origin/master
     node::FreeEnvironment(env);
     if (env == node_bindings_->uv_env())
       node::FreeIsolateData(node_bindings_->isolate_data());

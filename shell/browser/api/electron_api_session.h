@@ -13,6 +13,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "services/network/public/mojom/ssl_config.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -23,6 +24,11 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_registry_observer.h"
 #endif
 
 class GURL;
@@ -56,6 +62,9 @@ class Session : public gin::Wrappable<Session>,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                 public SpellcheckHunspellDictionary::Observer,
 #endif
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+                public extensions::ExtensionRegistryObserver,
+#endif
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
@@ -71,9 +80,7 @@ class Session : public gin::Wrappable<Session>,
       const std::string& partition,
       base::DictionaryValue options = base::DictionaryValue());
 
-  ElectronBrowserContext* browser_context() const {
-    return browser_context_.get();
-  }
+  ElectronBrowserContext* browser_context() const { return browser_context_; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -101,6 +108,7 @@ class Session : public gin::Wrappable<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin::Arguments* args);
   std::string GetUserAgent();
+  void SetSSLConfig(network::mojom::SSLConfigPtr config);
   bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
@@ -128,6 +136,15 @@ class Session : public gin::Wrappable<Session>,
   void RemoveExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions();
+
+  // extensions::ExtensionRegistryObserver:
+  void OnExtensionLoaded(content::BrowserContext* browser_context,
+                         const extensions::Extension* extension) override;
+  void OnExtensionReady(content::BrowserContext* browser_context,
+                        const extensions::Extension* extension) override;
+  void OnExtensionUnloaded(content::BrowserContext* browser_context,
+                           const extensions::Extension* extension,
+                           extensions::UnloadedExtensionReason reason) override;
 #endif
 
  protected:
@@ -159,7 +176,7 @@ class Session : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  scoped_refptr<ElectronBrowserContext> browser_context_;
+  ElectronBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

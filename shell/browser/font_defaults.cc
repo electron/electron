@@ -12,7 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
-#include "content/public/common/web_preferences.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
@@ -42,7 +42,7 @@ const FontDefault kFontDefaults[] = {
     {prefs::kWebKitCursiveFontFamily, IDS_CURSIVE_FONT_FAMILY},
     {prefs::kWebKitFantasyFontFamily, IDS_FANTASY_FONT_FAMILY},
     {prefs::kWebKitPictographFontFamily, IDS_PICTOGRAPH_FONT_FAMILY},
-#if defined(OS_CHROMEOS) || defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_CHROMEOS) || defined(OS_MAC) || defined(OS_WIN)
     {prefs::kWebKitStandardFontFamilyJapanese,
      IDS_STANDARD_FONT_FAMILY_JAPANESE},
     {prefs::kWebKitFixedFontFamilyJapanese, IDS_FIXED_FONT_FAMILY_JAPANESE},
@@ -66,7 +66,7 @@ const FontDefault kFontDefaults[] = {
     {prefs::kWebKitSansSerifFontFamilyTraditionalHan,
      IDS_SANS_SERIF_FONT_FAMILY_TRADITIONAL_HAN},
 #endif
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
     {prefs::kWebKitCursiveFontFamilySimplifiedHan,
      IDS_CURSIVE_FONT_FAMILY_SIMPLIFIED_HAN},
     {prefs::kWebKitCursiveFontFamilyTraditionalHan,
@@ -148,7 +148,7 @@ base::string16 FetchFont(const char* script, const char* map_name) {
 }
 
 void FillFontFamilyMap(const char* map_name,
-                       content::ScriptFontFamilyMap* map) {
+                       blink::web_pref::ScriptFontFamilyMap* map) {
   for (size_t i = 0; i < prefs::kWebKitScriptsForFontFamilyMapsLength; ++i) {
     const char* script = prefs::kWebKitScriptsForFontFamilyMaps[i];
     base::string16 result = FetchFont(script, map_name);
@@ -162,7 +162,7 @@ void FillFontFamilyMap(const char* map_name,
 
 namespace electron {
 
-void SetFontDefaults(content::WebPreferences* prefs) {
+void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
   FillFontFamilyMap(prefs::kWebKitStandardFontFamilyMap,
                     &prefs->standard_font_family_map);
   FillFontFamilyMap(prefs::kWebKitFixedFontFamilyMap,

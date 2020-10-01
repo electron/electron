@@ -5,11 +5,11 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5526859e551c10b31e9999d1f8ba89a94db9abfc..e2aa9c821de685a022fd78935399b7d219468403 100644
+index bc1ab0bfcf87936b8d8156172319283704b05da8..4fa2d4175fb318f560b7b9a8ed8baa091d3ed6a2 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -352,6 +352,10 @@ MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform() {
-   return per_process::v8_platform.Platform();
+@@ -472,6 +472,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+   return env->platform();
  }
  
 +node::tracing::Agent* CreateAgent() {
@@ -20,10 +20,10 @@ index 5526859e551c10b31e9999d1f8ba89a94db9abfc..e2aa9c821de685a022fd78935399b7d2
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 8378553f28671e4685b4ed20279b2be5d202e527..638a1a85b046ce4db303d532f7cf36cca2271db5 100644
+index d051b422d7c5a51a8590abda382676d3f661b532..80acb3f9f04ef8e6c363cf31384af4037abeeb87 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -116,6 +116,7 @@ namespace node {
+@@ -123,6 +123,7 @@ namespace node {
  
  namespace tracing {
  
@@ -31,12 +31,12 @@ index 8378553f28671e4685b4ed20279b2be5d202e527..638a1a85b046ce4db303d532f7cf36cc
  class TracingController;
  
  }
-@@ -386,6 +387,8 @@ NODE_EXTERN Environment* GetCurrentEnvironment(v8::Local<v8::Context> context);
- // it returns nullptr.
- NODE_EXTERN MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform();
+@@ -510,6 +511,8 @@ NODE_DEPRECATED("Use GetMultiIsolatePlatform(env) instead",
+ NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
+ NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  
 +NODE_EXTERN node::tracing::Agent* CreateAgent();
 +
- NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
-     int thread_pool_size,
-     node::tracing::TracingController* tracing_controller);
+ // Legacy variants of MultiIsolatePlatform::Create().
+ NODE_DEPRECATED("Use variant taking a v8::TracingController* pointer instead",
+     NODE_EXTERN MultiIsolatePlatform* CreatePlatform(

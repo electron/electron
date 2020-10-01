@@ -10,12 +10,10 @@ const args = require('minimist')(process.argv.slice(2), {
 const BASE = path.resolve(__dirname, '../..');
 const DISABLED_TESTS = require('./node-disabled-tests.json');
 const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node');
-const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null;
 const TAP_FILE_NAME = 'test.tap';
 
 const utils = require('./lib/utils');
-const { YARN_VERSION } = require('./yarn');
 
 if (!process.mainModule) {
   throw new Error('Must call the node spec runner directly');

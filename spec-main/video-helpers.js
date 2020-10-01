@@ -30,7 +30,7 @@ function atob (str) {
 // in this case, frames has a very specific meaning, which will be
 // detailed once i finish writing the code
 
-function ToWebM (frames, outputAsArray) {
+function ToWebM (frames) {
   const info = checkFrames(frames);
 
   // max duration by cluster in milliseconds
@@ -235,7 +235,7 @@ function ToWebM (frames, outputAsArray) {
     if (i >= 3) {
       cues.data[i - 3].data[1].data[1].data = position;
     }
-    const data = generateEBML([segment.data[i]], outputAsArray);
+    const data = generateEBML([segment.data[i]]);
     position += data.size || data.byteLength || data.length;
     if (i !== 2) { // not cues
       // Save results to avoid having to encode everything twice
@@ -243,7 +243,7 @@ function ToWebM (frames, outputAsArray) {
     }
   }
 
-  return generateEBML(EBML, outputAsArray);
+  return generateEBML(EBML);
 }
 
 // sums the lengths of all the frames and gets the duration, woo

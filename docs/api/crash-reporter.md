@@ -39,6 +39,37 @@ is an implementation detail driven by Chromium, and it may change in future. In
 particular, crashpad is newer and will likely eventually replace breakpad on
 all platforms.
 
+### Note about Node child processes on Linux
+
+If you are using the Node.js `child_process` module and want to report crashes
+from those processes on Linux, there is an extra step you will need to take to
+properly initialize the crash reporter in the child process. This is not
+necessary on Mac or Windows, as those platforms use Crashpad, which
+automatically monitors child processes.
+
+Since `require('electron')` is not available in Node child processes, the
+following APIs are available on the `process` object in Node child processes.
+Note that, on Linux, each Node child process has its own separate instance of
+the breakpad crash reporter. This is dissimilar to renderer child processes,
+which have a "stub" breakpad reporter which returns information to the main
+process for reporting.
+
+#### `process.crashReporter.start(options)`
+
+See [`crashReporter.start()`](#crashreporterstartoptions).
+
+#### `process.crashReporter.getParameters()`
+
+See [`crashReporter.getParameters()`](#crashreportergetparameters).
+
+#### `process.crashReporter.addExtraParameter(key, value)`
+
+See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
+
+#### `process.crashReporter.removeExtraParameter(key)`
+
+See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
+
 ## Methods
 
 The `crashReporter` module has the following methods:
@@ -59,7 +90,7 @@ The `crashReporter` module has the following methods:
   * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
     number of crashes uploaded to 1/hour. Default is `false`.
   * `compress` Boolean (optional) - If true, crash reports will be compressed
-    and uploaded with `Content-Encoding: gzip`. Default is `false`.
+    and uploaded with `Content-Encoding: gzip`. Default is `true`.
   * `extra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
@@ -156,15 +187,21 @@ parameters in a renderer process will not result in those parameters being sent
 with crashes that occur in other renderer processes or in the main process.
 
 **Note:** Parameters have limits on the length of the keys and values. Key
-names must be no longer than 39 bytes, and values must be no longer than 127
+names must be no longer than 39 bytes, and values must be no longer than 20320
 bytes. Keys with names longer than the maximum will be silently ignored. Key
 values longer than the maximum length will be truncated.
+
+**Note:** On linux values that are longer than 127 bytes will be chunked into
+multiple keys, each 127 bytes in length.  E.g. `addExtraParameter('foo', 'a'.repeat(130))`
+will result in two chunked keys `foo__1` and `foo__2`, the first will contain
+the first 127 bytes and the second will contain the remaining 3 bytes.  On
+your crash reporting backend you should stitch together keys in this format.
 
 ### `crashReporter.removeExtraParameter(key)`
 
 * `key` String - Parameter key, must be no longer than 39 bytes.
 
-Remove a extra parameter from the current set of parameters. Future crashes
+Remove an extra parameter from the current set of parameters. Future crashes
 will not include this parameter.
 
 ### `crashReporter.getParameters()`

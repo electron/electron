@@ -11,7 +11,6 @@ import find_depot_tools
 from vs_toolchain import \
     SetEnvironmentAndGetRuntimeDllDirs, \
     SetEnvironmentAndGetSDKDir, \
-    GetVisualStudioVersion, \
     NormalizePath
 
 sys.path.append("%s/win_toolchain" % find_depot_tools.add_depot_tools_to_path())

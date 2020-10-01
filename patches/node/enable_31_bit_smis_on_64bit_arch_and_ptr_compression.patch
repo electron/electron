@@ -8,22 +8,21 @@ node modules will have different (wrong) ideas about how v8 structs are laid
 out in memory on 64-bit machines, and will summarily fail to work.
 
 diff --git a/common.gypi b/common.gypi
-index dfcf529cd501dc890c05425fcf9a33414a45f1a5..38e7b2802f6225ac0e1ff4789b9ff8f4fb04cb79 100644
+index cde383f5a2d652dffe1c58c7f6de8399b967b441..547186692b8035cbc03556336729dc3fe631e260 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -71,6 +71,9 @@
-     # TODO(refack): make v8-perfetto happen
-     'v8_use_perfetto': 0,
+@@ -64,7 +64,7 @@
+     # options but default values are required here as this file is also used by
+     # node-gyp to build addons.
+     'v8_enable_pointer_compression%': 0,
+-    'v8_enable_31bit_smis_on_64bit_arch%': 0,
++    'v8_enable_31bit_smis_on_64bit_arch%': 1,
  
-+    'v8_enable_pointer_compression%': 0,
-+    'v8_enable_31bit_smis_on_64bit_arch': 1,
-+
-     ##### end V8 defaults #####
- 
-     # When building native modules using 'npm install' with the system npm,
-@@ -148,6 +151,9 @@
-       ['OS=="mac"', {
-         'clang%': 1,
+     # Disable V8 untrusted code mitigations.
+     # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
+@@ -124,6 +124,9 @@
+         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
+         'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
        }],
 +      ['target_arch == "arm64" or target_arch == "x64"', {
 +        'v8_enable_pointer_compression': 1,
@@ -31,16 +30,3 @@ index dfcf529cd501dc890c05425fcf9a33414a45f1a5..38e7b2802f6225ac0e1ff4789b9ff8f4
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
        }],
-@@ -378,6 +384,12 @@
-           }],
-         ],
-       }],
-+      ['v8_enable_pointer_compression == 1', {
-+        'defines': ['V8_COMPRESS_POINTERS'],
-+      }],
-+      ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
-+        'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
-+      }],
-       ['OS == "win"', {
-         'defines': [
-           'WIN32',

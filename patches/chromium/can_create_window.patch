@@ -19,15 +19,15 @@ index c7f2d8e31eba60686016d2c2d7b565f6d8943df9..7ab29a65a8081cfcbd12e4bd77aa9133
 +          params->raw_features, params->body,
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
- 
+
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d13b9cd849c531fea59e8d7e46bd1b006b6f5659..bfd99218ddac268fbfc79bf0c0c8d2437971c4f1 100644
+index d13b9cd849c531fea59e8d7e46bd1b006b6f5659..93065a4d6e41498b0f358935cecf7ecedaf0d829 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3653,6 +3653,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3695,6 +3695,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
- 
+
 +  // Call this earlier than Chrome to associate the web preferences with the
 +  // WebContents before the view gets created.
 +  if (delegate_) {
@@ -38,11 +38,11 @@ index d13b9cd849c531fea59e8d7e46bd1b006b6f5659..bfd99218ddac268fbfc79bf0c0c8d243
 +
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
- 
-@@ -3694,12 +3702,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+
+@@ -3694,6 +3702,12 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddDestructionObserver(new_contents_impl);
    }
- 
+
 -  if (delegate_) {
 -    delegate_->WebContentsCreated(this, render_process_id,
 -                                  opener->GetRoutingID(), params.frame_name,
@@ -57,7 +57,7 @@ index c969ed9b17b915f713d9b82114c7b637c8fd90df..9530a1936b0a801a4c6152dd53ec5105
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -264,6 +264,10 @@ struct CreateNewWindowParams {
- 
+
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
 +
@@ -65,7 +65,7 @@ index c969ed9b17b915f713d9b82114c7b637c8fd90df..9530a1936b0a801a4c6152dd53ec5105
 +  string raw_features;
 +  network.mojom.URLRequestBody? body;
  };
- 
+
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
 index 2d2bfc7e50d9b3e117ffb1dcf433fb6a809923a1..ca22e2dbdfbd4b4c3bf60464cbdcd2104cbe5a7e 100644
@@ -90,7 +90,7 @@ index 718fc096bd1087ef89d599f572abe20d4173a41c..bd81fcd224d4cad545265be2dd1fa4a6
  struct ResourceRequest;
 +class ResourceRequestBody;
  }  // namespace network
- 
+
  namespace sandbox {
 @@ -872,6 +873,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
@@ -106,9 +106,9 @@ index 7ac50fbbe16b057d7263c7850a62b01d3dfae095..90d315d815bb269ee47cef7fb5e0b0e2
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
- 
+
  WebContentsDelegate::WebContentsDelegate() = default;
- 
+
 +void WebContentsDelegate::WebContentsCreatedWithFullParams(
 +    WebContents* source_contents,
 +    int opener_render_process_id,
@@ -138,7 +138,7 @@ index a10c5caf5a4b7a30b7338c8b10ffa038e13dfd6a..938b6e622b52a05e6b7d626c4824e761
 @@ -338,6 +339,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const std::string& partition_id,
        SessionStorageNamespace* session_storage_namespace);
- 
+
 +  virtual void WebContentsCreatedWithFullParams(
 +      WebContents* source_contents,
 +      int opener_render_process_id,
@@ -164,7 +164,7 @@ index fb0f9eb912782251ca610669e99285bc5df00fcc..425dde974830bf8a669d799da1e69573
 @@ -644,6 +645,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
- 
+
 +  params->raw_features = features.raw_features.Utf8(
 +      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
 +  params->body = GetRequestBodyForWebURLRequest(request);
@@ -205,11 +205,11 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
 @@ -31,6 +31,8 @@
  #ifndef THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_WINDOW_FEATURES_H_
  #define THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_WINDOW_FEATURES_H_
- 
+
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
 +
  namespace blink {
- 
+
  struct WebWindowFeatures {
 @@ -60,6 +62,8 @@ struct WebWindowFeatures {
    bool noreferrer = false;
@@ -218,7 +218,7 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
 +
 +  String raw_features;
  };
- 
+
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
 index b2c724001af583b1497afab4176ffb02feca05e5..d12a6b4db191ca4e757837e39b8a8d6c024c35f4 100644
@@ -226,9 +226,9 @@ index b2c724001af583b1497afab4176ffb02feca05e5..d12a6b4db191ca4e757837e39b8a8d6c
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1949,6 +1949,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
- 
+
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);
 +  window_features.raw_features = features;
- 
+
    FrameLoadRequest frame_request(incumbent_window,
                                   ResourceRequest(completed_url));

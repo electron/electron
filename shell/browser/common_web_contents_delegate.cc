@@ -209,7 +209,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
       web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
-  // Determien whether the WebContents is offscreen.
+  // Determine whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   offscreen_ =
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);
@@ -250,14 +250,8 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // is destroyed.
     // //electron/patches/chromium/content_browser_main_loop.patch
     // is required to get the right quit closure for the main message loop.
-    base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](scoped_refptr<ElectronBrowserContext> browser_context,
-               std::unique_ptr<InspectableWebContents> web_contents) {
-              web_contents.reset();
-            },
-            base::RetainedRef(browser_context_), std::move(web_contents_)));
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
   } else {
     web_contents_.reset();
   }

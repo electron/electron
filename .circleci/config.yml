@@ -69,7 +69,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronjs/build:d09fd95029bd8c1c73069888231b29688ef385ed
+    - image: electron.azurecr.io/build:4cec2c5ab66765caa724e37bae2bffb9b29722a5
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -85,17 +85,17 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.0.0-UA"
+    xcode: "12.2.0"
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -137,8 +137,9 @@ env-arm: &env-arm
   TARGET_ARCH: arm
 
 env-apple-silicon: &env-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" use_prebuilt_v8_context_snapshot = true'
   TARGET_ARCH: arm64
+  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
 
 env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
@@ -151,9 +152,10 @@ env-mas: &env-mas
   MAS_BUILD: 'true'
 
 env-mas-apple-silicon: &env-mas-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true use_prebuilt_v8_context_snapshot = true'
   MAS_BUILD: 'true'
   TARGET_ARCH: arm64
+  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
 
 # Misc build configuration options.
 env-enable-sccache: &env-enable-sccache
@@ -320,13 +322,13 @@ step-restore-brew-cache: &step-restore-brew-cache
     paths:
       - /usr/local/Homebrew
     keys:
-      - v1-brew-cache-{{ arch }}
+      - v2-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Homebrew
-    key: v1-brew-cache-{{ arch }}
+    key: v2-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -335,22 +337,78 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
+        if [ "$TARGET_ARCH" == "arm64" ]; then
+          # Remount the root volume as writable, don't ask questions plz
+          sudo mount -uw /
+        fi
         tmpify() {
           if [ -d "$1" ]; then
-            sudo mv $1 $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
+            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
           fi
         }
+
+        strip_arm_deep() {
+          opwd=$(pwd)
+          cd $1
+          f=$(find . -perm +111 -type f)
+          for fp in $f
+          do
+            if [[ $(file "$fp") == *"universal binary"* ]]; then
+              if [[ $(file "$fp") == *"arm64e)"* ]]; then
+                sudo lipo -remove arm64e "$fp" -o "$fp" || true
+              fi
+              if [[ $(file "$fp") == *"arm64)"* ]]; then
+                sudo lipo -remove arm64 "$fp" -o "$fp" || true
+              fi
+            fi
+          done
+
+          cd $opwd
+        }
+
         tmpify /Library/Developer/CoreSimulator
+        tmpify ~/Library/Developer/CoreSimulator
         tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneOS.platform
         tmpify $(xcode-select -p)/Platforms/WatchOS.platform
         tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
         tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
+        tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
         tmpify ~/.rubies
         tmpify ~/Library/Caches/Homebrew
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
+
+        if [ "$TARGET_ARCH" == "arm64" ]; then
+          sudo rm -rf "/System/Library/Desktop Pictures"
+          sudo rm -rf /System/Library/Templates/Data
+          sudo rm -rf /System/Library/Speech/Voices
+          sudo rm -rf "/System/Library/Screen Savers"
+          sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+          sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+          sudo rm -rf /System/Volumes/Data/Library/Java
+          sudo rm -rf /System/Volumes/Data/Library/Ruby
+          sudo rm -rf /System/Volumes/Data/Library/Printers
+          sudo rm -rf /System/iOSSupport
+          sudo rm -rf /System/Applications/*.app
+          sudo rm -rf /System/Applications/Utilities/*.app
+          sudo rm -rf /System/Library/LinguisticData
+          sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+          # sudo rm -rf /System/Library/Fonts/*
+          # sudo rm -rf /System/Library/PreferencePanes
+          sudo rm -rf /System/Library/AssetsV2/*
+          sudo rm -rf /Applications/Safari.app
+          sudo rm -rf ~/project/src/build/linux
+          sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
+          sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+
+          # lipo off some huge binaries arm64 versions to save space
+          strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+          strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
+        fi
       fi
     background: true
 
@@ -450,6 +508,27 @@ step-electron-build: &step-electron-build
         rm -f src/out/Default/libffmpeg.so
       fi
       cd src
+      # Enable if things get really bad
+      # if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+      #   diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
+      #   mv /Applications/Xcode-12.beta.5.app /Volumes/xcode_disk/
+      #   ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
+      # fi
+
+      # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        rm -rf out/Default/clang_x64_v8_arm64/obj
+
+        # Regenerate because we just deleted some ninja files
+        if [ "$USE_GOMA" == "true" ]; then
+          gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        else
+          gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+        fi
+      fi
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       node electron/script/check-symlinks.js
 
@@ -699,8 +778,10 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-      gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      fi
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
@@ -713,7 +794,7 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
         fi
       fi
-      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ] && [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
@@ -745,8 +826,6 @@ step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
       if [ "$GENERATE_SYMBOLS" == "true" ]; then
         cd src
         ninja -C out/Default electron:electron_symbols
-        cd out/Default/breakpad_symbols
-        find . -name \*.sym -print0 | xargs -0 npx @sentry/cli@1.51.1 difutil bundle-sources
       fi
 
 step-maybe-zip-symbols: &step-maybe-zip-symbols
@@ -932,6 +1011,9 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
       rm -rf src/third_party/WebKit/LayoutTests
+      rm -rf third_party/electron_node/deps/openssl
+      rm -rf third_party/electron_node/deps/v8
+      rm -rf chrome/test/data/xr/webvr_info
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
@@ -1039,6 +1121,11 @@ steps-lint: &steps-lint
           cd src/electron
           node script/yarn install --frozen-lockfile
           node script/yarn lint
+    - run:
+        name: Run Script Typechecker
+        command: |
+          cd src/electron
+          node script/yarn tsc -p tsconfig.script.json
 
 steps-checkout-and-save-cache: &steps-checkout-and-save-cache
   steps:
@@ -1407,7 +1494,6 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        mv src/electron/vendor/boto .
                         mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
@@ -1420,9 +1506,7 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        rm -rf src/electron/vendor/boto
                         rm -rf src/electron/vendor/requests
-                        mv boto src/electron/vendor
                         mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
@@ -1618,7 +1702,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1677,7 +1761,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1770,7 +1854,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
@@ -1832,7 +1916,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1858,7 +1942,7 @@ jobs:
           checkout: false
 
   linux-arm-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1903,7 +1987,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-32bit-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -1925,7 +2009,7 @@ jobs:
           checkout: false
 
   linux-arm64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1977,7 +2061,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2039,7 +2123,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2053,7 +2137,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2147,7 +2231,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2161,7 +2245,7 @@ jobs:
       <<: *env-mas-apple-silicon
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:

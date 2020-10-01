@@ -17,7 +17,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
@@ -27,6 +26,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 
 #if defined(OS_WIN)
@@ -76,17 +76,17 @@ bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
 
 bool GetAsAutoplayPolicy(const base::Value* val,
                          base::StringPiece path,
-                         content::AutoplayPolicy* out) {
+                         blink::web_pref::AutoplayPolicy* out) {
   std::string policy_str;
   if (GetAsString(val, path, &policy_str)) {
     if (policy_str == "no-user-gesture-required") {
-      *out = content::AutoplayPolicy::kNoUserGestureRequired;
+      *out = blink::web_pref::AutoplayPolicy::kNoUserGestureRequired;
       return true;
     } else if (policy_str == "user-gesture-required") {
-      *out = content::AutoplayPolicy::kUserGestureRequired;
+      *out = blink::web_pref::AutoplayPolicy::kUserGestureRequired;
       return true;
     } else if (policy_str == "document-user-activation-required") {
-      *out = content::AutoplayPolicy::kDocumentUserActivationRequired;
+      *out = blink::web_pref::AutoplayPolicy::kDocumentUserActivationRequired;
       return true;
     }
     return false;
@@ -153,7 +153,7 @@ WebContentsPreferences::WebContentsPreferences(
   } else {
     SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
@@ -320,7 +320,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(options::kOffscreen);
   }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
     command_line->AppendSwitch(switches::kScrollBounce);
@@ -355,7 +355,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
-    content::WebPreferences* prefs) {
+    blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled =
       IsEnabled(options::kJavaScript, true /* default_value */);
   prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
@@ -365,7 +365,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
-    prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
+    prefs->autoplay_policy =
+        blink::web_pref::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
@@ -386,17 +387,17 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (fonts_dict) {
     base::string16 font;
     if (GetAsString(fonts_dict, "standard", &font))
-      prefs->standard_font_family_map[content::kCommonScript] = font;
+      prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "serif", &font))
-      prefs->serif_font_family_map[content::kCommonScript] = font;
+      prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "sansSerif", &font))
-      prefs->sans_serif_font_family_map[content::kCommonScript] = font;
+      prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "monospace", &font))
-      prefs->fixed_font_family_map[content::kCommonScript] = font;
+      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "cursive", &font))
-      prefs->cursive_font_family_map[content::kCommonScript] = font;
+      prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "fantasy", &font))
-      prefs->fantasy_font_family_map[content::kCommonScript] = font;
+      prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
   }
 
   int size;

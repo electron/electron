@@ -7,13 +7,13 @@ This fix temporarily sets page size to 16k for mac arm64 so that mksnapshot can 
 and generate a mac arm64 snapshot
 
 diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
-index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d381804e50 100644
+index 42eb0ccc1e8deedbdf7129e9762506d9447c4e2e..3657104ec6f6d34ebbb6987e6d5b16ce77825185 100644
 --- a/src/base/platform/platform-posix.cc
 +++ b/src/base/platform/platform-posix.cc
-@@ -147,9 +147,19 @@ int GetFlagsForMemoryPermission(OS::MemoryPermission access) {
- void* Allocate(void* hint, size_t size, OS::MemoryPermission access) {
+@@ -167,9 +167,19 @@ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
+                PageType page_type) {
    int prot = GetProtectionFromMemoryPermission(access);
-   int flags = GetFlagsForMemoryPermission(access);
+   int flags = GetFlagsForMemoryPermission(access, page_type);
 +#if defined(__APPLE__) && V8_TARGET_ARCH_ARM64 && defined(__x86_64__)
 +  // XXX: This logic is simple and leaky as it is only used for mksnapshot.
 +  size_t alignment = 16384;
@@ -30,7 +30,7 @@ index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d3
  }
  
  #endif  // !V8_OS_FUCHSIA
-@@ -206,7 +216,9 @@ void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
+@@ -226,7 +236,9 @@ void OS::Initialize(bool hard_abort, const char* const gc_fake_mmap) {
  }
  
  int OS::ActivationFrameAlignment() {
@@ -41,25 +41,3 @@ index 238750bab16b619d017bddce584b1c8257e5a6dc..89716d0ac4d354615411374dcef5b2d3
    // On EABI ARM targets this is required for fp correctness in the
    // runtime system.
    return 8;
-@@ -226,13 +238,21 @@ int OS::ActivationFrameAlignment() {
- 
- // static
- size_t OS::AllocatePageSize() {
-+#if defined(__APPLE__) && V8_TARGET_ARCH_ARM64 && defined(__x86_64__)
-+  return 16384;
-+#else
-   return static_cast<size_t>(sysconf(_SC_PAGESIZE));
-+#endif
- }
- 
- // static
- size_t OS::CommitPageSize() {
-+#if defined(__APPLE__) && V8_TARGET_ARCH_ARM64 && defined(__x86_64__)
-+  return 16384;
-+#else
-   static size_t page_size = getpagesize();
-   return page_size;
-+#endif
- }
- 
- // static

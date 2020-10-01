@@ -3,12 +3,9 @@
 from __future__ import print_function
 import atexit
 import contextlib
-import datetime
 import errno
 import json
 import os
-import platform
-import re
 import shutil
 import ssl
 import stat
@@ -23,15 +20,12 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode, PLATFORM
-from lib.env_util import get_vs_env
+from lib.config import is_verbose_mode
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 )
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
-BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
-                                        'boto'))
 
 NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
@@ -199,33 +193,19 @@ def get_electron_version():
   with open(version_file) as f:
     return 'v' + f.read().strip()
 
-def boto_path_dirs():
-  return [
-    os.path.join(BOTO_DIR, 'build', 'lib'),
-    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')
-  ]
-
-
-def run_boto_script(access_key, secret_key, script_name, *args):
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   env = os.environ.copy()
   env['AWS_ACCESS_KEY_ID'] = access_key
   env['AWS_SECRET_ACCESS_KEY'] = secret_key
-  env['PYTHONPATH'] = os.path.pathsep.join(
-      [env.get('PYTHONPATH', '')] + boto_path_dirs())
-
-  boto = os.path.join(BOTO_DIR, 'bin', script_name)
-  execute([sys.executable, boto] + list(args), env)
-
-
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
-  args = [
+  output = execute([
+    'node',
+    os.path.join(os.path.dirname(__file__), 's3put.js'),
     '--bucket', bucket,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
-    '--grant', 'public-read'
-  ] + files
-
-  run_boto_script(access_key, secret_key, 's3put', *args)
+    '--grant', 'public-read',
+  ] + files, env)
+  print(output)
 
 
 def add_exec_bit(filename):

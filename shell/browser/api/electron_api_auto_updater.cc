@@ -6,6 +6,7 @@
 
 #include "base/time/time.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -19,9 +20,10 @@ namespace electron {
 
 namespace api {
 
-AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
+gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+AutoUpdater::AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(this);
-  Init(isolate);
 }
 
 AutoUpdater::~AutoUpdater() {
@@ -29,38 +31,46 @@ AutoUpdater::~AutoUpdater() {
 }
 
 void AutoUpdater::OnError(const std::string& message) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
-  gin_helper::EmitEvent(
-      isolate(), GetWrapper(), "error",
-      error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
-      // Message is also emitted to keep compatibility with old code.
-      message);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (GetWrapper(isolate).ToLocal(&wrapper)) {
+    auto error = v8::Exception::Error(gin::StringToV8(isolate, message));
+    gin_helper::EmitEvent(
+        isolate, wrapper, "error",
+        error->ToObject(isolate->GetCurrentContext()).ToLocalChecked(),
+        // Message is also emitted to keep compatibility with old code.
+        message);
+  }
 }
 
 void AutoUpdater::OnError(const std::string& message,
                           const int code,
                           const std::string& domain) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto error = v8::Exception::Error(gin::StringToV8(isolate(), message));
-  auto errorObject =
-      error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (GetWrapper(isolate).ToLocal(&wrapper)) {
+    auto error = v8::Exception::Error(gin::StringToV8(isolate, message));
+    auto errorObject =
+        error->ToObject(isolate->GetCurrentContext()).ToLocalChecked();
 
-  auto context = isolate()->GetCurrentContext();
+    auto context = isolate->GetCurrentContext();
 
-  // add two new params for better error handling
-  errorObject
-      ->Set(context, gin::StringToV8(isolate(), "code"),
-            v8::Integer::New(isolate(), code))
-      .Check();
-  errorObject
-      ->Set(context, gin::StringToV8(isolate(), "domain"),
-            gin::StringToV8(isolate(), domain))
-      .Check();
+    // add two new params for better error handling
+    errorObject
+        ->Set(context, gin::StringToV8(isolate, "code"),
+              v8::Integer::New(isolate, code))
+        .Check();
+    errorObject
+        ->Set(context, gin::StringToV8(isolate, "domain"),
+              gin::StringToV8(isolate, domain))
+        .Check();
 
-  gin_helper::EmitEvent(isolate(), GetWrapper(), "error", errorObject, message);
+    gin_helper::EmitEvent(isolate, wrapper, "error", errorObject, message);
+  }
 }
 
 void AutoUpdater::OnCheckingForUpdate() {
@@ -89,7 +99,7 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(gin_helper::Arguments* args) {
+void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   auto_updater::AutoUpdater::SetFeedURL(args);
 }
 
@@ -109,18 +119,21 @@ void AutoUpdater::QuitAndInstall() {
 
 // static
 gin::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new AutoUpdater(isolate));
+  return gin::CreateHandle(isolate, new AutoUpdater());
 }
 
-// static
-void AutoUpdater::BuildPrototype(v8::Isolate* isolate,
-                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "AutoUpdater"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+gin::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<AutoUpdater>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
       .SetMethod("getFeedURL", &auto_updater::AutoUpdater::GetFeedURL)
       .SetMethod("setFeedURL", &AutoUpdater::SetFeedURL)
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
+}
+
+const char* AutoUpdater::GetTypeName() {
+  return "AutoUpdater";
 }
 
 }  // namespace api
@@ -138,9 +151,6 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("autoUpdater", AutoUpdater::Create(isolate));
-  dict.Set("AutoUpdater", AutoUpdater::GetConstructor(isolate)
-                              ->GetFunction(context)
-                              .ToLocalChecked());
 }
 
 }  // namespace

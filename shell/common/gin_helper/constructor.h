@@ -157,7 +157,7 @@ v8::Local<v8::Function> CreateConstructor(
   CHECK(!called) << "CreateConstructor can only be called for one type once";
   called = true;
 #endif
-  v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
+  v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate, base::BindRepeating(&internal::InvokeNew<Sig>, func));
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   T::BuildPrototype(isolate, templ);

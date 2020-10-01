@@ -42,7 +42,7 @@ void WebViewGuestDelegate::AttachToIframe(
 
   // Force a refresh of the webPreferences so that OverrideWebkitPrefs runs on
   // the new web contents before the renderer process initializes.
-  guest_web_contents->NotifyPreferencesChanged();
+  // guest_web_contents->NotifyPreferencesChanged();
 
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
@@ -60,6 +60,10 @@ void WebViewGuestDelegate::AttachToIframe(
   zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
 
   api_web_contents_->Emit("did-attach");
+}
+
+void WebViewGuestDelegate::WillDestroy() {
+  ResetZoomController();
 }
 
 void WebViewGuestDelegate::DidDetach() {

@@ -46,6 +46,7 @@ declare namespace NodeJS {
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
     isSameOrigin(a: string, b: string): boolean;
+    triggerFatalErrorForTesting(): void;
   }
 
   type AsarFileInfo = {
@@ -69,7 +70,8 @@ declare namespace NodeJS {
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    getFd(): number | -1;
+    read(offset: number, size: number): Promise<ArrayBuffer>;
+    readSync(offset: number, size: number): ArrayBuffer;
   }
 
   interface AsarBinding {
@@ -94,6 +96,7 @@ declare namespace NodeJS {
     url: string;
     extraHeaders?: Record<string, string>;
     useSessionCookies?: boolean;
+    credentials?: 'include' | 'omit';
     body: Uint8Array | BodyFunc;
     session?: Electron.Session;
     partition?: string;
@@ -137,7 +140,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
-      getMediaSourceIdForWebContents(requestWebContentsId: number, webContentsId: number): string;
     };
     _linkedBinding(name: 'electron_browser_net'): {
       isValidHeaderName: (headerName: string) => boolean;

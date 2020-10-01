@@ -3,8 +3,11 @@ import { isPromise, isSerializableObject, serialize, deserialize } from '../../c
 import { MetaTypeFromRenderer, ObjectMember, ObjProtoDescriptor, MetaType } from '../../common/remote/types';
 import { ipcRendererInternal } from '../ipc-renderer-internal';
 import type { BrowserWindow, WebContents } from 'electron/main';
+import deprecate from '@electron/internal/common/api/deprecate';
 import { browserModuleNames } from '@electron/internal/browser/api/module-names';
 import { commonModuleList } from '@electron/internal/common/api/module-list';
+
+deprecate.log('The remote module is deprecated. Use https://github.com/electron/remote instead.');
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');

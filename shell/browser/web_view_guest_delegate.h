@@ -24,6 +24,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // Attach to the iframe.
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
+  void WillDestroy();
 
  protected:
   // content::BrowserPluginGuestDelegate:

@@ -155,15 +155,14 @@ void AddPropertyFilters(
   for (const std::string& attribute : base::SplitString(
            attributes, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
     property_filters.push_back(
-        content::AccessibilityTreeFormatter::PropertyFilter(
-            base::ASCIIToUTF16(attribute), type));
+        content::AccessibilityTreeFormatter::PropertyFilter(attribute, type));
   }
 }
 
 bool MatchesPropertyFilters(
     const std::vector<content::AccessibilityTreeFormatter::PropertyFilter>&
         property_filters,
-    const base::string16& text) {
+    const std::string& text) {
   bool allow = false;
   for (const auto& filter : property_filters) {
     if (base::MatchPattern(text, filter.match_str)) {
@@ -172,7 +171,7 @@ bool MatchesPropertyFilters(
           allow = true;
           break;
         case content::AccessibilityTreeFormatter::PropertyFilter::ALLOW:
-          allow = (!base::MatchPattern(text, base::UTF8ToUTF16("*=''")));
+          allow = (!base::MatchPattern(text, "*=''"));
           break;
         case content::AccessibilityTreeFormatter::PropertyFilter::DENY:
           allow = false;
@@ -184,26 +183,25 @@ bool MatchesPropertyFilters(
 }
 
 std::string RecursiveDumpAXPlatformNodeAsString(
-    ui::AXPlatformNode* node,
+    const ui::AXPlatformNode* node,
     int indent,
     const std::vector<content::AccessibilityTreeFormatter::PropertyFilter>&
         property_filters) {
   if (!node)
     return "";
   std::string str(2 * indent, '+');
-  std::string line = node->GetDelegate()->GetData().ToString();
-  std::vector<std::string> attributes = base::SplitString(
+  const std::string line = node->GetDelegate()->GetData().ToString();
+  const std::vector<std::string> attributes = base::SplitString(
       line, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  for (std::string attribute : attributes) {
-    if (MatchesPropertyFilters(property_filters,
-                               base::UTF8ToUTF16(attribute))) {
+  for (const std::string& attribute : attributes) {
+    if (MatchesPropertyFilters(property_filters, attribute)) {
       str += attribute + " ";
     }
   }
   str += "\n";
   for (int i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
     gfx::NativeViewAccessible child = node->GetDelegate()->ChildAtIndex(i);
-    ui::AXPlatformNode* child_node =
+    const ui::AXPlatformNode* child_node =
         ui::AXPlatformNode::FromNativeViewAccessible(child);
     str += RecursiveDumpAXPlatformNodeAsString(child_node, indent + 1,
                                                property_filters);

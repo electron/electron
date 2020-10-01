@@ -7,7 +7,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/color_utils.h"
@@ -17,8 +17,9 @@ namespace electron {
 
 namespace api {
 
-SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
-  Init(isolate);
+gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+SystemPreferences::SystemPreferences() {
 #if defined(OS_WIN)
   InitializeWindow();
 #endif
@@ -30,7 +31,7 @@ SystemPreferences::~SystemPreferences() {
 #endif
 }
 
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
 bool SystemPreferences::IsDarkMode() {
   return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
 }
@@ -61,16 +62,14 @@ v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
 
 // static
 gin::Handle<SystemPreferences> SystemPreferences::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new SystemPreferences(isolate));
+  return gin::CreateHandle(isolate, new SystemPreferences());
 }
 
-// static
-void SystemPreferences::BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "SystemPreferences"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-#if defined(OS_WIN) || defined(OS_MACOSX)
+gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::EventEmitterMixin<
+             SystemPreferences>::GetObjectTemplateBuilder(isolate)
+#if defined(OS_WIN) || defined(OS_MAC)
       .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("getMediaAccessStatus",
@@ -79,7 +78,7 @@ void SystemPreferences::BuildPrototype(
 
 #if defined(OS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
-#elif defined(OS_MACOSX)
+#elif defined(OS_MAC)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)
@@ -125,6 +124,10 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::GetAnimationSettings);
 }
 
+const char* SystemPreferences::GetTypeName() {
+  return "SystemPreferences";
+}
+
 }  // namespace api
 
 }  // namespace electron
@@ -140,9 +143,6 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("systemPreferences", SystemPreferences::Create(isolate));
-  dict.Set("SystemPreferences", SystemPreferences::GetConstructor(isolate)
-                                    ->GetFunction(context)
-                                    .ToLocalChecked());
 }
 
 }  // namespace

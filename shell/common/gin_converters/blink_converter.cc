@@ -22,8 +22,10 @@
 #include "third_party/blink/public/common/input/web_keyboard_event.h"
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
-#include "third_party/blink/public/web/web_device_emulation_params.h"
+#include "third_party/blink/public/common/widget/device_emulation_params.h"
+#include "third_party/blink/public/platform/web_size.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
@@ -196,7 +198,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   ui::DomKey domKey;
   ui::KeyboardCode dummy_code;
-  int flags = electron::WebEventModifiersToEventFlags(out->GetModifiers());
+  int flags = ui::WebEventModifiersToEventFlags(out->GetModifiers());
   if (ui::DomCodeToUsLayoutDomKey(domCode, flags, &domKey, &dummy_code))
     out->dom_key = static_cast<int>(domKey);
 
@@ -292,21 +294,21 @@ bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
   return dict.Get("width", &out->width) && dict.Get("height", &out->height);
 }
 
-bool Converter<blink::WebDeviceEmulationParams>::FromV8(
+bool Converter<blink::DeviceEmulationParams>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    blink::WebDeviceEmulationParams* out) {
+    blink::DeviceEmulationParams* out) {
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
-  std::string screen_position;
-  if (dict.Get("screenPosition", &screen_position)) {
-    screen_position = base::ToLowerASCII(screen_position);
-    if (screen_position == "mobile")
-      out->screen_position = blink::WebDeviceEmulationParams::kMobile;
-    else if (screen_position == "desktop")
-      out->screen_position = blink::WebDeviceEmulationParams::kDesktop;
+  std::string screen_type;
+  if (dict.Get("screenPosition", &screen_type)) {
+    screen_type = base::ToLowerASCII(screen_type);
+    if (screen_type == "mobile")
+      out->screen_type = blink::mojom::EmulatedScreenType::kMobile;
+    else if (screen_type == "desktop")
+      out->screen_type = blink::mojom::EmulatedScreenType::kDesktop;
     else
       return false;
   }

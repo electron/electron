@@ -6,11 +6,13 @@ const fs = require('fs');
 const path = require('path');
 
 const { GitProcess } = require('dugite');
-const octokit = require('@octokit/rest')({
+
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
-const { SRC_DIR } = require('../../lib/utils');
+const { ELECTRON_DIR } = require('../../lib/utils');
 
 const MAX_FAIL_COUNT = 3;
 const CHECK_INTERVAL = 5000;
@@ -108,13 +110,21 @@ const getNoteFromClerk = async (ghKey) => {
       return NO_NOTES;
     }
     if (comment.body.startsWith(PERSIST_LEAD)) {
-      return comment.body
+      let lines = comment.body
         .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
         .split(/\r?\n/) // split into lines
         .map(line => line.trim())
         .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
-        .map(line => line.slice(QUOTE_LEAD.length)) // unquote the lines
-        .join(' ') // join the note lines
+        .map(line => line.slice(QUOTE_LEAD.length)); // unquote the lines
+
+      const firstLine = lines.shift();
+      // indent anything after the first line to ensure that
+      // multiline notes with their own sub-lists don't get
+      // parsed in the markdown as part of the top-level list
+      // (example: https://github.com/electron/electron/pull/25216)
+      lines = lines.map(line => '  ' + line);
+      return [firstLine, ...lines]
+        .join('\n') // join the lines
         .trim();
     }
   }
@@ -172,7 +182,7 @@ const parseCommitMessage = (commitMessage, commit) => {
   }
 
   // https://help.github.com/articles/closing-issues-using-keywords/
-  if ((match = body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i))) {
+  if (body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i)) {
     commit.semanticType = commit.semanticType || 'fix';
   }
 
@@ -386,13 +396,12 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   }
 
   const pool = new Pool();
-  const electronDir = path.resolve(SRC_DIR, 'electron');
-  const toBranch = await getBranchNameOfRef(toRef, electronDir);
+  const toBranch = await getBranchNameOfRef(toRef, ELECTRON_DIR);
 
   console.log(`Generating release notes between ${fromRef} and ${toRef} for version ${newVersion} in branch ${toBranch}`);
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: electronDir };
+  const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_DIR };
   await addRepoToPool(pool, electron, fromRef, toRef);
 
   // remove any old commits
@@ -532,6 +541,15 @@ function renderTrops (commit, excludeBranch) {
 function renderDescription (commit) {
   let note = commit.note || commit.subject || '';
   note = note.trim();
+
+  // release notes bullet point every change, so if the note author
+  // manually started the content with a bullet point, that will confuse
+  // the markdown renderer -- remove the redundant bullet point
+  // (example: https://github.com/electron/electron/pull/25216)
+  if (note.startsWith('*')) {
+    note = note.slice(1).trim();
+  }
+
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1);
 

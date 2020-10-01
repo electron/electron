@@ -49,6 +49,10 @@ interface ElectronBrowser {
       string channel,
       blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
 
+  // Informs underlying WebContents that first non-empty layout was performed
+  // by compositor.
+  OnFirstNonEmptyLayout();
+
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main

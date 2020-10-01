@@ -20,9 +20,6 @@ ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted);
 // pressed.
 ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
 
-// Ported from ui/events/blink/blink_event_util.h
-int WebEventModifiersToEventFlags(int modifiers);
-
 }  // namespace electron
 
 #endif  // SHELL_COMMON_KEYBOARD_UTIL_H_

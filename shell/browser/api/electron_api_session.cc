@@ -19,6 +19,7 @@
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/download/public/common/download_url_parameters.h"
@@ -180,6 +181,55 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+bool SSLProtocolVersionFromString(const std::string& version_str,
+                                  network::mojom::SSLVersion* version) {
+  if (version_str == switches::kSSLVersionTLSv1) {
+    *version = network::mojom::SSLVersion::kTLS1;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv11) {
+    *version = network::mojom::SSLVersion::kTLS11;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv12) {
+    *version = network::mojom::SSLVersion::kTLS12;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv13) {
+    *version = network::mojom::SSLVersion::kTLS13;
+    return true;
+  }
+  return false;
+}
+
+template <>
+struct Converter<network::mojom::SSLConfigPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::SSLConfigPtr* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    *out = network::mojom::SSLConfig::New();
+    std::string version_min_str;
+    if (options.Get("minVersion", &version_min_str)) {
+      if (!SSLProtocolVersionFromString(version_min_str, &(*out)->version_min))
+        return false;
+    }
+    std::string version_max_str;
+    if (options.Get("maxVersion", &version_max_str)) {
+      if (!SSLProtocolVersionFromString(version_max_str,
+                                        &(*out)->version_max) ||
+          (*out)->version_max < network::mojom::SSLVersion::kTLS12)
+        return false;
+    }
+
+    // TODO(nornagon): also support client_cert_pooling_policy and
+    // disabled_cipher_suites. Maybe other SSLConfig properties too?
+    return true;
+  }
+};
+
 }  // namespace gin
 
 namespace electron {
@@ -276,10 +326,14 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+      SpellcheckServiceFactory::GetForContext(browser_context_);
   if (service) {
     service->SetHunspellObserver(this);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
 #endif
 }
 
@@ -289,10 +343,14 @@ Session::~Session() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+      SpellcheckServiceFactory::GetForContext(browser_context_);
   if (service) {
     service->SetHunspellObserver(nullptr);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context())->RemoveObserver(this);
 #endif
 }
 
@@ -351,7 +409,7 @@ v8::Local<v8::Promise> Session::GetCacheSize() {
   gin_helper::Promise<int64_t> promise(isolate);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ComputeHttpCacheSize(
           base::Time(), base::Time::Max(),
@@ -375,7 +433,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
   gin_helper::Promise<void> promise(isolate);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -471,17 +529,17 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
     conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
   }
 
-  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
-                              browser_context_.get())
-                              ->GetNetworkContext();
+  auto* network_context =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+          ->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
                                         std::move(conditions));
 }
 
 void Session::DisableNetworkEmulation() {
-  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
-                              browser_context_.get())
-                              ->GetNetworkContext();
+  auto* network_context =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+          ->GetNetworkContext();
   network_context->SetNetworkConditions(
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
@@ -501,7 +559,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
         std::make_unique<CertVerifierClient>(proc),
         cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 
@@ -553,7 +611,7 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -567,10 +625,10 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_.get())
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
-          base::Time(),
+          base::Time(), base::Time::Max(),
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)));
 
@@ -593,9 +651,9 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
 void Session::SetUserAgent(const std::string& user_agent,
                            gin::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
-  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
-                              browser_context_.get())
-                              ->GetNetworkContext();
+  auto* network_context =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+          ->GetNetworkContext();
   network_context->SetUserAgent(user_agent);
 
   std::string accept_lang;
@@ -607,6 +665,10 @@ void Session::SetUserAgent(const std::string& user_agent,
 
 std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
+}
+
+void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  browser_context_->SetSSLConfig(std::move(config));
 }
 
 bool Session::IsPersistent() {
@@ -684,6 +746,13 @@ v8::Local<v8::Promise> Session::LoadExtension(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<const extensions::Extension*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!extension_path.IsAbsolute()) {
+    promise.RejectWithErrorMessage(
+        "The path to the extension in 'loadExtension' must be absolute");
+    return handle;
+  }
+
   if (browser_context()->IsOffTheRecord()) {
     promise.RejectWithErrorMessage(
         "Extensions cannot be loaded in a temporary session");
@@ -742,6 +811,22 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), extensions_vector);
 }
+
+void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
+                                const extensions::Extension* extension) {
+  Emit("extension-loaded", extension);
+}
+
+void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
+                                  const extensions::Extension* extension,
+                                  extensions::UnloadedExtensionReason reason) {
+  Emit("extension-unloaded", extension);
+}
+
+void Session::OnExtensionReady(content::BrowserContext* browser_context,
+                               const extensions::Extension* extension) {
+  Emit("extension-ready", extension);
+}
 #endif
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
@@ -781,10 +866,9 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   return net_log_.Get(isolate);
 }
 
-static void StartPreconnectOnUI(
-    scoped_refptr<ElectronBrowserContext> browser_context,
-    const GURL& url,
-    int num_sockets_to_preconnect) {
+static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
+                                const GURL& url,
+                                int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkIsolationKey()}};
@@ -815,7 +899,7 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   DCHECK_GT(num_sockets_to_preconnect, 0);
   base::PostTask(
       FROM_HERE, {content::BrowserThread::UI},
-      base::BindOnce(&StartPreconnectOnUI, base::RetainedRef(browser_context_),
+      base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
                      url, num_sockets_to_preconnect));
 }
 
@@ -860,7 +944,7 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   SpellcheckService* spellcheck =
-      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+      SpellcheckServiceFactory::GetForContext(browser_context_);
 
   if (!spellcheck)
     promise.RejectWithErrorMessage(
@@ -886,7 +970,7 @@ bool Session::AddWordToSpellCheckerDictionary(const std::string& word) {
     return false;
 
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+      SpellcheckServiceFactory::GetForContext(browser_context_);
   if (!service)
     return false;
 
@@ -907,7 +991,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
     return false;
 
   SpellcheckService* service =
-      SpellcheckServiceFactory::GetForContext(browser_context_.get());
+      SpellcheckServiceFactory::GetForContext(browser_context_);
   if (!service)
     return false;
 
@@ -953,7 +1037,7 @@ gin::Handle<Session> Session::CreateFrom(
 gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
                                             const std::string& partition,
                                             base::DictionaryValue options) {
-  scoped_refptr<ElectronBrowserContext> browser_context;
+  ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
         ElectronBrowserContext::From("", false, std::move(options));
@@ -966,7 +1050,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return CreateFrom(isolate, browser_context.get());
+  return CreateFrom(isolate, browser_context);
 }
 
 gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
@@ -994,6 +1078,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",

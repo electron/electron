@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
@@ -25,7 +26,7 @@
 #include "services/service_manager/embedder/switches.h"
 #include "shell/common/electron_paths.h"
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_POSIX) && !defined(OS_MAC)
 #include "components/version_info/version_info_values.h"
 #endif
 
@@ -147,26 +148,33 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #else
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
-  return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  bool result = base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    if (result && !base::PathExists(*crash_dir)) {
+      return base::CreateDirectory(*crash_dir);
+    }
+  }
+  return result;
 }
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
+#if defined(OS_MAC) || defined(OS_LINUX)
 bool ElectronCrashReporterClient::GetCrashMetricsLocation(
     base::FilePath* metrics_dir) {
   return base::PathService::Get(electron::DIR_USER_DATA, metrics_dir);
 }
-#endif  // OS_MACOSX || OS_LINUX
+#endif  // OS_MAC || OS_LINUX
 
 bool ElectronCrashReporterClient::IsRunningUnattended() {
-  return false;
+  return !collect_stats_consent_;
 }
 
 bool ElectronCrashReporterClient::GetCollectStatsConsent() {
   return collect_stats_consent_;
 }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
     bool* breakpad_enabled) {
   return false;
@@ -188,7 +196,7 @@ void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
   (*annotations)["ver"] = ELECTRON_VERSION_STRING;
 }
 
-#if defined(OS_LINUX) || defined(OS_MACOSX)
+#if defined(OS_LINUX) || defined(OS_MAC)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
   return false;
 }

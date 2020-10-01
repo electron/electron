@@ -8,19 +8,19 @@ Process: [Main](../glossary.md#main-process)
 
 The `powerMonitor` module emits the following events:
 
-### Event: 'suspend'
+### Event: 'suspend' _macOS_ _Windows_
 
 Emitted when the system is suspending.
 
-### Event: 'resume'
+### Event: 'resume' _macOS_ _Windows_
 
 Emitted when system is resuming.
 
-### Event: 'on-ac' _Windows_
+### Event: 'on-ac' _macOS_ _Windows_
 
 Emitted when the system changes to AC power.
 
-### Event: 'on-battery' _Windows_
+### Event: 'on-battery' _macOS_  _Windows_
 
 Emitted when system changes to battery power.
 
@@ -38,6 +38,14 @@ Emitted when the system is about to lock the screen.
 ### Event: 'unlock-screen' _macOS_ _Windows_
 
 Emitted as soon as the systems screen is unlocked.
+
+### Event: 'user-did-become-active' _macOS_
+
+Emitted when a login session is activated. See [documentation](https://developer.apple.com/documentation/appkit/nsworkspacesessiondidbecomeactivenotification?language=objc) for more information.
+
+### Event: 'user-did-resign-active' _macOS_
+
+Emitted when a login session is deactivated. See [documentation](https://developer.apple.com/documentation/appkit/nsworkspacesessiondidresignactivenotification?language=objc) for more information.
 
 ## Methods
 
