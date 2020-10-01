@@ -119,11 +119,11 @@ build_script:
         if ($(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30;$LASTEXITCODE -ne 0)) {
           Write-warning "Could not save source to shared drive; continuing anyway"
         }
-        # build time generation of file gen/angle/commit.h depends on
-        # third_party/angle/.git/HEAD.
+        # build time generation of file gen/angle/angle_commit.h depends on
+        # third_party/angle/.git.
         # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-        if ($(7z a $zipfile src\third_party\angle\.git\HEAD;$LASTEXITCODE -ne 0)) {
-          Write-warning "Failed to add third_party\angle\.git\HEAD; continuing anyway"
+        if ($(7z a $zipfile src\third_party\angle\.git;$LASTEXITCODE -ne 0)) {
+          Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
       }
   - ps: >-
