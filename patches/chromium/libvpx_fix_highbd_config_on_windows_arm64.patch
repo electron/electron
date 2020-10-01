@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaohan Wang <xhwang@chromium.org>
 Date: Tue, 29 Sep 2020 23:47:31 +0000
-Subject: [libvpx] Fix HighBD config on Windows ARM64
+Subject: Fix HighBD config on Windows ARM64
 
 In the last CL, "cpu_arch_full" was set to "arm64-highbd" for Windows
 ARM64, which seems not needed because "arm64 windows has it's own folder
