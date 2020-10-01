@@ -94,6 +94,7 @@ declare namespace NodeJS {
     url: string;
     extraHeaders?: Record<string, string>;
     useSessionCookies?: boolean;
+    credentials?: 'include' | 'omit';
     body: Uint8Array | BodyFunc;
     session?: Electron.Session;
     partition?: string;
@@ -137,7 +138,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
-      getMediaSourceIdForWebContents(requestWebContentsId: number, webContentsId: number): string;
     };
     _linkedBinding(name: 'electron_browser_net'): {
       isValidHeaderName: (headerName: string) => boolean;

@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index d041ce0470ee48d44897fb77f37f6013d9cc108a..0ef46569924354ea3ef59f3220637e30b316a761 100644
+index f32af0aa2f4c10047d54cd9d3558f00a13257a24..922dd136f655e9ef3b6812964146789b0a372ac4 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -102,6 +102,13 @@ const {
+@@ -106,6 +106,13 @@ const {
    CHAR_COLON
  } = require('internal/constants');
  
@@ -20,10 +20,10 @@ index d041ce0470ee48d44897fb77f37f6013d9cc108a..0ef46569924354ea3ef59f3220637e30
 +// Do the same for "Buffer".
 +const localBuffer = Buffer;
 +
- const isWindows = process.platform === 'win32';
- 
- const relativeResolveCache = ObjectCreate(null);
-@@ -1132,10 +1139,12 @@ Module.prototype._compile = function(content, filename) {
+ const {
+   isProxy
+ } = require('internal/util/types');
+@@ -1071,10 +1078,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new Map();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,

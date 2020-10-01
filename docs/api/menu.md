@@ -141,13 +141,7 @@ can have a submenu.
 
 ## Examples
 
-The `Menu` class is only available in the main process, but you can also use it
-in the render process via the [`remote`](remote.md) module.
-
-### Main process
-
-An example of creating the application menu in the main process with the
-simple template API:
+An example of creating the application menu with the simple template API:
 
 ```javascript
 const { app, Menu } = require('electron')
@@ -257,26 +251,36 @@ Menu.setApplicationMenu(menu)
 
 ### Render process
 
-Below is an example of creating a menu dynamically in a web page
-(render process) by using the [`remote`](remote.md) module, and showing it when
-the user right clicks the page:
+To create menus initiated by the renderer process, send the required
+information to the main process using IPC and have the main process display the
+menu on behalf of the renderer.
 
-```html
-<!-- index.html -->
-<script>
-const { remote } = require('electron')
-const { Menu, MenuItem } = remote
+Below is an example of showing a menu when the user right clicks the page:
 
-const menu = new Menu()
-menu.append(new MenuItem({ label: 'MenuItem1', click() { console.log('item 1 clicked') } }))
-menu.append(new MenuItem({ type: 'separator' }))
-menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }))
-
+```js
+// renderer
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault()
-  menu.popup({ window: remote.getCurrentWindow() })
-}, false)
-</script>
+  ipcRenderer.send('show-context-menu')
+})
+
+ipcRenderer.on('context-menu-command', (e, command) => {
+  // ...
+})
+
+// main
+ipcMain.on('show-context-menu', (event) => {
+  const template = [
+    {
+      label: 'Menu Item 1',
+      click: () => { event.sender.send('context-menu-command', 'menu-item-1') }
+    },
+    { type: 'separator' },
+    { label: 'Menu Item 2', type: 'checkbox', checked: true }
+  ]
+  const menu = Menu.buildFromTemplate(template)
+  menu.popup(BrowserWindow.fromWebContents(event.sender))
+})
 ```
 
 ## Notes on macOS Application Menu

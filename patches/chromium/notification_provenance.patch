@@ -55,7 +55,7 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index a3deeb43eb353601fcee39f51bd0d2cd093628e2..2ba734593ab72ac4d3f43cee1c8a5e5931f7480c 100644
+index 8465aa1395d0d4fa90a2702e697291508441bdd5..c5efb602468161a44e98836d507bdc67224c2863 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -140,7 +140,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -68,10 +68,10 @@ index a3deeb43eb353601fcee39f51bd0d2cd093628e2..2ba734593ab72ac4d3f43cee1c8a5e59
          notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 4e1fb31d9ff368b6e84aeca9382fa7d565bf75ba..57d4ae76b2508dcd1fa00a088050820e1776cb8a 100644
+index ab588373be7ff0398d1835997e5216d955313f39..b0afd19d0cbc020874cd3ea31125443ede0a354f 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -240,12 +240,13 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -257,12 +257,13 @@ void PlatformNotificationContextImpl::Shutdown() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
@@ -108,10 +108,10 @@ index f9b6a18aa73968506ddeca13de69b368f4ca8606..d45cb1c32be1b5c76840dafcd96fd06c
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index cf4162568a83916965542ae24cec388616272390..be7f43c0ce2a6b1a696ef96415bd60532ff65fbf 100644
+index 2f321520413d3c6f27b2613dbf45ab32281ffa38..8161c636c202298457a2f7d503566112a3877c1d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2152,7 +2152,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2148,7 +2148,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

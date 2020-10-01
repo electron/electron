@@ -47,6 +47,27 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
   }
 };
 
+template <>
+struct Converter<network::mojom::CredentialsMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::CredentialsMode* out) {
+    std::string mode;
+    if (!ConvertFromV8(isolate, val, &mode))
+      return false;
+    if (mode == "omit")
+      *out = network::mojom::CredentialsMode::kOmit;
+    else if (mode == "include")
+      *out = network::mojom::CredentialsMode::kInclude;
+    else
+      // "same-origin" is technically a member of this enum as well, but it
+      // doesn't make sense in the context of `net.request()`, so don't convert
+      // it.
+      return false;
+    return true;
+  }
+};  // namespace gin
+
 }  // namespace gin
 
 namespace electron {
@@ -252,7 +273,8 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderFactory* url_loader_factory)
+    network::mojom::URLLoaderFactory* url_loader_factory,
+    int options)
     : id_(GetAllRequests().Add(this)) {
   // We slightly abuse the |render_frame_id| field in ResourceRequest so that
   // we can correlate any authentication events that arrive with this request.
@@ -269,6 +291,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   }
 
   loader_->SetAllowHttpErrorResults(true);
+  loader_->SetURLLoaderFactoryOptions(options);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
@@ -353,6 +376,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   opts.Get("referrer", &request->referrer);
+  bool credentials_specified =
+      opts.Get("credentials", &request->credentials_mode);
   std::map<std::string, std::string> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
@@ -367,8 +392,13 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
-  if (!use_session_cookies) {
-    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
+  int options = 0;
+  if (!credentials_specified && !use_session_cookies) {
+    // This is the default case, as well as the case when credentials is not
+    // specified and useSessionCoookies is false. credentials_mode will be
+    // kInclude, but cookies will be blocked.
+    request->credentials_mode = network::mojom::CredentialsMode::kInclude;
+    options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
@@ -411,7 +441,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   auto ret = gin::CreateHandle(
       args->isolate(),
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get()));
+      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get(),
+                                 options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);

@@ -152,6 +152,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsSimpleFullScreen();
   void SetKiosk(bool kiosk);
   bool IsKiosk();
+  bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor();
   void SetHasShadow(bool has_shadow);
@@ -206,6 +207,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAspectRatio(double aspect_ratio, gin_helper::Arguments* args);
   void PreviewFile(const std::string& path, gin_helper::Arguments* args);
   void CloseFilePreview();
+  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;

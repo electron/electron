@@ -76,8 +76,9 @@ const isLocalhost = function () {
  *
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
  */
-const isUnsafeEvalEnabled = function () {
-  return webFrame.executeJavaScript(`(${(() => {
+const isUnsafeEvalEnabled: () => Promise<boolean> = function () {
+  // Call _executeJavaScript to bypass the world-safe deprecation warning
+  return (webFrame as any)._executeJavaScript(`(${(() => {
     try {
       new Function(''); // eslint-disable-line no-new,no-new-func
     } catch {

@@ -39,6 +39,37 @@ is an implementation detail driven by Chromium, and it may change in future. In
 particular, crashpad is newer and will likely eventually replace breakpad on
 all platforms.
 
+### Note about Node child processes on Linux
+
+If you are using the Node.js `child_process` module and want to report crashes
+from those processes on Linux, there is an extra step you will need to take to
+properly initialize the crash reporter in the child process. This is not
+necessary on Mac or Windows, as those platforms use Crashpad, which
+automatically monitors child processes.
+
+Since `require('electron')` is not available in Node child processes, the
+following APIs are available on the `process` object in Node child processes.
+Note that, on Linux, each Node child process has its own separate instance of
+the breakpad crash reporter. This is dissimilar to renderer child processes,
+which have a "stub" breakpad reporter which returns information to the main
+process for reporting.
+
+#### `process.crashReporter.start(options)`
+
+See [`crashReporter.start()`](#crashreporterstartoptions).
+
+#### `process.crashReporter.getParameters()`
+
+See [`crashReporter.getParameters()`](#crashreportergetparameters).
+
+#### `process.crashReporter.addExtraParameter(key, value)`
+
+See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
+
+#### `process.crashReporter.removeExtraParameter(key)`
+
+See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
+
 ## Methods
 
 The `crashReporter` module has the following methods:
@@ -59,7 +90,7 @@ The `crashReporter` module has the following methods:
   * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
     number of crashes uploaded to 1/hour. Default is `false`.
   * `compress` Boolean (optional) - If true, crash reports will be compressed
-    and uploaded with `Content-Encoding: gzip`. Default is `false`.
+    and uploaded with `Content-Encoding: gzip`. Default is `true`.
   * `extra` Record<String, String> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in

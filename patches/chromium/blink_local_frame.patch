@@ -14,12 +14,12 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 97cd8eb72e9932797089787dc13dcd0f540f2b78..edf0e4e8786997556509c8bb997bbc9859a5147e 100644
+index f64d3826cbbf10d1e951d90721cd147ac6ad8168..1d0d443cbeb3f51c07a3bd56302274f7c5278437 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -563,10 +563,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -580,10 +580,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    }
-   CHECK(!view_ || !view_->IsAttached());
+   DCHECK(!view_ || !view_->IsAttached());
  
 -  // This is the earliest that scripting can be disabled:
 -  // - FrameLoader::Detach() can fire XHR abort events
@@ -28,7 +28,7 @@ index 97cd8eb72e9932797089787dc13dcd0f540f2b78..edf0e4e8786997556509c8bb997bbc98
    if (!Client())
      return;
  
-@@ -584,6 +580,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -600,6 +596,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    // Notify ScriptController that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetScriptController().ClearForClose();

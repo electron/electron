@@ -619,6 +619,10 @@ void Initialize(v8::Local<v8::Object> exports,
   native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
   native_image.SetMethod("createFromNamedImage",
                          &NativeImage::CreateFromNamedImage);
+#if !defined(OS_LINUX)
+  native_image.SetMethod("createThumbnailFromPath",
+                         &NativeImage::CreateThumbnailFromPath);
+#endif
 }
 
 }  // namespace

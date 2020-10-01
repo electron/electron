@@ -274,6 +274,28 @@ struct Converter<electron::NativeWindowMac::TitleBarStyle> {
   }
 };
 
+template <>
+struct Converter<electron::NativeWindowMac::VisualEffectState> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     electron::NativeWindowMac::VisualEffectState* out) {
+    using VisualEffectState = electron::NativeWindowMac::VisualEffectState;
+    std::string visual_effect_state;
+    if (!ConvertFromV8(isolate, val, &visual_effect_state))
+      return false;
+    if (visual_effect_state == "followWindow") {
+      *out = VisualEffectState::FOLLOW_WINDOW;
+    } else if (visual_effect_state == "active") {
+      *out = VisualEffectState::ACTIVE;
+    } else if (visual_effect_state == "inactive") {
+      *out = VisualEffectState::INACTIVE;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace gin
 
 namespace electron {
@@ -344,6 +366,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.Get(options::kTrafficLightPosition, &traffic_light_position_);
+  options.Get(options::kVisualEffectState, &visual_effect_state_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -513,10 +536,12 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   original_level_ = [window_ level];
 }
 
-NativeWindowMac::~NativeWindowMac() {
+NativeWindowMac::~NativeWindowMac() {}
+
+void NativeWindowMac::Cleanup() {
+  DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
-  if (wheel_event_monitor_)
-    [NSEvent removeMonitor:wheel_event_monitor_];
+  [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
 void NativeWindowMac::RedrawTrafficLights() {
@@ -612,13 +637,6 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  // Remove event monitor before destroying window, otherwise the monitor may
-  // call its callback after window has been destroyed.
-  if (wheel_event_monitor_) {
-    [NSEvent removeMonitor:wheel_event_monitor_];
-    wheel_event_monitor_ = nil;
-  }
-
   // Retain the child window before closing it. If the last reference to the
   // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
   // See e.g. http://crbug.com/616701.
@@ -1252,12 +1270,15 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-  auto* native_view =
-      view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
-  [[window_ contentView] addSubview:native_view
-                         positioned:NSWindowAbove
-                         relativeTo:nil];
-  native_view.hidden = NO;
+  if (view->GetInspectableWebContentsView()) {
+    auto* native_view = view->GetInspectableWebContentsView()
+                            ->GetNativeView()
+                            .GetNativeNSView();
+    [[window_ contentView] addSubview:native_view
+                           positioned:NSWindowAbove
+                           relativeTo:nil];
+    native_view.hidden = NO;
+  }
 
   [CATransaction commit];
 }
@@ -1271,8 +1292,9 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-      removeFromSuperview];
+  if (view->GetInspectableWebContentsView())
+    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
+        removeFromSuperview];
   remove_browser_view(view);
 
   [CATransaction commit];
@@ -1467,7 +1489,14 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
     [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
+
+    if (visual_effect_state_ == VisualEffectState::ACTIVE) {
+      [effect_view setState:NSVisualEffectStateActive];
+    } else if (visual_effect_state_ == VisualEffectState::INACTIVE) {
+      [effect_view setState:NSVisualEffectStateInactive];
+    } else {
+      [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
+    }
 
     // Make frameless Vibrant windows have rounded corners.
     if (!has_frame() && !is_modal()) {

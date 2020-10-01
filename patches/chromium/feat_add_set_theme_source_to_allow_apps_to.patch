@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 432c107708d5578326c4b796861d4bb662297c90..e830e10508218d1146a4b1343b2a8dc2d5e73569 100644
+index 7a9ae490f6ec0b07eedf6aea62a58a026dfef693..bc04ea8d07c4b1cd11df626f98330b64dd2f1c7f 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -253,6 +253,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors)
@@ -62,10 +62,10 @@ index e2ca7dd198390ebc923facd690904faeb8300e62..f2f53775abb0ba2954cbb3ec431d84c3
  };
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 1ff5451c10c4843557746df9daf879d422b9855a..b215a4b7965f180f71a84b022f15f7f636924124 100644
+index 74afe95ebec7f14836b4a5f4c3689f5acc5774cb..349a61a4ea8e6d84f120cfb0a0cd5b608475fe1e 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -734,6 +734,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -736,6 +736,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (UsesHighContrastColors() && !IsForcedDarkMode())
      return false;

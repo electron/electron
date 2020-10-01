@@ -102,24 +102,26 @@ namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   uv_stop(loop);
-  int error = uv_loop_close(loop);
 
-  while (error) {
-    uv_run(loop, UV_RUN_DEFAULT);
-    uv_stop(loop);
-    uv_walk(
-        loop,
-        [](uv_handle_t* handle, void*) {
-          if (!uv_is_closing(handle)) {
-            uv_close(handle, nullptr);
-          }
-        },
-        nullptr);
-    uv_run(loop, UV_RUN_DEFAULT);
-    error = uv_loop_close(loop);
-  }
+  auto const ensure_closing = [](uv_handle_t* handle, void*) {
+    // We should be using the UvHandle wrapper everywhere, in which case
+    // all handles should already be in a closing state...
+    DCHECK(uv_is_closing(handle));
+    // ...but if a raw handle got through, through, do the right thing anyway
+    if (!uv_is_closing(handle)) {
+      uv_close(handle, nullptr);
+    }
+  };
 
-  DCHECK_EQ(error, 0);
+  uv_walk(loop, ensure_closing, nullptr);
+
+  // All remaining handles are in a closing state now.
+  // Pump the event loop so that they can finish closing.
+  for (;;)
+    if (uv_run(loop, UV_RUN_DEFAULT) == 0)
+      break;
+
+  DCHECK_EQ(0, uv_loop_alive(loop));
 }
 
 bool g_is_initialized = false;
@@ -244,18 +246,6 @@ namespace electron {
 
 namespace {
 
-// Convert the given vector to an array of C-strings. The strings in the
-// returned vector are only guaranteed valid so long as the vector of strings
-// is not modified.
-std::unique_ptr<const char* []> StringVectorToArgArray(
-    const std::vector<std::string>& vector) {
-  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
-  for (size_t i = 0; i < vector.size(); ++i) {
-    array[i] = vector[i].c_str();
-  }
-  return array;
-}
-
 base::FilePath GetResourcesPath() {
 #if defined(OS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
@@ -292,7 +282,7 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
+  dummy_uv_handle_.reset();
 
   // Clean up worker loop
   if (in_worker_loop())
@@ -392,17 +382,38 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ != BrowserEnvironment::BROWSER)
     global.Set("_noBrowserGlobals", true);
 
+  std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
 
-  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   isolate_data_ =
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
-  node::Environment* env = node::CreateEnvironment(
-      isolate_data_, context, args.size(), c_argv.get(), 0, nullptr);
-  DCHECK(env);
+
+  node::Environment* env;
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    // Only one ESM loader can be registered per isolate -
+    // in renderer processes this should be blink. We need to tell Node.js
+    // not to register its handler (overriding blinks) in non-browser processes.
+    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                     node::EnvironmentFlags::kNoRegisterESMLoader |
+                     node::EnvironmentFlags::kNoInitializeInspector;
+    v8::TryCatch try_catch(context->GetIsolate());
+    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
+                                  (node::EnvironmentFlags::Flags)flags);
+    DCHECK(env);
+
+    // This will only be caught when something has gone terrible wrong as all
+    // electron scripts are wrapped in a try {} catch {} in run-compiler.js
+    if (try_catch.HasCaught()) {
+      LOG(ERROR) << "Failed to initialize node environment in process: "
+                 << process_type;
+    }
+  } else {
+    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
+    DCHECK(env);
+  }
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
@@ -433,12 +444,9 @@ node::Environment* NodeBindings::CreateEnvironment(
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
     // context. We need to use the one Blink already provides.
-    is.flags &=
-        ~node::IsolateSettingsFlags::SHOULD_SET_PROMISE_REJECTION_CALLBACK;
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
   }
-
-  // This needs to be called before the inspector is initialized.
-  env->InitializeDiagnostics();
 
   node::SetIsolateUpForNode(context->GetIsolate(), is);
 
@@ -461,7 +469,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 void NodeBindings::PrepareMessageLoop() {
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
+  uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -518,8 +526,7 @@ void NodeBindings::WakeupMainThread() {
 }
 
 void NodeBindings::WakeupEmbedThread() {
-  if (!in_worker_loop())
-    uv_async_send(&dummy_uv_handle_);
+  uv_async_send(dummy_uv_handle_.get());
 }
 
 // static

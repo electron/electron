@@ -152,15 +152,6 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
   auto* const view = web_contents()->GetRenderWidgetHostView();
   view->Show();
   view->SetSize(window()->GetContentSize());
-
-  // Emit the ReadyToShow event in next tick in case of pending drawing work.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](base::WeakPtr<BrowserWindow> self) {
-                       if (self)
-                         self->Emit("ready-to-show");
-                     },
-                     GetWeakPtr()));
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -320,11 +311,11 @@ void BrowserWindow::OnWindowResize() {
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
-  BaseWindow::OnWindowLeaveFullScreen();
 #if defined(OS_MAC)
   if (web_contents()->IsFullscreen())
     web_contents()->ExitFullscreen(true);
 #endif
+  BaseWindow::OnWindowLeaveFullScreen();
 }
 
 void BrowserWindow::Focus() {

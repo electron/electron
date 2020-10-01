@@ -784,7 +784,7 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process.
 Calling `event.preventDefault()` will make it return empty sources.
 
-#### Event: 'remote-require'
+#### Event: 'remote-require' _Deprecated_
 
 Returns:
 
@@ -795,7 +795,7 @@ Emitted when `remote.require()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-global'
+#### Event: 'remote-get-global' _Deprecated_
 
 Returns:
 
@@ -806,7 +806,7 @@ Emitted when `remote.getGlobal()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the global from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-builtin'
+#### Event: 'remote-get-builtin' _Deprecated_
 
 Returns:
 
@@ -817,7 +817,7 @@ Emitted when `remote.getBuiltin()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-current-window'
+#### Event: 'remote-get-current-window' _Deprecated_
 
 Returns:
 
@@ -827,7 +827,7 @@ Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-current-web-contents'
+#### Event: 'remote-get-current-web-contents' _Deprecated_
 
 Returns:
 
@@ -1117,6 +1117,10 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
+> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> zoom level for a specific domain propagates across all instances of windows with
+> the same domain. Differentiating the window URLs will make zoom work per-window.
+
 #### `contents.getZoomLevel()`
 
 Returns `Number` - the current zoom level.
@@ -1208,12 +1212,6 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean (optional) - Whether to look only at the start of words.
-    defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean (optional) - When combined with `wordStart`,
-    accepts a match in the middle of a word if the match begins with an
-    uppercase letter followed by a lowercase or non-letter.
-    Accepts several other intra-word matches, defaults to `false`.
 
 Returns `Integer` - The request id used for the request.
 
@@ -1296,9 +1294,9 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - the start page.
-    * `to` Number - the end page.
+  * `pageRanges` Object[]  (optional) - The page range to print. On macOS, only one range is honored.
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
@@ -1324,10 +1322,10 @@ Example usage:
 const options = {
   silent: true,
   deviceName: 'My-Printer',
-  pageRanges: {
+  pageRanges: [{
     from: 0,
     to: 1
-  }
+  }]
 }
 win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
@@ -1345,8 +1343,8 @@ win.webContents.print(options, (success, errorType) => {
     default margin, 1 for no margin, and 2 for minimum margin.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
   * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - zero-based index of the first page to print.
-    * `to` Number - zero-based index of the last page to print (inclusive).
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width` in microns.
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
@@ -1453,7 +1451,7 @@ An example of showing devtools in a `<webview>` tag:
   <webview id="browser" src="https://github.com"></webview>
   <webview id="devtools" src="about:blank"></webview>
   <script>
-    const { webContents } = require('electron').remote
+    const { ipcRenderer } = require('electron')
     const emittedOnce = (element, eventName) => new Promise(resolve => {
       element.addEventListener(eventName, event => resolve(event), { once: true })
     })
@@ -1462,14 +1460,24 @@ An example of showing devtools in a `<webview>` tag:
     const browserReady = emittedOnce(browserView, 'dom-ready')
     const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
     Promise.all([browserReady, devtoolsReady]).then(() => {
-      const browser = webContents.fromId(browserView.getWebContentsId())
-      const devtools = webContents.fromId(devtoolsView.getWebContentsId())
-      browser.setDevToolsWebContents(devtools)
-      browser.openDevTools()
+      const targetId = browserView.getWebContentsId()
+      const devtoolsId = devtoolsView.getWebContentsId()
+      ipcRenderer.send('open-devtools', targetId, devtoolsId)
     })
   </script>
 </body>
 </html>
+```
+
+```js
+// Main process
+const { ipcMain, webContents } = require('electron')
+ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
+  const target = webContents.fromId(targetContentsId)
+  const devtools = webContents.fromId(devtoolsContentsId)
+  target.setDevToolsWebContents(devtools)
+  target.openDevTools()
+})
 ```
 
 An example of showing devtools in a `BrowserWindow`:

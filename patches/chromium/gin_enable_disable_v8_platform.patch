@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 13f6369429c2715330bc921f34c4941653269078..58a0eb4b105c802f9dd336a778081ccb0ef084a0 100644
+index 73435b1c2c008a376421f8c94059fdb61d58feed..9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -103,9 +103,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -105,9 +105,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -38,7 +38,7 @@ index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632b
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 3484c3f307f346e6b7fc75c365b28a4935b99263..cbaa537b4e58b772df1e9f864ecaa50d0719c802 100644
+index 9ba60a7f928a24b4829dafdf9a7362ad58bd7c64..51fe2fa000e47ced3661ba581c52dceba93447fe 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -191,12 +191,14 @@ enum LoadV8FileResult {

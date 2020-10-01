@@ -64,7 +64,8 @@ class SimpleURLLoaderWrapper
 
  private:
   SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> loader,
-                         network::mojom::URLLoaderFactory* url_loader_factory);
+                         network::mojom::URLLoaderFactory* url_loader_factory,
+                         int options);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,

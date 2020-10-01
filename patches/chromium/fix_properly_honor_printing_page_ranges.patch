@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Aug 2020 10:55:48 -0700
+Subject: fix: properly honor printing page ranges
+
+The print ranges in Chromium's print job settings were not being properly
+plumbed through to PMPrintSettings on mcOS. This fixes that by setting
+them should they exist.
+
+This will be upstreamed.
+
+diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
+index 909aaf6ce803fed32eb1c64c0abcf272731762da..ba431655fe5894c7d9b04464ea36307a145ac198 100644
+--- a/printing/printing_context_mac.h
++++ b/printing/printing_context_mac.h
+@@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
+   // Returns true if the orientation was set.
+   bool SetOrientationIsLandscape(bool landscape);
+ 
++  // Set the page range in native print info object.
++  // Returns true if the range was set.
++  bool SetPrintRangeInPrintSettings(const PageRanges& ranges);
++
+   // Sets duplex mode in PMPrintSettings.
+   // Returns true if duplex mode is set.
+   bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
+diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
+index 51c8ff31497fd03842ac9e7da4eab8a5919ec898..6a9d5c368a34c7c4c36506da6e4bed5a5f9f117b 100644
+--- a/printing/printing_context_mac.mm
++++ b/printing/printing_context_mac.mm
+@@ -188,7 +188,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+         !SetCopiesInPrintSettings(settings_->copies()) ||
+         !SetCollateInPrintSettings(settings_->collate()) ||
+         !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
+-        !SetOutputColor(static_cast<int>(settings_->color()))) {
++        !SetOutputColor(static_cast<int>(settings_->color())) ||
++        !SetPrintRangeInPrintSettings(settings_->ranges()) ) {
+       return OnError();
+     }
+   }
+@@ -341,6 +342,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+   return PMSetCopies(print_settings, copies, false) == noErr;
+ }
+ 
++bool PrintingContextMac::SetPrintRangeInPrintSettings(const PageRanges& ranges) {
++  // Default is already NSPrintAllPages - we can safely bail.
++  if (ranges.empty())
++    return true; 
++
++  auto* print_settings =
++      static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
++
++  // macOS does not allow multiple ranges, so pluck the first.
++  auto range = ranges.front();
++  bool set_first_page = PMSetFirstPage(print_settings, range.from + 1, false) == noErr;
++  bool set_last_page = PMSetLastPage(print_settings, range.to + 1, false) == noErr;
++
++  return set_first_page && set_last_page;
++}
++
+ bool PrintingContextMac::SetCollateInPrintSettings(bool collate) {
+   PMPrintSettings print_settings =
+       static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
+diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
+index d3c8677f30d72efc49b28f293260c74c7b8d8b4e..f6e66aaa58ab1881d64dcbb320ae8b5ac7631b28 100644
+--- a/printing/printing_context_system_dialog_win.cc
++++ b/printing/printing_context_system_dialog_win.cc
+@@ -52,14 +52,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+   PRINTPAGERANGE ranges[32];
+   dialog_options.nStartPage = START_PAGE_GENERAL;
+   if (max_pages) {
+-    // Default initialize to print all the pages.
+     memset(ranges, 0, sizeof(ranges));
+-    ranges[0].nFromPage = 1;
+-    ranges[0].nToPage = max_pages;
+-    dialog_options.nPageRanges = 1;
+-    dialog_options.nMaxPageRanges = base::size(ranges);
++
++    auto page_ranges = settings_->ranges();
++    if (!page_ranges.empty()) {
++      for (size_t i = 0; i < page_ranges.size(); i++) {
++        auto range = page_ranges[i];
++        ranges[i].nFromPage = range.from + 1;
++        ranges[i].nToPage = range.to + 1;
++      }
++      dialog_options.nPageRanges = page_ranges.size();
++
++      // Ensure the Pages radio button is selected.
++      dialog_options.Flags |= PD_PAGENUMS;
++    } else {
++      ranges[0].nFromPage = 1;
++      ranges[0].nToPage = max_pages;
++      dialog_options.nPageRanges = 1;
++    }
++
+     dialog_options.nMinPage = 1;
+     dialog_options.nMaxPage = max_pages;
++    dialog_options.nMaxPageRanges = base::size(ranges);
+     dialog_options.lpPageRanges = ranges;
+   } else {
+     // No need to bother, we don't know how many pages are available.
+diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
+index f2ed36e1258f4f3ef1bfce972e215e3d5d7335b6..405839e9f944f70106c1c203652044c3abfade3d 100644
+--- a/ui/gtk/printing/print_dialog_gtk.cc
++++ b/ui/gtk/printing/print_dialog_gtk.cc
+@@ -239,6 +239,24 @@ void PrintDialogGtk::UpdateSettings(
+ 
+   gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
+   gtk_print_settings_set_collate(gtk_settings_, settings->collate());
++  
++  auto print_ranges = settings->ranges();
++  if (!print_ranges.empty()) {
++    // Tell the system that we only intend to print a subset of pages.
++    gtk_print_settings_set_print_pages(gtk_settings_, GTK_PRINT_PAGES_RANGES);
++
++    GtkPageRange* ranges;
++    ranges = g_new(GtkPageRange, print_ranges.size());
++    for (size_t i = 0; i < print_ranges.size(); i++) {
++      auto range = print_ranges[i];
++      ranges[i].start = range.from;
++      ranges[i].end = range.to;
++    }
++
++    gtk_print_settings_set_page_ranges(gtk_settings_, ranges, 1);
++    g_free(ranges);
++  }
++
+   if (settings->dpi_horizontal() > 0 && settings->dpi_vertical() > 0) {
+     gtk_print_settings_set_resolution_xy(
+         gtk_settings_, settings->dpi_horizontal(), settings->dpi_vertical());

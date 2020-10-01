@@ -32,6 +32,11 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
+  // Cleanup observers when window is getting closed. Note that the destructor
+  // can be called much later after window gets closed, so we should not do
+  // cleanup in destructor.
+  void Cleanup();
+
   // NativeWindow:
   void SetContentView(views::View* view) override;
   void Close() override;
@@ -138,6 +143,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
       std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
+  void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
@@ -156,6 +162,12 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetTrafficLightPosition(const gfx::Point& position) override;
   gfx::Point GetTrafficLightPosition() const override;
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
+
+  enum class VisualEffectState {
+    FOLLOW_WINDOW,
+    ACTIVE,
+    INACTIVE,
+  };
 
   enum class TitleBarStyle {
     NORMAL,
@@ -217,6 +229,9 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::NORMAL;
+
+  // The "visualEffectState" option.
+  VisualEffectState visual_effect_state_ = VisualEffectState::FOLLOW_WINDOW;
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().

@@ -3,12 +3,9 @@
 from __future__ import print_function
 import atexit
 import contextlib
-import datetime
 import errno
 import json
 import os
-import platform
-import re
 import shutil
 import ssl
 import stat
@@ -23,8 +20,7 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode, PLATFORM
-from lib.env_util import get_vs_env
+from lib.config import is_verbose_mode
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -201,7 +197,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   env = os.environ.copy()
   env['AWS_ACCESS_KEY_ID'] = access_key
   env['AWS_SECRET_ACCESS_KEY'] = secret_key
-  execute([
+  output = execute([
     'node',
     os.path.join(os.path.dirname(__file__), 's3put.js'),
     '--bucket', bucket,
@@ -209,6 +205,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--key_prefix', key_prefix,
     '--grant', 'public-read',
   ] + files, env)
+  print(output)
 
 
 def add_exec_bit(filename):

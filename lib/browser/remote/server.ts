@@ -353,7 +353,7 @@ handleRemoteCommand('ELECTRON_BROWSER_REQUIRE', function (event, contextId, modu
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.require('${moduleName}')`);
     } else {
-      customEvent.returnValue = process.mainModule!.require(moduleName);
+      customEvent.returnValue = (process as any).mainModule.require(moduleName);
     }
   }
 

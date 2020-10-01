@@ -55,7 +55,7 @@
       },
       'window-open': () => {
         addEventListener('load', () => {
-          popup = open(window.location.href, 'popup!', 'top=60,left=50,width=500,height=600')
+          const popup = open(window.location.href, 'popup!', 'top=60,left=50,width=500,height=600')
           popup.addEventListener('DOMContentLoaded', () => {
             popup.document.write('<h1>scripting from opener</h1>')
             popup.callback()
@@ -82,7 +82,7 @@
       },
       'verify-ipc-sender': () => {
         const {ipcRenderer} = require('electron')
-        popup = open()
+        const popup = open()
         ipcRenderer.once('verified', () => {
           ipcRenderer.send('parent-answer')
         })

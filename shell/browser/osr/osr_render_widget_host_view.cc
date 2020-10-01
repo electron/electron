@@ -20,7 +20,7 @@
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
-#include "components/viz/common/quads/render_pass.h"
+#include "components/viz/common/quads/compositor_render_pass.h"
 #include "content/browser/renderer_host/cursor_manager.h"  // nogncheck
 #include "content/browser/renderer_host/input/synthetic_gesture_target.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
@@ -307,10 +307,10 @@ void OffScreenRenderWidgetHostView::Show() {
   delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(
       GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), base::nullopt);
+      GetRootLayer()->bounds().size(), {});
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(base::nullopt);
+    render_widget_host_->WasShown({});
 }
 
 void OffScreenRenderWidgetHostView::Hide() {

@@ -56,7 +56,7 @@ an issue:
 * [Accessibility](tutorial/accessibility.md)
   * [Spectron](tutorial/accessibility.md#spectron)
   * [Devtron](tutorial/accessibility.md#devtron)
-  * [Enabling Accessibility](tutorial/accessibility.md#enabling-accessibility)
+  * [Manually Enabling Accessibility Features](tutorial/accessibility.md#manually-enabling-accessibility-features)
 * [Testing and Debugging](tutorial/application-debugging.md)
   * [Debugging the Main Process](tutorial/debugging-main-process.md)
   * [Debugging the Main Process with Visual Studio Code](tutorial/debugging-main-process-vscode.md)

@@ -5,5 +5,11 @@
       "extension"
     ],
     "location": "component"
+  },
+  "management": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ]
   }
 }

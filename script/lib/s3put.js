@@ -12,7 +12,7 @@ if (prefix && !prefix.endsWith(path.sep)) prefix = path.resolve(prefix) + path.s
 
 function filenameToKey (file) {
   file = path.resolve(file);
-  if (file.startsWith(prefix)) file = file.substr(prefix.length);
+  if (file.startsWith(prefix)) file = file.substr(prefix.length - 1);
   return key_prefix + file.replace(path.sep, '/');
 }
 
@@ -20,9 +20,11 @@ let anErrorOccurred = false;
 function next (done) {
   const file = files.shift();
   if (!file) return done();
+  const key = filenameToKey(file);
+  console.log(`Uploading '${file}' to bucket '${bucket}' with key '${key}'...`);
   s3.upload({
     Bucket: bucket,
-    Key: filenameToKey(file),
+    Key: key,
     Body: fs.createReadStream(file),
     ACL: grant
   }, (err, data) => {

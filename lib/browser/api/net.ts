@@ -2,6 +2,7 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+
 const {
   isValidHeaderName,
   isValidHeaderValue,
@@ -243,7 +244,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     redirectPolicy,
     extraHeaders: options.headers || {},
     body: null as any,
-    useSessionCookies: options.useSessionCookies || false
+    useSessionCookies: options.useSessionCookies,
+    credentials: options.credentials
   };
   for (const [name, value] of Object.entries(urlLoaderOptions.extraHeaders!)) {
     if (!isValidHeaderName(name)) {
@@ -362,7 +364,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     delete this._urlLoaderOptions.extraHeaders[key];
   }
 
-  _write (chunk: Buffer, encoding: string, callback: () => void) {
+  _write (chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
     this._firstWrite = true;
     if (!this._body) {
       this._body = new SlurpStream();
@@ -481,6 +483,14 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
   }
 
   _die (err?: Error) {
+    // Node.js assumes that any stream which is ended is no longer capable of emitted events
+    // which is a faulty assumption for the case of an object that is acting like a stream
+    // (our urlRequest). If we don't emit here, this causes errors since we *do* expect
+    // that error events can be emitted after urlRequest.end().
+    if ((this as any)._writableState.destroyed && err) {
+      this.emit('error', err);
+    }
+
     this.destroy(err);
     if (this._urlLoader) {
       this._urlLoader.cancel();
