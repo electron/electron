@@ -85,8 +85,7 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
   webViewImpl.setupMethods(WebViewElement);
 
   // The customElements.define has to be called in a special scope.
-  const webFrame = webViewImpl.webFrame as ElectronInternal.WebFrameInternal;
-  webFrame.allowGuestViewElementDefinition(window, () => {
+  webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
     (window as any).WebView = WebViewElement;
 
