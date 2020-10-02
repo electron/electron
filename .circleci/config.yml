@@ -61,7 +61,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronjs/build:d09fd95029bd8c1c73069888231b29688ef385ed
+    - image: electron.azurecr.io/build:4cec2c5ab66765caa724e37bae2bffb9b29722a5
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
