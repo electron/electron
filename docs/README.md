@@ -146,7 +146,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * [contextBridge](api/context-bridge.md)
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
-* [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
 
 ### Modules for Both Processes:

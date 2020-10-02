@@ -266,27 +266,6 @@ const warnAboutAllowedPopups = function () {
 //   #13 Disable or limit creation of new windows
 //   #14 Do not use `openExternal` with untrusted content
 
-// #15 on the checklist: Disable the `remote` module
-// Logs a warning message about the remote module
-
-const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
-  if (!webPreferences || isLocalhost()) return;
-  const remoteModuleEnabled = webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : true;
-  if (!remoteModuleEnabled) return;
-
-  if (getIsRemoteProtocol()) {
-    const warning = `This renderer process has "enableRemoteModule" enabled
-    and attempted to load remote content from '${window.location}'. This
-    exposes users of this app to unnecessary security risks.\n${moreInformation}`;
-
-    console.warn('%cElectron Security Warning (enableRemoteModule)',
-      'font-weight: bold;', warning);
-  }
-};
-
-// Currently missing since we can't easily programmatically check for it:
-//   #16 Filter the `remote` module
-
 const logSecurityWarnings = function (
   webPreferences: Electron.WebPreferences | undefined, nodeIntegration: boolean
 ) {
@@ -298,7 +277,6 @@ const logSecurityWarnings = function (
   warnAboutEnableBlinkFeatures(webPreferences);
   warnAboutInsecureCSP();
   warnAboutAllowedPopups();
-  warnAboutRemoteModuleWithRemoteContent(webPreferences);
 };
 
 const getWebPreferences = async function () {

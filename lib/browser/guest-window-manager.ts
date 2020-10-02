@@ -191,7 +191,6 @@ const securityWebPreferences: { [key: string]: boolean } = {
   javascript: false,
   nativeWindowOpen: true,
   nodeIntegration: false,
-  enableRemoteModule: false,
   sandbox: true,
   webviewTag: false,
   nodeIntegrationInSubFrames: false,

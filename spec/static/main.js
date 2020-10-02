@@ -108,7 +108,6 @@ app.whenReady().then(async function () {
     webPreferences: {
       backgroundThrottling: false,
       nodeIntegration: true,
-      enableRemoteModule: false,
       webviewTag: true,
       contextIsolation: false
     }

@@ -123,10 +123,7 @@ describe('security warnings', () => {
       it('should warn about insecure Content-Security-Policy', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences: {
-            enableRemoteModule: false,
-            ...webPreferences
-          }
+          webPreferences
         });
 
         useCsp = false;
@@ -138,10 +135,7 @@ describe('security warnings', () => {
       it('should warn about insecure Content-Security-Policy (Trusted Types)', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences: {
-            enableRemoteModule: false,
-            ...webPreferences
-          }
+          webPreferences
         });
 
         useCsp = false;
@@ -207,7 +201,7 @@ describe('security warnings', () => {
       it('should warn about insecure resources', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences: { ...webPreferences }
+          webPreferences
         });
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
@@ -224,27 +218,6 @@ describe('security warnings', () => {
         w.loadURL(`${serverUrl}/insecure-resources.html`);
         const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.not.include('insecure-resources.html');
-      });
-
-      it('should warn about enabled remote module with remote content', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-
-        w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('enableRemoteModule');
-      });
-
-      it('should not warn about enabled remote module with remote content from localhost', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-        w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
-        expect(message).to.not.include('enableRemoteModule');
       });
     });
   };

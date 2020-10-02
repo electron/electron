@@ -132,10 +132,6 @@ app._setDefaultAppPaths(packagePath);
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
 
-if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
-  require('@electron/internal/browser/remote/server');
-}
-
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 

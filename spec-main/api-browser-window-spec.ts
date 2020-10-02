@@ -2015,21 +2015,6 @@ describe('BrowserWindow module', () => {
         const [, test] = await emittedOnce(ipcMain, 'answer');
         expect(test).to.eql('preload');
       });
-      ifit(features.isRemoteModuleEnabled())('can successfully delete the Buffer global', async () => {
-        const preload = path.join(__dirname, 'fixtures', 'remote', 'delete-buffer.js');
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true,
-            contextIsolation: false,
-            preload
-          }
-        });
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
-        const [, test] = await emittedOnce(ipcMain, 'answer');
-        expect(test).to.eql(Buffer.from('buffer'));
-      });
       it('has synchronous access to all eventual window APIs', async () => {
         const preload = path.join(fixtures, 'module', 'access-blink-apis.js');
         const w = new BrowserWindow({
@@ -2140,61 +2125,6 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.equal('undefined');
         expect(typeofBuffer).to.equal('undefined');
       });
-    });
-
-    ifdescribe(features.isRemoteModuleEnabled())('"enableRemoteModule" option', () => {
-      const generateSpecs = (description: string, sandbox: boolean) => {
-        describe(description, () => {
-          const preload = path.join(__dirname, 'fixtures', 'remote', 'preload-remote.js');
-
-          it('disables the remote module by default', async () => {
-            const w = new BrowserWindow({
-              show: false,
-              webPreferences: {
-                preload,
-                sandbox
-              }
-            });
-            const p = emittedOnce(ipcMain, 'remote');
-            w.loadFile(path.join(fixtures, 'api', 'blank.html'));
-            const [, remote] = await p;
-            expect(remote).to.equal('undefined');
-          });
-
-          it('disables the remote module when false', async () => {
-            const w = new BrowserWindow({
-              show: false,
-              webPreferences: {
-                preload,
-                sandbox,
-                enableRemoteModule: false
-              }
-            });
-            const p = emittedOnce(ipcMain, 'remote');
-            w.loadFile(path.join(fixtures, 'api', 'blank.html'));
-            const [, remote] = await p;
-            expect(remote).to.equal('undefined');
-          });
-
-          it('enables the remote module when true', async () => {
-            const w = new BrowserWindow({
-              show: false,
-              webPreferences: {
-                preload,
-                sandbox,
-                enableRemoteModule: true
-              }
-            });
-            const p = emittedOnce(ipcMain, 'remote');
-            w.loadFile(path.join(fixtures, 'api', 'blank.html'));
-            const [, remote] = await p;
-            expect(remote).to.equal('object');
-          });
-        });
-      };
-
-      generateSpecs('without sandbox', false);
-      generateSpecs('with sandbox', true);
     });
 
     describe('"sandbox" option', () => {
@@ -2510,85 +2440,6 @@ describe('BrowserWindow module', () => {
           }, 100);
         });
         w.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-      });
-
-      // see #9387
-      ifit(features.isRemoteModuleEnabled())('properly manages remote object references after page reload', (done) => {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            preload,
-            sandbox: true,
-            enableRemoteModule: true,
-            contextIsolation: false
-          }
-        });
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote' });
-
-        ipcMain.on('get-remote-module-path', (event) => {
-          event.returnValue = path.join(fixtures, 'module', 'hello.js');
-        });
-
-        let reload = false;
-        ipcMain.on('reloaded', (event) => {
-          event.returnValue = reload;
-          reload = !reload;
-        });
-
-        ipcMain.once('reload', (event) => {
-          event.sender.reload();
-        });
-
-        ipcMain.once('answer', (event, arg) => {
-          ipcMain.removeAllListeners('reloaded');
-          ipcMain.removeAllListeners('get-remote-module-path');
-          try {
-            expect(arg).to.equal('hi');
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
-
-      ifit(features.isRemoteModuleEnabled())('properly manages remote object references after page reload in child window', (done) => {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            preload,
-            sandbox: true,
-            enableRemoteModule: true,
-            contextIsolation: false
-          }
-        });
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload } } }));
-
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote-child' });
-
-        ipcMain.on('get-remote-module-path', (event) => {
-          event.returnValue = path.join(fixtures, 'module', 'hello-child.js');
-        });
-
-        let reload = false;
-        ipcMain.on('reloaded', (event) => {
-          event.returnValue = reload;
-          reload = !reload;
-        });
-
-        ipcMain.once('reload', (event) => {
-          event.sender.reload();
-        });
-
-        ipcMain.once('answer', (event, arg) => {
-          ipcMain.removeAllListeners('reloaded');
-          ipcMain.removeAllListeners('get-remote-module-path');
-          try {
-            expect(arg).to.equal('hi child window');
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
       });
 
       it('validates process APIs access in sandboxed renderer', async () => {
