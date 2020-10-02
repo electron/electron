@@ -174,7 +174,7 @@ describe('nativeImage module', () => {
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
 
       const imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
-      expect(imageC.getSize()).to.deep.equal({ width: 269, height: 95 });
+      expect(imageC.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('throws on invalid arguments', () => {
@@ -227,7 +227,7 @@ describe('nativeImage module', () => {
 
       const imageI = nativeImage.createFromBuffer(imageA.toBitmap(),
         { width: 538, height: 190, scaleFactor: 2.0 });
-      expect(imageI.getSize()).to.deep.equal({ width: 269, height: 95 });
+      expect(imageI.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('throws on invalid arguments', () => {
@@ -279,7 +279,7 @@ describe('nativeImage module', () => {
         scaleFactor: 2.0
       });
       expect(imageOne.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+        { width: imageData.width, height: imageData.height });
 
       const imageTwo = nativeImage.createFromDataURL(imageOne.toDataURL());
       expect(imageTwo.getSize()).to.deep.equal(
@@ -314,7 +314,7 @@ describe('nativeImage module', () => {
         scaleFactor: 2.0
       });
       expect(imageB.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+        { width: imageData.width, height: imageData.height });
 
       const imageC = nativeImage.createFromBuffer(imageB.toPNG());
       expect(imageC.getSize()).to.deep.equal(
@@ -335,7 +335,7 @@ describe('nativeImage module', () => {
       const imageFromBufferTwo = nativeImage.createFromBuffer(
         image.toPNG({ scaleFactor: 2.0 }), { scaleFactor: 2.0 });
       expect(imageFromBufferTwo.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+        { width: imageData.width, height: imageData.height });
     });
   });
 

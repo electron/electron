@@ -255,7 +255,7 @@ gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
-  return gfx::Size(image_rep.GetWidth(), image_rep.GetHeight());
+  return gfx::Size(image_rep.pixel_width(), image_rep.pixel_height());
 }
 
 std::vector<float> NativeImage::GetScaleFactors() {
