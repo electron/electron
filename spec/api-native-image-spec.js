@@ -498,6 +498,12 @@ describe('nativeImage module', () => {
       expect(cropB.getSize()).to.deep.equal({ width: 25, height: 64 });
       expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false();
     });
+
+    it('toBitmap() returns a buffer of the right size', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
+      expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
+    });
   });
 
   describe('getAspectRatio()', () => {
