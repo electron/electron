@@ -1913,8 +1913,8 @@ describe('BrowserWindow module', () => {
         const [, test] = await emittedOnce(ipcMain, 'answer');
         expect(test).to.eql('preload');
       });
-      it('can successfully delete the Buffer global', async () => {
-        const preload = path.join(__dirname, 'fixtures', 'module', 'delete-buffer.js');
+      ifit(features.isRemoteModuleEnabled())('can successfully delete the Buffer global', async () => {
+        const preload = path.join(__dirname, 'fixtures', 'remote', 'delete-buffer.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2039,7 +2039,7 @@ describe('BrowserWindow module', () => {
     ifdescribe(features.isRemoteModuleEnabled())('"enableRemoteModule" option', () => {
       const generateSpecs = (description: string, sandbox: boolean) => {
         describe(description, () => {
-          const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js');
+          const preload = path.join(__dirname, 'fixtures', 'remote', 'preload-remote.js');
 
           it('disables the remote module by default', async () => {
             const w = new BrowserWindow({
