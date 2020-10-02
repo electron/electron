@@ -1913,7 +1913,7 @@ describe('BrowserWindow module', () => {
         const [, test] = await emittedOnce(ipcMain, 'answer');
         expect(test).to.eql('preload');
       });
-      it('can successfully delete the Buffer global', async () => {
+      ifit(features.isRemoteModuleEnabled())('can successfully delete the Buffer global', async () => {
         const preload = path.join(__dirname, 'fixtures', 'module', 'delete-buffer.js');
         const w = new BrowserWindow({
           show: false,
