@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Richard Townsend <Richard.Townsend@arm.com>
+Date: Wed, 30 Sep 2020 11:48:59 +0100
+Subject: fix: correct calling convention for Windows on Arm
+
+Corrects a "Check failed: kFPParamRegisterCount == kParamRegisterCount"
+message when compiling v8_snapshot for Windows on Arm.
+
+Unlike x64, Windows on Arm's calling convention does not alternate
+between integer and float registers.
+
+Bug: chromium:1052746
+Change-Id: I4c9cdafcd6e43742b94613f85b2983761cc0891a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2440717
+Commit-Queue: Maya Lekova <mslekova@chromium.org>
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Reviewed-by: Maya Lekova <mslekova@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#70257}
+
+diff --git a/src/compiler/c-linkage.cc b/src/compiler/c-linkage.cc
+index af467f2bb14116006531b261e94ee40c8b12f4d6..5b395067f08ec011451b8ae370b4ac8a643fe47c 100644
+--- a/src/compiler/c-linkage.cc
++++ b/src/compiler/c-linkage.cc
+@@ -139,7 +139,7 @@ namespace {
+ #endif
+ }  // namespace
+ 
+-#ifdef V8_TARGET_OS_WIN
++#if defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64)
+ // As defined in
+ // https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=vs-2019#parameter-passing,
+ // Windows calling convention doesn't differentiate between GP and FP params
+@@ -176,11 +176,12 @@ void BuildParameterLocations(const MachineSignature* msig,
+     }
+   }
+ }
+-#else  // V8_TARGET_OS_WIN
++#else  // defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64)
+ // As defined in https://www.agner.org/optimize/calling_conventions.pdf,
+ // Section 7, Linux and Mac place parameters in consecutive registers,
+ // differentiating between GP and FP params. That's why we maintain two
+-// separate counters here.
++// separate counters here. This also applies to Arm systems following
++// the AAPCS and Windows on Arm.
+ void BuildParameterLocations(const MachineSignature* msig,
+                              size_t kFPParamRegisterCount,
+                              size_t kParamRegisterCount,
+@@ -216,7 +217,7 @@ void BuildParameterLocations(const MachineSignature* msig,
+     }
+   }
+ }
+-#endif  // V8_TARGET_OS_WIN
++#endif  // defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64)
+ 
+ // General code uses the above configuration data.
+ CallDescriptor* Linkage::GetSimplifiedCDescriptor(Zone* zone,
