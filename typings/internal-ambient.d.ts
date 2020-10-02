@@ -45,6 +45,7 @@ declare namespace NodeJS {
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
     triggerFatalErrorForTesting(): void;
+    isSameOrigin(left: string, right: string): boolean;
   }
 
   type AsarFileInfo = {

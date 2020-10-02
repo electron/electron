@@ -566,7 +566,7 @@ WebContents.prototype._init = function () {
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: string, postData: string) => {
+      rawFeatures: string, referrer: string, postData: Electron.UploadRawData[]) => {
       const { options, webPreferences, additionalFeatures } = parseFeatures(rawFeatures);
       const mergedOptions = {
         show: true,
@@ -584,7 +584,7 @@ WebContents.prototype._init = function () {
     // "window.open", used in sandbox and nativeWindowOpen mode.
     this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
       userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
-      referrer: string, rawFeatures: string, postData: string) => {
+      referrer: string, rawFeatures: string, postData: Electron.UploadRawData[]) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
