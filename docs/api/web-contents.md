@@ -998,11 +998,11 @@ Navigates to the specified offset from the "current entry".
 
 Returns `Boolean` - Whether the renderer process has crashed.
 
-#### `contents.crashProcess()`
+#### `contents.forcefullyCrashRenderer()`
 
 Forcefully terminates the renderer process that is currently hosting this
 `webContents`. This will cause the `render-process-gone` event to be emitted
-with the `reason=killed`. Please note that some webContents share renderer
+with the `reason=killed || reason=crashed`. Please note that some webContents share renderer
 processes and therefore calling this method may also crash the host process
 for other webContents as well.
 
@@ -1020,7 +1020,7 @@ contents.on('unresponsive', async () => {
     cancelId: 1
   })
   if (response === 0) {
-    contents.crashProcess()
+    contents.forcefullyCrashRenderer()
     contents.reload()
   }
 })

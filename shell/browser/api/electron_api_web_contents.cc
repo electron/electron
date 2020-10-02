@@ -1764,7 +1764,7 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::CrashProcess() {
+void WebContents::ForcefullyCrashRenderer() {
   content::RenderWidgetHostView* view =
       web_contents()->GetRenderWidgetHostView();
   if (!view)
@@ -2946,7 +2946,8 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("crashProcess", &WebContents::CrashProcess)
+      .SetMethod("forcefullyCrashRenderer",
+                 &WebContents::ForcefullyCrashRenderer)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
