@@ -248,7 +248,7 @@ async function mergeShasums (pkgVersion) {
         Bucket: bucket,
         Key: obj.Key
       }).promise();
-      shasums.push(data.toString('ascii').trim());
+      shasums.push(data.Body.toString('ascii').trim());
     }
   }
   return shasums.join('\n');
