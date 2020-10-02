@@ -19,16 +19,9 @@ There are three ways to create a `.snap` file:
 2) Using `electron-installer-snap`, which takes `electron-packager`'s output.
 3) Using an already created `.deb` package.
 
-In all cases, you will need to have the `snapcraft` tool installed. We
-recommend building on Ubuntu 16.04 (or the current LTS).
-
-```sh
-snap install snapcraft --classic
-```
-
-While it _is possible_ to install `snapcraft` on macOS using Homebrew, it
-is not able to build `snap` packages and is focused on managing packages
-in the store.
+In some cases, you will need to have the `snapcraft` tool installed.
+Instructions to install `snapcraft` for your particular distribution are
+available [here](https://snapcraft.io/docs/installing-snapcraft).
 
 ## Using `electron-installer-snap`
 
