@@ -64,6 +64,17 @@ dependencies, and tools contained in the `electron/electron` repository.
 
 See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
 
+## Need Help?
+
+### [Join](https://discord.gg/H6uTh7m) The Discord Server!
+Join the Discord server to get connected to thousands of Devs creating awesome projects with Electron.js everyday!
+  - Get Help! regarding any issue you are facing.
+  - Make new friends, working in the same space!
+  - Find some amazing projects to contribute to! or Help others with their issues!
+  - Still Reading for reasons to Join? duh! Just [Join](https://discord.gg/H6uTh7m)  Already!
+
+
+
 ## Further Reading
 
 For more in-depth guides on developing Electron, see 
