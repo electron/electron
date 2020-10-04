@@ -15,6 +15,7 @@ import fnmatch
 import io
 import multiprocessing
 import os
+import posixpath
 import signal
 import subprocess
 import sys
@@ -134,6 +135,8 @@ def run_clang_format_diff(args, file_name):
             proc.returncode, file_name), errs)
     if args.fix:
         return None, errs
+    if sys.platform == 'win32':
+        file_name = file_name.replace(os.sep, posixpath.sep)
     return make_diff(file_name, original, outs), errs
 
 
