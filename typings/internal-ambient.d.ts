@@ -97,6 +97,11 @@ declare namespace NodeJS {
     setListeningForShutdown(listening: boolean): void;
   }
 
+  interface WebViewManagerBinding {
+    addGuest(guestInstanceId: number, elementInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
+    removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
+  }
+
   type DataPipe = {
     write: (buf: Uint8Array) => Promise<void>;
     done: () => void;
@@ -202,6 +207,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
+    _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
     log: NodeJS.WriteStream['write'];

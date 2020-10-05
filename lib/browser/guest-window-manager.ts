@@ -266,7 +266,7 @@ export function internalWindowOpen (event: ElectronInternal.IpcMainInternalEvent
   }
 }
 
-const makeSafeHandler = function<T, Event> (handler: (event: Event, guestContents: Electron.webContents, ...args: any[]) => T) {
+const makeSafeHandler = function<Event> (handler: (event: Event, guestContents: Electron.webContents, ...args: any[]) => any) {
   return (event: Event, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
     const guestContents = electron.webContents.fromId(guestId);
