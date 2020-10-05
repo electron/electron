@@ -92,7 +92,7 @@ snap(options)
 
 Create your project directory and add add the following to `snap/snapcraft.yaml`:
 
-```
+```yaml
 name: electron-packager-hello-world
 version: '0.1'
 summary: Hello World Electron app
@@ -136,7 +136,7 @@ If you want to apply this example to an existing project, replace `source: https
 
 ### Step 2: Build the snap
 
-```
+```sh
 $ snapcraft
 
 <output snipped>                                                                                                                                                                                                         
@@ -145,13 +145,13 @@ Snapped electron-packager-hello-world_0.1_amd64.snap
 
 ### Step 3: Install the snap
 
-```
+```sh
 sudo snap install electron-packager-hello-world_0.1_amd64.snap --dangerous
 ```
 
 ### Step 4: Run the snap
 
-```
+```sh
 electron-packager-hello-world
 ```
 
