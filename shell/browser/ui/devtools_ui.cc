@@ -22,7 +22,12 @@ namespace electron {
 namespace {
 
 std::string PathWithoutParams(const std::string& path) {
-  return GURL(std::string("devtools://devtools/") + path).path().substr(1);
+  return GURL(base::StrCat({content::kChromeDevToolsScheme,
+                            url::kStandardSchemeSeparator,
+                            chrome::kChromeUIDevToolsHost}))
+      .Resolve(path)
+      .path()
+      .substr(1);
 }
 
 std::string GetMimeTypeForPath(const std::string& path) {
@@ -33,11 +38,19 @@ std::string GetMimeTypeForPath(const std::string& path) {
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "text/css";
   } else if (base::EndsWith(filename, ".js",
+                            base::CompareCase::INSENSITIVE_ASCII) ||
+             base::EndsWith(filename, ".mjs",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "application/javascript";
   } else if (base::EndsWith(filename, ".png",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "image/png";
+  } else if (base::EndsWith(filename, ".map",
+                            base::CompareCase::INSENSITIVE_ASCII)) {
+    return "application/json";
+  } else if (base::EndsWith(filename, ".ts",
+                            base::CompareCase::INSENSITIVE_ASCII)) {
+    return "application/x-typescript";
   } else if (base::EndsWith(filename, ".gif",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "image/gif";
