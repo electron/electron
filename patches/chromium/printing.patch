@@ -11,10 +11,22 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 4f3b68135f9bb29f2c36055f50e1725a9b36a856..ece3d14f3b7c585b52676ad9b8dde0b3f7bae0c6 100644
+index 4f3b68135f9bb29f2c36055f50e1725a9b36a856..c788d412544fdcc8992512784449752631aaf595 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -355,12 +355,14 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -349,18 +349,25 @@ void PrintJob::StartPdfToEmfConversion(
+   // seems to work with the fix for this bug applied.
+   const PrintSettings& settings = document()->settings();
+   bool print_text_with_gdi =
+-      settings.print_text_with_gdi() && !settings.printer_is_xps() &&
++#if defined(OS_WIN)
++      settings.is_modifiable()
++#else
++      settings.print_text_with_gdi()
++#endif
++      && !settings.printer_is_xps() &&
+       base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
+ 
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because |web_contents| was null. As a result, this section has many more
    // pointer checks to avoid crashing.

@@ -69,9 +69,9 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
   NSUserNotification* user_notification =
-      [notify userInfo][(id) @"NSApplicationLaunchUserNotificationKey"];
+      [notify userInfo][NSApplicationLaunchUserNotificationKey];
 
-  if (user_notification.userInfo) {
+  if ([user_notification isKindOfClass:[NSUserNotification class]]) {
     electron::Browser::Get()->DidFinishLaunching(
         electron::NSDictionaryToDictionaryValue(user_notification.userInfo));
   } else {
