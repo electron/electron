@@ -16,7 +16,7 @@ We recommend that you install either the latest `LTS` or `Current` version avail
 
 To check that Node.js was installed correctly, type the following commands in your terminal client:
 
-```
+```sh
 node -v
 npm -v
 ```
@@ -28,7 +28,7 @@ If both commands succeeded, you are ready to install Electron.
 
 From a development perspective, an Electron application is essentially a Node.js application. It means that the starting point of your Electron application will be a `package.json` file like in any other Node.js application. A basic Electron application has the following structure:
 
-```
+```plain
 my-electron-app/
 ├── package.json
 ├── main.js
@@ -41,7 +41,7 @@ Let's create a basic application based on the structure above.
 
 Create a folder for your project and install Electron there:
 
-```
+```sh
 mkdir my-electron-app && cd my-electron-app
 npm init -y
 npm i --save-dev electron
@@ -49,39 +49,39 @@ npm i --save-dev electron
 
 #### Create the main script file
 
-The main script specifies the entry point of your Electron application (in our case, the `main.js` file) that will run the Main process. Typically, the script that runs in the Main process controls the lifecycle of the application, displays the graphic user interface and its elements, performs native operating system interactions, and creates Renderer processes within web pages. An Electron application can have only one Main process.
+The main script specifies the entry point of your Electron application (in our case, the `main.js` file) that will run the Main process. Typically, the script that runs in the Main process controls the lifecycle of the application, displays the graphical user interface and its elements, performs native operating system interactions, and creates Renderer processes within web pages. An Electron application can have only one Main process.
 
 The main script may look as follows:
 
 ```js
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow } = require('electron')
 
 function createWindow () {
-    const win = new BrowserWindow({
-        width: 800,
-        height: 600,
-        webPreferences: {
-            nodeIntegration: true
-        }
-    });
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
 
-    win.loadFile('index.html')
-    win.webContents.openDevTools()
+  win.loadFile('index.html')
+  win.webContents.openDevTools()
 }
 
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit()
-    }
-});
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
 
 app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow()
-    }
-});
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
 ```
 
 ##### What is going on above?
@@ -144,7 +144,7 @@ By default, the `npm start` command runs the main script with Node.js. You need 
 
 #### Run your application
 
-```
+```sh
 npm start
 ```
 
@@ -152,14 +152,14 @@ Your running Electron app should look as follows:
 
 ![Simplest Electron app](../images/simplest-electron-app.png)
 
-### Package/Distribute the application
+### Package and distribute the application
 
 The simplest and the fastest way to distribute your newly created app is using
 Electron Forge.
 
 1. Import Electron Forge to your app folder:
 
-    ```
+    ```sh
     npx @electron-forge/cli import
 
     ✔ Checking your system
@@ -169,7 +169,6 @@ Electron Forge.
     ✔ Writing modified package.json file
     ✔ Fixing .gitignore
 
-
     We have ATTEMPTED to convert your app to be in a format that electron-forge understands.
 
     Thanks for using "electron-forge"!!!
@@ -177,7 +176,7 @@ Electron Forge.
 
 1. Create a distributable:
 
-    ```
+    ```sh
     npm run make
 
     > my-gsod-electron-app@1.0.0 make /my-electron-app
@@ -195,13 +194,12 @@ Electron Forge.
 
     Electron-forge creates the `out` folder where your package will be located:
 
-    ```
+    ```plain
     // Example for MacOS
     out/
     ├── out/make/zip/darwin/x64/my-electron-app-darwin-x64-1.0.0.zip
     ├── ...
-    └── out / my-electron-app-darwin-x64/my-electron-app.app/Contents/                      
-        MacOS/my-electron-app
+    └── out/my-electron-app-darwin-x64/my-electron-app.app/Contents/MacOS/my-electron-app
     ```
 
 [node-download]: https://nodejs.org/en/download/
@@ -245,21 +243,21 @@ Electron APIs are assigned based on the process type. It means that some of the 
 For example, to access Electron API in both processes, require its included module:
 
 ```js
-const electron = require('electron');
+const electron = require('electron')
 ```
 
 To create a window, call the `BrowserWindow` class which is only available in the Main process:
 
 ```js
-const { BrowserWindow } = require('electron');
-const win = new BrowserWindow();
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow()
 ```
 
 To call the Main process from the Renderer, use the IPC module:
 
 ```js
 // In the Main process
-const { ipcMain } = require('electron');
+const { ipcMain } = require('electron')
 
 ipcMain.handle('perform-action', (event, ...args) => {
   // ... do actions on behalf of the Renderer
@@ -289,12 +287,12 @@ console.log(root)
 
 To use a Node.js module, you first need to install it as a dependency:
 
-```js
-npm i --save aws-sdk
+```sh
+npm install --save aws-sdk
 ```
 
 Then, in your Electron application, require this module:
 
 ```js
-const S3 = require('aws-sdk/clients/s3');
+const S3 = require('aws-sdk/clients/s3')
 ```
