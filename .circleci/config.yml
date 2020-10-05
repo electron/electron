@@ -771,7 +771,7 @@ step-show-sccache-stats: &step-show-sccache-stats
       fi
       if [ "$USE_GOMA" == "true" ]; then
         $LOCAL_GOMA_DIR/goma_ctl.py stat
-        $LOCAL_GOMA_DIR/python diagnose_goma_log.py
+        $LOCAL_GOMA_DIR/diagnose_goma_log.py
       fi
     when: always
 
