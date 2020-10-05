@@ -403,7 +403,7 @@ bool ElectronBrowserClient::ShouldForceNewSiteInstance(
     const GURL& url,
     bool has_response_started) const {
   if (url.SchemeIs(url::kJavaScriptScheme))
-    // "javacript:" scheme should always use same SiteInstance
+    // "javascript:" scheme should always use same SiteInstance
     return false;
   if (url.SchemeIs(extensions::kExtensionScheme))
     return false;

@@ -121,7 +121,7 @@ if (packageJson.desktopName != null) {
   app.setDesktopName(`${app.name}.desktop`);
 }
 
-// Set v8 flags, delibrately lazy load so that apps that do not use this
+// Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags);

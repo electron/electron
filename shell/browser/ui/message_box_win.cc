@@ -136,7 +136,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
     }
   }
 
-  // If "detail" is empty then don't make message hilighted.
+  // If "detail" is empty then don't make message highlighted.
   if (detail.empty()) {
     config.pszContent = message.c_str();
   } else {

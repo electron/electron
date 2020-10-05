@@ -248,7 +248,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
   // Assume the window is not responding if it doesn't cancel the close and is
   // not closed in 5s, in this way we can quickly show the unresponsive
-  // dialog when the window is busy executing some script withouth waiting for
+  // dialog when the window is busy executing some script without waiting for
   // the unresponsive timeout.
   if (window_unresponsive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);

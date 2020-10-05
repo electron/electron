@@ -134,7 +134,7 @@ function wrapArgs (args: any[], visited = new Set()): any {
 
 // Populate object's members from descriptors.
 // The |ref| will be kept referenced by |members|.
-// This matches |getObjectMemebers| in rpc-server.
+// This matches |getObjectMembers| in rpc-server.
 function setObjectMembers (ref: any, object: any, metaId: number, members: ObjectMember[]) {
   if (!Array.isArray(members)) return;
 

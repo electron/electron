@@ -195,7 +195,7 @@ class Browser : public WindowListObserver {
   void UserActivityWasContinued(const std::string& type,
                                 base::DictionaryValue user_info);
 
-  // Gives an oportunity to update the Handoff payload.
+  // Gives an opportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
                                base::DictionaryValue user_info);
 

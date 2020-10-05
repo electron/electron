@@ -126,7 +126,7 @@ struct Converter<electron::ElectronMenuModel*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::ElectronMenuModel** out) {
-    // null would be tranfered to NULL.
+    // null would be transferred to NULL.
     if (val->IsNull()) {
       *out = nullptr;
       return true;

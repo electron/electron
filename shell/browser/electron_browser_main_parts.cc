@@ -357,7 +357,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // issue to keep updated:
   // https://bugs.chromium.org/p/chromium/issues/detail?id=998903
   UpdateDarkThemeSetting();
-  // Update the naitve theme when GTK theme changes. The GetNativeTheme
+  // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_.reset(new DarkThemeObserver);
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());

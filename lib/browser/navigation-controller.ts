@@ -20,10 +20,10 @@ ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
 });
 
 // JavaScript implementation of Chromium's NavigationController.
-// Instead of relying on Chromium for history control, we compeletely do history
+// Instead of relying on Chromium for history control, we completely do history
 // control on user land, and only rely on WebContents.loadURL for navigation.
 // This helps us avoid Chromium's various optimizations so we can ensure renderer
-// process is restarted everytime.
+// process is restarted every time.
 export class NavigationController extends EventEmitter {
   currentIndex: number = -1;
   inPageIndex: number = -1;
