@@ -132,7 +132,7 @@ parts:
     - libnspr4
 ```
 
-If you want to apply this example to an existing project, replace `source: https://github.com/electron/electron-quick-start.git` with `source: .`, and replace all instances of 'electron-quick-start` with your project's name.
+If you want to apply this example to an existing project, replace `source: https://github.com/electron/electron-quick-start.git` with `source: .`, and replace all instances of `electron-quick-start` with your project's name.
 
 ### Step 2: Build the snap
 
