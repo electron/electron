@@ -50,3 +50,5 @@ Somewhere in the Electron binary there will be a sequence of bytes that look lik
   * "r" (0x72) indicates the fuse has been removed and changing the byte to either 1 or 0 will have no effect.
 
 To flip a fuse you find its position in the fuse wire and change it to "0" or "1" depending on the state you'd like.
+
+You can view the current schema [here](https://github.com/electron/electron/blob/master/build/fuses/fuses.json).
