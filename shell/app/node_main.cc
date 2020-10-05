@@ -212,9 +212,6 @@ int NodeMain(int argc, char* argv[]) {
       node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
-#if defined(OS_WIN)
-      process.SetMethod("log", &ElectronBindings::Log);
-#endif
       process.SetMethod("crash", &ElectronBindings::Crash);
 
       // Setup process.crashReporter in child node processes
