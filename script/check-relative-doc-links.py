@@ -44,7 +44,7 @@ def getBrokenLinks(filepath):
     f = open(filepath, 'r')
     lines = f.readlines()
   except KeyboardInterrupt:
-    print('Keyboard interruption whle parsing. Please try again.')
+    print('Keyboard interruption while parsing. Please try again.')
   finally:
     f.close()
 
@@ -72,7 +72,7 @@ def getBrokenLinks(filepath):
           newFile = open(tempFile, 'r')
           newLines = newFile.readlines()
         except KeyboardInterrupt:
-          print('Keyboard interruption whle parsing. Please try again.')
+          print('Keyboard interruption while parsing. Please try again.')
         finally:
           newFile.close()
 

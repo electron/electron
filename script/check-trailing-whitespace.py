@@ -41,7 +41,7 @@ def hasTrailingWhiteSpace(filepath, fix):
     f = open(filepath, 'r')
     lines = f.read().splitlines()
   except KeyboardInterrupt:
-    print('Keyboard interruption whle parsing. Please try again.')
+    print('Keyboard interruption while parsing. Please try again.')
   finally:
     f.close()
 
