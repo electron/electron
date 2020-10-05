@@ -33,7 +33,7 @@ require('@electron/fuses').flipFuses(
 * **Sentinel**: A static known sequence of bytes you can use to locate the fuse wire
 * **Fuse Schema**: The format / allowed values for the fuse wire
 
-Manually flipping fuses requires editing the correct Electron binary and modifying the fuse wire to be the sequence of bytes that represent the state of the fuses you want.
+Manually flipping fuses requires editing the Electron binary and modifying the fuse wire to be the sequence of bytes that represent the state of the fuses you want.
 
 Somewhere in the Electron binary there will be a sequence of bytes that look like this:
 
@@ -42,11 +42,11 @@ Somewhere in the Electron binary there will be a sequence of bytes that look lik
 ```
 
 * `sentinel_bytes` is always this exact string `dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX`
-* `fuse_version` is a single byte whose integer value represents the version of the fuse schema
-* `fuse_wire_length` is a single byte whose integer value represents the number of fuses in the following fuse wire
+* `fuse_version` is a single byte whose unsigned integer value represents the version of the fuse schema
+* `fuse_wire_length` is a single byte whose unsigned integer value represents the number of fuses in the following fuse wire
 * `fuse_wire` is a sequence of N bytes, each byte represents a single fuse and its state.
-  * "0" indicates the fuse is disabled
-  * "1" indicates the fuse is enabled
-  * "r" indicates the fuse is removed and is now a noop
+  * "0" (0x30) indicates the fuse is disabled
+  * "1" (0x31) indicates the fuse is enabled
+  * "r" (0x72) indicates the fuse has been removed and changing the byte to either 1 or 0 will have no effect.
 
 To flip a fuse you find its position in the fuse wire and change it to "0" or "1" depending on the state you'd like.
