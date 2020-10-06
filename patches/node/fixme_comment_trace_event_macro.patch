@@ -7,7 +7,7 @@ This broke the build at some point. Does it still? We should probably remove
 this patch and find out!
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 54e24d41e25293d3535cd853eb5a80a7b0fee122..59b7e0c225a096acaa191bd144f876cc9a1c4432 100644
+index ab664208076ea776fcb2223dbc228cacd3eb7e58..4a1c3392cf53490bcb883e826bf731a4a674ef61 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -372,10 +372,11 @@ class TraceEventScope {

@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 74729c412674be2cbf01d68be1bc496b06b8ce1e..7311f249fbb24e0612d9f4f174e96fa13ed77acb 100644
+index 4c3633e06c60265c974bdd2a5a3d2e615e4aeb82..5e03a3a6e35e934faf71e765d7fc6e356f40e8d0 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
