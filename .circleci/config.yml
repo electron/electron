@@ -767,14 +767,15 @@ step-show-sccache-stats: &step-show-sccache-stats
     shell: /bin/bash
     name: Check sccache/goma stats after build
     command: |
-      set +e
-      set +o pipefail
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
       fi
       if [ "$USE_GOMA" == "true" ]; then
+        set +e
+        set +o pipefail
         $LOCAL_GOMA_DIR/goma_ctl.py stat
         $LOCAL_GOMA_DIR/diagnose_goma_log.py
+        true
       fi
     when: always
 
