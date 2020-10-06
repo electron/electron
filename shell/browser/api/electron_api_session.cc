@@ -950,8 +950,7 @@ gin::Handle<Session> Session::CreateFrom(
   ElectronBrowserMainParts::Get()->RegisterDestructionCallback(
       base::BindOnce([](Session* session) { delete session; }, handle.get()));
 
-  App::Get()->EmitCustomEvent("session-created",
-                              handle.ToV8().As<v8::Object>());
+  App::Get()->Emit("-session-created", handle.ToV8().As<v8::Object>());
 
   return handle;
 }

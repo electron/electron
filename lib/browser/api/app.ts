@@ -135,6 +135,10 @@ for (const name of events) {
   });
 }
 
+app.on('-session-created' as any, (event, session) => {
+  app.emit('session-created', session);
+});
+
 // Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
 // they are setting it to true
 deprecate.removeProperty(app, 'allowRendererProcessReuse', [false]);
