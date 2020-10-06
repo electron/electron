@@ -7,7 +7,7 @@ Process: [Main](../tutorial/application-architecture.md#main-and-renderer-proces
 ### `new TouchBarPopover(options)`
 
 * `options` Object
-  * `label` String (optional) - Popover button text.
+  * `label` string (optional) - Popover button text.
   * `icon` [NativeImage](native-image.md) (optional) - Popover button icon.
   * `items` [TouchBar](touch-bar.md) - Items to display in the popover.
   * `showCloseButton` Boolean (optional) - `true` to display a close button
@@ -19,7 +19,7 @@ The following properties are available on instances of `TouchBarPopover`:
 
 #### `touchBarPopover.label`
 
-A `String` representing the popover's current button text. Changing this value immediately updates the
+A `string` representing the popover's current button text. Changing this value immediately updates the
 popover in the touch bar.
 
 #### `touchBarPopover.icon`

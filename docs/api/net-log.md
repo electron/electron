@@ -24,14 +24,14 @@ of the `app` module gets emitted.
 
 ### `netLog.startLogging(path[, options])`
 
-* `path` String - File path to record network logs.
+* `path` string - File path to record network logs.
 * `options` Object (optional)
-  * `captureMode` String (optional) - What kinds of data should be captured. By
+  * `captureMode` string (optional) - What kinds of data should be captured. By
     default, only metadata about requests will be captured. Setting this to
     `includeSensitive` will include cookies and authentication data. Setting
     it to `everything` will include all bytes transferred on sockets. Can be
     `default`, `includeSensitive` or `everything`.
-  * `maxFileSize` Number (optional) - When the log grows beyond this size,
+  * `maxFileSize` number (optional) - When the log grows beyond this size,
     logging will automatically stop. Defaults to unlimited.
 
 Returns `Promise<void>` - resolves when the net log has begun recording.
@@ -48,4 +48,4 @@ Stops recording network events. If not called, net logging will automatically en
 
 ### `netLog.currentlyLogging` _Readonly_
 
-A `Boolean` property that indicates whether network logs are currently being recorded.
+A `boolean` property that indicates whether network logs are currently being recorded.

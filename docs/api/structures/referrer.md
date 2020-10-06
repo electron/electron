@@ -1,7 +1,7 @@
 # Referrer Object
 
-* `url` String - HTTP Referrer URL.
-* `policy` String - Can be `default`, `unsafe-url`,
+* `url` string - HTTP Referrer URL.
+* `policy` string - Can be `default`, `unsafe-url`,
   `no-referrer-when-downgrade`, `no-referrer`, `origin`,
   `strict-origin-when-cross-origin`, `same-origin` or `strict-origin`.
   See the [Referrer-Policy spec][1] for more details on the

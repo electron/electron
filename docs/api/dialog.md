@@ -19,12 +19,12 @@ The `dialog` module has the following methods:
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
-  * `defaultPath` String (optional)
-  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+  * `title` string (optional)
+  * `defaultPath` string (optional)
+  * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should
+  * `properties` string[] (optional) - Contains which features the dialog should
     use. The following values are supported:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
@@ -41,11 +41,11 @@ The `dialog` module has the following methods:
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
-  * `message` String (optional) _macOS_ - Message to display above input
+  * `message` string (optional) _macOS_ - Message to display above input
     boxes.
-  * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
 
-Returns `String[] | undefined`, the file paths chosen by the user; if the dialog is cancelled it returns `undefined`.
+Returns `string[] | undefined`, the file paths chosen by the user; if the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -82,12 +82,12 @@ dialog.showOpenDialogSync(mainWindow, {
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
-  * `defaultPath` String (optional)
-  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+  * `title` string (optional)
+  * `defaultPath` string (optional)
+  * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should
+  * `properties` string[] (optional) - Contains which features the dialog should
     use. The following values are supported:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
@@ -104,15 +104,15 @@ dialog.showOpenDialogSync(mainWindow, {
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
-  * `message` String (optional) _macOS_ - Message to display above input
+  * `message` string (optional) _macOS_ - Message to display above input
     boxes.
-  * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
-* `canceled` Boolean - whether or not the dialog was canceled.
-* `filePaths` String[] - An array of file paths chosen by the user. If the dialog is cancelled this will be an empty array.
-* `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated. (For return values, see [table here](#bookmarks-array).)
+* `canceled` boolean - whether or not the dialog was canceled.
+* `filePaths` string[] - An array of file paths chosen by the user. If the dialog is cancelled this will be an empty array.
+* `bookmarks` string[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated. (For return values, see [table here](#bookmarks-array).)
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -154,27 +154,27 @@ dialog.showOpenDialog(mainWindow, {
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
-  * `defaultPath` String (optional) - Absolute directory path, absolute file
+  * `title` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
-  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+  * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `message` String (optional) _macOS_ - Message to display above text fields.
-  * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
+  * `message` string (optional) _macOS_ - Message to display above text fields.
+  * `nameFieldLabel` string (optional) _macOS_ - Custom label for the text
     displayed in front of the filename text field.
-  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
+  * `showsTagField` boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
-  * `properties` String[] (optional)
+  * `properties` string[] (optional)
     * `showHiddenFiles` - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
     * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
-  * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
-Returns `String | undefined`, the path of the file chosen by the user; if the dialog is cancelled it returns `undefined`.
+Returns `string | undefined`, the path of the file chosen by the user; if the dialog is cancelled it returns `undefined`.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -185,29 +185,29 @@ The `filters` specifies an array of file types that can be displayed, see
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
-  * `defaultPath` String (optional) - Absolute directory path, absolute file
+  * `title` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
-  * `buttonLabel` String (optional) - Custom label for the confirmation button, when
+  * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `message` String (optional) _macOS_ - Message to display above text fields.
-  * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
+  * `message` string (optional) _macOS_ - Message to display above text fields.
+  * `nameFieldLabel` string (optional) _macOS_ - Custom label for the text
     displayed in front of the filename text field.
-  * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
-  * `properties` String[] (optional)
+  * `showsTagField` boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
+  * `properties` string[] (optional)
     * `showHiddenFiles` - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
     * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
-  * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `canceled` Boolean - whether or not the dialog was canceled.
-  * `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
-  * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
+  * `canceled` boolean - whether or not the dialog was canceled.
+  * `filePath` string (optional) - If the dialog is canceled, this will be `undefined`.
+  * `bookmark` string (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -221,32 +221,32 @@ expanding and collapsing the dialog.
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
+  * `type` string (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
   `"error"` display the same warning icon.
-  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
+  * `buttons` string[] (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
-  * `detail` String (optional) - Extra information of the message.
-  * `checkboxLabel` String (optional) - If provided, the message box will
+  * `title` string (optional) - Title of the message box, some platforms will not show it.
+  * `message` string - Content of the message box.
+  * `detail` string (optional) - Extra information of the message.
+  * `checkboxLabel` string (optional) - If provided, the message box will
     include a checkbox with the given label.
-  * `checkboxChecked` Boolean (optional) - Initial checked state of the
+  * `checkboxChecked` boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
-  * `icon` ([NativeImage](native-image.md) | String) (optional)
+  * `icon` ([NativeImage](native-image.md) | string) (optional)
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
     return value.
-  * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
+  * `noLink` boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
-  * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
+  * `normalizeAccessKeys` boolean (optional) - Normalize the keyboard access keys
     across platforms. Default is `false`. Enabling this assumes `&` is used in
     the button labels for the placement of the keyboard shortcut access key
     and labels will be converted so they work correctly on each platform, `&`
@@ -267,32 +267,32 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
+  * `type` string (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
   `"error"` display the same warning icon.
-  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
+  * `buttons` string[] (optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
-  * `detail` String (optional) - Extra information of the message.
-  * `checkboxLabel` String (optional) - If provided, the message box will
+  * `title` string (optional) - Title of the message box, some platforms will not show it.
+  * `message` string - Content of the message box.
+  * `detail` string (optional) - Extra information of the message.
+  * `checkboxLabel` string (optional) - If provided, the message box will
     include a checkbox with the given label.
-  * `checkboxChecked` Boolean (optional) - Initial checked state of the
+  * `checkboxChecked` boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
   * `icon` [NativeImage](native-image.md) (optional)
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
     return value.
-  * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
+  * `noLink` boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
     the style of modern Windows apps. If you don't like this behavior, you can
     set `noLink` to `true`.
-  * `normalizeAccessKeys` Boolean (optional) - Normalize the keyboard access keys
+  * `normalizeAccessKeys` boolean (optional) - Normalize the keyboard access keys
     across platforms. Default is `false`. Enabling this assumes `&` is used in
     the button labels for the placement of the keyboard shortcut access key
     and labels will be converted so they work correctly on each platform, `&`
@@ -302,8 +302,8 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     via `Alt-W` on Windows and Linux.
 
 Returns `Promise<Object>` - resolves with a promise containing the following properties:
-  * `response` Number - The index of the clicked button.
-  * `checkboxChecked` Boolean - The checked state of the checkbox if
+  * `response` number - The index of the clicked button.
+  * `checkboxChecked` boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
 Shows a message box.
@@ -312,8 +312,8 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 
 ### `dialog.showErrorBox(title, content)`
 
-* `title` String - The title to display in the error box.
-* `content` String - The text content to display in the error box.
+* `title` string - The title to display in the error box.
+* `content` string - The text content to display in the error box.
 
 Displays a modal dialog that shows an error message.
 
@@ -327,7 +327,7 @@ and no GUI dialog will appear.
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `certificate` [Certificate](structures/certificate.md) - The certificate to trust/import.
-  * `message` String - The message to display to the user.
+  * `message` string - The message to display to the user.
 
 Returns `Promise<void>` - resolves when the certificate trust dialog is shown.
 

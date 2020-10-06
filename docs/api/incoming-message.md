@@ -47,7 +47,7 @@ An `Integer` indicating the HTTP response status code.
 
 #### `response.statusMessage`
 
-A `String` representing the HTTP status message.
+A `string` representing the HTTP status message.
 
 #### `response.headers`
 
@@ -65,7 +65,7 @@ formatted as follows:
 
 #### `response.httpVersion`
 
-A `String` indicating the HTTP protocol version number. Typical values are '1.0'
+A `string` indicating the HTTP protocol version number. Typical values are '1.0'
 or '1.1'. Additionally `httpVersionMajor` and `httpVersionMinor` are two
 Integer-valued readable properties that return respectively the HTTP major and
 minor version numbers.

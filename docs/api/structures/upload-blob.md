@@ -1,4 +1,4 @@
 # UploadBlob Object
 
-* `type` String - `blob`.
-* `blobUUID` String - UUID of blob data to upload.
+* `type` string - `blob`.
+* `blobUUID` string - UUID of blob data to upload.

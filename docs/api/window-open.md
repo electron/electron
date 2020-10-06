@@ -16,9 +16,9 @@ string.
 
 ### `window.open(url[, frameName][, features])`
 
-* `url` String
-* `frameName` String (optional)
-* `features` String (optional)
+* `url` string
+* `frameName` string (optional)
+* `features` string (optional)
 
 Returns [`BrowserWindowProxy`](browser-window-proxy.md) - Creates a new window
 and returns an instance of `BrowserWindowProxy` class.
@@ -45,8 +45,8 @@ window.open('https://github.com', '_blank', 'nodeIntegration=no')
 
 ### `window.opener.postMessage(message, targetOrigin)`
 
-* `message` String
-* `targetOrigin` String
+* `message` string
+* `targetOrigin` string
 
 Sends a message to the parent window with the specified origin or `*` for no
 origin preference.
