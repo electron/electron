@@ -300,7 +300,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
     command: |
       echo 'export USE_GOMA=true' >> $BASH_ENV
       if [ "`uname`" == "Linux" ]; then
-        echo 'export NUMBER_OF_NINJA_PROCESSES=200' >> $BASH_ENV
+        echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
       else
         echo 'export NUMBER_OF_NINJA_PROCESSES=25' >> $BASH_ENV
       fi
@@ -1801,7 +1801,7 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1881,7 +1881,7 @@ jobs:
           checkout: false
 
   linux-ia32-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-ia32
