@@ -430,6 +430,12 @@ node::Environment* NodeBindings::CreateEnvironment(
   // crash message and location to CrashReports.
   is.fatal_error_callback = V8FatalErrorCallback;
 
+  // We don't want to abort either in the renderer or browser processes.
+  // We already listen for uncaught exceptions and handle them there.
+  is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+    return false;
+  };
+
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
