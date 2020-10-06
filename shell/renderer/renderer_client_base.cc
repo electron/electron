@@ -16,7 +16,6 @@
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
@@ -32,6 +31,7 @@
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -136,7 +136,7 @@ void RendererClientBase::DidCreateScriptContext(
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   bool enableRemoteModule =
-      render_frame->GetWebkitPreferences().enable_remote_module;
+      render_frame->GetBlinkPreferences().enable_remote_module;
   global.SetHidden("enableRemoteModule", enableRemoteModule);
 #endif
 }
@@ -273,7 +273,7 @@ void RendererClientBase::RenderFrameCreated(
   if (render_frame->IsMainFrame() && render_view) {
     blink::WebView* webview = render_view->GetWebView();
     if (webview) {
-      auto prefs = render_frame->GetWebkitPreferences();
+      auto prefs = render_frame->GetBlinkPreferences();
       if (prefs.guest_instance_id) {  // webview.
         webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
       } else {  // normal window.
@@ -299,7 +299,7 @@ void RendererClientBase::RenderFrameCreated(
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (render_frame->GetWebkitPreferences().enable_spellcheck)
+  if (render_frame->GetBlinkPreferences().enable_spellcheck)
     new SpellCheckProvider(render_frame, spellcheck_.get(), this);
 #endif
 }
@@ -332,7 +332,7 @@ bool RendererClientBase::OverrideCreatePlugin(
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-      render_frame->GetWebkitPreferences().enable_plugins)
+      render_frame->GetBlinkPreferences().enable_plugins)
     return false;
 
   *plugin = nullptr;
@@ -443,7 +443,7 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     v8::Isolate* isolate) const {
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
-  if (render_frame && render_frame->GetWebkitPreferences().context_isolation)
+  if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
     return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();

@@ -4,9 +4,9 @@
 
 #include "shell/renderer/content_settings_observer.h"
 
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/options_switches.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/url_conversion.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -34,8 +34,7 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
 
 bool ContentSettingsObserver::AllowStorageAccessSync(StorageType storage_type) {
   if (storage_type == StorageType::kDatabase &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableWebSQL)) {
+      render_frame()->GetBlinkPreferences().enable_websql) {
     return false;
   }
 

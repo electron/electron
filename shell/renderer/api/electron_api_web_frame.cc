@@ -10,7 +10,6 @@
 
 #include "base/command_line.h"
 #include "base/memory/memory_pressure_listener.h"
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
@@ -27,6 +26,7 @@
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -379,7 +379,7 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
                                       v8::Local<v8::Value> window,
                                       std::string pref_name) {
   content::RenderFrame* render_frame = GetRenderFrame(window);
-  const content::WebPreferences& prefs = render_frame->GetWebkitPreferences();
+  const auto& prefs = render_frame->GetBlinkPreferences();
 
   if (pref_name == options::kPreloadScripts) {
     return gin::ConvertToV8(isolate, prefs.preloads);
@@ -614,7 +614,7 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   ScriptExecutionCallback::CompletionCallback completion_callback;
   args->GetNext(&completion_callback);
 
-  auto prefs = render_frame->GetWebkitPreferences();
+  auto& prefs = render_frame->GetBlinkPreferences();
 
   render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
@@ -680,7 +680,7 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
                                blink::WebURL(GURL(url)), start_line));
   }
 
-  auto prefs = render_frame->GetWebkitPreferences();
+  auto& prefs = render_frame->GetBlinkPreferences();
 
   // Debugging tip: if you see a crash stack trace beginning from this call,
   // then it is very likely that some exception happened when executing the

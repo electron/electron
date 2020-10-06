@@ -276,6 +276,8 @@ const char kDisableNTLMv2[] = "disable-ntlm-v2";
 
 const char kGlobalCrashKeys[] = "global-crash-keys";
 
+const char kEnableWebSQL[] = "enableWebSQL";
+
 }  // namespace switches
 
 }  // namespace electron

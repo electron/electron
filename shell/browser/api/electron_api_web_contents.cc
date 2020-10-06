@@ -780,11 +780,14 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->raw_features = params.raw_features;
   tracker->body = params.body;
 
-  v8::HandleScope scope(isolate());
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
   v8::Local<v8::Value> val =
-      gin::ConvertToV8(isolate(), pending_child_web_preferences_);
+      gin::ConvertToV8(isolate, pending_child_web_preferences_);
   gin_helper::Dictionary dict;
-  gin::ConvertFromV8(isolate(), val, &dict);
+  gin::ConvertFromV8(isolate, val, &dict);
   pending_child_web_preferences_.DictEmpty();
 
   new WebContentsPreferences(new_contents, dict);
@@ -795,7 +798,8 @@ bool WebContents::IsWebContentsCreationOverridden(
     content::mojom::WindowContainerType window_container_type,
     const GURL& opener_url,
     const content::mojom::CreateNewWindowParams& params) {
-  if (Emit("-will-add-new-contents", params.target_url, params.frame_name, params.raw_features)) {
+  if (Emit("-will-add-new-contents", params.target_url, params.frame_name,
+           params.raw_features)) {
     return true;
   }
   return false;
@@ -803,7 +807,10 @@ bool WebContents::IsWebContentsCreationOverridden(
 
 void WebContents::SetNextChildWebPreferences(
     const gin_helper::Dictionary preferences) {
-  gin::ConvertFromV8(isolate(), preferences.GetHandle(),
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  gin::ConvertFromV8(isolate, preferences.GetHandle(),
                      &pending_child_web_preferences_);
 }
 

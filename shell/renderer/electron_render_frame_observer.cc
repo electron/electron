@@ -11,7 +11,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
@@ -22,6 +21,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -65,7 +65,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  auto prefs = render_frame_->GetWebkitPreferences();
+  auto prefs = render_frame_->GetBlinkPreferences();
   bool use_context_isolation = prefs.context_isolation;
   // This logic matches the EXPLAINED logic in electron_renderer_client.cc
   // to avoid explaining it twice go check that implementation in
@@ -161,7 +161,7 @@ bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  auto prefs = render_frame_->GetWebkitPreferences();
+  auto prefs = render_frame_->GetBlinkPreferences();
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
   if (prefs.context_isolation &&
       (render_frame_->IsMainFrame() || allow_node_in_sub_frames))

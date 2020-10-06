@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/command_line.h"
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
@@ -21,6 +20,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -82,7 +82,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
-  auto prefs = render_frame->GetWebkitPreferences();
+  auto prefs = render_frame->GetBlinkPreferences();
   bool reuse_renderer_processes_enabled =
       prefs.disable_electron_site_instance_overrides;
   // Consider the window not "opened" if it does not have an Opener, or if a
@@ -172,17 +172,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // for existing users.
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
-<<<<<<< HEAD
-  auto prefs = render_frame->GetWebkitPreferences();
+  auto prefs = render_frame->GetBlinkPreferences();
   if (prefs.node_integration_in_sub_frames ||
       prefs.disable_electron_site_instance_overrides) {
-    node::RunAtExit(env);
-=======
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
-      command_line->HasSwitch(
-          switches::kDisableElectronSiteInstanceOverrides)) {
->>>>>>> origin/master
     node::FreeEnvironment(env);
     if (env == node_bindings_->uv_env())
       node::FreeIsolateData(node_bindings_->isolate_data());
@@ -227,7 +219,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 void ElectronRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  auto prefs = render_frame->GetWebkitPreferences();
+  auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled
   if (!prefs.webview_tag)
     return;

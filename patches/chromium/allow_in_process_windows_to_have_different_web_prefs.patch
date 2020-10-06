@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/content/public/common/common_param_traits_macros.h b/content/public/common/common_param_traits_macros.h
-index a7f8944a9c763c226c5c18ba2bc0256143a21318..2d4fcce5e6a5b5a95bfcf8f93ddcbf349f352115 100644
+index ba371f4a80e821c96fa00e9b9b405894c1b67a90..7f0d676833ea1e396896d1aea7727556bfa3247b 100644
 --- a/content/public/common/common_param_traits_macros.h
 +++ b/content/public/common/common_param_traits_macros.h
-@@ -132,6 +132,28 @@ IPC_STRUCT_TRAITS_BEGIN(content::WebPreferences)
+@@ -132,6 +132,28 @@ IPC_STRUCT_TRAITS_BEGIN(blink::web_pref::WebPreferences)
    IPC_STRUCT_TRAITS_MEMBER(webgl2_enabled)
    IPC_STRUCT_TRAITS_MEMBER(pepper_3d_enabled)
    IPC_STRUCT_TRAITS_MEMBER(record_whole_document)
@@ -40,11 +40,11 @@ index a7f8944a9c763c226c5c18ba2bc0256143a21318..2d4fcce5e6a5b5a95bfcf8f93ddcbf34
    IPC_STRUCT_TRAITS_MEMBER(flash_3d_enabled)
    IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_enabled)
    IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_baseline_enabled)
-diff --git a/content/public/common/web_preferences.cc b/content/public/common/web_preferences.cc
-index 0cc0c87e74e829e16fc9dd449bef33a7db5f6799..3131bc806acc5dd9588d74979b9ec0c35360a8a8 100644
---- a/content/public/common/web_preferences.cc
-+++ b/content/public/common/web_preferences.cc
-@@ -177,6 +177,28 @@ WebPreferences::WebPreferences()
+diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
+index 940721ccb3f6cea6ad0ffdc71e0975a085b4fda7..9651e16018c2e646c4d7859ce3eaec981d57e208 100644
+--- a/third_party/blink/common/web_preferences/web_preferences.cc
++++ b/third_party/blink/common/web_preferences/web_preferences.cc
+@@ -158,6 +158,28 @@ WebPreferences::WebPreferences()
        navigate_on_drag_drop(true),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
@@ -72,12 +72,12 @@ index 0cc0c87e74e829e16fc9dd449bef33a7db5f6799..3131bc806acc5dd9588d74979b9ec0c3
 +
        cookie_enabled(true),
        accelerated_video_decode_enabled(false),
-       animation_policy(IMAGE_ANIMATION_POLICY_ALLOWED),
-diff --git a/content/public/common/web_preferences.h b/content/public/common/web_preferences.h
-index e2183b7525eb21349b5de82512d8b9858ba2e743..28cbfa1b1b5dce29a5f48358b8f2603537934b86 100644
---- a/content/public/common/web_preferences.h
-+++ b/content/public/common/web_preferences.h
-@@ -183,6 +183,27 @@ struct CONTENT_EXPORT WebPreferences {
+       animation_policy(kImageAnimationPolicyAllowed),
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
+index 09fbf0fac9c880c2bd64446611efe4debc000767..733706f0d618d1958c8852c8ed734961d933de3c 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences.h
+@@ -165,6 +165,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  

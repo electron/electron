@@ -22,7 +22,7 @@ index f56e27d3b0def3c4b58acd8d12a544f4912f78a5..682dba8763df58e6a6a2d52b5c46e6b8
 @@ -280,6 +281,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Allow the delegate to handle the cursor update. Returns true if handled.
    virtual bool OnUpdateDragCursor();
-
+ 
 +  // Notify the delegate of the RenderWidget's changing cursor.
 +  virtual void OnCursorChanged(const WebCursor& cursor) {}
 +
@@ -40,16 +40,16 @@ index 9dfabaf262152c8b31b15a294ed7204917c7f5e1..0df907a83ff99afa36e70fc8a847f92b
 +  if (delegate_)
 +    delegate_->OnCursorChanged(cursor);
  }
-
+ 
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3fb77b5e0ed7701bd8cf00079288e28af7885308..4d64d994503483c65e6902578579683d5475ca2e 100644
+index 4f535a36397a729ab1cfd9afa4efc4832702703e..e90fe20804b30de73e391c63268d48ac890fdb40 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4280,6 +4280,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -4282,6 +4282,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
-
+ 
 +void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
 +  observers_.ForEachObserver([&](WebContentsObserver* observer) {
 +    observer->OnCursorChanged(cursor);
@@ -86,10 +86,10 @@ index 301fa10bcc3ead324c3982903ee5290ca1b34390..28cbcc231fa4c03c03807ea2a326b78a
 @@ -372,6 +373,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
-
+ 
 +  // Invoked every time the RenderWidget's cursor changes.
 +  virtual void OnCursorChanged(const WebCursor& cursor) {}
 +
    // Invoked when the main frame changes size.
    virtual void MainFrameWasResized(bool width_changed) {}
-
+ 

@@ -136,6 +136,8 @@ extern const char kEnableAuthNegotiatePort[];
 extern const char kDisableNTLMv2[];
 
 extern const char kGlobalCrashKeys[];
+
+extern const char kEnableWebSQL[];
 }  // namespace switches
 
 }  // namespace electron
