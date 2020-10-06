@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/guid.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/binding.h"
@@ -123,11 +124,16 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
       } else {
         continue;
       }
-      // Some apps are passing content-type via headers, which is not accepted
-      // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type") {
+      auto header_name_lowercase = base::ToLowerASCII(iter.first);
+
+      if (header_name_lowercase == "content-type") {
+        // Some apps are passing content-type via headers, which is not accepted
+        // in NetworkService.
         head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
         has_content_type = true;
+      } else if (header_name_lowercase == "content-length" &&
+                 iter.second.is_string()) {
+        base::StringToInt64(iter.second.GetString(), &head->content_length);
       }
     }
   }
