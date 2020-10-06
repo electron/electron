@@ -767,6 +767,7 @@ step-show-sccache-stats: &step-show-sccache-stats
     shell: /bin/bash
     name: Check sccache/goma stats after build
     command: |
+      set +e
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
       fi
