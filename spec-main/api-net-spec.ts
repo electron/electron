@@ -4,7 +4,7 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { defer, delay } from './spec-helpers';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
@@ -1475,6 +1475,28 @@ describe('net module', () => {
       netRequest.end();
       await collectStreamBody(nodeResponse);
       expect(nodeRequestProcessed).to.equal(true);
+    });
+
+    it('should correctly throttle an incoming stream', async () => {
+      let numChunksSent = 0;
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        const data = randomString(kOneMegaByte);
+        const write = () => {
+          let ok = true;
+          do {
+            numChunksSent++;
+            if (numChunksSent > 30) return;
+            ok = response.write(data);
+          } while (ok);
+          response.once('drain', write);
+        };
+        write();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.on('response', () => {});
+      urlRequest.end();
+      await delay(2000);
+      expect(numChunksSent).to.be.at.most(20);
     });
   });
 
