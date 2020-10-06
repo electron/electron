@@ -570,7 +570,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
-          base::Time(),
+          base::Time(), base::Time::Max(),
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)));
 

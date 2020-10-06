@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
-#include "content/browser/frame_host/frame_tree.h"           // nogncheck
-#include "content/browser/frame_host/frame_tree_node.h"      // nogncheck
+#include "content/browser/renderer_host/frame_tree.h"        // nogncheck
+#include "content/browser/renderer_host/frame_tree_node.h"   // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 
 #if BUILDFLAG(ENABLE_OSR)

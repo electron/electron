@@ -14,10 +14,10 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ec267e98e19486163c70b1af240a4b638f554dc6..a33d19e719989584deb2c95f9fd8257e2b03b1f8 100644
+index e35eb49ce8ecccb2d7231bd3d6bd24bcc0a2fd9e..4db6561c0885ab394b17189aa4ba1eeb4ddecf57 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -571,10 +571,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -582,10 +582,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -28,7 +28,7 @@ index ec267e98e19486163c70b1af240a4b638f554dc6..a33d19e719989584deb2c95f9fd8257e
    if (!Client())
      return;
  
-@@ -591,6 +587,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -602,6 +598,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
    // Notify ScriptController that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetScriptController().ClearForClose();
@@ -37,5 +37,5 @@ index ec267e98e19486163c70b1af240a4b638f554dc6..a33d19e719989584deb2c95f9fd8257e
 +  // - Document::Shutdown() can dispose plugins which can run script.
 +  ScriptForbiddenScope forbid_script;
  
-   DCHECK(!view_->IsAttached());
-   SetView(nullptr);
+   // TODO(crbug.com/729196): Trace why LocalFrameView::DetachFromLayout crashes.
+   CHECK(!view_->IsAttached());

@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b741919560649f64b531 100644
+index f56e27d3b0def3c4b58acd8d12a544f4912f78a5..682dba8763df58e6a6a2d52b5c46e6b82344a196 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -16,10 +16,10 @@ index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b74191956064
  #include "components/viz/common/vertical_scroll_direction.h"
  #include "content/common/content_export.h"
 +#include "content/common/cursors/webcursor.h"
- #include "content/common/drag_event_source_info.h"
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
-@@ -281,6 +282,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+ #include "third_party/blink/public/common/input/web_input_event.h"
+@@ -280,6 +281,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Allow the delegate to handle the cursor update. Returns true if handled.
    virtual bool OnUpdateDragCursor();
  
@@ -30,10 +30,10 @@ index 32ffa76e3b13e67b50eed12c1b5b651e3a85a150..7faaaa3f1a728a885244b74191956064
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index ba4490916017d65c08f6f31ef8453928f37b84fd..f336b8c0c7b82b74a0603e6467a4ebf9f783509b 100644
+index 92353f412ba6d4c25e93f22b9a43442db974b31f..991cbec859c7c005aab75c30fb2a9cb841d2cd7d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1715,6 +1715,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1690,6 +1690,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,10 +43,10 @@ index ba4490916017d65c08f6f31ef8453928f37b84fd..f336b8c0c7b82b74a0603e6467a4ebf9
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b3adfd8438c605894e55fb4786cae4fd2e70345b..0aa99ad47d4152f8849577f09a0cb1b796fde70f 100644
+index 07ae134c8f6ba5aa03b9db35b4cea9e8e1668b5a..4b65b5aabf7481102493e20cde9ca17d901eceaa 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3974,6 +3974,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -4280,6 +4280,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -60,10 +60,10 @@ index b3adfd8438c605894e55fb4786cae4fd2e70345b..0aa99ad47d4152f8849577f09a0cb1b7
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index e2a8d8c8242340527e26c4193880be656158376a..588ae2e9695bd622f72c29a49c66abf005899f2b 100644
+index d2f3048bca219770a5c0606e4cb8fc0591a5a981..938dd84593f9aa445a3842b8af39941a5264d61e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -943,6 +943,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -945,6 +945,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;

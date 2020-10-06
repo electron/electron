@@ -33,7 +33,6 @@ mas_disable_remote_layer.patch
 mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
 chrome_key_systems.patch
-allow_nested_error_trackers.patch
 add_didinstallconditionalfeatures.patch
 ssl_security_state_tab_helper.patch
 desktop_media_list.patch
@@ -100,3 +99,4 @@ remove_some_deps_that_do_not_work_on_arm64.patch
 fix_check_issecureeventinputenabled_in_constructor_before_setting.patch
 skip_atk_toolchain_check.patch
 worker_feat_add_hook_to_notify_script_ready.patch
+remove_deprecated_factory_parameter_for_worker_resource_loader.patch

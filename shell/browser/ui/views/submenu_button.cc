@@ -38,7 +38,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* button_listener,
                                &text_height_, 0, 0);
 
   SetInkDropMode(InkDropMode::ON);
-  set_ink_drop_base_color(
+  SetInkDropBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
 }
 
@@ -49,7 +49,7 @@ std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
   std::unique_ptr<views::InkDropRipple> ripple(
       new views::FloodFillInkDropRipple(
           size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          ink_drop_visible_opacity()));
+          GetInkDropVisibleOpacity()));
   return ripple;
 }
 

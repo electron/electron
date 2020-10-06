@@ -151,6 +151,7 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
+  void GetSurveyAPIKey(const DispatchCallback& callback) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);

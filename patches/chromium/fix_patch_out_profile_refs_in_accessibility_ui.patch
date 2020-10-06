@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 34e1fe5d6cf8e9f44dc3def60cf40cd6de8d8d3e..98e8e8ac6cca5cffd9aafebbc06fa78e7917bb98 100644
+index 63dcc09dc00d58eb141a1833db8abe9e8c43f05d..8d6546111e1e3b52b02b19d2f49265c3d8f55cbc 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -19,7 +19,9 @@
@@ -101,14 +101,14 @@ index 34e1fe5d6cf8e9f44dc3def60cf40cd6de8d8d3e..98e8e8ac6cca5cffd9aafebbc06fa78e
 +#if 0
    PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
    bool internal = pref->GetBoolean(prefs::kShowInternalAccessibilityTree);
-+#endif
-   base::string16 accessibility_contents_utf16 =
++#endif  
+   std::string accessibility_contents =
 -      web_contents->DumpAccessibilityTree(internal, property_filters);
 +      web_contents->DumpAccessibilityTree(true, property_filters);
-   result->SetString(kTreeField,
-                     base::UTF16ToUTF8(accessibility_contents_utf16));
+   result->SetString(kTreeField, accessibility_contents);
    CallJavascriptFunction(request_type, *(result.get()));
-@@ -623,7 +628,8 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+ }
+@@ -622,7 +627,8 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        content::AccessibilityTreeFormatter::PropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny,
                       content::AccessibilityTreeFormatter::PropertyFilter::DENY);
@@ -118,7 +118,7 @@ index 34e1fe5d6cf8e9f44dc3def60cf40cd6de8d8d3e..98e8e8ac6cca5cffd9aafebbc06fa78e
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        std::unique_ptr<base::DictionaryValue> result(
-@@ -704,5 +710,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -703,5 +709,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {

@@ -6,10 +6,10 @@ Subject: chore: add v8 apple silicon patches
 Once these are available upstream we can remove this patch.
 
 diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
-index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02e5549e87 100644
+index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf17b290e88 100644
 --- a/src/codegen/arm64/macro-assembler-arm64.cc
 +++ b/src/codegen/arm64/macro-assembler-arm64.cc
-@@ -2973,6 +2973,35 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -2975,6 +2975,35 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
  
    int arg_count = kPrintfMaxArgCount;
  
@@ -45,7 +45,7 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
    // The PCS varargs registers for printf. Note that x0 is used for the printf
    // format string.
    static const CPURegList kPCSVarargs =
-@@ -3083,7 +3112,7 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -3085,7 +3114,7 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
      }
  #endif
    }
@@ -54,7 +54,7 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
    // Load the format string into x0, as per the procedure-call standard.
    //
    // To make the code as portable as possible, the format string is encoded
-@@ -3105,6 +3134,10 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
+@@ -3107,6 +3136,10 @@ void TurboAssembler::PrintfNoPreserve(const char* format,
    }
  
    CallPrintf(arg_count, pcs);
@@ -66,10 +66,10 @@ index 2d3e27e5302f40466917ca5ce28bd787d14d8fe9..d0d55a25a62c255096cfb0348beaae02
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd25165d5fb3e9 100644
+index dc4fdb4d2ef1a327dab529a5aa5990f6705bbd43..2a11ac9e6ab70cc3556cefc95f38b2cec72a2304 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1884,6 +1884,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1898,6 +1898,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index 5f19a6bb7cbb5ace74747a0bcd780034ff4aab54..b860a88febbb6033399ca23862fd2516
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 97f11b55ece56eda8c640e3909cdb31541afbe9b..b06cdebbd294714582b78aeb0f14bc21d3c01ff8 100644
+index d7fbd96fb9f255e6cc110d15289281922e238387..4befa19700c44625ccaa4fca90f6a9cc432feaaf 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -715,7 +715,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -758,7 +758,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -96,7 +96,7 @@ index 97f11b55ece56eda8c640e3909cdb31541afbe9b..b06cdebbd294714582b78aeb0f14bc21
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index 22cae5f668236438c9630287cbd5c6280e12d4b2..461243b4ddbcda4a7f1a3fd888b602a070706b24 100644
+index a37d11db2fb8ee162152d62d7cca0130eacbf3fa..edaabf588c0fdf0d693b32ee2410f677afc20e74 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
@@ -121,10 +121,10 @@ index 5d8abca5abb6f958b61b9922ce0e6eac80bde244..040f8cfd31a1f9f971fc866ab34657ad
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index 3411bb6c87cd05985f35b290dedf3920378ee68a..27d1d21f2b2f5bcab87da358246ff62587898624 100644
+index e0202b98d138b55d1f953655fedef5717d9fb2c3..d69bf0a5be8f3ffb58ca7bf962891d95566e67ff 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
-@@ -1452,6 +1452,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
+@@ -1504,6 +1504,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
      wasm::WasmCompilationResult result = compiler::CompileWasmImportCallWrapper(
          isolate->wasm_engine(), &env, kind, sig, false,
          shared.internal_formal_parameter_count());
