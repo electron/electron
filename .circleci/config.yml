@@ -768,6 +768,7 @@ step-show-sccache-stats: &step-show-sccache-stats
     name: Check sccache/goma stats after build
     command: |
       set +e
+      set +o pipefail
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
       fi
