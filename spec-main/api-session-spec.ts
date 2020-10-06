@@ -979,10 +979,10 @@ describe('session module', () => {
 
   describe('session-created event', () => {
     it('is emitted when a session is created', async () => {
-      const eventEmitted = new Promise<Session>(resolve => app.once('session-created', resolve));
-      session.fromPartition('' + Math.random());
-      const s = await eventEmitted;
-      expect(s.constructor.name).to.equal('Session');
+      const sessionCreated = emittedOnce(app, 'session-created');
+      const session1 = session.fromPartition('' + Math.random());
+      const [session2] = await sessionCreated;
+      expect(session1).to.equal(session2);
     });
   });
 });
