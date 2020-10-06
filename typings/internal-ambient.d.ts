@@ -48,6 +48,13 @@ declare namespace NodeJS {
     isSameOrigin(left: string, right: string): boolean;
   }
 
+  interface EnvironmentBinding {
+    getVar(name: string): string | null;
+    hasVar(name: string): boolean;
+    setVar(name: string, value: string): boolean;
+    unSetVar(name: string): boolean;
+  }
+
   type AsarFileInfo = {
     size: number;
     unpacked: boolean;
@@ -137,6 +144,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
+    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
     };
