@@ -272,6 +272,50 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> scenario_attribute_pnode;
   return attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
                                         &scenario_attribute_pnode);
+  // RETURN_IF_FAILED(
+  // attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+  //                                      &scenario_attribute_pnode));
+
+  /* ComPtr<IXmlElement> audio_element;
+  ScopedHString audio_str(L"audio");
+  RETURN_IF_FAILED(doc->CreateElement(audio_str, &audio_element));
+
+  ComPtr<IXmlNode> audio_node_tmp;
+  RETURN_IF_FAILED(audio_element.As(&audio_node_tmp));
+
+  // Append audio node to toast xml
+  ComPtr<IXmlNode> audio_node;
+  RETURN_IF_FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node));
+
+  // Create silent attribute
+  ComPtr<IXmlNamedNodeMap> attributes;
+  RETURN_IF_FAILED(audio_node->get_Attributes(&attributes));
+
+  ComPtr<IXmlAttribute> silent_attribute;
+  ScopedHString silent_str(L"silent");
+  RETURN_IF_FAILED(doc->CreateAttribute(silent_str, &silent_attribute));
+
+  ComPtr<IXmlNode> silent_attribute_node;
+  RETURN_IF_FAILED(silent_attribute.As(&silent_attribute_node));
+
+  // Set silent attribute to true
+  ScopedHString silent_value(L"true");
+  if (!silent_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> silent_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(silent_value, &silent_text));
+
+  ComPtr<IXmlNode> silent_node;
+  RETURN_IF_FAILED(silent_text.As(&silent_node));
+
+  ComPtr<IXmlNode> child_node;
+  RETURN_IF_FAILED(
+      silent_attribute_node->AppendChild(silent_node.Get(), &child_node));
+
+  ComPtr<IXmlNode> silent_attribute_pnode;
+  return attributes.Get()->SetNamedItem(silent_attribute_node.Get(),
+                                        &silent_attribute_pnode);*/
 }
 
 HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
