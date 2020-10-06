@@ -3,7 +3,7 @@ import type { MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'elect
 
 import * as url from 'url';
 import * as path from 'path';
-import { openGuestWindow } from '@electron/internal/browser/guest-window-manager';
+import { openGuestWindow, makeWebPreferences } from '@electron/internal/browser/guest-window-manager';
 import { NavigationController } from '@electron/internal/browser/navigation-controller';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
@@ -613,14 +613,18 @@ WebContents.prototype._init = function () {
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string, rawFeatures: string) => {
       windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName, rawFeatures);
-      if (!event.defaultPrevented && windowOpenOverriddenOptions) {
-        this._setNextChildWebPreferences({
+      if (!event.defaultPrevented) {
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
+          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+          ...windowOpenOverriddenOptions.webPreferences
+        } : undefined;
+        console.log('secureOverrideWebPreferences', secureOverrideWebPreferences);
+        this._setNextChildWebPreferences(
           // Allow setting of backgroundColor as a webPreference even though
           // it's technically a BrowserWindowConstructorOptions option because
           // we need to access it in the renderer at init time.
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          ...windowOpenOverriddenOptions.webPreferences
-        });
+          makeWebPreferences({ embedder: event.sender, secureOverrideWebPreferences })
+        );
       }
     });
 

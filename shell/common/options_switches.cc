@@ -276,7 +276,7 @@ const char kDisableNTLMv2[] = "disable-ntlm-v2";
 
 const char kGlobalCrashKeys[] = "global-crash-keys";
 
-const char kEnableWebSQL[] = "enableWebSQL";
+const char kEnableWebSQL[] = "enable-websql";
 
 }  // namespace switches
 

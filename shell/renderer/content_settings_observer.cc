@@ -4,6 +4,7 @@
 
 #include "shell/renderer/content_settings_observer.h"
 
+#include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -34,7 +35,10 @@ bool ContentSettingsObserver::AllowStorage(bool local) {
 
 bool ContentSettingsObserver::AllowStorageAccessSync(StorageType storage_type) {
   if (storage_type == StorageType::kDatabase &&
-      render_frame()->GetBlinkPreferences().enable_websql) {
+      // Command line support is still relevant for extensions.
+      !(base::CommandLine::ForCurrentProcess()->HasSwitch(
+            switches::kEnableWebSQL) ||
+        render_frame()->GetBlinkPreferences().enable_websql)) {
     return false;
   }
 

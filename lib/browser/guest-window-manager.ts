@@ -210,15 +210,7 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOpti
 }) {
   const { options: parsedOptions, webPreferences: parsedWebPreferences, additionalFeatures } = parseFeatures(features, useDeprecatedBehaviorForBareValues);
 
-  const parentWebPreferences = (embedder as any).getLastWebPreferences();
-  const securityWebPreferencesFromParent = Object.keys(securityWebPreferences).reduce((map, key) => {
-    if (securityWebPreferences[key] === parentWebPreferences[key]) {
-      map[key] = parentWebPreferences[key];
-    }
-    return map;
-  }, {} as any);
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
-  const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
 
   return {
     additionalFeatures,
@@ -230,19 +222,42 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOpti
       height: 600,
       ...parsedOptions,
       ...overrideOptions,
-      webPreferences: {
-        ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions ? deprecatedInheritedOptions.webPreferences : null),
-        ...parsedWebPreferences,
-        // Note that order is key here, we want to disallow the renderer's
-        // ability to change important security options but allow main (via
-        // setWindowOpenOverride) to change them.
-        ...securityWebPreferencesFromParent,
-        ...(overrideOptions && overrideOptions.webPreferences),
-        // Sets correct openerId here to give correct options to 'new-window' event handler
-        // TODO: Figure out another way to pass this?
-        openerId
-      }
+      webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
     }
+  };
+}
+
+export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {}, insecureParsedWebPreferences: parsedWebPreferences = {}, useDeprecatedBehaviorForOptionInheritance = true }: {
+  embedder: WebContents,
+  insecureParsedWebPreferences?: ReturnType<typeof parseFeatures>['webPreferences'],
+  // Note that override preferences are considered elevated, and should only be
+  // sourced from the main process, as they override security defaults. If you
+  // have unvetted prefs, use parsedWebPreferences.
+  secureOverrideWebPreferences?: BrowserWindowConstructorOptions['webPreferences'],
+  useDeprecatedBehaviorForBareValues?: boolean
+  useDeprecatedBehaviorForOptionInheritance?: boolean
+}) {
+  const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
+  const parentWebPreferences = (embedder as any).getLastWebPreferences();
+  const securityWebPreferencesFromParent = Object.keys(securityWebPreferences).reduce((map, key) => {
+    if (securityWebPreferences[key] === parentWebPreferences[key]) {
+      map[key] = parentWebPreferences[key];
+    }
+    return map;
+  }, {} as any);
+  const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
+
+  return {
+    ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions ? deprecatedInheritedOptions.webPreferences : null),
+    ...parsedWebPreferences,
+    // Note that order is key here, we want to disallow the renderer's
+    // ability to change important security options but allow main (via
+    // setWindowOpenOverride) to change them.
+    ...securityWebPreferencesFromParent,
+    ...secureOverrideWebPreferences,
+    // Sets correct openerId here to give correct options to 'new-window' event handler
+    // TODO: Figure out another way to pass this?
+    openerId
   };
 }
 
