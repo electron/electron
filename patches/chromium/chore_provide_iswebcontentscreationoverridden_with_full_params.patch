@@ -444,7 +444,7 @@ index 9651e16018c2e646c4d7859ce3eaec981d57e208..f766c621d2e30388de0d8e6cad223f71
        node_integration(false),
        node_integration_in_worker(false),
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 39a58363e717a0b9d71b7e3ca26578f81f8fb453..2b456186ac0930e0b415f0095aac1f023268a5c1 100644
+index 39a58363e717a0b9d71b7e3ca26578f81f8fb453..4372cf1e383ef3884048fb2a06c72888abcac9e3 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -427,8 +427,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -453,12 +453,12 @@ index 39a58363e717a0b9d71b7e3ca26578f81f8fb453..2b456186ac0930e0b415f0095aac1f02
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    if (delegate_)
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 97142bc886e1bbf05871fb6603342ed0cd15dcf8..ee2394aab4e21abf960ba438f7b4011d6d73f2f2 100644
+index 97142bc886e1bbf05871fb6603342ed0cd15dcf8..94206bb4674e696093a5cfc027281254c3bf37ff 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -153,8 +153,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
@@ -467,7 +467,7 @@ index 97142bc886e1bbf05871fb6603342ed0cd15dcf8..ee2394aab4e21abf960ba438f7b4011d
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void RequestMediaAccessPermission(
        content::WebContents* web_contents,
        const content::MediaStreamRequest& request,
