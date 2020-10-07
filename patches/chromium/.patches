@@ -99,4 +99,3 @@ skip_atk_toolchain_check.patch
 worker_feat_add_hook_to_notify_script_ready.patch
 fix_properly_honor_printing_page_ranges.patch
 fix_use_electron_generated_resources.patch
-libvpx_fix_highbd_config_on_windows_arm64.patch
