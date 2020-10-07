@@ -130,7 +130,7 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
 };
 
 /**
- * Deprecated in favor of `webContents.setWindowOpenOverride` and
+ * Deprecated in favor of `webContents.setWindowOpenHandler` and
  * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
  */
 function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, additionalFeatures, disposition, referrer, postData }: {
@@ -252,7 +252,7 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     ...parsedWebPreferences,
     // Note that order is key here, we want to disallow the renderer's
     // ability to change important security options but allow main (via
-    // setWindowOpenOverride) to change them.
+    // setWindowOpenHandler) to change them.
     ...securityWebPreferencesFromParent,
     ...secureOverrideWebPreferences,
     // Sets correct openerId here to give correct options to 'new-window' event handler

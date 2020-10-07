@@ -19,15 +19,15 @@ directly, as if it were a `div` in the parent.
 
 Electron pairs this native Chrome `Window` with a BrowserWindow under the hood.
 You can take advantage of all the customization available when creating a
-BrowserWindow in the main process by using `webContents.setWindowOpenOverride()`
+BrowserWindow in the main process by using `webContents.setWindowOpenHandler()`
 for renderer-created windows.
 
 BrowserWindow constructor options are set by, in increasing precedence
 order: options inherited from the parent, parsed options
 from the `features` string from `window.open()`, security-related webPreferences
 inherited from the parent, and options given by
-[`webContents.setWindowOpenOverride`](web-contents.md#contentssetwindowopenoverride-handler).
-Note that `webContents.setWindowOpenOverride` has final say and full privilege
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetWindowOpenHandler-handler).
+Note that `webContents.setWindowOpenHandler` has final say and full privilege
 because it is invoked in the main process.
 
 ### `window.open(url[, frameName][, features])`
@@ -41,7 +41,7 @@ Returns [`BrowserWindowProxy`](browser-window-proxy.md) | [`Window`](https://dev
 `features` is a comma-separated key-value list, following the standard format of
 the browser. Electron will parse `BrowserWindowConstructorOptions` out of this
 list where possible, for convenience. For full control and better ergonomics,
-consider using `webContents.setWindowOpenOverride` to customize the
+consider using `webContents.setWindowOpenHandler` to customize the
 BrowserWindow creation.
 
 A subset of `WebPreferences` can be set directly,
@@ -66,7 +66,7 @@ window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIn
   `did-create-window` event handler in the `additionalFeatures` argument.
 
 To customize or cancel the creation of the window, you can optionally set an
-override handler with `webContents.setWindowOpenOverride()` from the main
+override handler with `webContents.setWindowOpenHandler()` from the main
 process. Returning `false` cancels the window, while returning an object sets
 the `BrowserWindowConstructorOptions` used when creating the window. Note that
 this is more powerful than passing options through the feature string, as the
@@ -80,7 +80,7 @@ main process.
 // main.js
 const mainWindow = new BrowserWindow()
 
-mainWindow.webContents.setWindowOpenOverride(({ url }) => {
+mainWindow.webContents.setWindowOpenHandler(({ url }) => {
   if (url.startsWith('https://github.com/')) {
     return true
   }
@@ -113,7 +113,7 @@ const mainWindow = new BrowserWindow({
 
 // In this example, only windows with the `about:blank` url will be created.
 // All other urls will be blocked.
-mainWindow.webContents.setWindowOpenOverride(({ url }) => {
+mainWindow.webContents.setWindowOpenHandler(({ url }) => {
   if (url === 'about:blank') {
     return {
       frame: false,

@@ -201,7 +201,7 @@ Returns:
       BrowserWindow. They are merged in increasing precedence: options inherited
       from the parent, parsed options from the `features` string from
       `window.open()`, and options given by
-      [`webContents.setWindowOpenOverride`](web-contents.md#contentssetwindowopenoverride-handler).
+      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetWindowOpenHandler-handler).
       Unrecognized options are not filtered out.
     * `additionalFeatures` String[] - The non-standard features (features not
       handled Chromium or Electron) _Deprecated_
@@ -218,7 +218,7 @@ Returns:
 
 Similar to the deprecated `new-window` event, except it's emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
-[`webContents.setWindowOpenOverride`](web-contents.md#contentssetwindowopenoverride-handler).
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetWindowOpenHandler-handler).
 
 See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
 
@@ -1114,7 +1114,7 @@ Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
 Ignore application menu shortcuts while this web contents is focused.
 
-#### `contents.setWindowOpenOverride(handler)`
+#### `contents.setWindowOpenHandler(handler)`
 
 * `handler` Function<Boolean | BrowserWindowConstructorOptions>
   * `details` Object

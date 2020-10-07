@@ -72,7 +72,7 @@ ipcMainInternal.on(
       );
     }
 
-    const browserWindowOptions = (event.sender as any)._callWindowOpenOverride(event, url, frameName, features);
+    const browserWindowOptions = (event.sender as any)._callWindowOpenHandler(event, url, frameName, features);
     if (event.defaultPrevented) {
       return;
     }

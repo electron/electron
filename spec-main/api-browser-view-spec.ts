@@ -228,7 +228,7 @@ describe('BrowserView module', () => {
     it('works in BrowserView', (done) => {
       view = new BrowserView();
       w.setBrowserView(view);
-      view.webContents.setWindowOpenOverride(({ url, frameName }) => {
+      view.webContents.setWindowOpenHandler(({ url, frameName }) => {
         expect(url).to.equal('http://host/');
         expect(frameName).to.equal('host');
         done();

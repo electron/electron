@@ -637,7 +637,7 @@ void WebContents::InitWithSessionAndOptions(
 
   // Save the preferences in C++.
   // If there's already a WebContentsPreferences object, we created it as part
-  // of the webContents.setWindowOpenOverride path, so don't overwrite it.
+  // of the webContents.setWindowOpenHandler path, so don't overwrite it.
   if (!WebContentsPreferences::From(web_contents())) {
     new WebContentsPreferences(web_contents(), options);
   }

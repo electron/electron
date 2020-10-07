@@ -87,7 +87,7 @@ describe('new-window event', () => {
   }
 });
 
-describe('webContents.setWindowOpenOverride', () => {
+describe('webContents.setWindowOpenHandler', () => {
   const testConfig = {
     native: {
       browserWindowOptions: {
@@ -121,7 +121,7 @@ describe('webContents.setWindowOpenOverride', () => {
       afterEach(closeAllWindows);
 
       it('does not fire window creation events if an override returns false', (done) => {
-        browserWindow.webContents.setWindowOpenOverride(() => false);
+        browserWindow.webContents.setWindowOpenHandler(() => false);
         browserWindow.webContents.on('new-window', () => {
           assert.fail('new-window should not to be called with an overridden window.open');
         });
@@ -140,7 +140,7 @@ describe('webContents.setWindowOpenOverride', () => {
       it('fires handler with correct params', (done) => {
         const testFrameName = 'test-frame-name';
         const testUrl = 'app://does-not-exist/';
-        browserWindow.webContents.setWindowOpenOverride(({ url, frameName }) => {
+        browserWindow.webContents.setWindowOpenHandler(({ url, frameName }) => {
           expect(url).to.equal(testUrl);
           expect(frameName).to.equal(testFrameName);
           done();
@@ -151,7 +151,7 @@ describe('webContents.setWindowOpenOverride', () => {
       });
 
       it('does fire window creation events if an override returns true', async () => {
-        browserWindow.webContents.setWindowOpenOverride(() => true);
+        browserWindow.webContents.setWindowOpenHandler(() => true);
 
         setImmediate(() => {
           browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
@@ -164,7 +164,7 @@ describe('webContents.setWindowOpenOverride', () => {
       });
 
       it('can change webPreferences of child windows', (done) => {
-        browserWindow.webContents.setWindowOpenOverride(() => ({ webPreferences: { defaultFontSize: 30 } }));
+        browserWindow.webContents.setWindowOpenHandler(() => ({ webPreferences: { defaultFontSize: 30 } }));
 
         browserWindow.webContents.on('did-create-window', async (childWindow) => {
           await childWindow.webContents.executeJavaScript("document.write('hello')");

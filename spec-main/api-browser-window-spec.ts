@@ -2182,7 +2182,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        w.webContents.setWindowOpenOverride(() => ({
+        w.webContents.setWindowOpenHandler(() => ({
           webPreferences: {
             preload
           }
@@ -2213,7 +2213,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        w.webContents.setWindowOpenOverride(() => ({
+        w.webContents.setWindowOpenHandler(() => ({
           webPreferences: {
             preload
           }
@@ -2274,7 +2274,7 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenOverride(() => ({ webPreferences: { preload: preloadPath } }));
+        w.webContents.setWindowOpenHandler(() => ({ webPreferences: { preload: preloadPath } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [, { argv }] = await emittedOnce(ipcMain, 'answer');
         expect(argv).to.include('--enable-sandbox');
@@ -2289,7 +2289,7 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenOverride(() => ({ webPreferences: { preload: preloadPath, foo: 'bar' } }));
+        w.webContents.setWindowOpenHandler(() => ({ webPreferences: { preload: preloadPath, foo: 'bar' } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           emittedOnce(app, 'web-contents-created'),
@@ -2308,7 +2308,7 @@ describe('BrowserWindow module', () => {
           }
         });
         let childWc: WebContents | null = null;
-        w.webContents.setWindowOpenOverride(() => ({ webPreferences: { preload } }));
+        w.webContents.setWindowOpenHandler(() => ({ webPreferences: { preload } }));
 
         w.webContents.on('did-create-window', (win) => {
           childWc = win.webContents;
@@ -2441,7 +2441,7 @@ describe('BrowserWindow module', () => {
             enableRemoteModule: true
           }
         });
-        w.webContents.setWindowOpenOverride(() => ({ webPreferences: { preload } }));
+        w.webContents.setWindowOpenHandler(() => ({ webPreferences: { preload } }));
 
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'reload-remote-child' });
 
@@ -2604,7 +2604,7 @@ describe('BrowserWindow module', () => {
       it('should inherit the nativeWindowOpen setting in opened windows', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
 
-        w.webContents.setWindowOpenOverride(() => ({
+        w.webContents.setWindowOpenHandler(() => ({
           webPreferences: {
             preload: preloadPath
           }
@@ -2615,7 +2615,7 @@ describe('BrowserWindow module', () => {
       });
       it('should open windows with the options configured via new-window event listeners', async () => {
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenOverride(() => ({
+        w.webContents.setWindowOpenHandler(() => ({
           webPreferences: {
             preload: preloadPath,
             foo: 'bar'
@@ -2660,7 +2660,7 @@ describe('BrowserWindow module', () => {
             }
           });
 
-          w.webContents.setWindowOpenOverride(() => ({
+          w.webContents.setWindowOpenHandler(() => ({
             webPreferences: {
               preload: path.join(fixtures, 'api', 'window-open-preload.js')
             }
@@ -2683,7 +2683,7 @@ describe('BrowserWindow module', () => {
             }
           });
 
-          w.webContents.setWindowOpenOverride(() => ({
+          w.webContents.setWindowOpenHandler(() => ({
             webPreferences: {
               preload: path.join(fixtures, 'api', 'window-open-preload.js')
             }

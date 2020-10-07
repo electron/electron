@@ -1,6 +1,6 @@
 /// <reference path="../electron.d.ts" />
 
- /**
+/**
  * This file augments the Electron TS namespace with the internal APIs
  * that are not documented but are used by Electron internally
  */
@@ -114,8 +114,8 @@ declare namespace Electron {
   type WindowOpenOverride = (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean;
 
   interface WebContentsInternal extends Electron.WebContents {
-    _windowOpenOverrideHandler: any;
-    _callWindowOpenOverride(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
+    _windowOpenHandler: any;
+    _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
@@ -177,7 +177,7 @@ declare namespace Electron {
   }
 
   class View {}
-  
+
   // Experimental views API
   class BaseWindow {
     constructor(args: {show: boolean})

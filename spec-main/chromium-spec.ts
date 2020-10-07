@@ -897,7 +897,7 @@ describe('chromium features', () => {
           const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
             const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
-            w.webContents.setWindowOpenOverride(() => ({
+            w.webContents.setWindowOpenHandler(() => ({
               webPreferences: {
                 sandbox: sandboxPopup
               }

@@ -439,13 +439,13 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
-WebContents.prototype.setWindowOpenOverride = function (handler: (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean) {
-  this._windowOpenOverrideHandler = handler;
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean) {
+  this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenOverride = function (event: any, url: string, frameName: string, rawFeatures: string) {
-  if (this._windowOpenOverrideHandler) {
-    const response = this._windowOpenOverrideHandler({ url, frameName, features: rawFeatures });
+WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string) {
+  if (this._windowOpenHandler) {
+    const response = this._windowOpenHandler({ url, frameName, features: rawFeatures });
 
     switch (typeof response) {
       case 'boolean':
@@ -512,7 +512,7 @@ WebContents.prototype._init = function () {
   this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
   this.length = navigationController.length.bind(navigationController);
 
-  this._windowOpenOverrideHandler = null;
+  this._windowOpenHandler = null;
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
@@ -612,7 +612,7 @@ WebContents.prototype._init = function () {
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string, rawFeatures: string) => {
-      windowOpenOverriddenOptions = this._callWindowOpenOverride(event, url, frameName, rawFeatures);
+      windowOpenOverriddenOptions = this._callWindowOpenHandler(event, url, frameName, rawFeatures);
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           backgroundColor: windowOpenOverriddenOptions.backgroundColor,
