@@ -269,53 +269,120 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(
       scenario_attribute_node->AppendChild(scenario_node.Get(), &child_node));
 
+  /*
+  ComPtr<IXmlDocumentIO> docIO;
+  ComPtr<IXmlDocument> xmlDoc = reinterpret_cast<IXmlDocument*>(*doc);
+  RETURN_IF_FAILED(xmlDoc.As(&docIO));
+  docIO->SaveToFileAsync("C:/Users/mlaurencin/Desktop/", "test.rtf");
+  */
+
   ComPtr<IXmlNode> scenario_attribute_pnode;
+  ///*
   return attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
                                         &scenario_attribute_pnode);
-  // RETURN_IF_FAILED(
-  // attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
-  //                                      &scenario_attribute_pnode));
+  //*/
+  // MICHAELA: Attempting to add dismiss button to reminder
+  /*
+    RETURN_IF_FAILED(
+      attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+                                        &scenario_attribute_pnode));
+  */
 
-  /* ComPtr<IXmlElement> audio_element;
-  ScopedHString audio_str(L"audio");
-  RETURN_IF_FAILED(doc->CreateElement(audio_str, &audio_element));
+  /*
+  ComPtr<IXmlElement> action_element;
+  ScopedHString action_str(L"action");
+  RETURN_IF_FAILED(doc->CreateElement(action_str, &action_element));
 
-  ComPtr<IXmlNode> audio_node_tmp;
-  RETURN_IF_FAILED(audio_element.As(&audio_node_tmp));
+  ComPtr<IXmlNode> action_node_tmp;
+  RETURN_IF_FAILED(action_element.As(&action_node_tmp));
 
-  // Append audio node to toast xml
-  ComPtr<IXmlNode> audio_node;
-  RETURN_IF_FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node));
+  // Append action node to toast xml
+  ComPtr<IXmlNode> action_node;
+  RETURN_IF_FAILED(root->AppendChild(action_node_tmp.Get(), &action_node));
 
-  // Create silent attribute
-  ComPtr<IXmlNamedNodeMap> attributes;
-  RETURN_IF_FAILED(audio_node->get_Attributes(&attributes));
+  // Create activationType attribute
+  ComPtr<IXmlNamedNodeMap> attributes_2;
+  RETURN_IF_FAILED(action_node->get_Attributes(&attributes_2));
 
-  ComPtr<IXmlAttribute> silent_attribute;
-  ScopedHString silent_str(L"silent");
-  RETURN_IF_FAILED(doc->CreateAttribute(silent_str, &silent_attribute));
+  ComPtr<IXmlAttribute> activation_type_attribute;
+  ScopedHString activation_type_str(L"activationType");
+  RETURN_IF_FAILED(doc->CreateAttribute(activation_type_str,
+&activation_type_attribute));
 
-  ComPtr<IXmlNode> silent_attribute_node;
-  RETURN_IF_FAILED(silent_attribute.As(&silent_attribute_node));
+  ComPtr<IXmlNode> activation_type_attribute_node;
+  RETURN_IF_FAILED(activation_type_attribute.As(&activation_type_attribute_node));
 
-  // Set silent attribute to true
-  ScopedHString silent_value(L"true");
-  if (!silent_value.success())
+  // Set activationType attribute to system
+  ScopedHString activation_type_value(L"system");
+  if (!activation_type_value.success())
     return E_FAIL;
 
-  ComPtr<IXmlText> silent_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(silent_value, &silent_text));
+  ComPtr<IXmlText> activation_type_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(activation_type_value,
+&activation_type_text));
 
-  ComPtr<IXmlNode> silent_node;
-  RETURN_IF_FAILED(silent_text.As(&silent_node));
+  ComPtr<IXmlNode> activation_type_node;
+  RETURN_IF_FAILED(activation_type_text.As(&activation_type_node));
 
-  ComPtr<IXmlNode> child_node;
+  ComPtr<IXmlNode> child_node_4;
   RETURN_IF_FAILED(
-      silent_attribute_node->AppendChild(silent_node.Get(), &child_node));
+      activation_type_attribute_node->AppendChild(activation_type_node.Get(),
+&child_node_4));
 
-  ComPtr<IXmlNode> silent_attribute_pnode;
-  return attributes.Get()->SetNamedItem(silent_attribute_node.Get(),
-                                        &silent_attribute_pnode);*/
+  //Attempt to add "arguments"
+  // Create arguments attribute
+  ComPtr<IXmlAttribute> arguments_attribute;
+  ScopedHString arguments_str(L"arguments");
+  RETURN_IF_FAILED(doc->CreateAttribute(arguments_str, &arguments_attribute));
+
+  ComPtr<IXmlNode> arguments_attribute_node;
+  RETURN_IF_FAILED(arguments_attribute.As(&arguments_attribute_node));
+
+  // Set arguments attribute to system
+  ScopedHString arguments_value(L"dismiss");
+  if (!arguments_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> arguments_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(arguments_value, &arguments_text));
+
+  ComPtr<IXmlNode> arguments_node;
+  RETURN_IF_FAILED(arguments_text.As(&arguments_node));
+
+  ComPtr<IXmlNode> child_node_2;
+  RETURN_IF_FAILED(
+      arguments_attribute_node->AppendChild(arguments_node.Get(),
+&child_node_2));
+
+  //Attempt to add "content"
+  // Create content attribute
+  ComPtr<IXmlAttribute> content_attribute;
+  ScopedHString content_str(L"content");
+  RETURN_IF_FAILED(doc->CreateAttribute(content_str, &content_attribute));
+
+  ComPtr<IXmlNode> content_attribute_node;
+  RETURN_IF_FAILED(content_attribute.As(&content_attribute_node));
+
+  // Set content attribute to system
+  ScopedHString content_value(L"");
+  if (!content_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> content_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(content_value, &content_text));
+
+  ComPtr<IXmlNode> content_node;
+  RETURN_IF_FAILED(content_text.As(&content_node));
+
+  ComPtr<IXmlNode> child_node_3;
+  RETURN_IF_FAILED(
+      content_attribute_node->AppendChild(content_node.Get(), &child_node_3));
+
+/////////
+  ComPtr<IXmlNode> activation_type_attribute_pnode;
+  return attributes.Get()->SetNamedItem(activation_type_attribute_node.Get(),
+                                        &activation_type_attribute_pnode);
+  */
 }
 
 HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
