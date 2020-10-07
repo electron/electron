@@ -93,7 +93,7 @@ ipcMainInternal.on(
   }
 );
 
-type IpcHandler = (event: Electron.IpcMainInvokeEvent, guestContents: Electron.WebContentsInternal, ...args: any[]) => void;
+type IpcHandler = (event: Electron.IpcMainInvokeEvent, guestContents: Electron.WebContents, ...args: any[]) => void;
 const makeSafeHandler = function (handler: IpcHandler) {
   return (event: Electron.IpcMainInvokeEvent, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
@@ -102,7 +102,7 @@ const makeSafeHandler = function (handler: IpcHandler) {
       throw new Error(`Invalid guestId: ${guestId}`);
     }
 
-    return handler(event, guestContents as Electron.WebContentsInternal, ...args);
+    return handler(event, guestContents as Electron.WebContents, ...args);
   };
 };
 
