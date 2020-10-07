@@ -49,6 +49,13 @@ declare namespace NodeJS {
     triggerFatalErrorForTesting(): void;
   }
 
+  interface EnvironmentBinding {
+    getVar(name: string): string | null;
+    hasVar(name: string): boolean;
+    setVar(name: string, value: string): boolean;
+    unSetVar(name: string): boolean;
+  }
+
   type AsarFileInfo = {
     size: number;
     unpacked: boolean;
@@ -121,7 +128,7 @@ declare namespace NodeJS {
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
-    on(eventName: 'data', listener: (event: any, data: ArrayBuffer) => void): this;
+    on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(eventName: 'response-started', listener: (event: any, finalUrl: string, responseHead: ResponseHead) => void): this;
     on(eventName: 'complete', listener: (event: any) => void): this;
     on(eventName: 'error', listener: (event: any, netErrorString: string) => void): this;
@@ -138,6 +145,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
+    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
     };

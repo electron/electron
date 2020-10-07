@@ -266,6 +266,15 @@ static_library("chrome") {
       ]
     }
   }
+
+  sources += [ "//chrome/browser/hang_monitor/hang_crash_dump.h" ]
+  if (is_mac) {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump_mac.cc" ]
+  } else if (is_win) {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump_win.cc" ]
+  } else {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump.cc" ]
+  }
 }
 
 source_set("plugins") {

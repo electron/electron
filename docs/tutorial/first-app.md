@@ -188,6 +188,15 @@ Once you've created your initial `main.js`, `index.html`, and `package.json`
 files, you can try your app by running `npm start` from your application's
 directory.
 
+**Note**: If you are building this project without downloading the example
+repository, your `start` script in `package.json` should look like this
+
+```json
+  "scripts": {
+    "start": "electron ."
+  }
+```
+
 ## Trying this Example
 
 Clone and run the code in this tutorial by using the

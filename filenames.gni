@@ -452,6 +452,7 @@ filenames = {
     "shell/common/api/electron_api_clipboard.h",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_command_line.cc",
+    "shell/common/api/electron_api_environment.cc",
     "shell/common/api/electron_api_key_weak_map.h",
     "shell/common/api/electron_api_native_image.cc",
     "shell/common/api/electron_api_native_image.h",

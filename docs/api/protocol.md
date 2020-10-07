@@ -112,7 +112,7 @@ expect streaming responses.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
@@ -133,7 +133,7 @@ from protocols that follow the "generic URI syntax" like `file:`.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
 
@@ -157,7 +157,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
@@ -173,7 +173,7 @@ property.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` ProtocolResponse
 
@@ -188,7 +188,7 @@ should be called with an object that has the `url` property.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
@@ -251,7 +251,7 @@ Returns `Boolean` - Whether `scheme` is already registered.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
@@ -264,7 +264,7 @@ which sends a file as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
@@ -277,7 +277,7 @@ which sends a `String` as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
 
@@ -290,7 +290,7 @@ which sends a `Buffer` as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` [ProtocolResponse](structures/protocol-response.md)
 
@@ -303,7 +303,7 @@ which sends a new HTTP request as a response.
 
 * `scheme` String
 * `handler` Function
-  * `request` ProtocolRequest
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
