@@ -694,8 +694,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
 
-  base::Value pending_child_web_preferences_ =
-      base::Value(base::Value::Type::DICTIONARY);
+  v8::Global<v8::Value> pending_child_web_preferences_;
 
   bool initially_shown_ = true;
 

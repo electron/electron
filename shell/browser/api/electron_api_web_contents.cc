@@ -784,11 +784,10 @@ void WebContents::WebContentsCreatedWithFullParams(
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
-  v8::Local<v8::Value> val =
-      gin::ConvertToV8(isolate, pending_child_web_preferences_);
   gin_helper::Dictionary dict;
-  gin::ConvertFromV8(isolate, val, &dict);
-  pending_child_web_preferences_.DictEmpty();
+  gin::ConvertFromV8(isolate, pending_child_web_preferences_.Get(isolate),
+                     &dict);
+  pending_child_web_preferences_.Reset();
 
   new WebContentsPreferences(new_contents, dict);
 }
@@ -810,8 +809,7 @@ void WebContents::SetNextChildWebPreferences(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  gin::ConvertFromV8(isolate, preferences.GetHandle(),
-                     &pending_child_web_preferences_);
+  pending_child_web_preferences_.Reset(isolate, preferences.GetHandle());
 }
 
 content::WebContents* WebContents::CreateCustomWebContents(
