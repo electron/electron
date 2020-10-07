@@ -458,8 +458,8 @@ void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
-  Emit("data", array_buffer);
-  std::move(resume).Run();
+  Emit("data", array_buffer,
+       base::AdaptCallbackForRepeating(std::move(resume)));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {

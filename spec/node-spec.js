@@ -122,7 +122,7 @@ describe('node feature', () => {
         });
         await emittedOnce(child.stdout, 'close');
         expect(JSON.parse(output)).to.deep.equal({
-          processLog: process.platform === 'win32' ? 'function' : 'undefined',
+          stdoutType: 'pipe',
           processType: 'undefined',
           window: 'undefined'
         });

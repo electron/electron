@@ -1,44 +1,9 @@
 import { webFrame, IpcMessageEvent } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
+import { webViewEvents } from '@electron/internal/common/web-view-events';
 
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
-
-const WEB_VIEW_EVENTS: Record<string, Array<string>> = {
-  'load-commit': ['url', 'isMainFrame'],
-  'did-attach': [],
-  'did-finish-load': [],
-  'did-fail-load': ['errorCode', 'errorDescription', 'validatedURL', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'did-frame-finish-load': ['isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'did-start-loading': [],
-  'did-stop-loading': [],
-  'dom-ready': [],
-  'console-message': ['level', 'message', 'line', 'sourceId'],
-  'context-menu': ['params'],
-  'devtools-opened': [],
-  'devtools-closed': [],
-  'devtools-focused': [],
-  'new-window': ['url', 'frameName', 'disposition', 'options'],
-  'will-navigate': ['url'],
-  'did-start-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
-  'did-frame-navigate': ['url', 'httpResponseCode', 'httpStatusText', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'did-navigate-in-page': ['url', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'focus-change': ['focus', 'guestInstanceId'],
-  close: [],
-  crashed: [],
-  'plugin-crashed': ['name', 'version'],
-  destroyed: [],
-  'page-title-updated': ['title', 'explicitSet'],
-  'page-favicon-updated': ['favicons'],
-  'enter-html-full-screen': [],
-  'leave-html-full-screen': [],
-  'media-started-playing': [],
-  'media-paused': [],
-  'found-in-page': ['result'],
-  'did-change-theme-color': ['themeColor'],
-  'update-target-url': ['url']
-};
 
 const DEPRECATED_EVENTS: Record<string, string> = {
   'page-title-updated': 'page-title-set'
@@ -52,7 +17,7 @@ const dispatchEvent = function (
   }
 
   const domEvent = new Event(eventName) as ElectronInternal.WebViewEvent;
-  WEB_VIEW_EVENTS[eventKey].forEach((prop, index) => {
+  webViewEvents[eventKey].forEach((prop, index) => {
     (domEvent as any)[prop] = args[index];
   });
 
