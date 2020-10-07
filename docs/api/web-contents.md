@@ -201,7 +201,7 @@ Returns:
       BrowserWindow. They are merged in increasing precedence: options inherited
       from the parent, parsed options from the `features` string from
       `window.open()`, and options given by
-      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetWindowOpenHandler-handler).
+      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
       Unrecognized options are not filtered out.
     * `additionalFeatures` String[] - The non-standard features (features not
       handled Chromium or Electron) _Deprecated_
@@ -218,7 +218,7 @@ Returns:
 
 Similar to the deprecated `new-window` event, except it's emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
-[`webContents.setWindowOpenHandler`](web-contents.md#contentssetWindowOpenHandler-handler).
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
 
 See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
 
