@@ -224,8 +224,14 @@ struct Converter<network::mojom::SSLConfigPtr> {
         return false;
     }
 
-    // TODO(nornagon): also support client_cert_pooling_policy and
-    // disabled_cipher_suites. Maybe other SSLConfig properties too?
+    if (options.Has("disabledCipherSuites") &&
+        !options.Get("disabledCipherSuites", &(*out)->disabled_cipher_suites)) {
+      return false;
+    }
+    std::sort((*out)->disabled_cipher_suites.begin(),
+              (*out)->disabled_cipher_suites.end());
+
+    // TODO(nornagon): also support other SSLConfig properties?
     return true;
   }
 };
