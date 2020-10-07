@@ -74,10 +74,18 @@ index 940721ccb3f6cea6ad0ffdc71e0975a085b4fda7..9651e16018c2e646c4d7859ce3eaec98
        accelerated_video_decode_enabled(false),
        animation_policy(kImageAnimationPolicyAllowed),
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 09fbf0fac9c880c2bd64446611efe4debc000767..733706f0d618d1958c8852c8ed734961d933de3c 100644
+index 09fbf0fac9c880c2bd64446611efe4debc000767..0e2a2eb9ed70a3cd133c5347652bb96d0e507732 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
-@@ -165,6 +165,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -9,6 +9,7 @@
+ #include <string>
+ #include <vector>
+ 
++#include "base/files/file_path.h"
+ #include "base/strings/string16.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
+@@ -165,6 +166,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
