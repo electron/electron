@@ -180,7 +180,7 @@ Returns `string` - ETag header value.
 
 #### `downloadItem.getStartTime()`
 
-Returns `Double` - Number of seconds since the UNIX epoch when the download was
+Returns `Double` - number of seconds since the UNIX epoch when the download was
 started.
 
 ### Instance Properties

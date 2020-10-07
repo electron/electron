@@ -77,10 +77,10 @@ Emitted when there is no available update.
 Returns:
 
 * `event` Event
-* `releaseNotes` String
-* `releaseName` String
+* `releaseNotes` string
+* `releaseName` string
 * `releaseDate` Date
-* `updateURL` String
+* `updateURL` string
 
 Emitted when an update has been downloaded.
 
@@ -102,16 +102,16 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(options)`
 
 * `options` Object
-  * `url` String
-  * `headers` Record<String, String> (optional) _macOS_ - HTTP request headers.
-  * `serverType` String (optional) _macOS_ - Can be `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
+  * `url` string
+  * `headers` Record<string, string> (optional) _macOS_ - HTTP request headers.
+  * `serverType` string (optional) _macOS_ - Can be `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
     README for more information.
 
 Sets the `url` and initialize the auto updater.
 
 ### `autoUpdater.getFeedURL()`
 
-Returns `String` - The current update feed URL.
+Returns `string` - The current update feed URL.
 
 ### `autoUpdater.checkForUpdates()`
 

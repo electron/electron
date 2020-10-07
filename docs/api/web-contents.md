@@ -515,7 +515,7 @@ Returns:
 * `result` Object
   * `requestId` Integer
   * `activeMatchOrdinal` Integer - Position of the active match.
-  * `matches` Integer - Number of Matches.
+  * `matches` Integer - number of Matches.
   * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` boolean
 
