@@ -277,16 +277,41 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   */
 
   ComPtr<IXmlNode> scenario_attribute_pnode;
-  ///*
+  /*
   return attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
                                         &scenario_attribute_pnode);
-  //*/
-  // MICHAELA: Attempting to add dismiss button to reminder
-  /*
-    RETURN_IF_FAILED(
-      attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
-                                        &scenario_attribute_pnode));
   */
+  // MICHAELA: Attempting to add dismiss button to reminder
+  /* MICHAELA: What I am attempting to have
+  <toast scenario = "reminder">
+    <actions>
+      <action activationType="system" arguments="dismiss" content=""/>
+    </actions>
+  </toast>
+  */
+  ///*
+  RETURN_IF_FAILED(attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+                                                  &scenario_attribute_pnode));
+  //*/
+
+  ComPtr<IXmlElement> actions_wrapper_element;
+  ScopedHString actions_wrapper_str(L"actions");
+  RETURN_IF_FAILED(
+      doc->CreateElement(actions_wrapper_str, &actions_wrapper_element));
+
+  ComPtr<IXmlNode> actions_wrapper_node_tmp;
+  RETURN_IF_FAILED(actions_wrapper_element.As(&actions_wrapper_node_tmp));
+
+  // Append action node to toast xml
+  ComPtr<IXmlNode> actions_wrapper_node;
+  RETURN_IF_FAILED(
+      root->AppendChild(actions_wrapper_node_tmp.Get(), &actions_wrapper_node));
+
+  // Setup attributes for action
+  ComPtr<IXmlNamedNodeMap> attributes_actions_wrapper;
+  RETURN_IF_FAILED(
+      actions_wrapper_node->get_Attributes(&attributes_actions_wrapper));
+  return actions_wrapper_node->get_Attributes(&attributes_actions_wrapper);
 
   /*
   ComPtr<IXmlElement> action_element;
@@ -298,12 +323,14 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
 
   // Append action node to toast xml
   ComPtr<IXmlNode> action_node;
-  RETURN_IF_FAILED(root->AppendChild(action_node_tmp.Get(), &action_node));
+  RETURN_IF_FAILED(actions_wrapper_node->AppendChild(action_node_tmp.Get(),
+&action_node));
 
-  // Create activationType attribute
+  // Setup attributes for action
   ComPtr<IXmlNamedNodeMap> attributes_2;
   RETURN_IF_FAILED(action_node->get_Attributes(&attributes_2));
 
+  // Create activationType attribute
   ComPtr<IXmlAttribute> activation_type_attribute;
   ScopedHString activation_type_str(L"activationType");
   RETURN_IF_FAILED(doc->CreateAttribute(activation_type_str,
@@ -324,10 +351,16 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> activation_type_node;
   RETURN_IF_FAILED(activation_type_text.As(&activation_type_node));
 
-  ComPtr<IXmlNode> child_node_4;
+  ComPtr<IXmlNode> child_node_2;
   RETURN_IF_FAILED(
       activation_type_attribute_node->AppendChild(activation_type_node.Get(),
-&child_node_4));
+&child_node_2));
+
+  //Add activation type to the action attributes
+  ComPtr<IXmlNode> activation_type_attribute_pnode;
+  RETURN_IF_FAILED(
+attributes_2.Get()->SetNamedItem(activation_type_attribute_node.Get(),
+                                        &activation_type_attribute_pnode));
 
   //Attempt to add "arguments"
   // Create arguments attribute
@@ -349,10 +382,16 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> arguments_node;
   RETURN_IF_FAILED(arguments_text.As(&arguments_node));
 
-  ComPtr<IXmlNode> child_node_2;
+  ComPtr<IXmlNode> child_node_3;
   RETURN_IF_FAILED(
       arguments_attribute_node->AppendChild(arguments_node.Get(),
-&child_node_2));
+&child_node_3));
+
+  //Add activation type to the action attributes
+  ComPtr<IXmlNode> arguments_attribute_pnode;
+  RETURN_IF_FAILED(
+attributes_2.Get()->SetNamedItem(arguments_attribute_node.Get(),
+                                        &arguments_attribute_pnode));
 
   //Attempt to add "content"
   // Create content attribute
@@ -374,14 +413,15 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> content_node;
   RETURN_IF_FAILED(content_text.As(&content_node));
 
-  ComPtr<IXmlNode> child_node_3;
+  ComPtr<IXmlNode> child_node_4;
   RETURN_IF_FAILED(
-      content_attribute_node->AppendChild(content_node.Get(), &child_node_3));
+      content_attribute_node->AppendChild(content_node.Get(), &child_node_4));
 
 /////////
-  ComPtr<IXmlNode> activation_type_attribute_pnode;
-  return attributes.Get()->SetNamedItem(activation_type_attribute_node.Get(),
-                                        &activation_type_attribute_pnode);
+  //Add activation type to the action attributes
+  ComPtr<IXmlNode> content_attribute_pnode;
+  return attributes_2.Get()->SetNamedItem(content_attribute_node.Get(),
+                                        &content_attribute_pnode);
   */
 }
 
