@@ -13,8 +13,7 @@ interface GuestInstance {
   guest: Electron.WebContents;
 }
 
-// Doesn't exist in early initialization.
-let webViewManager: NodeJS.WebViewManagerBinding | null = null;
+const webViewManager = process._linkedBinding('electron_browser_web_view_manager');
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
 
@@ -30,10 +29,6 @@ function sanitizeOptionsForGuest (options: Record<string, any>) {
 
 // Create a new guest instance.
 const createGuest = function (embedder: Electron.WebContents, params: Record<string, any>) {
-  if (webViewManager == null) {
-    webViewManager = process._linkedBinding('electron_browser_web_view_manager');
-  }
-
   // eslint-disable-next-line no-undef
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
     type: 'webview',
@@ -156,7 +151,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
 
     // Remove guest from embedder if moving across web views
     if (guest.viewInstanceId !== params.instanceId) {
-      webViewManager!.removeGuest(guestInstance.embedder, guestInstanceId);
+      webViewManager.removeGuest(guestInstance.embedder, guestInstanceId);
       guestInstance.embedder._sendInternal(`ELECTRON_GUEST_VIEW_INTERNAL_DESTROY_GUEST-${guest.viewInstanceId}`);
     }
   }
@@ -222,7 +217,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
 
   watchEmbedder(embedder);
 
-  webViewManager!.addGuest(guestInstanceId, elementInstanceId, embedder, guest, webPreferences);
+  webViewManager.addGuest(guestInstanceId, elementInstanceId, embedder, guest, webPreferences);
   guest.attachToIframe(embedder, embedderFrameId);
 };
 
@@ -236,7 +231,7 @@ const detachGuest = function (embedder: Electron.WebContents, guestInstanceId: n
     return;
   }
 
-  webViewManager!.removeGuest(embedder, guestInstanceId);
+  webViewManager.removeGuest(embedder, guestInstanceId);
   delete guestInstances[guestInstanceId];
 
   const key = `${embedder.id}-${guestInstance.elementInstanceId}`;
