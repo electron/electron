@@ -6,7 +6,7 @@
  * BrowserWindowProxy) are created here. "Embedder" roughly means "parent."
  */
 import { BrowserWindow } from 'electron/main';
-import type { BrowserWindowConstructorOptions, Referrer, WebContents, IpcMainEvent, LoadURLOptions } from 'electron/main';
+import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
 
 type PostData = LoadURLOptions['postData']
@@ -31,7 +31,7 @@ const getGuestWindowByFrameName = (name: string) => frameNamesToWindow.get(name)
  * DestroyWebContents in the nativeWindowOpen code path).
  */
 export function openGuestWindow ({ event, embedder, guest, referrer, disposition, postData, overrideBrowserWindowOptions, windowOpenArgs }: {
-  event: IpcMainEvent,
+  event: { sender: WebContents, defaultPrevented: boolean },
   embedder: WebContents,
   guest?: WebContents,
   referrer: Referrer,
@@ -134,7 +134,7 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
  * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
  */
 function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, additionalFeatures, disposition, referrer, postData }: {
-  event: IpcMainEvent,
+  event: { sender: WebContents, defaultPrevented: boolean },
   embedder: WebContents,
   guest?: WebContents,
   windowOpenArgs: WindowOpenArgs,

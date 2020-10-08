@@ -58,7 +58,7 @@ const canAccessWindow = function (sender: WebContents, target: WebContents) {
 ipcMainInternal.on(
   'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN',
   (
-    event: Electron.IpcMainInvokeEvent,
+    event,
     url: string,
     frameName: string,
     features: string
@@ -77,7 +77,7 @@ ipcMainInternal.on(
       return;
     }
     const guest = openGuestWindow({
-      event: event as Electron.IpcMainEvent,
+      event,
       embedder: event.sender,
       referrer: { url: '', policy: 'default' },
       disposition: 'new-window',
@@ -110,7 +110,7 @@ const handleMessage = function (channel: string, handler: IpcHandler<any, Electr
   ipcMainInternal.handle(channel, makeSafeHandler(handler));
 };
 
-const handleMessageSync = function (channel: string, handler: IpcHandler<any, Electron.IpcMainInvokeEvent>) {
+const handleMessageSync = function (channel: string, handler: IpcHandler<any, ElectronInternal.IpcMainInternalEvent>) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(handler));
 };
 
