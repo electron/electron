@@ -1,19 +1,19 @@
 # Opening windows from the renderer
 
-Often, developers will want to control how windows are created from trusted or
+There are several ways to control how windows are created from trusted or
 untrusted content within a renderer. Windows can be created from the renderer in two ways:
 
 - clicking on links or submitting forms adorned with `target=_blank`
 - JavaScript calling `window.open()`
 
-By default, this results in the creation of a
+In non-sandboxed renderers, or when `nativeWindowOpen` is false (the default), this results in the creation of a
 [`BrowserWindowProxy`](browser-window-proxy.md), a light wrapper around
 `BrowserWindow`.
 
 However, when the `sandbox` (or directly, `nativeWindowOpen`) option is set, a
 `Window` instance is created, as you'd expect in the browser. For same-origin
 content, the new window is created within the same process, enabling the parent
-to affect the DOM directly. This can be very useful for app sub-windows that act
+to access the child window directly. This can be very useful for app sub-windows that act
 as preference panels, or similar, as the parent can render to the sub-window
 directly, as if it were a `div` in the parent.
 
