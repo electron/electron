@@ -20,13 +20,12 @@ const FUNCTION_PROPERTIES = [
 
 type RendererFunctionId = [string, number] // [contextId, funcId]
 type FinalizerInfo = { id: RendererFunctionId, webContents: electron.WebContents, frameId: number };
-type WeakRef<T> = { deref(): T | undefined }
 type CallIntoRenderer = (...args: any[]) => void
 
 // The remote functions in renderer processes.
 const rendererFunctionCache = new Map<string, WeakRef<CallIntoRenderer>>();
 // eslint-disable-next-line no-undef
-const finalizationRegistry = new (globalThis as any).FinalizationRegistry((fi: FinalizerInfo) => {
+const finalizationRegistry = new FinalizationRegistry((fi: FinalizerInfo) => {
   const mapKey = fi.id[0] + '~' + fi.id[1];
   const ref = rendererFunctionCache.get(mapKey);
   if (ref !== undefined && ref.deref() === undefined) {
@@ -45,7 +44,7 @@ function getCachedRendererFunction (id: RendererFunctionId): CallIntoRenderer | 
 }
 function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebContents, frameId: number, value: CallIntoRenderer) {
   // eslint-disable-next-line no-undef
-  const wr = new (globalThis as any).WeakRef(value) as WeakRef<CallIntoRenderer>;
+  const wr = new WeakRef<CallIntoRenderer>(value);
   const mapKey = id[0] + '~' + id[1];
   rendererFunctionCache.set(mapKey, wr);
   finalizationRegistry.register(value, {
@@ -263,7 +262,7 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false;
           if (!sender.isDestroyed()) {
-            succeed = (sender as any)._sendToFrameInternal(frameId, 'ELECTRON_RENDERER_CALLBACK', contextId, meta.id, valueToMeta(sender, contextId, args));
+            succeed = sender._sendToFrameInternal(frameId, 'ELECTRON_RENDERER_CALLBACK', contextId, meta.id, valueToMeta(sender, contextId, args));
           }
           if (!succeed) {
             removeRemoteListenersAndLogWarning(this, callIntoRenderer);

@@ -295,6 +295,9 @@ Sets the proxy settings.
 When `pacScript` and `proxyRules` are provided together, the `proxyRules`
 option is ignored and `pacScript` configuration is applied.
 
+You may need `ses.closeAllConnections` to close currently in flight connections to prevent
+pooled sockets using previous proxy from being reused by future requests.
+
 The `proxyRules` has to follow the rules below:
 
 ```sh
@@ -403,6 +406,12 @@ window.webContents.session.enableNetworkEmulation({ offline: true })
   * `numSockets` Number (optional) - number of sockets to preconnect. Must be between 1 and 6. Defaults to 1.
 
 Preconnects the given number of sockets to an origin.
+
+#### `ses.closeAllConnections()`
+
+Returns `Promise<void>` - Resolves when all connections are closed.
+
+**Note:** It will terminate / fail all requests currently in flight.
 
 #### `ses.disableNetworkEmulation()`
 

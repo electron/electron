@@ -152,7 +152,7 @@ def parse_args():
 def run_python_upload_script(script, *args):
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', script)
-  return execute([sys.executable, script_path] + list(args))
+  print(execute([sys.executable, script_path] + list(args)))
 
 
 def get_electron_build_version():

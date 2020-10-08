@@ -93,9 +93,9 @@ ipcMainInternal.on(
   }
 );
 
-type IpcHandler = (event: Electron.IpcMainInvokeEvent, guestContents: Electron.WebContents, ...args: any[]) => void;
-const makeSafeHandler = function (handler: IpcHandler) {
-  return (event: Electron.IpcMainInvokeEvent, guestId: number, ...args: any[]) => {
+type IpcHandler<T, Event> = (event: Event, guestContents: Electron.WebContents, ...args: any[]) => T;
+const makeSafeHandler = function<T, Event> (handler: IpcHandler<T, Event>) {
+  return (event: Event, guestId: number, ...args: any[]) => {
     // Access webContents via electron to prevent circular require.
     const guestContents = webContents.fromId(guestId);
     if (!guestContents) {
@@ -106,11 +106,11 @@ const makeSafeHandler = function (handler: IpcHandler) {
   };
 };
 
-const handleMessage = function (channel: string, handler: IpcHandler) {
+const handleMessage = function (channel: string, handler: IpcHandler<any, Electron.IpcMainInvokeEvent>) {
   ipcMainInternal.handle(channel, makeSafeHandler(handler));
 };
 
-const handleMessageSync = function (channel: string, handler: IpcHandler) {
+const handleMessageSync = function (channel: string, handler: IpcHandler<any, Electron.IpcMainInvokeEvent>) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(handler));
 };
 

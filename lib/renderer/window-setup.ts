@@ -255,13 +255,13 @@ export const windowSetup = (
   if (!usesNativeWindowOpen) {
     // TODO(MarshallOfSound): Make compatible with ctx isolation without hole-punch
     // Make the browser window or guest view emit "new-window" event.
-    (window as any).open = function (url?: string, frameName?: string, features?: string) {
+    window.open = function (url?: string, frameName?: string, features?: string) {
       if (url != null && url !== '') {
         url = resolveURL(url, location.href);
       }
       const guestId = ipcRendererInternal.sendSync('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, toString(frameName), toString(features));
       if (guestId != null) {
-        return getOrCreateProxy(guestId);
+        return getOrCreateProxy(guestId) as any as WindowProxy;
       } else {
         return null;
       }
