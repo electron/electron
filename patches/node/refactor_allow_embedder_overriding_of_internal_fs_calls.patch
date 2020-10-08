@@ -25,10 +25,10 @@ diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loade
 index 768d13d018f75f12061f1d9e7d69fb47ddd3552d..7fd217560ec465b893116df87916d422f384b55f 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -71,7 +71,7 @@ const internalFS = require('internal/fs/utils');
+@@ -70,7 +70,7 @@ const fs = require('fs');
+ const internalFS = require('internal/fs/utils');
  const path = require('path');
  const { sep } = path;
- const { emitWarningSync } = require('internal/process/warning');
 -const { internalModuleStat } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
  const packageJsonReader = require('internal/modules/package_json_reader');
