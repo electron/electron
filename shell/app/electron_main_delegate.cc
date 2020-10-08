@@ -345,8 +345,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
-  if (process_type != ::switches::kZygoteProcess &&
-      !process_type.empty()) {
+  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     breakpad::InitCrashReporter(process_type);
   }
