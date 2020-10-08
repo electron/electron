@@ -45,6 +45,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   itWithOptions('should be visible when the window is initially shown by default', {}, async () => {
     await load();
     const state = await getVisibilityState();
+    console.log('FIXME(ckerr) in "should be visible when the window is initially shown by default", this is line 48');
     expect(state).to.equal('visible');
   });
 
