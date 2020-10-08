@@ -270,7 +270,11 @@ gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
 
 std::vector<float> NativeImage::GetScaleFactors() {
   gfx::ImageSkia image_skia = image_.AsImageSkia();
-  return image_skia.GetSupportedScales();
+  std::vector<float> scale_factors;
+  for (const auto& rep : image_skia.image_reps()) {
+    scale_factors.push_back(rep.scale());
+  }
+  return scale_factors;
 }
 
 float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
