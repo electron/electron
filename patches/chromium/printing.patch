@@ -521,7 +521,7 @@ index 959aa103a15d197f5a9d2abbbe69b78afad2e73f..55b1a8403704144d48a0f4672be3e08d
 +    const blink::WebNode& node,
 +    PrintRequestType print_request_type,
 +    bool silent,
-+    base::Value settings,) {
++    base::Value settings) {
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
