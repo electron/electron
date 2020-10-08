@@ -1148,6 +1148,7 @@ Ignore application menu shortcuts while this web contents is focused.
   * `details` Object
     * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
+    * `features` String - Comma separated list of window features provided to `window.open()`.
   Returns `Boolean | BrowserWindowConstructorOptions` - `false` cancels the creation of the new window. `true` results in the default behavior: a window is created. Returning `BrowserWindowConstructorOptions` allows customization of the created window. Returning `undefined` will result in a console error and cancellation of the window.
 
 Called before creating a window when `window.open()` is called from the

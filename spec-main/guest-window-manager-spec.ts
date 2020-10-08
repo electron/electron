@@ -139,15 +139,17 @@ describe('webContents.setWindowOpenHandler', () => {
 
       it('fires handler with correct params', (done) => {
         const testFrameName = 'test-frame-name';
+        const testFeatures = 'top=10&left=10&something-unknown';
         const testUrl = 'app://does-not-exist/';
-        browserWindow.webContents.setWindowOpenHandler(({ url, frameName }) => {
+        browserWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
           expect(url).to.equal(testUrl);
           expect(frameName).to.equal(testFrameName);
+          expect(features).to.equal(testFeatures);
           done();
           return false;
         });
 
-        browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}') && true`);
+        browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
       });
 
       it('does fire window creation events if an override returns true', async () => {

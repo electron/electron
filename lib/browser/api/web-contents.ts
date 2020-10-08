@@ -439,7 +439,7 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: { url: string, frameName: string }) => BrowserWindowConstructorOptions | boolean) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => BrowserWindowConstructorOptions | boolean) {
   this._windowOpenHandler = handler;
 };
 
@@ -618,14 +618,13 @@ WebContents.prototype._init = function () {
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, url, frameName, rawFeatures);
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          ...windowOpenOverriddenOptions.webPreferences
-        } : undefined;
-        console.log('secureOverrideWebPreferences', secureOverrideWebPreferences);
-        this._setNextChildWebPreferences(
           // Allow setting of backgroundColor as a webPreference even though
           // it's technically a BrowserWindowConstructorOptions option because
           // we need to access it in the renderer at init time.
+          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+          ...windowOpenOverriddenOptions.webPreferences
+        } : undefined;
+        this._setNextChildWebPreferences(
           makeWebPreferences({ embedder: event.sender, secureOverrideWebPreferences })
         );
       }
