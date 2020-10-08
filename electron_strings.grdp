@@ -79,5 +79,9 @@
     <message name="IDS_UTILITY_PROCESS_UTILITY_WIN_NAME" desc="The name of the utility process used to handle Windows utility operations.">
       Windows Utilities
     </message>
+    <message name="IDS_TOAST_NOTIFICATION_DISMISS_TEXT" desc="Text label for the Dismiss button in Windows Toast Notifications. This is used when the toast has a timeout type of never.">
+      Dismiss
+    </message>
   </if>
+  
 </grit-part>
