@@ -1397,8 +1397,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
                                                              render_frame_id);
   if (factory)
-    factories->emplace(extensions::kExtensionScheme,
-                                      std::move(factory));
+    factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
   if (!web_contents)
     return;
