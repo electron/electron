@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..34c1a25f8bedafd96effcca60d36bb7f95433e52 100644
+index cf5658313ec9a1b771ebc445610979750d63b021..0bcdb66f8e5dd408729454bececad4dc2e15a971 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -379,7 +379,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -312,7 +312,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..34c1a25f8bedafd96effcca60d36bb7f
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -390,7 +390,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -323,7 +323,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -28,7 +28,7 @@ index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..34c1a25f8bedafd96effcca60d36bb7f
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
      AXValueType type = AXValueGetType(static_cast<AXValueRef>(value));
-@@ -500,7 +500,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -433,7 +433,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -37,7 +37,7 @@ index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..34c1a25f8bedafd96effcca60d36bb7f
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -514,7 +514,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -447,7 +447,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
@@ -47,10 +47,10 @@ index 12aa59f04809f8092f2f0e9640bd6fe2b4c68ac2..34c1a25f8bedafd96effcca60d36bb7f
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 540afa34eb0ab6597f799767988b3d8cb8f4bb9c..feb109c62708d107cc475d8332cd1f969969733b 100644
+index 320751d301f7cebe40e59127a1a631a010009385..11fabe50abd47d0b0a7ff24a3b979067452f53db 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -267,6 +267,7 @@ id ParameterizedAttributeValueOf(const id node,
+@@ -156,6 +156,7 @@
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -58,7 +58,7 @@ index 540afa34eb0ab6597f799767988b3d8cb8f4bb9c..feb109c62708d107cc475d8332cd1f96
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -274,6 +275,7 @@ id ParameterizedAttributeValueOf(const id node,
+@@ -163,6 +164,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -66,7 +66,7 @@ index 540afa34eb0ab6597f799767988b3d8cb8f4bb9c..feb109c62708d107cc475d8332cd1f96
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -339,6 +341,7 @@ id ParameterizedAttributeValueOf(const id node,
+@@ -228,6 +230,7 @@
    return uielement;
  }
  
@@ -74,7 +74,7 @@ index 540afa34eb0ab6597f799767988b3d8cb8f4bb9c..feb109c62708d107cc475d8332cd1f96
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -406,6 +409,7 @@ id ParameterizedAttributeValueOf(const id node,
+@@ -295,6 +298,7 @@
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
@@ -369,10 +369,10 @@ index cf856f59f0e1990cb9b249ab264a87c27f452525..96b6fa030c2a36ab5c4217ad19f0bfe4
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index f77433fff5426dd174865aad3d290d787764174c..d64e4fbcf44590e9132c2338819d2aa76612db95 100644
+index 8c1c60ee5e9e12378644f693bbaba5ace85c5fbc..68b8ccd88fb4ad6e4793a54869d5424f2a860d8a 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -529,6 +529,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -536,6 +536,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -380,7 +380,7 @@ index f77433fff5426dd174865aad3d290d787764174c..d64e4fbcf44590e9132c2338819d2aa7
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -536,6 +537,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -543,6 +544,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -503,10 +503,10 @@ index 933483c36d94336c8e9cc56a53bc86aee01e12d0..a48b4af66fb4edcf74caef5bec68c53b
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index f5279e1f51e9fcb5f700311153b67044ddc81497..2aad6e02ef356765b80141702c21bb03dc2eb977 100644
+index 5e4dc90597d093d1763b09f4c46f385f0c120ca9..58846d3cdd8e712ed2302a1772ecfb2538d8538d 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -171,6 +171,12 @@ source_set("audio") {
+@@ -175,6 +175,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
