@@ -10,7 +10,7 @@ export const setDefaultApplicationMenu = () => {
 
   const helpMenu: Electron.MenuItemConstructorOptions = {
     role: 'help',
-    submenu: app.isPackaged() ? [] : [
+    submenu: app.isPackaged ? [] : [
       {
         label: 'Learn More',
         click: async () => {
