@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 5 Oct 2020 16:05:45 -0700
+Subject: chore: expose v8 initialization isolate callbacks
+
+Exposes v8 initializer callbacks to Electron so that we can call them
+directly. We expand upon and adapt their behavior, so allows us to
+ensure that we stay in sync with Node.js default behavior.
+
+This will be upstreamed.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 7b370579d365204b2bd40a25e740bbc83726c376..be58db8d2bebd1e1e5a0e6eb35c09b459d5d56e6 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -25,14 +25,16 @@ using v8::Private;
+ using v8::String;
+ using v8::Value;
+ 
+-static bool AllowWasmCodeGenerationCallback(Local<Context> context,
++// static
++bool Environment::AllowWasmCodeGenerationCallback(Local<Context> context,
+                                             Local<String>) {
+   Local<Value> wasm_code_gen =
+       context->GetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration);
+   return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
+ }
+ 
+-static bool ShouldAbortOnUncaughtException(Isolate* isolate) {
++// static
++bool Environment::ShouldAbortOnUncaughtException(Isolate* isolate) {
+   DebugSealHandleScope scope(isolate);
+   Environment* env = Environment::GetCurrent(isolate);
+   return env != nullptr &&
+@@ -41,7 +43,8 @@ static bool ShouldAbortOnUncaughtException(Isolate* isolate) {
+          !env->inside_should_not_abort_on_uncaught_scope();
+ }
+ 
+-static MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
++// static
++MaybeLocal<Value> Environment::PrepareStackTraceCallback(Local<Context> context,
+                                       Local<Value> exception,
+                                       Local<Array> trace) {
+   Environment* env = Environment::GetCurrent(context);
+@@ -195,7 +198,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+ 
+   auto* abort_callback = s.should_abort_on_uncaught_exception_callback ?
+       s.should_abort_on_uncaught_exception_callback :
+-      ShouldAbortOnUncaughtException;
++      Environment::ShouldAbortOnUncaughtException;
+   isolate->SetAbortOnUncaughtExceptionCallback(abort_callback);
+ 
+   auto* fatal_error_cb = s.fatal_error_callback ?
+@@ -203,7 +206,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+   isolate->SetFatalErrorHandler(fatal_error_cb);
+ 
+   auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
+-      s.prepare_stack_trace_callback : PrepareStackTraceCallback;
++      s.prepare_stack_trace_callback : Environment::PrepareStackTraceCallback;
+   isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
+ }
+ 
+@@ -211,7 +214,7 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+   isolate->SetMicrotasksPolicy(s.policy);
+ 
+   auto* allow_wasm_codegen_cb = s.allow_wasm_code_generation_callback ?
+-    s.allow_wasm_code_generation_callback : AllowWasmCodeGenerationCallback;
++    s.allow_wasm_code_generation_callback : Environment::AllowWasmCodeGenerationCallback;
+   isolate->SetAllowWasmCodeGenerationCallback(allow_wasm_codegen_cb);
+ 
+   auto* promise_reject_cb = s.promise_reject_callback ?
+diff --git a/src/env.h b/src/env.h
+index e269c47ae3814b42fdd2792360c1acb1995e98d2..e251eb1bb478b61b6b5a679f311c00d4310ff5ce 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -908,6 +908,13 @@ class Environment : public MemoryRetainer {
+   void Exit(int code);
+   void ExitEnv();
+ 
++  static bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
++                                       v8::Local<v8::String>);
++  static bool ShouldAbortOnUncaughtException(v8::Isolate* isolate);
++  static v8::MaybeLocal<v8::Value> PrepareStackTraceCallback(v8::Local<v8::Context> context,
++                                      v8::Local<v8::Value> exception,
++                                      v8::Local<v8::Array> trace);
++
+   // Register clean-up cb to be called on environment destruction.
+   inline void RegisterHandleCleanup(uv_handle_t* handle,
+                                     HandleCleanupCb cb,
