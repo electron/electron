@@ -18,7 +18,7 @@ index 732f2711719621ce42a0b13a6035954bada67ab9..80432aea6160736ac731f68185b1a8fa
 +scoped_refptr<SiteInstanceImpl> BrowsingInstance::CreateSiteInstanceForURL(
 +    const GURL& url) {
 +  scoped_refptr<SiteInstanceImpl> instance = new SiteInstanceImpl(this);
-+  instance->SetSite(UrlInfo(url));
++  instance->SetSite(UrlInfo(url, false));
 +  return instance;
 +}
 +
