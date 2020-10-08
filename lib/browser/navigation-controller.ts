@@ -16,7 +16,7 @@ ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', function (even
 });
 
 ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
-  event.returnValue = (event.sender as any).length();
+  event.returnValue = event.sender.length();
 });
 
 // JavaScript implementation of Chromium's NavigationController.
@@ -39,7 +39,7 @@ export class NavigationController extends EventEmitter {
       this.currentIndex++;
       this.history.push(this.webContents._getURL());
     }
-    this.webContents.on('navigation-entry-committed' as any, (event: any, url: string, inPage: boolean, replaceEntry: boolean) => {
+    this.webContents.on('navigation-entry-committed' as any, (event: Electron.Event, url: string, inPage: boolean, replaceEntry: boolean) => {
       if (this.inPageIndex > -1 && !inPage) {
         // Navigated to a new page, clear in-page mark.
         this.inPageIndex = -1;
@@ -82,14 +82,14 @@ export class NavigationController extends EventEmitter {
       const finishListener = () => {
         resolveAndCleanup();
       };
-      const failListener = (event: any, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
         if (isMainFrame) {
           rejectAndCleanup(errorCode, errorDescription, validatedURL);
         }
       };
 
       let navigationStarted = false;
-      const navigationListener = (event: any, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
+      const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
         if (isMainFrame) {
           if (navigationStarted && !isSameDocument) {
             // the webcontents has started another unrelated navigation in the
@@ -159,7 +159,7 @@ export class NavigationController extends EventEmitter {
     return this.webContents._loadURL(this.getURL(), {
       extraHeaders: 'pragma: no-cache\n',
       reloadIgnoringCache: true
-    } as any);
+    });
   }
 
   canGoBack () {

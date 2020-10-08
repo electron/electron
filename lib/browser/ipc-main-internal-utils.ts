@@ -1,6 +1,6 @@
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 
-type IPCHandler = (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any
+type IPCHandler = (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any
 
 export const handleSync = function <T extends IPCHandler> (channel: string, handler: T) {
   ipcMainInternal.on(channel, async (event, ...args) => {

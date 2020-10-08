@@ -124,8 +124,7 @@ describe('deprecate', () => {
     deprecate.setHandler(m => { msg = m; });
 
     function oldFn () { return 'hello'; }
-    function newFn () { return 'goodbye'; }
-    const deprecatedFn = deprecate.renameFunction(oldFn, newFn);
+    const deprecatedFn = deprecate.renameFunction(oldFn, 'newFn');
     deprecatedFn();
 
     expect(msg).to.be.a('string');
