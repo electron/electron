@@ -270,25 +270,9 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
       scenario_attribute_node->AppendChild(scenario_node.Get(), &child_node));
 
   ComPtr<IXmlNode> scenario_attribute_pnode;
-  ///*
   RETURN_IF_FAILED(attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
                                                   &scenario_attribute_pnode));
-  //*/
-  /*
-  return attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
-                                        &scenario_attribute_pnode);
-  */
 
-  // MICHAELA: Attempting to add dismiss button to reminder
-  /* MICHAELA: What I am attempting to have
-  <toast scenario = "reminder">
-    <actions>
-      <action activationType="system" arguments="dismiss" content="dismiss"/>
-    </actions>
-  </toast>
-  */
-
-  ///*
   // Create "actions" wrapper
   ComPtr<IXmlElement> actions_wrapper_element;
   ScopedHString actions_wrapper_str(L"actions");
@@ -306,10 +290,8 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNamedNodeMap> attributes_actions_wrapper;
   RETURN_IF_FAILED(
       actions_wrapper_node->get_Attributes(&attributes_actions_wrapper));
-  // return actions_wrapper_node->get_Attributes(&attributes_actions_wrapper);
-  //*/
 
-  ///*
+  // Add a "Dismiss" button
   // Create "action" tag
   ComPtr<IXmlElement> action_element;
   ScopedHString action_str(L"action");
@@ -322,11 +304,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> action_node;
   RETURN_IF_FAILED(
       actions_wrapper_node->AppendChild(action_node_tmp.Get(), &action_node));
-  // return actions_wrapper_node->AppendChild(action_node_tmp.Get(),
-  // &action_node);
-  //*/
 
-  ///*
   // Setup attributes for action
   ComPtr<IXmlNamedNodeMap> attributes_2;
   RETURN_IF_FAILED(action_node->get_Attributes(&attributes_2));
@@ -362,7 +340,6 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(attributes_2.Get()->SetNamedItem(
       activation_type_attribute_node.Get(), &activation_type_attribute_pnode));
 
-  // Attempt to add "arguments"
   // Create arguments attribute
   ComPtr<IXmlAttribute> arguments_attribute;
   ScopedHString arguments_str(L"arguments");
@@ -371,7 +348,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> arguments_attribute_node;
   RETURN_IF_FAILED(arguments_attribute.As(&arguments_attribute_node));
 
-  // Set arguments attribute to system
+  // Set arguments attribute to dismiss
   ScopedHString arguments_value(L"dismiss");
   if (!arguments_value.success())
     return E_FAIL;
@@ -390,10 +367,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> arguments_attribute_pnode;
   RETURN_IF_FAILED(attributes_2.Get()->SetNamedItem(
       arguments_attribute_node.Get(), &arguments_attribute_pnode));
-  // return attributes_2.Get()->SetNamedItem(arguments_attribute_node.Get(),
-  //                                       &arguments_attribute_pnode);
 
-  // Attempt to add "content"
   // Create content attribute
   ComPtr<IXmlAttribute> content_attribute;
   ScopedHString content_str(L"content");
@@ -402,7 +376,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> content_attribute_node;
   RETURN_IF_FAILED(content_attribute.As(&content_attribute_node));
 
-  // Set content attribute to system
+  // Set content attribute to Dismiss
   ScopedHString content_value(L"Dismiss");
   if (!content_value.success())
     return E_FAIL;
@@ -417,13 +391,10 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(
       content_attribute_node->AppendChild(content_node.Get(), &child_node_4));
 
-  /////////
-
   // Add content to the action attributes
   ComPtr<IXmlNode> content_attribute_pnode;
   return attributes_2.Get()->SetNamedItem(content_attribute_node.Get(),
                                           &content_attribute_pnode);
-  //*/
 }
 
 HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
