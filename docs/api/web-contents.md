@@ -155,6 +155,8 @@ Returns:
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
 
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
 
@@ -216,11 +218,11 @@ Returns:
     * `disposition` String - Can be `default`, `foreground-tab`,
       `background-tab`, `new-window`, `save-to-disk` and `other`.
 
-Similar to the deprecated `new-window` event, except it's emitted _after_ successful creation of a window via `window.open` in the renderer.
+Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
 [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
 
-See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
+See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
 
 #### Event: 'will-navigate'
 

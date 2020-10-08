@@ -790,6 +790,10 @@ void WebContents::WebContentsCreatedWithFullParams(
                      &dict);
   pending_child_web_preferences_.Reset();
 
+  // Associate the preferences passed in via `setWindowOpenHandler` with the
+  // content::WebContents that was just created for the child window. These
+  // preferences will be picked up by the RenderWidgetHost via its call to the
+  // delegate's OverrideWebkitPrefs.
   new WebContentsPreferences(new_contents, dict);
 }
 
@@ -810,6 +814,8 @@ void WebContents::SetNextChildWebPreferences(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
+  // Store these prefs for when Chrome calls WebContentsCreatedWithFullParams
+  // with the new child contents.
   pending_child_web_preferences_.Reset(isolate, preferences.GetHandle());
 }
 
