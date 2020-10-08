@@ -88,7 +88,7 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
 #if defined(OS_LINUX)
       // The zygote process opens the resources for the renderers.
-      process_type == switches::kZygoteProcess ||
+      process_type == ::switches::kZygoteProcess ||
 #endif
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
@@ -345,7 +345,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
-  if (process_type != switches::kZygoteProcess &&
+  if (process_type != ::switches::kZygoteProcess &&
       !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     breakpad::InitCrashReporter(process_type);
