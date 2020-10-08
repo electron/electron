@@ -245,8 +245,8 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(node_list->Item(0, &root));
 
   // get attributes of root "toast" node
-  ComPtr<IXmlNamedNodeMap> attributes;
-  RETURN_IF_FAILED(root->get_Attributes(&attributes));
+  ComPtr<IXmlNamedNodeMap> toast_attributes;
+  RETURN_IF_FAILED(root->get_Attributes(&toast_attributes));
 
   ComPtr<IXmlAttribute> scenario_attribute;
   ScopedHString scenario_str(L"scenario");
@@ -265,13 +265,13 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> scenario_node;
   RETURN_IF_FAILED(scenario_text.As(&scenario_node));
 
-  ComPtr<IXmlNode> child_node;
-  RETURN_IF_FAILED(
-      scenario_attribute_node->AppendChild(scenario_node.Get(), &child_node));
+  ComPtr<IXmlNode> scenario_backup_node;
+  RETURN_IF_FAILED(scenario_attribute_node->AppendChild(scenario_node.Get(),
+                                                        &scenario_backup_node));
 
   ComPtr<IXmlNode> scenario_attribute_pnode;
-  RETURN_IF_FAILED(attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
-                                                  &scenario_attribute_pnode));
+  RETURN_IF_FAILED(toast_attributes.Get()->SetNamedItem(
+      scenario_attribute_node.Get(), &scenario_attribute_pnode));
 
   // Create "actions" wrapper
   ComPtr<IXmlElement> actions_wrapper_element;
@@ -306,8 +306,8 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
       actions_wrapper_node->AppendChild(action_node_tmp.Get(), &action_node));
 
   // Setup attributes for action
-  ComPtr<IXmlNamedNodeMap> attributes_2;
-  RETURN_IF_FAILED(action_node->get_Attributes(&attributes_2));
+  ComPtr<IXmlNamedNodeMap> action_attributes;
+  RETURN_IF_FAILED(action_node->get_Attributes(&action_attributes));
 
   // Create activationType attribute
   ComPtr<IXmlAttribute> activation_type_attribute;
@@ -331,13 +331,13 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> activation_type_node;
   RETURN_IF_FAILED(activation_type_text.As(&activation_type_node));
 
-  ComPtr<IXmlNode> child_node_2;
+  ComPtr<IXmlNode> activation_type_backup_node;
   RETURN_IF_FAILED(activation_type_attribute_node->AppendChild(
-      activation_type_node.Get(), &child_node_2));
+      activation_type_node.Get(), &activation_type_backup_node));
 
   // Add activation type to the action attributes
   ComPtr<IXmlNode> activation_type_attribute_pnode;
-  RETURN_IF_FAILED(attributes_2.Get()->SetNamedItem(
+  RETURN_IF_FAILED(action_attributes.Get()->SetNamedItem(
       activation_type_attribute_node.Get(), &activation_type_attribute_pnode));
 
   // Create arguments attribute
@@ -359,13 +359,13 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> arguments_node;
   RETURN_IF_FAILED(arguments_text.As(&arguments_node));
 
-  ComPtr<IXmlNode> child_node_3;
-  RETURN_IF_FAILED(arguments_attribute_node->AppendChild(arguments_node.Get(),
-                                                         &child_node_3));
+  ComPtr<IXmlNode> arguments_backup_node;
+  RETURN_IF_FAILED(arguments_attribute_node->AppendChild(
+      arguments_node.Get(), &arguments_backup_node));
 
   // Add arguments to the action attributes
   ComPtr<IXmlNode> arguments_attribute_pnode;
-  RETURN_IF_FAILED(attributes_2.Get()->SetNamedItem(
+  RETURN_IF_FAILED(action_attributes.Get()->SetNamedItem(
       arguments_attribute_node.Get(), &arguments_attribute_pnode));
 
   // Create content attribute
@@ -387,14 +387,14 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   ComPtr<IXmlNode> content_node;
   RETURN_IF_FAILED(content_text.As(&content_node));
 
-  ComPtr<IXmlNode> child_node_4;
-  RETURN_IF_FAILED(
-      content_attribute_node->AppendChild(content_node.Get(), &child_node_4));
+  ComPtr<IXmlNode> content_backup_node;
+  RETURN_IF_FAILED(content_attribute_node->AppendChild(content_node.Get(),
+                                                       &content_backup_node));
 
   // Add content to the action attributes
   ComPtr<IXmlNode> content_attribute_pnode;
-  return attributes_2.Get()->SetNamedItem(content_attribute_node.Get(),
-                                          &content_attribute_pnode);
+  return action_attributes.Get()->SetNamedItem(content_attribute_node.Get(),
+                                               &content_attribute_pnode);
 }
 
 HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
