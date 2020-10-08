@@ -8,7 +8,7 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index 732f2711719621ce42a0b13a6035954bada67ab9..80432aea6160736ac731f68185b1a8faca849c0c 100644
+index 732f2711719621ce42a0b13a6035954bada67ab9..62775b566d6e11a06a2516f9c1097b5ad5725247 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
 @@ -91,6 +91,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
