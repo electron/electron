@@ -49,7 +49,7 @@ index 0f9d88529021db245fb498dfa339e5327450256a..962dc2d3e8c3976f5088146c9edc0516
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ff2ca894b2ddda4bc5e199f6c5973b8c0de740fe..5cc5c9d20c70428e1e318de74cc2f2bd84caa9c0 100644
+index e13745d859ca82ec313c25e1958945a3efeaaa62..0f6ec93b55fcc263f69157d650b20bf34d6a586f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -463,6 +463,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index ff2ca894b2ddda4bc5e199f6c5973b8c0de740fe..5cc5c9d20c70428e1e318de74cc2f2bd
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1098,7 +1104,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1130,7 +1136,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index ff2ca894b2ddda4bc5e199f6c5973b8c0de740fe..5cc5c9d20c70428e1e318de74cc2f2bd
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1114,11 +1120,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1146,11 +1152,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index ff2ca894b2ddda4bc5e199f6c5973b8c0de740fe..5cc5c9d20c70428e1e318de74cc2f2bd
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index ed6dfca8e0afe6697759e54d78f65d896be24347..619d025c1c0f192c7d3f7107f5aab7791b9843b4 100644
+index 70518f42849e5d1d6e1dd0faf4cae866ba39ef09..b081be5d939b17ecaffa85e75ebb012444bb2bf1 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -118,6 +118,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
