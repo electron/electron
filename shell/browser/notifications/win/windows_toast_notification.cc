@@ -17,12 +17,12 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "electron/grit/electron_resources.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/strings/grit/ui_strings.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
@@ -379,8 +379,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(content_attribute.As(&content_attribute_node));
 
   // Set content attribute to Dismiss
-  ScopedHString content_value(
-      l10n_util::GetStringUTF16(IDS_TOAST_NOTIFICATION_DISMISS_TEXT));
+  ScopedHString content_value(l10n_util::GetStringUTF16(IDS_APP_CLOSE));
   if (!content_value.success())
     return E_FAIL;
 
