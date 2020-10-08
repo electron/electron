@@ -1156,6 +1156,10 @@ describe('webContents module', () => {
             res.end();
           } else if (req.url === '/redirected') {
             res.end('<html><script>window.localStorage</script></html>');
+          } else if (req.url === '/first-window-open') {
+            res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
+          } else if (req.url === '/second-window-open') {
+            res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
           } else {
             res.end();
           }
@@ -1190,6 +1194,27 @@ describe('webContents module', () => {
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
+    });
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+      const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      let currentRenderViewDeletedEmitted = false;
+      let childWindow:BrowserWindow;
+      const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true;
+      };
+      app.once('browser-window-created', (event, window) => {
+        childWindow = window;
+        window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+      });
+      parentWindow.loadURL(`${serverUrl}/first-window-open`);
+      setTimeout(() => {
+        childWindow.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
+        parentWindow.close();
+      }, 500);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
     });
 
     it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
