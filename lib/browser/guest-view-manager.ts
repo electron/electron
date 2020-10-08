@@ -18,8 +18,8 @@ const webViewManager = process._linkedBinding('electron_browser_web_view_manager
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
 
-const guestInstances: Record<string, GuestInstance> = {};
-const embedderElementsMap: Record<string, number> = {};
+const guestInstances = new Map<number, GuestInstance>();
+const embedderElementsMap = new Map<string, number>();
 
 function sanitizeOptionsForGuest (options: Record<string, any>) {
   const ret = { ...options };
@@ -37,14 +37,14 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
     embedder: embedder
   });
   const guestInstanceId = guest.id;
-  guestInstances[guestInstanceId] = {
+  guestInstances.set(guestInstanceId, {
     guest: guest,
     embedder: embedder
-  };
+  });
 
   // Clear the guest from map when it is destroyed.
   guest.once('destroyed', () => {
-    if (Object.prototype.hasOwnProperty.call(guestInstances, guestInstanceId)) {
+    if (guestInstances.has(guestInstanceId)) {
       detachGuest(embedder, guestInstanceId);
     }
   });
@@ -107,7 +107,7 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   // Notify guest of embedder window visibility when it is ready
   // FIXME Remove once https://github.com/electron/electron/issues/6828 is fixed
   guest.on('dom-ready', function () {
-    const guestInstance = guestInstances[guestInstanceId];
+    const guestInstance = guestInstances.get(guestInstanceId);
     if (guestInstance != null && guestInstance.visibilityState != null) {
       guest._sendInternal(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, guestInstance.visibilityState);
     }
@@ -122,20 +122,20 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
   const embedder = event.sender;
   // Destroy the old guest when attaching.
   const key = `${embedder.id}-${elementInstanceId}`;
-  const oldGuestInstanceId = embedderElementsMap[key];
+  const oldGuestInstanceId = embedderElementsMap.get(key);
   if (oldGuestInstanceId != null) {
     // Reattachment to the same guest is just a no-op.
     if (oldGuestInstanceId === guestInstanceId) {
       return;
     }
 
-    const oldGuestInstance = guestInstances[oldGuestInstanceId];
+    const oldGuestInstance = guestInstances.get(oldGuestInstanceId);
     if (oldGuestInstance) {
       oldGuestInstance.guest.detachFromOuterFrame();
     }
   }
 
-  const guestInstance = guestInstances[guestInstanceId];
+  const guestInstance = guestInstances.get(guestInstanceId);
   // If this isn't a valid guest instance then do nothing.
   if (!guestInstance) {
     throw new Error(`Invalid guestInstanceId: ${guestInstanceId}`);
@@ -148,7 +148,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
   // If this guest is already attached to an element then remove it
   if (guestInstance.elementInstanceId) {
     const oldKey = `${guestInstance.embedder.id}-${guestInstance.elementInstanceId}`;
-    delete embedderElementsMap[oldKey];
+    embedderElementsMap.delete(oldKey);
 
     // Remove guest from embedder if moving across web views
     if (guest.viewInstanceId !== params.instanceId) {
@@ -210,7 +210,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
   }
 
   guest.attachParams = params;
-  embedderElementsMap[key] = guestInstanceId;
+  embedderElementsMap.set(key, guestInstanceId);
 
   guest.setEmbedder(embedder);
   guestInstance.embedder = embedder;
@@ -224,7 +224,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
 
 // Remove an guest-embedder relationship.
 const detachGuest = function (embedder: Electron.WebContents, guestInstanceId: number) {
-  const guestInstance = guestInstances[guestInstanceId];
+  const guestInstance = guestInstances.get(guestInstanceId);
 
   if (!guestInstance) return;
 
@@ -233,10 +233,10 @@ const detachGuest = function (embedder: Electron.WebContents, guestInstanceId: n
   }
 
   webViewManager.removeGuest(embedder, guestInstanceId);
-  delete guestInstances[guestInstanceId];
+  guestInstances.delete(guestInstanceId);
 
   const key = `${embedder.id}-${guestInstance.elementInstanceId}`;
-  delete embedderElementsMap[key];
+  embedderElementsMap.delete(key);
 };
 
 // Once an embedder has had a guest attached we watch it for destruction to
@@ -250,8 +250,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
 
   // Forward embedder window visibility change events to guest
   const onVisibilityChange = function (visibilityState: VisibilityState) {
-    for (const guestInstanceId of Object.keys(guestInstances)) {
-      const guestInstance = guestInstances[guestInstanceId];
+    for (const guestInstance of guestInstances.values()) {
       guestInstance.visibilityState = visibilityState;
       if (guestInstance.embedder === embedder) {
         guestInstance.guest._sendInternal(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, visibilityState);
@@ -264,10 +263,9 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
     // Usually the guestInstances is cleared when guest is destroyed, but it
     // may happen that the embedder gets manually destroyed earlier than guest,
     // and the embedder will be invalid in the usual code path.
-    for (const guestInstanceId of Object.keys(guestInstances)) {
-      const guestInstance = guestInstances[guestInstanceId];
+    for (const [guestInstanceId, guestInstance] of guestInstances) {
       if (guestInstance.embedder === embedder) {
-        detachGuest(embedder, parseInt(guestInstanceId));
+        detachGuest(embedder, guestInstanceId);
       }
     }
     // Clear the listeners.
@@ -388,6 +386,6 @@ const getGuestForWebContents = function (guestInstanceId: number, contents: Elec
 
 // Returns WebContents from its guest id.
 const getGuest = function (guestInstanceId: number) {
-  const guestInstance = guestInstances[guestInstanceId];
+  const guestInstance = guestInstances.get(guestInstanceId);
   if (guestInstance != null) return guestInstance.guest;
 };
