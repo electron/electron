@@ -264,8 +264,12 @@ export const roleList: Record<RoleId, Role> = {
   }
 };
 
+const hasRole = (role: keyof typeof roleList) => {
+  return Object.prototype.hasOwnProperty.call(roleList, role);
+};
+
 const canExecuteRole = (role: keyof typeof roleList) => {
-  if (!Object.prototype.hasOwnProperty.call(roleList, role)) return false;
+  if (!hasRole(role)) return false;
   if (!isMac) return true;
 
   // macOS handles all roles natively except for a few
@@ -273,20 +277,20 @@ const canExecuteRole = (role: keyof typeof roleList) => {
 };
 
 export function getDefaultLabel (role: RoleId) {
-  return Object.prototype.hasOwnProperty.call(roleList, role) ? roleList[role].label : '';
+  return hasRole(role) ? roleList[role].label : '';
 }
 
 export function getDefaultAccelerator (role: RoleId) {
-  if (Object.prototype.hasOwnProperty.call(roleList, role)) return roleList[role].accelerator;
+  if (hasRole(role)) return roleList[role].accelerator;
 }
 
 export function shouldRegisterAccelerator (role: RoleId) {
-  const hasRoleRegister = Object.prototype.hasOwnProperty.call(roleList, role) && roleList[role].registerAccelerator !== undefined;
+  const hasRoleRegister = hasRole(role) && roleList[role].registerAccelerator !== undefined;
   return hasRoleRegister ? roleList[role].registerAccelerator : true;
 }
 
 export function getDefaultSubmenu (role: RoleId) {
-  if (!Object.prototype.hasOwnProperty.call(roleList, role)) return;
+  if (!hasRole(role)) return;
 
   let { submenu } = roleList[role];
 
