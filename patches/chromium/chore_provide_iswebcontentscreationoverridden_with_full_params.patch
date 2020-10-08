@@ -421,28 +421,6 @@ index f3cd399afe4de5818f73a9e754ae0a7c5d10b8ad..7c8f0780fbb2c0f68e6c320de744b92f
      return headless_web_contents_->browser_context()
          ->options()
          ->block_new_web_contents();
-diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 9651e16018c2e646c4d7859ce3eaec981d57e208..f766c621d2e30388de0d8e6cad223f7197516bc2 100644
---- a/third_party/blink/common/web_preferences/web_preferences.cc
-+++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -159,7 +159,7 @@ WebPreferences::WebPreferences()
-       v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
-       record_whole_document(false),
- 
--      preloads(base::EmptyString()),
-+      preloads(""),
-       disable_electron_site_instance_overrides(),
-       background_color(base::EmptyString()),
-       opener_id(0),
-@@ -169,7 +169,7 @@ WebPreferences::WebPreferences()
-       guest_instance_id(0),
-       hidden_page(false),
-       offscreen(false),
--      preload(base::EmptyString()),
-+      preload(""),
-       native_window_open(false),
-       node_integration(false),
-       node_integration_in_worker(false),
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
 index 39a58363e717a0b9d71b7e3ca26578f81f8fb453..4372cf1e383ef3884048fb2a06c72888abcac9e3 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
