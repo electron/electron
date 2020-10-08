@@ -68,7 +68,7 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
     if (code !== 0) {
       // Disabled for backwards compatibility:
       // eslint-disable-next-line standard/no-callback-literal
-      return callback(`Command failed: ${signal != null ? signal : code}\n${stderr}`);
+      return callback(`Command failed: ${signal ?? code}\n${stderr}`);
     }
 
     // Success.
