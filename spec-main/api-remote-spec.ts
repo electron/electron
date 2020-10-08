@@ -107,7 +107,7 @@ describe('typeUtils serialization/deserialization', () => {
     expect(nonEmpty.isEmpty()).to.be.false();
     expect(nonEmpty.getAspectRatio()).to.equal(1);
     expect(nonEmpty.toDataURL()).to.not.be.empty();
-    expect(nonEmpty.toDataURL({ scaleFactor: 1.0 })).to.equal(dataURL);
+    expect(nonEmpty.toBitmap({ scaleFactor: 1.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 1.0 }));
     expect(nonEmpty.getSize()).to.deep.equal({ width: 2, height: 2 });
     expect(nonEmpty.getBitmap()).to.not.be.empty();
     expect(nonEmpty.toPNG()).to.not.be.empty();
@@ -132,14 +132,12 @@ describe('typeUtils serialization/deserialization', () => {
     expect(nonEmpty.getBitmap({ scaleFactor: 1.0 })).to.not.be.empty();
     expect(nonEmpty.getBitmap({ scaleFactor: 2.0 })).to.not.be.empty();
     expect(nonEmpty.toBitmap()).to.not.be.empty();
-    expect(nonEmpty.toBitmap({ scaleFactor: 1.0 })).to.not.be.empty();
-    expect(nonEmpty.toBitmap({ scaleFactor: 2.0 })).to.not.be.empty();
+    expect(nonEmpty.toBitmap({ scaleFactor: 1.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 1.0 }));
+    expect(nonEmpty.toBitmap({ scaleFactor: 2.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 2.0 }));
     expect(nonEmpty.toPNG()).to.not.be.empty();
     expect(nonEmpty.toPNG({ scaleFactor: 1.0 })).to.not.be.empty();
     expect(nonEmpty.toPNG({ scaleFactor: 2.0 })).to.not.be.empty();
     expect(nonEmpty.toDataURL()).to.not.be.empty();
-    expect(nonEmpty.toDataURL({ scaleFactor: 1.0 })).to.equal(dataURL1);
-    expect(nonEmpty.toDataURL({ scaleFactor: 2.0 })).to.equal(dataURL2);
   });
 
   it('serializes and deserializes an Array', () => {

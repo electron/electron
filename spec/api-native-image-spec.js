@@ -539,11 +539,15 @@ describe('nativeImage module', () => {
         buffer: nativeImage.createFromPath(imageDataOne.path).toPNG()
       });
 
+      expect(image.getScaleFactors()).to.deep.equal([1]);
+
       const imageDataTwo = getImage({ width: 2, height: 2 });
       image.addRepresentation({
         scaleFactor: 2.0,
         buffer: nativeImage.createFromPath(imageDataTwo.path).toPNG()
       });
+
+      expect(image.getScaleFactors()).to.deep.equal([1, 2]);
 
       const imageDataThree = getImage({ width: 3, height: 3 });
       image.addRepresentation({
@@ -551,10 +555,15 @@ describe('nativeImage module', () => {
         buffer: nativeImage.createFromPath(imageDataThree.path).toPNG()
       });
 
+      expect(image.getScaleFactors()).to.deep.equal([1, 2, 3]);
+
       image.addRepresentation({
         scaleFactor: 4.0,
         buffer: 'invalid'
       });
+
+      // this one failed, so it shouldn't show up in the scale factors
+      expect(image.getScaleFactors()).to.deep.equal([1, 2, 3]);
 
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
