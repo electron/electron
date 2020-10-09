@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
-import { BrowserWindow, WebFrameMain } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { AddressInfo } from 'net';
@@ -176,9 +176,6 @@ describe('webFrameMain module', () => {
     });
   });
 
-  // TODO: see https://github.com/electron/typescript-definitions/pull/175
-  const { webFrameMain } = require('electron') as any;
-
   it('webFrameMain.fromId can find each frame from navigation events', (done) => {
     const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
 
@@ -186,7 +183,7 @@ describe('webFrameMain module', () => {
 
     let eventCount = 0;
     w.webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {
-      const frame = (webFrameMain).fromId(frameProcessId, frameRoutingId) as WebFrameMain | null;
+      const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
       expect(frame).not.to.be.null();
       expect(frame?.processId).to.be.equal(frameProcessId);
       expect(frame?.routingId).to.be.equal(frameRoutingId);
