@@ -1,0 +1,298 @@
+From 8629cd7f8af3888426b4c4678fe61b39f44982d5 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Tue, 29 Sep 2020 17:56:16 +0000
+Subject: [PATCH] Add mutex for allowing the graph to be pulled
+
+Basically add a mutex to protect access to
+allow_pulling_audio_graph_.  The main thread waits until it has the
+lock before setting this.  This prevents the main thread from deleting
+things while the audio thread is pulling on the graph.
+
+A try lock is used so as not to block the audio thread if it can't get
+lock.
+
+This is applied to both real time and offline contexts which required
+moving the original real-time-only implementation to
+audio_destination_node so we can use the same methods for the offline
+context.
+
+Tested the repro case from 1125635, and the issue does not reproduce.
+We're assuming this will fix 1115901, but I've not been able to
+reproduce that locally.
+
+(cherry picked from commit 6785a406fd652f7a2f40933620ef4c979643c56b)
+
+Bug: 1125635, 1115901
+Change-Id: I1037d8c44225c6dcc8fe906c29a5a86740a15e1d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2410743
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#809393}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2436324
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1083}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+ .../webaudio/audio_destination_node.cc        |  3 +-
+ .../modules/webaudio/audio_destination_node.h | 47 +++++++++++++++++++
+ .../offline_audio_destination_node.cc         | 38 ++++++++++-----
+ .../realtime_audio_destination_node.cc        | 47 +++++++++++--------
+ .../realtime_audio_destination_node.h         | 24 ----------
+ 5 files changed, 104 insertions(+), 55 deletions(-)
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/audio_destination_node.cc
+index c85f6d2e26f2e..9b1a5ec495f8f 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_destination_node.cc
+@@ -30,7 +30,8 @@
+ namespace blink {
+ 
+ AudioDestinationHandler::AudioDestinationHandler(AudioNode& node)
+-    : AudioHandler(kNodeTypeDestination, node, 0) {
++    : AudioHandler(kNodeTypeDestination, node, 0),
++      allow_pulling_audio_graph_(false) {
+   AddInput();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_destination_node.h b/third_party/blink/renderer/modules/webaudio/audio_destination_node.h
+index c35722c9296b6..2d1a60c5bb5f3 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_destination_node.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_destination_node.h
+@@ -71,6 +71,53 @@ class AudioDestinationHandler : public AudioHandler {
+     return is_execution_context_destroyed_;
+   }
+ 
++  // Should only be called from
++  // RealtimeAudioDestinationHandler::StartPlatformDestination for a realtime
++  // context or OfflineAudioDestinationHandler::StartRendering for an offline
++  // context---basically wherever the context has started rendering.
++  // TODO(crbug.com/1128121): Consider removing this if possible
++  void EnablePullingAudioGraph() {
++    MutexLocker lock(allow_pulling_audio_graph_mutex_);
++    allow_pulling_audio_graph_.store(true, std::memory_order_release);
++  }
++
++  // Should only be called from
++  // RealtimeAudioDestinationHandler::StopPlatformDestination for a realtime
++  // context or from OfflineAudioDestinationHandler::Uninitialize for an offline
++  // context---basically whenever the context is being stopped.
++  // TODO(crbug.com/1128121): Consider removing this if possible
++  void DisablePullingAudioGraph() {
++    MutexLocker lock(allow_pulling_audio_graph_mutex_);
++    allow_pulling_audio_graph_.store(false, std::memory_order_release);
++  }
++
++  // TODO(crbug.com/1128121): Consider removing this if possible
++  bool IsPullingAudioGraphAllowed() const {
++    return allow_pulling_audio_graph_.load(std::memory_order_acquire);
++  }
++
++  // If true, the audio graph will be pulled to get new data.  Otherwise, the
++  // graph is not pulled, even if the audio thread is still running and
++  // requesting data.
++  //
++  // For an AudioContext, this MUST be modified only in
++  // RealtimeAudioDestinationHandler::StartPlatformDestination (via
++  // AudioDestinationHandler::EnablePullingAudioGraph) or
++  // RealtimeAudioDestinationHandler::StopPlatformDestination (via
++  // AudioDestinationHandler::DisablePullingAudioGraph), including destroying
++  // the the realtime context.
++  //
++  // For an OfflineAudioContext, this MUST be modified only when the the context
++  // is started or it has stopped rendering, including destroying the offline
++  // context.
++
++  // TODO(crbug.com/1128121): Consider removing this if possible
++  std::atomic_bool allow_pulling_audio_graph_;
++
++  // Protects allow_pulling_audio_graph_ from race conditions.  Must use try
++  // lock on the audio thread.
++  mutable Mutex allow_pulling_audio_graph_mutex_;
++
+  protected:
+   void AdvanceCurrentSampleFrame(size_t number_of_frames) {
+     current_sample_frame_.fetch_add(number_of_frames,
+diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+index a6c542fb1b6ca..d7f67ba86f38c 100644
+--- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
+@@ -96,6 +96,7 @@ void OfflineAudioDestinationHandler::Uninitialize() {
+   if (render_thread_)
+     render_thread_.reset();
+ 
++  DisablePullingAudioGraph();
+   AudioHandler::Uninitialize();
+ }
+ 
+@@ -115,6 +116,7 @@ void OfflineAudioDestinationHandler::StartRendering() {
+   // Rendering was not started. Starting now.
+   if (!is_rendering_started_) {
+     is_rendering_started_ = true;
++    EnablePullingAudioGraph();
+     PostCrossThreadTask(
+         *render_thread_task_runner_, FROM_HERE,
+         CrossThreadBindOnce(
+@@ -296,20 +298,34 @@ bool OfflineAudioDestinationHandler::RenderIfNotSuspended(
+ 
+   DCHECK_GE(NumberOfInputs(), 1u);
+ 
+-  // This will cause the node(s) connected to us to process, which in turn will
+-  // pull on their input(s), all the way backwards through the rendering graph.
+-  scoped_refptr<AudioBus> rendered_bus =
+-      Input(0).Pull(destination_bus, number_of_frames);
++  {
++    // The entire block that relies on |IsPullingAudioGraphAllowed| needs
++    // locking to prevent pulling audio graph being disallowed (i.e. a
++    // destruction started) in the middle of processing
++    MutexTryLocker try_locker(allow_pulling_audio_graph_mutex_);
++
++    if (IsPullingAudioGraphAllowed() && try_locker.Locked()) {
++      // This will cause the node(s) connected to us to process, which in turn
++      // will pull on their input(s), all the way backwards through the
++      // rendering graph.
++      scoped_refptr<AudioBus> rendered_bus =
++          Input(0).Pull(destination_bus, number_of_frames);
++
++      if (!rendered_bus) {
++        destination_bus->Zero();
++      } else if (rendered_bus != destination_bus) {
++        // in-place processing was not possible - so copy
++        destination_bus->CopyFrom(*rendered_bus);
++      }
+ 
+-  if (!rendered_bus) {
+-    destination_bus->Zero();
+-  } else if (rendered_bus != destination_bus) {
+-    // in-place processing was not possible - so copy
+-    destination_bus->CopyFrom(*rendered_bus);
++    } else {
++      // Not allowed to pull on the graph or couldn't get the lock.
++      destination_bus->Zero();
++    }
+   }
+ 
+-  // Process nodes which need a little extra help because they are not connected
+-  // to anything, but still need to process.
++  // Process nodes which need a little extra help because they are not
++  // connected to anything, but still need to process.
+   Context()->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
+       number_of_frames);
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
+index 4d3666b37d0fa..71507ed2ccec3 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.cc
+@@ -53,7 +53,6 @@ RealtimeAudioDestinationHandler::RealtimeAudioDestinationHandler(
+     : AudioDestinationHandler(node),
+       latency_hint_(latency_hint),
+       sample_rate_(sample_rate),
+-      allow_pulling_audio_graph_(false),
+       task_runner_(Context()->GetExecutionContext()->GetTaskRunner(
+           TaskType::kInternalMediaRealTime)) {
+   // Node-specific default channel count and mixing rules.
+@@ -200,28 +199,38 @@ void RealtimeAudioDestinationHandler::Render(
+   // Only pull on the audio graph if we have not stopped the destination.  It
+   // takes time for the destination to stop, but we want to stop pulling before
+   // the destination has actually stopped.
+-  if (IsPullingAudioGraphAllowed()) {
+-    // Renders the graph by pulling all the inputs to this node. This will in
+-    // turn pull on their inputs, all the way backwards through the graph.
+-    scoped_refptr<AudioBus> rendered_bus =
+-        Input(0).Pull(destination_bus, number_of_frames);
+-
+-    DCHECK(rendered_bus);
+-    if (!rendered_bus) {
+-      // AudioNodeInput might be in the middle of destruction. Then the internal
+-      // summing bus will return as nullptr. Then zero out the output.
++  {
++    // The entire block that relies on |IsPullingAudioGraphAllowed| needs
++    // locking to prevent pulling audio graph being disallowed (i.e. a
++    // destruction started) in the middle of processing.
++    MutexTryLocker try_locker(allow_pulling_audio_graph_mutex_);
++
++    if (IsPullingAudioGraphAllowed() && try_locker.Locked()) {
++      // Renders the graph by pulling all the inputs to this node. This will in
++      // turn pull on their inputs, all the way backwards through the graph.
++      scoped_refptr<AudioBus> rendered_bus =
++          Input(0).Pull(destination_bus, number_of_frames);
++
++      DCHECK(rendered_bus);
++      if (!rendered_bus) {
++        // AudioNodeInput might be in the middle of destruction. Then the
++        // internal summing bus will return as nullptr. Then zero out the
++        // output.
++        destination_bus->Zero();
++      } else if (rendered_bus != destination_bus) {
++        // In-place processing was not possible. Copy the rendered result to the
++        // given |destination_bus| buffer.
++        destination_bus->CopyFrom(*rendered_bus);
++      }
++    } else {
++      // Not allowed to pull on the graph or couldn't get the lock.
+       destination_bus->Zero();
+-    } else if (rendered_bus != destination_bus) {
+-      // In-place processing was not possible. Copy the rendered result to the
+-      // given |destination_bus| buffer.
+-      destination_bus->CopyFrom(*rendered_bus);
+     }
+-  } else {
+-    destination_bus->Zero();
+   }
+ 
+-  // Processes "automatic" nodes that are not connected to anything. This can
+-  // be done after copying because it does not affect the rendered result.
++  // Processes "automatic" nodes that are not connected to anything. This
++  // can be done after copying because it does not affect the rendered
++  // result.
+   context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(number_of_frames);
+ 
+   context->HandlePostRenderTasks();
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h
+index a0a3baefe5aaa..638d364afa38f 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h
+@@ -84,10 +84,6 @@ class RealtimeAudioDestinationHandler final
+   // Returns a given frames-per-buffer size from audio infra.
+   int GetFramesPerBuffer() const;
+ 
+-  bool IsPullingAudioGraphAllowed() const {
+-    return allow_pulling_audio_graph_.load(std::memory_order_acquire);
+-  }
+-
+   // Sets the detect silence flag for the platform destination.
+   void SetDetectSilence(bool detect_silence);
+ 
+@@ -105,16 +101,6 @@ class RealtimeAudioDestinationHandler final
+   // Render() method.
+   void SetDetectSilenceIfNecessary(bool has_automatic_pull_nodes);
+ 
+-  // Should only be called from StartPlatformDestination.
+-  void EnablePullingAudioGraph() {
+-    allow_pulling_audio_graph_.store(true, std::memory_order_release);
+-  }
+-
+-  // Should only be called from StopPlatformDestination.
+-  void DisablePullingAudioGraph() {
+-    allow_pulling_audio_graph_.store(false, std::memory_order_release);
+-  }
+-
+   const WebAudioLatencyHint latency_hint_;
+ 
+   // Holds the audio device thread that runs the real time audio context.
+@@ -122,16 +108,6 @@ class RealtimeAudioDestinationHandler final
+ 
+   base::Optional<float> sample_rate_;
+ 
+-  // If true, the audio graph will be pulled to get new data.  Otherwise, the
+-  // graph is not pulled, even if the audio thread is still running and
+-  // requesting data.
+-  //
+-  // Must be modified only in StartPlatformDestination (via
+-  // EnablePullingAudioGraph) or StopPlatformDestination (via
+-  // DisablePullingAudioGraph) .  This is modified only by the main threda and
+-  // the audio thread only reads this.
+-  std::atomic_bool allow_pulling_audio_graph_;
+-
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
+   // Represents the current condition of silence detection. By default, the
