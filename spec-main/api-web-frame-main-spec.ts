@@ -22,7 +22,7 @@ describe('webFrameMain module', () => {
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      webFrame = w.webContents.webFrame;
+      webFrame = w.webContents.mainFrame;
     });
 
     it('can access top frame', () => {
@@ -102,7 +102,7 @@ describe('webFrameMain module', () => {
 
       it('can access cross-origin frames', async () => {
         await w.loadURL(`${serverA.url}?frameSrc=${serverB.url}`);
-        webFrame = w.webContents.webFrame;
+        webFrame = w.webContents.mainFrame;
         expect(webFrame.url.startsWith(serverA.url)).to.be.true();
         expect(webFrame.frames[0].url).to.equal(serverB.url);
       });
@@ -113,7 +113,7 @@ describe('webFrameMain module', () => {
     it('should report correct address for each subframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      const webFrame = w.webContents.webFrame;
+      const webFrame = w.webContents.mainFrame;
 
       expect(webFrame.url).to.equal(fileUrl('frame-with-frame-container.html'));
       expect(webFrame.frames[0].url).to.equal(fileUrl('frame-with-frame.html'));
@@ -125,7 +125,7 @@ describe('webFrameMain module', () => {
     it('has properties for various identifiers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
-      const webFrame = w.webContents.webFrame;
+      const webFrame = w.webContents.mainFrame;
       expect(webFrame).to.haveOwnProperty('frameTreeNodeId');
       expect(webFrame).to.haveOwnProperty('processId');
       expect(webFrame).to.haveOwnProperty('routingId');
@@ -136,7 +136,7 @@ describe('webFrameMain module', () => {
     it('can inject code into any subframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      const webFrame = w.webContents.webFrame;
+      const webFrame = w.webContents.mainFrame;
 
       const getUrl = (frame: WebFrameMain) => frame.executeJavaScript('location.href');
       expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
@@ -149,7 +149,7 @@ describe('webFrameMain module', () => {
     it('reloads a frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
-      const webFrame = w.webContents.webFrame;
+      const webFrame = w.webContents.mainFrame;
 
       await webFrame.executeJavaScript('window.TEMP = 1', false);
       expect(webFrame.reload()).to.be.true();
@@ -165,7 +165,7 @@ describe('webFrameMain module', () => {
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      webFrame = w.webContents.webFrame;
+      webFrame = w.webContents.mainFrame;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
       await new Promise(resolve => setTimeout(resolve, 0));

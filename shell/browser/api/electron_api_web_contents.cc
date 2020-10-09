@@ -2819,7 +2819,7 @@ bool WebContents::WasInitiallyShown() {
   return initially_shown_;
 }
 
-content::RenderFrameHost* WebContents::WebFrame() {
+content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
 
@@ -3017,7 +3017,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
-      .SetProperty("webFrame", &WebContents::WebFrame)
+      .SetProperty("mainFrame", &WebContents::MainFrame)
       .Build();
 }
 

@@ -36,7 +36,7 @@ async function main () {
   const win = new BrowserWindow({ width: 800, height: 600 })
   await win.loadURL('https://reddit.com')
 
-  const youtubeEmbeds = win.webContents.webFrame.frames.filter((frame) => {
+  const youtubeEmbeds = win.webContents.mainFrame.frames.filter((frame) => {
     try {
       const url = new URL(frame.url)
       return url.host === 'www.youtube.com'
