@@ -106,10 +106,10 @@ index c35722c9296b6c98832444799124334d382225df..ce7bf61ef9ad18a5aa9669edb990542d
    void AdvanceCurrentSampleFrame(size_t number_of_frames) {
      current_sample_frame_.fetch_add(number_of_frames,
 diff --git a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
-index ec610b99c6758bc66cda07bd344f29825c8376a3..76dbae184a34194c27f188d72c0f69a55c5f4cec 100644
+index 2b0d87395cef31793273ef69f61eb540be897fcf..697a3e684e9bc582a93b20ac163ceb790dfb62cc 100644
 --- a/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/offline_audio_destination_node.cc
-@@ -95,6 +95,7 @@ void OfflineAudioDestinationHandler::Uninitialize() {
+@@ -92,6 +92,7 @@ void OfflineAudioDestinationHandler::Uninitialize() {
  
    render_thread_.reset();
  
@@ -117,7 +117,7 @@ index ec610b99c6758bc66cda07bd344f29825c8376a3..76dbae184a34194c27f188d72c0f69a5
    AudioHandler::Uninitialize();
  }
  
-@@ -114,6 +115,7 @@ void OfflineAudioDestinationHandler::StartRendering() {
+@@ -111,6 +112,7 @@ void OfflineAudioDestinationHandler::StartRendering() {
    // Rendering was not started. Starting now.
    if (!is_rendering_started_) {
      is_rendering_started_ = true;
@@ -125,7 +125,7 @@ index ec610b99c6758bc66cda07bd344f29825c8376a3..76dbae184a34194c27f188d72c0f69a5
      PostCrossThreadTask(
          *render_thread_task_runner_, FROM_HERE,
          CrossThreadBindOnce(
-@@ -295,20 +297,34 @@ bool OfflineAudioDestinationHandler::RenderIfNotSuspended(
+@@ -292,20 +294,34 @@ bool OfflineAudioDestinationHandler::RenderIfNotSuspended(
  
    DCHECK_GE(NumberOfInputs(), 1u);
  
