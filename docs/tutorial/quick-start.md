@@ -275,6 +275,8 @@ ipcRenderer.invoke('perform-action', ...args)
 
 ##### Node.js API
 
+> NOTE: To provide full access to Node.js API, you need to set the `nodeIntegration` preference to `true`.
+
 Electron exposes full access to Node.js API and its modules both in the Main and the Renderer processes. For example, you can read all the files from the root directory:
 
 ```js
