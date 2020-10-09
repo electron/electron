@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rahul Arakeri <arakeri@microsoft.com>
+Date: Tue, 8 Sep 2020 20:36:24 +0000
+Subject: Fix for UAF when referencing a deleted scrollbar layer.
+
+This CL fixes an issue where autoscroll may be called on a scrollbar
+layer that is deleted. When the pointer is pressed down, an autoscroll
+task is scheduled to be executed after ~250ms. The task will execute if
+the pointer remains held down. In LayerTreeImpl::UnregisterScrollbar,
+DidUnregisterScrollbarLayer only gets called after both scrollbars are
+removed. So if you go from 2 to 1 scrollbar while an autoscroll task is
+queued, the autoscroll task won't get cancelled. At this point, the
+ScrollbarController tries to access the deleted scrollbar and that
+leads to an access violation. The fix here is to ensure that the call
+to DidUnregisterScrollbarLayer happens for each scrollbar.
+
+Bug: 1106612
+Change-Id: I4f1d684830012db8fdd73258c9a9e5231807bcb6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2356809
+Reviewed-by: Robert Flack <flackr@chromium.org>
+Commit-Queue: Rahul Arakeri <arakeri@microsoft.com>
+Cr-Commit-Position: refs/heads/master@{#805057}
+(cherry picked from commit 52dceba66599f0892fb649717fc462ff016d2fa2)
+
+diff --git a/cc/input/scrollbar_controller.cc b/cc/input/scrollbar_controller.cc
+index b4d2ef531e2f5ccee157babb67522c454c720c9e..be80b5e07f5330ac636946f32f6cf713e0bb77a5 100644
+--- a/cc/input/scrollbar_controller.cc
++++ b/cc/input/scrollbar_controller.cc
+@@ -433,9 +433,12 @@ void ScrollbarController::ResetState() {
+   captured_scrollbar_metadata_ = base::nullopt;
+ }
+ 
+-void ScrollbarController::DidUnregisterScrollbar(ElementId element_id) {
++void ScrollbarController::DidUnregisterScrollbar(
++    ElementId element_id,
++    ScrollbarOrientation orientation) {
+   if (captured_scrollbar_metadata_.has_value() &&
+-      captured_scrollbar_metadata_->scroll_element_id == element_id)
++      captured_scrollbar_metadata_->scroll_element_id == element_id &&
++      captured_scrollbar_metadata_->orientation == orientation)
+     ResetState();
+ }
+ 
+@@ -531,6 +534,7 @@ void ScrollbarController::StartAutoScrollAnimation(
+   // the same time.
+   DCHECK(!drag_state_.has_value());
+   DCHECK_NE(velocity, 0);
++  DCHECK(ScrollbarLayer());
+ 
+   // scroll_node is set up while handling GSB. If there's no node to scroll, we
+   // don't need to create any animation for it.
+diff --git a/cc/input/scrollbar_controller.h b/cc/input/scrollbar_controller.h
+index ab93bde692dfc48f3d2e2f95ca56c984e8d0eb88..c9faf8ca505776b1b2764225427e28008ae74c8e 100644
+--- a/cc/input/scrollbar_controller.h
++++ b/cc/input/scrollbar_controller.h
+@@ -135,7 +135,8 @@ class CC_EXPORT ScrollbarController {
+                                 const ScrollbarLayerImplBase* scrollbar,
+                                 ScrollbarPart pressed_scrollbar_part);
+   bool ScrollbarScrollIsActive() { return scrollbar_scroll_is_active_; }
+-  void DidUnregisterScrollbar(ElementId element_id);
++  void DidUnregisterScrollbar(ElementId element_id,
++                              ScrollbarOrientation orientation);
+   ScrollbarLayerImplBase* ScrollbarLayer();
+   void WillBeginImplFrame();
+ 
+diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
+index 688a0905c997c86b63bcc607033ec82a74741114..46821befb4f1720a93cb9e4b8e9d33bd45a6292a 100644
+--- a/cc/trees/layer_tree_host_impl.cc
++++ b/cc/trees/layer_tree_host_impl.cc
+@@ -5326,9 +5326,10 @@ void LayerTreeHostImpl::RegisterScrollbarAnimationController(
+ }
+ 
+ void LayerTreeHostImpl::DidUnregisterScrollbarLayer(
+-    ElementId scroll_element_id) {
++    ElementId scroll_element_id,
++    ScrollbarOrientation orientation) {
+   scrollbar_animation_controllers_.erase(scroll_element_id);
+-  scrollbar_controller_->DidUnregisterScrollbar(scroll_element_id);
++  scrollbar_controller_->DidUnregisterScrollbar(scroll_element_id, orientation);
+ }
+ 
+ ScrollbarAnimationController*
+diff --git a/cc/trees/layer_tree_host_impl.h b/cc/trees/layer_tree_host_impl.h
+index 2352d8e17c316542f2d65f6e1c6b075db9cf66bd..f2272d0c760f3301b0b64d81d6372758110798e9 100644
+--- a/cc/trees/layer_tree_host_impl.h
++++ b/cc/trees/layer_tree_host_impl.h
+@@ -464,7 +464,8 @@ class CC_EXPORT LayerTreeHostImpl : public InputHandler,
+ 
+   void RegisterScrollbarAnimationController(ElementId scroll_element_id,
+                                             float initial_opacity);
+-  void DidUnregisterScrollbarLayer(ElementId scroll_element_id);
++  void DidUnregisterScrollbarLayer(ElementId scroll_element_id,
++                                   ScrollbarOrientation orientation);
+   ScrollbarAnimationController* ScrollbarAnimationControllerForElementId(
+       ElementId scroll_element_id) const;
+   void FlashAllScrollbars(bool did_scroll);
+diff --git a/cc/trees/layer_tree_impl.cc b/cc/trees/layer_tree_impl.cc
+index 45f7e5707a0ab5b983294964369d549e2981bf7d..2b6ea7532e954babe7150386209e958546b9bc40 100644
+--- a/cc/trees/layer_tree_impl.cc
++++ b/cc/trees/layer_tree_impl.cc
+@@ -1933,9 +1933,11 @@ void LayerTreeImpl::UnregisterScrollbar(
+   if (scrollbar_ids.horizontal == Layer::INVALID_ID &&
+       scrollbar_ids.vertical == Layer::INVALID_ID) {
+     element_id_to_scrollbar_layer_ids_.erase(scroll_element_id);
+-    if (IsActiveTree()) {
+-      host_impl_->DidUnregisterScrollbarLayer(scroll_element_id);
+-    }
++  }
++
++  if (IsActiveTree()) {
++    host_impl_->DidUnregisterScrollbarLayer(scroll_element_id,
++                                            scrollbar_layer->orientation());
+   }
+ }
+ 

@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Fri, 11 Sep 2020 16:37:47 +0200
+Subject: Fix bug in SimplifiedLowering's overflow computation
+
+It's unsound to ignore -0 inputs:
+-0 - INT32_MIN is outside of INT32 range.
+
+Bug: chromium:1126249
+Change-Id: I3b92f16c1201705780acb0359975329aa2ca34d1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2404452
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#69877}
+(cherry picked from commit e371325bcb03f20a362ebfa48225159702c6fde7)
+
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index aa222af96cfd6e990c80375b0141b872c9e2dc7e..40bd28867df24b178896197b5a71f7eeafdacabf 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -178,10 +178,16 @@ void ReplaceEffectControlUses(Node* node, Node* effect, Node* control) {
+ }
+ 
+ bool CanOverflowSigned32(const Operator* op, Type left, Type right,
+-                         Zone* type_zone) {
+-  // We assume the inputs are checked Signed32 (or known statically
+-  // to be Signed32). Technically, the inputs could also be minus zero, but
+-  // that cannot cause overflow.
++                         TypeCache const* type_cache, Zone* type_zone) {
++  // We assume the inputs are checked Signed32 (or known statically to be
++  // Signed32). Technically, the inputs could also be minus zero, which we treat
++  // as 0 for the purpose of this function.
++  if (left.Maybe(Type::MinusZero())) {
++    left = Type::Union(left, type_cache->kSingletonZero, type_zone);
++  }
++  if (right.Maybe(Type::MinusZero())) {
++    right = Type::Union(right, type_cache->kSingletonZero, type_zone);
++  }
+   left = Type::Intersect(left, Type::Signed32(), type_zone);
+   right = Type::Intersect(right, Type::Signed32(), type_zone);
+   if (left.IsNone() || right.IsNone()) return false;
+@@ -1471,7 +1477,8 @@ class RepresentationSelector {
+     if (lower()) {
+       if (truncation.IsUsedAsWord32() ||
+           !CanOverflowSigned32(node->op(), left_feedback_type,
+-                               right_feedback_type, graph_zone())) {
++                               right_feedback_type, type_cache_,
++                               graph_zone())) {
+         ChangeToPureOp(node, Int32Op(node));
+ 
+       } else {
+diff --git a/test/mjsunit/compiler/regress-1126249.js b/test/mjsunit/compiler/regress-1126249.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..87f4885305da3c48389251c50bfeabc70100be4b
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1126249.js
+@@ -0,0 +1,22 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function foo(b) {
++  var x = -0;
++  var y = -0x80000000;
++
++  if (b) {
++    x = -1;
++    y = 1;
++  }
++
++  return (x - y) == -0x80000000;
++}
++
++%PrepareFunctionForOptimization(foo);
++assertFalse(foo(true));
++%OptimizeFunctionOnNextCall(foo);
++assertFalse(foo(false));

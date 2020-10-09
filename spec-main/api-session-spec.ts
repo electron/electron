@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { session, BrowserWindow, net, ipcMain, Session } from 'electron';
+import { app, session, BrowserWindow, net, ipcMain, Session } from 'electron';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
@@ -925,6 +925,15 @@ describe('session module', () => {
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+    });
+  });
+
+  describe('session-created event', () => {
+    it('is emitted when a session is created', async () => {
+      const sessionCreated = emittedOnce(app, 'session-created');
+      const session1 = session.fromPartition('' + Math.random());
+      const [session2] = await sessionCreated;
+      expect(session1).to.equal(session2);
     });
   });
 });

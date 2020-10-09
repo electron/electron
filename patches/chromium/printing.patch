@@ -10,6 +10,24 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
+diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
+index 0cfd89165ad179230662a6fdcb9e1bd929f63188..dd573471a452ae2b10ed60a641bcc5d463804cba 100644
+--- a/chrome/browser/printing/print_job.cc
++++ b/chrome/browser/printing/print_job.cc
+@@ -317,7 +317,12 @@ void PrintJob::StartPdfToEmfConversion(
+   // seems to work with the fix for this bug applied.
+   const PrintSettings& settings = document()->settings();
+   bool print_text_with_gdi =
+-      settings.print_text_with_gdi() && !settings.printer_is_xps() &&
++#if defined(OS_WIN)
++      settings.is_modifiable()
++#else
++      settings.print_text_with_gdi()
++#endif
++      && !settings.printer_is_xps() &&
+       base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
+   PdfRenderSettings render_settings(
+       content_area, gfx::Point(0, 0), settings.dpi_size(),
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
 index 33e17f0df3563726767d912fb828ab959c8ec252..780967949746cbe957cd7b3487507892b3df607c 100644
 --- a/chrome/browser/printing/print_job_worker.cc
