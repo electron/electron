@@ -26,7 +26,7 @@ diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
 index 93438609a3a0eaeec0dbc76efe5c46e03fb40e52..dc64546f7d88db3b48f379b34c7dcc49b692a048 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -186,7 +186,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -186,7 +186,8 @@ PrintingContext::Result PrintingContextMac::UpdatePrinterSettings(
          !SetCopiesInPrintSettings(settings_->copies()) ||
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
@@ -36,7 +36,7 @@ index 93438609a3a0eaeec0dbc76efe5c46e03fb40e52..dc64546f7d88db3b48f379b34c7dcc49
        return OnError();
      }
    }
-@@ -339,6 +340,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -339,6 +340,22 @@ bool PrintingContextMac::SetCopiesInPrintSettings(int copies) {
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
