@@ -62,6 +62,7 @@
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
@@ -87,6 +88,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -1324,6 +1326,10 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
+  // disposed to prevent access to it.
+  WebFrameMain::RenderFrameDeleted(render_frame_host);
+
   // A RenderFrameHost can be destroyed before the related Mojo binding is
   // closed, which can result in Mojo calls being sent for RenderFrameHosts
   // that no longer exist. To prevent this from happening, when a
@@ -2835,6 +2841,10 @@ bool WebContents::WasInitiallyShown() {
   return initially_shown_;
 }
 
+content::RenderFrameHost* WebContents::MainFrame() {
+  return web_contents()->GetMainFrame();
+}
+
 void WebContents::GrantOriginAccess(const GURL& url) {
   content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
       web_contents()->GetMainFrame()->GetProcess()->GetID(),
@@ -3031,6 +3041,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
+      .SetProperty("mainFrame", &WebContents::MainFrame)
       .Build();
 }
 

@@ -63,6 +63,7 @@
   V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
+  V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \

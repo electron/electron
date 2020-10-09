@@ -34,7 +34,8 @@ export const browserModuleNames = [
   'Tray',
   'View',
   'webContents',
-  'WebContentsView'
+  'WebContentsView',
+  'webFrameMain'
 ];
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
