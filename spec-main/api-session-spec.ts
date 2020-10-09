@@ -990,52 +990,52 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      // The Reporting API only works on https with valid certs. To dodge having
-      // to set up a trusted certificate, hack the validator.
-      ses.setCertificateVerifyProc((req, cb) => {
-        cb(0);
-      });
       const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
       const certPath = path.join(fixturesPath, 'certificates');
-      const options = {
+      const server = https.createServer({
         key: fs.readFileSync(path.join(certPath, 'server.key')),
         cert: fs.readFileSync(path.join(certPath, 'server.pem')),
         ca: [
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
           fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
         ],
-        requestCert: true,
-        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.2',
         ciphers: 'AES128-GCM-SHA256'
-      };
-      // 0x009C == TLS_RSA_WITH_AES_128_GCM_SHA256 == AES128-GCM-SHA256
+      }, (req, res) => {
+        res.end('hi');
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      defer(() => server.close());
+      const { port } = server.address() as AddressInfo;
+
+      function request () {
+        return new Promise((resolve, reject) => {
+          const r = net.request({
+            url: `https://127.0.0.1:${port}`,
+            session: ses
+          });
+          r.on('response', (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk.toString('utf8');
+            });
+            res.on('end', () => {
+              resolve(data);
+            });
+          });
+          r.on('error', (err) => {
+            reject(err);
+          });
+          r.end();
+        });
+      }
+
+      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
       ses.setSSLConfig({
         disabledCipherSuites: [0x009C]
       });
-
-      const server = https.createServer(options, (req, res) => {
-        res.end('hi');
-      });
-      defer(() => server.close());
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-      const { port } = server.address() as AddressInfo;
-
-      const err = await new Promise<Error>((resolve, reject) => {
-        const req = net.request({
-          url: `https://127.0.0.1:${port}`,
-          session: ses
-        });
-        req.on('response', () => {
-          // We shouldn't receive a response, because we have disabled the only
-          // cipher suite the server supports.
-          reject(new Error('received unexpected response'));
-        });
-        req.on('error', (err) => {
-          resolve(err);
-        });
-        req.end();
-      });
-      expect(err.message).to.equal('net::ERR_SSL_VERSION_OR_CIPHER_MISMATCH');
+      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
 });
