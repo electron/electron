@@ -765,7 +765,7 @@ The following properties are available on instances of `Session`:
 #### `ses.availableSpellCheckerLanguages` _Readonly_
 
 A `String[]` array which consists of all the known available spell checker languages.  Providing a language
-code to the `setSpellCheckerLanaguages` API that isn't in this array will result in an error.
+code to the `setSpellCheckerLanguages` API that isn't in this array will result in an error.
 
 #### `ses.cookies` _Readonly_
 
