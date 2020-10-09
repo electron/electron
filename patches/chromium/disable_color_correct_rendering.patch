@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index e6a662a3963fa0a8186e52ef540a6e4babe4c20f..9ed8442978553ff554eef7ba342970f7a705febb 100644
+index c0bdb8cf65f6162911135e11ef58943e7d20716f..b26cd1a4572bdd0c0dfbf343c64c9fde21054304 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1760,6 +1760,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -35,10 +35,10 @@ index e6a662a3963fa0a8186e52ef540a6e4babe4c20f..9ed8442978553ff554eef7ba342970f7
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index e5a58655788be3bd1c86e238e34bbadf8012bc48..2a2de85e89a8a0f803b7c987620a259b26281d8d 100644
+index 64fe3c1c3f60758c25f9bc88daedf35633508aa7..a2e9ebb3dc31b4e8665376ffb1f805c6093bce5c 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -99,6 +99,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -98,6 +98,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -48,7 +48,7 @@ index e5a58655788be3bd1c86e238e34bbadf8012bc48..2a2de85e89a8a0f803b7c987620a259b
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 733d83e802b0c99d5d237ab5d0deea2385c4e899..f3dc39b3bd3e85cd7f68b81210b3bd64b8ae37ee 100644
+index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8cafca050 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index 733d83e802b0c99d5d237ab5d0deea2385c4e899..f3dc39b3bd3e85cd7f68b81210b3bd64
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index b06ea5f9fe36162dc9bcec32f604b1a8fc10f825..d53e7a0055dbdfe937a51939a312272317749f2a 100644
+index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c156220662c0f 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -16,6 +16,7 @@
@@ -241,10 +241,10 @@ index de4eadaf7be8be95fc0ad454d66c8ec397cfc20a..d4c451ea992490befb34b3690a98d968
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 616cf2720a1c5bd496dcaa3d6e93f6b5443bf84d..dde0c4aa87f334dc6ca68b6a2843d33f485221ca 100644
+index 74f19cb9c196510c19daffcd98c1577ec541ea54..0a65b9be576a437cc036af211230292d2c2c3c03 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -226,6 +226,7 @@
+@@ -225,6 +225,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -258,7 +258,7 @@ index 616cf2720a1c5bd496dcaa3d6e93f6b5443bf84d..dde0c4aa87f334dc6ca68b6a2843d33f
    static const char* const kSwitchNames[] = {
 +    switches::kDisableColorCorrectRendering,
      network::switches::kExplicitlyAllowedPorts,
-     service_manager::switches::kDisableInProcessStackTraces,
+     switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 index 0501709a855b9fae82ab06c4e143b42058ddc12e..e0a457aab29acda134d1da9c798b5472c9bdb627 100644

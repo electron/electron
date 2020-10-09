@@ -26,18 +26,10 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
-    "//chrome/browser/extensions/global_shortcut_listener_mac.h",
-    "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
-    "//chrome/browser/extensions/global_shortcut_listener_win.cc",
-    "//chrome/browser/extensions/global_shortcut_listener_win.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
-    "//chrome/browser/icon_loader_mac.mm",
-    "//chrome/browser/icon_loader_win.cc",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
-    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
-    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
     "//chrome/browser/net/proxy_config_monitor.cc",
@@ -57,13 +49,31 @@ static_library("chrome") {
     "//chrome/browser/ssl/tls_deprecation_config.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
-    "//chrome/browser/win/chrome_process_finder.cc",
-    "//chrome/browser/win/chrome_process_finder.h",
-    "//chrome/child/v8_crashpad_support_win.cc",
-    "//chrome/child/v8_crashpad_support_win.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
+
+  if (is_mac) {
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+      "//chrome/browser/icon_loader_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+    ]
+  }
+
+  if (is_win) {
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_win.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_win.h",
+      "//chrome/browser/icon_loader_win.cc",
+      "//chrome/browser/win/chrome_process_finder.cc",
+      "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/child/v8_crashpad_support_win.cc",
+      "//chrome/child/v8_crashpad_support_win.h",
+    ]
+  }
 
   public_deps = [
     "//chrome/common",

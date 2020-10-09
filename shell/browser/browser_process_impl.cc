@@ -244,6 +244,11 @@ BrowserProcessImpl::floc_blocklist_service() {
   return nullptr;
 }
 
+federated_learning::FlocSortingLshClustersService*
+BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
+  return nullptr;
+}
+
 optimization_guide::OptimizationGuideService*
 BrowserProcessImpl::optimization_guide_service() {
   return nullptr;

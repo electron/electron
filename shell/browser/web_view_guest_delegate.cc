@@ -62,10 +62,6 @@ void WebViewGuestDelegate::WillDestroy() {
   ResetZoomController();
 }
 
-void WebViewGuestDelegate::DidDetach() {
-  ResetZoomController();
-}
-
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
   return embedder_web_contents_;
 }
@@ -95,14 +91,6 @@ void WebViewGuestDelegate::ResetZoomController() {
     embedder_zoom_controller_->RemoveObserver(this);
     embedder_zoom_controller_ = nullptr;
   }
-}
-
-content::RenderWidgetHost* WebViewGuestDelegate::GetOwnerRenderWidgetHost() {
-  return embedder_web_contents_->GetRenderViewHost()->GetWidget();
-}
-
-content::SiteInstance* WebViewGuestDelegate::GetOwnerSiteInstance() {
-  return embedder_web_contents_->GetSiteInstance();
 }
 
 content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(

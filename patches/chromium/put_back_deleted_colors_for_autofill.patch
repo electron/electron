@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd04a46fef 100644
+index a77c5718649d8703a1c8423f6a6e2cf196720526..cb4fdb40a7ec0eada94ac53aba22e8bba06d4c05 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -353,6 +353,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -355,6 +355,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -42,7 +42,7 @@ index e4b9c5e52d6f8408f8ab5ab7c4f8b28466e04626..9c32aaaa0d88a692632a2e888250c6fd
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 977cefd87de616ac97c687f7fbe350cc703b84b3..286768de5756b446fafe9a9af33364270cf0e583 100644
+index 35301a2fd7fc53c940bcda47f85527f17af64248..c78bdfb3643f8a310e0ee4c788af4f09fe876d7e 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -63,7 +63,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -55,7 +55,7 @@ index 977cefd87de616ac97c687f7fbe350cc703b84b3..286768de5756b446fafe9a9af3336427
    switch (color_id) {
      // Dialogs
      case NativeTheme::kColorId_WindowBackground:
-@@ -78,6 +79,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
+@@ -79,6 +80,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
      case NativeTheme::kColorId_BubbleFooterBackground:
        return SkColorSetRGB(0x32, 0x36, 0x39);
  
@@ -70,7 +70,7 @@ index 977cefd87de616ac97c687f7fbe350cc703b84b3..286768de5756b446fafe9a9af3336427
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -564,6 +573,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -572,6 +581,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -89,7 +89,7 @@ index 977cefd87de616ac97c687f7fbe350cc703b84b3..286768de5756b446fafe9a9af3336427
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -667,7 +688,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -675,7 +696,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -115,10 +115,10 @@ index dde0f977c676b6914f206ca7022290887257622b..67fe14f482dcbdf884711e3b283f9d61
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index d6fa761fafbc7cfea744a34b1101fb33a5ac1ba2..74afe95ebec7f14836b4a5f4c3689f5acc5774cb 100644
+index 950956142148d2127135386dd2b9d0076b7aa148..eaf817b4b5400fa4d2b6af7c86ac69aabf030a38 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -647,6 +647,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -648,6 +648,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

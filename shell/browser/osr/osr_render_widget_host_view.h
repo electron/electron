@@ -140,8 +140,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       content::RenderWidgetHost*,
       content::WebContentsView*) override;
 
-  const viz::LocalSurfaceIdAllocation& GetLocalSurfaceIdAllocation()
-      const override;
+  const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
 
   void DidNavigate() override;
@@ -254,10 +253,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceIdAllocation delegated_frame_host_allocation_;
+  viz::LocalSurfaceId delegated_frame_host_surface_id_;
   viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
 
-  viz::LocalSurfaceIdAllocation compositor_allocation_;
+  viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
