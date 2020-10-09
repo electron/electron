@@ -10,7 +10,7 @@ ensure that we stay in sync with Node.js default behavior.
 This will be upstreamed.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1a6980340 100644
+index 274d0481529ace763c997910ce40e2c730a20146..194094e1d5bdda4589c7cc4d99270af3cb3ef5a3 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -30,14 +30,16 @@ using v8::PropertyDescriptor;
