@@ -1328,9 +1328,9 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
-  // A WebFrame can outlive its RenderFrameHost so we need to mark it as
+  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
   // disposed to prevent access to it.
-  WebFrame::RenderFrameDeleted(render_frame_host);
+  WebFrameMain::RenderFrameDeleted(render_frame_host);
 
   // A RenderFrameHost can be destroyed before the related Mojo binding is
   // closed, which can result in Mojo calls being sent for RenderFrameHosts

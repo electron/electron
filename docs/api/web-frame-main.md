@@ -129,5 +129,5 @@ An `Integer` representing the id of the process which owns this frame.
 #### `frame.routingId` _Readonly_
 
 An `Integer` representing the unique frame id in the current renderer process.
-Distinct WebFrame instances that refer to the same underlying frame will have
-the same `routingId`.
+Distinct `WebFrameMain` instances that refer to the same underlying frame will
+have the same `routingId`.

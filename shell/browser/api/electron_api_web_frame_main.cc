@@ -29,46 +29,48 @@ namespace electron {
 
 namespace api {
 
-typedef std::unordered_map<content::RenderFrameHost*, WebFrame*> RenderFrameMap;
+typedef std::unordered_map<content::RenderFrameHost*, WebFrameMain*>
+    RenderFrameMap;
 base::LazyInstance<RenderFrameMap>::DestructorAtExit g_render_frame_map =
     LAZY_INSTANCE_INITIALIZER;
 
-WebFrame* FromRenderFrameHost(content::RenderFrameHost* rfh) {
+WebFrameMain* FromRenderFrameHost(content::RenderFrameHost* rfh) {
   auto frame_map = g_render_frame_map.Get();
   auto iter = frame_map.find(rfh);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
 }
 
-gin::WrapperInfo WebFrame::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-WebFrame::WebFrame(content::RenderFrameHost* rfh) : render_frame_(rfh) {
+WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh) : render_frame_(rfh) {
   g_render_frame_map.Get().emplace(rfh, this);
 }
 
-WebFrame::~WebFrame() {
+WebFrameMain::~WebFrameMain() {
   MarkRenderFrameDisposed();
 }
 
-void WebFrame::MarkRenderFrameDisposed() {
+void WebFrameMain::MarkRenderFrameDisposed() {
   g_render_frame_map.Get().erase(render_frame_);
   render_frame_disposed_ = true;
 }
 
-bool WebFrame::CheckRenderFrame() const {
+bool WebFrameMain::CheckRenderFrame() const {
   if (render_frame_disposed_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Render frame was disposed before WebFrame could be accessed");
+        "Render frame was disposed before WebFrameMain could be accessed");
     return false;
   }
   return true;
 }
 
-v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(gin::Arguments* args,
-                                                   const base::string16& code) {
+v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
+    gin::Arguments* args,
+    const base::string16& code) {
   gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -87,7 +89,7 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(gin::Arguments* args,
 
   if (render_frame_disposed_) {
     promise.RejectWithErrorMessage(
-        "Render frame was disposed before WebFrame could be accessed");
+        "Render frame was disposed before WebFrameMain could be accessed");
     return handle;
   }
 
@@ -106,49 +108,49 @@ v8::Local<v8::Promise> WebFrame::ExecuteJavaScript(gin::Arguments* args,
   return handle;
 }
 
-bool WebFrame::Reload(v8::Isolate* isolate) {
+bool WebFrameMain::Reload(v8::Isolate* isolate) {
   if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
 }
 
-int WebFrame::FrameTreeNodeID(v8::Isolate* isolate) const {
+int WebFrameMain::FrameTreeNodeID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetFrameTreeNodeId();
 }
 
-int WebFrame::ProcessID(v8::Isolate* isolate) const {
+int WebFrameMain::ProcessID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetProcess()->GetID();
 }
 
-int WebFrame::RoutingID(v8::Isolate* isolate) const {
+int WebFrameMain::RoutingID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrame::URL(v8::Isolate* isolate) const {
+GURL WebFrameMain::URL(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return GURL::EmptyGURL();
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrame::Top(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Top(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrame::Parent(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Parent(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrame::Frames(
+std::vector<content::RenderFrameHost*> WebFrameMain::Frames(
     v8::Isolate* isolate) const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
@@ -162,7 +164,7 @@ std::vector<content::RenderFrameHost*> WebFrame::Frames(
   return frame_hosts;
 }
 
-std::vector<content::RenderFrameHost*> WebFrame::FramesInSubtree(
+std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree(
     v8::Isolate* isolate) const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
@@ -176,49 +178,49 @@ std::vector<content::RenderFrameHost*> WebFrame::FramesInSubtree(
 }
 
 // static
-gin::Handle<WebFrame> WebFrame::From(v8::Isolate* isolate,
-                                     content::RenderFrameHost* rfh) {
+gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
+                                             content::RenderFrameHost* rfh) {
   if (rfh == nullptr)
-    return gin::Handle<WebFrame>();
+    return gin::Handle<WebFrameMain>();
   auto* web_frame = FromRenderFrameHost(rfh);
   auto handle = gin::CreateHandle(
-      isolate, web_frame == nullptr ? new WebFrame(rfh) : web_frame);
+      isolate, web_frame == nullptr ? new WebFrameMain(rfh) : web_frame);
   return handle;
 }
 
 // static
-gin::Handle<WebFrame> WebFrame::FromID(v8::Isolate* isolate,
-                                       int render_process_id,
-                                       int render_frame_id) {
+gin::Handle<WebFrameMain> WebFrameMain::FromID(v8::Isolate* isolate,
+                                               int render_process_id,
+                                               int render_frame_id) {
   auto* rfh =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   return From(isolate, rfh);
 }
 
 // static
-void WebFrame::RenderFrameDeleted(content::RenderFrameHost* rfh) {
+void WebFrameMain::RenderFrameDeleted(content::RenderFrameHost* rfh) {
   auto* web_frame = FromRenderFrameHost(rfh);
   if (web_frame)
     web_frame->MarkRenderFrameDisposed();
 }
 
-gin::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
+gin::ObjectTemplateBuilder WebFrameMain::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<WebFrame>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
-      .SetMethod("reload", &WebFrame::Reload)
-      .SetProperty("frameTreeNodeId", &WebFrame::FrameTreeNodeID)
-      .SetProperty("processId", &WebFrame::ProcessID)
-      .SetProperty("routingId", &WebFrame::RoutingID)
-      .SetProperty("url", &WebFrame::URL)
-      .SetProperty("top", &WebFrame::Top)
-      .SetProperty("parent", &WebFrame::Parent)
-      .SetProperty("frames", &WebFrame::Frames)
-      .SetProperty("framesInSubtree", &WebFrame::FramesInSubtree);
+  return gin::Wrappable<WebFrameMain>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("reload", &WebFrameMain::Reload)
+      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
+      .SetProperty("processId", &WebFrameMain::ProcessID)
+      .SetProperty("routingId", &WebFrameMain::RoutingID)
+      .SetProperty("url", &WebFrameMain::URL)
+      .SetProperty("top", &WebFrameMain::Top)
+      .SetProperty("parent", &WebFrameMain::Parent)
+      .SetProperty("frames", &WebFrameMain::Frames)
+      .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree);
 }
 
-const char* WebFrame::GetTypeName() {
-  return "WebFrame";
+const char* WebFrameMain::GetTypeName() {
+  return "WebFrameMain";
 }
 
 }  // namespace api
@@ -227,17 +229,18 @@ const char* WebFrame::GetTypeName() {
 
 namespace {
 
-using electron::api::WebFrame;
+using electron::api::WebFrameMain;
 
 v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
                             int render_process_id,
                             int render_frame_id) {
   if (!electron::Browser::Get()->is_ready()) {
-    thrower.ThrowError("WebFrame is available only after app ready");
+    thrower.ThrowError("WebFrameMain is available only after app ready");
     return v8::Null(thrower.isolate());
   }
 
-  return WebFrame::FromID(thrower.isolate(), render_process_id, render_frame_id)
+  return WebFrameMain::FromID(thrower.isolate(), render_process_id,
+                              render_frame_id)
       .ToV8();
 }
 

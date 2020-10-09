@@ -22,7 +22,7 @@ v8::Local<v8::Value> Converter<content::RenderFrameHost*>::ToV8(
     content::RenderFrameHost* val) {
   if (!val)
     return v8::Null(isolate);
-  return electron::api::WebFrame::From(isolate, val).ToV8();
+  return electron::api::WebFrameMain::From(isolate, val).ToV8();
 }
 
 }  // namespace gin

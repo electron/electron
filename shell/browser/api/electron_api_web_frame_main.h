@@ -31,17 +31,17 @@ namespace electron {
 namespace api {
 
 // Bindings for accessing frames from the main process.
-class WebFrame : public gin::Wrappable<WebFrame> {
+class WebFrameMain : public gin::Wrappable<WebFrameMain> {
  public:
-  static gin::Handle<WebFrame> FromID(v8::Isolate* isolate,
-                                      int render_process_id,
-                                      int render_frame_id);
-  static gin::Handle<WebFrame> From(
+  static gin::Handle<WebFrameMain> FromID(v8::Isolate* isolate,
+                                          int render_process_id,
+                                          int render_frame_id);
+  static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
 
-  // Called to mark any RenderFrameHost as disposed by any WebFrame that may
-  // be holding a weak reference.
+  // Called to mark any RenderFrameHost as disposed by any WebFrameMain that
+  // may be holding a weak reference.
   static void RenderFrameDeleted(content::RenderFrameHost* rfh);
 
   // Mark RenderFrameHost as disposed and to no longer access it. This can
@@ -55,11 +55,11 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   const char* GetTypeName() override;
 
  protected:
-  explicit WebFrame(content::RenderFrameHost* render_frame);
-  ~WebFrame() override;
+  explicit WebFrameMain(content::RenderFrameHost* render_frame);
+  ~WebFrameMain() override;
 
  private:
-  // WebFrame can outlive its RenderFrameHost pointer so we need to check
+  // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
 
@@ -84,7 +84,7 @@ class WebFrame : public gin::Wrappable<WebFrame> {
   // be accessed.
   bool render_frame_disposed_ = false;
 
-  DISALLOW_COPY_AND_ASSIGN(WebFrame);
+  DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };
 
 }  // namespace api
