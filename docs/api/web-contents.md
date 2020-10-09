@@ -70,7 +70,7 @@ Returns:
 * `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed.
-The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
