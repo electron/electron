@@ -398,6 +398,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       * `bypassHeatCheck` - Bypass code caching heuristics but with lazy compilation
       * `bypassHeatCheckAndEagerCompile` - Same as above except compilation is eager.
       Default policy is `code`.
+    * `preferredSizeMode` Boolean (optional) - Whether to enable preferred size
+      mode. Enabling this will cause the `preferred-size-changed` event to be
+      emitted on the `WebContents` when the minimum size of the document's
+      layout changes.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
