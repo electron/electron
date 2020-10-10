@@ -1173,6 +1173,11 @@ void WebContents::DidStartLoading() {
 
 void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
+
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences &&
+      web_preferences->IsEnabled(options::kPreferredSizeMode))
+    web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 }
 
 bool WebContents::EmitNavigationEvent(
@@ -2901,6 +2906,11 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
+}
+
+void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
+                                      const gfx::Size& pref_size) {
+  Emit("preferred-size-changed", pref_size);
 }
 
 // static

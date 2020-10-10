@@ -87,6 +87,7 @@ extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
 extern const char kEnableWebSQL[];
+extern const char kPreferredSizeMode[];
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 extern const char kSpellcheck[];
