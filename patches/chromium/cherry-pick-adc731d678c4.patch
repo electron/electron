@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Tue, 8 Sep 2020 19:29:40 +0000
+Subject: serial: Check that port is open before reading or writing
+
+This change adds checks to the platform-specific implementations
+of Read() and Write() to make sure that the file descriptor is
+valid before. This makes the assumptions validated by later DCHECK
+correct.
+
+This cannot be done in the platform-independent layer because test
+code depends on being able to call some SerialIoHandler methods
+without an actual file descriptor.
+
+Bug: 1121836
+Change-Id: If182404cf10a2f3b445b9c80b75fed5df6b5ab4b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2393001
+Reviewed-by: James Hollyer <jameshollyer@chromium.org>
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#805016}
+(cherry picked from commit adc731d678c4c795e7c4c74133a624310e7bc9ae)
+
+diff --git a/services/device/serial/serial_io_handler_posix.cc b/services/device/serial/serial_io_handler_posix.cc
+index 452d81538fd34ceb8f4267b8ceee0f39588d2528..7f2a2c421b3f5a890652bac470c945ef4534728c 100644
+--- a/services/device/serial/serial_io_handler_posix.cc
++++ b/services/device/serial/serial_io_handler_posix.cc
+@@ -126,7 +126,11 @@ scoped_refptr<SerialIoHandler> SerialIoHandler::Create(
+ void SerialIoHandlerPosix::ReadImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(pending_read_buffer());
+-  DCHECK(file().IsValid());
++
++  if (!file().IsValid()) {
++    QueueReadCompleted(0, mojom::SerialReceiveError::DISCONNECTED);
++    return;
++  }
+ 
+   // Try to read immediately. This is needed because on some platforms
+   // (e.g., OSX) there may not be a notification from the message loop
+@@ -138,7 +142,11 @@ void SerialIoHandlerPosix::ReadImpl() {
+ void SerialIoHandlerPosix::WriteImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(pending_write_buffer());
+-  DCHECK(file().IsValid());
++
++  if (!file().IsValid()) {
++    QueueWriteCompleted(0, mojom::SerialSendError::DISCONNECTED);
++    return;
++  }
+ 
+   EnsureWatchingWrites();
+ }
+diff --git a/services/device/serial/serial_io_handler_win.cc b/services/device/serial/serial_io_handler_win.cc
+index 1501ce9081c3dc5a2b2fd2cfd681aea98ed16efe..5696ab995dc999fc0357230fb930652fa13a4c92 100644
+--- a/services/device/serial/serial_io_handler_win.cc
++++ b/services/device/serial/serial_io_handler_win.cc
+@@ -266,7 +266,11 @@ bool SerialIoHandlerWin::PostOpen() {
+ void SerialIoHandlerWin::ReadImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(pending_read_buffer());
+-  DCHECK(file().IsValid());
++
++  if (!file().IsValid()) {
++    QueueReadCompleted(0, mojom::SerialReceiveError::DISCONNECTED);
++    return;
++  }
+ 
+   if (!SetCommMask(file().GetPlatformFile(), EV_RXCHAR)) {
+     VPLOG(1) << "Failed to set serial event flags";
+@@ -285,7 +289,11 @@ void SerialIoHandlerWin::ReadImpl() {
+ void SerialIoHandlerWin::WriteImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(pending_write_buffer());
+-  DCHECK(file().IsValid());
++
++  if (!file().IsValid()) {
++    QueueWriteCompleted(0, mojom::SerialSendError::DISCONNECTED);
++    return;
++  }
+ 
+   BOOL ok = ::WriteFile(file().GetPlatformFile(), pending_write_buffer(),
+                         pending_write_buffer_len(), NULL,
