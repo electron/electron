@@ -1,0 +1,27 @@
+بوابة استنساخ https://github.com/KAU-KING-ABDULAZIZ/atom-ghsa-rgqm-55x8-rw64.git
+‏cd atom-ghsa-rgqm-55x8-rw64
+بوابة الخروج-ب النصائح-الإصلاح -1
+
+
+ثم 
+
+
+‏git push -u origin Advisory-fix-1
+
+
+‏gh repo clone KAU-KING-ABDULAZIZ/atom-ghsa-rgqm-55x8-rw64
+
+
+
+
+
+‏gh repo clone KAU-KING-ABDULAZIZ/atom-ghsa-rgqm-55x8-rw64
+
+
+$ ssh-keygen -p
+# Start the SSH key creation process
+> Enter file in which the key is (/Users/you/.ssh/id_rsa): [Hit enter]
+> Key has comment '/Users/you/.ssh/id_rsa'
+> Enter new passphrase (empty for no passphrase): [Type new passphrase]
+> Enter same passphrase again: [One more time for luck]
+> Your identification has been saved with the new passphrase.
