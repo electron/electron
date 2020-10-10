@@ -142,6 +142,9 @@ if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 
+// Load web-contents module to ensure it is populated on app ready
+require('@electron/internal/browser/api/web-contents');
+
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
 
