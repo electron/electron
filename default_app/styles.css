@@ -83,6 +83,7 @@ pre {
   padding: 6px 15px;
   text-align: center;
   border-radius: 3px;
+  min-height: 40px;
 }
 
 pre.with-prompt:before {
