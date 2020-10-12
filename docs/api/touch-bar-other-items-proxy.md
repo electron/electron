@@ -7,6 +7,6 @@
 >
 > Note: Only one instance of this class can be added per TouchBar.
 
-Process: Main
+Process: [Main](../glossary.md#main-process)
 
 ### `new TouchBarOtherItemsProxy()`
