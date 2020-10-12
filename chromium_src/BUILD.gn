@@ -301,18 +301,6 @@ source_set("plugins") {
   if (enable_pdf_viewer) {
     deps += [ "//components/pdf/browser" ]
   }
-  if (enable_pepper_flash) {
-    if (is_mac) {
-      sources += [
-        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
-        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
-      ]
-      frameworks += [ "CoreGraphics.framework" ]
-    }
-    if (is_linux) {
-      deps += [ "//components/services/font/public/cpp" ]
-    }
-  }
 
   # renderer side
   sources += [
@@ -321,13 +309,7 @@ source_set("plugins") {
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
-  if (enable_pepper_flash) {
-    sources += [
-      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
-    ]
-  }
-  if (enable_pepper_flash || enable_pdf_viewer) {
+  if (enable_pdf_viewer) {
     sources += [
       "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
       "//chrome/renderer/pepper/pepper_flash_font_file_host.h",

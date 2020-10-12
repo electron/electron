@@ -123,10 +123,6 @@
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"  // nogncheck
-#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
-
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -822,12 +818,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 }
 
 void ElectronBrowserClient::DidCreatePpapiPlugin(
-    content::BrowserPpapiHost* host) {
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-  host->GetPpapiHost()->AddHostFactoryFilter(
-      base::WrapUnique(new ChromeBrowserPepperHostFactory(host)));
-#endif
-}
+    content::BrowserPpapiHost* host) {}
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
