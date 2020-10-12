@@ -334,10 +334,6 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),
                               base::Time::FromDoubleT(modification_time));
-    } else if (type == "blob") {
-      std::string uuid;
-      dict->GetString("blobUUID", &uuid);
-      (*out)->AppendBlob(uuid);
     }
   }
   return true;
