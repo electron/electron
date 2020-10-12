@@ -431,7 +431,7 @@ index 4b140a2a0f431cd7b06a8d1b6f9e84981f4ce7e7..14779debdacc7b5f78aa0799f197241d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 8568856b8480ae94e01e693a52217bc13bab4bae..58133c25136a93e0a3f2c358bce786d7ebc44e3a 100644
+index 58e8aa32aa5f291b000753dc4487835a53df34c5..b5529c8b2697af7e94311707a5d14f9cedab434c 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -564,8 +564,8 @@ index 8568856b8480ae94e01e693a52217bc13bab4bae..58133c25136a93e0a3f2c358bce786d7
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2075,7 +2114,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
-     base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
+@@ -2077,7 +2116,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
+   }
  }
  
 -bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
@@ -575,7 +575,7 @@ index 8568856b8480ae94e01e693a52217bc13bab4bae..58133c25136a93e0a3f2c358bce786d7
    mojom::PrintPagesParams settings;
    settings.params = mojom::PrintParams::New();
    GetPrintManagerHost()->GetDefaultPrintSettings(&settings.params);
-@@ -2099,12 +2140,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2101,12 +2142,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -595,7 +595,7 @@ index 8568856b8480ae94e01e693a52217bc13bab4bae..58133c25136a93e0a3f2c358bce786d7
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..d7d316df470300bd99559e6f5aaaf0f196b06cb1 100644
+index 78d76aadc206a0922163f87f0575ca0cfe344880..d51fff55ebd5c9d1a39637039b279b491d025b08 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -230,7 +230,7 @@ class PrintRenderFrameHelper
@@ -636,10 +636,10 @@ index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..d7d316df470300bd99559e6f5aaaf0f1
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 14ec2b673afe6fc0ecfce8028a432f5bcfc9e104..5a1853c4f8e70143e9b1be3dcab7f1dff448346d 100644
+index 49e0e83868dc8f4e32eab5b08172f0697552a532..eb8fd82289e6bb370934883c039bdde704604768 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -95,7 +95,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -96,7 +96,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
@@ -648,10 +648,10 @@ index 14ec2b673afe6fc0ecfce8028a432f5bcfc9e104..5a1853c4f8e70143e9b1be3dcab7f1df
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 7ac9ce996ca7cbf8bcd21cb0c8161b63050ff684..43f5383bfed965c3d8cd3102dc18309a65c457ae 100644
+index 896d1b26f492862b3ae501ca5b756cfb201d1c75..a3762cb0e222d425359bd803c8406f7a11b59ade 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -133,12 +133,12 @@ class PRINTING_EXPORT PrintingContext {
+@@ -134,12 +134,12 @@ class PRINTING_EXPORT PrintingContext {
  
    int job_id() const { return job_id_; }
  

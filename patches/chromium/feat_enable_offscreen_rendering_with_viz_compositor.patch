@@ -94,10 +94,10 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3d3fc4f522707f6a5f16c936e55b49f480afd014..bafbc340e7d8969292c72ad4a9a95075ccd03841 100644
+index f17e070e91c06d28a110437856decc2f4271130d..3eedd746e7f83be3e7b448d88ea1a719f8e75f9b 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -124,6 +124,8 @@ viz_component("service") {
+@@ -115,6 +115,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -107,7 +107,7 @@ index 3d3fc4f522707f6a5f16c936e55b49f480afd014..bafbc340e7d8969292c72ad4a9a95075
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 2da653cc9c3c9c54fbfcd1ae92ea381bb3d0022f..3442a2d52443c5b17dacd642cbe1538b92ceca8c 100644
+index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e00016ce9b 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -22,6 +22,7 @@
@@ -126,7 +126,7 @@ index 2da653cc9c3c9c54fbfcd1ae92ea381bb3d0022f..3442a2d52443c5b17dacd642cbe1538b
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -225,6 +227,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -245,6 +247,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

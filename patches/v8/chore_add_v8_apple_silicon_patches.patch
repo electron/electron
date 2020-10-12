@@ -66,10 +66,10 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index a202af2ff653245f1e902194d17cd5a21f6a0635..099e900846acce551d70b171ea7761c3f6d61d50 100644
+index 4cca59a73380a5d25f158876c3bd238da78e9f52..b029706485b41a15fd453f6041f0d950741f4ce9 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1898,6 +1898,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1905,6 +1905,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index a202af2ff653245f1e902194d17cd5a21f6a0635..099e900846acce551d70b171ea7761c3
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index ab689283e970a79bc02dbeee7a4a74720265fcd7..12e54765d316f97297ad0a999ca32c5d07872580 100644
+index 3137eb2ad31847efb9a0c526a2e0f84209d71cfe..723845eee8439f6dc8b5d1de3cc578ecdd1d3e99 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -763,7 +763,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -776,7 +776,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -96,7 +96,7 @@ index ab689283e970a79bc02dbeee7a4a74720265fcd7..12e54765d316f97297ad0a999ca32c5d
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index 8b41a90992f58c535df285e7fa569b51ae31f85d..1ff813abf44d25e8f2fd84b236623b74913684fb 100644
+index 5c35f69f2af2199025dddfa577564996dbb6145f..a4e6b0128e909d371d0ede3627494002e281d547 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
@@ -121,7 +121,7 @@ index 5e8ed5475bb064cb657069242ce7517de7f5f8e2..5652bb407da3646e55c42492b3e9face
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index cf78ab5ff3286d6c07527a323eac4213255fe825..b89433d445f46110ba6cacfc6ec930d31171fd1f 100644
+index 0666f88619b9e724fe79d8fad817b8acf99a01b7..5274cad0d0aed50bbdea66ff1666af556d994879 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
 @@ -1512,6 +1512,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
