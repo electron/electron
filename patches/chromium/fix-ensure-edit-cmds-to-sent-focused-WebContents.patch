@@ -105,7 +105,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/cont
 index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..17e3fe40522e088057eaf01a290b658a0b6d1d01 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -1799,15 +1799,15 @@ void RenderWidgetHostViewMac::ExecuteEditCommand(const std::string& command) {
+@@ -1799,15 +1799,15 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::Undo() {
@@ -127,7 +127,7 @@ index 472869202ff8a62d854c9ca39ca9f14e2f91e8cf..17e3fe40522e088057eaf01a290b658a
  }
  
  void RenderWidgetHostViewMac::Cut() {
-@@ -1835,9 +1835,9 @@ void RenderWidgetHostViewMac::Paste() {
+@@ -1835,9 +1835,9 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::PasteAndMatchStyle() {
@@ -144,7 +144,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac_editcomma
 index 760e47e9edd7b92b7bc6074f6da9c76048be8f28..2b0f1135e584852048081629eb6297e4e1fcc574 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac_editcommand_helper_unittest.mm
-@@ -91,9 +91,12 @@ class RenderWidgetHostDelegateEditCommandCounter
+@@ -91,9 +91,12 @@ void ExecuteEditCommand(
        const base::Optional<base::string16>& value) override {
      edit_command_message_count_++;
    }
@@ -161,7 +161,7 @@ diff --git a/content/browser/renderer_host/text_input_client_mac_unittest.mm b/c
 index 158e0507af7433e16c47227e7519b12e14554f1b..e7b8109cdc78e76d737bd0c067f8d33e0c171117 100644
 --- a/content/browser/renderer_host/text_input_client_mac_unittest.mm
 +++ b/content/browser/renderer_host/text_input_client_mac_unittest.mm
-@@ -40,9 +40,12 @@ class MockRenderWidgetHostDelegate : public RenderWidgetHostDelegate {
+@@ -40,9 +40,12 @@
    void ExecuteEditCommand(
        const std::string& command,
        const base::Optional<base::string16>& value) override {}
