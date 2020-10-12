@@ -302,14 +302,6 @@ source_set("plugins") {
     deps += [ "//components/pdf/browser" ]
   }
   if (enable_pepper_flash) {
-    sources += [
-      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h",
-    ]
     if (is_mac) {
       sources += [
         "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
@@ -331,14 +323,8 @@ source_set("plugins") {
   ]
   if (enable_pepper_flash) {
     sources += [
-      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
       "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
-      "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_menu_host.h",
-      "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
     ]
   }
   if (enable_pepper_flash || enable_pdf_viewer) {
