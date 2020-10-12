@@ -1294,13 +1294,11 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
     base::UkmSourceId ukm_source_id,
-    NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   content::BrowserContext* context = web_contents->GetBrowserContext();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  DCHECK(uniquely_owned_factories);
   DCHECK(factories);
   factories->emplace(
       extensions::kExtensionScheme,
@@ -1384,7 +1382,6 @@ class FileURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
-    NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
@@ -1397,7 +1394,6 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
                                      factories);
   }
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  DCHECK(uniquely_owned_factories);
   DCHECK(factories);
   factories->emplace(extensions::kExtensionScheme,
                      extensions::CreateExtensionURLLoaderFactory(
