@@ -388,7 +388,6 @@ void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
 
   blink::WebFrame* web_frame = render_frame->GetWebFrame();
   web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
-  web_frame->View()->SetIgnoreViewportTagScaleLimits(true);
 }
 
 void AllowGuestViewElementDefinition(gin_helper::ErrorThrower thrower,
