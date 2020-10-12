@@ -27,7 +27,6 @@
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
-#include "services/service_manager/embedder/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
@@ -346,8 +345,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
-  if (process_type != service_manager::switches::kZygoteProcess &&
-      !process_type.empty()) {
+  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     breakpad::InitCrashReporter(process_type);
   }
