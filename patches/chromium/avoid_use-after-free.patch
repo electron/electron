@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bruce Dawson <brucedawson@chromium.org>
+Date: Thu, 17 Sep 2020 22:34:58 +0000
+Subject: Avoid use-after-free
+
+SetNotWaitingForResponse can trigger a message pump which can then free
+the object which |this| points to. This use-after-free can be avoided by
+not dereferencing |this| after the call, by ensuring that calling
+SetNotWaitingForResponse is the last thing done.
+
+(cherry picked from commit e1c5c8442210bccfbc2475c9bc75a9cf99bb259e)
+
+Bug: 1125199
+Change-Id: Ie1289c93112151978e6daaa1d24326770028c529
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2407065
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Bruce Dawson <brucedawson@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#806839}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2416264
+Reviewed-by: Bruce Dawson <brucedawson@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#816}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 279875a1c109568ec8e658d51a55efdea998dd7d..a7c76413b86fac18f6f1f54c87e67218f094e6b2 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3561,10 +3561,11 @@ void WebContentsImpl::SetNotWaitingForResponse() {
+     return;
+ 
+   waiting_for_response_ = false;
+-  if (delegate_)
+-    delegate_->LoadingStateChanged(this, is_load_to_different_document_);
+   for (auto& observer : observers_)
+     observer.DidReceiveResponse();
++
++  if (delegate_)
++    delegate_->LoadingStateChanged(this, is_load_to_different_document_);
+ }
+ 
+ void WebContentsImpl::SendScreenRects() {
+@@ -4533,6 +4534,8 @@ void WebContentsImpl::ReadyToCommitNavigation(
+             : false);
+   }
+ 
++  // LoadingStateChanged must be called last in case it triggers deletion of
++  // |this| due to recursive message pumps.
+   SetNotWaitingForResponse();
+ }
+ 

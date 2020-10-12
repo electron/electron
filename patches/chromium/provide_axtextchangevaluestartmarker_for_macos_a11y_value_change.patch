@@ -18,7 +18,7 @@ diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac_brow
 index 5f6db82d33d3343fc7bbc54783744a710c455a38..76131713f1919b62a35449fd411ad2f3333933f9 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac_browsertest.mm
-@@ -154,7 +154,7 @@ IN_PROC_BROWSER_TEST_F(AccessibilityTreeFormatterMacBrowserTest,
+@@ -154,7 +154,7 @@ AccessibilityNotificationWaiter waiter(shell()->web_contents(),
                      </script>)~~",
                 {":3;AXSelectedTextMarkerRange=*"}, R"~~(AXWebArea
  ++AXGroup
@@ -95,7 +95,7 @@ index eae637ff66da54ec2cba43107504ee3133d5fb2c..5038378864a6dd78bd470e068049d0e4
  #if defined(MAC_OS_X_VERSION_10_12) && \
      (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)
  #warning NSAccessibilityRequiredAttributeChrome \
-@@ -1890,10 +1904,15 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+@@ -1890,10 +1904,15 @@ - (BOOL)shouldExposeTitleUIElement {
      if (size_t{sel_start} == newValue.length() &&
          size_t{sel_end} == newValue.length()) {
        // Don't include oldValue as it would be announced -- very confusing.
@@ -113,7 +113,7 @@ index eae637ff66da54ec2cba43107504ee3133d5fb2c..5038378864a6dd78bd470e068049d0e4
  }
  
  - (BOOL)instanceActive {
-@@ -2268,7 +2287,9 @@ id content::AXTextMarkerFrom(const BrowserAccessibilityCocoa* anchor,
+@@ -2268,7 +2287,9 @@ - (NSValue*)selectedTextRange {
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
@@ -128,7 +128,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa_browserte
 index 4148e32e7184c0cb68327ff51bbe47a195a1b428..48f8d9dbbe387cf5f580c6b8ee769ab2651668b9 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
-@@ -62,6 +62,43 @@ class BrowserAccessibilityCocoaBrowserTest : public ContentBrowserTest {
+@@ -62,6 +62,43 @@
  
  }  // namespace
  
@@ -190,7 +190,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm 
 index 9163ae35ba4dc81cbe9b8d8d4a456e8d36c3eede..90bdee0cf769e872f2e9585eb5055429f12a9eda 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -94,6 +94,8 @@ NSString* const NSAccessibilityTextSelectionChangedFocus =
+@@ -94,6 +94,8 @@
  NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
  NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
  NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
@@ -199,7 +199,7 @@ index 9163ae35ba4dc81cbe9b8d8d4a456e8d36c3eede..90bdee0cf769e872f2e9585eb5055429
  NSString* const NSAccessibilityTextChangeValueLength =
      @"AXTextChangeValueLength";
  NSString* const NSAccessibilityTextChangeValues = @"AXTextChangeValues";
-@@ -313,16 +315,18 @@ void BrowserAccessibilityManagerMac::FireGeneratedEvent(
+@@ -313,16 +315,18 @@ void PostAnnouncementNotification(NSString* announcement) {
        if (base::mac::IsAtLeastOS10_11() && !text_edits_.empty()) {
          base::string16 deleted_text;
          base::string16 inserted_text;
@@ -221,7 +221,7 @@ index 9163ae35ba4dc81cbe9b8d8d4a456e8d36c3eede..90bdee0cf769e872f2e9585eb5055429
  
          BrowserAccessibility* root = GetRoot();
          if (!root)
-@@ -544,29 +548,42 @@ NSDictionary*
+@@ -544,29 +548,42 @@ void PostAnnouncementNotification(NSString* announcement) {
  BrowserAccessibilityManagerMac::GetUserInfoForValueChangedNotification(
      const BrowserAccessibilityCocoa* native_node,
      const base::string16& deleted_text,
