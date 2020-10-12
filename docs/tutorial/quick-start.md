@@ -232,7 +232,7 @@ As it was mentioned before, Electron has two types of processes: Main and Render
 
 ----
 
-The communication between processes is possible via Inter-Process Communication (IPC) modules: [`ipcMain`](https://www.electronjs.org/docs/api/ipc-main) and [`ipcRenderer`](https://www.electronjs.org/docs/api/ipc-renderer).
+The communication between processes is possible via Inter-Process Communication (IPC) modules: [`ipcMain`](../api/ipc-main.md) and [`ipcRenderer`](../api/ipc-renderer.md).
 
 #### APIs
 
@@ -275,7 +275,7 @@ ipcRenderer.invoke('perform-action', ...args)
 
 ##### Node.js API
 
-> NOTE: To provide full access to Node.js API, you need to set the `nodeIntegration` preference to `true`.
+> NOTE: To access the Node.js API from the Renderer process, you need to set the `nodeIntegration` preference to `true`.
 
 Electron exposes full access to Node.js API and its modules both in the Main and the Renderer processes. For example, you can read all the files from the root directory:
 
