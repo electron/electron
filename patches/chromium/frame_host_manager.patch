@@ -8,7 +8,7 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index f1d16dc478cee3eded4f056287a318fb1c421343..872d85a5388e24aec611d08c9d7eeaa628e1aebc 100644
+index f1d16dc478cee3eded4f056287a318fb1c421343..ab3e6f48547fbcf33577e18b6eaed58f74b50151 100644
 --- a/content/browser/browsing_instance.cc
 +++ b/content/browser/browsing_instance.cc
 @@ -86,6 +86,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
@@ -18,7 +18,7 @@ index f1d16dc478cee3eded4f056287a318fb1c421343..872d85a5388e24aec611d08c9d7eeaa6
 +scoped_refptr<SiteInstanceImpl> BrowsingInstance::CreateSiteInstanceForURL(
 +    const GURL& url) {
 +  scoped_refptr<SiteInstanceImpl> instance = new SiteInstanceImpl(this);
-+  instance->SetSite(url);
++  instance->SetSite(UrlInfo(url, false));
 +  return instance;
 +}
 +
