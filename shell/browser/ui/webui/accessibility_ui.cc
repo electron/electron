@@ -147,7 +147,7 @@ bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
 // Add property filters to the property_filters vector for the given property
 // filter type. The attributes are passed in as a string with each attribute
 // separated by a space.
-void AddPropertyFilters(std::vector<ui::AXPropertyFilter>& property_filters,
+void AddPropertyFilters(std::vector<ui::AXPropertyFilter>* property_filters,
                         const std::string& attributes,
                         ui::AXPropertyFilter::Type type) {
   for (const std::string& attribute : base::SplitString(
@@ -358,10 +358,10 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
   AllowJavascript();
 
   std::vector<ui::AXPropertyFilter> property_filters;
-  AddPropertyFilters(property_filters, allow, ui::AXPropertyFilter::ALLOW);
-  AddPropertyFilters(property_filters, allow_empty,
+  AddPropertyFilters(&property_filters, allow, ui::AXPropertyFilter::ALLOW);
+  AddPropertyFilters(&property_filters, allow_empty,
                      ui::AXPropertyFilter::ALLOW_EMPTY);
-  AddPropertyFilters(property_filters, deny, ui::AXPropertyFilter::DENY);
+  AddPropertyFilters(&property_filters, deny, ui::AXPropertyFilter::DENY);
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {
