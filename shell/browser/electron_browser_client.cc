@@ -609,9 +609,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
 #endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
-                                      ? blink::PreferredColorScheme::kDark
-                                      : blink::PreferredColorScheme::kLight;
+  prefs->preferred_color_scheme =
+      native_theme->ShouldUseDarkColors()
+          ? blink::mojom::PreferredColorScheme::kDark
+          : blink::mojom::PreferredColorScheme::kLight;
 
   SetFontDefaults(prefs);
 
