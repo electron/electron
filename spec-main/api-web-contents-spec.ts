@@ -1412,6 +1412,19 @@ describe('webContents module', () => {
     });
   });
 
+  it('does not crash when running a script in a new vm context', (done) => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true
+      }
+    });
+    w.webContents.on('console-message', (e, level, message) => {
+      if (message === 'ran-script') done();
+    });
+    w.loadFile(path.join(__dirname, 'fixtures', 'api', 'run-vm-context-script.html'));
+  });
+
   describe('ipc-message event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends an asynchronous message', async () => {

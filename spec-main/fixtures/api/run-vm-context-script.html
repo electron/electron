@@ -1,0 +1,7 @@
+<script>
+  const vm = require('vm');
+  const script = new vm.Script(`console.log('ran-script')`);
+  const sandbox = { globalVar: 1, console: console };
+  const contextifiedSandbox = vm.createContext(sandbox);
+  script.runInContext(contextifiedSandbox);
+</script>
