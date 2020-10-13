@@ -230,7 +230,7 @@ auto_filenames = {
     "lib/browser/default-menu.ts",
     "lib/browser/desktop-capturer.ts",
     "lib/browser/devtools.ts",
-    "lib/browser/guest-view-manager.js",
+    "lib/browser/guest-view-manager.ts",
     "lib/browser/guest-window-manager.ts",
     "lib/browser/init.ts",
     "lib/browser/ipc-main-impl.ts",
