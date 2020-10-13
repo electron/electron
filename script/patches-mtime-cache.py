@@ -21,7 +21,7 @@ def generate_cache(patches_config):
                 file_path = posixpath.join(repo, line[6:])
 
                 if not os.path.exists(file_path):
-                    print("Skipping non-existant file:", file_path)
+                    print("Skipping non-existent file:", file_path)
                     continue
 
                 with open(file_path, "rb") as f:
@@ -37,7 +37,7 @@ def generate_cache(patches_config):
 def apply_mtimes(mtime_cache):
     for file_path, metadata in mtime_cache.items():
         if not os.path.exists(file_path):
-            print("Skipping non-existant file:", file_path)
+            print("Skipping non-existent file:", file_path)
             continue
 
         with open(file_path, "rb") as f:
