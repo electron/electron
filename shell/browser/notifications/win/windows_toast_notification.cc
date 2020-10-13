@@ -260,8 +260,9 @@ bool WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
     return false;
 
   ComPtr<IXmlNode> scenario_attribute_pnode;
-  return (FAILED(toast_attributes.Get()->SetNamedItem(
-      scenario_attribute_node.Get(), &scenario_attribute_pnode))) return false;
+  if (FAILED(toast_attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+                                                  &scenario_attribute_pnode)))
+    return false;
 
   // Create "actions" wrapper
   ComPtr<IXmlElement> actions_wrapper_element;
