@@ -66,7 +66,7 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 4cca59a73380a5d25f158876c3bd238da78e9f52..b029706485b41a15fd453f6041f0d950741f4ce9 100644
+index 78ae11f0d17c156b3debd1d501a22edc42c9fff5..564e6a1a71073727fe6daa847093c556c532620b 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
 @@ -1905,6 +1905,7 @@ void InstructionSelector::EmitPrepareArguments(

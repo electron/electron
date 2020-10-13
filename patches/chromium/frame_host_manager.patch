@@ -106,10 +106,10 @@ index 1bcb9a4c209ff3c97ffbcc715493e483f911e024..e6f290d4adfef9f12f1bf205f5df3f76
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index 69e0321c1044e5aaeb4d92e3d7b71bb48b68b7ec..507f9dd630be6e3c9f31aca96f5491b42df160f3 100644
+index a7c684e192a3890c57d85bb206dd4641686c9a42..05650f4caee399b0d377ed3cc90b0f0c0b029e68 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
-@@ -2522,6 +2522,16 @@ RenderFrameHostManager::GetCoopCoepCrossOriginIsolationInfo(
+@@ -2527,6 +2527,16 @@ RenderFrameHostManager::GetCoopCoepCrossOriginIsolationInfo(
  scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request) {
@@ -126,7 +126,7 @@ index 69e0321c1044e5aaeb4d92e3d7b71bb48b68b7ec..507f9dd630be6e3c9f31aca96f5491b4
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2541,10 +2551,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2546,10 +2556,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index 69e0321c1044e5aaeb4d92e3d7b71bb48b68b7ec..507f9dd630be6e3c9f31aca96f5491b4
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2583,6 +2643,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2588,6 +2648,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -202,10 +202,10 @@ index 69e0321c1044e5aaeb4d92e3d7b71bb48b68b7ec..507f9dd630be6e3c9f31aca96f5491b4
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 4add86a7d11b0c4100f7aae8a176e4d86f6316bf..d5c2d0b6f1a3188597a30ddf4013b344fe72c93e 100644
+index f92beb6251b36731a9e00395c0d1696a1b076794..702c940d24e038b91e60f4359520d94555c44930 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -677,6 +677,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
+@@ -694,6 +694,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
    return browsing_instance_->HasSiteInstance(site_info);
  }
  
@@ -217,7 +217,7 @@ index 4add86a7d11b0c4100f7aae8a176e4d86f6316bf..d5c2d0b6f1a3188597a30ddf4013b344
      const GURL& url) {
    return GetRelatedSiteInstanceImpl(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index 5ff7aa895cb4151d33de099a9e1884908843f2b5..783064e23862aca35eeaab7a0ca60f207014d377 100644
+index 2a69510e624d653fef5125fe6b5f511f537b76a6..eb1bbd8699c851ca750391f3743a6a1dda0708da 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
 @@ -299,6 +299,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,

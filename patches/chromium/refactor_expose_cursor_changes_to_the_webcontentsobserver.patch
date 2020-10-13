@@ -43,10 +43,10 @@ index a2cd30b9aa715153c65a92d802714cf7cd0b3dbf..007e87046a7eac432a5bea72b1cd403b
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 90e1b9ea4702f9b60f1e9fd4cb430121d9a76e1f..48d2b475c81dbcccb9e8a564573a75e01e93cab2 100644
+index 1d9c7c466b3959282916ad410feaf27636f1388b..77e1e0ba5a09ace190b1856e063c339dbf43541e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4227,6 +4227,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -4230,6 +4230,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -60,7 +60,7 @@ index 90e1b9ea4702f9b60f1e9fd4cb430121d9a76e1f..48d2b475c81dbcccb9e8a564573a75e0
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 0a0b86a681e705f8e8ecf81ea2c375848509866d..834a3847809572c0d4876337b4c1da85a31bcda7 100644
+index 1123f81496453a333ae687ed6fb4d45b1f96dea1..c3814d26076f41481c325575ceb185a56028cb30 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -946,6 +946,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -72,7 +72,7 @@ index 0a0b86a681e705f8e8ecf81ea2c375848509866d..834a3847809572c0d4876337b4c1da85
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index ba438df316402fe9ddcd30a8e4f39301863d6074..29fa0fbb38976a74ba947a4fed2c053cfb8c089a 100644
+index 41c4e51fb449744f01c6b8ba9478a6673c1263c5..1fb7c0c686fb7cc66ab7d2b3afc936f63dee6be1 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
