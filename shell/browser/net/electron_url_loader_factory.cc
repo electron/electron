@@ -201,11 +201,14 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory;
-  handler_.Run(request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                                       std::move(loader), routing_id,
-                                       request_id, options, request,
-                                       std::move(client), traffic_annotation,
-                                       std::move(proxy_factory), type_));
+  // XXX - Would be preferable to not send a second argument at all, but this
+  // works for now
+  handler_.Run(request,
+               base::BindOnce(
+                   &ElectronURLLoaderFactory::StartLoading, std::move(loader),
+                   routing_id, request_id, options, request, std::move(client),
+                   traffic_annotation, std::move(proxy_factory), type_),
+               base::DoNothing());
 }
 
 // static

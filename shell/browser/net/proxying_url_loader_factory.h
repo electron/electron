@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/ref_counted.h"
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
@@ -172,6 +173,42 @@ class ProxyingURLLoaderFactory
     DISALLOW_COPY_AND_ASSIGN(InProgressRequest);
   };
 
+  class InterceptedRequest
+      : public base::RefCountedThreadSafe<InterceptedRequest> {
+   public:
+    InterceptedRequest(
+        mojo::PendingReceiver<network::mojom::URLLoader> loader,
+        mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+        mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory);
+
+    void SendResponse(int32_t routing_id,
+                      int32_t request_id,
+                      uint32_t options,
+                      const network::ResourceRequest& request,
+                      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+                      ProtocolType type,
+                      gin::Arguments* args);
+    void ContinueRequest(int32_t routing_id,
+                         int32_t request_id,
+                         uint32_t options,
+                         const network::ResourceRequest& request,
+                         const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+                         ProxyingURLLoaderFactory* proxy_factory,
+                         gin::Arguments* args);
+
+   private:
+    ~InterceptedRequest();
+    friend class base::RefCountedThreadSafe<InterceptedRequest>;
+
+    mojo::PendingReceiver<network::mojom::URLLoader> loader_;
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client_;
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory_;
+
+    bool callbackFired_ = false;
+
+    DISALLOW_COPY_AND_ASSIGN(InterceptedRequest);
+  };
+
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
@@ -221,6 +258,15 @@ class ProxyingURLLoaderFactory
   void MaybeDeleteThis();
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
+
+  void DefaultLoader(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t routing_id,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation);
 
   // Passed from api::WebRequest.
   WebRequestAPI* web_request_api_;
