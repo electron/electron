@@ -358,9 +358,7 @@ base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
-void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {
-  NOTREACHED();
-}
+void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {}
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
   return size_;
