@@ -1,7 +1,7 @@
-From f06a6cb3a38e6344893d1b74d022d71a016f7822 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Rummell <jrummell@chromium.org>
 Date: Wed, 16 Sep 2020 00:43:28 +0000
-Subject: [PATCH] (merge) Check for context destroyed in MediaKeys
+Subject: (merge) Check for context destroyed in MediaKeys
 
 Don't allow calls to proceed once the associated content has been
 destroyed.
@@ -21,21 +21,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2412559
 Reviewed-by: John Rummell <jrummell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4183@{#1836}
 Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
----
- .../modules/encryptedmedia/media_keys.cc      | 42 ++++++++++++++++++-
- .../modules/encryptedmedia/media_keys.h       |  6 ++-
- .../media_keys_get_status_for_policy.cc       |  6 ++-
- .../media_keys_get_status_for_policy.h        |  3 +-
- .../media_keys_get_status_for_policy.idl      |  2 +-
- .../encrypted-media-context-destroyed.html    | 33 +++++++++++++++
- 6 files changed, 85 insertions(+), 7 deletions(-)
- create mode 100644 third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html
 
 diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc b/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
-index 94e482b9e8bf6..aa103c6210d6a 100644
+index 82a2c622ebe5bd70f99c5effd730c063e7b63ab3..2d3b0a526d9cbcec248019826bdc4b40ec8f6f7f 100644
 --- a/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
 +++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
-@@ -221,6 +221,13 @@ MediaKeySession* MediaKeys::createSession(ScriptState* script_state,
+@@ -228,6 +228,13 @@ MediaKeySession* MediaKeys::createSession(ScriptState* script_state,
    DVLOG(MEDIA_KEYS_LOG_LEVEL)
        << __func__ << "(" << this << ") " << session_type_string;
  
@@ -49,7 +40,7 @@ index 94e482b9e8bf6..aa103c6210d6a 100644
    // [RuntimeEnabled] does not work with enum values. So we have to check it
    // here. See https://crbug.com/871867 for details.
    if (!RuntimeEnabledFeatures::
-@@ -267,6 +274,13 @@ ScriptPromise MediaKeys::setServerCertificate(
+@@ -274,6 +281,13 @@ ScriptPromise MediaKeys::setServerCertificate(
      ScriptState* script_state,
      const DOMArrayPiece& server_certificate,
      ExceptionState& exception_state) {
@@ -63,7 +54,7 @@ index 94e482b9e8bf6..aa103c6210d6a 100644
    // From https://w3c.github.io/encrypted-media/#setServerCertificate
    // The setServerCertificate(serverCertificate) method provides a server
    // certificate to be used to encrypt messages to the license server.
-@@ -309,6 +323,15 @@ void MediaKeys::SetServerCertificateTask(
+@@ -317,6 +331,15 @@ void MediaKeys::SetServerCertificateTask(
      ContentDecryptionModuleResult* result) {
    DVLOG(MEDIA_KEYS_LOG_LEVEL) << __func__ << "(" << this << ")";
  
@@ -79,7 +70,7 @@ index 94e482b9e8bf6..aa103c6210d6a 100644
    // 5.1 Let cdm be the cdm during the initialization of this object.
    WebContentDecryptionModule* cdm = ContentDecryptionModule();
  
-@@ -325,7 +348,15 @@ void MediaKeys::SetServerCertificateTask(
+@@ -333,7 +356,15 @@ void MediaKeys::SetServerCertificateTask(
  
  ScriptPromise MediaKeys::getStatusForPolicy(
      ScriptState* script_state,
@@ -96,7 +87,7 @@ index 94e482b9e8bf6..aa103c6210d6a 100644
    // TODO(xhwang): Pass MediaKeysPolicy classes all the way to Chromium when
    // we have more than one policy to check.
    String min_hdcp_version = media_keys_policy->minHdcpVersion();
-@@ -349,6 +380,15 @@ void MediaKeys::GetStatusForPolicyTask(const String& min_hdcp_version,
+@@ -358,6 +389,15 @@ void MediaKeys::GetStatusForPolicyTask(const String& min_hdcp_version,
                                         ContentDecryptionModuleResult* result) {
    DVLOG(MEDIA_KEYS_LOG_LEVEL) << __func__ << ": " << min_hdcp_version;
  
@@ -113,7 +104,7 @@ index 94e482b9e8bf6..aa103c6210d6a 100644
    cdm->GetStatusForPolicy(min_hdcp_version, result->Result());
  }
 diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys.h b/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
-index 1061cb15becf3..ad23239df08d7 100644
+index ba2d0093ba83ca0c391f0edf03bf44502723e4cb..d24ad3d6e39f65d84200d3b198a59aca4c1c3c1f 100644
 --- a/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
 +++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
 @@ -71,9 +71,11 @@ class MediaKeys : public ScriptWrappable,
@@ -131,7 +122,7 @@ index 1061cb15becf3..ad23239df08d7 100644
    // Indicates that the provided HTMLMediaElement wants to use this object.
    // Returns true if no other HTMLMediaElement currently references this
 diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
-index 0b12f4d3a0315..c6e7ff4a754c3 100644
+index 0b12f4d3a03158b3d3e83845612416a6ef67a3f5..c6e7ff4a754c3edfc258bb3ecdf652a38febfa77 100644
 --- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
 +++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
 @@ -14,10 +14,12 @@ namespace blink {
@@ -150,7 +141,7 @@ index 0b12f4d3a0315..c6e7ff4a754c3 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
-index 246e7a5aac85c..62317f6c03724 100644
+index 246e7a5aac85c37cbbafab5b9fb6f2f4726ffbf2..62317f6c03724d2a6294a4516ef680fb89581481 100644
 --- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
 +++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
 @@ -20,7 +20,8 @@ class MediaKeysGetStatusForPolicy {
@@ -164,7 +155,7 @@ index 246e7a5aac85c..62317f6c03724 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
-index 15a6ca073ec19..671ba323111b6 100644
+index 15a6ca073ec19700a778f963a2697c4cf5c1f99d..671ba323111b6450288b55d9be95dbd216540b54 100644
 --- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
 +++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
 @@ -8,5 +8,5 @@
@@ -176,7 +167,7 @@ index 15a6ca073ec19..671ba323111b6 100644
  };
 diff --git a/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html b/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html
 new file mode 100644
-index 0000000000000..2d54624b0fa76
+index 0000000000000000000000000000000000000000..2d54624b0fa76b59a4341ed41a876654d135bc0e
 --- /dev/null
 +++ b/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html
 @@ -0,0 +1,33 @@
