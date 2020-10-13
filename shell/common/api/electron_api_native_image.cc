@@ -257,7 +257,11 @@ gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
 
 std::vector<float> NativeImage::GetScaleFactors() {
   gfx::ImageSkia image_skia = image_.AsImageSkia();
-  return image_skia.GetSupportedScales();
+  std::vector<float> scale_factors;
+  for (const auto& rep : image_skia.image_reps()) {
+    scale_factors.push_back(rep.scale());
+  }
+  return scale_factors;
 }
 
 float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
@@ -376,18 +380,20 @@ gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
 gin::Handle<NativeImage> NativeImage::CreateFromPNG(v8::Isolate* isolate,
                                                     const char* buffer,
                                                     size_t length) {
-  gfx::Image image = gfx::Image::CreateFrom1xPNGBytes(
-      reinterpret_cast<const unsigned char*>(buffer), length);
-  return Create(isolate, image);
+  gfx::ImageSkia image_skia;
+  electron::util::AddImageSkiaRepFromPNG(
+      &image_skia, reinterpret_cast<const unsigned char*>(buffer), length, 1.0);
+  return Create(isolate, gfx::Image(image_skia));
 }
 
 // static
 gin::Handle<NativeImage> NativeImage::CreateFromJPEG(v8::Isolate* isolate,
                                                      const char* buffer,
                                                      size_t length) {
-  gfx::Image image = gfx::ImageFrom1xJPEGEncodedData(
-      reinterpret_cast<const unsigned char*>(buffer), length);
-  return Create(isolate, image);
+  gfx::ImageSkia image_skia;
+  electron::util::AddImageSkiaRepFromJPEG(
+      &image_skia, reinterpret_cast<const unsigned char*>(buffer), length, 1.0);
+  return Create(isolate, gfx::Image(image_skia));
 }
 
 // static
