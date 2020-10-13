@@ -20,6 +20,8 @@
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/strings/grit/ui_strings.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
@@ -227,8 +229,8 @@ bool WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
     return false;
 
   // get attributes of root "toast" node
-  ComPtr<IXmlNamedNodeMap> attributes;
-  if (FAILED(root->get_Attributes(&attributes)))
+  ComPtr<IXmlNamedNodeMap> toast_attributes;
+  if (FAILED(root->get_Attributes(&toast_attributes)))
     return false;
 
   ComPtr<IXmlAttribute> scenario_attribute;
@@ -252,14 +254,159 @@ bool WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   if (FAILED(scenario_text.As(&scenario_node)))
     return false;
 
-  ComPtr<IXmlNode> child_node;
+  ComPtr<IXmlNode> scenario_backup_node;
   if (FAILED(scenario_attribute_node->AppendChild(scenario_node.Get(),
-                                                  &child_node)))
+                                                  &scenario_backup_node)))
     return false;
 
   ComPtr<IXmlNode> scenario_attribute_pnode;
-  return SUCCEEDED(attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
-                                                  &scenario_attribute_pnode));
+  return (FAILED(toast_attributes.Get()->SetNamedItem(
+      scenario_attribute_node.Get(), &scenario_attribute_pnode))) return false;
+
+  // Create "actions" wrapper
+  ComPtr<IXmlElement> actions_wrapper_element;
+  ScopedHString actions_wrapper_str(L"actions");
+  if (FAILED(doc->CreateElement(actions_wrapper_str, &actions_wrapper_element)))
+    return false;
+
+  ComPtr<IXmlNode> actions_wrapper_node_tmp;
+  if (FAILED(actions_wrapper_element.As(&actions_wrapper_node_tmp)))
+    return false;
+
+  // Append actions wrapper node to toast xml
+  ComPtr<IXmlNode> actions_wrapper_node;
+  if (FAILED(root->AppendChild(actions_wrapper_node_tmp.Get(),
+                               &actions_wrapper_node)))
+    return false;
+
+  ComPtr<IXmlNamedNodeMap> attributes_actions_wrapper;
+  if (FAILED(actions_wrapper_node->get_Attributes(&attributes_actions_wrapper)))
+    return false;
+
+  // Add a "Dismiss" button
+  // Create "action" tag
+  ComPtr<IXmlElement> action_element;
+  ScopedHString action_str(L"action");
+  if (FAILED(doc->CreateElement(action_str, &action_element)))
+    return false;
+
+  ComPtr<IXmlNode> action_node_tmp;
+  if (FAILED(action_element.As(&action_node_tmp)))
+    return false;
+
+  // Append action node to actions wrapper in toast xml
+  ComPtr<IXmlNode> action_node;
+  if (FAILED(actions_wrapper_node->AppendChild(action_node_tmp.Get(),
+                                               &action_node)))
+    return false;
+
+  // Setup attributes for action
+  ComPtr<IXmlNamedNodeMap> action_attributes;
+  if (FAILED(action_node->get_Attributes(&action_attributes)))
+    return false;
+
+  // Create activationType attribute
+  ComPtr<IXmlAttribute> activation_type_attribute;
+  ScopedHString activation_type_str(L"activationType");
+  if (FAILED(doc->CreateAttribute(activation_type_str,
+                                  &activation_type_attribute)))
+    return false;
+
+  ComPtr<IXmlNode> activation_type_attribute_node;
+  if (FAILED(activation_type_attribute.As(&activation_type_attribute_node)))
+    return false;
+
+  // Set activationType attribute to system
+  ScopedHString activation_type_value(L"system");
+  if (!activation_type_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> activation_type_text;
+  if (FAILED(doc->CreateTextNode(activation_type_value, &activation_type_text)))
+    return false;
+
+  ComPtr<IXmlNode> activation_type_node;
+  if (FAILED(activation_type_text.As(&activation_type_node)))
+    return false;
+
+  ComPtr<IXmlNode> activation_type_backup_node;
+  if (FAILED(activation_type_attribute_node->AppendChild(
+          activation_type_node.Get(), &activation_type_backup_node)))
+    return false;
+
+  // Add activation type to the action attributes
+  ComPtr<IXmlNode> activation_type_attribute_pnode;
+  if (FAILED(action_attributes.Get()->SetNamedItem(
+          activation_type_attribute_node.Get(),
+          &activation_type_attribute_pnode)))
+    return false;
+
+  // Create arguments attribute
+  ComPtr<IXmlAttribute> arguments_attribute;
+  ScopedHString arguments_str(L"arguments");
+  if (FAILED(doc->CreateAttribute(arguments_str, &arguments_attribute)))
+    return false;
+
+  ComPtr<IXmlNode> arguments_attribute_node;
+  if (FAILED(arguments_attribute.As(&arguments_attribute_node)))
+    return false;
+
+  // Set arguments attribute to dismiss
+  ScopedHString arguments_value(L"dismiss");
+  if (!arguments_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> arguments_text;
+  if (FAILED(doc->CreateTextNode(arguments_value, &arguments_text)))
+    return false;
+
+  ComPtr<IXmlNode> arguments_node;
+  if (FAILED(arguments_text.As(&arguments_node)))
+    return false;
+
+  ComPtr<IXmlNode> arguments_backup_node;
+  if (FAILED(arguments_attribute_node->AppendChild(arguments_node.Get(),
+                                                   &arguments_backup_node)))
+    return false;
+
+  // Add arguments to the action attributes
+  ComPtr<IXmlNode> arguments_attribute_pnode;
+  if (FAILED(action_attributes.Get()->SetNamedItem(
+          arguments_attribute_node.Get(), &arguments_attribute_pnode)))
+    return false;
+
+  // Create content attribute
+  ComPtr<IXmlAttribute> content_attribute;
+  ScopedHString content_str(L"content");
+  if (FAILED(doc->CreateAttribute(content_str, &content_attribute)))
+    return false;
+
+  ComPtr<IXmlNode> content_attribute_node;
+  if (FAILED(content_attribute.As(&content_attribute_node)))
+    return false;
+
+  // Set content attribute to Dismiss
+  ScopedHString content_value(l10n_util::GetStringUTF16(IDS_APP_CLOSE));
+  if (!content_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> content_text;
+  if (FAILED(doc->CreateTextNode(content_value, &content_text)))
+    return false;
+
+  ComPtr<IXmlNode> content_node;
+  if (FAILED(content_text.As(&content_node)))
+    return false;
+
+  ComPtr<IXmlNode> content_backup_node;
+  if (FAILED(content_attribute_node->AppendChild(content_node.Get(),
+                                                 &content_backup_node)))
+    return false;
+
+  // Add content to the action attributes
+  ComPtr<IXmlNode> content_attribute_pnode;
+  return SUCCEEDED(action_attributes.Get()->SetNamedItem(
+      content_attribute_node.Get(), &content_attribute_pnode));
 }
 
 bool WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
