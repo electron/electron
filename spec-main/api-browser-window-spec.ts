@@ -4286,6 +4286,30 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('reloading with allowRendererProcessReuse enabled', () => {
+    it('does not cause Node.js module API hangs after reload', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+
+      let count = 0;
+      ipcMain.on('async-node-api-done', () => {
+        if (count === 3) {
+          ipcMain.removeAllListeners('async-node-api-done');
+          done();
+        } else {
+          count++;
+          w.reload();
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
+    });
+  });
+
   describe('window.webContents.focus()', () => {
     afterEach(closeAllWindows);
     it('focuses window', async () => {
