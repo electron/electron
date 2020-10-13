@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 12 Oct 2020 22:48:21 -0700
+Subject: fix: ScriptState crash for non-Blink v8::Contexts
+
+In the renderer process it's possible that a v8::Context will be created
+by Node.js and therefore not have an associated ScriptState. Blink
+assumes one will be associated always, and thus crashes when trying to
+fetch the DOMWrapperWorld for a ScriptState created from a non-Blink
+v8::Context. This adds extra safety checks to ensure that
+ScriptContext::From correctly returns nullptr for those cases.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/world_safe_v8_reference.cc b/third_party/blink/renderer/bindings/core/v8/world_safe_v8_reference.cc
+index 8ee18890b381f20b673fc20885d04fd116e123f2..65b40835b996a65331084c481d4234c32ce701f2 100644
+--- a/third_party/blink/renderer/bindings/core/v8/world_safe_v8_reference.cc
++++ b/third_party/blink/renderer/bindings/core/v8/world_safe_v8_reference.cc
+@@ -47,6 +47,10 @@ void WorldSafeV8ReferenceInternal::MaybeCheckCreationContextWorld(
+     return;
+ 
+   ScriptState* script_state = ScriptState::From(context);
++  // Script state can be null if the context was not created by Blink.
++  if (!script_state)
++    return;
++
+   CHECK_EQ(&world, &script_state->World());
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
+index 2a1897e16b150f6130c99cb388d63921b7f111a5..52785226a8e34d5a1c87f8de6a5a5ff337aba253 100644
+--- a/third_party/blink/renderer/platform/bindings/script_state.h
++++ b/third_party/blink/renderer/platform/bindings/script_state.h
+@@ -174,7 +174,8 @@ class PLATFORM_EXPORT ScriptState final : public GarbageCollected<ScriptState> {
+     // valid embedder data in the embedder field.
+     SECURITY_CHECK(script_state);
+     SECURITY_CHECK(script_state->context_ == context);
+-    return script_state;
++
++    return script_state->world_ ? script_state : nullptr;
+   }
+ 
+   v8::Isolate* GetIsolate() const { return isolate_; }
