@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Rummell <jrummell@chromium.org>
+Date: Wed, 16 Sep 2020 00:43:28 +0000
+Subject: (merge) Check for context destroyed in MediaKeys
+
+Don't allow calls to proceed once the associated content has been
+destroyed.
+
+(cherry picked from commit 1257ea7e0601a4a2a2a86bcc4a428573813f6cd7)
+
+Bug: 1121414
+Test: example in the bug no longer crashes
+Change-Id: I3bdeb86f2020f684958b624fcc30438babfb5004
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2378889
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Xiaohan Wang <xhwang@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: John Rummell <jrummell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#805561}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2412559
+Reviewed-by: John Rummell <jrummell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4183@{#1836}
+Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
+
+diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc b/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
+index 82a2c622ebe5bd70f99c5effd730c063e7b63ab3..2d3b0a526d9cbcec248019826bdc4b40ec8f6f7f 100644
+--- a/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
++++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys.cc
+@@ -228,6 +228,13 @@ MediaKeySession* MediaKeys::createSession(ScriptState* script_state,
+   DVLOG(MEDIA_KEYS_LOG_LEVEL)
+       << __func__ << "(" << this << ") " << session_type_string;
+ 
++  // If the context for MediaKeys has been destroyed, fail.
++  if (!GetExecutionContext()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kInvalidAccessError,
++                                      "The context provided is invalid.");
++    return nullptr;
++  }
++
+   // [RuntimeEnabled] does not work with enum values. So we have to check it
+   // here. See https://crbug.com/871867 for details.
+   if (!RuntimeEnabledFeatures::
+@@ -274,6 +281,13 @@ ScriptPromise MediaKeys::setServerCertificate(
+     ScriptState* script_state,
+     const DOMArrayPiece& server_certificate,
+     ExceptionState& exception_state) {
++  // If the context for MediaKeys has been destroyed, fail.
++  if (!GetExecutionContext()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kInvalidAccessError,
++                                      "The context provided is invalid.");
++    return ScriptPromise();
++  }
++
+   // From https://w3c.github.io/encrypted-media/#setServerCertificate
+   // The setServerCertificate(serverCertificate) method provides a server
+   // certificate to be used to encrypt messages to the license server.
+@@ -317,6 +331,15 @@ void MediaKeys::SetServerCertificateTask(
+     ContentDecryptionModuleResult* result) {
+   DVLOG(MEDIA_KEYS_LOG_LEVEL) << __func__ << "(" << this << ")";
+ 
++  // If the context has been destroyed, don't proceed. Try to have the promise
++  // be rejected.
++  if (!GetExecutionContext()) {
++    result->CompleteWithError(
++        kWebContentDecryptionModuleExceptionInvalidStateError, 0,
++        "The context provided is invalid.");
++    return;
++  }
++
+   // 5.1 Let cdm be the cdm during the initialization of this object.
+   WebContentDecryptionModule* cdm = ContentDecryptionModule();
+ 
+@@ -333,7 +356,15 @@ void MediaKeys::SetServerCertificateTask(
+ 
+ ScriptPromise MediaKeys::getStatusForPolicy(
+     ScriptState* script_state,
+-    const MediaKeysPolicy* media_keys_policy) {
++    const MediaKeysPolicy* media_keys_policy,
++    ExceptionState& exception_state) {
++  // If the context for MediaKeys has been destroyed, fail.
++  if (!GetExecutionContext()) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kInvalidAccessError,
++                                      "The context provided is invalid.");
++    return ScriptPromise();
++  }
++
+   // TODO(xhwang): Pass MediaKeysPolicy classes all the way to Chromium when
+   // we have more than one policy to check.
+   String min_hdcp_version = media_keys_policy->minHdcpVersion();
+@@ -358,6 +389,15 @@ void MediaKeys::GetStatusForPolicyTask(const String& min_hdcp_version,
+                                        ContentDecryptionModuleResult* result) {
+   DVLOG(MEDIA_KEYS_LOG_LEVEL) << __func__ << ": " << min_hdcp_version;
+ 
++  // If the context has been destroyed, don't proceed. Try to have the promise
++  // be rejected.
++  if (!GetExecutionContext()) {
++    result->CompleteWithError(
++        kWebContentDecryptionModuleExceptionInvalidStateError, 0,
++        "The context provided is invalid.");
++    return;
++  }
++
+   WebContentDecryptionModule* cdm = ContentDecryptionModule();
+   cdm->GetStatusForPolicy(min_hdcp_version, result->Result());
+ }
+diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys.h b/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
+index ba2d0093ba83ca0c391f0edf03bf44502723e4cb..d24ad3d6e39f65d84200d3b198a59aca4c1c3c1f 100644
+--- a/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
++++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys.h
+@@ -71,9 +71,11 @@ class MediaKeys : public ScriptWrappable,
+ 
+   ScriptPromise setServerCertificate(ScriptState*,
+                                      const DOMArrayPiece& server_certificate,
+-                                     ExceptionState& exception_state);
++                                     ExceptionState&);
+ 
+-  ScriptPromise getStatusForPolicy(ScriptState*, const MediaKeysPolicy*);
++  ScriptPromise getStatusForPolicy(ScriptState*,
++                                   const MediaKeysPolicy*,
++                                   ExceptionState&);
+ 
+   // Indicates that the provided HTMLMediaElement wants to use this object.
+   // Returns true if no other HTMLMediaElement currently references this
+diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
+index 0b12f4d3a03158b3d3e83845612416a6ef67a3f5..c6e7ff4a754c3edfc258bb3ecdf652a38febfa77 100644
+--- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
++++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.cc
+@@ -14,10 +14,12 @@ namespace blink {
+ ScriptPromise MediaKeysGetStatusForPolicy::getStatusForPolicy(
+     ScriptState* script_state,
+     MediaKeys& media_keys,
+-    const MediaKeysPolicy* media_keys_policy) {
++    const MediaKeysPolicy* media_keys_policy,
++    ExceptionState& exception_state) {
+   DVLOG(1) << __func__;
+ 
+-  return media_keys.getStatusForPolicy(script_state, media_keys_policy);
++  return media_keys.getStatusForPolicy(script_state, media_keys_policy,
++                                       exception_state);
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
+index 246e7a5aac85c37cbbafab5b9fb6f2f4726ffbf2..62317f6c03724d2a6294a4516ef680fb89581481 100644
+--- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
++++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.h
+@@ -20,7 +20,8 @@ class MediaKeysGetStatusForPolicy {
+  public:
+   static ScriptPromise getStatusForPolicy(ScriptState*,
+                                           MediaKeys&,
+-                                          const MediaKeysPolicy*);
++                                          const MediaKeysPolicy*,
++                                          ExceptionState&);
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
+index 15a6ca073ec19700a778f963a2697c4cf5c1f99d..671ba323111b6450288b55d9be95dbd216540b54 100644
+--- a/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
++++ b/third_party/blink/renderer/modules/encryptedmedia/media_keys_get_status_for_policy.idl
+@@ -8,5 +8,5 @@
+     ImplementedAs=MediaKeysGetStatusForPolicy,
+     SecureContext
+ ] partial interface MediaKeys {
+-    [Measure, CallWith=ScriptState] Promise<MediaKeyStatus> getStatusForPolicy(MediaKeysPolicy policy);
++    [Measure, CallWith=ScriptState, RaisesException] Promise<MediaKeyStatus> getStatusForPolicy(MediaKeysPolicy policy);
+ };
+diff --git a/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html b/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d54624b0fa76b59a4341ed41a876654d135bc0e
+--- /dev/null
++++ b/third_party/blink/web_tests/media/encrypted-media/encrypted-media-context-destroyed.html
+@@ -0,0 +1,33 @@
++<!DOCTYPE html>
++<html>
++    <head>
++        <title>Test context destruction.</title>
++        <script src="encrypted-media-utils.js"></script>
++        <script src="../../resources/testharness.js"></script>
++        <script src="../../resources/testharnessreport.js"></script>
++    </head>
++    <body>
++        <script>
++            function allociframe() {
++                iframe = document.createElement('iframe');
++                iframe.height = 50;
++                iframe.width = 50;
++                document.body.appendChild(iframe);
++                return iframe;
++            }
++
++            async_test(async function(test)
++            {
++                iframe = allociframe();
++                keySystemAccess = await iframe.contentWindow.navigator.requestMediaKeySystemAccess('org.w3.clearkey', getSimpleConfiguration());
++                keys = await keySystemAccess.createMediaKeys();
++                document.body.removeChild(iframe);
++                keys.getStatusForPolicy({minHdcpVersion : '1.0'}).then(function(result) {
++                    assert_unreached('getStatusforPolicy() should fail');
++                }, function(error) {
++                    test.done();
++                });
++           }, 'Test context destruction.');
++        </script>
++    </body>
++</html>
