@@ -842,8 +842,8 @@ Custom value can be returned by setting `event.returnValue`.
 Returns:
 
 * `event` Event
-* `preferredSize` [Size](structures/size.md) - The minimum size to contain the layout of
-  the document—without requiring scrolling.
+* `preferredSize` [Size](structures/size.md) - The minimum size needed to
+  contain the layout of the document—without requiring scrolling.
 
 Emitted when the `WebContents` preferred size has changed.
 
