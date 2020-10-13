@@ -79,7 +79,7 @@ class LocationProxy {
         const guestURL = this.getGuestURL();
         if (guestURL) {
           // TypeScript doesn't want us to assign to read-only variables.
-          // It's right, that's bad, but we're doing it anway.
+          // It's right, that's bad, but we're doing it anyway.
           (guestURL as any)[propertyKey] = newVal;
 
           return this._invokeWebContentsMethod('loadURL', guestURL.toString());
@@ -127,7 +127,7 @@ class LocationProxy {
   private getGuestURL (): URL | null {
     const maybeURL = this._invokeWebContentsMethodSync('getURL') as string;
 
-    // When there's no previous frame the url will be blank, so accountfor that here
+    // When there's no previous frame the url will be blank, so account for that here
     // to prevent url parsing errors on an empty string.
     const urlString = maybeURL !== '' ? maybeURL : 'about:blank';
     try {

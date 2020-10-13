@@ -247,7 +247,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
   }
   watchedEmbedders.add(embedder);
 
-  // Forward embedder window visiblity change events to guest
+  // Forward embedder window visibility change events to guest
   const onVisibilityChange = function (visibilityState: VisibilityState) {
     for (const guestInstanceId of Object.keys(guestInstances)) {
       const guestInstance = guestInstances[guestInstanceId];

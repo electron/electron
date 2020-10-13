@@ -1100,7 +1100,7 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
-#endif  // BUILDFLAG(ENABLE_PLUIGNS)
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,

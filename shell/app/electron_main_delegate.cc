@@ -222,8 +222,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-  // Enable convient stack printing. This is enabled by default in non-official
-  // builds.
+  // Enable convenient stack printing. This is enabled by default in
+  // non-official builds.
   if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
     base::debug::EnableInProcessStackDumping();
 
