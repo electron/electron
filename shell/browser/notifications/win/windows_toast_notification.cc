@@ -410,6 +410,70 @@ bool WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
       content_attribute_node.Get(), &content_attribute_pnode));
 }
 
+bool WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
+  ScopedHString tag(L"toast");
+  if (!tag.success())
+    return false;
+
+  ComPtr<IXmlNodeList> node_list;
+  if (FAILED(doc->GetElementsByTagName(tag, &node_list)))
+    return false;
+
+  ComPtr<IXmlNode> root;
+  if (FAILED(node_list->Item(0, &root)))
+    return false;
+
+  ComPtr<IXmlElement> audio_element;
+  ScopedHString audio_str(L"audio");
+  if (FAILED(doc->CreateElement(audio_str, &audio_element)))
+    return false;
+
+  ComPtr<IXmlNode> audio_node_tmp;
+  if (FAILED(audio_element.As(&audio_node_tmp)))
+    return false;
+
+  // Append audio node to toast xml
+  ComPtr<IXmlNode> audio_node;
+  if (FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node)))
+    return false;
+
+  // Create silent attribute
+  ComPtr<IXmlNamedNodeMap> attributes;
+  if (FAILED(audio_node->get_Attributes(&attributes)))
+    return false;
+
+  ComPtr<IXmlAttribute> silent_attribute;
+  ScopedHString silent_str(L"silent");
+  if (FAILED(doc->CreateAttribute(silent_str, &silent_attribute)))
+    return false;
+
+  ComPtr<IXmlNode> silent_attribute_node;
+  if (FAILED(silent_attribute.As(&silent_attribute_node)))
+    return false;
+
+  // Set silent attribute to true
+  ScopedHString silent_value(L"true");
+  if (!silent_value.success())
+    return false;
+
+  ComPtr<IXmlText> silent_text;
+  if (FAILED(doc->CreateTextNode(silent_value, &silent_text)))
+    return false;
+
+  ComPtr<IXmlNode> silent_node;
+  if (FAILED(silent_text.As(&silent_node)))
+    return false;
+
+  ComPtr<IXmlNode> child_node;
+  if (FAILED(
+          silent_attribute_node->AppendChild(silent_node.Get(), &child_node)))
+    return false;
+
+  ComPtr<IXmlNode> silent_attribute_pnode;
+  return SUCCEEDED(attributes.Get()->SetNamedItem(silent_attribute_node.Get(),
+                                                  &silent_attribute_pnode));
+}
+
 bool WindowsToastNotification::SetXmlText(IXmlDocument* doc,
                                           const std::wstring& text) {
   ScopedHString tag;
