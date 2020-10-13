@@ -2,6 +2,7 @@ import * as electron from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { isSameOrigin } = process._linkedBinding('electron_common_v8_util');
 
@@ -132,7 +133,7 @@ const setupGuest = function (embedder: Electron.WebContents, frameName: string, 
     guest.destroy();
   };
   const closedByUser = function () {
-    embedder._sendInternal('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_' + guestId);
+    embedder._sendInternal(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${guestId}`);
     embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
   };
   embedder.once('current-render-view-deleted' as any, closedByEmbedder);
@@ -219,12 +220,12 @@ const canAccessWindow = function (sender: Electron.WebContents, target: Electron
 };
 
 // Routed window.open messages with raw options
-ipcMainInternal.on('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, url: string, frameName: string, features: string) => {
+ipcMainInternal.on(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_OPEN, (event, url: string, frameName: string, features: string) => {
   // This should only be allowed for senders that have nativeWindowOpen: false
   const lastWebPreferences = event.sender.getLastWebPreferences();
   if (lastWebPreferences.nativeWindowOpen || lastWebPreferences.sandbox) {
     event.returnValue = null;
-    throw new Error('GUEST_WINDOW_MANAGER_WINDOW_OPEN denied: expected native window.open');
+    throw new Error(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_OPEN} denied: expected native window.open`);
   }
   if (url == null || url === '') url = 'about:blank';
   if (frameName == null) frameName = '';
@@ -299,7 +300,7 @@ const windowMethods = new Set([
   'blur'
 ]);
 
-handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestContents, method: string, ...args: any[]) => {
+handleMessage(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_METHOD, (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!windowMethods.has(method)) {
@@ -310,7 +311,7 @@ handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestConten
   return (getGuestWindow(guestContents) as any)[method](...args);
 });
 
-handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestContents, message, targetOrigin, sourceOrigin) => {
+handleMessage(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE, (event, guestContents, message, targetOrigin, sourceOrigin) => {
   if (targetOrigin == null) {
     targetOrigin = '*';
   }
@@ -322,7 +323,7 @@ handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestC
 
   if (targetOrigin === '*' || isSameOrigin(guestContents.getURL(), targetOrigin)) {
     const sourceId = event.sender.id;
-    guestContents._sendInternal('ELECTRON_GUEST_WINDOW_POSTMESSAGE', sourceId, message, sourceOrigin);
+    guestContents._sendInternal(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, sourceId, message, sourceOrigin);
   }
 });
 
@@ -332,7 +333,7 @@ const webContentsMethodsAsync = new Set([
   'print'
 ]);
 
-handleMessage('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method: string, ...args: any[]) => {
+handleMessage(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD, (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!webContentsMethodsAsync.has(method)) {
@@ -347,7 +348,7 @@ const webContentsMethodsSync = new Set([
   'getURL'
 ]);
 
-handleMessageSync('ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestContents, method: string, ...args: any[]) => {
+handleMessageSync(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD, (event, guestContents, method: string, ...args: any[]) => {
   securityCheck(event.sender, guestContents, canAccessWindow);
 
   if (!webContentsMethodsSync.has(method)) {

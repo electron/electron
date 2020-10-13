@@ -1,5 +1,6 @@
 import { webFrame } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 let shouldLog: boolean | null = null;
 
@@ -302,7 +303,7 @@ const logSecurityWarnings = function (
 
 const getWebPreferences = async function () {
   try {
-    return ipcRendererInternal.invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES');
+    return ipcRendererInternal.invoke<Electron.WebPreferences>(IPC_MESSAGES.BROWSER_GET_LAST_WEB_PREFERENCES);
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`);
   }
