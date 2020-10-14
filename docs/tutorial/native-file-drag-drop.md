@@ -14,7 +14,7 @@ API in response to the `ondragstart` event.
 
 ## Example
 
-Assuming you have a working Electron application from the
+Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `index.html` file:
 
@@ -23,7 +23,7 @@ Assuming you have a working Electron application from the
 <script src="renderer.js"></script>
 ```
 
-and add the `renderer.js` file:
+and add the following lines to the `renderer.js` file:
 
 ```js
 const { ipcRenderer } = require('electron')
