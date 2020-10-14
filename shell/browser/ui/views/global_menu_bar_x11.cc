@@ -291,7 +291,8 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
   if (accelerator.IsShiftDown())
     g_variant_builder_add(&builder, "s", "Shift");
 
-  uint16_t keysym = ui::GetUnicodeCharacterFromXKeySym(XKeysymForWindowsKeyCode(accelerator.key_code(), false));
+  uint16_t keysym = ui::GetUnicodeCharacterFromXKeySym(
+      XKeysymForWindowsKeyCode(accelerator.key_code(), false));
   if (!keysym) {
     NOTIMPLEMENTED();
     return;
