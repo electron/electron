@@ -20,7 +20,7 @@ To add a file to recent documents, you need to use the
 
 ### Add an item to recent documents
 
-Assuming you have a working Electron application from the
+Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `main.js` file:
 
@@ -30,7 +30,9 @@ const { app } = require('electron')
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
-After launching the Electron application, right click the application icon. You should see the item you just added. In this guide, the item is a Markdown file located in the root of the project:
+After launching the Electron application, right click the application icon.
+You should see the item you just added. In this guide, the item is a Markdown
+file located in the root of the project:
 
 ![Recent document](../images/recent-documents.png)
 
@@ -61,7 +63,8 @@ will be started with the path of the file added as a command line argument.
 
 #### Add the Recent Documents list to the application menu
 
-You can add menu items to access and clear recent documents by adding the following code snippet to your menu template.
+You can add menu items to access and clear recent documents by adding the
+following code snippet to your menu template:
 
 ```json
 {
