@@ -60,7 +60,6 @@ void NativeBrowserViewViews::AutoResize(const gfx::Rect& new_window,
   auto* iwc_view = GetInspectableWebContentsView();
   if (!iwc_view)
     return;
-   
   auto* view = iwc_view->GetView();
   const auto flags = GetAutoResizeFlags();
   if (!(flags & kAutoResizeWidth)) {
