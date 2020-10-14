@@ -8,6 +8,7 @@
 import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 type PostData = LoadURLOptions['postData']
 export type WindowOpenArgs = {
@@ -113,9 +114,7 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
 
   const cachedGuestId = guest.webContents.id;
   const closedByUser = function () {
-    (embedder as any)._sendInternal(
-      'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_CLOSED_' + cachedGuestId
-    );
+    embedder._sendInternal(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${cachedGuestId}`);
     embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
   };
   embedder.once('current-render-view-deleted' as any, closedByEmbedder);

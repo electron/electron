@@ -9,10 +9,10 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2315981
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2304812
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 4bb9b919f60a91225ddb531e5e5e8acb1bc6a5b5..802c49cf027735302a8c5c504635a1f15e647c78 100644
+index 7e68b7af891ffb87ce083081775015cc7b62fc42..aac0682670fcffd235fcf450bc5e2b0d45985b47 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -541,6 +541,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -544,6 +544,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  

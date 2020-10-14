@@ -131,7 +131,7 @@ class RendererClientBase : public content::ContentRendererClient
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
   std::string renderer_client_id_;
-  // An increasing ID used for indentifying an V8 context in this process.
+  // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

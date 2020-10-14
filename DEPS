@@ -16,11 +16,11 @@ vars = {
   'chromium_version':
     'b943d006a33ec5bc1743792d64724693eb357083',
   'node_version':
-    'v14.13.0',
+    'v14.13.1',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
-    '44468f858ce0d25c27bd5e674abfa104e0119738',
+    'a3a5b3f03b824441c014893b18f99a103b2603e9',
 
   'pyyaml_version': '3.12',
   'requests_version': 'e4d59bedfd3c7f4f254f4f5d036587bcd8152458',

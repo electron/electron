@@ -145,7 +145,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
-  // If webSecurity was explicity set to false, let's inherit that into
+  // If webSecurity was explicitly set to false, let's inherit that into
   // insecureContent
   if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
       !webSecurity) {

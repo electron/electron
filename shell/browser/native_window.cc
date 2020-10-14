@@ -579,6 +579,13 @@ void NativeWindow::NotifyNewWindowForTab() {
     observer.OnNewWindowForTab();
 }
 
+void NativeWindow::NotifyWindowSystemContextMenu(int x,
+                                                 int y,
+                                                 bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnSystemContextMenu(x, y, prevent_default);
+}
+
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,

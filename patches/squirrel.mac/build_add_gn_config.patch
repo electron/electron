@@ -464,7 +464,7 @@ index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a
  NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
  NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index 9db530f3642585154057143d590bb393b86dc063..b6047ea61a71b7f8c7b4d33e47adc23e2baadcee 100644
+index 433ad21eb28bb74389ae4900eec2b9d0e03fdd8e..db246534e176f9c3ea2dd8b1c8659378fdc2435d 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -8,10 +8,10 @@

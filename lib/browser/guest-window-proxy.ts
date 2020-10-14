@@ -9,6 +9,7 @@ import type { WebContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { openGuestWindow } from '@electron/internal/browser/guest-window-manager';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { isSameOrigin } = process._linkedBinding('electron_common_v8_util');
 
@@ -56,7 +57,7 @@ const canAccessWindow = function (sender: WebContents, target: WebContents) {
 
 // Routed window.open messages with raw options
 ipcMainInternal.on(
-  'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN',
+  IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_OPEN,
   (
     event,
     url: string,
@@ -127,7 +128,7 @@ const securityCheck = function (contents: WebContents, guestContents: WebContent
 const windowMethods = new Set(['destroy', 'focus', 'blur']);
 
 handleMessage(
-  'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_METHOD',
+  IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_METHOD,
   (event, guestContents, method, ...args) => {
     securityCheck(event.sender, guestContents, canAccessWindow);
 
@@ -143,7 +144,7 @@ handleMessage(
 );
 
 handleMessage(
-  'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE',
+  IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE,
   (event, guestContents, message, targetOrigin, sourceOrigin) => {
     if (targetOrigin == null) {
       targetOrigin = '*';
@@ -176,7 +177,7 @@ const webContentsMethodsAsync = new Set([
 ]);
 
 handleMessage(
-  'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD',
+  IPC_MESSAGES.GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD,
   (event, guestContents, method, ...args) => {
     securityCheck(event.sender, guestContents, canAccessWindow);
 
@@ -194,7 +195,7 @@ handleMessage(
 const webContentsMethodsSync = new Set(['getURL']);
 
 handleMessageSync(
-  'ELECTRON_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD',
+  IPC_MESSAGES.GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD,
   (event, guestContents, method, ...args) => {
     securityCheck(event.sender, guestContents, canAccessWindow);
 

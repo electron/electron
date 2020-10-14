@@ -27,7 +27,7 @@ The Electron team is currently undergoing an initiative to convert separate gett
 * `DownloadItem` class
   * `savePath`
 * `BrowserWindow` module
-  * `autohideMenuBar`
+  * `autoHideMenuBar`
   * `resizable`
   * `maximizable`
   * `minimizable`

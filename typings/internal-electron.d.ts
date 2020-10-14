@@ -80,6 +80,13 @@ declare namespace Electron {
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
     length(): number;
+    destroy(): void;
+    // <webview>
+    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
+    detachFromOuterFrame(): void;
+    setEmbedder(embedder: Electron.WebContents): void;
+    attachParams?: Record<string, any>;
+    viewInstanceId: number;
   }
 
   interface WebFrame {
@@ -91,6 +98,9 @@ declare namespace Electron {
     guestInstanceId?: number;
     openerId?: number;
     disablePopups?: boolean;
+    preloadURL?: string;
+    embedder?: Electron.WebContents;
+    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Menu {
@@ -268,6 +278,10 @@ declare namespace ElectronInternal {
     // Created in web-view-impl
     public getWebContentsId(): number;
     public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
+  }
+
+  class WebContents extends Electron.WebContents {
+    static create(opts: Electron.WebPreferences): Electron.WebContents;
   }
 }
 

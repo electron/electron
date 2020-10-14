@@ -39,7 +39,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
 
   // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
   enum class AuthRequiredResponse {
-    // No credenitals were provided.
+    // No credentials were provided.
     AUTH_REQUIRED_RESPONSE_NO_ACTION,
     // AuthCredentials is filled in with a username and password, which should
     // be used in a response to the provided auth challenge.

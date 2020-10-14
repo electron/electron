@@ -279,10 +279,10 @@ void ElectronURLLoaderFactory::StartLoading(
 
     client_remote->OnReceiveRedirect(redirect_info, std::move(head));
 
-    // Unound client, so it an be passed to sub-methods
+    // Unbound client, so it an be passed to sub-methods
     client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
-    // |proxy_factory| passed), we askes the proxy factory to create a loader
+    // |proxy_factory| passed), we ask the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
     // loader with default factory.
     //

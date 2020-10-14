@@ -39,7 +39,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   CommonWebContentsDelegate();
   ~CommonWebContentsDelegate() override;
 
-  // Creates a InspectableWebContents object and takes onwership of
+  // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
   void InitWithWebContents(content::WebContents* web_contents,
                            ElectronBrowserContext* browser_context,

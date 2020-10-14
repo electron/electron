@@ -156,7 +156,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (enable_larger_than_screen())
     // We need to set a default maximum window size here otherwise Windows
     // will not allow us to resize the window larger than scree.
-    // Setting directly to INT_MAX somehow doesn't work, so we just devide
+    // Setting directly to INT_MAX somehow doesn't work, so we just divide
     // by 10, which should still be large enough.
     SetContentSizeConstraints(extensions::SizeConstraints(
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
