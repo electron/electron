@@ -2,17 +2,25 @@
 
 ## Overview
 
-All three operating systems provide means for applications to send notifications
-to the user. Electron conveniently allows developers to send notifications with
-the [HTML5 Notification API](https://notifications.spec.whatwg.org/), using
-the currently running operating system's native notification APIs to display it.
+All three operating systems provide means for applications to send
+notifications to the user. The technique of showing notifications is different
+for the Main and Renderer processes.
+
+For the Renderer process, Electron conveniently allows developers to send
+notifications with the [HTML5 Notification API](https://notifications.spec.whatwg.org/),
+using the currently running operating system's native notification APIs
+to display it.
+
+To show notifications in the Main process, you need to use the
+[Notification](../api/notification.md) module.
 
 ## Example
 
 ### Show notifications in the Renderer process
 
-Assuming you have a working Electron application from the [Quick Start Guide](quick-start.md),
-add the following line to the `index.html` file before the closing `</body>` tag:
+Assuming you have a working Electron application from the
+[Quick Start Guide](quick-start.md), add the following line to the
+`index.html` file before the closing `</body>` tag:
 
 ```html
 <script src="renderer.js"></script>
@@ -34,15 +42,15 @@ After launching the Electron application, you should see the notification:
 
 ![Notification in the Renderer process](../images/notification-renderer.png)
 
-If you open the Console and then click the notification, you will see the message that was generated after triggering the `onclick` event:
+If you open the Console and then click the notification, you will see the
+message that was generated after triggering the `onclick` event:
 
 ![Onclick message for the notification](../images/message-notification-renderer.png)
 
 ### Show notifications in the Main process
 
-To show notifications in the Main process, you need to use the [Notification](../api/notification.md) module.
-
-Assuming you have a working Electron application from the [Quick Start Guide](quick-start.md), update the `main.js` file as follows:
+Assuming you have a working Electron application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file as follows:
 
 ```js
 const { app, BrowserWindow, Notification } = require('electron')
@@ -94,7 +102,13 @@ are subtle differences.
 
 ### Windows
 
-* On Windows 10, a shortcut to your app with an [Application User Model ID][app-user-model-id] must be installed to the Start Menu. This can be overkill during development, so adding `node_modules\electron\dist\electron.exe` to your Start Menu also does the trick. Navigate to the file in Explorer, right-click and 'Pin to Start Menu'. You will then need to add the line `app.setAppUserModelId(process.execPath)` to your main process to see notifications.
+* On Windows 10, a shortcut to your app with an
+[Application User Model ID][app-user-model-id] must be installed to the
+Start Menu. This can be overkill during development, so adding
+`node_modules\electron\dist\electron.exe` to your Start Menu also does the
+trick. Navigate to the file in Explorer, right-click and 'Pin to Start Menu'.
+You will then need to add the line `app.setAppUserModelId(process.execPath)` to
+your main process to see notifications.
 * On Windows 8.1 and Windows 8, a shortcut to your app with an [Application User
 Model ID][app-user-model-id] must be installed to the Start screen. Note,
 however, that it does not need to be pinned to the Start screen.
@@ -123,38 +137,45 @@ main process or the renderer process), use the userland module
 which uses native Node addons to send `ToastNotification` and `TileNotification` objects.
 
 While notifications including buttons work with `electron-windows-notifications`,
-handling replies requires the use of [`electron-windows-interactive-notifications`](https://github.com/felixrieseberg/electron-windows-interactive-notifications), which
-helps with registering the required COM components and calling your Electron app with
-the entered user data.
+handling replies requires the use of
+[`electron-windows-interactive-notifications`](https://github.com/felixrieseberg/electron-windows-interactive-notifications),
+which helps with registering the required COM components and calling your
+Electron app with the entered user data.
 
 #### Quiet Hours / Presentation Mode
 
-To detect whether or not you're allowed to send a notification, use the userland module
-[electron-notification-state](https://github.com/felixrieseberg/electron-notification-state).
+To detect whether or not you're allowed to send a notification, use the
+`userland` module [electron-notification-state](https://github.com/felixrieseberg/electron-notification-state).
 
-This allows you to determine ahead of time whether or not Windows will silently throw
-the notification away.
+This allows you to determine ahead of time whether or not Windows will
+silently throw the notification away.
 
 ### macOS
 
 Notifications are straight-forward on macOS, but you should be aware of
-[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/).
+[Apple's Human Interface guidelines regarding notifications][apple-notification-guidelines].
 
 Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.
+
+[apple-notification-guidelines]: https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/
 
 #### Advanced Notifications
 
 Later versions of macOS allow for notifications with an input field, allowing the user
 to quickly reply to a notification. In order to send notifications with an input field,
-use the userland module [node-mac-notifier](https://github.com/CharlieHess/node-mac-notifier).
+use the userland module [node-mac-notifier][node-mac-notifier].
+
+[node-mac-notifier]: https://github.com/CharlieHess/node-mac-notifier
 
 #### Do not disturb / Session State
 
 To detect whether or not you're allowed to send a notification, use the userland module
-[electron-notification-state](https://github.com/felixrieseberg/electron-notification-state).
+[electron-notification-state][electron-notification-state].
 
 This will allow you to detect ahead of time whether or not the notification will be displayed.
+
+[electron-notification-state]: https://github.com/felixrieseberg/electron-notification-state
 
 ### Linux
 
