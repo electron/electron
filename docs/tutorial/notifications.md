@@ -63,20 +63,20 @@ function createWindow () {
       nodeIntegration: true
     }
   })
-  
+
   win.loadFile('index.html')
   win.webContents.openDevTools()
 }
 
-function showNotification() {
+function showNotification () {
   const notification = {
     title: 'Basic Notification',
     body: 'Notification from the Main process'
   }
-  new Notification(notification).show();
+  new Notification(notification).show()
 }
 
-app.whenReady().then(createWindow).then(showNotification);
+app.whenReady().then(createWindow).then(showNotification)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
