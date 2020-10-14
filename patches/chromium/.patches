@@ -142,3 +142,4 @@ cherry-pick-52dceba66599.patch
 cherry-pick-abc6ab85e704.patch
 avoid_use-after-free.patch
 cherry-pick-f06a6cb3a38e.patch
+reland_add_more_checks_for_chrome_debugger_extensions.patch
