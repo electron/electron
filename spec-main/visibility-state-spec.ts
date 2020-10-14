@@ -72,6 +72,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       await delay(0);
     }
     w.hide();
+    load();
     const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
   });
@@ -167,7 +168,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       height: 50
     }, async function () {
       this.timeout(240000);
-      await load();
+      load();
       const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
       makeOtherWindow({
