@@ -123,11 +123,11 @@ pre_deps_hooks = [
     'action': [
       'python3',
       'src/electron/script/patches-mtime-cache.py',
+      'generate',
       '--cache-file',
       'src/electron/patches/mtime-cache.json',
       '--patches-config',
       'src/electron/patches/config.json',
-      '--generate',
     ],
   },
 ]
@@ -150,9 +150,9 @@ hooks = [
     'action': [
       'python3',
       'src/electron/script/patches-mtime-cache.py',
+      'apply',
       '--cache-file',
       'src/electron/patches/mtime-cache.json',
-      '--apply',
     ],
   },
   {
