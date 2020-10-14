@@ -49,24 +49,11 @@ message that was generated after triggering the `onclick` event:
 
 ### Show notifications in the Main process
 
-Assuming you have a working Electron application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file as follows:
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the following lines:
 
 ```js
-const { app, BrowserWindow, Notification } = require('electron')
-
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true
-    }
-  })
-
-  win.loadFile('index.html')
-  win.webContents.openDevTools()
-}
+const { Notification } = require('electron')
 
 function showNotification () {
   const notification = {
@@ -77,18 +64,6 @@ function showNotification () {
 }
 
 app.whenReady().then(createWindow).then(showNotification)
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
 ```
 
 After launching the Electron application, you should see the notification:
