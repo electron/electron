@@ -20,7 +20,7 @@ To add a file to recent documents, you need to use the
 
 ### Add an item to recent documents
 
-Assuming you have a working Electron application from the 
+Assuming you have a working Electron application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `main.js` file:
 
