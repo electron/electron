@@ -294,6 +294,12 @@ void BaseWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
 
+void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
+  if (Emit("system-context-menu", gfx::Point(x, y))) {
+    *prevent_default = true;
+  }
+}
+
 #if defined(OS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {

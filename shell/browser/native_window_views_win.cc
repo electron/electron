@@ -306,6 +306,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
+    case WM_CONTEXTMENU: {
+      bool prevent_default = false;
+      NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
+                                    GET_Y_LPARAM(l_param), &prevent_default);
+      return prevent_default;
+    }
     default:
       return false;
   }
