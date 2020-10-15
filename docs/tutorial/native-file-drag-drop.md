@@ -8,7 +8,7 @@ web content is common and supported by many websites. Electron additionally
 supports dragging files and content out from web content into the operating
 system's world.
 
-To implement this feature in your app, you need to call
+To implement this feature in your app, you need to call the
 [`webContents.startDrag(item)`](../api/web-contents.md#contentsstartdragitem)
 API in response to the `ondragstart` event.
 
@@ -51,7 +51,8 @@ ipcMain.on('ondragstart', (event, filePath) => {
 })
 ```
 
-After launching the Electron application, try to drag-and-drop the item.
-In this guide, the item is a Markdown file located in the root of the project:
+After launching the Electron application, try to dragging and dropping
+the item from the BroswerWindow onto your desktop. In this guide,
+the item is a Markdown file located in the root of the project:
 
 ![Drag and drop](../images/drag-and-drop.gif)
