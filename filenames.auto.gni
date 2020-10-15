@@ -125,7 +125,6 @@ auto_filenames = {
     "docs/api/structures/trace-categories-and-options.md",
     "docs/api/structures/trace-config.md",
     "docs/api/structures/transaction.md",
-    "docs/api/structures/upload-blob.md",
     "docs/api/structures/upload-data.md",
     "docs/api/structures/upload-file.md",
     "docs/api/structures/upload-raw-data.md",
