@@ -120,7 +120,7 @@ Electron app with the entered user data.
 #### Quiet Hours / Presentation Mode
 
 To detect whether or not you're allowed to send a notification, use the
-`userland` module [electron-notification-state](https://github.com/felixrieseberg/electron-notification-state).
+userland module [electron-notification-state](https://github.com/felixrieseberg/electron-notification-state).
 
 This allows you to determine ahead of time whether or not Windows will
 silently throw the notification away.
