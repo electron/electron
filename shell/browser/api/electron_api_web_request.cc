@@ -22,6 +22,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "net/http/http_content_disposition.h"
 
 namespace gin {
 
@@ -115,6 +116,14 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
       base::Value* values = response_headers.FindListKey(key);
+      if (base::EqualsCaseInsensitiveASCII("Content-Disposition", key) &&
+          !value.empty()) {
+        net::HttpContentDisposition header(value, std::string());
+        std::string decodedFilename =
+            header.is_attachment() ? " attachement" : " inline";
+        decodedFilename += "; filename=" + header.filename();
+        value = decodedFilename;
+      }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
       values->Append(value);
