@@ -367,6 +367,7 @@ source_set("chrome_spellchecker") {
   sources = []
   deps = []
   libs = []
+  public_deps = []
 
   if (enable_builtin_spellchecker) {
     sources += [
@@ -384,7 +385,6 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_service.cc",
       "//chrome/browser/spellchecker/spellcheck_service.h",
-      "//chrome/common/pref_names.h",
     ]
 
     if (has_spellcheck_panel) {
@@ -407,9 +407,11 @@ source_set("chrome_spellchecker") {
       "//components/spellcheck:buildflags",
       "//components/sync",
     ]
+
+    public_deps += [ "//chrome/common:constants" ]
   }
 
-  public_deps = [
+  public_deps += [
     "//components/spellcheck/browser",
     "//components/spellcheck/common",
     "//components/spellcheck/renderer",
