@@ -168,6 +168,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
                             base::ProcessHandle handle,
+                            const std::string& service_name = std::string(),
                             const std::string& name = std::string());
   void ChildProcessDisconnected(base::ProcessId pid);
 

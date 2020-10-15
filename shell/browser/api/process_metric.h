@@ -38,11 +38,13 @@ struct ProcessMetric {
   int type;
   base::Process process;
   std::unique_ptr<base::ProcessMetrics> metrics;
+  std::string service_name;
   std::string name;
 
   ProcessMetric(int type,
                 base::ProcessHandle handle,
                 std::unique_ptr<base::ProcessMetrics> metrics,
+                const std::string& service_name = std::string(),
                 const std::string& name = std::string());
   ~ProcessMetric();
 
