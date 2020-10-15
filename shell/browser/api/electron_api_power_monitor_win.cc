@@ -85,22 +85,22 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
         // Unretained is OK because this object is eternally pinned.
         base::ThreadPool::PostTask(
             FROM_HERE, {content::BrowserThread::UI},
-            base::BindOnce(&Emit, base::Unretained(this), "lock-screen"));
+            base::BindOnce(&Emit<>, base::Unretained(this), "lock-screen"));
       } else if (wparam == WTS_SESSION_UNLOCK) {
         base::ThreadPool::PostTask(
             FROM_HERE, {content::BrowserThread::UI},
-            base::BindOnce(&Emit, base::Unretained(this), "unlock-screen"));
+            base::BindOnce(&Emit<>, base::Unretained(this), "unlock-screen"));
       }
     }
   } else if (message == WM_POWERBROADCAST) {
     if (wparam == PBT_APMRESUMEAUTOMATIC) {
       base::ThreadPool::PostTask(
           FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(&Emit, base::Unretained(this), "resume"));
+          base::BindOnce(&Emit<>, base::Unretained(this), "resume"));
     } else if (wparam == PBT_APMSUSPEND) {
       base::ThreadPool::PostTask(
           FROM_HERE, {content::BrowserThread::UI},
-          base::BindOnce(&Emit, base::Unretained(this), "suspend"));
+          base::BindOnce(&Emit<>, base::Unretained(this), "suspend"));
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
