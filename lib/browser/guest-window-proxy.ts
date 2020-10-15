@@ -161,7 +161,7 @@ handleMessage(
     ) {
       const sourceId = event.sender.id;
       guestContents._sendInternal(
-        'ELECTRON_GUEST_WINDOW_POSTMESSAGE',
+        IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE,
         sourceId,
         message,
         sourceOrigin

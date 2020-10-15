@@ -82,15 +82,19 @@ describe('window.postMessage', () => {
     await closeAllWindows();
   });
 
-  it('sets the source and origin correctly', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-    w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
-    const [, message] = await emittedOnce(ipcMain, 'complete');
-    expect(message.data).to.equal('testing');
-    expect(message.origin).to.equal('file://');
-    expect(message.sourceEqualsOpener).to.equal(true);
-    expect(message.eventOrigin).to.equal('file://');
-  });
+  for (const nativeWindowOpen of [true, false]) {
+    describe(`when nativeWindowOpen: ${nativeWindowOpen}`, () => {
+      it('sets the source and origin correctly', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+        w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
+        const [, message] = await emittedOnce(ipcMain, 'complete');
+        expect(message.data).to.equal('testing');
+        expect(message.origin).to.equal('file://');
+        expect(message.sourceEqualsOpener).to.equal(true);
+        expect(message.eventOrigin).to.equal('file://');
+      });
+    });
+  }
 });
 
 describe('focus handling', () => {
