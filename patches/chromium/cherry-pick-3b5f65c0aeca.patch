@@ -1,0 +1,334 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Fri, 18 Sep 2020 22:35:09 +0000
+Subject: Reland "Add more checks for chrome.debugger extensions"
+
+TBR=rdevlin.cronin@chromium.org
+
+This reverts commit 5a809a08fd5ca32cb8d594664416db2f2dc8ebdc.
+
+Reason for revert: I don't think the test failure is related. Please note it stopped before the revert landed (build no 91007 vs. 91010). This must have been a flake, or a independent failure that has been fixed by one of the front-end rolls.
+
+Original change's description:
+> Revert "Add more checks for chrome.debugger extensions"
+>
+> This reverts commit 4838b76ae48797760fd8a362b4dc15325ccddcf5.
+>
+> Reason for revert: 1119297
+>
+> Original change's description:
+> > Add more checks for chrome.debugger extensions
+> >
+> > Bug: 1113558, 1113565
+> > Change-Id: I99f2e030f9a38f1ffd6b6adc760ba15e5d231f96
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2342277
+> > Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+> > Reviewed-by: Sigurd Schneider <sigurds@chromium.org>
+> > Reviewed-by: Yang Guo <yangguo@chromium.org>
+> > Reviewed-by: Devlin <rdevlin.cronin@chromium.org>
+> > Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+> > Cr-Commit-Position: refs/heads/master@{#799514}
+>
+> TBR=dgozman@chromium.org,rdevlin.cronin@chromium.org,caseq@chromium.org,yangguo@chromium.org,sigurds@chromium.org
+>
+> Change-Id: I01ad12ca99ac75197f9073e2c6c9d0eaa0d95147
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Bug: 1113558
+> Bug: 1113565
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2362920
+> Reviewed-by: Christian Dullweber <dullweber@chromium.org>
+> Commit-Queue: Christian Dullweber <dullweber@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#799558}
+
+TBR=dgozman@chromium.org,rdevlin.cronin@chromium.org,caseq@chromium.org,yangguo@chromium.org,sigurds@chromium.org,dullweber@chromium.org
+
+(cherry picked from commit a064db74c8734fbf47de2f3a3503832514857173)
+
+(cherry picked from commit 9940472e708a4003aee9edf9da42d68fde591e08)
+
+Bug: 1113558
+Bug: 1113565
+Change-Id: Ic98fc037028a210204b7935b0b8e50e4e36e2397
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2368446
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#800682}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2398884
+Cr-Original-Commit-Position: refs/branch-heads/4240@{#506}
+Cr-Original-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2419133
+Cr-Commit-Position: refs/branch-heads/4183@{#1863}
+Cr-Branched-From: 740e9e8a40505392ba5c8e022a8024b3d018ca65-refs/heads/master@{#782793}
+
+diff --git a/chrome/browser/extensions/api/debugger/debugger_apitest.cc b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
+index 9f6af1fa41ba663d92976c709b37e18ce8b5540d..39b62d17071287606c6bab9dec802c866e8f5229 100644
+--- a/chrome/browser/extensions/api/debugger/debugger_apitest.cc
++++ b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
+@@ -366,4 +366,14 @@ IN_PROC_BROWSER_TEST_F(SitePerProcessDebuggerExtensionApiTest, Debugger) {
+       << message_;
+ }
+ 
++IN_PROC_BROWSER_TEST_F(SitePerProcessDebuggerExtensionApiTest,
++                       NavigateSubframe) {
++  GURL url(embedded_test_server()->GetURL(
++      "a.com",
++      "/extensions/api_test/debugger_navigate_subframe/inspected_page.html"));
++  ASSERT_TRUE(
++      RunExtensionTestWithArg("debugger_navigate_subframe", url.spec().c_str()))
++      << message_;
++}
++
+ }  // namespace extensions
+diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_subframe/background.js b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/background.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..15bfe092cc00e720cf0abedffce519c5ae6e4806
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/background.js
+@@ -0,0 +1,76 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const protocolVersion = '1.3';
++const DETACHED_WHILE_HANDLING = 'Detached while handling command.';
++
++function openTab(url) {
++  return new Promise((resolve) => {
++    let createdTabId;
++    let completedTabIds = [];
++    chrome.tabs.onUpdated.addListener(
++        function listener(tabId, changeInfo, tab) {
++      if (changeInfo.status !== 'complete')
++        return;  // Tab not done.
++
++      if (createdTabId === undefined) {
++        // A tab completed loading before the chrome.tabs.create callback was
++        // triggered; stash the ID for later comparison to see if it was our
++        // tab.
++        completedTabIds.push(tabId);
++        return;
++      }
++
++      if (tabId !== createdTabId)
++        return;  // Not our tab.
++
++      // It's ours!
++      chrome.tabs.onUpdated.removeListener(listener);
++      resolve(tab);
++    });
++    chrome.tabs.create({url: url}, (tab) => {
++      if (completedTabIds.includes(tab.id))
++        resolve(tab);
++      else
++        createdTabId = tab.id;
++    });
++  });
++}
++
++chrome.test.getConfig(config => chrome.test.runTests([
++  async function testNavigateSubframe() {
++    const topURL = config.customArg;
++    const subframeURL = topURL.replace('http://a.com', 'http://b.com');
++    const tab = await openTab(topURL);
++    const debuggee = {tabId: tab.id};
++    await new Promise(resolve =>
++        chrome.debugger.attach(debuggee, protocolVersion, resolve));
++
++    chrome.debugger.sendCommand(debuggee, 'Page.enable', null);
++    const response = await new Promise(resolve =>
++        chrome.debugger.sendCommand(debuggee, 'Page.getFrameTree', resolve));
++    const subframeId = response.frameTree.childFrames[0].frame.id;
++    const expression = `
++      new Promise(resolve => {
++        const frame = document.body.firstElementChild;
++        frame.onload = resolve;
++        frame.src = '${subframeURL}';
++      })
++    `;
++    await new Promise(resolve =>
++        chrome.debugger.sendCommand(debuggee, 'Runtime.evaluate', {
++            expression,
++            awaitPromise: true
++        }, resolve));
++    chrome.test.assertNoLastError();
++    const result = await new Promise(resolve =>
++      chrome.debugger.sendCommand(debuggee, 'Page.navigate', {
++          frameId: subframeId,
++          url: 'devtools://devtools/bundled/inspector.html'
++      }, resolve));
++    chrome.test.assertLastError(DETACHED_WHILE_HANDLING);
++
++    chrome.test.succeed();
++  }
++]));
+diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_subframe/inspected_page.html b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/inspected_page.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..190e207f7943a910f07e5e0c14bca5a02f7606a1
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/inspected_page.html
+@@ -0,0 +1,3 @@
++<html>
++<iframe></iframe>
++</html>
+\ No newline at end of file
+diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_subframe/manifest.json b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/manifest.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4cdcb013c70c9257437e6b5ae88848c1ff9e02f1
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/debugger_navigate_subframe/manifest.json
+@@ -0,0 +1,11 @@
++{
++  "name": "Debugger API test for CDP-initiated navigation of subframes",
++  "version": "1.0",
++  "manifest_version": 2,
++  "background": {
++    "scripts": ["background.js"]
++  },
++  "permissions": [
++    "debugger"
++  ]
++}
+diff --git a/content/browser/devtools/devtools_instrumentation.cc b/content/browser/devtools/devtools_instrumentation.cc
+index 88e8c770477f35530fd4f47b7748d465c3d3b629..bda28426e4198a34cb510266a9c5adb7423d165e 100644
+--- a/content/browser/devtools/devtools_instrumentation.cc
++++ b/content/browser/devtools/devtools_instrumentation.cc
+@@ -378,12 +378,23 @@ bool WillCreateURLLoaderFactory(
+ 
+ void OnNavigationRequestWillBeSent(
+     const NavigationRequest& navigation_request) {
+-  auto* agent_host = static_cast<RenderFrameDevToolsAgentHost*>(
+-      RenderFrameDevToolsAgentHost::GetFor(
+-          navigation_request.frame_tree_node()));
+-  if (!agent_host)
+-    return;
+-  agent_host->OnNavigationRequestWillBeSent(navigation_request);
++  // Note this intentionally deviates from the usual instrumentation signal
++  // logic and dispatches to all agents upwards from the frame, to make sure
++  // the security checks are properly applied even if no DevTools session is
++  // established for the navigated frame itself. This is because the page
++  // agent may navigate all of its subframes currently.
++  for (RenderFrameHostImpl* rfh =
++           navigation_request.frame_tree_node()->current_frame_host();
++       rfh; rfh = rfh->GetParent()) {
++    // Only check frames that qualify as DevTools targets, i.e. (local)? roots.
++    if (!RenderFrameDevToolsAgentHost::ShouldCreateDevToolsForHost(rfh))
++      continue;
++    auto* agent_host = static_cast<RenderFrameDevToolsAgentHost*>(
++        RenderFrameDevToolsAgentHost::GetFor(rfh));
++    if (!agent_host)
++      continue;
++    agent_host->OnNavigationRequestWillBeSent(navigation_request);
++  }
+ 
+   // Make sure both back-ends yield the same timestamp.
+   auto timestamp = base::TimeTicks::Now();
+diff --git a/content/browser/devtools/render_frame_devtools_agent_host.cc b/content/browser/devtools/render_frame_devtools_agent_host.cc
+index 1b999d6bf036d11ba09d2875ff7dbd8fd3e66a77..2c0dba762312fae825926976d845473be756835b 100644
+--- a/content/browser/devtools/render_frame_devtools_agent_host.cc
++++ b/content/browser/devtools/render_frame_devtools_agent_host.cc
+@@ -86,10 +86,6 @@ RenderFrameDevToolsAgentHost* FindAgentHost(FrameTreeNode* frame_tree_node) {
+   return it == g_agent_host_instances.Get().end() ? nullptr : it->second;
+ }
+ 
+-bool ShouldCreateDevToolsForHost(RenderFrameHost* rfh) {
+-  return rfh->IsCrossProcessSubframe() || !rfh->GetParent();
+-}
+-
+ bool ShouldCreateDevToolsForNode(FrameTreeNode* ftn) {
+   return !ftn->parent() || ftn->current_frame_host()->IsCrossProcessSubframe();
+ }
+@@ -140,6 +136,12 @@ scoped_refptr<DevToolsAgentHost> RenderFrameDevToolsAgentHost::GetOrCreateFor(
+   return result;
+ }
+ 
++// static
++bool RenderFrameDevToolsAgentHost::ShouldCreateDevToolsForHost(
++    RenderFrameHost* rfh) {
++  return rfh->IsCrossProcessSubframe() || !rfh->GetParent();
++}
++
+ // static
+ scoped_refptr<DevToolsAgentHost>
+ RenderFrameDevToolsAgentHost::CreateForCrossProcessNavigation(
+@@ -604,7 +606,9 @@ void RenderFrameDevToolsAgentHost::OnPageScaleFactorChanged(
+ 
+ void RenderFrameDevToolsAgentHost::OnNavigationRequestWillBeSent(
+     const NavigationRequest& navigation_request) {
+-  const auto& url = navigation_request.common_params().url;
++  GURL url = navigation_request.common_params().url;
++  if (url.SchemeIs(url::kJavaScriptScheme) && frame_host_)
++    url = frame_host_->GetLastCommittedURL();
+   std::vector<DevToolsSession*> restricted_sessions;
+   bool is_webui = frame_host_ && frame_host_->web_ui();
+   for (DevToolsSession* session : sessions()) {
+@@ -814,9 +818,16 @@ bool RenderFrameDevToolsAgentHost::ShouldAllowSession(
+       !manager->delegate()->AllowInspectingRenderFrameHost(frame_host_)) {
+     return false;
+   }
+-  // Note this may be called before navigation is committed.
+-  return session->client()->MayAttachToURL(
+-      frame_host_->GetSiteInstance()->GetSiteURL(), frame_host_->web_ui());
++  auto* root = FrameTreeNode::From(frame_host_);
++  for (FrameTreeNode* node : root->frame_tree()->SubtreeNodes(root)) {
++    // Note this may be called before navigation is committed.
++    RenderFrameHostImpl* rfh = node->current_frame_host();
++    const GURL& url = rfh->GetSiteInstance()->GetSiteURL();
++    if (!session->client()->MayAttachToURL(url, rfh->web_ui())) {
++      return false;
++    }
++  }
++  return true;
+ }
+ 
+ void RenderFrameDevToolsAgentHost::UpdateResourceLoaderFactories() {
+diff --git a/content/browser/devtools/render_frame_devtools_agent_host.h b/content/browser/devtools/render_frame_devtools_agent_host.h
+index bccca6922fb6024a3d1696dfd396ba16a53f0d40..8cee809624dc6dd0568bcd0fb07449e359053fa4 100644
+--- a/content/browser/devtools/render_frame_devtools_agent_host.h
++++ b/content/browser/devtools/render_frame_devtools_agent_host.h
+@@ -59,6 +59,11 @@ class CONTENT_EXPORT RenderFrameDevToolsAgentHost
+   static scoped_refptr<DevToolsAgentHost> GetOrCreateFor(
+       FrameTreeNode* frame_tree_node);
+ 
++  // Whether the RFH passed may have associated DevTools agent host
++  // (i.e. the specified RFH is a local root). This does not indicate
++  // whether DevToolsAgentHost has actually been created.
++  static bool ShouldCreateDevToolsForHost(RenderFrameHost* rfh);      
++
+   // This method is called when new frame is created during cross process
+   // navigation.
+   static scoped_refptr<DevToolsAgentHost> CreateForCrossProcessNavigation(
+diff --git a/content/browser/frame_host/frame_tree_node.cc b/content/browser/frame_host/frame_tree_node.cc
+index cc1966c156dfa7ce45cf43db7695b7e6c3ec55e8..0d90e0a84a6bc5cf7b1f1e57a046d28a477ebdc3 100644
+--- a/content/browser/frame_host/frame_tree_node.cc
++++ b/content/browser/frame_host/frame_tree_node.cc
+@@ -94,6 +94,13 @@ FrameTreeNode* FrameTreeNode::GloballyFindByID(int frame_tree_node_id) {
+   return it == nodes->end() ? nullptr : it->second;
+ }
+ 
++// static
++FrameTreeNode* FrameTreeNode::From(RenderFrameHost* rfh) {
++  if (!rfh)
++    return nullptr;
++  return static_cast<RenderFrameHostImpl*>(rfh)->frame_tree_node();
++}
++
+ FrameTreeNode::FrameTreeNode(FrameTree* frame_tree,
+                              Navigator* navigator,
+                              FrameTreeNode* parent,
+diff --git a/content/browser/frame_host/frame_tree_node.h b/content/browser/frame_host/frame_tree_node.h
+index 9d148e9cb1f41e7732735c8fe93cdd090f917515..ae8deb0e8b83556a3e2e386f670f9522d5c1bb90 100644
+--- a/content/browser/frame_host/frame_tree_node.h
++++ b/content/browser/frame_host/frame_tree_node.h
+@@ -68,6 +68,10 @@ class CONTENT_EXPORT FrameTreeNode {
+   // regardless of which FrameTree it is in.
+   static FrameTreeNode* GloballyFindByID(int frame_tree_node_id);
+ 
++  // Returns the FrameTreeNode for the given |rfh|. Same as
++  // rfh->frame_tree_node(), but also supports nullptrs.
++  static FrameTreeNode* From(RenderFrameHost* rfh);
++
+   // Callers are are expected to initialize sandbox flags separately after
+   // calling the constructor.
+   FrameTreeNode(FrameTree* frame_tree,
