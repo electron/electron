@@ -367,6 +367,7 @@ source_set("chrome_spellchecker") {
   sources = []
   deps = []
   libs = []
+  public_deps = []
 
   if (enable_builtin_spellchecker) {
     sources += [
@@ -406,15 +407,13 @@ source_set("chrome_spellchecker") {
       "//components/spellcheck:buildflags",
       "//components/sync",
     ]
+
+    public_deps += [ "//chrome/common:constants" ]
   }
 
-  public_deps = [
+  public_deps += [
     "//components/spellcheck/browser",
     "//components/spellcheck/common",
     "//components/spellcheck/renderer",
   ]
-
-  if (enable_builtin_spellchecker) {
-    public_deps += [ "//chrome/common:constants" ]
-  }
 }
