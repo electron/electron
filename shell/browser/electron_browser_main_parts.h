@@ -160,8 +160,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<ElectronExtensionsBrowserClient> extensions_browser_client_;
 #endif
 
-  base::RepeatingTimer gc_timer_;
-
   // List of callbacks should be executed before destroying JS env.
   std::list<base::OnceClosure> destructors_;
 
