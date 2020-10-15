@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Phillips <robertphillips@google.com>
+Date: Wed, 16 Sep 2020 18:42:32 +0000
+Subject: Don't create providers if context is lost
+
+CanvasResourceProvider::CreateSharedImageProvider receives a weak pointer
+to the ContextProviderWrapper and returns nullptr if it does not exist.
+
+Unfortunately SharedGpuContext::IsGpuCompositingEnabled can re-create
+the ContextProviderWrapper after this check happens, leading to potential
+use-after-frees.
+
+To me it simply makes the most sense to not create a CRP if context is
+lost, as the created provider would be invalid and nullptr would get
+returned anyway.
+
+Bug: 1126424
+Change-Id: Ic92709d7a38d94e5e7529efac3a09405d64eaa34
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2417097
+Reviewed-by: Juanmi Huertas <juanmihd@chromium.org>
+Reviewed-by: Fernando Serboncini <fserb@chromium.org>
+Commit-Queue: Aaron Krajeski <aaronhk@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#809327}
+
+diff --git a/third_party/blink/renderer/platform/graphics/canvas_resource_provider.cc b/third_party/blink/renderer/platform/graphics/canvas_resource_provider.cc
+index 4635d4a38836150f3abafedeffaf31a20d6e77cf..8fb14df8be73ef83fe0e67946b684d2faa825f38 100644
+--- a/third_party/blink/renderer/platform/graphics/canvas_resource_provider.cc
++++ b/third_party/blink/renderer/platform/graphics/canvas_resource_provider.cc
+@@ -801,7 +801,16 @@ CanvasResourceProvider::CreateSharedImageProvider(
+     bool is_origin_top_left,
+     RasterMode raster_mode,
+     uint32_t shared_image_usage_flags) {
+-  if (!context_provider_wrapper)
++  // IsGpuCompositingEnabled can re-create the context if it has been lost, do
++  // this up front so that we can fail early and not expose ourselves to
++  // use after free bugs (crbug.com/1126424)
++  const bool is_gpu_compositing_enabled =
++      SharedGpuContext::IsGpuCompositingEnabled();
++
++  // If the context is lost we don't want to re-create it here, the resulting
++  // resource provider would be invalid anyway
++  if (!context_provider_wrapper ||
++      context_provider_wrapper->ContextProvider()->IsContextLost())
+     return nullptr;
+ 
+   const auto& capabilities =
+@@ -817,7 +826,7 @@ CanvasResourceProvider::CreateSharedImageProvider(
+   }
+ 
+   const bool is_gpu_memory_buffer_image_allowed =
+-      SharedGpuContext::IsGpuCompositingEnabled() &&
++      is_gpu_compositing_enabled &&
+       IsGMBAllowed(size, color_params, capabilities) &&
+       Platform::Current()->GetGpuMemoryBufferManager();
+ 
+@@ -850,6 +859,9 @@ CanvasResourceProvider::CreatePassThroughProvider(
+     const CanvasColorParams& color_params,
+     bool is_origin_top_left,
+     base::WeakPtr<CanvasResourceDispatcher> resource_dispatcher) {
++  // SharedGpuContext::IsGpuCompositingEnabled can potentially replace the
++  // context_provider_wrapper, so it's important to call that first as it can
++  // invalidate the weak pointer.
+   if (!SharedGpuContext::IsGpuCompositingEnabled() || !context_provider_wrapper)
+     return nullptr;
+ 
+@@ -883,6 +895,9 @@ CanvasResourceProvider::CreateSwapChainProvider(
+     const CanvasColorParams& color_params,
+     bool is_origin_top_left,
+     base::WeakPtr<CanvasResourceDispatcher> resource_dispatcher) {
++  // SharedGpuContext::IsGpuCompositingEnabled can potentially replace the
++  // context_provider_wrapper, so it's important to call that first as it can
++  // invalidate the weak pointer.
+   DCHECK(is_origin_top_left);
+   if (!SharedGpuContext::IsGpuCompositingEnabled() || !context_provider_wrapper)
+     return nullptr;
