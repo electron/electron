@@ -310,6 +310,10 @@ double NativeWindow::GetSheetOffsetY() {
   return sheet_offset_y_;
 }
 
+bool NativeWindow::IsTabletMode() const {
+  return false;
+}
+
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {}
 
 std::string NativeWindow::GetRepresentedFilename() {
@@ -573,6 +577,13 @@ void NativeWindow::NotifyTouchBarItemInteraction(
 void NativeWindow::NotifyNewWindowForTab() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnNewWindowForTab();
+}
+
+void NativeWindow::NotifyWindowSystemContextMenu(int x,
+                                                 int y,
+                                                 bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnSystemContextMenu(x, y, prevent_default);
 }
 
 #if defined(OS_WIN)

@@ -86,6 +86,7 @@
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -402,7 +403,7 @@ bool ElectronBrowserClient::ShouldForceNewSiteInstance(
     const GURL& url,
     bool has_response_started) const {
   if (url.SchemeIs(url::kJavaScriptScheme))
-    // "javacript:" scheme should always use same SiteInstance
+    // "javascript:" scheme should always use same SiteInstance
     return false;
   if (url.SchemeIs(extensions::kExtensionScheme))
     return false;
@@ -1745,6 +1746,12 @@ ElectronBrowserClient::GetPluginMimeTypesWithExternalHandlers(
     mime_types.insert(pair.first);
 #endif
   return mime_types;
+}
+
+content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
+  if (!serial_delegate_)
+    serial_delegate_ = std::make_unique<ElectronSerialDelegate>();
+  return serial_delegate_.get();
 }
 
 }  // namespace electron

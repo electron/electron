@@ -21,6 +21,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/hang_monitor/hang_crash_dump.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
@@ -61,6 +62,7 @@
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
@@ -86,6 +88,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -1065,22 +1068,13 @@ void WebContents::RenderFrameCreated(
     rwh_impl->disable_hidden_ = !background_throttling_;
 }
 
-void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                        content::RenderViewHost* new_host) {
-  currently_committed_process_id_ = new_host->GetProcess()->GetID();
-}
-
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   // This event is necessary for tracking any states with respect to
   // intermediate render view hosts aka speculative render view hosts. Currently
   // used by object-registry.js to ref count remote objects.
   Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 
-  if (-1 == currently_committed_process_id_ ||
-      render_view_host->GetProcess()->GetID() ==
-          currently_committed_process_id_) {
-    currently_committed_process_id_ = -1;
-
+  if (web_contents()->GetRenderViewHost() == render_view_host) {
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
     // Currently tracked by guest-window-manager.js to destroy the
@@ -1106,7 +1100,7 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
-#endif  // BUILDFLAG(ENABLE_PLUIGNS)
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
@@ -1240,6 +1234,12 @@ void WebContents::Invoke(bool internal,
                  std::move(callback), internal, channel, std::move(arguments));
 }
 
+void WebContents::OnFirstNonEmptyLayout() {
+  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+    Emit("ready-to-show");
+  }
+}
+
 void WebContents::ReceivePostMessage(const std::string& channel,
                                      blink::TransferableMessage message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1326,6 +1326,10 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
+  // disposed to prevent access to it.
+  WebFrameMain::RenderFrameDeleted(render_frame_host);
+
   // A RenderFrameHost can be destroyed before the related Mojo binding is
   // closed, which can result in Mojo calls being sent for RenderFrameHosts
   // that no longer exist. To prevent this from happening, when a
@@ -1755,6 +1759,30 @@ void WebContents::SetWebRTCIPHandlingPolicy(
 
 bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
+}
+
+void WebContents::ForcefullyCrashRenderer() {
+  content::RenderWidgetHostView* view =
+      web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+
+  content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
+  if (!rwh)
+    return;
+
+  content::RenderProcessHost* rph = rwh->GetProcess();
+  if (rph) {
+#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+    // A generic |CrashDumpHungChildProcess()| is not implemented for Linux.
+    // Instead we send an explicit IPC to crash on the renderer's IO thread.
+    rph->ForceCrash();
+#else
+    // Try to generate a crash report for the hung process.
+    CrashDumpHungChildProcess(rph->GetProcess().Handle());
+    rph->Shutdown(content::RESULT_CODE_HUNG);
+#endif
+  }
 }
 
 void WebContents::SetUserAgent(const std::string& user_agent) {
@@ -2813,6 +2841,10 @@ bool WebContents::WasInitiallyShown() {
   return initially_shown_;
 }
 
+content::RenderFrameHost* WebContents::MainFrame() {
+  return web_contents()->GetMainFrame();
+}
+
 void WebContents::GrantOriginAccess(const GURL& url) {
   content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
       web_contents()->GetMainFrame()->GetProcess()->GetID(),
@@ -2915,6 +2947,8 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
+      .SetMethod("forcefullyCrashRenderer",
+                 &WebContents::ForcefullyCrashRenderer)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
@@ -3007,6 +3041,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
+      .SetProperty("mainFrame", &WebContents::MainFrame)
       .Build();
 }
 

@@ -108,6 +108,14 @@ describe('Notification module', () => {
     n.close();
   });
 
+  ifit(process.platform === 'win32')('inits, gets and sets custom xml', () => {
+    const n = new Notification({
+      toastXml: '<xml/>'
+    });
+
+    expect(n.toastXml).to.equal('<xml/>');
+  });
+
   ifit(process.platform === 'darwin')('emits show and close events', async () => {
     const n = new Notification({
       title: 'test notification',
@@ -122,6 +130,17 @@ describe('Notification module', () => {
     {
       const e = emittedOnce(n, 'close');
       n.close();
+      await e;
+    }
+  });
+
+  ifit(process.platform === 'win32')('emits failed event', async () => {
+    const n = new Notification({
+      toastXml: 'not xml'
+    });
+    {
+      const e = emittedOnce(n, 'failed');
+      n.show();
       await e;
     }
   });

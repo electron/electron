@@ -147,6 +147,10 @@ class ElectronBrowserContext
     return protocol_registry_.get();
   }
 
+  void SetSSLConfig(network::mojom::SSLConfigPtr config);
+  network::mojom::SSLConfigPtr GetSSLConfig();
+  void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
+
   ~ElectronBrowserContext() override;
 
  private:
@@ -189,6 +193,9 @@ class ElectronBrowserContext
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderAuthClient> auth_client_{this};
+
+  network::mojom::SSLConfigPtr ssl_config_;
+  mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_;
 

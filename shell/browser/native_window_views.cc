@@ -60,6 +60,7 @@
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
+#include "base/win/win_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
@@ -155,7 +156,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (enable_larger_than_screen())
     // We need to set a default maximum window size here otherwise Windows
     // will not allow us to resize the window larger than scree.
-    // Setting directly to INT_MAX somehow doesn't work, so we just devide
+    // Setting directly to INT_MAX somehow doesn't work, so we just divide
     // by 10, which should still be large enough.
     SetContentSizeConstraints(extensions::SizeConstraints(
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
@@ -899,6 +900,14 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+bool NativeWindowViews::IsTabletMode() const {
+#if defined(OS_WIN)
+  return base::win::IsWindows10TabletMode(GetAcceleratedWidget());
+#else
+  return false;
+#endif
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {

@@ -70,7 +70,7 @@ Returns:
 * `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed.
-The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
@@ -219,7 +219,7 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-Emitted when any frame (including main) starts navigating. `isInplace` will be
+Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
 
 #### Event: 'will-redirect'
@@ -364,7 +364,7 @@ Returns:
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
     * `crashed` - Process crashed
     * `oom` - Process ran out of memory
-    * `launch-failure` - Process never successfully launched
+    * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
@@ -998,6 +998,34 @@ Navigates to the specified offset from the "current entry".
 
 Returns `Boolean` - Whether the renderer process has crashed.
 
+#### `contents.forcefullyCrashRenderer()`
+
+Forcefully terminates the renderer process that is currently hosting this
+`webContents`. This will cause the `render-process-gone` event to be emitted
+with the `reason=killed || reason=crashed`. Please note that some webContents share renderer
+processes and therefore calling this method may also crash the host process
+for other webContents as well.
+
+Calling `reload()` immediately after calling this
+method will force the reload to occur in a new process. This should be used
+when this process is unstable or unusable, for instance in order to recover
+from the `unresponsive` event.
+
+```js
+contents.on('unresponsive', async () => {
+  const { response } = await dialog.showMessageBox({
+    message: 'App X has become unresponsive',
+    title: 'Do you want to try forcefully reloading the app?',
+    buttons: ['OK', 'Cancel'],
+    cancelId: 1
+  })
+  if (response === 0) {
+    contents.forcefullyCrashRenderer()
+    contents.reload()
+  }
+})
+```
+
 #### `contents.setUserAgent(userAgent)`
 
 * `userAgent` String
@@ -1212,12 +1240,6 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean (optional) - Whether to look only at the start of words.
-    defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean (optional) - When combined with `wordStart`,
-    accepts a match in the middle of a word if the match begins with an
-    uppercase letter followed by a lowercase or non-letter.
-    Accepts several other intra-word matches, defaults to `false`.
 
 Returns `Integer` - The request id used for the request.
 
@@ -1915,3 +1937,7 @@ A [`Debugger`](debugger.md) instance for this webContents.
 
 A `Boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.mainFrame` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.

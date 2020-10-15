@@ -5,7 +5,6 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,7 +47,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   // These bindings are shared between sandboxed & unsandboxed renderers
   process->SetMethod("crash", &Crash);
   process->SetMethod("hang", &Hang);
-  process->SetMethod("log", &Log);
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
@@ -124,11 +122,6 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
   }
 
   self->pending_next_ticks_.clear();
-}
-
-// static
-void ElectronBindings::Log(const base::string16& message) {
-  std::cout << message << std::flush;
 }
 
 // static

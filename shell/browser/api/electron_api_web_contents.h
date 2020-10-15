@@ -228,6 +228,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;
+  void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
@@ -396,6 +397,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   bool WasInitiallyShown();
+  content::RenderFrameHost* MainFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
@@ -555,8 +557,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                          const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
@@ -631,6 +631,7 @@ class WebContents : public gin::Wrappable<WebContents>,
               const std::string& channel,
               blink::CloneableMessage arguments,
               InvokeCallback callback) override;
+  void OnFirstNonEmptyLayout() override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void MessageSync(bool internal,
@@ -693,10 +694,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   base::ObserverList<ExtendedWebContentsObserver> observers_;
 
   bool initially_shown_ = true;
-
-  // The ID of the process of the currently committed RenderViewHost.
-  // -1 means no speculative RVH has been committed yet.
-  int currently_committed_process_id_ = -1;
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
   mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>

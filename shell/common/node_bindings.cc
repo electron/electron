@@ -33,6 +33,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 
 #if !defined(MAS_BUILD)
 #include "shell/common/crash_keys.h"
@@ -62,11 +63,13 @@
   V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
+  V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
+  V(electron_common_environment)         \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_native_theme)        \
@@ -149,6 +152,22 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 
   volatile int* zero = nullptr;
   *zero = 0;
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  v8::Isolate* isolate = context->GetIsolate();
+  if (node::Environment::GetCurrent(isolate) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return false;
+    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
+        context, v8::String::Empty(isolate));
+  }
+
+  return node::Environment::AllowWasmCodeGenerationCallback(
+      context, v8::String::Empty(isolate));
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -392,13 +411,13 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
-  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kNoInitializeInspector;
   if (browser_env_ != BrowserEnvironment::BROWSER) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
-    flags |= node::EnvironmentFlags::kNoRegisterESMLoader;
+    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                     node::EnvironmentFlags::kNoRegisterESMLoader |
+                     node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
     env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
                                   (node::EnvironmentFlags::Flags)flags);
@@ -411,8 +430,7 @@ node::Environment* NodeBindings::CreateEnvironment(
                  << process_type;
     }
   } else {
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                                  (node::EnvironmentFlags::Flags)flags);
+    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
     DCHECK(env);
   }
 
@@ -429,6 +447,16 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Use a custom fatal error callback to allow us to add
   // crash message and location to CrashReports.
   is.fatal_error_callback = V8FatalErrorCallback;
+
+  // We don't want to abort either in the renderer or browser processes.
+  // We already listen for uncaught exceptions and handle them there.
+  is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+    return false;
+  };
+
+  // Use a custom callback here to allow us to leverage Blink's logic in the
+  // renderer process.
+  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.

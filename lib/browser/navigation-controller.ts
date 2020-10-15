@@ -1,29 +1,30 @@
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import type { WebContents, LoadURLOptions } from 'electron/main';
 import { EventEmitter } from 'events';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // The history operation in renderer is redirected to browser.
-ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_BACK', function (event) {
+ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_BACK, function (event) {
   event.sender.goBack();
 });
 
-ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_FORWARD', function (event) {
+ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_FORWARD, function (event) {
   event.sender.goForward();
 });
 
-ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_GO_TO_OFFSET', function (event, offset) {
+ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_TO_OFFSET, function (event, offset) {
   event.sender.goToOffset(offset);
 });
 
-ipcMainInternal.on('ELECTRON_NAVIGATION_CONTROLLER_LENGTH', function (event) {
-  event.returnValue = (event.sender as any).length();
+ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_LENGTH, function (event) {
+  event.returnValue = event.sender.length();
 });
 
 // JavaScript implementation of Chromium's NavigationController.
-// Instead of relying on Chromium for history control, we compeletely do history
+// Instead of relying on Chromium for history control, we completely do history
 // control on user land, and only rely on WebContents.loadURL for navigation.
 // This helps us avoid Chromium's various optimizations so we can ensure renderer
-// process is restarted everytime.
+// process is restarted every time.
 export class NavigationController extends EventEmitter {
   currentIndex: number = -1;
   inPageIndex: number = -1;
@@ -39,7 +40,7 @@ export class NavigationController extends EventEmitter {
       this.currentIndex++;
       this.history.push(this.webContents._getURL());
     }
-    this.webContents.on('navigation-entry-committed' as any, (event: any, url: string, inPage: boolean, replaceEntry: boolean) => {
+    this.webContents.on('navigation-entry-committed' as any, (event: Electron.Event, url: string, inPage: boolean, replaceEntry: boolean) => {
       if (this.inPageIndex > -1 && !inPage) {
         // Navigated to a new page, clear in-page mark.
         this.inPageIndex = -1;
@@ -82,14 +83,14 @@ export class NavigationController extends EventEmitter {
       const finishListener = () => {
         resolveAndCleanup();
       };
-      const failListener = (event: any, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
         if (isMainFrame) {
           rejectAndCleanup(errorCode, errorDescription, validatedURL);
         }
       };
 
       let navigationStarted = false;
-      const navigationListener = (event: any, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
+      const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
         if (isMainFrame) {
           if (navigationStarted && !isSameDocument) {
             // the webcontents has started another unrelated navigation in the
@@ -159,7 +160,7 @@ export class NavigationController extends EventEmitter {
     return this.webContents._loadURL(this.getURL(), {
       extraHeaders: 'pragma: no-cache\n',
       reloadIgnoringCache: true
-    } as any);
+    });
   }
 
   canGoBack () {

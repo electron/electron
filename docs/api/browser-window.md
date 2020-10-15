@@ -667,6 +667,20 @@ Emitted when the window has closed a sheet.
 
 Emitted when the native new tab button is clicked.
 
+#### Event: 'system-context-menu' _Windows_
+
+Returns:
+
+* `event` Event
+* `point` [Point](structures/point.md) - The screen coordinates the context menu was triggered at
+
+Emitted when the system context menu is triggered on the window, this is
+normally only triggered when the user right clicks on the non-client area
+of your window.  This is the window titlebar or any area you have declared
+as `-webkit-app-region: drag` in a frameless window.
+
+Calling `event.preventDefault()` will prevent the menu from being displayed.
+
 ### Static Methods
 
 The `BrowserWindow` class has the following static methods:
@@ -1345,6 +1359,17 @@ Enters or leaves kiosk mode.
 #### `win.isKiosk()`
 
 Returns `Boolean` - Whether the window is in kiosk mode.
+
+#### `win.isTabletMode()` _Windows_
+
+Returns `Boolean` - Whether the window is in Windows 10 tablet mode.
+
+Since Windows 10 users can [use their PC as tablet](https://support.microsoft.com/en-us/help/17210/windows-10-use-your-pc-like-a-tablet),
+under this mode apps can choose to optimize their UI for tablets, such as
+enlarging the titlebar and hiding titlebar buttons.
+
+This API returns whether the window is in tablet mode, and the `resize` event
+can be be used to listen to changes to tablet mode.
 
 #### `win.getMediaSourceId()`
 

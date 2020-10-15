@@ -846,7 +846,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..b09510a6048f6cff3905240e3c969f143a382047
+index 0000000000000000000000000000000000000000..fbf2c13688d52b5ba320eadac42d472f09441e79
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,527 @@
@@ -1136,7 +1136,6 @@ index 0000000000000000000000000000000000000000..b09510a6048f6cff3905240e3c969f14
 +    "lib/internal/url.js",
 +    "lib/internal/util.js",
 +    "lib/internal/util/comparisons.js",
-+    "lib/internal/util/compositekey.js",
 +    "lib/internal/util/debuglog.js",
 +    "lib/internal/util/inspect.js",
 +    "lib/internal/util/inspector.js",
@@ -1183,7 +1182,8 @@ index 0000000000000000000000000000000000000000..b09510a6048f6cff3905240e3c969f14
 +    "deps/acorn-plugins/acorn-numeric-separator/index.js",
 +    "deps/acorn-plugins/acorn-private-class-elements/index.js",
 +    "deps/acorn-plugins/acorn-private-methods/index.js",
-+    "deps/acorn-plugins/acorn-static-class-features/index.js"
++    "deps/acorn-plugins/acorn-static-class-features/index.js",
++    "deps/cjs-module-lexer/lexer.js"
 +  ],
 +  "node_sources": [
 +    "src/api/async_resource.cc",
@@ -1583,7 +1583,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 49e4e9d16f8732641248fd3ab15be1a74d9fd45f..35f90fcae715c5421c672a9397a8e25d93f80cd6 100644
+index 19fa04ebe755ecd120ef0842a02688e121c4c963..fdbde0397dd4bfaa117ca8e9223510b885511ce6 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1616,10 +1616,10 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..9be5ffae55057c4072599d17384735984851de5a
+index 0000000000000000000000000000000000000000..e5fd79da5323e7039730fd8cca66caae8c84e903
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,70 @@
 +#!/usr/bin/env python
 +import json
 +import os
@@ -1654,21 +1654,28 @@ index 0000000000000000000000000000000000000000..9be5ffae55057c4072599d1738473598
 +  node_gyp_path = os.path.join(node_root_dir, 'node.gyp')
 +  out = {}
 +  node_gyp = LoadPythonDictionary(node_gyp_path)
-+  out['library_files'] = node_gyp['variables']['library_files']
 +  node_lib_target = next(
 +      t for t in node_gyp['targets']
 +      if t['target_name'] == '<(node_lib_target_name)')
-+  node_source_blacklist = {
++  node_source_blocklist = {
 +      '<@(library_files)',
 +      'common.gypi',
 +      '<(SHARED_INTERMEDIATE_DIR)/node_javascript.cc',
 +  }
-+  out['node_sources'] = [
++
++  def filter_v8_files(files):
++    if any(f.startswith('deps/v8/') for f in files):
++      files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
++    return files
++
++  out['library_files'] = filter_v8_files(node_gyp['variables']['library_files'])
++
++  blocklisted_sources = [
 +      f for f in node_lib_target['sources']
-+      if f not in node_source_blacklist]
++      if f not in node_source_blocklist]
++  out['node_sources'] = filter_v8_files(blocklisted_sources)
 +
 +  out['headers'] = []
-+
 +  def add_headers(files, dest_dir):
 +    if 'src/node.h' in files:
 +      files = [f for f in files if f.endswith('.h') and f != 'src/node_version.h']

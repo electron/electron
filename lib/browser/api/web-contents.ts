@@ -9,6 +9,7 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -121,7 +122,7 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const { WebContents } = binding as { WebContents: { prototype: Electron.WebContentsInternal } };
+const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
@@ -196,11 +197,11 @@ const webFrameMethods = [
 
 for (const method of webFrameMethods) {
   WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', method, ...args);
+    return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
   };
 }
 
-const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContentsInternal) => {
+const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
   return new Promise((resolve) => {
@@ -214,11 +215,11 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContentsInt
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScript', String(code), !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScript', String(code), !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
 };
 
 // Translate the options of printToPDF.
@@ -461,9 +462,11 @@ const addReturnValueToEvent = (event: any) => {
   });
 };
 
+const commandLine = process._linkedBinding('electron_common_command_line');
+const environment = process._linkedBinding('electron_common_environment');
+
 const loggingEnabled = () => {
-  return Object.prototype.hasOwnProperty.call(process.env, 'ELECTRON_ENABLE_LOGGING') ||
-    process.argv.some(arg => arg.toLowerCase().startsWith('--enable-logging'));
+  return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
 };
 
 // Add JavaScript wrappers for WebContents class.
@@ -492,7 +495,7 @@ WebContents.prototype._init = function () {
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
       addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
@@ -517,7 +520,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: Electron.WebContentsInternal, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
       addReplyInternalToEvent(event);
@@ -548,26 +551,26 @@ WebContents.prototype._init = function () {
 
   this.on('crashed', (event, ...args) => {
     app.emit('renderer-process-crashed', event, this, ...args);
+  });
+
+  this.on('render-process-gone', (event, details) => {
+    app.emit('render-process-gone', event, this, details);
 
     // Log out a hint to help users better debug renderer crashes.
     if (loggingEnabled()) {
-      console.info('Renderer process crashed - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.');
+      console.info(`Renderer process ${details.reason} - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.`);
     }
   });
 
-  this.on('render-process-gone', (event, ...args) => {
-    app.emit('render-process-gone', event, this, ...args);
-  });
-
   // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: Electron.WebContentsInternal) {
+  this.on('devtools-reload-page', function (this: Electron.WebContents) {
     this.reload();
   });
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: string, postData: string) => {
+      rawFeatures: string, referrer: string, postData: Electron.UploadRawData[]) => {
       const { options, webPreferences, additionalFeatures } = parseFeatures(rawFeatures);
       const mergedOptions = {
         show: true,
@@ -583,9 +586,9 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContentsInternal, disposition: string,
+    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
       userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
-      referrer: string, rawFeatures: string, postData: string) => {
+      referrer: string, rawFeatures: string, postData: Electron.UploadRawData[]) => {
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
@@ -614,6 +617,15 @@ WebContents.prototype._init = function () {
 
   this.on('login', (event, ...args) => {
     app.emit('login', event, this, ...args);
+  });
+
+  this.on('ready-to-show' as any, () => {
+    const owner = this.getOwnerBrowserWindow();
+    if (owner && !owner.isDestroyed()) {
+      process.nextTick(() => {
+        owner.emit('ready-to-show');
+      });
+    }
   });
 
   const event = process._linkedBinding('electron_browser_event').createEmpty();

@@ -1,9 +1,6 @@
-import { Buffer } from 'buffer';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
-import { Socket } from 'net';
 import * as path from 'path';
-import * as util from 'util';
 
 const Module = require('module');
 
@@ -18,28 +15,6 @@ require('../common/reset-search-paths');
 require('@electron/internal/common/init');
 
 process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
-
-if (process.platform === 'win32') {
-  // Redirect node's console to use our own implementations, since node can not
-  // handle console output when running as GUI program.
-  const consoleLog = (...args: any[]) => {
-    // @ts-ignore this typing is incorrect; 'format' is an optional parameter
-    // See https://nodejs.org/api/util.html#util_util_format_format_args
-    return process.log(util.format(...args) + '\n');
-  };
-  const streamWrite: Socket['write'] = function (chunk: Buffer | string, encoding?: any, callback?: Function) {
-    if (Buffer.isBuffer(chunk)) {
-      chunk = chunk.toString(encoding);
-    }
-    process.log(chunk);
-    if (callback) {
-      callback();
-    }
-    return true;
-  };
-  console.log = console.error = console.warn = consoleLog;
-  process.stdout.write = process.stderr.write = streamWrite;
-}
 
 // Don't quit on fatal error.
 process.on('uncaughtException', function (error) {
@@ -146,7 +121,7 @@ if (packageJson.desktopName != null) {
   app.setDesktopName(`${app.name}.desktop`);
 }
 
-// Set v8 flags, delibrately lazy load so that apps that do not use this
+// Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags);
@@ -166,6 +141,9 @@ if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
 
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
+
+// Load web-contents module to ensure it is populated on app ready
+require('@electron/internal/browser/api/web-contents');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';

@@ -1,6 +1,7 @@
 /* eslint no-eval: "off" */
 /* global binding */
 import * as events from 'events';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { EventEmitter } = events;
 
@@ -29,7 +30,7 @@ const {
   guestInstanceId,
   openerId,
   process: processProps
-} = ipcRendererUtils.invokeSync('ELECTRON_BROWSER_SANDBOX_LOAD');
+} = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
 
 process.isRemoteModuleEnabled = isRemoteModuleEnabled;
 
@@ -180,7 +181,7 @@ for (const { preloadPath, preloadSrc, preloadError } of preloadScripts) {
     console.error(`Unable to load preload script: ${preloadPath}`);
     console.error(error);
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadPath, error);
+    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadPath, error);
   }
 }
 

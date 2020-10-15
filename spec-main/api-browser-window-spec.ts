@@ -1913,8 +1913,8 @@ describe('BrowserWindow module', () => {
         const [, test] = await emittedOnce(ipcMain, 'answer');
         expect(test).to.eql('preload');
       });
-      it('can successfully delete the Buffer global', async () => {
-        const preload = path.join(__dirname, 'fixtures', 'module', 'delete-buffer.js');
+      ifit(features.isRemoteModuleEnabled())('can successfully delete the Buffer global', async () => {
+        const preload = path.join(__dirname, 'fixtures', 'remote', 'delete-buffer.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2039,7 +2039,7 @@ describe('BrowserWindow module', () => {
     ifdescribe(features.isRemoteModuleEnabled())('"enableRemoteModule" option', () => {
       const generateSpecs = (description: string, sandbox: boolean) => {
         describe(description, () => {
-          const preload = path.join(__dirname, 'fixtures', 'module', 'preload-remote.js');
+          const preload = path.join(__dirname, 'fixtures', 'remote', 'preload-remote.js');
 
           it('disables the remote module by default', async () => {
             const w = new BrowserWindow({
@@ -4283,6 +4283,30 @@ describe('BrowserWindow module', () => {
       `);
       const [, data] = await p;
       expect(data.pageContext.openedLocation).to.equal('about:blank');
+    });
+  });
+
+  describe('reloading with allowRendererProcessReuse enabled', () => {
+    it('does not cause Node.js module API hangs after reload', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+
+      let count = 0;
+      ipcMain.on('async-node-api-done', () => {
+        if (count === 3) {
+          ipcMain.removeAllListeners('async-node-api-done');
+          done();
+        } else {
+          count++;
+          w.reload();
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
     });
   });
 

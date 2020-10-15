@@ -43,10 +43,10 @@ if (process.type === 'renderer') {
 }
 
 const originalResolveFilename = Module._resolveFilename;
-Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean) {
+Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
   if (request === 'electron' || request.startsWith('electron/')) {
     return 'electron';
   } else {
-    return originalResolveFilename(request, parent, isMain);
+    return originalResolveFilename(request, parent, isMain, options);
   }
 };

@@ -6,6 +6,7 @@ import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-v
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import { deserialize } from '@electron/internal/common/type-utils';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 const { webFrame } = electron;
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -226,7 +227,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   // Forward proto.foo* method calls to WebViewImpl.foo*.
   const createBlockHandler = function (method: string) {
     return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args);
+      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, this.getWebContentsId(), method, args);
     };
   };
 
@@ -236,7 +237,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
 
   const createNonBlockHandler = function (method: string) {
     return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', this.getWebContentsId(), method, args);
+      return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, this.getWebContentsId(), method, args);
     };
   };
 
@@ -245,24 +246,24 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   }
 
   WebViewElement.prototype.capturePage = async function (...args) {
-    return deserialize(await ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CAPTURE_PAGE', this.getWebContentsId(), args));
+    return deserialize(await ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, this.getWebContentsId(), args));
   };
 
   const createPropertyGetter = function (property: string) {
     return function (this: ElectronInternal.WebViewElement) {
-      return ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_GET', this.getWebContentsId(), property);
+      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, this.getWebContentsId(), property);
     };
   };
 
   const createPropertySetter = function (property: string) {
     return function (this: ElectronInternal.WebViewElement, arg: any) {
-      return ipcRendererUtils.invokeSync('ELECTRON_GUEST_VIEW_MANAGER_PROPERTY_SET', this.getWebContentsId(), property, arg);
+      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, this.getWebContentsId(), property, arg);
     };
   };
 
   for (const property of properties) {
     Object.defineProperty(WebViewElement.prototype, property, {
-      get: createPropertyGetter(property) as any,
+      get: createPropertyGetter(property),
       set: createPropertySetter(property)
     });
   }

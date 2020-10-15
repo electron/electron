@@ -31,7 +31,8 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'Tray', loader: () => require('./tray') },
   { name: 'View', loader: () => require('./view') },
   { name: 'webContents', loader: () => require('./web-contents') },
-  { name: 'WebContentsView', loader: () => require('./web-contents-view') }
+  { name: 'WebContentsView', loader: () => require('./web-contents-view') },
+  { name: 'webFrameMain', loader: () => require('./web-frame-main') }
 ];
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {

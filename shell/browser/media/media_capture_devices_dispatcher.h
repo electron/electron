@@ -47,7 +47,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   // Unittests that do not require actual device enumeration should call this
   // API on the singleton. It is safe to call this multiple times on the
-  // signleton.
+  // singleton.
   void DisableDeviceEnumerationForTesting();
 
   // Overridden from content::MediaObserver:

@@ -108,11 +108,11 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   injected_frames_.insert(render_frame);
 
-  // If this is the first environment we are creating, prepare the node
-  // bindings.
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  } else if (reuse_renderer_processes_enabled) {
     node_bindings_->PrepareMessageLoop();
   }
 
@@ -129,9 +129,9 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
-  if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
-    env->ForceOnlyContextAwareNativeModules();
-  env->WarnNonContextAwareNativeModules();
+  if (reuse_renderer_processes_enabled)
+    env->set_force_context_aware(true);
+  env->set_warn_context_aware(true);
 
   environments_.insert(env);
 

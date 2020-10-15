@@ -148,6 +148,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual bool IsTabletMode() const;
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() = 0;
   virtual void SetHasShadow(bool has_shadow) = 0;
@@ -287,6 +288,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
+  void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

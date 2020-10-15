@@ -7,15 +7,15 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module');
 
-const Promise: PromiseConstructor = global.Promise as any;
+const Promise: PromiseConstructor = global.Promise;
 
 const envNoAsar = process.env.ELECTRON_NO_ASAR &&
     process.type !== 'browser' &&
     process.type !== 'renderer';
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
-const internalBinding = (process as any).internalBinding;
-delete (process as any).internalBinding;
+const internalBinding = process.internalBinding!;
+delete process.internalBinding;
 
 const nextTick = (functionToCall: Function, args: any[] = []) => {
   process.nextTick(() => functionToCall(...args));

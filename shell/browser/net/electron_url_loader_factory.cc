@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/guid.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/binding.h"
@@ -123,11 +124,16 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
       } else {
         continue;
       }
-      // Some apps are passing content-type via headers, which is not accepted
-      // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type") {
+      auto header_name_lowercase = base::ToLowerASCII(iter.first);
+
+      if (header_name_lowercase == "content-type") {
+        // Some apps are passing content-type via headers, which is not accepted
+        // in NetworkService.
         head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
         has_content_type = true;
+      } else if (header_name_lowercase == "content-length" &&
+                 iter.second.is_string()) {
+        base::StringToInt64(iter.second.GetString(), &head->content_length);
       }
     }
   }
@@ -194,11 +200,22 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  handler_.Run(
-      request,
-      base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
-                     routing_id, request_id, options, request,
-                     std::move(client), traffic_annotation, nullptr, type_));
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory;
+  handler_.Run(request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                                       std::move(loader), routing_id,
+                                       request_id, options, request,
+                                       std::move(client), traffic_annotation,
+                                       std::move(proxy_factory), type_));
+}
+
+// static
+void ElectronURLLoaderFactory::OnComplete(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    int32_t request_id,
+    const network::URLLoaderCompletionStatus& status) {
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
+  client_remote->OnComplete(status);
 }
 
 // static
@@ -210,7 +227,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    network::mojom::URLLoaderFactory* proxy_factory,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
     ProtocolType type,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -219,10 +236,8 @@ void ElectronURLLoaderFactory::StartLoading(
   // passed, to keep compatibility with old code.
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -231,9 +246,8 @@ void ElectronURLLoaderFactory::StartLoading(
   if (!dict.IsEmpty()) {
     int error_code;
     if (dict.Get("error", &error_code)) {
-      mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-          std::move(client));
-      client_remote->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      OnComplete(std::move(client), request_id,
+                 network::URLLoaderCompletionStatus(error_code));
       return;
     }
   }
@@ -265,10 +279,10 @@ void ElectronURLLoaderFactory::StartLoading(
 
     client_remote->OnReceiveRedirect(redirect_info, std::move(head));
 
-    // Unound client, so it an be passed to sub-methods
+    // Unbound client, so it an be passed to sub-methods
     client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
-    // |proxy_factory| passed), we askes the proxy factory to create a loader
+    // |proxy_factory| passed), we ask the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
     // loader with default factory.
     //
@@ -280,10 +294,14 @@ void ElectronURLLoaderFactory::StartLoading(
     // module.
     //
     // I'm not sure whether this is an intended behavior in Chromium.
-    if (proxy_factory) {
-      proxy_factory->CreateLoaderAndStart(
+    mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
+        std::move(proxy_factory));
+
+    if (proxy_factory_remote.is_bound()) {
+      proxy_factory_remote->CreateLoaderAndStart(
           std::move(loader), routing_id, request_id, options, new_request,
           std::move(client), traffic_annotation);
+      proxy_factory = proxy_factory_remote.Unbind();
     } else {
       StartLoadingHttp(std::move(loader), new_request, std::move(client),
                        traffic_annotation,
@@ -294,10 +312,8 @@ void ElectronURLLoaderFactory::StartLoading(
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -324,15 +340,13 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kFree:
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
-        mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-            std::move(client));
-        client_remote->OnComplete(
-            network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        OnComplete(std::move(client), request_id,
+                   network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
       StartLoading(std::move(loader), routing_id, request_id, options, request,
-                   std::move(client), traffic_annotation, proxy_factory, type,
-                   args);
+                   std::move(client), traffic_annotation,
+                   std::move(proxy_factory), type, args);
       break;
   }
 }

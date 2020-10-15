@@ -21,7 +21,7 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   v8::Isolate::Scope scope(isolate_);
   // In the browser process we follow Node.js microtask policy of kExplicit
   // and let the MicrotaskRunner which is a task observer for chromium UI thread
-  // scheduler run the micotask checkpoint. This worked fine because Node.js
+  // scheduler run the microtask checkpoint. This worked fine because Node.js
   // also runs microtasks through its task queue, but after
   // https://github.com/electron/electron/issues/20013 Node.js now performs its
   // own microtask checkpoint and it may happen is some situations that there is

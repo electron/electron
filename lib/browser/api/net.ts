@@ -2,6 +2,7 @@ import * as url from 'url';
 import { Readable, Writable } from 'stream';
 import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
+
 const {
   isValidHeaderName,
   isValidHeaderValue,
@@ -37,12 +38,14 @@ class IncomingMessage extends Readable {
   _shouldPush: boolean;
   _data: (Buffer | null)[];
   _responseHead: NodeJS.ResponseHead;
+  _resume: (() => void) | null;
 
   constructor (responseHead: NodeJS.ResponseHead) {
     super();
     this._shouldPush = false;
     this._data = [];
     this._responseHead = responseHead;
+    this._resume = null;
   }
 
   get statusCode () {
@@ -102,7 +105,9 @@ class IncomingMessage extends Readable {
     throw new Error('HTTP trailers are not supported');
   }
 
-  _storeInternalData (chunk: Buffer | null) {
+  _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
+    // save the network callback for use in _pushInternalData
+    this._resume = resume;
     this._data.push(chunk);
     this._pushInternalData();
   }
@@ -111,6 +116,12 @@ class IncomingMessage extends Readable {
     while (this._shouldPush && this._data.length > 0) {
       const chunk = this._data.shift();
       this._shouldPush = this.push(chunk);
+    }
+    if (this._shouldPush && this._resume) {
+      this._resume();
+      // Reset the callback, so that a new one is used for each
+      // batch of throttled data
+      this._resume = null;
     }
   }
 
@@ -243,7 +254,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     redirectPolicy,
     extraHeaders: options.headers || {},
     body: null as any,
-    useSessionCookies: options.useSessionCookies || false
+    useSessionCookies: options.useSessionCookies,
+    credentials: options.credentials
   };
   for (const [name, value] of Object.entries(urlLoaderOptions.extraHeaders!)) {
     if (!isValidHeaderName(name)) {
@@ -402,11 +414,11 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       const response = this._response = new IncomingMessage(responseHead);
       this.emit('response', response);
     });
-    this._urlLoader.on('data', (event, data) => {
-      this._response!._storeInternalData(Buffer.from(data));
+    this._urlLoader.on('data', (event, data, resume) => {
+      this._response!._storeInternalData(Buffer.from(data), resume);
     });
     this._urlLoader.on('complete', () => {
-      if (this._response) { this._response._storeInternalData(null); }
+      if (this._response) { this._response._storeInternalData(null, null); }
     });
     this._urlLoader.on('error', (event, netErrorString) => {
       const error = new Error(netErrorString);

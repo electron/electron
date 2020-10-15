@@ -128,7 +128,7 @@ void NodeStreamLoader::ReadMore() {
   // Hold the buffer until the write is done.
   buffer_.Reset(isolate_, buffer);
 
-  // Write buffer to mojo pipe asyncronously.
+  // Write buffer to mojo pipe asynchronously.
   is_reading_ = false;
   is_writing_ = true;
   producer_->Write(std::make_unique<mojo::StringDataSource>(

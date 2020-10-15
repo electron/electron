@@ -438,7 +438,7 @@ void ProxyingWebSocket::OnError(int error_code) {
 void ProxyingWebSocket::OnMojoConnectionErrorWithCustomReason(
     uint32_t custom_reason,
     const std::string& description) {
-  // Here we want to nofiy the custom reason to the client, which is why
+  // Here we want to notify the custom reason to the client, which is why
   // we reset |forwarding_handshake_client_| manually.
   forwarding_handshake_client_.ResetWithReason(custom_reason, description);
   OnError(net::ERR_FAILED);

@@ -4,7 +4,7 @@ const { ipc } = process._linkedBinding('electron_renderer_ipc');
 
 const internal = true;
 
-const ipcRendererInternal = new EventEmitter() as any as Electron.IpcRendererInternal;
+const ipcRendererInternal = new EventEmitter() as any as ElectronInternal.IpcRendererInternal;
 ipcRendererInternal.send = function (channel, ...args) {
   return ipc.send(internal, channel, args);
 };

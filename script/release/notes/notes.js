@@ -182,7 +182,7 @@ const parseCommitMessage = (commitMessage, commit) => {
   }
 
   // https://help.github.com/articles/closing-issues-using-keywords/
-  if ((match = body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i))) {
+  if (body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i)) {
     commit.semanticType = commit.semanticType || 'fix';
   }
 

@@ -106,6 +106,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
       storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
+      ssl_config_(network::mojom::SSLConfig::New()),
       weak_factory_(this) {
   // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
   base::ScopedAllowBlockingForTesting allow_blocking;
@@ -444,6 +445,22 @@ ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
     resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
   }
   return resolve_proxy_helper_.get();
+}
+
+network::mojom::SSLConfigPtr ElectronBrowserContext::GetSSLConfig() {
+  return ssl_config_.Clone();
+}
+
+void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  ssl_config_ = std::move(config);
+  if (ssl_config_client_) {
+    ssl_config_client_->OnSSLConfigUpdated(ssl_config_.Clone());
+  }
+}
+
+void ElectronBrowserContext::SetSSLConfigClient(
+    mojo::Remote<network::mojom::SSLConfigClient> client) {
+  ssl_config_client_ = std::move(client);
 }
 
 // static

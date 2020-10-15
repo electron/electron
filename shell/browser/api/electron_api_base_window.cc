@@ -294,6 +294,12 @@ void BaseWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
 
+void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
+  if (Emit("system-context-menu", gfx::Point(x, y))) {
+    *prevent_default = true;
+  }
+}
+
 #if defined(OS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
@@ -620,6 +626,10 @@ void BaseWindow::SetKiosk(bool kiosk) {
 
 bool BaseWindow::IsKiosk() {
   return window_->IsKiosk();
+}
+
+bool BaseWindow::IsTabletMode() const {
+  return window_->IsTabletMode();
 }
 
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
@@ -1160,6 +1170,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
       .SetMethod("setKiosk", &BaseWindow::SetKiosk)
       .SetMethod("isKiosk", &BaseWindow::IsKiosk)
+      .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
       .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
       .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
