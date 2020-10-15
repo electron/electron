@@ -17,7 +17,6 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
-#include "printing/buildflags/buildflags.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
