@@ -17,5 +17,7 @@
 
   "src/electron/patches/angle": "src/third_party/angle",
 
-  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
+
+  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
 }
