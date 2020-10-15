@@ -415,6 +415,6 @@ source_set("chrome_spellchecker") {
   ]
 
   if (enable_builtin_spellchecker) {
-    public_deps += [ "//chrome/common" ]
+    public_deps += [ "//chrome/common:constants" ]
   }
 }
