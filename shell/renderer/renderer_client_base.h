@@ -151,7 +151,7 @@ class RendererClientBase : public content::ContentRendererClient
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
 #endif
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
 #endif
 };
