@@ -236,13 +236,6 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   OverrideLinuxAppDataPath();
 #endif
 
-#if defined(USE_X11)
-  // Installs the X11 error handlers for the browser process used during
-  // startup. They simply print error messages and exit because
-  // we can't shutdown properly while creating and initializing services.
-  ui::SetNullErrorHandlers();
-#endif
-
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
@@ -460,13 +453,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
 }
 
 void ElectronBrowserMainParts::PostMainMessageLoopRun() {
-#if defined(USE_X11)
-  // Unset the X11 error handlers. The X11 error handlers log the errors using a
-  // |PostTask()| on the message-loop. But since the message-loop is in the
-  // process of terminating, this can cause errors.
-  ui::SetEmptyErrorHandlers();
-#endif
-
 #if defined(OS_MAC)
   FreeAppDelegate();
 #endif
