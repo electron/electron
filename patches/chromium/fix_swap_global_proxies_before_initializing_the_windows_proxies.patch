@@ -61,7 +61,7 @@ index 33d85e22813ee15ced7e8c41d1bc070c8dbbdd26..d9ff55f67ffa4208a6fa342ed24cd6e1
    // TODO(dcheng): Temporarily exposed to avoid include cycles. Remove the need
    // for this and remove this getter.
 diff --git a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc b/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
-index 90083d1fa2e2fed8173f6ff993c7a93da36510bf..9fa174ba67b1212a70f8951eda86d12ecb0df9a3 100644
+index f13c18e345543733cfb733f8083be2462079bb9a..1fb9cfa329dcd9d54b38bef3f1a282358e5cf2c4 100644
 --- a/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/window_proxy_manager.cc
 @@ -55,8 +55,11 @@ void WindowProxyManager::ReleaseGlobalProxies(

@@ -180,7 +180,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
       base::UkmSourceId ukm_source_id,
-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -188,7 +187,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,
-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void CreateWebSocket(
       content::RenderFrameHost* frame,
@@ -206,6 +204,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       base::Optional<int64_t> navigation_id,
+      base::UkmSourceId ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,

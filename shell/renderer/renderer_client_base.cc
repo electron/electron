@@ -363,7 +363,7 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #endif
 }
 
-content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
+guest_view::GuestViewContainer* RendererClientBase::CreateBrowserPluginDelegate(
     content::RenderFrame* render_frame,
     const content::WebPluginInfo& info,
     const std::string& mime_type,

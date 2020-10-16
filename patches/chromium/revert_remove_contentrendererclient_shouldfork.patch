@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a1695b0d1 100644
+index 6ed2fa09d79bd35b261cbb028883adc0a71bdbac..42975c626cd4ff3c2c22936e98ebf7e1865e4d0c 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1281,6 +1281,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1269,6 +1269,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
@@ -39,10 +39,10 @@ index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 04d63a82dde7b1ec4259ec90e0733f3536e97ad0..e335dfbfabe643d15e78c691750aed3aab4a006a 100644
+index b5f29c1f2193dfd0f72ab238c9474dc5a20ee235..771637be7ca510e24e16914d2a3565729f3da301 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -127,6 +127,11 @@ class ChromeContentRendererClient
+@@ -123,6 +123,11 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
@@ -55,10 +55,10 @@ index 04d63a82dde7b1ec4259ec90e0733f3536e97ad0..e335dfbfabe643d15e78c691750aed3a
                         ui::PageTransition transition_type,
                         const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960df7f4780f 100644
+index 37f552964f5443188ac813713e06d4a7cf960384..1aa65b17d65211a4528db242e22453cbd287865a 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
-@@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
+@@ -108,6 +108,14 @@ bool ContentRendererClient::HandleNavigation(
  }
  #endif
  
@@ -74,10 +74,10 @@ index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960d
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8b3fda222 100644
+index 541fb915a2096a6ea56860662fff9f1dec9929cf..e4637fc393bafcdeac62cd4257f42451306dbeed 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -229,6 +229,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -214,6 +214,13 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
@@ -92,10 +92,10 @@ index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f9e97c36bca9c70af0c585b81902165c1ac6ba5d..f0c50a4693a5363c0b0f834de0e4924e66a39039 100644
+index 3a01380b4fc373f41d631f585d4576b10129b130..5cafa3e47e96327963706e51af1414b76bcff5e7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5755,6 +5755,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5767,6 +5767,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

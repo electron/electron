@@ -66,10 +66,10 @@ index fef1758aaa81a85009461839ec9aa816e7d196a6..c0f7a1cf5fd4787896b06bce911aabf1
  
  void TurboAssembler::CallPrintf(int arg_count, const CPURegister* args) {
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b299739459be7d4e 100644
+index 78ae11f0d17c156b3debd1d501a22edc42c9fff5..564e6a1a71073727fe6daa847093c556c532620b 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -1888,6 +1888,7 @@ void InstructionSelector::EmitPrepareArguments(
+@@ -1905,6 +1905,7 @@ void InstructionSelector::EmitPrepareArguments(
  
    // Poke the arguments into the stack.
    while (slot >= 0) {
@@ -78,10 +78,10 @@ index 963ce49fa4200e4fe486cd71aaf80ac0768cc18a..7d8537f703e92c56c16ca289b2997394
      PushParameter input1 = slot > 0 ? (*arguments)[slot - 1] : PushParameter();
      // Emit a poke-pair if consecutive parameters have the same type.
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 7d02d5452005be82a4a261cfa1caf765617c5ced..ab6f30a89199d1f0a07a56f12b4bbe9850c181ce 100644
+index 3137eb2ad31847efb9a0c526a2e0f84209d71cfe..723845eee8439f6dc8b5d1de3cc578ecdd1d3e99 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -743,7 +743,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
+@@ -776,7 +776,12 @@ DEFINE_INT(wasm_num_compilation_tasks, 128,
             "maximum number of parallel compilation tasks for wasm")
  DEFINE_DEBUG_BOOL(trace_wasm_native_heap, false,
                    "trace wasm native heap events")
@@ -96,7 +96,7 @@ index 7d02d5452005be82a4a261cfa1caf765617c5ced..ab6f30a89199d1f0a07a56f12b4bbe98
  DEFINE_DEBUG_BOOL(trace_wasm_serialization, false,
                    "trace serialization/deserialization")
 diff --git a/src/wasm/function-compiler.cc b/src/wasm/function-compiler.cc
-index f90df86be380f827dcec5ce79988cc4bddcd8410..96d14bf15a203144228d6d1cdbaf3649778bc52a 100644
+index 5c35f69f2af2199025dddfa577564996dbb6145f..a4e6b0128e909d371d0ede3627494002e281d547 100644
 --- a/src/wasm/function-compiler.cc
 +++ b/src/wasm/function-compiler.cc
 @@ -258,6 +258,7 @@ void WasmCompilationUnit::CompileWasmFunction(Isolate* isolate,
@@ -108,10 +108,10 @@ index f90df86be380f827dcec5ce79988cc4bddcd8410..96d14bf15a203144228d6d1cdbaf3649
          native_module->AddCompiledCode(std::move(result)));
    } else {
 diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
-index 5d8abca5abb6f958b61b9922ce0e6eac80bde244..040f8cfd31a1f9f971fc866ab34657ad3f7c003a 100644
+index 5e8ed5475bb064cb657069242ce7517de7f5f8e2..5652bb407da3646e55c42492b3e9facec4556367 100644
 --- a/src/wasm/wasm-code-manager.h
 +++ b/src/wasm/wasm-code-manager.h
-@@ -880,7 +880,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+@@ -886,7 +886,7 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
  //    and even if we did, the resulting set of pages may be fragmented.
  //    Currently, we try and keep the number of syscalls low.
  // -  similar argument for debug time.
@@ -121,10 +121,10 @@ index 5d8abca5abb6f958b61b9922ce0e6eac80bde244..040f8cfd31a1f9f971fc866ab34657ad
    explicit NativeModuleModificationScope(NativeModule* native_module);
    ~NativeModuleModificationScope();
 diff --git a/src/wasm/wasm-objects.cc b/src/wasm/wasm-objects.cc
-index 923cb415d4ab5a8d4467d1dfc658c449b7901d27..1d079f9bb1dad404e79a67c8a52060f19ffaf4eb 100644
+index 0666f88619b9e724fe79d8fad817b8acf99a01b7..5274cad0d0aed50bbdea66ff1666af556d994879 100644
 --- a/src/wasm/wasm-objects.cc
 +++ b/src/wasm/wasm-objects.cc
-@@ -1454,6 +1454,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
+@@ -1512,6 +1512,7 @@ void WasmInstanceObject::ImportWasmJSFunctionIntoTable(
      wasm::WasmCompilationResult result = compiler::CompileWasmImportCallWrapper(
          isolate->wasm_engine(), &env, kind, sig, false,
          shared.internal_formal_parameter_count());

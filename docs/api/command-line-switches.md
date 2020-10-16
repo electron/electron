@@ -171,14 +171,6 @@ authentication [per Chromium issue](https://bugs.chromium.org/p/chromium/issues/
 
 Enables remote debugging over HTTP on the specified `port`.
 
-### --ppapi-flash-path=`path`
-
-Sets the `path` of the pepper flash plugin.
-
-### --ppapi-flash-version=`version`
-
-Sets the `version` of the pepper flash plugin.
-
 ### --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally

@@ -43,6 +43,7 @@
 #include "ui/events/event_constants.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
@@ -193,11 +194,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   current_device_scale_factor_ = kDefaultScaleFactor;
 
   delegated_frame_host_allocator_.GenerateId();
-  delegated_frame_host_allocation_ =
-      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_surface_id_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
   compositor_allocator_.GenerateId();
-  compositor_allocation_ =
-      compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
   delegated_frame_host_client_ =
       std::make_unique<ElectronDelegatedFrameHostClient>(this);
@@ -305,9 +305,8 @@ void OffScreenRenderWidgetHostView::Show() {
   is_showing_ = true;
 
   delegated_frame_host_->AttachToCompositor(compositor_.get());
-  delegated_frame_host_->WasShown(
-      GetLocalSurfaceIdAllocation().local_surface_id(),
-      GetRootLayer()->bounds().size(), {});
+  delegated_frame_host_->WasShown(GetLocalSurfaceId(),
+                                  GetRootLayer()->bounds().size(), {});
 
   if (render_widget_host_)
     render_widget_host_->WasShown({});
@@ -359,9 +358,7 @@ base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
-void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {
-  NOTREACHED();
-}
+void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {}
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
   return size_;
@@ -669,11 +666,11 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
 
 gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
   if (IsPopupWidget()) {
-    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
-                                   popup_position_.size());
+    return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
+        popup_position_.size(), current_device_scale_factor_));
   } else {
-    return gfx::ConvertSizeToPixel(current_device_scale_factor_,
-                                   GetViewBounds().size());
+    return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
+        GetViewBounds().size(), current_device_scale_factor_));
   }
 }
 
@@ -697,16 +694,18 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
 
       if (popup_host_view_ && !popup_host_view_->GetBacking().drawsNothing()) {
         gfx::Rect rect = popup_host_view_->popup_position_;
-        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
-            current_device_scale_factor_, rect.origin());
+        gfx::Point origin_in_pixels =
+            gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
+                rect.origin(), current_device_scale_factor_));
         canvas.writePixels(popup_host_view_->GetBacking(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
 
       for (auto* proxy_view : proxy_views_) {
         gfx::Rect rect = proxy_view->GetBounds();
-        gfx::Point origin_in_pixels = gfx::ConvertPointToPixel(
-            current_device_scale_factor_, rect.origin());
+        gfx::Point origin_in_pixels =
+            gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
+                rect.origin(), current_device_scale_factor_));
         canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
@@ -722,14 +721,14 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
 }
 
 void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect) {
-  InvalidateBounds(
-      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
+  InvalidateBounds(gfx::ToEnclosingRect(
+      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor_)));
 }
 
 void OffScreenRenderWidgetHostView::OnProxyViewPaint(
     const gfx::Rect& damage_rect) {
-  InvalidateBounds(
-      gfx::ConvertRectToPixel(current_device_scale_factor_, damage_rect));
+  InvalidateBounds(gfx::ToEnclosingRect(
+      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor_)));
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -941,9 +940,9 @@ ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
   return root_layer_.get();
 }
 
-const viz::LocalSurfaceIdAllocation&
-OffScreenRenderWidgetHostView::GetLocalSurfaceIdAllocation() const {
-  return delegated_frame_host_allocation_;
+const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
+    const {
+  return delegated_frame_host_surface_id_;
 }
 
 content::DelegatedFrameHost*
@@ -995,23 +994,22 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
 
-  const gfx::Size& size_in_pixels =
-      gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
+  const gfx::Size& size_in_pixels = gfx::ToFlooredSize(
+      gfx::ConvertSizeToPixels(size, current_device_scale_factor_));
 
   if (compositor_) {
     compositor_allocator_.GenerateId();
-    compositor_allocation_ =
-        compositor_allocator_.GetCurrentLocalSurfaceIdAllocation();
+    compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
     compositor_->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
-                                 compositor_allocation_);
+                                 compositor_surface_id_);
   }
 
   delegated_frame_host_allocator_.GenerateId();
-  delegated_frame_host_allocation_ =
-      delegated_frame_host_allocator_.GetCurrentLocalSurfaceIdAllocation();
+  delegated_frame_host_surface_id_ =
+      delegated_frame_host_allocator_.GetCurrentLocalSurfaceId();
 
   GetDelegatedFrameHost()->EmbedSurface(
-      delegated_frame_host_allocation_.local_surface_id(), size,
+      delegated_frame_host_surface_id_, size,
       cc::DeadlinePolicy::UseDefaultDeadline());
 
   // Note that |render_widget_host_| will retrieve resize parameters from the

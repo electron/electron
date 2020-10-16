@@ -123,10 +123,6 @@
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"  // nogncheck
-#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
-
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -609,9 +605,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
 #endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->preferred_color_scheme = native_theme->ShouldUseDarkColors()
-                                      ? blink::PreferredColorScheme::kDark
-                                      : blink::PreferredColorScheme::kLight;
+  prefs->preferred_color_scheme =
+      native_theme->ShouldUseDarkColors()
+          ? blink::mojom::PreferredColorScheme::kDark
+          : blink::mojom::PreferredColorScheme::kLight;
 
   SetFontDefaults(prefs);
 
@@ -821,12 +818,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 }
 
 void ElectronBrowserClient::DidCreatePpapiPlugin(
-    content::BrowserPpapiHost* host) {
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-  host->GetPpapiHost()->AddHostFactoryFilter(
-      base::WrapUnique(new ChromeBrowserPepperHostFactory(host)));
-#endif
-}
+    content::BrowserPpapiHost* host) {}
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
@@ -1294,13 +1286,12 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
     base::UkmSourceId ukm_source_id,
-    NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   content::BrowserContext* context = web_contents->GetBrowserContext();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  uniquely_owned_factories->emplace(
+  factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionNavigationURLLoaderFactory(
           context, ukm_source_id,
@@ -1382,7 +1373,6 @@ class FileURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
-    NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
@@ -1398,8 +1388,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
                                                              render_frame_id);
   if (factory)
-    uniquely_owned_factories->emplace(extensions::kExtensionScheme,
-                                      std::move(factory));
+    factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
   if (!web_contents)
     return;
@@ -1499,6 +1488,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
     base::Optional<int64_t> navigation_id,
+    base::UkmSourceId ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
@@ -1697,7 +1687,7 @@ void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
     content::PosixFileDescriptorInfo* mappings) {
   int crash_signal_fd = GetCrashSignalFD(command_line);
   if (crash_signal_fd >= 0) {
-    mappings->Share(service_manager::kCrashDumpSignal, crash_signal_fd);
+    mappings->Share(kCrashDumpSignal, crash_signal_fd);
   }
 }
 #endif

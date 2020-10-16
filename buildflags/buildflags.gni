@@ -28,9 +28,6 @@ declare_args() {
   # Should not be enabled for release build.
   enable_fake_location_provider = !is_official_build
 
-  # Enable flash plugin support.
-  enable_pepper_flash = true
-
   # Enable Chrome extensions support.
   enable_electron_extensions = true
 

@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b4d200164829d0d34c2511a07eb0cc3d046d6fa3..e15635d66859211ac91b5beff36beffd4dfe4807 100644
+index 7332e25e8a182e35ffdba0a4e98c01641e60ee8a..fdb952a2ea9b80d7f75edb250a494f0ddad639be 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -214,6 +214,25 @@ struct CTPolicy {
+@@ -215,6 +215,25 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -39,7 +39,7 @@ index b4d200164829d0d34c2511a07eb0cc3d046d6fa3..e15635d66859211ac91b5beff36beffd
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -652,6 +671,8 @@ struct URLLoaderFactoryParams {
+@@ -641,6 +660,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
@@ -49,10 +49,10 @@ index b4d200164829d0d34c2511a07eb0cc3d046d6fa3..e15635d66859211ac91b5beff36beffd
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c8ee10013 100644
+index 65893457556402e93ea85e93c48ca8f4a00bb1c1..cf05119ade526ae2b48b9e3b223d4b318e94900c 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -483,6 +483,7 @@ URLLoader::URLLoader(
+@@ -459,6 +459,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer)
-@@ -546,6 +547,11 @@ URLLoader::URLLoader(
+@@ -521,6 +522,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1119,7 +1125,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1126,7 +1132,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1135,11 +1141,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1142,11 +1148,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index 5f05f9a5385f5b424b2d66a5ac19e878f09f24f4..f5ce4de54b0c71f2099753198794503c
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index a624b8c43f49a7db975d8deda753b18583db5d72..cce8d7e0b8847528715aca4704db5194829c5bbc 100644
+index 70518f42849e5d1d6e1dd0faf4cae866ba39ef09..b081be5d939b17ecaffa85e75ebb012444bb2bf1 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -118,6 +118,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
