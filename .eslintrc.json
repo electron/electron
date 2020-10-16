@@ -33,13 +33,32 @@
     "ENABLE_DESKTOP_CAPTURER": "readonly",
     "ENABLE_REMOTE_MODULE": "readonly",
     "ENABLE_VIEWS_API": "readonly",
-    "BigInt": "readonly"
+    "BigInt": "readonly",
+    "Electron": "readonly",
+    "ElectronInternal": "readonly",
+    "NodeJS": "readonly",
+    "BufferEncoding": "readonly",
+    "BrowserWindow": "readonly",
+    "WeakRef": "readonly",
+    "ContextMenuItem": "readonly",
+    "WindowProxy": "readonly",
+    "VisibilityState": "readonly",
+    "NodeModule": "readonly",
+    "Mocha": "readonly"
   },
   "overrides": [
     {
       "files": "*.js",
       "rules": {
           "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      "files": "*.ts",
+      "rules": {
+        "no-redeclare": "off",
+        "@typescript-eslint/no-redeclare": ["error"],
+        "no-use-before-define": "off"
       }
     },
     {
