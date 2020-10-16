@@ -1003,7 +1003,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 
 void NativeWindowViews::SetContentProtection(bool enable) {
 #if defined(OS_WIN)
-  DWORD affinity = enable ? WDA_MONITOR : WDA_NONE;
+  DWORD affinity = enable ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE;
   ::SetWindowDisplayAffinity(GetAcceleratedWidget(), affinity);
 #endif
 }
