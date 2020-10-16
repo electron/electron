@@ -1,62 +1,97 @@
 # Keyboard Shortcuts
 
-> Configure local and global keyboard shortcuts
+## Overview
 
-## Local Shortcuts
+This feature allows you to configure local and global keyboard shortcuts
+for your Electron application.
 
-You can use the [Menu] module to configure keyboard shortcuts that will
-be triggered only when the app is focused. To do so, specify an
-[`accelerator`] property when creating a [MenuItem].
+## Example
+
+### Local Shortcuts
+
+Local keyboard shortcuts are triggered only when the application is focused.
+To configure a local keyboard shortcut, you need to specify an [`accelerator`]
+property when creating a [MenuItem] within the [Menu] module.
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```js
 const { Menu, MenuItem } = require('electron')
+
 const menu = new Menu()
-
 menu.append(new MenuItem({
-  label: 'Print',
-  accelerator: 'CmdOrCtrl+P',
-  click: () => { console.log('time to print stuff') }
+  label: 'Electron',
+  submenu: [{
+    role: 'help',
+    accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
+    click: () => { console.log('Electron rocks!') }
+  }]
 }))
+
+Menu.setApplicationMenu(menu)
 ```
 
-You can configure different key combinations based on the user's operating system.
+> NOTE: From the code above you can see that the key combination differs based on the
+user's operating system: for Mac it is `Alt+Cmd+I` whereas for Linux and
+Windows it is `Ctrl+Shift+I`.
 
-```js
-{
-  accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I'
-}
-```
+After launching the Electron application, you should see the application menu
+along with the local shortcut you just defined:
 
-## Global Shortcuts
+![Menu with a local shortcut](../images/local-shortcut.png)
 
-You can use the [globalShortcut] module to detect keyboard events even when
-the application does not have keyboard focus.
+If you click `Help` or press the defined key combination and then open
+the Console, you will see the message that was generated after
+triggering the `click` event: "Electron rocks!"
+
+### Global Shortcuts
+
+To configure a local keyboard shortcut, you need to use the [globalShortcut]
+module to detect keyboard events even when the application does not have
+keyboard focus.
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```js
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {
-  globalShortcut.register('CommandOrControl+X', () => {
-    console.log('CommandOrControl+X is pressed')
+  globalShortcut.register('Alt+CommandOrControl+I', () => {
+    console.log('Electron loves global shortcuts!')
   })
-})
+}).then(createWindow)
 ```
 
-## Shortcuts within a BrowserWindow
+After launching the Electron application, if you press the defined key
+combination and then open the Console, you will see that Electron loves global
+shortcuts!
 
-If you want to handle keyboard shortcuts for a [BrowserWindow], you can use the `keyup` and `keydown` event listeners on the window object inside the renderer process.
+### Shortcuts within a BrowserWindow
+
+#### Overview
+
+If you want to handle keyboard shortcuts for a [BrowserWindow], you can use the
+`keyup` and `keydown` event listeners on the window object inside the renderer
+process.
 
 ```js
 window.addEventListener('keyup', doSomething, true)
 ```
 
-Note the third parameter `true` which means the listener will always receive key presses before other listeners so they can't have `stopPropagation()` called on them.
+Note the third parameter `true` which means the listener will always receive
+key presses before other listeners so they can't have `stopPropagation()`
+called on them.
 
 The [`before-input-event`](../api/web-contents.md#event-before-input-event) event
 is emitted before dispatching `keydown` and `keyup` events in the page. It can
 be used to catch and handle custom shortcuts that are not visible in the menu.
 
-If you don't want to do manual shortcut parsing there are libraries that do advanced key detection such as [mousetrap].
+If you don't want to do manual shortcut parsing there are libraries that do
+advanced key detection such as [mousetrap].
 
 ```js
 Mousetrap.bind('4', () => { console.log('4') })
