@@ -13,6 +13,7 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "net/http/http_content_disposition.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
@@ -22,7 +23,6 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "net/http/http_content_disposition.h"
 
 namespace gin {
 
