@@ -53,11 +53,13 @@ def apply_mtimes(mtime_cache):
 
         with open(file_path, "rb") as f:
             if hashlib.sha256(f.read()).hexdigest() == metadata["sha256"]:
-                updates.append([file_path, metadata["atime"], metadata["mtime"]])
+                updates.append(
+                    [file_path, metadata["atime"], metadata["mtime"]]
+                )
 
-    # We can't atomically set the times for all files at once, but by waiting to
-    # update until we've checked all the files we at least have less chance of
-    # only updating some files due to an error on one of the files
+    # We can't atomically set the times for all files at once, but by waiting
+    # to update until we've checked all the files we at least have less chance
+    # of only updating some files due to an error on one of the files
     for [file_path, atime, mtime] in updates:
         os.utime(file_path, (atime, mtime))
 
@@ -80,13 +82,19 @@ def set_mtimes(patches_config, mtime):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Make mtime cache for patched files")
-    subparsers = parser.add_subparsers(dest="operation", help="sub-command help")
+    parser = argparse.ArgumentParser(
+        description="Make mtime cache for patched files"
+    )
+    subparsers = parser.add_subparsers(
+        dest="operation", help="sub-command help"
+    )
 
     apply_subparser = subparsers.add_parser(
         "apply", help="apply the mtimes from the cache"
     )
-    apply_subparser.add_argument("--cache-file", required=True, help="mtime cache file")
+    apply_subparser.add_argument(
+        "--cache-file", required=True, help="mtime cache file"
+    )
     apply_subparser.add_argument(
         "--preserve-cache",
         action="store_true",
@@ -107,7 +115,10 @@ def main():
         "set", help="set all mtimes to a specific date"
     )
     set_subparser.add_argument(
-        "--mtime", type=int, required=True, help="mtime to use for all patched files"
+        "--mtime",
+        type=int,
+        required=True,
+        help="mtime to use for all patched files",
     )
 
     for subparser in [generate_subparser, set_subparser]:
@@ -125,7 +136,10 @@ def main():
             mtime_cache = generate_cache(json.load(args.patches_config))
             json.dump(mtime_cache, args.cache_file, indent=2)
         except Exception:
-            print("ERROR: failed to generate mtime cache for patches", file=sys.stderr)
+            print(
+                "ERROR: failed to generate mtime cache for patches",
+                file=sys.stderr,
+            )
             traceback.print_exc(file=sys.stderr)
             return 0
     elif args.operation == "apply":
@@ -140,7 +154,10 @@ def main():
             if not args.preserve_cache:
                 os.remove(args.cache_file)
         except Exception:
-            print("ERROR: failed to apply mtime cache for patches", file=sys.stderr)
+            print(
+                "ERROR: failed to apply mtime cache for patches",
+                file=sys.stderr,
+            )
             traceback.print_exc(file=sys.stderr)
             return 0
     elif args.operation == "set":
@@ -151,7 +168,8 @@ def main():
             user_input = input
 
         answer = user_input(
-            "WARNING: Manually setting mtimes could mess up your build. If you're sure, type yes: "
+            "WARNING: Manually setting mtimes could mess up your build. "
+            "If you're sure, type yes: "
         )
 
         if answer.lower() != "yes":
