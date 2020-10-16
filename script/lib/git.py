@@ -62,6 +62,7 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
   command = ['git'] + root_args + ['am'] + args
   proc = subprocess.Popen(
       command,
+      bufsize=-1,
       stdin=subprocess.PIPE)
   proc.communicate(patch_data.encode('utf-8'))
   if proc.returncode != 0:
