@@ -44,4 +44,7 @@ that they are completely separate from your own `BrowserWindow` content and
 their position is not controlled by the DOM or CSS. Instead, it is controlled
 by setting the bounds in the Main process.
 
-`BrowserViews` offer the greatest control over their contents, since they implement the `webContents` similarly to how the `BrowserWindow` does it. However, as they are not part of your DOM but are overlaid on top of them, which means you will have to manage their position manually.
+`BrowserViews` offer the greatest control over their contents, since they
+implement the `webContents` similarly to how the `BrowserWindow` does it.
+However, as `BrowserViews` are not a part of your DOM, but are overlaid on top
+of them, which means that you will have to manage their position manually.
