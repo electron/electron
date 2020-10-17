@@ -29,7 +29,7 @@ class WMState;
 }
 #endif
 
-#if defined(OS_LINUX)
+#if defined(USE_X11)
 namespace ui {
 class GtkUiDelegate;
 }
@@ -133,6 +133,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_X11)
   std::unique_ptr<ui::GtkUiDelegate> gtk_ui_delegate_;
+#endif
+
+#if defined(OS_LINUX)
   // Used to notify the native theme of changes to dark mode.
   std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif

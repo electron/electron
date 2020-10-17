@@ -109,7 +109,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
-#if defined(OS_WIN) || defined(USE_X11)
+#if defined(OS_WIN) || defined(OS_LINUX)
   bool resizable;
   if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);

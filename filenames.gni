@@ -1,3 +1,5 @@
+import("//build/config/ui.gni")
+
 filenames = {
   default_app_ts_sources = [
     "default_app/default_app.ts",
@@ -22,20 +24,10 @@ filenames = {
   ]
 
   lib_sources_linux = [
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/file_dialog_gtk.cc",
     "shell/browser/ui/message_box_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.h",
-    "shell/browser/ui/views/global_menu_bar_x11.cc",
-    "shell/browser/ui/views/global_menu_bar_x11.h",
-    "shell/browser/ui/x/event_disabler.cc",
-    "shell/browser/ui/x/event_disabler.h",
-    "shell/browser/ui/x/window_state_watcher.cc",
-    "shell/browser/ui/x/window_state_watcher.h",
-    "shell/browser/ui/x/x_window_utils.cc",
-    "shell/browser/ui/x/x_window_utils.h",
     "shell/browser/browser_linux.cc",
     "shell/browser/lib/power_observer_linux.cc",
     "shell/browser/lib/power_observer_linux.h",
@@ -641,6 +633,21 @@ filenames = {
     "shell/utility/electron_content_utility_client.cc",
     "shell/utility/electron_content_utility_client.h",
   ]
+
+  if (use_x11) {
+    lib_sources_linux += [
+      "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
+      "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
+      "shell/browser/ui/views/global_menu_bar_x11.cc",
+      "shell/browser/ui/views/global_menu_bar_x11.h",
+      "shell/browser/ui/x/event_disabler.cc",
+      "shell/browser/ui/x/event_disabler.h",
+      "shell/browser/ui/x/window_state_watcher.cc",
+      "shell/browser/ui/x/window_state_watcher.h",
+      "shell/browser/ui/x/x_window_utils.cc",
+      "shell/browser/ui/x/x_window_utils.h",
+    ]
+  }
 
   lib_sources_nss = [
     "chromium_src/chrome/browser/certificate_manager_model.cc",
