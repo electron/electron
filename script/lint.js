@@ -32,6 +32,8 @@ const BLACKLIST = new Set([
   ['spec', 'ts-smoke', 'runner.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)));
 
+const IS_WINDOWS = process.platform === 'win32';
+
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = Object.assign({ stdio: 'inherit' }, opts);
   const status = childProcess.spawnSync(cmd, args, opts).status;
@@ -39,7 +41,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 }
 
 function cpplint (args) {
-  const result = childProcess.spawnSync('cpplint.py', args, { encoding: 'utf8' });
+  const result = childProcess.spawnSync(IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py', args, { encoding: 'utf8', shell: true });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
     for (const line of result.stderr.split(/[\r\n]+/)) {
@@ -48,8 +50,9 @@ function cpplint (args) {
       }
     }
   }
-  if (result.status) {
-    process.exit(result.status);
+  if (result.status !== 0) {
+    if (result.error) console.error(result.error);
+    process.exit(result.status || 1);
   }
 }
 
