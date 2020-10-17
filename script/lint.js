@@ -98,9 +98,39 @@ const LINTERS = [{
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint');
-    const args = ['--cache', '--ext', '.js,.ts', ...filenames];
+    const args = ['--cache', '--ext', '.js,.ts'];
     if (opts.fix) args.unshift('--fix');
-    spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT });
+    // Windows has a max command line length of 2047 characters, so we can't provide
+    // all of the filenames without going over that. To work around it, run eslint
+    // multiple times and chunk the filenames so that each run is under that limit.
+    // Use a much higher limit on other platforms which will effectively be a no-op.
+    const MAX_FILENAME_ARGS_LENGTH = IS_WINDOWS ? 1900 : 100 * 1024;
+    const cmdOpts = { stdio: 'inherit', shell: IS_WINDOWS, cwd: SOURCE_ROOT };
+    if (IS_WINDOWS) {
+      // When running with shell spaces in filenames are problematic
+      filenames = filenames.map(filename => `"${filename}"`);
+    }
+    const chunkedFilenames = filenames.reduce((chunkedFilenames, filename) => {
+      const currentChunk = chunkedFilenames[chunkedFilenames.length - 1];
+      const currentChunkLength = currentChunk.reduce((totalLength, _filename) => totalLength + _filename.length, 0);
+      if (currentChunkLength + filename.length > MAX_FILENAME_ARGS_LENGTH) {
+        chunkedFilenames.push([filename]);
+      } else {
+        currentChunk.push(filename);
+      }
+      return chunkedFilenames;
+    }, [[]]);
+    const allOk = chunkedFilenames.map(filenames => {
+      const result = childProcess.spawnSync(cmd, [...args, ...filenames], cmdOpts);
+      if (result.error) {
+        console.error(result.error);
+        process.exit(result.status || 1);
+      }
+      return result.status === 0;
+    }).every(x => x);
+    if (!allOk) {
+      process.exit(1);
+    }
   }
 }, {
   key: 'gn',
