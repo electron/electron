@@ -53,7 +53,6 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -167,7 +166,8 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enables printing from Chrome PDF viewer.
-  pdf::PepperPDFHost::SetPrintClient(new ChromePDFPrintClient());
+  pdf_print_client_.reset(new ChromePDFPrintClient());
+  pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
