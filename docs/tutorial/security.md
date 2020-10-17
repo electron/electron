@@ -814,6 +814,6 @@ which potential security issues are not as widely known.
 [web-contents]: ../api/web-contents.md
 [new-window]: ../api/web-contents.md#event-new-window
 [will-navigate]: ../api/web-contents.md#event-will-navigate
-[open-external]: ../api/shell.md#shellopenexternalurl-options-callback
+[open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md
 [responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure

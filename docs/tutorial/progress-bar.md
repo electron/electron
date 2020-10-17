@@ -32,4 +32,4 @@ win.setProgressBar(0.5)
 ```
 
 [taskbar-progress-image]: https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png
-[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress-options
