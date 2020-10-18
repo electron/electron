@@ -37,6 +37,8 @@ const getOrCreateArchive = (archivePath: string) => {
   return newArchive;
 };
 
+const asarRe = /\.asar/i;
+
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer) => {
   // Shortcut for disabled asar.
@@ -48,6 +50,7 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
     archivePath = archivePathOrBuffer.toString();
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
+  if(!asarRe.test(archivePath)) return { isAsar: <const>false };
 
   return asar.splitPath(path.normalize(archivePath));
 };
