@@ -210,6 +210,7 @@ class InspectableWebContents
   bool can_dock_;
   std::string dock_state_;
   bool activate_ = true;
+  bool is_docked_;
 
   InspectableWebContentsDelegate* delegate_;  // weak references.
 
