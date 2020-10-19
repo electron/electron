@@ -1176,7 +1176,7 @@ void WebContents::DidStopLoading() {
 
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences &&
-      web_preferences->IsEnabled(options::kPreferredSizeMode))
+      web_preferences->IsEnabled(options::kEnablePreferredSizeMode))
     web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 }
 

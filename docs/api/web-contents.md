@@ -847,8 +847,8 @@ Returns:
 
 Emitted when the `WebContents` preferred size has changed.
 
-This event will only be emitted when `preferredSizeMode` is enabled in
-`webPreferences`.
+This event will only be emitted when `enablePreferredSizeMode` is set to `true`
+in `webPreferences`.
 
 ### Instance Methods
 
