@@ -32,9 +32,9 @@ const int kMaxScanRetries = 5;
 void OnDeviceChosen(const content::BluetoothChooser::EventHandler& handler,
                     const std::string& device_id) {
   if (device_id.empty()) {
-    handler.Run(content::BluetoothChooser::Event::CANCELLED, device_id);
+    handler.Run(content::BluetoothChooserEvent::CANCELLED, device_id);
   } else {
-    handler.Run(content::BluetoothChooser::Event::SELECTED, device_id);
+    handler.Run(content::BluetoothChooserEvent::SELECTED, device_id);
   }
 }
 
@@ -50,7 +50,7 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {
     case AdapterPresence::ABSENT:
     case AdapterPresence::POWERED_OFF:
-      event_handler_.Run(Event::CANCELLED, "");
+      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case AdapterPresence::POWERED_ON:
       break;
@@ -60,12 +60,13 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
 void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
-      event_handler_.Run(Event::CANCELLED, "");
+      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case DiscoveryState::IDLE:
       if (device_map_.empty()) {
-        auto event =
-            ++num_retries_ > kMaxScanRetries ? Event::CANCELLED : Event::RESCAN;
+        auto event = ++num_retries_ > kMaxScanRetries
+                         ? content::BluetoothChooserEvent::CANCELLED
+                         : content::BluetoothChooserEvent::RESCAN;
         event_handler_.Run(event, "");
       } else {
         bool prevent_default = api_web_contents_->Emit(
@@ -74,7 +75,8 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
         if (!prevent_default) {
           auto it = device_map_.begin();
           auto device_id = it->first;
-          event_handler_.Run(Event::SELECTED, device_id);
+          event_handler_.Run(content::BluetoothChooserEvent::SELECTED,
+                             device_id);
         }
       }
       break;
@@ -109,7 +111,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
     // If emit not implimented select first device that matches the filters
     //  provided.
     if (!prevent_default) {
-      event_handler_.Run(Event::SELECTED, device_id);
+      event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);
     }
   }
 }

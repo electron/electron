@@ -32,17 +32,19 @@ index c5125495b4d178ffb18be4d2d9670f7556412cbd..cddb321abb938c667a4a2089f87eab99
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index 45e3cf52684d8ce58a33f61c32a2fdfff40d5a4f..b0a34b13cd521754ce8ff630d2fdd15ddbda35f9 100644
+index 47284879c3c16d355e476a8d283f97df93a3e021..d40d7fedeff3283f9108f938edf55c7f7197601e 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-@@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
-   modifiers |= accelerator.IsShiftDown() ? ShiftMask : 0;
-   modifiers |= accelerator.IsCtrlDown() ? ControlMask : 0;
-   modifiers |= accelerator.IsAltDown() ? Mod1Mask : 0;
-+  modifiers |= accelerator.IsCmdDown() ? Mod4Mask : 0;
- 
-   return modifiers;
+@@ -38,7 +38,8 @@ x11::ModMask GetNativeModifiers(const ui::Accelerator& accelerator) {
+   constexpr auto kNoMods = x11::ModMask{};
+   return (accelerator.IsShiftDown() ? x11::ModMask::Shift : kNoMods) |
+          (accelerator.IsCtrlDown() ? x11::ModMask::Control : kNoMods) |
+-         (accelerator.IsAltDown() ? x11::ModMask::c_1 : kNoMods);
++         (accelerator.IsAltDown() ? x11::ModMask::c_1 : kNoMods) |
++         (accelerator.IsCmdDown() ? x11::ModMask::c_4 : kNoMods);
  }
+ 
+ }  // namespace
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc

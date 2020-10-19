@@ -83,9 +83,8 @@ void MoveWindowAbove(x11::Window window, x11::Window other_window) {
 }
 
 bool IsWindowValid(x11::Window window) {
-  XWindowAttributes attrs;
-  return XGetWindowAttributes(gfx::GetXDisplay(), static_cast<uint32_t>(window),
-                              &attrs);
+  auto* conn = x11::Connection::Get();
+  return conn->GetWindowAttributes({window}).Sync();
 }
 
 }  // namespace electron

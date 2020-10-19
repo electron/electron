@@ -27,8 +27,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
  protected:
   // content::BrowserPluginGuestManager:
-  content::WebContents* GetGuestByInstanceID(int owner_process_id,
-                                             int element_instance_id) override;
   bool ForEachGuest(content::WebContents* embedder,
                     const GuestCallback& callback) override;
 

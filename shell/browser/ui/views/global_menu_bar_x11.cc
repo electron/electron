@@ -8,6 +8,7 @@
 #include <glib-object.h>
 
 #include "base/logging.h"
+#include "base/strings/string16.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"
@@ -17,7 +18,11 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
+#include "ui/events/keycodes/keysym_to_unicode.h"
+#include "ui/gfx/x/connection.h"
+#include "ui/gfx/x/keysyms/keysyms.h"
 #include "ui/gfx/x/x11.h"
+#include "ui/gfx/x/xproto.h"
 
 // libdbusmenu-glib types
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
@@ -286,13 +291,14 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
   if (accelerator.IsShiftDown())
     g_variant_builder_add(&builder, "s", "Shift");
 
-  char* name =
-      XKeysymToString(XKeysymForWindowsKeyCode(accelerator.key_code(), false));
-  if (!name) {
+  uint16_t keysym = ui::GetUnicodeCharacterFromXKeySym(
+      XKeysymForWindowsKeyCode(accelerator.key_code(), false));
+  if (!keysym) {
     NOTIMPLEMENTED();
     return;
   }
-  g_variant_builder_add(&builder, "s", name);
+  std::string name = base::UTF16ToUTF8(base::string16(1, keysym));
+  g_variant_builder_add(&builder, "s", name.c_str());
 
   GVariant* inside_array = g_variant_builder_end(&builder);
   g_variant_builder_init(&builder, G_VARIANT_TYPE_ARRAY);

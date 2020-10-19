@@ -22,17 +22,6 @@ ContentSettingsObserver::ContentSettingsObserver(
 
 ContentSettingsObserver::~ContentSettingsObserver() = default;
 
-bool ContentSettingsObserver::AllowStorage(bool local) {
-  blink::WebFrame* frame = render_frame()->GetWebFrame();
-  if (frame->GetSecurityOrigin().IsOpaque() ||
-      frame->Top()->GetSecurityOrigin().IsOpaque())
-    return false;
-  auto origin = blink::WebStringToGURL(frame->GetSecurityOrigin().ToString());
-  if (!origin.IsStandard())
-    return false;
-  return true;
-}
-
 bool ContentSettingsObserver::AllowStorageAccessSync(StorageType storage_type) {
   if (storage_type == StorageType::kDatabase &&
       // Command line support is still relevant for extensions.

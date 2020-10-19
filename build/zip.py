@@ -13,27 +13,30 @@ EXTENSIONS_TO_SKIP = [
 ]
 
 PATHS_TO_SKIP = [
-  'angledata', #Skipping because it is an output of //ui/gl that we don't need
-  './libVkICD_mock_', #Skipping because these are outputs that we don't need
-  './VkICD_mock_', #Skipping because these are outputs that we don't need
-
-  # Skipping because its an output of create_bundle from //build/config/mac/rules.gni
+  # Skip because it is an output of //ui/gl that we don't need.
+  'angledata',
+  # Skip because these are outputs that we don't need.
+  './libVkICD_mock_',
+  # Skip because these are outputs that we don't need.
+  './VkICD_mock_',
+  # Skip because its an output of create_bundle from //build/config/mac/rules.gni
   # that we don't need
   'Electron.dSYM',
-
+  # Refs https://chromium-review.googlesource.com/c/angle/angle/+/2425197.
+  # Remove this when Angle themselves remove the file: https://issuetracker.google.com/issues/168736059
+  'gen/angle/angle_commit.h',
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
   # ship it.
   'pyproto',
-
   # On Windows, this binary doesn't exist (the crashpad handler is built-in).
   # On MacOS, the binary is called 'chrome_crashpad_handler' and is inside the
   # app bundle.
   # On Linux, we don't use crashpad, but this binary is still built for some
   # reason. Exclude it from the zip.
   './crashpad_handler',
-
-  'resources/inspector', #Skipping because these are outputs that we don't need
+  # Skip because these are outputs that we don't need.
+  'resources/inspector',
 ]
 
 def skip_path(dep, dist_zip, target_cpu):

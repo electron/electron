@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 591c018e1e7b1f859c9871785371c60afdff89a7..fe30fc94f752e08839913868b8464a349fe541fe 100644
+index 33f453f91f067c821af1cd81fae4b77adab98b55..e251376b5765e0a4f277155efb2254440aebfd32 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -115,6 +115,11 @@
+@@ -114,6 +114,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -22,7 +22,7 @@ index 591c018e1e7b1f859c9871785371c60afdff89a7..fe30fc94f752e08839913868b8464a34
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -372,6 +377,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
+@@ -371,6 +376,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
  
  }  // namespace
  
@@ -178,7 +178,7 @@ index 591c018e1e7b1f859c9871785371c60afdff89a7..fe30fc94f752e08839913868b8464a34
    std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
        std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 615d42ea815743b264adb6615cff89c7677819a4..e2a565663abea1b13beaaa33e83d8102da693e35 100644
+index e1a8746bcdaf61c181566369b380af5ead3a7796..1372f6f6ca4899cc7b230a3cd1b26db4c16325b5 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -86,6 +86,7 @@ class DomainReliabilityMonitor;
@@ -208,10 +208,10 @@ index 615d42ea815743b264adb6615cff89c7677819a4..e2a565663abea1b13beaaa33e83d8102
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 4e4731bf930e66644a77870f69e98b3197de12ac..2163ef65ae5faec671f4f3ad93c36d069f598ac6 100644
+index 184e48c657b91dadb96f81ae17a0828a27a736d6..7470e225762ead89d411654923b2415f12ab1ecb 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -214,6 +214,17 @@ struct CTPolicy {
+@@ -215,6 +215,17 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -229,7 +229,7 @@ index 4e4731bf930e66644a77870f69e98b3197de12ac..2163ef65ae5faec671f4f3ad93c36d06
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -876,6 +887,9 @@ interface NetworkContext {
+@@ -861,6 +872,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

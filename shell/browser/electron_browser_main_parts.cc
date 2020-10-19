@@ -63,7 +63,6 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "ui/base/x/x11_error_handler.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
@@ -237,18 +236,11 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   OverrideLinuxAppDataPath();
 #endif
 
-#if defined(USE_X11)
-  // Installs the X11 error handlers for the browser process used during
-  // startup. They simply print error messages and exit because
-  // we can't shutdown properly while creating and initializing services.
-  ui::SetNullErrorHandlers();
-#endif
-
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
 
-  return service_manager::RESULT_CODE_NORMAL_EXIT;
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void ElectronBrowserMainParts::PostEarlyInitialization() {
@@ -452,13 +444,6 @@ void ElectronBrowserMainParts::PreDefaultMainMessageLoopRun(
 }
 
 void ElectronBrowserMainParts::PostMainMessageLoopStart() {
-#if defined(USE_X11)
-  // Installs the X11 error handlers for the browser process after the
-  // main message loop has started. This will allow us to exit cleanly
-  // if X exits before us.
-  ui::SetErrorHandlers(
-      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated()));
-#endif
 #if defined(OS_LINUX)
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
@@ -468,13 +453,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
 }
 
 void ElectronBrowserMainParts::PostMainMessageLoopRun() {
-#if defined(USE_X11)
-  // Unset the X11 error handlers. The X11 error handlers log the errors using a
-  // |PostTask()| on the message-loop. But since the message-loop is in the
-  // process of terminating, this can cause errors.
-  ui::SetEmptyErrorHandlers();
-#endif
-
 #if defined(OS_MAC)
   FreeAppDelegate();
 #endif

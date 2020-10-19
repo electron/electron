@@ -7,44 +7,11 @@ Allow earlier access to newly created WebContents so that we can change
 WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
-diff --git a/content/public/common/common_param_traits_macros.h b/content/public/common/common_param_traits_macros.h
-index ba371f4a80e821c96fa00e9b9b405894c1b67a90..7f0d676833ea1e396896d1aea7727556bfa3247b 100644
---- a/content/public/common/common_param_traits_macros.h
-+++ b/content/public/common/common_param_traits_macros.h
-@@ -132,6 +132,28 @@ IPC_STRUCT_TRAITS_BEGIN(blink::web_pref::WebPreferences)
-   IPC_STRUCT_TRAITS_MEMBER(webgl2_enabled)
-   IPC_STRUCT_TRAITS_MEMBER(pepper_3d_enabled)
-   IPC_STRUCT_TRAITS_MEMBER(record_whole_document)
-+
-+  IPC_STRUCT_TRAITS_MEMBER(preloads)
-+  IPC_STRUCT_TRAITS_MEMBER(disable_electron_site_instance_overrides)
-+  IPC_STRUCT_TRAITS_MEMBER(background_color)
-+  IPC_STRUCT_TRAITS_MEMBER(opener_id)
-+  IPC_STRUCT_TRAITS_MEMBER(context_isolation)
-+  IPC_STRUCT_TRAITS_MEMBER(enable_remote_module)
-+  IPC_STRUCT_TRAITS_MEMBER(world_safe_execute_javascript)
-+  IPC_STRUCT_TRAITS_MEMBER(guest_instance_id)
-+  IPC_STRUCT_TRAITS_MEMBER(hidden_page)
-+  IPC_STRUCT_TRAITS_MEMBER(offscreen)
-+  IPC_STRUCT_TRAITS_MEMBER(preload)
-+  IPC_STRUCT_TRAITS_MEMBER(native_window_open)
-+  IPC_STRUCT_TRAITS_MEMBER(node_integration)
-+  IPC_STRUCT_TRAITS_MEMBER(node_integration_in_worker)
-+  IPC_STRUCT_TRAITS_MEMBER(node_leakage_in_renderers)
-+  IPC_STRUCT_TRAITS_MEMBER(node_integration_in_sub_frames)
-+  IPC_STRUCT_TRAITS_MEMBER(enable_spellcheck)
-+  IPC_STRUCT_TRAITS_MEMBER(enable_plugins)
-+  IPC_STRUCT_TRAITS_MEMBER(enable_websql)
-+  IPC_STRUCT_TRAITS_MEMBER(webview_tag)
-+
-   IPC_STRUCT_TRAITS_MEMBER(flash_3d_enabled)
-   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_enabled)
-   IPC_STRUCT_TRAITS_MEMBER(flash_stage3d_baseline_enabled)
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 940721ccb3f6cea6ad0ffdc71e0975a085b4fda7..1dfca6e5007759af22cf1e5b833e138e4f45a78e 100644
+index d825a36e27109fd96bfbda5c3629a5ce4c4d3b34..980a29517b8bb3dbf7ddce4f522a1141dbb044f7 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -158,6 +158,28 @@ WebPreferences::WebPreferences()
+@@ -142,6 +142,28 @@ WebPreferences::WebPreferences()
        navigate_on_drag_drop(true),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
@@ -72,9 +39,53 @@ index 940721ccb3f6cea6ad0ffdc71e0975a085b4fda7..1dfca6e5007759af22cf1e5b833e138e
 +
        cookie_enabled(true),
        accelerated_video_decode_enabled(false),
-       animation_policy(kImageAnimationPolicyAllowed),
+       animation_policy(
+diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+index 15a8f088ec5f96765312779fbff9b4e6cfb9c89d..2639fba8c9d48312aa73ac9ba7ee7016c71ea872 100644
+--- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
++++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+@@ -179,6 +179,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+       !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
+       !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
+       !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
++      // Begin Electron-specific WebPreferences.
++      !data.ReadPreloads(&out->preloads) ||
++      !data.ReadBackgroundColor(&out->background_color) ||
++      !data.ReadPreload(&out->preload) ||
++      // End Electron-specific WebPreferences.
+       !data.ReadLazyFrameLoadingDistanceThresholdsPx(
+           &out->lazy_frame_loading_distance_thresholds_px) ||
+       !data.ReadLazyImageLoadingDistanceThresholdsPx(
+@@ -302,6 +307,27 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+   out->navigate_on_drag_drop = data.navigate_on_drag_drop();
+   out->v8_cache_options = data.v8_cache_options();
+   out->record_whole_document = data.record_whole_document();
++
++  // Begin Electron-specific WebPreferences.
++  out->disable_electron_site_instance_overrides = data.disable_electron_site_instance_overrides();
++  out->opener_id = data.opener_id();
++  out->context_isolation = data.context_isolation();
++  out->enable_remote_module = data.enable_remote_module();
++  out->world_safe_execute_javascript = data.world_safe_execute_javascript();
++  out->guest_instance_id = data.guest_instance_id();
++  out->hidden_page = data.hidden_page();
++  out->offscreen = data.offscreen();
++  out->native_window_open = data.native_window_open();
++  out->node_integration = data.node_integration();
++  out->node_integration_in_worker = data.node_integration_in_worker();
++  out->node_leakage_in_renderers = data.node_leakage_in_renderers();
++  out->node_integration_in_sub_frames = data.node_integration_in_sub_frames();
++  out->enable_spellcheck = data.enable_spellcheck();
++  out->enable_plugins = data.enable_plugins();
++  out->enable_websql = data.enable_websql();
++  out->webview_tag = data.webview_tag();
++  // End Electron-specific WebPreferences.
++
+   out->cookie_enabled = data.cookie_enabled();
+   out->accelerated_video_decode_enabled =
+       data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 09fbf0fac9c880c2bd64446611efe4debc000767..0e2a2eb9ed70a3cd133c5347652bb96d0e507732 100644
+index 776127997373391364909a3f613c07cbf4c8e996..9a0a0de139aaf0d491b5eeb5bcdffbaec687ba4c 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -85,7 +96,7 @@ index 09fbf0fac9c880c2bd64446611efe4debc000767..0e2a2eb9ed70a3cd133c5347652bb96d
  #include "base/strings/string16.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
-@@ -165,6 +166,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -155,6 +156,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
@@ -113,3 +124,137 @@ index 09fbf0fac9c880c2bd64446611efe4debc000767..0e2a2eb9ed70a3cd133c5347652bb96d
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..727bb74626a61db6338d954a3c6e50d15401078b 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+@@ -462,6 +462,88 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+     return r.record_whole_document;
+   }
+ 
++  // Begin Electron-specific WebPreferences.
++  static const std::string& preloads(const blink::web_pref::WebPreferences& r) {
++    return r.preloads;
++  }
++
++  static bool disable_electron_site_instance_overrides(const blink::web_pref::WebPreferences& r) {
++    return r.disable_electron_site_instance_overrides;
++  }
++
++  static const std::string& background_color(const blink::web_pref::WebPreferences& r) {
++    return r.background_color;
++  }
++
++  static int opener_id(const blink::web_pref::WebPreferences& r) {
++    return r.opener_id;
++  }
++
++  static bool context_isolation(const blink::web_pref::WebPreferences& r) {
++    return r.context_isolation;
++  }
++
++  static bool enable_remote_module(const blink::web_pref::WebPreferences& r) {
++    return r.enable_remote_module;
++  }
++
++  static bool world_safe_execute_javascript(const blink::web_pref::WebPreferences& r) {
++    return r.world_safe_execute_javascript;
++  }
++
++  static int guest_instance_id(const blink::web_pref::WebPreferences& r) {
++    return r.guest_instance_id;
++  }
++
++  static bool hidden_page(const blink::web_pref::WebPreferences& r) {
++    return r.hidden_page;
++  }
++
++  static bool offscreen(const blink::web_pref::WebPreferences& r) {
++    return r.offscreen;
++  }
++
++  static const std::string& preload(const blink::web_pref::WebPreferences& r) {
++    return r.preload;
++  }
++
++  static bool native_window_open(const blink::web_pref::WebPreferences& r) {
++    return r.native_window_open;
++  }
++
++  static bool node_integration(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration;
++  }
++
++  static bool node_integration_in_worker(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration_in_worker;
++  }
++
++  static bool node_leakage_in_renderers(const blink::web_pref::WebPreferences& r) {
++    return r.node_leakage_in_renderers;
++  }
++
++  static bool node_integration_in_sub_frames(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration_in_sub_frames;
++  }
++
++  static bool enable_spellcheck(const blink::web_pref::WebPreferences& r) {
++    return r.enable_spellcheck;
++  }
++
++  static bool enable_plugins(const blink::web_pref::WebPreferences& r) {
++    return r.enable_plugins;
++  }
++
++  static bool enable_websql(const blink::web_pref::WebPreferences& r) {
++    return r.enable_websql;
++  }
++
++  static bool webview_tag(const blink::web_pref::WebPreferences& r) {
++    return r.webview_tag;
++  }
++  // End Electron-specific WebPreferences.
++
+   static bool cookie_enabled(const blink::web_pref::WebPreferences& r) {
+     return r.cookie_enabled;
+   }
+diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..d9804ff04ec80ca4458d141d3010c29557bb6fd5 100644
+--- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
++++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+@@ -202,6 +202,29 @@ struct WebPreferences {
+   V8CacheOptions v8_cache_options;
+   bool record_whole_document;
+ 
++  // Begin Electron-specific WebPreferences.
++  string preloads;
++  bool disable_electron_site_instance_overrides;
++  string background_color;
++  int32 opener_id;
++  bool context_isolation;
++  bool enable_remote_module;
++  bool world_safe_execute_javascript;
++  int32 guest_instance_id;
++  bool hidden_page;
++  bool offscreen;
++  string preload;
++  bool native_window_open;
++  bool node_integration;
++  bool node_integration_in_worker;
++  bool node_leakage_in_renderers;
++  bool node_integration_in_sub_frames;
++  bool enable_spellcheck;
++  bool enable_plugins;
++  bool enable_websql;
++  bool webview_tag;
++  // End Electron-specific WebPreferences.
++
+   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
+   // only controls whether or not the "document.cookie" field is properly
+   // connected to the backing store, for instance if you wanted to be able to
+@@ -428,4 +451,4 @@ struct WebPreferences {
+   // Whether touch input can trigger HTML drag-and-drop operations. The
+   // default value depends on the platform.
+   bool touch_drag_drop_enabled;
+-};
+\ No newline at end of file
++};

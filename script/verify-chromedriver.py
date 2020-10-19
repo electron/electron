@@ -33,7 +33,9 @@ def main():
 
   returncode = 0
   match = re.search(
-    '^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$', output)
+    '^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$',
+    output
+  )
 
   if match is None:
     returncode = 1

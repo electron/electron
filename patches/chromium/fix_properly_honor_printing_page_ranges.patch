@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 909aaf6ce803fed32eb1c64c0abcf272731762da..ba431655fe5894c7d9b04464ea36307a145ac198 100644
+index f63f7f2674d9562f57dea4f9c9f473aa595a0c5f..78a46dbea7ff31209748ef47d541725397d80616 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
@@ -25,20 +25,20 @@ index 909aaf6ce803fed32eb1c64c0abcf272731762da..ba431655fe5894c7d9b04464ea36307a
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 51c8ff31497fd03842ac9e7da4eab8a5919ec898..6a9d5c368a34c7c4c36506da6e4bed5a5f9f117b 100644
+index aa950b59390fdae9a5152affb7a7438cb78eb6f4..3ec9ee0ee464960a48d23f5000137cc44027e9b1 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -188,7 +188,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
-         !SetCopiesInPrintSettings(settings_->copies()) ||
+@@ -189,7 +189,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
--        !SetOutputColor(static_cast<int>(settings_->color()))) {
-+        !SetOutputColor(static_cast<int>(settings_->color())) ||
+         !SetOutputColor(static_cast<int>(settings_->color())) ||
+-        !SetResolution(settings_->dpi_size())) {
++        !SetResolution(settings_->dpi_size()) ||
 +        !SetPrintRangeInPrintSettings(settings_->ranges()) ) {
        return OnError();
      }
    }
-@@ -341,6 +342,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -342,6 +343,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
