@@ -33,10 +33,10 @@ Object.defineProperty(electronModule, 'exports', {
 Module._cache['electron'] = electronModule;
 
 const originalResolveFilename = Module._resolveFilename;
-Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean) {
+Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
   if (request === 'electron') {
     return 'electron';
   } else {
-    return originalResolveFilename(request, parent, isMain);
+    return originalResolveFilename(request, parent, isMain, options);
   }
 };
