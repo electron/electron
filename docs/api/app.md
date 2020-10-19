@@ -432,6 +432,7 @@ Returns:
     * `integrity-failure` - Windows code integrity checks failed
   * `exitCode` Number - The exit code for the process
       (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
+  * `serviceName` String (optional) - The non-localized name of the process.
   * `name` String (optional) - The name of the process.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 
