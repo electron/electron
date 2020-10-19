@@ -9,8 +9,12 @@ If you're looking for programming help,
 for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
-- [`electron`](https://discuss.atom.io/c/electron) category on the Atom
-forums
+- [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
+  - Getting help
+  - Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
+  - Sharing ideas with other Electron app developers
+  - And more!
+- [`electron`](https://discuss.atom.io/c/electron) category on the Atom forums
 - `#atom-shell` channel on Freenode
 - `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
