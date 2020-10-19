@@ -296,8 +296,6 @@ source_set("plugins") {
   sources += [
     "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc",
     "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h",
-    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc",
-    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.h",
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
