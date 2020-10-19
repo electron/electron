@@ -65,7 +65,7 @@ index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92b
    NativeModuleEnv::InitializeCodeCache();
  
 diff --git a/src/node.h b/src/node.h
-index 33e11327e487bca9d0d7b5cd5a1c036c7009a359..7340d1a6f0cf2f912aaee15d66ed137fe2870bab 100644
+index 38e0ef50f9b283b1d7ca8f54412d99b8cd38e524..34a16feaed229a59181e1b2e48b0e111d5b0b2a6 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -220,6 +220,8 @@ namespace node {

@@ -257,6 +257,20 @@ renderer process.
 
 Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
 
+### `webFrame.isWordMisspelled(word)`
+
+* `word` String - The word to be spellchecked.
+
+Returns `Boolean` - True if the word is misspelled according to the built in
+spellchecker, false otherwise. If no dictionary is loaded, always return false.
+
+### `webFrame.getWordSuggestions(word)`
+
+* `word` String - The misspelled word.
+
+Returns `String[]` - A list of suggested words for a given word. If the word
+is spelled correctly, the result will be empty.
+
 ## Properties
 
 ### `webFrame.top` _Readonly_

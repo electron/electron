@@ -166,8 +166,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
         context, v8::String::Empty(isolate));
   }
 
-  return node::Environment::AllowWasmCodeGenerationCallback(
-      context, v8::String::Empty(isolate));
+  return node::AllowWasmCodeGenerationCallback(context,
+                                               v8::String::Empty(isolate));
 }
 
 // Initialize Node.js cli options to pass to Node.js

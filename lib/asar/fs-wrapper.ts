@@ -216,16 +216,16 @@ const makePromiseFunction = function (orig: Function, pathArgumentIndex: number)
 
 // Override fs APIs.
 export const wrapFsWithAsar = (fs: Record<string, any>) => {
-  const logFDs: Record<string, number> = {};
+  const logFDs = new Map<string, number>();
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
     if (!process.env.ELECTRON_LOG_ASAR_READS) return;
-    if (!logFDs[asarPath]) {
+    if (!logFDs.has(asarPath)) {
       const path = require('path');
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join(require('os').tmpdir(), logFilename);
-      logFDs[asarPath] = fs.openSync(logPath, 'a');
+      logFDs.set(asarPath, fs.openSync(logPath, 'a'));
     }
-    fs.writeSync(logFDs[asarPath], `${offset}: ${filePath}\n`);
+    fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
   };
 
   const { lstatSync } = fs;

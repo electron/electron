@@ -300,8 +300,8 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     touchBar._addToWindow(window);
   }
 
-  private windowListeners: Record<number, Function> = {};
-  private items: Record<string, TouchBarItem<any>> = {};
+  private windowListeners = new Map<number, Function>();
+  private items = new Map<string, TouchBarItem<any>>();
   orderedItems: TouchBarItem<any>[] = [];
 
   constructor (options: Electron.TouchBarConstructorOptions) {
@@ -317,12 +317,10 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
       items = [];
     }
 
-    this.windowListeners = {};
-    this.items = {};
     this.escapeItem = (escapeItem as any) || null;
 
     const registerItem = (item: TouchBarItem<any>) => {
-      this.items[item.id] = item;
+      this.items.set(item.id, item);
       item.on('change', this.changeListener);
       if (item.child instanceof TouchBar) {
         item.child.orderedItems.forEach(registerItem);
@@ -387,7 +385,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     const { id } = window;
 
     // Already added to window
-    if (Object.prototype.hasOwnProperty.call(this.windowListeners, id)) return;
+    if (this.windowListeners.has(id)) return;
 
     window._touchBar = this;
 
@@ -402,7 +400,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     this.on('escape-item-change', escapeItemListener);
 
     const interactionListener = (_: any, itemID: string, details: any) => {
-      let item = this.items[itemID];
+      let item = this.items.get(itemID);
       if (item == null && this.escapeItem != null && this.escapeItem.id === itemID) {
         item = this.escapeItem;
       }
@@ -418,7 +416,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
       window.removeListener('-touch-bar-interaction', interactionListener);
       window.removeListener('closed', removeListeners);
       window._touchBar = null;
-      delete this.windowListeners[id];
+      this.windowListeners.delete(id);
       const unregisterItems = (items: TouchBarItem<any>[]) => {
         for (const item of items) {
           item.removeListener('change', this.changeListener);
@@ -433,14 +431,14 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
       }
     };
     window.once('closed', removeListeners);
-    this.windowListeners[id] = removeListeners;
+    this.windowListeners.set(id, removeListeners);
 
     window._setTouchBarItems(this.orderedItems);
     escapeItemListener(this.escapeItem);
   }
 
   _removeFromWindow (window: Electron.BrowserWindow) {
-    const removeListeners = this.windowListeners[window.id];
+    const removeListeners = this.windowListeners.get(window.id);
     if (removeListeners != null) removeListeners();
   }
 
