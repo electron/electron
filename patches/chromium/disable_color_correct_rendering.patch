@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 7218773c3b74808ca29f7c0bad9444fbdad18c3e..7810ad7138fdafb3aeaf2bd8c4b00e08bcb5be60 100644
+index 49e9d299ebfd8c2fc3b27cd62ea91916f16cb746..7571b4affea23f68ad767560ca408bd860c21512 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1760,6 +1760,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1765,6 +1765,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -81,7 +81,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76ab5ba70f1 100644
+index 83af241b302edcafc2c2decee1a66885dc2da057..2e3b10def6afd3de1f889685f05e70dc3bfae44a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -187,7 +187,7 @@ index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76a
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame);
  
    if (current_program_->rounded_corner_rect_location() != -1) {
-@@ -3649,7 +3659,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3648,7 +3658,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level) {
@@ -198,7 +198,7 @@ index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76a
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level) {
      // If the input color space is HDR, and it did not specify a white level,
-@@ -4029,9 +4041,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4028,9 +4040,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76a
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4251,8 +4263,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4249,8 +4261,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,17 +222,17 @@ index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76a
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4442,3 +4454,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4440,3 +4452,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index aa761376f817a91cad293264b05ebcc5cb38def4..5acb7ecb3d6d8024040cda27ed32cfc92a37ee07 100644
+index da2850b9167844ae653e951d1487ea1662eb2953..949cbbfbefef0d503bc01dcacce04bb6cfcd48f1 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -221,6 +221,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -241,7 +241,7 @@ index aa761376f817a91cad293264b05ebcc5cb38def4..5acb7ecb3d6d8024040cda27ed32cfc9
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index befc71496fa45101614759d7271314e9ed5feef3..44b96fd0ecfb165af688317b1784bf2d73f6200d 100644
+index ddc6942ba9b66c055672eb44cb5dbd745afe19f4..68086533184db8a41a1f280324590c250558fb7d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -225,6 +225,7 @@
@@ -252,7 +252,7 @@ index befc71496fa45101614759d7271314e9ed5feef3..44b96fd0ecfb165af688317b1784bf2d
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3302,6 +3303,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3304,6 +3305,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

@@ -8,7 +8,7 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 66e001469a794567e85728fee67c7f88d861f150..70dd15aeae2d9d393e45c77495c7b10ee2bf76f1 100644
+index 5d4dac328d353e19a1453dc1a5a12e43713d7a84..9f5c3c01ece048d9a5deee8d3cea2d6a87890cb4 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
 @@ -786,9 +786,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
