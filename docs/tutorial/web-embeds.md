@@ -1,8 +1,8 @@
-# Web embeds in Electron
+# Web embeds
 
 ## Overview
 
-If you want to embed (third party) web content in an Electron `BrowserWindow`,
+If you want to embed (third-party) web content in an Electron `BrowserWindow`,
 there are three options available to you: `<iframe>` tags, `<webview>` tags,
 and `BrowserViews`. Each one offers slightly different functionality and is
 useful in different situations. To help you choose between these, this guide
@@ -35,7 +35,14 @@ Compared to an `<iframe>`, `<webview>` tends to be slightly slower but offers
 much greater control in loading and communicating with the third-party content
 and handling various events.
 
-## BrowserViews
+> Important Note:
+[we do not recommend you to use use WebViews](https://www.electronjs.org/docs/api/webview-tag#warning)
+as this tag undergoes dramatic architectural changes that may affect stability
+of your application. Consider switching to alternatives, like `iframe` and
+Electron's `BrowserView` or an architecture that avoids embedded content
+by design.
+
+### BrowserViews
 
 [BrowserViews](../api/browser-view.md) are not a part of the DOM - instead,
 they are created in and controlled by your Main process. They are simply
@@ -46,5 +53,5 @@ by setting the bounds in the Main process.
 
 `BrowserViews` offer the greatest control over their contents, since they
 implement the `webContents` similarly to how the `BrowserWindow` does it.
-However, as `BrowserViews` are not a part of your DOM, but are overlaid on top
-of them, which means that you will have to manage their position manually.
+However, as `BrowserViews` are not a part of your DOM, but are rather overlaid
+on top of them, you will have to manage their position manually.
