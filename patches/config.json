@@ -19,5 +19,7 @@
 
   "src/electron/patches/skia": "src/third_party/skia",
 
-  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
+
+  "src/electron/patches/freetype": "src/third_party/freetype/src"
 }
