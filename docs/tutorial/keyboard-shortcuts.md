@@ -25,7 +25,7 @@ menu.append(new MenuItem({
   label: 'Electron',
   submenu: [{
     role: 'help',
-    accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
+    accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Alt+Shift+I',
     click: () => { console.log('Electron rocks!') }
   }]
 }))
@@ -33,22 +33,22 @@ menu.append(new MenuItem({
 Menu.setApplicationMenu(menu)
 ```
 
-> NOTE: From the code above you can see that the key combination differs based on the
-user's operating system: for Mac it is `Alt+Cmd+I` whereas for Linux and
-Windows it is `Ctrl+Shift+I`.
+> NOTE: In the code above, you can see that the accelerator differs based on the
+user's operating system. For MacOS, it is `Alt+Cmd+I`, whereas for Linux and
+Windows, it is `Alt+Shift+I`.
 
 After launching the Electron application, you should see the application menu
 along with the local shortcut you just defined:
 
 ![Menu with a local shortcut](../images/local-shortcut.png)
 
-If you click `Help` or press the defined key combination and then open
-the Console, you will see the message that was generated after
-triggering the `click` event: "Electron rocks!"
+If you click `Help` or press the defined accelerator and then open the terminal
+that you ran your Electron application from, you will see the message that was
+generated after triggering the `click` event: "Electron rocks!".
 
 ### Global Shortcuts
 
-To configure a local keyboard shortcut, you need to use the [globalShortcut]
+To configure a global keyboard shortcut, you need to use the [globalShortcut]
 module to detect keyboard events even when the application does not have
 keyboard focus.
 
@@ -66,32 +66,60 @@ app.whenReady().then(() => {
 }).then(createWindow)
 ```
 
+> NOTE: In the code above, the `CommandOrControl` combination uses `Command`
+on macOS and `Control` on Windows/Linux.
+
 After launching the Electron application, if you press the defined key
-combination and then open the Console, you will see that Electron loves global
-shortcuts!
+combination then open the terminal that you ran your Electron application from,
+you will see that Electron loves global shortcuts!
 
 ### Shortcuts within a BrowserWindow
 
-#### Overview
+#### Using web APIs
 
-If you want to handle keyboard shortcuts for a [BrowserWindow], you can use the
-`keyup` and `keydown` event listeners on the window object inside the renderer
-process.
+If you want to handle keyboard shortcuts within a [BrowserWindow], you can
+listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
+renderer process using the [addEventListener() API][addEventListener-api].
 
 ```js
 window.addEventListener('keyup', doSomething, true)
 ```
 
-Note the third parameter `true` which means the listener will always receive
+Note the third parameter `true` indicates that the listener will always receive
 key presses before other listeners so they can't have `stopPropagation()`
 called on them.
+
+#### Intercepting events in the main process
 
 The [`before-input-event`](../api/web-contents.md#event-before-input-event) event
 is emitted before dispatching `keydown` and `keyup` events in the page. It can
 be used to catch and handle custom shortcuts that are not visible in the menu.
 
-If you don't want to do manual shortcut parsing there are libraries that do
-advanced key detection such as [mousetrap].
+##### Example
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
+ 
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  let win = new BrowserWindow({ width: 800, height: 600 })
+  
+  win.webContents.on('before-input-event', (event, input) => {
+    // For example, only enable application menu keyboard shortcuts when
+    // Ctrl/Cmd are down.
+    win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  })
+});
+```
+
+#### Using third-party libraries
+
+If you don't want to do manual shortcut parsing, there are libraries that do
+advanced key detection, such as [mousetrap]. Below are examples of usage of the
+`mousetrap` running in the Renderer process:
 
 ```js
 Mousetrap.bind('4', () => { console.log('4') })
@@ -125,3 +153,5 @@ Mousetrap.bind('up up down down left right left right b a enter', () => {
 [`accelerator`]: ../api/accelerator.md
 [BrowserWindow]: ../api/browser-window.md
 [mousetrap]: https://github.com/ccampbell/mousetrap
+[dom-events]: https://developer.mozilla.org/en-US/docs/Web/Events
+[addEventListener-api]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
