@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 36ef24b8b25bffa2f64408c9cd2a912dae4b3ab4..29766a994b1665801b6aedaf806cdc022c71a2cf 100644
+index 3b66e90e3b99cd6833bfb741d2e5148f8a5debdf..41e8c7b0ab3368b563c3d19b87b8e26303951848 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2759,6 +2759,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -34,7 +34,7 @@ index 36ef24b8b25bffa2f64408c9cd2a912dae4b3ab4..29766a994b1665801b6aedaf806cdc02
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 416cfe39a91742c5c5992447cc6d95f2b9f711d9..e62239a5ebe662d6ce5ba6c7d3e08e1538865305 100644
+index 9da82cb41e48fc3e4724732cb9c7bfde77e3cb57..dca566248f71480816f9e697f5b4d67dd655759d 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -86,8 +86,11 @@ class BrowserContext;

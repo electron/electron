@@ -108,6 +108,7 @@ declare namespace Electron {
     _isCommandIdVisible(id: string): boolean;
     _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
     _shouldRegisterAcceleratorForCommandId(id: string): boolean;
+    _getSharingItemForCommandId(id: string): SharingItem | null;
     _callMenuWillShow(): void;
     _executeCommand(event: any, id: number): void;
     _menuWillShow(): void;

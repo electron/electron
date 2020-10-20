@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 49e9d299ebfd8c2fc3b27cd62ea91916f16cb746..7571b4affea23f68ad767560ca408bd860c21512 100644
+index d74f07b37b45adc75c5476d954ef8a1b3f6cff63..afcdc9d4639bd99e60891ea68ce32cb1f97fec5e 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1765,6 +1765,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,7 +81,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 83af241b302edcafc2c2decee1a66885dc2da057..2e3b10def6afd3de1f889685f05e70dc3bfae44a 100644
+index 83af241b302edcafc2c2decee1a66885dc2da057..d5a1d00b970351e5a180adb7fc37099c9894ca82 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -121,7 +121,7 @@ index 83af241b302edcafc2c2decee1a66885dc2da057..2e3b10def6afd3de1f889685f05e70dc
                                         tint_gl_composited_content_,
                                         ShouldApplyRoundedCorner(quad)),
 -                CurrentRenderPassColorSpace(), CurrentRenderPassColorSpace());
-+                PATCH_CS(CurrentRenderPassColorSpace()), 
++                PATCH_CS(CurrentRenderPassColorSpace()),
 +                PATCH_CS(CurrentRenderPassColorSpace()));
  
    gfx::ColorSpace quad_color_space = gfx::ColorSpace::CreateSRGB();
@@ -241,7 +241,7 @@ index da2850b9167844ae653e951d1487ea1662eb2953..949cbbfbefef0d503bc01dcacce04bb6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ddc6942ba9b66c055672eb44cb5dbd745afe19f4..68086533184db8a41a1f280324590c250558fb7d 100644
+index ec165b24e11a3b025dc063869a5738688ff1e5be..713ec35edf80312906481af2c5c3c67b3bc20881 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -225,6 +225,7 @@

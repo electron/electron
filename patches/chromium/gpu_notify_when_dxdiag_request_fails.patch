@@ -12,14 +12,14 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index 694f63ecd2de241fd1a8b7b529bbd4d1bea78337..cc9679eb86f85239f5612d8db8200db5392f5bc5 100644
+index 694f63ecd2de241fd1a8b7b529bbd4d1bea78337..705d24cb09a2a8b07ac7acd21b18e2e3483856bf 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -229,6 +229,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
    base::AutoLock auto_lock(lock_);
    private_->TerminateInfoCollectionGpuProcess();
  }
-+  
++
 +bool GpuDataManagerImpl::DxdiagDx12VulkanRequested() const {
 +  base::AutoLock auto_lock(lock_);
 +  return private_->DxdiagDx12VulkanRequested();

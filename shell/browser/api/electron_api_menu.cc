@@ -12,11 +12,38 @@
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
+
+#if defined(OS_MAC)
+
+namespace gin {
+
+using SharingItem = electron::ElectronMenuModel::SharingItem;
+
+template <>
+struct Converter<SharingItem> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     SharingItem* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.GetOptional("texts", &(out->texts));
+    dict.GetOptional("filePaths", &(out->file_paths));
+    dict.GetOptional("urls", &(out->urls));
+    return true;
+  }
+};
+
+}  // namespace gin
+
+#endif
 
 namespace electron {
 
@@ -26,6 +53,15 @@ gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
   model_->AddObserver(this);
+
+#if defined(OS_MAC)
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    ElectronMenuModel::SharingItem item;
+    if (options.Get("sharingItem", &item))
+      model_->SetSharingItem(std::move(item));
+  }
+#endif
 }
 
 Menu::~Menu() {
@@ -80,6 +116,19 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
   return InvokeBoolMethod(this, "_shouldRegisterAcceleratorForCommandId",
                           command_id);
 }
+
+#if defined(OS_MAC)
+bool Menu::GetSharingItemForCommandId(
+    int command_id,
+    ElectronMenuModel::SharingItem* item) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getSharingItemForCommandId", command_id);
+  return gin::ConvertFromV8(isolate, val, item);
+}
+#endif
 
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

@@ -78,7 +78,7 @@ index 7b0b92cffe8c90da6b9e982488776bf9a87258b2..57820d9a59eedf491e62754ef157a00a
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 5103c2860f57f26c778a4383c037c8a2aed410b9..2416783199c0d34082c6b9acd544e524f33b9a56 100644
+index 41f631967ed35ed6e1216153af3e2e4d906bc8a4..af44b1e8864f5791359ab0dfecf6244ceec96cc9 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 @@ -272,6 +272,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
