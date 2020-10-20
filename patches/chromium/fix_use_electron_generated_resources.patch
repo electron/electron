@@ -51,4 +51,3 @@ index 721e1a863cc6925908f8343002df056f2373bf0b..10b2a95162541a8ff4d010c7be864f3f
  #include "content/public/browser/service_process_host.h"
  
  mojo::Remote<chrome::mojom::UtilReadIcon> LaunchIconReaderInstance() {
- 
