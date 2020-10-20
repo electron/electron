@@ -171,14 +171,6 @@ authentication [per Chromium issue](https://bugs.chromium.org/p/chromium/issues/
 
 Enables remote debugging over HTTP on the specified `port`.
 
-### --ppapi-flash-path=`path`
-
-Sets the `path` of the pepper flash plugin.
-
-### --ppapi-flash-version=`version`
-
-Sets the `version` of the pepper flash plugin.
-
 ### --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
@@ -240,7 +232,7 @@ Specify ways of the inspector web socket url exposure.
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.
 
 [app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[append-switch]: command-line.md#commandlineappendswitchswitch-value
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md

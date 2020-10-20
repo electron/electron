@@ -116,14 +116,16 @@ build_script:
       if ($env:SAVE_GCLIENT_SRC -eq 'true') {
         # archive current source for future use 
         # only run on x64/woa to avoid contention saving
-        if ($(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30;$LASTEXITCODE -ne 0)) {
+        $(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30)
+        if ($LASTEXITCODE -ne 0) {
           Write-warning "Could not save source to shared drive; continuing anyway"
         }
-        # build time generation of file gen/angle/commit.h depends on
-        # third_party/angle/.git/HEAD.
-        # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-        if ($(7z a $zipfile src\third_party\angle\.git\HEAD;$LASTEXITCODE -ne 0)) {
-          Write-warning "Failed to add third_party\angle\.git\HEAD; continuing anyway"
+        # build time generation of file gen/angle/angle_commit.h depends on
+        # third_party/angle/.git
+        # https://chromium-review.googlesource.com/c/angle/angle/+/2074924       
+        $(7z a $zipfile src\third_party\angle\.git)
+        if ($LASTEXITCODE -ne 0) {
+          Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
       }
   - ps: >-
@@ -207,7 +209,8 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging)
+  # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging --disable-features=CalculateNativeWinOcclusion )
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"

@@ -20,10 +20,6 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
   const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
     return it(name, async function (...args) {
-      // document.visibilityState tests are very flaky, this is probably because
-      // Electron implements it via async IPC messages.
-      this.retries(3);
-
       w = new BrowserWindow({
         ...options,
         paintWhenInitiallyHidden: false,
@@ -36,31 +32,25 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     });
   };
 
-  const getVisibilityState = async (): Promise<string> => {
-    const response = emittedOnce(ipcMain, 'visibility-state');
-    w.webContents.send('get-visibility-state');
-    return (await response)[1];
-  };
-
   itWithOptions('should be visible when the window is initially shown by default', {}, async () => {
-    await load();
-    const state = await getVisibilityState();
+    load();
+    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
   itWithOptions('should be visible when the window is initially shown', {
     show: true
   }, async () => {
-    await load();
-    const state = await getVisibilityState();
+    load();
+    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
   itWithOptions('should be hidden when the window is initially hidden', {
     show: false
   }, async () => {
-    await load();
-    const state = await getVisibilityState();
+    load();
+    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
   });
 
@@ -68,8 +58,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     show: false
   }, async () => {
     w.show();
-    await load();
-    const state = await getVisibilityState();
+    load();
+    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
@@ -82,33 +72,37 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       await delay(0);
     }
     w.hide();
-    await load();
-    const state = await getVisibilityState();
+    load();
+    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
   });
 
   itWithOptions('should be toggle between visible and hidden as the window is hidden and shown', {}, async () => {
-    await load();
-    expect(await getVisibilityState()).to.equal('visible');
-    await emittedOnce(ipcMain, 'visibility-change', () => w.hide());
-    expect(await getVisibilityState()).to.equal('hidden');
-    await emittedOnce(ipcMain, 'visibility-change', () => w.show());
-    expect(await getVisibilityState()).to.equal('visible');
+    load();
+    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    expect(initialState).to.equal('visible');
+    w.hide();
+    await emittedOnce(ipcMain, 'visibility-change-hidden');
+    w.show();
+    await emittedOnce(ipcMain, 'visibility-change-visible');
   });
 
   itWithOptions('should become hidden when a window is minimized', {}, async () => {
-    await load();
-    expect(await getVisibilityState()).to.equal('visible');
-    await emittedOnce(ipcMain, 'visibility-change', () => w.minimize());
-    expect(await getVisibilityState()).to.equal('hidden');
+    load();
+    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    expect(initialState).to.equal('visible');
+    w.minimize();
+    await emittedOnce(ipcMain, 'visibility-change-hidden', () => w.minimize());
   });
 
   itWithOptions('should become visible when a window is restored', {}, async () => {
-    await load();
-    expect(await getVisibilityState()).to.equal('visible');
-    await emittedOnce(ipcMain, 'visibility-change', () => w.minimize());
-    await emittedOnce(ipcMain, 'visibility-change', () => w.restore());
-    expect(await getVisibilityState()).to.equal('visible');
+    load();
+    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    expect(initialState).to.equal('visible');
+    w.minimize();
+    await emittedOnce(ipcMain, 'visibility-change-hidden');
+    w.restore();
+    await emittedOnce(ipcMain, 'visibility-change-visible');
   });
 
   describe('on platforms that support occlusion detection', () => {
@@ -145,8 +139,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         width: 200,
         height: 200
       });
-      await load();
-      const state = await getVisibilityState();
+      load();
+      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
     });
 
@@ -162,29 +156,28 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         width: 200,
         height: 200
       });
-      await load();
-      const state = await getVisibilityState();
+      load();
+      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
     });
 
-    itWithOptions('should be hidden when a second window completely conceals the current window', {
+    itWithOptions('should be hidden when a second window completely occludes the current window', {
       x: 50,
       y: 50,
       width: 50,
       height: 50
     }, async function () {
       this.timeout(240000);
-      await load();
-      await emittedOnce(ipcMain, 'visibility-change', async () => {
-        await makeOtherWindow({
-          x: 0,
-          y: 0,
-          width: 300,
-          height: 300
-        });
+      load();
+      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+      expect(state).to.equal('visible');
+      makeOtherWindow({
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 300
       });
-      const state = await getVisibilityState();
-      expect(state).to.equal('hidden');
+      await emittedOnce(ipcMain, 'visibility-change-hidden');
     });
   });
 });

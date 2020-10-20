@@ -6,7 +6,7 @@ Subject: fix: add v8_enable_reverse_jsargs defines in common.gypi
 This can be removed once node upgrades V8 and inevitably has to do this exact same thing.  Also hi node people if you are looking at this.
 
 diff --git a/common.gypi b/common.gypi
-index 5e209300b5ce85c2a6e15480465623f911053960..27892535631a3e6431bdb3bdea15d0c4ee6e2b59 100644
+index 4d63ac7981edca3f99c05ce08af8ea41628b0387..42d353c7495ff29a58a942ad72227ada8be662a9 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@

@@ -11,7 +11,7 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5110c9f754f7653261f7de6d5f0c35e541880a4d..274d0481529ace763c997910ce40e2c730a20146 100644
+index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -358,12 +358,14 @@ Environment* CreateEnvironment(
@@ -63,7 +63,7 @@ index 38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51..4fe2eb3b7699efcab87c377743a955ef
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index b9493d1f3d5b4f192609f1e7529715ec30ab46e2..019620ad0c6a0ca80e6cbcfc5a8322f4e1220bb1 100644
+index a649f52403659fd18898e1e813f97e32f33784e7..b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -426,7 +426,11 @@ enum Flags : uint64_t {

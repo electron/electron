@@ -45,7 +45,8 @@ ProxyingWebSocket::ProxyingWebSocket(
           /*is_download=*/false,
           /*is_async=*/true,
           /*is_service_worker_script=*/false,
-          /*navigation_id=*/base::nullopt)) {}
+          /*navigation_id=*/base::nullopt,
+          /*ukm_source_id=*/base::kInvalidUkmSourceId)) {}
 
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
@@ -438,7 +439,7 @@ void ProxyingWebSocket::OnError(int error_code) {
 void ProxyingWebSocket::OnMojoConnectionErrorWithCustomReason(
     uint32_t custom_reason,
     const std::string& description) {
-  // Here we want to nofiy the custom reason to the client, which is why
+  // Here we want to notify the custom reason to the client, which is why
   // we reset |forwarding_handshake_client_| manually.
   forwarding_handshake_client_.ResetWithReason(custom_reason, description);
   OnError(net::ERR_FAILED);

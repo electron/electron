@@ -837,7 +837,7 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
   ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
-                       base::UTF16ToUTF8(data.name));
+                       data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
@@ -868,6 +868,7 @@ void App::BrowserChildProcessCrashedOrKilled(
   details.Set("type", content::GetProcessTypeNameInEnglish(data.process_type));
   details.Set("reason", info.status);
   details.Set("exitCode", info.exit_code);
+  details.Set("serviceName", data.metrics_name);
   if (!data.name.empty()) {
     details.Set("name", data.name);
   }
@@ -896,6 +897,7 @@ void App::RenderProcessDisconnected(base::ProcessId host_pid) {
 
 void App::ChildProcessLaunched(int process_type,
                                base::ProcessHandle handle,
+                               const std::string& service_name,
                                const std::string& name) {
   auto pid = base::GetProcId(handle);
 
@@ -906,7 +908,7 @@ void App::ChildProcessLaunched(int process_type,
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(handle);
 #endif
   app_metrics_[pid] = std::make_unique<electron::ProcessMetric>(
-      process_type, handle, std::move(metrics), name);
+      process_type, handle, std::move(metrics), service_name, name);
 }
 
 void App::ChildProcessDisconnected(base::ProcessId pid) {
@@ -1348,6 +1350,10 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
                              process_metric.second->type));
     pid_dict.Set("creationTime",
                  process_metric.second->process.CreationTime().ToJsTime());
+
+    if (!process_metric.second->service_name.empty()) {
+      pid_dict.Set("serviceName", process_metric.second->service_name);
+    }
 
     if (!process_metric.second->name.empty()) {
       pid_dict.Set("name", process_metric.second->name);

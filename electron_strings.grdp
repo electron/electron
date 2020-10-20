@@ -80,4 +80,8 @@
       Windows Utilities
     </message>
   </if>
+  <message name="IDS_DOWNLOAD_MORE_ACTIONS"
+          desc="Tooltip of a button on the downloads page that shows a menu with actions like 'Open downloads folder' or 'Clear all'">
+    More actions
+</message>
 </grit-part>

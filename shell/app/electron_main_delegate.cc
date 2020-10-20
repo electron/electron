@@ -27,7 +27,6 @@
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
-#include "services/service_manager/embedder/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
@@ -89,7 +88,7 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
 #if defined(OS_LINUX)
       // The zygote process opens the resources for the renderers.
-      process_type == service_manager::switches::kZygoteProcess ||
+      process_type == ::switches::kZygoteProcess ||
 #endif
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
@@ -222,8 +221,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-  // Enable convient stack printing. This is enabled by default in non-official
-  // builds.
+  // Enable convenient stack printing. This is enabled by default in
+  // non-official builds.
   if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
     base::debug::EnableInProcessStackDumping();
 
@@ -346,8 +345,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
-  if (process_type != service_manager::switches::kZygoteProcess &&
-      !process_type.empty()) {
+  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     breakpad::InitCrashReporter(process_type);
   }

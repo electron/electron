@@ -12,14 +12,14 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index 694f63ecd2de241fd1a8b7b529bbd4d1bea78337..cc9679eb86f85239f5612d8db8200db5392f5bc5 100644
+index 694f63ecd2de241fd1a8b7b529bbd4d1bea78337..705d24cb09a2a8b07ac7acd21b18e2e3483856bf 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -229,6 +229,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
    base::AutoLock auto_lock(lock_);
    private_->TerminateInfoCollectionGpuProcess();
  }
-+  
++
 +bool GpuDataManagerImpl::DxdiagDx12VulkanRequested() const {
 +  base::AutoLock auto_lock(lock_);
 +  return private_->DxdiagDx12VulkanRequested();
@@ -40,10 +40,10 @@ index 7030549c94196877b690e8f683dda212534176ec..e9b216f65394e36525533768e087cd36
    // Update the GPU feature info. This updates the blocklist and enabled status
    // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 879e233fa550b3aad94b64fb1ac603cbae782922..cecf9738c6e33c766fcadea8c71b6656fb67784d 100644
+index 1b729fa275f4fa3fea5b9bdabeccb9df0a94713a..c10d08dee7ad5fc26c61b6a5e96e62fa1fb4548c 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1060,6 +1060,11 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1022,6 +1022,11 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
      host->ForceShutdown();
  }
  

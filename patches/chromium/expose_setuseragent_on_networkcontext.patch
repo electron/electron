@@ -33,7 +33,7 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index fe30fc94f752e08839913868b8464a349fe541fe..0c2c48ef148adaba81b16e6354e4098100afbca6 100644
+index e251376b5765e0a4f277155efb2254440aebfd32..d756fd6a3fdf7fb02eccd10f736b6c2fce2b5d5b 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1081,6 +1081,13 @@ void NetworkContext::SetNetworkConditions(
@@ -51,7 +51,7 @@ index fe30fc94f752e08839913868b8464a349fe541fe..0c2c48ef148adaba81b16e6354e40981
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index e2a565663abea1b13beaaa33e83d8102da693e35..407e89a436905f562464536a4cd353346a8a4cce 100644
+index 1372f6f6ca4899cc7b230a3cd1b26db4c16325b5..0e2c067837cd180ad9b99c082487199d72e5a0ed 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -244,6 +244,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index e2a565663abea1b13beaaa33e83d8102da693e35..407e89a436905f562464536a4cd35334
    void SetEnableReferrers(bool enable_referrers) override;
  #if defined(OS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 2163ef65ae5faec671f4f3ad93c36d069f598ac6..b4d200164829d0d34c2511a07eb0cc3d046d6fa3 100644
+index 7470e225762ead89d411654923b2415f12ab1ecb..7332e25e8a182e35ffdba0a4e98c01641e60ee8a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1072,6 +1072,9 @@ interface NetworkContext {
+@@ -1057,6 +1057,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  

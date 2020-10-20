@@ -53,9 +53,11 @@ namespace electron {
 ProcessMetric::ProcessMetric(int type,
                              base::ProcessHandle handle,
                              std::unique_ptr<base::ProcessMetrics> metrics,
+                             const std::string& service_name,
                              const std::string& name) {
   this->type = type;
   this->metrics = std::move(metrics);
+  this->service_name = service_name;
   this->name = name;
 
 #if defined(OS_WIN)

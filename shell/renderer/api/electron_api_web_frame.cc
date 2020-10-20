@@ -10,6 +10,8 @@
 
 #include "base/command_line.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/strings/utf_string_conversions.h"
+#include "components/spellcheck/renderer/spellcheck.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
@@ -24,6 +26,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
+#include "shell/renderer/electron_renderer_client.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/platform/web_cache.h"
@@ -99,6 +102,24 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   if (!frame)
     return nullptr;
   return content::RenderFrame::FromWebFrame(frame);
+}
+
+bool SpellCheckWord(v8::Isolate* isolate,
+                    v8::Local<v8::Value> window,
+                    const std::string& word,
+                    std::vector<base::string16>* optional_suggestions) {
+  size_t start;
+  size_t length;
+
+  ElectronRendererClient* client = ElectronRendererClient::Get();
+  auto* render_frame = GetRenderFrame(window);
+  if (!render_frame)
+    return true;
+
+  base::string16 w = base::UTF8ToUTF16(word);
+  int id = render_frame->GetRoutingID();
+  return client->GetSpellCheck()->SpellCheckWord(
+      w.c_str(), 0, word.size(), id, &start, &length, optional_suggestions);
 }
 
 class RenderFrameStatus final : public content::RenderFrameObserver {
@@ -388,7 +409,6 @@ void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
 
   blink::WebFrame* web_frame = render_frame->GetWebFrame();
   web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
-  web_frame->View()->SetIgnoreViewportTagScaleLimits(true);
 }
 
 void AllowGuestViewElementDefinition(gin_helper::ErrorThrower thrower,
@@ -672,6 +692,20 @@ blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
   return stats;
 }
 
+bool IsWordMisspelled(v8::Isolate* isolate,
+                      v8::Local<v8::Value> window,
+                      const std::string& word) {
+  return !SpellCheckWord(isolate, window, word, nullptr);
+}
+
+std::vector<base::string16> GetWordSuggestions(v8::Isolate* isolate,
+                                               v8::Local<v8::Value> window,
+                                               const std::string& word) {
+  std::vector<base::string16> suggestions;
+  SpellCheckWord(isolate, window, word, &suggestions);
+  return suggestions;
+}
+
 void ClearCache(v8::Isolate* isolate) {
   isolate->IdleNotificationDeadline(0.5);
   blink::WebCache::Clear();
@@ -827,6 +861,10 @@ void Initialize(v8::Local<v8::Object> exports,
                  &ExecuteJavaScriptInIsolatedWorld);
   dict.SetMethod("setIsolatedWorldInfo", &SetIsolatedWorldInfo);
   dict.SetMethod("getResourceUsage", &GetResourceUsage);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  dict.SetMethod("isWordMisspelled", &IsWordMisspelled);
+  dict.SetMethod("getWordSuggestions", &GetWordSuggestions);
+#endif
   dict.SetMethod("clearCache", &ClearCache);
   dict.SetMethod("_findFrameByRoutingId", &FindFrameByRoutingId);
   dict.SetMethod("_getFrameForSelector", &GetFrameForSelector);

@@ -121,7 +121,7 @@ if (packageJson.desktopName != null) {
   app.setDesktopName(`${app.name}.desktop`);
 }
 
-// Set v8 flags, delibrately lazy load so that apps that do not use this
+// Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags);
@@ -141,6 +141,9 @@ if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
 
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
+
+// Load web-contents module to ensure it is populated on app ready
+require('@electron/internal/browser/api/web-contents');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';

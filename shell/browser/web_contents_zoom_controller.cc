@@ -263,7 +263,7 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
 
   // When kZoomFactor is available, it takes precedence over
   // pref store values but if the host has zoom factor set explicitly
-  // then it takes precendence.
+  // then it takes precedence.
   // pref store < kZoomFactor < setZoomLevel
   std::string host = net::GetHostOrSpecFromURL(url);
   std::string scheme = url.scheme();

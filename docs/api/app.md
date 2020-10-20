@@ -432,7 +432,8 @@ Returns:
     * `integrity-failure` - Windows code integrity checks failed
   * `exitCode` Number - The exit code for the process
       (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
-  * `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
+  * `serviceName` String (optional) - The non-localized name of the process.
+  * `name` String (optional) - The name of the process.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 
 Emitted when the child process unexpectedly disappears. This is normally
@@ -679,7 +680,6 @@ Returns `String` - The current application directory.
   * `videos` Directory for a user's videos.
   * `recent` Directory for the user's recent files (Windows only).
   * `logs` Directory for your app's log folder.
-  * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
   * `crashDumps` Directory where crash dumps are stored.
 
 Returns `String` - A path to a special directory or file associated with `name`. On

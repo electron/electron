@@ -163,6 +163,10 @@ bool TabsExecuteScriptFunction::ShouldInsertCSS() const {
   return false;
 }
 
+bool TabsExecuteScriptFunction::ShouldRemoveCSS() const {
+  return false;
+}
+
 ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   std::unique_ptr<tabs::Get::Params> params(tabs::Get::Params::Create(*args_));
   EXTENSION_FUNCTION_VALIDATE(params.get());

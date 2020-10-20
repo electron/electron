@@ -9,6 +9,7 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // session is not used here, the purpose is to make sure session is initalized
 // before the webContents module.
@@ -196,7 +197,7 @@ const webFrameMethods = [
 
 for (const method of webFrameMethods) {
   WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', method, ...args);
+    return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
   };
 }
 
@@ -214,11 +215,11 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScript', String(code), !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScript', String(code), !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, 'ELECTRON_INTERNAL_RENDERER_WEB_FRAME_METHOD', 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
 };
 
 // Translate the options of printToPDF.

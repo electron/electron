@@ -999,7 +999,7 @@ void BaseWindow::SetIcon(gin::Handle<NativeImage> icon) {
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
                 icon->GetHICON(GetSystemMetrics(SM_CXICON)));
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->image().AsImageSkia());
 #endif

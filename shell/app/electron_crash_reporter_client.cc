@@ -23,7 +23,6 @@
 #include "components/upload_list/crash_upload_list.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
-#include "services/service_manager/embedder/switches.h"
 #include "shell/common/electron_paths.h"
 
 #if defined(OS_POSIX) && !defined(OS_MAC)
@@ -210,7 +209,7 @@ bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {
   return process_type == switches::kRendererProcess ||
          process_type == switches::kPpapiPluginProcess ||
-         process_type == service_manager::switches::kZygoteProcess ||
+         process_type == switches::kZygoteProcess ||
          process_type == switches::kGpuProcess ||
          process_type == switches::kUtilityProcess || process_type == "node";
 }

@@ -6,7 +6,9 @@
 #define SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 
 #include <type_traits>
+#include <utility>
 
+#include "base/optional.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
@@ -57,6 +59,18 @@ class Dictionary : public gin::Dictionary {
         GetHandle()->Set(isolate()->GetCurrentContext(),
                          gin::ConvertToV8(isolate(), key), v8_value);
     return !result.IsNothing() && result.FromJust();
+  }
+
+  // Like normal Get but put result in an base::Optional.
+  template <typename T>
+  bool GetOptional(base::StringPiece key, base::Optional<T>* out) const {
+    T ret;
+    if (Get(key, &ret)) {
+      out->emplace(std::move(ret));
+      return true;
+    } else {
+      return false;
+    }
   }
 
   template <typename T>

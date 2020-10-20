@@ -789,12 +789,12 @@ const path = require('path')
 
 app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
-  protocol.registerFileProtocol('atom', (request, callback) => {
+  if (!protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
-  }, (error) => {
-    if (error) console.error('Failed to register protocol')
-  })
+  })) {
+    console.error('Failed to register protocol')
+  }
 })
 ```
 

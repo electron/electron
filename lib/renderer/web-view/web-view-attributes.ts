@@ -1,6 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // Helper function to resolve url set in attribute.
 const a = document.createElement('a');
@@ -122,7 +123,7 @@ class SrcAttribute extends WebViewAttribute {
     super.setValueIgnoreMutation(value);
 
     // takeRecords() is needed to clear queued up src mutations. Without it, it
-    // is possible for this change to get picked up asyncronously by src's
+    // is possible for this change to get picked up asynchronously by src's
     // mutation observer |observer|, and then get handled even though we do not
     // want to handle this mutation.
     this.observer.takeRecords();
@@ -196,7 +197,7 @@ class SrcAttribute extends WebViewAttribute {
     const method = 'loadURL';
     const args = [this.getValue(), opts];
 
-    ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args);
+    ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
   }
 }
 

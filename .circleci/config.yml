@@ -764,14 +764,20 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
 
 step-show-sccache-stats: &step-show-sccache-stats
   run:
+    shell: /bin/bash
     name: Check sccache/goma stats after build
     command: |
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
       fi
       if [ "$USE_GOMA" == "true" ]; then
+        set +e
+        set +o pipefail
         $LOCAL_GOMA_DIR/goma_ctl.py stat
+        $LOCAL_GOMA_DIR/diagnose_goma_log.py
+        true
       fi
+    when: always
 
 step-mksnapshot-build: &step-mksnapshot-build
   run:
@@ -1796,7 +1802,7 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1876,7 +1882,7 @@ jobs:
           checkout: false
 
   linux-ia32-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-ia32

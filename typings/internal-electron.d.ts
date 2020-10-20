@@ -1,6 +1,6 @@
 /// <reference path="../electron.d.ts" />
 
- /**
+/**
  * This file augments the Electron TS namespace with the internal APIs
  * that are not documented but are used by Electron internally
  */
@@ -77,6 +77,13 @@ declare namespace Electron {
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
     length(): number;
+    destroy(): void;
+    // <webview>
+    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
+    detachFromOuterFrame(): void;
+    setEmbedder(embedder: Electron.WebContents): void;
+    attachParams?: Record<string, any>;
+    viewInstanceId: number;
   }
 
   interface WebFrame {
@@ -87,7 +94,10 @@ declare namespace Electron {
   interface WebPreferences {
     guestInstanceId?: number;
     openerId?: number;
-    disablePopups?: boolean
+    disablePopups?: boolean;
+    preloadURL?: string;
+    embedder?: Electron.WebContents;
+    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Menu {
@@ -98,6 +108,7 @@ declare namespace Electron {
     _isCommandIdVisible(id: string): boolean;
     _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
     _shouldRegisterAcceleratorForCommandId(id: string): boolean;
+    _getSharingItemForCommandId(id: string): SharingItem | null;
     _callMenuWillShow(): void;
     _executeCommand(event: any, id: number): void;
     _menuWillShow(): void;
@@ -265,6 +276,10 @@ declare namespace ElectronInternal {
     // Created in web-view-impl
     public getWebContentsId(): number;
     public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
+  }
+
+  class WebContents extends Electron.WebContents {
+    static create(opts: Electron.WebPreferences): Electron.WebContents;
   }
 }
 

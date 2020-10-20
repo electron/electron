@@ -34,13 +34,25 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 }  // namespace
 
+// static
+ElectronRendererClient* ElectronRendererClient::self_ = nullptr;
+
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
+  DCHECK(!self_) << "Cannot have two ElectronRendererClient";
+  self_ = this;
+}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
+}
+
+// static
+ElectronRendererClient* ElectronRendererClient::Get() {
+  DCHECK(self_);
+  return self_;
 }
 
 void ElectronRendererClient::RenderFrameCreated(
@@ -108,11 +120,11 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   injected_frames_.insert(render_frame);
 
-  // If this is the first environment we are creating, prepare the node
-  // bindings.
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  } else if (reuse_renderer_processes_enabled) {
     node_bindings_->PrepareMessageLoop();
   }
 
@@ -129,7 +141,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
-  if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
+  if (reuse_renderer_processes_enabled)
     env->set_force_context_aware(true);
   env->set_warn_context_aware(true);
 

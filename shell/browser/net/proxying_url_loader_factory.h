@@ -227,9 +227,9 @@ class ProxyingURLLoaderFactory
 
   // This is passed from api::Protocol.
   //
-  // The Protocol instance lives through the lifetime of BrowserContenxt,
-  // which is guarenteed to cover the lifetime of URLLoaderFactory, so the
-  // reference is guarenteed to be valid.
+  // The Protocol instance lives through the lifetime of BrowserContext,
+  // which is guaranteed to cover the lifetime of URLLoaderFactory, so the
+  // reference is guaranteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
   const HandlersMap& intercepted_handlers_;
