@@ -2,16 +2,24 @@
 
 ## Overview
 
-On Windows, a taskbar button can be used to display a progress bar. This enables
-a window to provide progress information to the user without the need of switching to
-the window itself.
+A progress bar enables a window to provide progress information to the user
+without the need of switching to the window itself.
 
-![Taskbar Progress Bar][taskbar-progress-image]
+On Windows, you can use a taskbar button to display a progress bar.
+
+![Windows Progress Bar][windows-progress-bar]
 
 On macOS, the progress bar will be displayed as a part of the dock icon.
 
-The Unity DE also has a similar feature that allows you to specify the progress
-bar in the launcher.
+![macOS Progress Bar][macos-progress-bar]
+
+On Linux, the Unity graphical interface also has a similar feature that allows
+you to specify the progress bar in the launcher.
+
+![Linux Progress Bar][linux-progress-bar]
+
+> NOTE: on Windows, each window can have its own progress bar, whereas on macOS
+and Linux (Unity) there can be only one progress bar for the application.
 
 ----
 
@@ -24,7 +32,7 @@ currently at 63% towards completion, you would call it as
 
 Setting the parameter to negative values (e.g. `-1`) will remove the progress
 bar, whereas setting it to values greater than `1` (e.g. `2`) will switch the
-progress bar to intermediate mode (100% complete).
+progress bar to indeterminate mode (100% complete).
 
 See the [API documentation for more options and modes][setprogressbar].
 
@@ -48,9 +56,11 @@ percentage you just defined.
 ![macOS dock progress bar](../images/dock-progress-bar.png)
 
 For macOS, the progress bar will also be indicated for your application
-when using [Mission control](https://support.apple.com/en-us/HT204100):
+when using [Mission Control](https://support.apple.com/en-us/HT204100):
 
 ![Mission Control Progress Bar](../images/mission-control-progress-bar.png)
 
-[taskbar-progress-image]: https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png
+[windows-progress-bar]: https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png
+[macos-progress-bar]: ../images/macos-progress.bar.png
+[linux-progress-bar]: ../images/linux-progress.bar.png
 [setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
