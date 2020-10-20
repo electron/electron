@@ -2,11 +2,14 @@
 
 ## Overview
 
-On macOS, a window can set its represented file, so the file's icon can be
-shown in the title bar. When users click on the title with `Command` or
-`Control` key pressed, a popup with a path to the file will be shown.
+On macOS, you can set a represented file for any window in your application.
+The represented file's icon will be shown in the title bar, and when users
+`Command-Click` or `Control-Click`, a popup with a path to the file will be
+shown.
 
 ![Represented File][represented-image]
+
+> NOTE: The screenshot above is an example where this feature is used to indicate the currently opened file in the Atom text editor.
 
 You can also set the edited state for a window so that the file icon can
 indicate whether the document in this window has been modified.
