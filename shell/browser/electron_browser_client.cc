@@ -614,7 +614,8 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   auto preloads =
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
-    prefs->preloads = base::JoinString(preloads, kPathDelimiter);
+    prefs->preloads =
+        base::FilePath(base::JoinString(preloads, kPathDelimiter));
   if (CanUseCustomSiteInstance())
     prefs->disable_electron_site_instance_overrides = true;
 

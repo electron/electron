@@ -85,7 +85,7 @@ index 15a8f088ec5f96765312779fbff9b4e6cfb9c89d..2639fba8c9d48312aa73ac9ba7ee7016
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 776127997373391364909a3f613c07cbf4c8e996..9a0a0de139aaf0d491b5eeb5bcdffbaec687ba4c 100644
+index 776127997373391364909a3f613c07cbf4c8e996..9b2206348c94f71738bae497c8aca280cb9d187e 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -96,11 +96,12 @@ index 776127997373391364909a3f613c07cbf4c8e996..9a0a0de139aaf0d491b5eeb5bcdffbae
  #include "base/strings/string16.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
-@@ -155,6 +156,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -155,6 +156,29 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
-+  base::FilePath::StringType preloads;
++  // Begin Electron-specific WebPreferences.
++  base::FilePath preloads;
 +  bool disable_electron_site_instance_overrides;
 +  std::string background_color;
 +  int opener_id;
@@ -110,7 +111,7 @@ index 776127997373391364909a3f613c07cbf4c8e996..9a0a0de139aaf0d491b5eeb5bcdffbae
 +  int guest_instance_id;
 +  bool hidden_page;
 +  bool offscreen;
-+  base::FilePath::StringType preload;
++  base::FilePath preload;
 +  bool native_window_open;
 +  bool node_integration;
 +  bool node_integration_in_worker;
@@ -120,20 +121,29 @@ index 776127997373391364909a3f613c07cbf4c8e996..9a0a0de139aaf0d491b5eeb5bcdffbae
 +  bool enable_plugins;
 +  bool enable_websql;
 +  bool webview_tag;
++  // End Electron-specific WebPreferences.
 +
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..727bb74626a61db6338d954a3c6e50d15401078b 100644
+index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..28ccc99b5fd0ccbd88dca42f2b2253a9732bdc8a 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-@@ -462,6 +462,88 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -6,6 +6,7 @@
+ #define THIRD_PARTY_BLINK_PUBLIC_COMMON_WEB_PREFERENCES_WEB_PREFERENCES_MOJOM_TRAITS_H_
+ 
+ #include "build/build_config.h"
++#include "mojo/public/cpp/base/file_path_mojom_traits.h"
+ #include "mojo/public/cpp/bindings/struct_traits.h"
+ #include "net/nqe/effective_connection_type.h"
+ #include "third_party/blink/public/common/common_export.h"
+@@ -462,6 +463,88 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.record_whole_document;
    }
  
 +  // Begin Electron-specific WebPreferences.
-+  static const std::string& preloads(const blink::web_pref::WebPreferences& r) {
++  static const base::FilePath& preloads(const blink::web_pref::WebPreferences& r) {
 +    return r.preloads;
 +  }
 +
@@ -173,7 +183,7 @@ index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..727bb74626a61db6338d954a3c6e50d1
 +    return r.offscreen;
 +  }
 +
-+  static const std::string& preload(const blink::web_pref::WebPreferences& r) {
++  static const base::FilePath& preload(const blink::web_pref::WebPreferences& r) {
 +    return r.preload;
 +  }
 +
@@ -218,15 +228,23 @@ index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..727bb74626a61db6338d954a3c6e50d1
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..d9804ff04ec80ca4458d141d3010c29557bb6fd5 100644
+index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..11365efdb551812d5832a4309902e2ad63a6ac2c 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-@@ -202,6 +202,29 @@ struct WebPreferences {
+@@ -8,6 +8,7 @@ import "third_party/blink/public/mojom/css/preferred_color_scheme.mojom";
+ import "third_party/blink/public/mojom/v8_cache_options.mojom";
+ import "url/mojom/url.mojom";
+ import "mojo/public/mojom/base/string16.mojom";
++import "mojo/public/mojom/base/file_path.mojom";
+ 
+ enum PointerType {
+   kPointerFirstType                         = 1,  // 1 << 0
+@@ -202,6 +203,29 @@ struct WebPreferences {
    V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
-+  string preloads;
++  mojo_base.mojom.FilePath preloads;
 +  bool disable_electron_site_instance_overrides;
 +  string background_color;
 +  int32 opener_id;
@@ -236,7 +254,7 @@ index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..d9804ff04ec80ca4458d141d3010c295
 +  int32 guest_instance_id;
 +  bool hidden_page;
 +  bool offscreen;
-+  string preload;
++  mojo_base.mojom.FilePath preload;
 +  bool native_window_open;
 +  bool node_integration;
 +  bool node_integration_in_worker;
@@ -251,7 +269,7 @@ index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..d9804ff04ec80ca4458d141d3010c295
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
-@@ -428,4 +451,4 @@ struct WebPreferences {
+@@ -428,4 +452,4 @@ struct WebPreferences {
    // Whether touch input can trigger HTML drag-and-drop operations. The
    // default value depends on the platform.
    bool touch_drag_drop_enabled;

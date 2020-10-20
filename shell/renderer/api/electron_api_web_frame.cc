@@ -403,7 +403,7 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
   const auto& prefs = render_frame->GetBlinkPreferences();
 
   if (pref_name == options::kPreloadScripts) {
-    return gin::ConvertToV8(isolate, prefs.preloads);
+    return gin::ConvertToV8(isolate, prefs.preloads.value());
   } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
     return gin::ConvertToV8(isolate,
                             prefs.disable_electron_site_instance_overrides);
@@ -429,7 +429,7 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
   } else if (pref_name == options::kOffscreen) {
     return gin::ConvertToV8(isolate, prefs.offscreen);
   } else if (pref_name == options::kPreloadScript) {
-    return gin::ConvertToV8(isolate, prefs.preload);
+    return gin::ConvertToV8(isolate, prefs.preload.value());
   } else if (pref_name == options::kNativeWindowOpen) {
     return gin::ConvertToV8(isolate, prefs.native_window_open);
   } else if (pref_name == options::kNodeIntegration) {
