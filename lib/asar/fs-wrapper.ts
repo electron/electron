@@ -50,7 +50,7 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
     archivePath = archivePathOrBuffer.toString();
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
-  if(!asarRe.test(archivePath)) return { isAsar: <const>false };
+  if (!asarRe.test(archivePath)) return { isAsar: <const>false };
 
   return asar.splitPath(path.normalize(archivePath));
 };
