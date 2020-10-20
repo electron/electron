@@ -424,7 +424,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} in run-compiler.js
+    // electron scripts are wrapped in a try {} catch {} by webpack
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Failed to initialize node environment in process: "
                  << process_type;
