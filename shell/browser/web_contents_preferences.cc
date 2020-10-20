@@ -414,7 +414,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
 
-  // // --background-color.
+  // --background-color.
   std::string color;
   if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
     prefs->background_color = color;
