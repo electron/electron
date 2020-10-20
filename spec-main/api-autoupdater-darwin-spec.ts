@@ -307,7 +307,7 @@ describeFn('autoUpdater behavior', function () {
 
         await relaunchPromise;
         expect(requests).to.have.lengthOf(3);
-        expect(requests[2]).to.have.property('url', '/update-check/updated/2.0.0');
+        expect(requests[2].url).to.equal('/update-check/updated/2.0.0');
         expect(requests[2].header('user-agent')).to.include('Electron/');
       });
     });
