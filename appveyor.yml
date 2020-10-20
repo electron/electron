@@ -105,7 +105,7 @@ build_script:
             cd src\third_party\angle
             git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
             git fetch
-            cd ..\..
+            cd ..\..\..
           }
         } else {    
           # file does not exist, gclient sync, then zip
