@@ -475,11 +475,6 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
 
-  // Start idle gc.
-  gc_timer_.Start(FROM_HERE, base::TimeDelta::FromMinutes(1),
-                  base::BindRepeating(&v8::Isolate::LowMemoryNotification,
-                                      base::Unretained(js_env_->isolate())));
-
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
 
