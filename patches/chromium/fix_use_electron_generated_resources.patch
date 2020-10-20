@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 24 Sep 2020 11:10:41 -0700
+Subject: fix: use electron generated resources
+
+This patch fixes a few instances where we need to use Electron generated
+resources for IDS strings, or the IDs will be wrong and cause DCHECKS
+as they will loaded as empty strings.
+
+* IDR_PDF_MANIFEST on Linux
+* IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME on Windows
+
+diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
+index 877d0ba2f48359243527ddebf1d91132b3d5c455..cd69de498c4968ade0ffabf45b72d4d63b70b10f 100644
+--- a/chrome/browser/pdf/pdf_extension_util.cc
++++ b/chrome/browser/pdf/pdf_extension_util.cc
+@@ -6,7 +6,7 @@
+ 
+ #include "base/strings/string_util.h"
+ #include "chrome/common/chrome_content_client.h"
+-#include "chrome/grit/browser_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/resource/resource_bundle.h"
+ 
+ namespace pdf_extension_util {
+diff --git a/chrome/browser/printing/printing_service.cc b/chrome/browser/printing/printing_service.cc
+index 1c9e0853250fe763888cfe1fb5fe4f8dad119e60..cbaf7b2c7f8972a91b186d03739be33c366b206e 100644
+--- a/chrome/browser/printing/printing_service.cc
++++ b/chrome/browser/printing/printing_service.cc
+@@ -6,7 +6,7 @@
+ 
+ #include "base/no_destructor.h"
+ #include "build/build_config.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "content/public/browser/service_process_host.h"
+ 
+ const mojo::Remote<printing::mojom::PrintingService>& GetPrintingService() {
