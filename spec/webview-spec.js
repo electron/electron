@@ -986,7 +986,8 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('did-change-theme-color event', () => {
+  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
+  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
     it('emits when theme color changes', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/theme-color.html`
