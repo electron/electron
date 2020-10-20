@@ -10,10 +10,10 @@ ensure that we stay in sync with Node.js default behavior.
 This will be upstreamed.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1a6980340 100644
+index 28851b8a8f8bdd6dec0f54c62f79fd75a3be08ed..e42416b4807fcc9d35a93399b916968b45ed0c7a 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -30,14 +30,16 @@ using v8::PropertyDescriptor;
+@@ -26,14 +26,16 @@ using v8::PropertyDescriptor;
  using v8::String;
  using v8::Value;
  
@@ -32,7 +32,7 @@ index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1
    DebugSealHandleScope scope(isolate);
    Environment* env = Environment::GetCurrent(isolate);
    return env != nullptr &&
-@@ -47,7 +49,8 @@ static bool ShouldAbortOnUncaughtException(Isolate* isolate) {
+@@ -42,7 +44,8 @@ static bool ShouldAbortOnUncaughtException(Isolate* isolate) {
           !env->inside_should_not_abort_on_uncaught_scope();
  }
  
@@ -42,7 +42,7 @@ index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1
                                        Local<Value> exception,
                                        Local<Array> trace) {
    Environment* env = Environment::GetCurrent(context);
-@@ -221,7 +224,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -216,7 +219,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
  
    auto* abort_callback = s.should_abort_on_uncaught_exception_callback ?
        s.should_abort_on_uncaught_exception_callback :
@@ -51,7 +51,7 @@ index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1
    isolate->SetAbortOnUncaughtExceptionCallback(abort_callback);
  
    auto* fatal_error_cb = s.fatal_error_callback ?
-@@ -229,7 +232,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -224,7 +227,7 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetFatalErrorHandler(fatal_error_cb);
  
    auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
@@ -60,7 +60,7 @@ index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1
    isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
  }
  
-@@ -237,7 +240,7 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -232,7 +235,7 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetMicrotasksPolicy(s.policy);
  
    auto* allow_wasm_codegen_cb = s.allow_wasm_code_generation_callback ?
@@ -68,12 +68,12 @@ index cf6115d04ba3c184937c5db85c9d7ebc78ed3db7..a8ee97729858b40179e6bce58cfbacf1
 +    s.allow_wasm_code_generation_callback : Environment::AllowWasmCodeGenerationCallback;
    isolate->SetAllowWasmCodeGenerationCallback(allow_wasm_codegen_cb);
  
-   if ((s.flags & SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK) == 0) {
+   if (s.flags & SHOULD_SET_PROMISE_REJECTION_CALLBACK) {
 diff --git a/src/env.h b/src/env.h
-index 4fe2eb3b7699efcab87c377743a955effbbfd9de..2bb196d199bd9b6c27d9de8ca7e5a9bffad0c788 100644
+index 9420bdf3f71e2df1011ddd7e583071f5c99beac8..a5c72b6c145feedd624f7b6e407617ab295ad3bb 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -904,6 +904,13 @@ class Environment : public MemoryRetainer {
+@@ -918,6 +918,13 @@ class Environment : public MemoryRetainer {
    void Exit(int code);
    void ExitEnv();
  
