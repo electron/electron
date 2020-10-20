@@ -101,6 +101,11 @@ build_script:
           } else {
             # update external binaries
             python src/electron/script/update-external-binaries.py
+            # update angle
+            cd src\angle
+            git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
+            git fetch
+            cd ..\..
           }
         } else {    
           # file does not exist, gclient sync, then zip
