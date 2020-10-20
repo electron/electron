@@ -8,8 +8,7 @@ detection can be implemented in the Renderer process using the
 attribute, part of standard HTML5 API.
 
 The `navigator.onLine` attribute returns:
-* `false` if any network requests are guaranteed to fail, i.e., definitely
-offline (disconnected from the network).
+* `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
 * `true` in all other cases.
 
 Since many cases return `true`, you should treat with care situations of
@@ -21,7 +20,7 @@ status of Electron, you should develop additional means for this check.
 
 ## Example
 
-## Event detection in the Renderer process
+### Event detection in the Renderer process
 
 Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file
@@ -60,7 +59,7 @@ After launching the Electron application, you should see the notification:
 
 ![Online-offline-event detection](../images/online-event-detection.png)
 
-## Event detection in the Main process
+### Event detection in the Main process
 
 There may be situations when you want to respond to online/offline events in
 the Main process as well. The Main process, however, does not have a
