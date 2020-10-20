@@ -81,7 +81,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76ab5ba70f1 100644
+index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..e1bfab6b716fa5d2f552b7af149748b3b0dc0a23 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -121,7 +121,7 @@ index 31fa3d22a28cb673a1eac983acafb7bcd484e6ca..58d52c207f12dd329a0cb8593af5f76a
                                         tint_gl_composited_content_,
                                         ShouldApplyRoundedCorner(quad)),
 -                CurrentRenderPassColorSpace(), CurrentRenderPassColorSpace());
-+                PATCH_CS(CurrentRenderPassColorSpace()), 
++                PATCH_CS(CurrentRenderPassColorSpace()),
 +                PATCH_CS(CurrentRenderPassColorSpace()));
  
    gfx::ColorSpace quad_color_space = gfx::ColorSpace::CreateSRGB();
