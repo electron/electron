@@ -11,6 +11,7 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
+#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
@@ -18,6 +19,10 @@
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -138,6 +143,9 @@ class RendererClientBase : public content::ContentRendererClient
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
 #endif
 };
 
