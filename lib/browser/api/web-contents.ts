@@ -453,6 +453,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: any, url: string
         if (response === false) event.preventDefault();
         return null;
       case 'object':
+        // TODO: check that |response| is not null
         return response;
       default:
         console.error(
