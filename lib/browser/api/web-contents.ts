@@ -445,25 +445,23 @@ WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electr
 };
 
 WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string) {
-  if (this._windowOpenHandler) {
-    const response = this._windowOpenHandler({ url, frameName, features: rawFeatures });
-
-    switch (typeof response) {
-      case 'boolean':
-        if (response === false) event.preventDefault();
-        return null;
-      case 'object':
-        // TODO: check that |response| is not null
-        return response;
-      default:
-        console.error(
-          'The window.open override response must be a boolean or an object of BrowserWindow options.'
-        );
-        event.preventDefault();
-        return null;
-    }
+  if (!this._windowOpenHandler) {
+    return null;
   }
-  return null;
+  const response = this._windowOpenHandler({ url, frameName, features: rawFeatures });
+
+  if (response === false) {
+    event.preventDefault();
+    return null;
+  } else if (response === true) {
+    return null;
+  } else if (response != null && typeof response === 'object') {
+    return response;
+  } else {
+    console.error('The window.open override response must be a boolean or an object of BrowserWindow options.');
+    event.preventDefault();
+    return null;
+  }
 };
 
 const addReplyToEvent = (event: any) => {
