@@ -32,6 +32,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
@@ -225,9 +226,18 @@ void SetNodeOptions(base::Environment* env) {
 
 bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
                                      v8::Local<v8::String>) {
-  v8::Local<v8::Value> wasm_code_gen = context->GetEmbedderData(
-      node::ContextEmbedderIndex::kAllowWasmCodeGeneration);
-  return wasm_code_gen->IsUndefined() || wasm_code_gen->IsTrue();
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  v8::Isolate* isolate = context->GetIsolate();
+  if (node::Environment::GetCurrent(isolate) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return false;
+    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
+        context, v8::String::Empty(isolate));
+  }
+
+  return node::Environment::AllowWasmCodeGenerationCallback(
+      context, v8::String::Empty(isolate));
 }
 
 }  // namespace
