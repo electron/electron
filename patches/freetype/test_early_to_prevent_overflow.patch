@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <anbelen@microsoft.com>
+Date: Tue, 20 Oct 2020 21:39:54 +0200
+Subject: Test early to prevent overflow.
+
+Bug: chromium:1139963
+
+diff --git a/src/sfnt/pngshim.c b/src/sfnt/pngshim.c
+index 2e64e58463ad04c65424b2386e4a5a0d4ed7ca18..0bf2b4321752fc1526ca10d8fe0c96d5576128bd 100644
+--- a/src/sfnt/pngshim.c
++++ b/src/sfnt/pngshim.c
+@@ -332,6 +332,13 @@
+ 
+     if ( populate_map_and_metrics )
+     {
++      /* reject too large bitmaps similarly to the rasterizer */
++      if ( imgWidth > 0x7FFF || imgHeight > 0x7FFF )
++       {
++         error = FT_THROW( Array_Too_Large );
++         goto DestroyExit;
++       }
++
+       metrics->width  = (FT_UShort)imgWidth;
+       metrics->height = (FT_UShort)imgHeight;
+ 
+@@ -340,13 +347,6 @@
+       map->pixel_mode = FT_PIXEL_MODE_BGRA;
+       map->pitch      = (int)( map->width * 4 );
+       map->num_grays  = 256;
+-
+-      /* reject too large bitmaps similarly to the rasterizer */
+-      if ( map->rows > 0x7FFF || map->width > 0x7FFF )
+-      {
+-        error = FT_THROW( Array_Too_Large );
+-        goto DestroyExit;
+-      }
+     }
+ 
+     /* convert palette/gray image to rgb */
