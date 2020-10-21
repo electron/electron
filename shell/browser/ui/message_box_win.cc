@@ -14,8 +14,8 @@
 
 #include "base/lazy_instance.h"
 #include "base/strings/string_util.h"
-#include "base/synchronization/lock.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/synchronization/lock.h"
 #include "base/task/post_task.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/browser.h"
@@ -130,8 +130,8 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
                                 const std::u16string& checkbox_label,
                                 bool checkbox_checked,
                                 const gfx::ImageSkia& icon,
-                                const absl::optional<std::string>& mb_id = nullptr,
-                                HWND* hwnd = nullptr) {
+                                const absl::optional<std::string>& mb_id,
+                                HWND* hwnd) {
   TASKDIALOG_FLAGS flags =
       TDF_SIZE_TO_CONTENT |           // Show all content.
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
@@ -261,8 +261,8 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
   return ShowTaskDialogWstr(
       settings.parent_window, settings.type, buttons, settings.default_id,
       settings.cancel_id, settings.no_link, title, message, detail,
-      checkbox_label, settings.checkbox_checked, settings.icon,
-      settings.id, hwnd);
+      checkbox_label, settings.checkbox_checked, settings.icon, settings.id,
+      hwnd);
 }
 
 }  // namespace
@@ -283,8 +283,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       std::move(callback).Run("Duplicate ID found", 0, false);
       return;
     }
-    auto it = g_dialogs.emplace(*settings.id,
-                                std::make_unique<HWND>(kHwndReserve));
+    auto it =
+        g_dialogs.emplace(*settings.id, std::make_unique<HWND>(kHwndReserve));
     hwnd = it.first->second.get();
   }
 
@@ -325,7 +325,8 @@ bool CloseMessageBox(const std::string& id, std::string* error) {
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
-                     u"Error", title, content, u"", false, gfx::ImageSkia());
+                     u"Error", title, content, u"", false, gfx::ImageSkia(),
+                     nullptr, nullptr);
 }
 
 }  // namespace electron

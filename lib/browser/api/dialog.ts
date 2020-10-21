@@ -263,8 +263,8 @@ export function showMessageBox (windowOrOptions: BrowserWindow | MessageBoxOptio
   return messageBox(false, window, options);
 }
 
-export function closeMessageBox (id: string, code: number) {
-  return dialogBinding.closeMessageBox(id, code);
+export function closeMessageBox (id: string) {
+  return dialogBinding.closeMessageBox(id);
 }
 
 export function showMessageBoxSync(window: BrowserWindow, options: MessageBoxOptions): MessageBoxReturnValue;

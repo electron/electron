@@ -302,8 +302,7 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 
 Returns `Promise<Object>` - resolves with a promise containing the following properties:
 
-* `response` Number - The index of the clicked button, or -1 if the message
-box was cancelled by the `closeMessageBox` API.
+* `response` Number - The index of the clicked button.
 * `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
@@ -315,10 +314,18 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 
 * `id` String - The ID of the message box.
 
-Closes the message box with `id`.
+Closes the asynchronous message box with `id`, the message box will behave as
+if it was cancelled by the user.
 
-The `id` is a custom string passed to the `options` of `showMessageBox`. This
-function will throw if there is no message box with the `id` found.
+Before using this API, a custom unique `id` must be passed to the `options` of
+`showMessageBox`. This function will throw if there is no message box with the
+`id` found.
+
+This API does not work with synchronous message boxes created by the
+`showMessageBoxSync` API.
+
+On macOS, this API does not work with message boxes that do not have a parent
+window, since those message boxes run synchronously due to platform limitations.
 
 ### `dialog.showErrorBox(title, content)`
 

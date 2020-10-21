@@ -150,6 +150,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
     __block absl::optional<std::string> id = std::move(settings.id);
+    __block int cancel_id = settings.cancel_id;
 
     [alert
         beginSheetModalForWindow:window
@@ -159,9 +160,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
                  // When the alert is cancelled programmly, the response
                  // would be something like -1000. This currently only
                  // happens when users call CloseMessageBox API, and we
-                 // should return -1 as result.
+                 // should return cancelId as result.
                  if (response < 0)
-                   response = -1;
+                   response = cancel_id;
                  std::move(callback_).Run(
                      "", response, alert.suppressionButton.state == NSOnState);
                  [alert release];
@@ -176,7 +177,7 @@ bool CloseMessageBox(const std::string& id, std::string* error) {
     *error = "ID not found";
     return false;
   }
-  [NSApp endSheet:it.second.window];
+  [NSApp endSheet:it->second.window];
   return true;
 }
 
