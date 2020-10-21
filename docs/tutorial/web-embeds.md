@@ -20,10 +20,10 @@ and only allow the capabilities you want to support.
 ### WebViews
 
 > Important Note:
-[we do not recommend you to use use WebViews](https://www.electronjs.org/docs/api/webview-tag#warning)
+[we do not recommend you to use use WebViews](https://www.electronjs.org/docs/api/webview-tag#warning),
 as this tag undergoes dramatic architectural changes that may affect stability
 of your application. Consider switching to alternatives, like `iframe` and
-Electron's `BrowserView` or an architecture that avoids embedded content
+Electron's `BrowserView`, or an architecture that avoids embedded content
 by design.
 
 [WebViews](../api/webview-tag.md) are based on Chromium's WebViews and are not
