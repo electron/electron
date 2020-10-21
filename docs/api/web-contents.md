@@ -837,6 +837,19 @@ Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
+#### Event: 'preferred-size-changed'
+
+Returns:
+
+* `event` Event
+* `preferredSize` [Size](structures/size.md) - The minimum size needed to
+  contain the layout of the document—without requiring scrolling.
+
+Emitted when the `WebContents` preferred size has changed.
+
+This event will only be emitted when `enablePreferredSizeMode` is set to `true`
+in `webPreferences`.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`

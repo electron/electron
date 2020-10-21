@@ -551,6 +551,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
   void OnAudioStateChanged(bool audible) override;
+  void UpdatePreferredSize(content::WebContents* web_contents,
+                           const gfx::Size& pref_size) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(bool proceed,

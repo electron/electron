@@ -143,6 +143,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
   SetDefaultBoolIfUndefined(options::kWebGL, true);
   SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
+  SetDefaultBoolIfUndefined(options::kEnablePreferredSizeMode, false);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicitly set to false, let's inherit that into
