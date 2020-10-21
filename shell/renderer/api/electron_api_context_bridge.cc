@@ -128,7 +128,7 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
 }
 
 // Where the context bridge should create the exception it is about to throw
-enum BridgeErrorTarget {
+enum class BridgeErrorTarget {
   // The source / calling context.  This is default and correct 99% of the time,
   // the caller / context asking for the conversion will receive the error and
   // therefore the error should be made in that context
