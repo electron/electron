@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index c44d658372805f0695044c6647c641fbb3fda270..b48dc3c5c435d439b0dbca8fed5a9dd88e1fbf76 100644
+index cbe1b66e234eed5563f2484792db1be19c75f8b4..2469cc4cb3d0d57bd6adce952195b38b58acd7d3 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -19,7 +19,7 @@ index c44d658372805f0695044c6647c641fbb3fda270..b48dc3c5c435d439b0dbca8fed5a9dd8
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
-@@ -280,6 +281,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -268,6 +269,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Allow the delegate to handle the cursor update. Returns true if handled.
    virtual bool OnUpdateDragCursor();
  
@@ -30,10 +30,10 @@ index c44d658372805f0695044c6647c641fbb3fda270..b48dc3c5c435d439b0dbca8fed5a9dd8
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index a2cd30b9aa715153c65a92d802714cf7cd0b3dbf..007e87046a7eac432a5bea72b1cd403ba84e7e9a 100644
+index 34059ca48f274afc5df515e24b9a18183d6a551e..88d5fa537b8783389f41f042a1dede27747e138d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1673,6 +1673,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
+@@ -1669,6 +1669,8 @@ void RenderWidgetHostImpl::SetCursor(const WebCursor& cursor) {
    if (!view_)
      return;
    view_->UpdateCursor(cursor);
@@ -43,10 +43,10 @@ index a2cd30b9aa715153c65a92d802714cf7cd0b3dbf..007e87046a7eac432a5bea72b1cd403b
  
  void RenderWidgetHostImpl::OnCursorVisibilityStateChanged(bool is_visible) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 41e8c7b0ab3368b563c3d19b87b8e26303951848..743cef9d23a721632bb50b127aaf41e7b42c67da 100644
+index f87be509cbc18ce1dbeff8863209759d9ad07d21..30f57d6b1d9b73d35343397d04b2fc0e3a9589e5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4197,6 +4197,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
+@@ -4123,6 +4123,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
           browser_plugin_embedder_->OnUpdateDragCursor();
  }
  
@@ -60,10 +60,10 @@ index 41e8c7b0ab3368b563c3d19b87b8e26303951848..743cef9d23a721632bb50b127aaf41e7
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 7bb80abe44bcf30ffa33a53b07c2afb3db9e7a68..ac01f887d6921afdcaaf57d6eb8c2b835c72b67c 100644
+index 1d602b6d17a07e5c62302b6e191acc006ce7555e..51ecdfc3a9a14430aa6104d1a19c2d71c0a309aa 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -939,6 +939,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -936,6 +936,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;
@@ -72,7 +72,7 @@ index 7bb80abe44bcf30ffa33a53b07c2afb3db9e7a68..ac01f887d6921afdcaaf57d6eb8c2b83
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 41c4e51fb449744f01c6b8ba9478a6673c1263c5..1fb7c0c686fb7cc66ab7d2b3afc936f63dee6be1 100644
+index 864b2ba8292649adf7068295d26e112d45e9f884..a9e7d1e91e107f28e2797d286ae4312a6a52f6e4 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@

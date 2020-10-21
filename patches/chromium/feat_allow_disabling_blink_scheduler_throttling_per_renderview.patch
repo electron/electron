@@ -33,7 +33,7 @@ index 4eaa941fa7718ca7660578cee7c299da871be84c..ec364e840073f76467ec1b80c09a6ba7
    void SendWebPreferencesToRenderer();
  
 diff --git a/content/common/view_messages.h b/content/common/view_messages.h
-index cc9faca8f4159d74c6dd6370f76fd3f7ebc1c1ee..05113187f9f39ecfe5212fa06c1f9ab5286e440b 100644
+index eb3f50df0ec981b66f6db8d465a2f35a4036e21f..c18205c5fc16d11d4459492491bbe9b687ab12c2 100644
 --- a/content/common/view_messages.h
 +++ b/content/common/view_messages.h
 @@ -93,6 +93,9 @@ IPC_STRUCT_TRAITS_END()
@@ -61,10 +61,10 @@ index 8a0e60f3a783fd9e21c0d03e23ba421b94fc1ecd..577bf986f9efa45d432ce017663daeb8
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 459a9e75aa96db86450ed1a9abd542156109058c..87ef9e9e5923191efe2ee79d0a3644c827bf3e96 100644
+index 9616c312ececfe73764b6b705a4998a1fb8a1b0f..bd12c934870ea12cc691a5730bc69bc76899f13e 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -538,6 +538,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -370,6 +370,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
@@ -73,7 +73,7 @@ index 459a9e75aa96db86450ed1a9abd542156109058c..87ef9e9e5923191efe2ee79d0a3644c8
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
  
      // Page messages.
-@@ -973,6 +975,12 @@ void RenderViewImpl::OnSetRendererPrefs(
+@@ -805,6 +807,12 @@ void RenderViewImpl::OnSetRendererPrefs(
  #endif  // defined(USE_X11) || defined(USE_OZONE)
  }
  

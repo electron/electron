@@ -170,7 +170,7 @@ index b9b67b25e1eba3a1a3ed720e5f2f898fc04bbc5d..0a0784d4ba5c409eb2dbd370cace906a
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 62010c7a3247644a390d2229b05ba6218dc23e3f..efe4d624d71266eb7a1d6fe402a2444f9c2aea57 100644
+index d7254d4d09a704a1489531cb01853e23be58ca77..4f12b39d7b493043023906933babdd011c381728 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -307,6 +307,13 @@ component("base") {
@@ -184,9 +184,9 @@ index 62010c7a3247644a390d2229b05ba6218dc23e3f..efe4d624d71266eb7a1d6fe402a2444f
 +    ]
 +  }
 +
-   if (is_posix) {
-     sources += [ "l10n/l10n_util_posix.cc" ]
-   }
+   if (is_ios) {
+     sources += [
+       "device_form_factor_ios.mm",
 diff --git a/ui/base/cocoa/remote_accessibility_api.h b/ui/base/cocoa/remote_accessibility_api.h
 index e7adfee3210ec723c687adfcc4bee8827ef643e7..25a924a47eeb30d783ef83dbb4896c4bed139a27 100644
 --- a/ui/base/cocoa/remote_accessibility_api.h

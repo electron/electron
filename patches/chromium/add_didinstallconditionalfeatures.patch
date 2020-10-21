@@ -67,7 +67,7 @@ index a1ffdddc549f328d16bf7641e2079320a02cb07d..fe8149b9440851d99b0592d134cccfe5
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index be4c8053f2bc5e2ad9da6a038a1a70edb37656c9..953e436fc09e9afa2189ad2ebdfdb085cabe51a7 100644
+index 16d2cc458b3a61c0974b258111ad154be61d55db..119f080e0ea00300dc4df8e9ec14d735b424c3f5 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -203,6 +203,7 @@ void LocalWindowProxy::Initialize() {

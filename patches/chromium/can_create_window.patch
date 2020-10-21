@@ -21,10 +21,10 @@ index 5119fbc55d5eb7ef08c701da58923a7769946749..999b6218a905f9cf5e09d2b1b8de98d8
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 98875af67a09225675d0532844a9ce94cd9890a4..e617ad652e5eb36c263f3d2fa31c36b01efc7e50 100644
+index 23d441832af5e174fe692f1ead9f71b8784c66cb..6e97c20264bf93a4429f5aeb9794eca91cfe3beb 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3694,9 +3694,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3620,9 +3620,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -87,7 +87,7 @@ index e222a0295dea1cc6f412d2d217a1850379ea6405..de4a1792078e934e4536f6cbfd819940
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 12ce66464a416262767c126d0600fed60f5b106a..f60cf6064fdf279b26f0d11125e2ffa5bbb36c78 100644
+index 331be91414da82a8311b55c7568a4c6f5c5a6977..b0513d20bd48fe8ffe8398b5387e13545749c508 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -109,7 +109,7 @@ index 12ce66464a416262767c126d0600fed60f5b106a..f60cf6064fdf279b26f0d11125e2ffa5
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index ee6b87d40496591935cef789bab9c1de8e60cee9..dd7f018be164b250f0b2408ce309219d61c50caa 100644
+index 5f8ccea8e3a48057bdb0180ae5a9b499be4e710a..94f576a6d52731f92c65adb958be5ca0a3391d4c 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -135,18 +135,18 @@ index ee6b87d40496591935cef789bab9c1de8e60cee9..dd7f018be164b250f0b2408ce309219d
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index bb210f4f90e31bec1e136fb480df3d7718e50761..459a9e75aa96db86450ed1a9abd542156109058c 100644
+index b058da6017ec921f840d57b4a1979456f3f6362f..9616c312ececfe73764b6b705a4998a1fb8a1b0f 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -107,6 +107,7 @@
- #include "third_party/blink/public/platform/web_url.h"
- #include "third_party/blink/public/platform/web_url_error.h"
- #include "third_party/blink/public/platform/web_url_request.h"
+@@ -26,6 +26,7 @@
+ #include "content/renderer/render_thread_impl.h"
+ #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
+ #include "third_party/blink/public/platform/url_conversion.h"
 +#include "third_party/blink/public/platform/web_url_request_util.h"
- #include "third_party/blink/public/platform/web_url_response.h"
- #include "third_party/blink/public/platform/web_vector.h"
- #include "third_party/blink/public/public_buildflags.h"
-@@ -597,6 +598,10 @@ WebView* RenderViewImpl::CreateView(
+ #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
+ #include "third_party/blink/public/web/web_frame_widget.h"
+ #include "third_party/blink/public/web/web_local_frame.h"
+@@ -429,6 +430,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -158,10 +158,10 @@ index bb210f4f90e31bec1e136fb480df3d7718e50761..459a9e75aa96db86450ed1a9abd54215
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index f0c53c0945d76ce4482ce4c24acb75c3eccb59e9..458919350048f02d07695bef1c4d4e41b0ce043e 100644
+index 6f5ae5bf1938133933f8055824e554a57470bbb9..7391fac052218c660cb122181e16ef84dc1a2e74 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -377,6 +377,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -378,6 +378,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -171,7 +171,7 @@ index f0c53c0945d76ce4482ce4c24acb75c3eccb59e9..458919350048f02d07695bef1c4d4e41
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/web_test/browser/web_test_content_browser_client.h b/content/web_test/browser/web_test_content_browser_client.h
-index b96c23ec09111b29f9b9349a6324076d26f900bc..d42a00e59cde5195195096237f25eca5d4186797 100644
+index 15262ff3e3a7be037d5eedda3279c8897628e4d8..4e285a97787d9f487b5424b2dfc2b0fff2df53a2 100644
 --- a/content/web_test/browser/web_test_content_browser_client.h
 +++ b/content/web_test/browser/web_test_content_browser_client.h
 @@ -83,6 +83,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
@@ -206,7 +206,7 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 76288263aacdaff7a7b8834b653bd1638cf26208..cfa308cf491f422834a84e087f6ef0be7e069990 100644
+index 2e01ca4549bad4ccba85e202fa2675e6003e1416..d642e342983fea97fed8d150a743b0dc13dd29b2 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1968,6 +1968,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
