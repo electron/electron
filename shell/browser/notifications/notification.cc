@@ -21,12 +21,10 @@ Notification::~Notification() {
     delegate()->NotificationDestroyed();
 }
 
-void Notification::NotificationClicked(bool should_destroy) {
+void Notification::NotificationClicked() {
   if (delegate())
     delegate()->NotificationClick();
-
-  if (should_destroy)
-    Destroy();
+  Destroy();
 }
 
 void Notification::NotificationDismissed() {
