@@ -136,12 +136,58 @@ describe('dialog module', () => {
   describe('closeMessageBox', () => {
     afterEach(closeAllWindows);
 
-    it('closes message box', async () => {
+    it('releases message box ID', async () => {
+      const w = new BrowserWindow();
+      const p1 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
+      dialog.closeMessageBox('dialog1');
+      await p1;
+      const p2 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
+      dialog.closeMessageBox('dialog1');
+      await p2;
+    });
+
+    it('closes message box immediately', async () => {
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, { id: 'dialog2', message: 'i am message' });
       dialog.closeMessageBox('dialog2');
       const result = await p;
-      expect(result.response).to.equal(-1);
+      expect(result.response).to.equal(0);
+    });
+
+    it('closes message box after a while', async () => {
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, { id: 'dialog3', message: 'i am message' });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      dialog.closeMessageBox('dialog3');
+      const result = await p;
+      expect(result.response).to.equal(0);
+    });
+
+    it('cancels message box', async () => {
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, {
+        id: 'dialog4',
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+      dialog.closeMessageBox('dialog4');
+      const result = await p;
+      expect(result.response).to.equal(1);
+    });
+
+    it('cancels message box after a while', async () => {
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, {
+        id: 'dialog5',
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      dialog.closeMessageBox('dialog5');
+      const result = await p;
+      expect(result.response).to.equal(1);
     });
 
     it('throws when ID is not found', () => {

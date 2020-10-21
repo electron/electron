@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_UI_MESSAGE_BOX_H_
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/callback_forward.h"
@@ -24,8 +23,6 @@ enum class MessageBoxType {
   kError,
   kQuestion,
 };
-
-using DialogResult = std::pair<int, bool>;
 
 struct MessageBoxSettings {
   electron::NativeWindow* parent_window = nullptr;

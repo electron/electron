@@ -9,9 +9,12 @@
 #include <commctrl.h>
 
 #include <map>
+#include <tuple>
 #include <vector>
 
+#include "base/lazy_instance.h"
 #include "base/strings/string_util.h"
+#include "base/synchronization/lock.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "base/win/scoped_gdi_object.h"
@@ -29,6 +32,23 @@ MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
 MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
+
+using DialogResult = std::tuple<std::string, int, bool>;
+
+// <ID, messageBox> map.
+// Note that the HWND is stored in a unique_ptr, because the pointer of HWND
+// will be passed between threads and we need to ensure the memory of HWND is
+// not changed while g_dialogs is modified.
+std::map<std::string, std::unique_ptr<HWND>> g_dialogs;
+
+// Speical HWND used by the g_dialogs map.
+// - ID is used but window has not been created yet.
+HWND kHwndReserve = reinterpret_cast<HWND>(-1);
+// - Notification to cancel message box.
+HWND kHwndCancel = reinterpret_cast<HWND>(-2);
+
+// Lock used for modifying HWND between threads.
+base::LazyInstance<base::Lock>::Leaky g_hwnd_lock = LAZY_INSTANCE_INITIALIZER;
 
 // Small command ID values are already taken by Windows, we have to start from
 // a large number to avoid conflicts with Windows.
@@ -76,6 +96,28 @@ void MapToCommonID(const std::vector<std::wstring>& buttons,
   }
 }
 
+// The data passed to dialog threads.
+struct TaskDialogCallbackData {
+  std::string id;
+  HWND* hwnd;
+  std::unique_ptr<base::AutoLock> lock;
+};
+
+// Callback of the task dialog. Used for storing the hwnd of task dialog when
+// it is created.
+HRESULT TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
+  if (msg == TDN_CREATED) {
+    auto* cdata = reinterpret_cast<TaskDialogCallbackData*>(data);
+    DCHECK(cdata);
+    DCHECK(cdata->hwnd);
+    DCHECK(!cdata->id.empty());
+    *cdata->hwnd = hwnd;
+    // Release lock after HWND is written.
+    cdata->lock.reset();
+  }
+  return S_OK;
+}
+
 DialogResult ShowTaskDialogWstr(NativeWindow* parent,
                                 MessageBoxType type,
                                 const std::vector<std::wstring>& buttons,
@@ -87,7 +129,9 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
                                 const std::u16string& detail,
                                 const std::u16string& checkbox_label,
                                 bool checkbox_checked,
-                                const gfx::ImageSkia& icon) {
+                                const gfx::ImageSkia& icon,
+                                const absl::optional<std::string>& mb_id = nullptr,
+                                HWND* hwnd = nullptr) {
   TASKDIALOG_FLAGS flags =
       TDF_SIZE_TO_CONTENT |           // Show all content.
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
@@ -169,12 +213,29 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
       config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
-  int button_id;
+  // When user specifies an ID for message box, we have to store the hwnd of
+  // the dialog to a global map.
+  TaskDialogCallbackData data;
+  if (mb_id) {
+    data.id = *mb_id;
+    data.hwnd = hwnd;
+    config.pfCallback = &TaskDialogCallback;
+    config.lpCallbackData = reinterpret_cast<LONG_PTR>(&data);
+    // Lock before reading and modifying HWND, note that the lock will keep
+    // until we get the HWND of the task dialog.
+    data.lock = std::make_unique<base::AutoLock>(g_hwnd_lock.Get());
+    // If the dialog is canceled before TaskDialogIndirect is called, return
+    // immediately.
+    DCHECK(*hwnd == kHwndCancel || *hwnd == kHwndReserve);
+    if (*hwnd == kHwndCancel)
+      return std::make_tuple("", cancel_id, false);
+  }
 
   int id = 0;
   BOOL verificationFlagChecked = FALSE;
   TaskDialogIndirect(&config, &id, nullptr, &verificationFlagChecked);
 
+  int button_id;
   if (id_map.find(id) != id_map.end())  // common button.
     button_id = id_map[id];
   else if (id >= kIDStart)  // custom button.
@@ -182,10 +243,11 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_pair(button_id, verificationFlagChecked);
+  return std::make_tuple("", button_id, verificationFlagChecked);
 }
 
-DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
+DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
+                                HWND* hwnd = nullptr) {
   std::vector<std::wstring> buttons;
   for (const auto& button : settings.buttons)
     buttons.push_back(base::UTF8ToWide(button));
@@ -199,7 +261,8 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
   return ShowTaskDialogWstr(
       settings.parent_window, settings.type, buttons, settings.default_id,
       settings.cancel_id, settings.no_link, title, message, detail,
-      checkbox_label, settings.checkbox_checked, settings.icon);
+      checkbox_label, settings.checkbox_checked, settings.icon,
+      settings.id, hwnd);
 }
 
 }  // namespace
@@ -207,17 +270,56 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   electron::UnresponsiveSuppressor suppressor;
   DialogResult result = ShowTaskDialogUTF8(settings);
-  return result.first;
+  DCHECK(std::get<0>(result).empty());  // check if there is error
+  return std::get<1>(result);
 }
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings),
+  // Check if the ID has been taken, and mark it as reserved if not.
+  HWND* hwnd = nullptr;
+  if (settings.id) {
+    if (base::Contains(g_dialogs, *settings.id)) {
+      std::move(callback).Run("Duplicate ID found", 0, false);
+      return;
+    }
+    auto it = g_dialogs.emplace(*settings.id,
+                                std::make_unique<HWND>(kHwndReserve));
+    hwnd = it.first->second.get();
+  }
+
+  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8,
+                                    settings, base::Unretained(hwnd)),
                      base::BindOnce(
-                         [](MessageBoxCallback callback, DialogResult result) {
-                           std::move(callback).Run(result.first, result.second);
+                         [](MessageBoxCallback callback,
+                            absl::optional<std::string> id,
+                            DialogResult result) {
+                           if (id)
+                             g_dialogs.erase(*id);
+                           std::move(callback).Run(std::get<0>(result),
+                                                   std::get<1>(result),
+                                                   std::get<2>(result));
                          },
-                         std::move(callback)));
+                         std::move(callback), settings.id));
+}
+
+bool CloseMessageBox(const std::string& id, std::string* error) {
+  DCHECK(error);
+  auto it = g_dialogs.find(id);
+  if (it == g_dialogs.end()) {
+    *error = "ID not found";
+    return false;
+  }
+  HWND* hwnd = it->second.get();
+  base::AutoLock lock(g_hwnd_lock.Get());
+  if (*hwnd == kHwndReserve) {
+    // If the dialog window has not been created yet, tell it to cancel.
+    *hwnd = kHwndCancel;
+  } else {
+    // Otherwise send a message to close it.
+    ::PostMessage(*hwnd, WM_CLOSE, 0, 0);
+  }
+  return true;
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {

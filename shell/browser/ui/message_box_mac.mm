@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/message_box.h"
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,7 +14,6 @@
 #include "base/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_nsobject.h"
-#include "base/stl_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -27,7 +27,8 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
 
-std::map<std::string, NSAlert*> g_alerts;
+// <ID, messageBox> map
+std::map<std::string, NSAlert*> g_dialogs;
 
 NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   // Ignore the title; it's the window title on other platforms and ignorable.
@@ -133,11 +134,11 @@ void ShowMessageBox(const MessageBoxSettings& settings,
                             alert.suppressionButton.state == NSOnState);
   } else {
     if (settings.id) {
-      if (base::Contains(g_alerts, *settings.id)) {
+      if (base::Contains(g_dialogs, *settings.id)) {
         std::move(callback).Run("Duplicate ID found", 0, false);
         return;
       }
-      g_alerts[*settings.id] = alert;
+      g_dialogs[*settings.id] = alert;
     }
 
     NSWindow* window =
@@ -154,7 +155,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
         beginSheetModalForWindow:window
                completionHandler:^(NSModalResponse response) {
                  if (id)
-                   g_alerts.erase(*id);
+                   g_dialogs.erase(*id);
                  // When the alert is cancelled programmly, the response
                  // would be something like -1000. This currently only
                  // happens when users call CloseMessageBox API, and we
@@ -170,12 +171,12 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 bool CloseMessageBox(const std::string& id, std::string* error) {
   DCHECK(error);
-  if (!base::Contains(g_alerts, id)) {
+  auto it = g_dialogs.find(id);
+  if (it == g_dialogs.end()) {
     *error = "ID not found";
     return false;
   }
-  NSAlert* alert = g_alerts[id];
-  [NSApp endSheet:alert.window];
+  [NSApp endSheet:it.second.window];
   return true;
 }
 
