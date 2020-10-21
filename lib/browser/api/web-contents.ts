@@ -636,6 +636,9 @@ WebContents.prototype._init = function () {
     this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
+      const overriddenOptions = windowOpenOverriddenOptions || undefined;
+      windowOpenOverriddenOptions = null;
+
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
@@ -646,7 +649,7 @@ WebContents.prototype._init = function () {
         event,
         embedder: event.sender,
         guest: webContents,
-        overrideBrowserWindowOptions: windowOpenOverriddenOptions || undefined,
+        overrideBrowserWindowOptions: overriddenOptions,
         disposition,
         referrer,
         postData,
@@ -656,8 +659,6 @@ WebContents.prototype._init = function () {
           features: rawFeatures
         }
       });
-
-      windowOpenOverriddenOptions = null;
     });
 
     const prefs = this.getWebPreferences() || {};
