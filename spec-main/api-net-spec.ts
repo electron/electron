@@ -1500,6 +1500,16 @@ describe('net module', () => {
     });
   });
 
+  describe('net.isOnline', () => {
+    it('getter returns boolean', () => {
+      expect(net.isOnline()).to.be.a('boolean');
+    });
+
+    it('property returns boolean', () => {
+      expect(net.online).to.be.a('boolean');
+    });
+  });
+
   describe('Stability and performance', () => {
     it('should free unreferenced, never-started request objects without crash', (done) => {
       net.request('https://test');
