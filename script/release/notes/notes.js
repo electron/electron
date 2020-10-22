@@ -381,6 +381,7 @@ async function getBranchNameOfRef (ref, dir) {
   return (await runGit(dir, ['branch', '--all', '--contains', ref, '--sort', 'version:refname']))
     .split(/\r?\n/) // split into lines
     .shift() // we sorted by refname and want the first result
+    .match(/(?:\s?\*\s){0,1}(.*)/)[1] // if present, remove leading '* ' in case we're currently in that branch
     .match(/(?:.*\/)?(.*)/)[1] // 'remote/origins/10-x-y' -> '10-x-y'
     .trim();
 }
@@ -398,7 +399,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   const pool = new Pool();
   const toBranch = await getBranchNameOfRef(toRef, ELECTRON_DIR);
 
-  console.log(`Generating release notes between ${fromRef} and ${toRef} for version ${newVersion} in branch ${toBranch}`);
+  console.log(`Generating release notes between '${fromRef}' and '${toRef}' for version '${newVersion}' in branch '${toBranch}'`);
 
   // get the electron/electron commits
   const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_DIR };
