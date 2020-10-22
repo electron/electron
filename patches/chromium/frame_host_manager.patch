@@ -42,10 +42,10 @@ index 8e22428ddd0c545a94b04942fe9a2bf5f137b374..2436871e3d04ec276620d97ddd0a20dd
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 04c748c769a3bfcef56e3d239350349b5bda2853..919c6c6c3996b38902f0458260c42819442dee4f 100644
+index 5400eb49c66e01cbbb298de675dddaf88fb25db7..c93f4c5f8ea35334ba6da6c162c72ec9fbbb62fc 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -1397,6 +1397,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1396,6 +1396,21 @@ void NavigationRequest::BeginNavigation() {
      is_loaded_from_mhtml_archive_ = IsForMhtmlSubframe();
      ComputeSandboxFlagsToCommit();
  
@@ -67,7 +67,7 @@ index 04c748c769a3bfcef56e3d239350349b5bda2853..919c6c6c3996b38902f0458260c42819
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5070,6 +5085,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5069,6 +5084,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 04c748c769a3bfcef56e3d239350349b5bda2853..919c6c6c3996b38902f0458260c42819
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5083,10 +5099,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5082,10 +5098,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -229,7 +229,7 @@ index 30562ee1c0d1834124c54f5b1b7cbe8005ecc789..86a32c961ef0d1aa15df20885d8018d1
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5665b6c0ec77afb484593c366eebc802562d5752..940487c5f31a49b6a5d00328b187df209b8d588c 100644
+index 52dc9307352e7d665961fc8c0b7c653b2ff01a95..7647531191874d5f10950a768e34c54ca81b0cb9 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -63,6 +63,21 @@
@@ -255,7 +255,7 @@ index 5665b6c0ec77afb484593c366eebc802562d5752..940487c5f31a49b6a5d00328b187df20
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index de4a1792078e934e4536f6cbfd8199402fc0c36b..7bb7767758c5fbc50ef3ac9fb3fcc10d239c67c5 100644
+index f1236b17eeb6e86e275ae0c57c00ce025bd9a7fe..da413be52c765d44a8dd06d99a55a06f619d5083 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -253,8 +253,45 @@ class CONTENT_EXPORT ContentBrowserClient {

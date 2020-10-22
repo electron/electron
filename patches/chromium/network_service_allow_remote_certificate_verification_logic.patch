@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 33f453f91f067c821af1cd81fae4b77adab98b55..e251376b5765e0a4f277155efb2254440aebfd32 100644
+index 4a63f357cfef5c619de7c71f2c8c1193b0ce78b9..17e19c450549957833b200559839d5a00f0ec081 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -114,6 +114,11 @@
@@ -116,7 +116,7 @@ index 33f453f91f067c821af1cd81fae4b77adab98b55..e251376b5765e0a4f277155efb225444
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1819,8 +1904,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1820,8 +1905,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
           "NetworkContext should pass CertVerifierServiceRemoteParams.";
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -127,7 +127,7 @@ index 33f453f91f067c821af1cd81fae4b77adab98b55..e251376b5765e0a4f277155efb225444
    } else {
      if (params_->cert_verifier_params &&
          params_->cert_verifier_params->is_remote_params()) {
-@@ -1848,14 +1934,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1849,14 +1935,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          cert_net_fetcher_ =
              base::MakeRefCounted<net::CertNetFetcherURLRequest>();
  
@@ -145,7 +145,7 @@ index 33f453f91f067c821af1cd81fae4b77adab98b55..e251376b5765e0a4f277155efb225444
  
  #if defined(OS_CHROMEOS)
      cert_verifier_with_trust_anchors_ =
-@@ -1864,13 +1950,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1865,13 +1951,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      UpdateAdditionalCertificates(
          std::move(params_->initial_additional_certificates));
      cert_verifier_with_trust_anchors_->InitializeOnIOThread(

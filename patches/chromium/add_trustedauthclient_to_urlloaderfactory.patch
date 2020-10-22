@@ -49,7 +49,7 @@ index 2a63214d06af6b5c0cda34a6c6d179a14c57044e..57fab113d0568aec47a04004b2c24497
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 65893457556402e93ea85e93c48ca8f4a00bb1c1..cf05119ade526ae2b48b9e3b223d4b318e94900c 100644
+index 794fcd3774af9bc119a310bf93412da2a7dfd8fe..4a55b407b4647e16906b3b28bbd31a7ccd65e0f4 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -459,6 +459,7 @@ URLLoader::URLLoader(
@@ -128,7 +128,7 @@ index 70518f42849e5d1d6e1dd0faf4cae866ba39ef09..b081be5d939b17ecaffa85e75ebb0124
    std::unique_ptr<FileOpenerForUpload> file_opener_for_upload_;
  
 diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
-index 75ae8488efa7e5acfda0b21029657b525fa95f86..5dce71ee5efc97f9f63d0b5f236dccdfb05cfc79 100644
+index 7b9ec0454dfde7e1b950c51eb8d00dcb89e1f900..07da4723043fef85dd8530a844008859f92e3937 100644
 --- a/services/network/url_loader_factory.cc
 +++ b/services/network/url_loader_factory.cc
 @@ -75,6 +75,7 @@ URLLoaderFactory::URLLoaderFactory(
