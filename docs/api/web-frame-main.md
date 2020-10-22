@@ -122,9 +122,17 @@ content. The identifier is fixed at the creation of the frame and stays
 constant for the lifetime of the frame. When the frame is removed, the id is
 not used again.
 
+#### `frame.name` _Readonly_
+
+A `String` representing the frame name.
+
+#### `frame.osProcessId` _Readonly_
+
+An `Integer` representing the operating system `pid` of the process which owns this frame.
+
 #### `frame.processId` _Readonly_
 
-An `Integer` representing the id of the process which owns this frame.
+An `Integer` representing the Chromium internal `pid` of the process which owns this frame.
 
 #### `frame.routingId` _Readonly_
 

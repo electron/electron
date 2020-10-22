@@ -1591,18 +1591,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
-base::ProcessId WebContents::GetOSProcessIdForFrame(
-    const std::string& name,
-    const std::string& document_url) const {
-  for (auto* frame : web_contents()->GetAllFrames()) {
-    if (frame->GetFrameName() == name &&
-        frame->GetLastCommittedURL().spec() == document_url) {
-      return base::GetProcId(frame->GetProcess()->GetProcess().Handle());
-    }
-  }
-  return base::kNullProcessId;
-}
-
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
@@ -2942,8 +2930,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
-      .SetMethod("_getOSProcessIdForFrame",
-                 &WebContents::GetOSProcessIdForFrame)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
