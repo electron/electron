@@ -2,8 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/ui/message_box.h"
+
+#include <map>
 
 #include "base/callback.h"
 #include "base/strings/string_util.h"
@@ -11,6 +12,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
@@ -38,10 +40,14 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
 
+// <ID, messageBox> map
+std::map<std::string, GtkWidget*> g_dialogs;
+
 class GtkMessageBox : public NativeWindowObserver {
  public:
   explicit GtkMessageBox(const MessageBoxSettings& settings)
-      : cancel_id_(settings.cancel_id),
+      : id_(settings.id),
+        cancel_id_(settings.cancel_id),
         parent_(static_cast<NativeWindow*>(settings.parent_window)) {
     // Create dialog.
     dialog_ =
@@ -50,6 +56,8 @@ class GtkMessageBox : public NativeWindowObserver {
                                GetMessageType(settings.type),   // type
                                GTK_BUTTONS_NONE,                // no buttons
                                "%s", settings.message.c_str());
+    if (id_)
+      g_dialogs[*id_] = dialog_;
     if (!settings.detail.empty())
       gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog_),
                                                "%s", settings.detail.c_str());
@@ -183,6 +191,9 @@ class GtkMessageBox : public NativeWindowObserver {
  private:
   electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
+  // The id of the dialog.
+  absl::optional<std::string> id_;
+
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_ = 0;
 
@@ -196,12 +207,14 @@ class GtkMessageBox : public NativeWindowObserver {
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
+  if (id_)
+    g_dialogs.erase(*id_);
   gtk_widget_hide(dialog_);
 
   if (response < 0)
-    std::move(callback_).Run(cancel_id_, checkbox_checked_);
+    std::move(callback_).Run("", cancel_id_, checkbox_checked_);
   else
-    std::move(callback_).Run(response, checkbox_checked_);
+    std::move(callback_).Run("", response, checkbox_checked_);
   delete this;
 }
 
@@ -217,7 +230,24 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
+  if (settings.id) {
+    if (base::Contains(g_dialogs, *settings.id)) {
+      std::move(callback).Run("Duplicate ID found", 0, false);
+      return;
+    }
+  }
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
+}
+
+bool CloseMessageBox(const std::string& id, std::string* error) {
+  DCHECK(error);
+  auto it = g_dialogs.find(id);
+  if (it == g_dialogs.end()) {
+    *error = "ID not found";
+    return false;
+  }
+  gtk_window_close(GTK_WINDOW(it->second));
+  return true;
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
