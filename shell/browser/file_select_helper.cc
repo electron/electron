@@ -59,14 +59,8 @@ void FileSelectHelper::ShowOpenDialog(
   v8::HandleScope scope(isolate);
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
-  // Will be released in one of the following
-  // OnFilesSelected - Callback flow completed with response
-  // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
-  // destroyed (and thus WebContentsDestroyed was called)
-  AddRefWithCheck();
-  DCHECK(HasAtLeastOneRef());
-
-  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone, this);
+  auto callback = base::BindOnce(&FileSelectHelper::OnOpenDialogDone,
+                                 weak_ptr_factory_.GetWeakPtr());
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowOpenDialog(settings, std::move(promise));
@@ -78,14 +72,8 @@ void FileSelectHelper::ShowSaveDialog(
   v8::HandleScope scope(isolate);
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
-  // Will be released in one of the following
-  // OnFilesSelected - Callback flow completed with response
-  // RunFileChooserEnd - If user cancelled dialog or render_frame_host was
-  // destroyed (and thus WebContentsDestroyed was called)
-  AddRefWithCheck();
-  DCHECK(HasAtLeastOneRef());
-
-  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone, this);
+  auto callback = base::BindOnce(&FileSelectHelper::OnSaveDialogDone,
+                                 weak_ptr_factory_.GetWeakPtr());
   ignore_result(promise.Then(std::move(callback)));
 
   file_dialog::ShowSaveDialog(settings, std::move(promise));
@@ -94,7 +82,6 @@ void FileSelectHelper::ShowSaveDialog(
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListFile(
     const net::DirectoryLister::DirectoryListerData& data) {
-  DCHECK(HasOneRef());
   if (!render_frame_host_ || !web_contents_) {
     // If the frame or webcontents was destroyed under us. We
     // must notify |listener_| and release our reference to
@@ -110,7 +97,6 @@ void FileSelectHelper::OnListFile(
 }
 
 void FileSelectHelper::RunFileChooserEnd() {
-  DCHECK(HasOneRef());
   // If there are temporary files, then this instance needs to stick around
   // until web_contents_ is destroyed, so that this instance can delete the
   // temporary files.
@@ -122,13 +108,10 @@ void FileSelectHelper::RunFileChooserEnd() {
 
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
-
-  Release();
 }
 
 // net::DirectoryLister::DirectoryListerDelegate
 void FileSelectHelper::OnListDone(int error) {
-  DCHECK(HasOneRef());
   if (!render_frame_host_ || !web_contents_) {
     // If the frame or webcontents was destroyed under us. We
     // must notify |listener_| and release our reference to
@@ -146,7 +129,6 @@ void FileSelectHelper::OnListDone(int error) {
 }
 
 void FileSelectHelper::DeleteTemporaryFiles() {
-  DCHECK(HasOneRef());
   base::ThreadPool::PostTask(
       FROM_HERE,
       {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
@@ -155,7 +137,6 @@ void FileSelectHelper::DeleteTemporaryFiles() {
 }
 
 void FileSelectHelper::EnumerateDirectory() {
-  DCHECK(HasOneRef());
   // Ensure that this fn is only called once
   DCHECK(!lister_);
   DCHECK(!lister_base_dir_.empty());
@@ -167,7 +148,6 @@ void FileSelectHelper::EnumerateDirectory() {
 }
 
 void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
-  DCHECK(HasOneRef());
   bool canceled = true;
   result.Get("canceled", &canceled);
 
@@ -208,7 +188,6 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
 
 void FileSelectHelper::ConvertToFileChooserFileInfoList(
     const std::vector<ui::SelectedFileInfo>& files) {
-  DCHECK(HasOneRef());
   std::vector<FileChooserFileInfoPtr> file_info;
 
   for (const auto& file : files) {
@@ -220,7 +199,6 @@ void FileSelectHelper::ConvertToFileChooserFileInfoList(
 }
 
 void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
-  DCHECK(HasOneRef());
   std::vector<FileChooserFileInfoPtr> file_info;
   bool canceled = true;
   result.Get("canceled", &canceled);
@@ -241,19 +219,16 @@ void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
 void FileSelectHelper::OnFilesSelected(
     std::vector<FileChooserFileInfoPtr> file_info,
     base::FilePath base_dir) {
-  DCHECK(HasOneRef());
   if (listener_) {
     listener_->FileSelected(std::move(file_info), base_dir, mode_);
     listener_.reset();
   }
 
   render_frame_host_ = nullptr;
-  Release();
 }
 
 void FileSelectHelper::RenderWidgetHostDestroyed(
     content::RenderWidgetHost* widget_host) {
-  DCHECK(HasOneRef());
   render_frame_host_ = nullptr;
   observer_.Remove(widget_host);
 }
@@ -262,7 +237,6 @@ void FileSelectHelper::RenderWidgetHostDestroyed(
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
-  DCHECK(HasOneRef());
   if (!render_frame_host_)
     return;
   // The |old_host| and its children are now pending deletion. Do not give
@@ -276,22 +250,14 @@ void FileSelectHelper::RenderFrameHostChanged(
 // content::WebContentsObserver:
 void FileSelectHelper::RenderFrameDeleted(
     content::RenderFrameHost* deleted_host) {
-  DCHECK(HasOneRef());
   if (deleted_host == render_frame_host_)
     render_frame_host_ = nullptr;
 }
 
 // content::WebContentsObserver:
 void FileSelectHelper::WebContentsDestroyed() {
-  DCHECK(HasOneRef());
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
 
   DeleteTemporaryFiles();
-  if (!lister_) {
-    // If its a directory listing wait for response from
-    // DirectoryListerDelegate, which will eventually
-    // release the instance.
-    Release();
-  }
 }
