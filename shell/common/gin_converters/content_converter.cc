@@ -175,6 +175,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     const content::PermissionType& val) {
   using PermissionType = electron::WebContentsPermissionHelper::PermissionType;
   switch (val) {
+    case content::PermissionType::CLIPBOARD_READ_WRITE:
+      return StringToV8(isolate, "clipboard-read");
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
     case content::PermissionType::NOTIFICATIONS:
