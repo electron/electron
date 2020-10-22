@@ -1,0 +1,330 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Mon, 12 Oct 2020 08:50:01 +0000
+Subject: Expose AXIndex for accessibility TreeGrid and Tree rows on Mac
+
+VoiceOver requires each row to have in index in order to announce it. We
+expose this property for rows which either have role=row or
+role=treeitem.
+
+AX-Relnotes: Fix an issue where ARIA TreeGrid and Tree rows were not announced.
+Bug: 1115267
+Change-Id: Ia8917044a510b2467aa2480dff54fe226b90c391
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2426569
+Auto-Submit: Martin Robinson <mrobinson@igalia.com>
+Commit-Queue: Martin Robinson <mrobinson@igalia.com>
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Reviewed-by: Abigail Klein <abigailbklein@google.com>
+Cr-Commit-Position: refs/heads/master@{#816089}
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index 318af1ec3a11ee53a1146909f76c9cea7f78be1e..770c0cb6a4dad8cbf35900311a23a8296407d81d 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -112,6 +112,11 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+ - (NSString*)valueForRange:(NSRange)range;
+ - (NSAttributedString*)attributedValueForRange:(NSRange)range;
+ 
++// Find the index of the given row among the descendants of this object
++// or return nil if this row is not found.
++- (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
++    withCurrentIndex:(int*)currentIndex;
++
+ // Internally-used property.
+ @property(nonatomic, readonly) NSPoint origin;
+ 
+@@ -150,6 +155,7 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+ @property(nonatomic, readonly, getter=isIgnored) BOOL ignored;
+ // Index of a row, column, or tree item.
+ @property(nonatomic, readonly) NSNumber* index;
++@property(nonatomic, readonly) NSNumber* treeItemRowIndex;
+ #ifndef MAS_BUILD
+ @property(nonatomic, readonly) NSNumber* insertionPointLineNumber;
+ #endif
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 96b6fa030c2a36ab5c4217ad19f0bfe4d5212bb8..3abd9933ab325bda6cb486a41fd6c8b246aa8e71 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -1497,7 +1497,10 @@ - (id)highestEditableAncestor {
+ - (NSNumber*)index {
+   if (![self instanceActive])
+     return nil;
+-  if ([self internalRole] == ax::mojom::Role::kColumn) {
++
++  if ([self internalRole] == ax::mojom::Role::kTreeItem) {
++    return [self treeItemRowIndex];
++  } else if ([self internalRole] == ax::mojom::Role::kColumn) {
+     DCHECK(_owner->node());
+     base::Optional<int> col_index = *_owner->node()->GetTableColColIndex();
+     if (col_index)
+@@ -1512,6 +1515,55 @@ - (NSNumber*)index {
+   return nil;
+ }
+ 
++- (NSNumber*)treeItemRowIndex {
++  if (![self instanceActive])
++    return nil;
++
++  DCHECK([self internalRole] == ax::mojom::Role::kTreeItem);
++  DCHECK([[self role] isEqualToString:NSAccessibilityRowRole]);
++
++  // First find an ancestor that establishes this tree or treegrid. We
++  // will search in this ancestor to calculate our row index.
++  BrowserAccessibility* container = [self owner]->PlatformGetParent();
++  while (container && container->GetRole() != ax::mojom::Role::kTree &&
++         container->GetRole() != ax::mojom::Role::kTreeGrid) {
++    container = container->PlatformGetParent();
++  }
++  if (!container)
++    return nil;
++
++  const BrowserAccessibilityCocoa* cocoaContainer =
++      ToBrowserAccessibilityCocoa(container);
++  int currentIndex = 0;
++  if ([cocoaContainer findRowIndex:self withCurrentIndex:&currentIndex]) {
++    return @(currentIndex);
++  }
++
++  return nil;
++}
++
++- (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
++    withCurrentIndex:(int*)currentIndex {
++  if (![self instanceActive])
++    return false;
++
++  DCHECK([[toFind role] isEqualToString:NSAccessibilityRowRole]);
++  for (BrowserAccessibilityCocoa* childToCheck in [self children]) {
++    if ([toFind isEqual:childToCheck]) {
++      return true;
++    }
++
++    if ([[childToCheck role] isEqualToString:NSAccessibilityRowRole]) {
++      ++(*currentIndex);
++    }
++
++    if ([childToCheck findRowIndex:toFind withCurrentIndex:currentIndex]) {
++      return true;
++    }
++  }
++
++  return false;
++}
+ 
+ #ifndef MAS_BUILD
+ - (NSNumber*)insertionPointLineNumber {
+@@ -3441,12 +3493,15 @@ - (NSArray*)accessibilityAttributeNames {
+       container = container->PlatformGetParent();
+     if ([subrole isEqualToString:NSAccessibilityOutlineRowSubrole] ||
+         (container && container->GetRole() == ax::mojom::Role::kTreeGrid)) {
++      // clang-format off
+       [ret addObjectsFromArray:@[
+-        NSAccessibilityDisclosingAttribute,
++        NSAccessibilityIndexAttribute,
+         NSAccessibilityDisclosedByRowAttribute,
+-        NSAccessibilityDisclosureLevelAttribute,
+-        NSAccessibilityDisclosedRowsAttribute
++        NSAccessibilityDisclosedRowsAttribute,
++        NSAccessibilityDisclosingAttribute,
++        NSAccessibilityDisclosureLevelAttribute
+       ]];
++      // clang-format on
+     } else {
+       [ret addObjectsFromArray:@[ NSAccessibilityIndexAttribute ]];
+     }
+diff --git a/content/test/data/accessibility/aria/aria-level-expected-mac.txt b/content/test/data/accessibility/aria/aria-level-expected-mac.txt
+index 2977dc82f7c894b8496158fb51dc2665939d0d9d..19b7c2b3f131a41f9e49dc4a8db875efe53e3cdb 100644
+--- a/content/test/data/accessibility/aria/aria-level-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-level-expected-mac.txt
+@@ -14,21 +14,21 @@ AXWebArea
+ ++AXHeading AXTitle='Level 5' AXValue=5
+ ++++AXStaticText AXValue='Level 5'
+ ++AXOutline
+-++++AXRow AXSubrole=AXOutlineRow AXDisclosing=1 AXDisclosureLevel=0 AXTitle='Tree item at level 1'
++++++AXRow AXSubrole=AXOutlineRow AXDisclosing=1 AXDisclosureLevel=0 AXIndex=0 AXTitle='Tree item at level 1'
+ ++++++AXStaticText AXValue='Tree item at level 1'
+ ++++++AXGroup
+-++++++++AXRow AXSubrole=AXOutlineRow AXDisclosing=0 AXDisclosureLevel=1 AXTitle='Tree item at level 2'
++++++++++AXRow AXSubrole=AXOutlineRow AXDisclosing=0 AXDisclosureLevel=1 AXIndex=1 AXTitle='Tree item at level 2'
+ ++++++++++AXStaticText AXValue='Tree item at level 2'
+-++++AXRow AXSubrole=AXOutlineRow AXDisclosing=0 AXDisclosureLevel=2 AXTitle='Tree item at level 3'
++++++AXRow AXSubrole=AXOutlineRow AXDisclosing=0 AXDisclosureLevel=2 AXIndex=2 AXTitle='Tree item at level 3'
+ ++++++AXStaticText AXValue='Tree item at level 3'
+ ++AXTable
+-++++AXRow AXDisclosureLevel=0
++++++AXRow AXDisclosureLevel=0 AXIndex=0
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 1'
+-++++AXRow AXDisclosureLevel=1
++++++AXRow AXDisclosureLevel=1 AXIndex=1
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 2'
+-++++AXColumn
++++++AXColumn AXIndex=0
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 1'
+ ++++++AXCell
+diff --git a/content/test/data/accessibility/aria/aria-level.html b/content/test/data/accessibility/aria/aria-level.html
+index 9c499edadbfb8dfa3c07d5cf1d9e5f48349a48a5..b7aabab3a3232985c597cb2362184c0a436e8475 100644
+--- a/content/test/data/accessibility/aria/aria-level.html
++++ b/content/test/data/accessibility/aria/aria-level.html
+@@ -3,6 +3,7 @@
+ @MAC-ALLOW:AXSubrole=AXOutlineRow
+ @MAC-ALLOW:AXDisclosing*
+ @MAC-ALLOW:AXDisclosureLevel*
++@MAC-ALLOW:AXIndex*
+ @WIN-ALLOW:level:*
+ @WIN-ALLOW:EXPANDED
+ @WIN-DENY:name=''
+diff --git a/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt b/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
+index 3f2259665df8fbc291a848e5ada5ee02c37eb8cd..48afda07b5d020f0972a9aaf9ccffcfb76fd3857 100644
+--- a/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
+@@ -1,7 +1,7 @@
+ AXWebArea
+ ++AXOutline AXARIASetSize=2
+-++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXTitle='card content'
++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXIndex=0 AXTitle='card content'
+ ++++++AXStaticText AXValue='card content'
+ ++++AXGroup
+-++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXTitle='card content'
++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=1 AXTitle='card content'
+ ++++++AXStaticText AXValue='card content'
+diff --git a/content/test/data/accessibility/aria/aria-tree-discontinuous.html b/content/test/data/accessibility/aria/aria-tree-discontinuous.html
+index c0ef927e92216957f9369afedb07c068c0970025..f14ce533208511655e6c86f934661e1adec083ba 100644
+--- a/content/test/data/accessibility/aria/aria-tree-discontinuous.html
++++ b/content/test/data/accessibility/aria/aria-tree-discontinuous.html
+@@ -1,6 +1,7 @@
+ <!--
+ @MAC-ALLOW:AXARIASetSize
+ @MAC-ALLOW:AXARIAPosInSet
++@MAC-ALLOW:AXIndex
+ @WIN-ALLOW:setsize*
+ @WIN-ALLOW:posinset*
+ @UIA-WIN-ALLOW:SizeOfSet*
+diff --git a/content/test/data/accessibility/aria/aria-tree-expected-mac.txt b/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
+index 5d40b45374b4cc3685eff0146d34e3f814216af8..2580c407cf97626dff52f6e883b5ee8c1c753dc8 100644
+--- a/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
+@@ -1,22 +1,22 @@
+ AXWebArea
+ ++AXOutline AXARIASetSize=2
+-++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXTitle='Animals' AXValue=2
++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXIndex=0 AXTitle='Animals' AXValue=2
+ ++++++AXLink AXDescription='Animals'
+ ++++++++AXStaticText AXValue='Animals'
+ ++++++AXGroup AXARIASetSize=2
+-++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXTitle='Domesticated'
++++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXIndex=1 AXTitle='Domesticated'
+ ++++++++++AXLink AXDescription='Domesticated'
+ ++++++++++++AXStaticText AXValue='Domesticated'
+ ++++++++++AXGroup AXARIASetSize=2
+-++++++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXTitle='Dog' AXValue=1
++++++++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXIndex=2 AXTitle='Dog' AXValue=1
+ ++++++++++++++AXLink AXDescription='Dog'
+ ++++++++++++++++AXStaticText AXValue='Dog'
+-++++++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXTitle='Cat' AXValue=0
++++++++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=3 AXTitle='Cat' AXValue=0
+ ++++++++++++++AXLink AXDescription='Cat'
+ ++++++++++++++++AXStaticText AXValue='Cat'
+-++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXTitle='Wild'
++++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=4 AXTitle='Wild'
+ ++++++++++AXLink AXDescription='Wild'
+ ++++++++++++AXStaticText AXValue='Wild'
+-++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXTitle='Plants'
++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=5 AXTitle='Plants'
+ ++++++AXLink AXDescription='Plants'
+ ++++++++AXStaticText AXValue='Plants'
+diff --git a/content/test/data/accessibility/aria/aria-tree.html b/content/test/data/accessibility/aria/aria-tree.html
+index f2974e876b83e48d277a54d2bcf92319dcc89cfe..7b984675b97b09cb629d81d6835b5616c7b8873f 100644
+--- a/content/test/data/accessibility/aria/aria-tree.html
++++ b/content/test/data/accessibility/aria/aria-tree.html
+@@ -1,4 +1,5 @@
+ <!--
++@MAC-ALLOW:AXIndex
+ @MAC-ALLOW:AXARIASetSize
+ @MAC-ALLOW:AXARIAPosInSet
+ @WIN-ALLOW:setsize*
+diff --git a/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt b/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
+index 3c28472ddfe697d88e3fba3fe0fcff5853e0d1d5..d4d0a70fd610994b19641ddd69a31bb56574a55e 100644
+--- a/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
+@@ -1,12 +1,12 @@
+ AXWebArea
+ ++AXTable
+-++++AXRow AXDisclosureLevel=0
++++++AXRow AXDisclosureLevel=0 AXIndex=0
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 1'
+-++++AXRow AXDisclosureLevel=1
++++++AXRow AXDisclosureLevel=1 AXIndex=1
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 2'
+-++++AXColumn
++++++AXColumn AXIndex=0
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 1'
+ ++++++AXCell
+@@ -14,10 +14,10 @@ AXWebArea
+ ++++AXGroup
+ ++AXTable
+ ++++AXGroup
+-++++++AXRow AXDisclosureLevel=0
++++++++AXRow AXDisclosureLevel=0 AXIndex=0
+ ++++++++AXCell
+ ++++++++++AXStaticText AXValue='Cell at level 1'
+-++++AXColumn
++++++AXColumn AXIndex=0
+ ++++++AXCell
+ ++++++++AXStaticText AXValue='Cell at level 1'
+ ++++AXGroup
+diff --git a/content/test/data/accessibility/aria/aria-treegrid.html b/content/test/data/accessibility/aria/aria-treegrid.html
+index f8aefe163b900596152999b845bd856b44a05df2..01b74aa99db9304248e94273bbc3d73a170d8539 100644
+--- a/content/test/data/accessibility/aria/aria-treegrid.html
++++ b/content/test/data/accessibility/aria/aria-treegrid.html
+@@ -1,5 +1,6 @@
+ <!--
+ @BLINK-ALLOW:hierarchicalLevel*
++@MAC-ALLOW:AXIndex
+ @MAC-ALLOW:AXRole=*
+ @MAC-ALLOW:AXDisclosureLevel*
+ @WIN-ALLOW:xml-roles:*
+diff --git a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
+index 0b7abc24fd7b3acec0a44244c7f975075282e887..523458d38299a7599060c1fda8a8c301acc4304f 100644
+--- a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
+@@ -1,17 +1,17 @@
+ AXWebArea AXRoleDescription='HTML content'
+ ++AXOutline AXARIASetSize=5 AXRoleDescription='outline'
+ ++++AXGroup AXRoleDescription='group'
+-++++++AXRow AXARIAPosInSet=2 AXARIASetSize=5 AXRoleDescription='row' AXTitle='treeitem 2 of 5, level 1'
++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=5 AXIndex=0 AXRoleDescription='row' AXTitle='treeitem 2 of 5, level 1'
+ ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 2 of 5, level 1'
+ ++++AXGroup AXRoleDescription='group'
+-++++++AXRow AXARIAPosInSet=3 AXARIASetSize=5 AXRoleDescription='row' AXTitle='treeitem 3 of 5, level 1'
++++++++AXRow AXARIAPosInSet=3 AXARIASetSize=5 AXIndex=1 AXRoleDescription='row' AXTitle='treeitem 3 of 5, level 1'
+ ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 3 of 5, level 1'
+ ++++AXGroup AXRoleDescription='group'
+-++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXRoleDescription='row' AXTitle='treeitem 1 of 2, level 2'
++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=2 AXIndex=2 AXRoleDescription='row' AXTitle='treeitem 1 of 2, level 2'
+ ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 1 of 2, level 2'
+ ++++AXGroup AXRoleDescription='group'
+-++++++AXRow AXARIAPosInSet=1 AXARIASetSize=1 AXRoleDescription='row' AXTitle='treeitem 1 of 1, level 3'
++++++++AXRow AXARIAPosInSet=1 AXARIASetSize=1 AXIndex=3 AXRoleDescription='row' AXTitle='treeitem 1 of 1, level 3'
+ ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 1 of 1, level 3'
+ ++++AXGroup AXRoleDescription='group'
+-++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXRoleDescription='row' AXTitle='treeitem 2 of 2, level 2'
++++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=4 AXRoleDescription='row' AXTitle='treeitem 2 of 2, level 2'
+ ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 2 of 2, level 2'
+diff --git a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
+index f3794bbad09a43a279fef12b5bc4f63e1c70341f..8294fb11adb63a801117e4439c8b43c48dc8ce59 100644
+--- a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
++++ b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
+@@ -4,6 +4,7 @@
+ @MAC-ALLOW:AXARIAPosInSet*
+ @MAC-DENY:AXARIASetSize=0
+ @MAC-DENY:AXARIAPosInSet=0
++@MAC-ALLOW:AXIndex
+ @WIN-ALLOW:xml-roles*
+ @WIN-ALLOW:level*
+ @WIN-ALLOW:setsize*
