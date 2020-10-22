@@ -456,7 +456,7 @@ index 4b140a2a0f431cd7b06a8d1b6f9e84981f4ce7e7..14779debdacc7b5f78aa0799f197241d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 959aa103a15d197f5a9d2abbbe69b78afad2e73f..109a8324fe4206f9ee93d13b015ca5a5c822cdcf 100644
+index 58e8aa32aa5f291b000753dc4487835a53df34c5..533e9a75e3c85302a730c034727d70a02b8999c5 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -594,8 +594,8 @@ index 959aa103a15d197f5a9d2abbbe69b78afad2e73f..109a8324fe4206f9ee93d13b015ca5a5
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2075,10 +2113,22 @@ void PrintRenderFrameHelper::IPCProcessed() {
-     base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, this);
+@@ -2077,10 +2115,22 @@ void PrintRenderFrameHelper::IPCProcessed() {
+   }
  }
  
 -bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
@@ -619,7 +619,7 @@ index 959aa103a15d197f5a9d2abbbe69b78afad2e73f..109a8324fe4206f9ee93d13b015ca5a5
  
    // Check if the printer returned any settings, if the settings is empty, we
    // can safely assume there are no printer drivers configured. So we safely
-@@ -2099,12 +2149,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2101,12 +2151,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -639,7 +639,7 @@ index 959aa103a15d197f5a9d2abbbe69b78afad2e73f..109a8324fe4206f9ee93d13b015ca5a5
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 9cc2c01cb3e2ffce0253c01be84b9619ac6d7f85..d7d316df470300bd99559e6f5aaaf0f196b06cb1 100644
+index 78d76aadc206a0922163f87f0575ca0cfe344880..d51fff55ebd5c9d1a39637039b279b491d025b08 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -230,7 +230,7 @@ class PrintRenderFrameHelper

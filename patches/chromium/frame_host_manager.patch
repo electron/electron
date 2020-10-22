@@ -42,7 +42,7 @@ index 75a58c7f56ef990e340ef271aa2d057f3541c47d..ab2679680111cfdc260c8d8dafbfae00
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 7253ef9c4e55ff6a0122d20ea3fd25c70141b284..b5e83b64acab066fcb42451334071a72442465d1 100644
+index ab58967aba4143d5a39f51d7bbeed0568e2fa012..102c72335f0b3e7116c982784a3b0a26d780a618 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1396,6 +1396,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index 7253ef9c4e55ff6a0122d20ea3fd25c70141b284..b5e83b64acab066fcb42451334071a72
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5058,6 +5073,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5066,6 +5081,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index 7253ef9c4e55ff6a0122d20ea3fd25c70141b284..b5e83b64acab066fcb42451334071a72
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5071,10 +5087,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5079,10 +5095,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
