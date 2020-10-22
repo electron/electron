@@ -96,8 +96,7 @@ void PlatformNotificationService::DisplayNotification(
   // See: https://notifications.spec.whatwg.org/#showing-a-notification
   presenter->CloseNotificationWithId(notification_id);
 
-  NotificationDelegateImpl* delegate =
-      new NotificationDelegateImpl(notification_id);
+  auto* delegate = new NotificationDelegateImpl(notification_id);
 
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {

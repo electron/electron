@@ -382,8 +382,7 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     content::RenderWidgetHostView* view) {
   DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
               ->IsRenderWidgetHostViewChildFrame());
-  OffScreenRenderWidgetHostView* view_osr =
-      static_cast<OffScreenRenderWidgetHostView*>(view);
+  auto* view_osr = static_cast<OffScreenRenderWidgetHostView*>(view);
   SetBackgroundColor(view_osr->background_color_);
   if (GetDelegatedFrameHost() && view_osr->GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->TakeFallbackContentFrom(
