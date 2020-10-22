@@ -38,7 +38,7 @@ const keysOfTypeNumber = ['top', 'left', ...Object.keys(keysOfTypeNumberCompileT
 type CoercedValue = string | number | boolean;
 function coerce (key: string, value: string): CoercedValue {
   if (keysOfTypeNumber.includes(key)) {
-    return Number(value);
+    return parseInt(value);
   }
 
   switch (value) {
