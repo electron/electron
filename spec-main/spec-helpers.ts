@@ -7,14 +7,14 @@ import { SuiteFunction, TestFunction } from 'mocha';
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
     return fn(...args);
-  }
+  };
   (wrapped as any).only = wrapped;
   (wrapped as any).skip = wrapped;
   return wrapped as any;
 };
 
 export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip))
+export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
 export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
 
