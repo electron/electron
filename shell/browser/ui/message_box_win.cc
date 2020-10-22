@@ -161,7 +161,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
-  if (dialog_buttons.size() > 0) {
+  if (!dialog_buttons.empty()) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
     if (!no_link)

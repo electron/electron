@@ -406,7 +406,7 @@ base::string16 GetDefaultPrinterAsync() {
   if (printer_name.empty()) {
     printing::PrinterList printers;
     print_backend->EnumeratePrinters(&printers);
-    if (printers.size() > 0)
+    if (!printers.empty())
       printer_name = printers.front().printer_name;
   }
   return base::UTF8ToUTF16(printer_name);
@@ -2182,7 +2182,7 @@ void WebContents::Print(gin::Arguments* args) {
         continue;
       }
     }
-    if (page_range_list.GetList().size() > 0)
+    if (!page_range_list.GetList().empty())
       settings.SetPath(printing::kSettingPageRange, std::move(page_range_list));
   }
 
