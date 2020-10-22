@@ -1,8 +1,7 @@
-From 2f5b8357dca24749c9db43008ab3e8f121f87f85 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Martin Robinson <mrobinson@igalia.com>
 Date: Mon, 12 Oct 2020 08:50:01 +0000
-Subject: [PATCH] Expose AXIndex for accessibility TreeGrid and Tree rows on
- Mac
+Subject: Expose AXIndex for accessibility TreeGrid and Tree rows on Mac
 
 VoiceOver requires each row to have in index in order to announce it. We
 expose this property for rows which either have role=row or
@@ -17,28 +16,14 @@ Commit-Queue: Martin Robinson <mrobinson@igalia.com>
 Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
 Reviewed-by: Abigail Klein <abigailbklein@google.com>
 Cr-Commit-Position: refs/heads/master@{#816089}
----
- .../browser_accessibility_cocoa.h             |  6 ++
- .../browser_accessibility_cocoa.mm            | 64 +++++++++++++++++--
- .../aria/aria-level-expected-mac.txt          | 12 ++--
- .../data/accessibility/aria/aria-level.html   |  1 +
- .../aria-tree-discontinuous-expected-mac.txt  |  4 +-
- .../aria/aria-tree-discontinuous.html         |  1 +
- .../aria/aria-tree-expected-mac.txt           | 12 ++--
- .../data/accessibility/aria/aria-tree.html    |  1 +
- .../aria/aria-treegrid-expected-mac.txt       | 10 +--
- .../accessibility/aria/aria-treegrid.html     |  1 +
- ...-treeitem-nested-in-lists-expected-mac.txt | 10 +--
- .../aria/aria-treeitem-nested-in-lists.html   |  1 +
- 12 files changed, 95 insertions(+), 28 deletions(-)
 
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
-index f6f6510ab3e6a..95bff04e5ad40 100644
+index 318af1ec3a11ee53a1146909f76c9cea7f78be1e..770c0cb6a4dad8cbf35900311a23a8296407d81d 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.h
-@@ -113,6 +113,11 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+@@ -112,6 +112,11 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+ - (NSString*)valueForRange:(NSRange)range;
  - (NSAttributedString*)attributedValueForRange:(NSRange)range;
- - (NSRect)frameForRange:(NSRange)range;
  
 +// Find the index of the given row among the descendants of this object
 +// or return nil if this row is not found.
@@ -48,19 +33,19 @@ index f6f6510ab3e6a..95bff04e5ad40 100644
  // Internally-used property.
  @property(nonatomic, readonly) NSPoint origin;
  
-@@ -149,6 +154,7 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+@@ -150,6 +155,7 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
  @property(nonatomic, readonly, getter=isIgnored) BOOL ignored;
  // Index of a row, column, or tree item.
  @property(nonatomic, readonly) NSNumber* index;
 +@property(nonatomic, readonly) NSNumber* treeItemRowIndex;
+ #ifndef MAS_BUILD
  @property(nonatomic, readonly) NSNumber* insertionPointLineNumber;
- @property(nonatomic, readonly) NSString* invalid;
- @property(nonatomic, readonly) NSNumber* isMultiSelectable;
+ #endif
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 873d920f02738..0e8257d76d17a 100644
+index 96b6fa030c2a36ab5c4217ad19f0bfe4d5212bb8..3abd9933ab325bda6cb486a41fd6c8b246aa8e71 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -1481,7 +1481,10 @@ - (id)highestEditableAncestor {
+@@ -1497,7 +1497,10 @@ - (id)highestEditableAncestor {
  - (NSNumber*)index {
    if (![self instanceActive])
      return nil;
@@ -72,7 +57,7 @@ index 873d920f02738..0e8257d76d17a 100644
      DCHECK(_owner->node());
      base::Optional<int> col_index = *_owner->node()->GetTableColColIndex();
      if (col_index)
-@@ -1496,6 +1499,56 @@ - (NSNumber*)index {
+@@ -1512,6 +1515,55 @@ - (NSNumber*)index {
    return nil;
  }
  
@@ -125,11 +110,10 @@ index 873d920f02738..0e8257d76d17a 100644
 +
 +  return false;
 +}
-+
+ 
+ #ifndef MAS_BUILD
  - (NSNumber*)insertionPointLineNumber {
-   if (![self instanceActive])
-     return nil;
-@@ -3409,12 +3462,15 @@ - (NSArray*)accessibilityAttributeNames {
+@@ -3441,12 +3493,15 @@ - (NSArray*)accessibilityAttributeNames {
        container = container->PlatformGetParent();
      if ([subrole isEqualToString:NSAccessibilityOutlineRowSubrole] ||
          (container && container->GetRole() == ax::mojom::Role::kTreeGrid)) {
@@ -149,7 +133,7 @@ index 873d920f02738..0e8257d76d17a 100644
        [ret addObjectsFromArray:@[ NSAccessibilityIndexAttribute ]];
      }
 diff --git a/content/test/data/accessibility/aria/aria-level-expected-mac.txt b/content/test/data/accessibility/aria/aria-level-expected-mac.txt
-index 2977dc82f7c89..19b7c2b3f131a 100644
+index 2977dc82f7c894b8496158fb51dc2665939d0d9d..19b7c2b3f131a41f9e49dc4a8db875efe53e3cdb 100644
 --- a/content/test/data/accessibility/aria/aria-level-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-level-expected-mac.txt
 @@ -14,21 +14,21 @@ AXWebArea
@@ -181,19 +165,19 @@ index 2977dc82f7c89..19b7c2b3f131a 100644
  ++++++++AXStaticText AXValue='Cell at level 1'
  ++++++AXCell
 diff --git a/content/test/data/accessibility/aria/aria-level.html b/content/test/data/accessibility/aria/aria-level.html
-index 930ed590b9b98..f2d666a20f9c5 100644
+index 9c499edadbfb8dfa3c07d5cf1d9e5f48349a48a5..b7aabab3a3232985c597cb2362184c0a436e8475 100644
 --- a/content/test/data/accessibility/aria/aria-level.html
 +++ b/content/test/data/accessibility/aria/aria-level.html
 @@ -3,6 +3,7 @@
  @MAC-ALLOW:AXSubrole=AXOutlineRow
- @MAC-ALLOW:AXDisclosing
- @MAC-ALLOW:AXDisclosureLevel
-+@MAC-ALLOW:AXIndex
+ @MAC-ALLOW:AXDisclosing*
+ @MAC-ALLOW:AXDisclosureLevel*
++@MAC-ALLOW:AXIndex*
  @WIN-ALLOW:level:*
  @WIN-ALLOW:EXPANDED
  @WIN-DENY:name=''
 diff --git a/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt b/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
-index 3f2259665df8f..48afda07b5d02 100644
+index 3f2259665df8fbc291a848e5ada5ee02c37eb8cd..48afda07b5d020f0972a9aaf9ccffcfb76fd3857 100644
 --- a/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-tree-discontinuous-expected-mac.txt
 @@ -1,7 +1,7 @@
@@ -207,7 +191,7 @@ index 3f2259665df8f..48afda07b5d02 100644
 +++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=1 AXTitle='card content'
  ++++++AXStaticText AXValue='card content'
 diff --git a/content/test/data/accessibility/aria/aria-tree-discontinuous.html b/content/test/data/accessibility/aria/aria-tree-discontinuous.html
-index c0ef927e92216..f14ce53320851 100644
+index c0ef927e92216957f9369afedb07c068c0970025..f14ce533208511655e6c86f934661e1adec083ba 100644
 --- a/content/test/data/accessibility/aria/aria-tree-discontinuous.html
 +++ b/content/test/data/accessibility/aria/aria-tree-discontinuous.html
 @@ -1,6 +1,7 @@
@@ -219,7 +203,7 @@ index c0ef927e92216..f14ce53320851 100644
  @WIN-ALLOW:posinset*
  @UIA-WIN-ALLOW:SizeOfSet*
 diff --git a/content/test/data/accessibility/aria/aria-tree-expected-mac.txt b/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
-index 5d40b45374b4c..2580c407cf976 100644
+index 5d40b45374b4cc3685eff0146d34e3f814216af8..2580c407cf97626dff52f6e883b5ee8c1c753dc8 100644
 --- a/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-tree-expected-mac.txt
 @@ -1,22 +1,22 @@
@@ -252,7 +236,7 @@ index 5d40b45374b4c..2580c407cf976 100644
  ++++++AXLink AXDescription='Plants'
  ++++++++AXStaticText AXValue='Plants'
 diff --git a/content/test/data/accessibility/aria/aria-tree.html b/content/test/data/accessibility/aria/aria-tree.html
-index f2974e876b83e..7b984675b97b0 100644
+index f2974e876b83e48d277a54d2bcf92319dcc89cfe..7b984675b97b09cb629d81d6835b5616c7b8873f 100644
 --- a/content/test/data/accessibility/aria/aria-tree.html
 +++ b/content/test/data/accessibility/aria/aria-tree.html
 @@ -1,4 +1,5 @@
@@ -262,7 +246,7 @@ index f2974e876b83e..7b984675b97b0 100644
  @MAC-ALLOW:AXARIAPosInSet
  @WIN-ALLOW:setsize*
 diff --git a/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt b/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
-index 3c28472ddfe69..d4d0a70fd6109 100644
+index 3c28472ddfe697d88e3fba3fe0fcff5853e0d1d5..d4d0a70fd610994b19641ddd69a31bb56574a55e 100644
 --- a/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-treegrid-expected-mac.txt
 @@ -1,12 +1,12 @@
@@ -295,7 +279,7 @@ index 3c28472ddfe69..d4d0a70fd6109 100644
  ++++++++AXStaticText AXValue='Cell at level 1'
  ++++AXGroup
 diff --git a/content/test/data/accessibility/aria/aria-treegrid.html b/content/test/data/accessibility/aria/aria-treegrid.html
-index 0566552031d7a..bff5ed2764823 100644
+index f8aefe163b900596152999b845bd856b44a05df2..01b74aa99db9304248e94273bbc3d73a170d8539 100644
 --- a/content/test/data/accessibility/aria/aria-treegrid.html
 +++ b/content/test/data/accessibility/aria/aria-treegrid.html
 @@ -1,5 +1,6 @@
@@ -303,10 +287,10 @@ index 0566552031d7a..bff5ed2764823 100644
  @BLINK-ALLOW:hierarchicalLevel*
 +@MAC-ALLOW:AXIndex
  @MAC-ALLOW:AXRole=*
- @MAC-ALLOW:AXDisclosureLevel
+ @MAC-ALLOW:AXDisclosureLevel*
  @WIN-ALLOW:xml-roles:*
 diff --git a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
-index 0b7abc24fd7b3..523458d38299a 100644
+index 0b7abc24fd7b3acec0a44244c7f975075282e887..523458d38299a7599060c1fda8a8c301acc4304f 100644
 --- a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists-expected-mac.txt
 @@ -1,17 +1,17 @@
@@ -333,11 +317,11 @@ index 0b7abc24fd7b3..523458d38299a 100644
 +++++++AXRow AXARIAPosInSet=2 AXARIASetSize=2 AXIndex=4 AXRoleDescription='row' AXTitle='treeitem 2 of 2, level 2'
  ++++++++AXStaticText AXRoleDescription='text' AXValue='treeitem 2 of 2, level 2'
 diff --git a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
-index 0386d93892a9b..38f77c6a6da7f 100644
+index f3794bbad09a43a279fef12b5bc4f63e1c70341f..8294fb11adb63a801117e4439c8b43c48dc8ce59 100644
 --- a/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
 +++ b/content/test/data/accessibility/aria/aria-treeitem-nested-in-lists.html
 @@ -4,6 +4,7 @@
- @MAC-ALLOW:AXARIAPosInSet
+ @MAC-ALLOW:AXARIAPosInSet*
  @MAC-DENY:AXARIASetSize=0
  @MAC-DENY:AXARIAPosInSet=0
 +@MAC-ALLOW:AXIndex
