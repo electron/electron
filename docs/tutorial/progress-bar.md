@@ -64,6 +64,6 @@ when using [Mission Control](https://support.apple.com/en-us/HT204100):
 ![Mission Control Progress Bar](../images/mission-control-progress-bar.png)
 
 [windows-progress-bar]: https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png
-[macos-progress-bar]: ../images/macos-progress.bar.png
-[linux-progress-bar]: ../images/linux-progress.bar.png
-[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress
+[macos-progress-bar]: ../images/macos-progress-bar.png
+[linux-progress-bar]: ../images/linux-progress-bar.png
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress-options
