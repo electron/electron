@@ -37,7 +37,7 @@ struct Converter<UUID> {
 
     UUID uid;
 
-    if (guid.length() > 0) {
+    if (!guid.empty()) {
       if (guid[0] == '{' && guid[guid.length() - 1] == '}') {
         guid = guid.substr(1, guid.length() - 2);
       }
