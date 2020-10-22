@@ -23,7 +23,6 @@
 #include "content/public/browser/web_contents.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 
@@ -119,11 +118,12 @@ void WebDialogHelper::RunFileChooser(
   settings.parent_window = window_;
   settings.title = base::UTF16ToUTF8(params.title);
 
-  auto file_select_helper = base::MakeRefCounted<FileSelectHelper>(
-      render_frame_host, std::move(listener), params.mode);
+  auto* fsc =
+      new FileSelectHelper(render_frame_host, std::move(listener), params.mode);
+
   if (params.mode == FileChooserParams::Mode::kSave) {
     settings.default_path = params.default_file_name;
-    file_select_helper->ShowSaveDialog(settings);
+    fsc->ShowSaveDialog(settings);
   } else {
     int flags = file_dialog::OPEN_DIALOG_CREATE_DIRECTORY;
     switch (params.mode) {
@@ -146,7 +146,7 @@ void WebDialogHelper::RunFileChooser(
                                 ->GetFilePath(prefs::kSelectFileLastDirectory)
                                 .Append(params.default_file_name);
     settings.properties = flags;
-    file_select_helper->ShowOpenDialog(settings);
+    fsc->ShowOpenDialog(settings);
   }
 }
 

@@ -30,18 +30,18 @@
 
 using blink::mojom::FileChooserParams;
 
-class FileSelectHelper : public base::RefCountedThreadSafe<
-                             FileSelectHelper,
-                             content::BrowserThread::DeleteOnUIThread>,
-                         public content::WebContentsObserver,
+class FileSelectHelper : public content::WebContentsObserver,
                          public content::RenderWidgetHostObserver,
                          public net::DirectoryLister::DirectoryListerDelegate {
  public:
-  REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
-
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    scoped_refptr<content::FileSelectListener> listener,
                    FileChooserParams::Mode mode);
+  ~FileSelectHelper() override;
+
+  base::WeakPtr<FileSelectHelper> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   // WebDialogHelper::RunFileChooser
 
@@ -50,13 +50,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   void ShowSaveDialog(const file_dialog::DialogSettings& settings);
 
  private:
-  friend class base::RefCountedThreadSafe<FileSelectHelper>;
-  friend class base::DeleteHelper<FileSelectHelper>;
-  friend struct content::BrowserThread::DeleteOnThread<
-      content::BrowserThread::UI>;
-
-  ~FileSelectHelper() override;
-
   // net::DirectoryLister::DirectoryListerDelegate overrides.
   void OnListFile(
       const net::DirectoryLister::DirectoryListerData& data) override;
@@ -122,6 +115,8 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   std::unique_ptr<net::DirectoryLister> lister_;
   base::FilePath lister_base_dir_;
   std::vector<base::FilePath> lister_paths_;
+
+  base::WeakPtrFactory<FileSelectHelper> weak_factory_{this};
 };
 
 #endif  // SHELL_BROWSER_FILE_SELECT_HELPER_H_
