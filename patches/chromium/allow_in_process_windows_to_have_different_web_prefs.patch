@@ -8,15 +8,15 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index d825a36e27109fd96bfbda5c3629a5ce4c4d3b34..980a29517b8bb3dbf7ddce4f522a1141dbb044f7 100644
+index d825a36e27109fd96bfbda5c3629a5ce4c4d3b34..8ae2d0097174a52a2dccbe7dc1abf7faa8f12e13 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -142,6 +142,28 @@ WebPreferences::WebPreferences()
+@@ -142,6 +142,29 @@ WebPreferences::WebPreferences()
        navigate_on_drag_drop(true),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
 +
-+      preloads(base::FilePath::StringType()),
++      // Begin Electron-specific WebPreferences.
 +      disable_electron_site_instance_overrides(),
 +      background_color(base::EmptyString()),
 +      opener_id(0),
@@ -36,6 +36,7 @@ index d825a36e27109fd96bfbda5c3629a5ce4c4d3b34..980a29517b8bb3dbf7ddce4f522a1141
 +      enable_plugins(false),
 +      enable_websql(false),
 +      webview_tag(false),
++      // End Electron-specific WebPreferences.
 +
        cookie_enabled(true),
        accelerated_video_decode_enabled(false),
@@ -85,7 +86,7 @@ index 15a8f088ec5f96765312779fbff9b4e6cfb9c89d..2639fba8c9d48312aa73ac9ba7ee7016
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 776127997373391364909a3f613c07cbf4c8e996..9b2206348c94f71738bae497c8aca280cb9d187e 100644
+index 776127997373391364909a3f613c07cbf4c8e996..1d7505d25c314bcb7239005403ae5383991b5e80 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -101,7 +102,7 @@ index 776127997373391364909a3f613c07cbf4c8e996..9b2206348c94f71738bae497c8aca280
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
-+  base::FilePath preloads;
++  std::vector<base::FilePath> preloads;
 +  bool disable_electron_site_instance_overrides;
 +  std::string background_color;
 +  int opener_id;
@@ -127,7 +128,7 @@ index 776127997373391364909a3f613c07cbf4c8e996..9b2206348c94f71738bae497c8aca280
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..28ccc99b5fd0ccbd88dca42f2b2253a9732bdc8a 100644
+index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..83881980b6fc5d40fab361054c42b4334064d215 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -143,7 +144,7 @@ index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..28ccc99b5fd0ccbd88dca42f2b2253a9
    }
  
 +  // Begin Electron-specific WebPreferences.
-+  static const base::FilePath& preloads(const blink::web_pref::WebPreferences& r) {
++  static const std::vector<base::FilePath>& preloads(const blink::web_pref::WebPreferences& r) {
 +    return r.preloads;
 +  }
 +
@@ -228,7 +229,7 @@ index dc5f1be2f4ee0ddcae2620fc2716efc757be5976..28ccc99b5fd0ccbd88dca42f2b2253a9
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..11365efdb551812d5832a4309902e2ad63a6ac2c 100644
+index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..688ea93b1d067555b7b48165ba7a33625f9d597f 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -8,6 +8,7 @@ import "third_party/blink/public/mojom/css/preferred_color_scheme.mojom";
@@ -244,7 +245,7 @@ index ac1099c8fb923184a014bf9cbaa35c496cf85cd9..11365efdb551812d5832a4309902e2ad
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
-+  mojo_base.mojom.FilePath preloads;
++  array<mojo_base.mojom.FilePath> preloads;
 +  bool disable_electron_site_instance_overrides;
 +  string background_color;
 +  int32 opener_id;

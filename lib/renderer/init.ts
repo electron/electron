@@ -78,7 +78,7 @@ const usesNativeWindowOpen = getWebPreference(window, 'nativeWindowOpen');
 const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
 
 const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preloadScripts', [], value => value.split(path.delimiter)) as string[];
+const preloadScripts = parseOption('preloadScripts', []);
 const guestInstanceId = parseOption('guestInstanceId', null, value => parseInt(value));
 const openerId = parseOption('openerId', null, value => parseInt(value));
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;

@@ -241,22 +241,22 @@ bool WebContentsPreferences::GetPreference(base::StringPiece name,
   return GetAsString(&preference_, name, value);
 }
 
-bool WebContentsPreferences::GetPreloadPath(
-    base::FilePath::StringType* path) const {
+bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   DCHECK(path);
-  base::FilePath::StringType preload;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute()) {
+  base::FilePath::StringType preload_path;
+  if (GetAsString(&preference_, options::kPreloadScript, &preload_path)) {
+    base::FilePath preload(preload_path);
+    if (preload.IsAbsolute()) {
       *path = std::move(preload);
       return true;
     } else {
       LOG(ERROR) << "preload script must have absolute path.";
     }
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
+  } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
     // Translate to file path if there is "preload-url" option.
-    base::FilePath preload_path;
-    if (net::FileURLToFilePath(GURL(preload), &preload_path)) {
-      *path = std::move(preload_path.value());
+    base::FilePath preload;
+    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+      *path = std::move(preload);
       return true;
     } else {
       LOG(ERROR) << "preload url must be file:// protocol.";
@@ -468,9 +468,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->offscreen = IsEnabled(options::kOffscreen);
 
   // The preload script.
-  base::FilePath::StringType preload;
-  if (GetPreloadPath(&preload))
-    prefs->preload = base::FilePath(preload);
+  GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
   prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);

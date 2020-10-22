@@ -225,12 +225,6 @@ void BindNetworkHintsHandler(
   NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
 }
 
-#if defined(OS_WIN)
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
-#else
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
 // below.  Extension, and isolated apps require different privileges to be
@@ -614,8 +608,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   auto preloads =
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
-    prefs->preloads =
-        base::FilePath(base::JoinString(preloads, kPathDelimiter));
+    prefs->preloads = preloads;
   if (CanUseCustomSiteInstance())
     prefs->disable_electron_site_instance_overrides = true;
 

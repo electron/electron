@@ -20,6 +20,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
@@ -403,7 +404,7 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
   const auto& prefs = render_frame->GetBlinkPreferences();
 
   if (pref_name == options::kPreloadScripts) {
-    return gin::ConvertToV8(isolate, prefs.preloads.value());
+    return gin::ConvertToV8(isolate, prefs.preloads);
   } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
     return gin::ConvertToV8(isolate,
                             prefs.disable_electron_site_instance_overrides);

@@ -2776,11 +2776,11 @@ void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
-std::vector<base::FilePath::StringType> WebContents::GetPreloadPaths() const {
+std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
 
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
-    base::FilePath::StringType preload;
+    base::FilePath preload;
     if (web_preferences->GetPreloadPath(&preload)) {
       result.emplace_back(preload);
     }
