@@ -236,7 +236,7 @@ index 492386c61ac6701fc38c5e90976b4e5f638189de..6050916081ebeb426ee6cf5dd67962f0
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 20e8cb0b4aec5a71f496feb6069ac68e03f9f47a..3ea70bea36f8660779d06dfb12eda3aa65675bd4 100644
+index d0be0e2ff2d9477376514ed2e6fd648a9dad94ec..e9d7b4b0a1aa036b4f000cc979c45d7a5a557617 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -284,14 +284,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -262,7 +262,7 @@ index 20e8cb0b4aec5a71f496feb6069ac68e03f9f47a..3ea70bea36f8660779d06dfb12eda3aa
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1130,6 +1138,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1133,6 +1141,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -270,7 +270,7 @@ index 20e8cb0b4aec5a71f496feb6069ac68e03f9f47a..3ea70bea36f8660779d06dfb12eda3aa
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1137,14 +1146,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1140,14 +1149,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];
