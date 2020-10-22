@@ -1139,7 +1139,8 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     }
 
     // Restore window controls visibility state
-    const bool window_button_hidden = !window_button_visibility_.value_or(true);
+    const bool window_button_hidden =
+        !window_button_visibility_.value_or(true) || !has_frame();
     [[window standardWindowButton:NSWindowZoomButton]
         setHidden:window_button_hidden];
     [[window standardWindowButton:NSWindowMiniaturizeButton]
