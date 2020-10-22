@@ -868,9 +868,11 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_);
 
-  if (!spellcheck)
+  if (!spellcheck) {
     promise.RejectWithErrorMessage(
         "Spellcheck in unexpected state: failed to load custom dictionary.");
+    return handle;
+  }
 
   if (spellcheck->GetCustomDictionary()->IsLoaded()) {
     promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
