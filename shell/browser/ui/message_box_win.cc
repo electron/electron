@@ -105,7 +105,8 @@ struct TaskDialogCallbackData {
 
 // Callback of the task dialog. Used for storing the hwnd of task dialog when
 // it is created.
-HRESULT TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
+HRESULT CALLBACK
+TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
   if (msg == TDN_CREATED) {
     auto* cdata = reinterpret_cast<TaskDialogCallbackData*>(data);
     DCHECK(cdata);
