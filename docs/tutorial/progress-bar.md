@@ -32,10 +32,10 @@ currently at 63% towards completion, you would call it as
 
 Setting the parameter to negative values (e.g. `-1`) will remove the progress
 bar, whereas setting it to values greater than `1` (e.g. `2`) will switch the
-progress bar to indeterminate mode. In this mode, a progress bar remains active
-but does not show an actual percentage. Use this mode for situations when you
-do not know how long an operation will take to complete. The indeterminate mode
-is a Windows-only feature.
+progress bar to indeterminate mode (Windows-only -- it will clamp to 100%
+otherwise). In this mode, a progress bar remains active but does not show an
+actual percentage. Use this mode for situations when you do not know how long
+an operation will take to complete.
 
 See the [API documentation for more options and modes][setprogressbar].
 
