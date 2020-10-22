@@ -15,9 +15,11 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        partition: `unique-spell-${Date.now()}`
       }
     });
+    w.webContents.session.setSpellCheckerLanguages(['en-US']);
     await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
   });
 
@@ -49,6 +51,26 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   });
 
   ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
+    const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
+    // Wait for spellchecker to load
+    await delay(500);
+    w.webContents.sendInputEvent({
+      type: 'mouseDown',
+      button: 'right',
+      x: 43,
+      y: 42
+    });
+    const contextMenuParams: Electron.ContextMenuParams = (await contextMenuPromise)[1];
+    expect(contextMenuParams.misspelledWord).to.eq('Beautifulllll');
+    expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
+  });
+
+  ifit(shouldRun)('should detect incorrectly spelled words as incorrect after disabling all languages and re-enabling', async () => {
+    w.webContents.session.setSpellCheckerLanguages([]);
+    await delay(500);
+    w.webContents.session.setSpellCheckerLanguages(['en-US']);
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
