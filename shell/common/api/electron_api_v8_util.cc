@@ -122,9 +122,9 @@ void ClearWeaklyTrackedValues() {
 
 std::vector<v8::Local<v8::Value>> GetWeaklyTrackedValues(v8::Isolate* isolate) {
   std::vector<v8::Local<v8::Value>> locals;
-  for (size_t i = 0; i < weakly_tracked_values.size(); i++) {
-    if (!weakly_tracked_values[i].IsEmpty())
-      locals.push_back(weakly_tracked_values[i].Get(isolate));
+  for (const auto& value : weakly_tracked_values) {
+    if (!value.IsEmpty())
+      locals.push_back(value.Get(isolate));
   }
   return locals;
 }
