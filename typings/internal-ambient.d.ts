@@ -195,6 +195,7 @@ declare namespace NodeJS {
       createPair(): { port1: Electron.MessagePortMain, port2: Electron.MessagePortMain };
     };
     _linkedBinding(name: 'electron_browser_net'): {
+      isOnline(): boolean;
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
       Net: any;

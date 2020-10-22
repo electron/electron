@@ -9,6 +9,7 @@ import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { defer } from './spec-helpers';
 import { AddressInfo } from 'net';
 
 /* The whole session API doesn't use standard callbacks */
@@ -983,6 +984,58 @@ describe('session module', () => {
       const session1 = session.fromPartition('' + Math.random());
       const [session2] = await sessionCreated;
       expect(session1).to.equal(session2);
+    });
+  });
+
+  describe('ses.setSSLConfig()', () => {
+    it('can disable cipher suites', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+      const certPath = path.join(fixturesPath, 'certificates');
+      const server = https.createServer({
+        key: fs.readFileSync(path.join(certPath, 'server.key')),
+        cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+        ca: [
+          fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+        ],
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.2',
+        ciphers: 'AES128-GCM-SHA256'
+      }, (req, res) => {
+        res.end('hi');
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      defer(() => server.close());
+      const { port } = server.address() as AddressInfo;
+
+      function request () {
+        return new Promise((resolve, reject) => {
+          const r = net.request({
+            url: `https://127.0.0.1:${port}`,
+            session: ses
+          });
+          r.on('response', (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk.toString('utf8');
+            });
+            res.on('end', () => {
+              resolve(data);
+            });
+          });
+          r.on('error', (err) => {
+            reject(err);
+          });
+          r.end();
+        });
+      }
+
+      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
+      ses.setSSLConfig({
+        disabledCipherSuites: [0x009C]
+      });
+      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
 });

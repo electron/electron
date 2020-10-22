@@ -232,7 +232,7 @@ Specify ways of the inspector web socket url exposure.
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.
 
 [app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[append-switch]: command-line.md#commandlineappendswitchswitch-value
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md

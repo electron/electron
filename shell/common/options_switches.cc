@@ -198,6 +198,8 @@ const char kEnableRemoteModule[] = "enableRemoteModule";
 
 const char kEnableWebSQL[] = "enableWebSQL";
 
+const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
+
 }  // namespace options
 
 namespace switches {

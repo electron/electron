@@ -46,9 +46,12 @@ const main = async () => {
   const webpackTargetsWithDeps = await Promise.all(webpackTargets.map(async webpackTarget => {
     const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'));
     const child = cp.spawn('node', [
-      'build/webpack/get-outputs.js',
-      `./${webpackTarget.config}`,
-      path.resolve(tmpDir, `${webpackTarget.name}.measure.js`)
+      './node_modules/webpack-cli/bin/cli.js',
+      '--config', `./build/webpack/${webpackTarget.config}`,
+      '--display', 'errors-only',
+      `--output-path=${tmpDir}`,
+      `--output-filename=${webpackTarget.name}.measure.js`,
+      '--env.PRINT_WEBPACK_GRAPH'
     ], {
       cwd: path.resolve(__dirname, '..')
     });

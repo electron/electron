@@ -51,7 +51,7 @@ ipcMain.on('ondragstart', (event, filePath) => {
 })
 ```
 
-After launching the Electron application, try to dragging and dropping
+After launching the Electron application, try dragging and dropping
 the item from the BroswerWindow onto your desktop. In this guide,
 the item is a Markdown file located in the root of the project:
 

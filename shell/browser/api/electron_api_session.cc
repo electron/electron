@@ -203,6 +203,19 @@ bool SSLProtocolVersionFromString(const std::string& version_str,
 }
 
 template <>
+struct Converter<uint16_t> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     uint16_t* out) {
+    auto maybe = val->IntegerValue(isolate->GetCurrentContext());
+    if (maybe.IsNothing())
+      return false;
+    *out = maybe.FromJust();
+    return true;
+  }
+};
+
+template <>
 struct Converter<network::mojom::SSLConfigPtr> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -224,8 +237,14 @@ struct Converter<network::mojom::SSLConfigPtr> {
         return false;
     }
 
-    // TODO(nornagon): also support client_cert_pooling_policy and
-    // disabled_cipher_suites. Maybe other SSLConfig properties too?
+    if (options.Has("disabledCipherSuites") &&
+        !options.Get("disabledCipherSuites", &(*out)->disabled_cipher_suites)) {
+      return false;
+    }
+    std::sort((*out)->disabled_cipher_suites.begin(),
+              (*out)->disabled_cipher_suites.end());
+
+    // TODO(nornagon): also support other SSLConfig properties?
     return true;
   }
 };

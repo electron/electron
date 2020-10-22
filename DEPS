@@ -16,7 +16,7 @@ vars = {
   'chromium_version':
     '9269f9eb1d98d29564c2b2ab97f30c6e148c4e11',
   'node_version':
-    'v14.13.1',
+    'v14.14.0',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
@@ -37,6 +37,9 @@ vars = {
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
+
+  # To use an mtime cache for patched files to speed up builds.
+  'use_mtime_cache': True,
 
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
@@ -112,6 +115,23 @@ deps = {
   }
 }
 
+pre_deps_hooks = [
+  {
+    'name': 'generate_mtime_cache',
+    'condition': '(checkout_chromium and apply_patches and use_mtime_cache) and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'python3',
+      'src/electron/script/patches-mtime-cache.py',
+      'generate',
+      '--cache-file',
+      'src/electron/patches/mtime-cache.json',
+      '--patches-config',
+      'src/electron/patches/config.json',
+    ],
+  },
+]
+
 hooks = [
   {
     'name': 'patch_chromium',
@@ -121,6 +141,18 @@ hooks = [
       'python3',
       'src/electron/script/apply_all_patches.py',
       'src/electron/patches/config.json',
+    ],
+  },
+  {
+    'name': 'apply_mtime_cache',
+    'condition': '(checkout_chromium and apply_patches and use_mtime_cache) and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'python3',
+      'src/electron/script/patches-mtime-cache.py',
+      'apply',
+      '--cache-file',
+      'src/electron/patches/mtime-cache.json',
     ],
   },
   {

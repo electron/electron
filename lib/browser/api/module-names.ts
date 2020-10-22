@@ -29,6 +29,7 @@ export const browserModuleNames = [
   'protocol',
   'screen',
   'session',
+  'ShareMenu',
   'systemPreferences',
   'TouchBar',
   'Tray',

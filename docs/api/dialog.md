@@ -221,6 +221,7 @@ expanding and collapsing the dialog.
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -230,7 +231,6 @@ expanding and collapsing the dialog.
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
@@ -267,6 +267,7 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -276,7 +277,6 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
