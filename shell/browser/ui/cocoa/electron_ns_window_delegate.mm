@@ -201,6 +201,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidEndLiveResize:(NSNotification*)notification {
+  shell_->NotifyWindowResized();
   if (is_zooming_) {
     if (shell_->IsMaximized())
       shell_->NotifyWindowMaximize();

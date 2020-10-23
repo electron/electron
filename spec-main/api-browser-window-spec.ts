@@ -855,6 +855,15 @@ describe('BrowserWindow module', () => {
         const expectedBounds = Object.assign(fullBounds, boundsUpdate);
         expectBoundsEqual(w.getBounds(), expectedBounds);
       });
+
+      ifit(process.platform === 'darwin')('on macOS', () => {
+        it('emits \'resized\' event after animating', async () => {
+          const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
+          w.setBounds(fullBounds, true);
+
+          await expect(emittedOnce(w, 'resized')).to.eventually.be.fulfilled();
+        });
+      });
     });
 
     describe('BrowserWindow.setSize(width, height)', () => {
@@ -866,6 +875,15 @@ describe('BrowserWindow module', () => {
         await resized;
 
         expectBoundsEqual(w.getSize(), size);
+      });
+
+      ifit(process.platform === 'darwin')('on macOS', () => {
+        it('emits \'resized\' event after animating', async () => {
+          const size = [300, 400];
+          w.setSize(size[0], size[1], true);
+
+          await expect(emittedOnce(w, 'resized')).to.eventually.be.fulfilled();
+        });
       });
     });
 
