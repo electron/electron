@@ -896,6 +896,41 @@ describe('net module', () => {
       });
     });
 
+    it('should set sec-fetch-dest to empty by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-dest']).to.equal('empty');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    [
+      'empty', 'audio', 'audioworklet', 'document', 'embed', 'font',
+      'frame', 'iframe', 'image', 'manifest', 'object', 'paintworklet',
+      'report', 'script', 'serviceworker', 'style', 'track', 'video',
+      'worker', 'xslt'
+    ].forEach((dest) => {
+      it(`should set sec-fetch-dest to ${dest} if requested`, async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          expect(request.headers['sec-fetch-dest']).to.equal(dest);
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.end();
+        });
+        const urlRequest = net.request({
+          url: serverUrl,
+          origin: serverUrl
+        });
+        urlRequest.setHeader('sec-fetch-dest', dest);
+        await collectStreamBody(await getResponse(urlRequest));
+      });
+    });
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end();
