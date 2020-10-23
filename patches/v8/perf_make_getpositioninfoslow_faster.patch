@@ -87,17 +87,19 @@ index d8ae4114596e0c89f6a0cbb898d4f400dbe558ee..75047fb56bf5bb726837e8e004a039b2
  
  bool Script::GetPositionInfo(int position, PositionInfo* info,
 diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
-index 777442799601ccd9b0f102df4aac46788d1ce849..56529f1f0f05cba49a5fd26a39043026fb0cc26e 100644
+index 777442799601ccd9b0f102df4aac46788d1ce849..49fffa34adabd6fec0a5c5180de6c560d4a38050 100644
 --- a/src/profiler/heap-snapshot-generator.cc
 +++ b/src/profiler/heap-snapshot-generator.cc
-@@ -578,8 +578,8 @@ void V8HeapExplorer::ExtractLocationForJSFunction(HeapEntry* entry,
+@@ -578,9 +578,9 @@ void V8HeapExplorer::ExtractLocationForJSFunction(HeapEntry* entry,
    Script script = Script::cast(func.shared().script());
    int scriptId = script.id();
    int start = func.shared().StartPosition();
 -  int line = script.GetLineNumber(start);
 -  int col = script.GetColumnNumber(start);
+-  snapshot_->AddLocation(entry, scriptId, line, col);
 +  Script::PositionInfo info;
 +  script.GetPositionInfo(start, &info, Script::WITH_OFFSET);
-   snapshot_->AddLocation(entry, scriptId, line, col);
++  snapshot_->AddLocation(entry, scriptId, info.line, info.column);
  }
  
+ HeapEntry* V8HeapExplorer::AddEntry(HeapObject object) {
