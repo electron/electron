@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Fri, 23 Oct 2020 15:45:05 -0500
+Subject: perf: make GetPositionInfoSlow() faster
+
+Improve the efficiency of getting position info in slow mode. The
+current code does a linear walk through the source by calling
+String::Get() for each character. This PR also does a linear walk,
+but avoids overhead pulling the String's flat content into a local
+vector and walking through that.
+
+In addition, we halve the number of position lookups (either slow or
+fast mode) by changing V8HeapExplorer::ExtractLocationForJSFunction()
+to call GetPositionInfo() instead of making separate calls for column
+and line number.
+
+The snapshot test at https://github.com/electron/electron/issues/24509
+takes 7-8 seconds before this patch and 0.35 seconds with it.
+
+I'm going to submit this upstream to V8. If it's accepted there,
+then remove this one from Electron.
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index d8ae4114596e0c89f6a0cbb898d4f400dbe558ee..75047fb56bf5bb726837e8e004a039b250ad03ec 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4790,30 +4790,43 @@ bool Script::ContainsAsmModule() {
+ }
+ 
+ namespace {
+-bool GetPositionInfoSlow(const Script script, int position,
+-                         Script::PositionInfo* info) {
+-  if (!script.source().IsString()) return false;
+-  if (position < 0) position = 0;
+ 
+-  String source_string = String::cast(script.source());
++template <typename Char>
++bool GetPositionInfoSlowImpl(const Vector<Char>& source, int position,
++                             Script::PositionInfo* info) {
++  if (position < 0) {
++    position = 0;
++  }
+   int line = 0;
+-  int line_start = 0;
+-  int len = source_string.length();
+-  for (int pos = 0; pos <= len; ++pos) {
+-    if (pos == len || source_string.Get(pos) == '\n') {
+-      if (position <= pos) {
+-        info->line = line;
+-        info->column = position - line_start;
+-        info->line_start = line_start;
+-        info->line_end = pos;
+-        return true;
+-      }
+-      line++;
+-      line_start = pos + 1;
++  const auto begin = std::cbegin(source);
++  const auto end = std::cend(source);
++  for (auto line_begin = begin; line_begin < end;) {
++    const auto line_end = std::find(line_begin, end, '\n');
++    if (position <= (line_end - begin)) {
++      info->line = line;
++      info->column = static_cast<int>((begin + position) - line_begin);
++      info->line_start = static_cast<int>(line_begin - begin);
++      info->line_end = static_cast<int>(line_end - begin);
++      return true;
+     }
++    ++line;
++    line_begin = line_end + 1;
+   }
+   return false;
+ }
++bool GetPositionInfoSlow(const Script script, int position,
++                         Script::PositionInfo* info) {
++  if (!script.source().IsString()) {
++    return false;
++  }
++  auto source = String::cast(script.source());
++  const DisallowHeapAllocation no_gc;
++  const auto flat = source.GetFlatContent(no_gc);
++  return flat.IsOneByte()
++             ? GetPositionInfoSlowImpl(flat.ToOneByteVector(), position, info)
++             : GetPositionInfoSlowImpl(flat.ToUC16Vector(), position, info);
++}
++
+ }  // namespace
+ 
+ bool Script::GetPositionInfo(int position, PositionInfo* info,
+diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
+index 777442799601ccd9b0f102df4aac46788d1ce849..56529f1f0f05cba49a5fd26a39043026fb0cc26e 100644
+--- a/src/profiler/heap-snapshot-generator.cc
++++ b/src/profiler/heap-snapshot-generator.cc
+@@ -578,8 +578,8 @@ void V8HeapExplorer::ExtractLocationForJSFunction(HeapEntry* entry,
+   Script script = Script::cast(func.shared().script());
+   int scriptId = script.id();
+   int start = func.shared().StartPosition();
+-  int line = script.GetLineNumber(start);
+-  int col = script.GetColumnNumber(start);
++  Script::PositionInfo info;
++  script.GetPositionInfo(start, &info, Script::WITH_OFFSET);
+   snapshot_->AddLocation(entry, scriptId, line, col);
+ }
+ 
