@@ -378,7 +378,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   opts.Get("referrer", &request->referrer);
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
-  std::map<std::string, std::string> extra_headers;
+  std::vector<std::pair<std::string, std::string>> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
