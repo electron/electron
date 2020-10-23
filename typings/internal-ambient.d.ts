@@ -120,6 +120,7 @@ declare namespace NodeJS {
     partition?: string;
     referrer?: string;
     origin?: string;
+    hasUserActivation?: boolean;
   };
   type ResponseHead = {
     statusCode: number;

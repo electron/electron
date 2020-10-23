@@ -839,6 +839,33 @@ describe('net module', () => {
       await collectStreamBody(await getResponse(urlRequest));
     });
 
+    it('should not send sec-fetch-user header by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers).not.to.have.property('sec-fetch-user');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-user to ?1 if requested', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-user']).to.equal('?1');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      urlRequest.setHeader('sec-fetch-user', '?1');
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end();

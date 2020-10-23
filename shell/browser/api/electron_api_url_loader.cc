@@ -381,6 +381,11 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   if (!origin.empty()) {
     request->request_initiator = url::Origin::Create(GURL(origin));
   }
+  bool has_user_activation;
+  if (opts.Get("hasUserActivation", &has_user_activation)) {
+    request->trusted_params = network::ResourceRequest::TrustedParams();
+    request->trusted_params->has_user_activation = has_user_activation;
+  }
 
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
