@@ -1196,7 +1196,8 @@ describe('webContents module', () => {
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
 
-    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+    // TODO (jkleinsc) - this test is very flaky on WOA due to its dependence on a setTimeout; disabling until it can be rewritten
+    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
       const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
       let currentRenderViewDeletedEmitted = false;
       let childWindow:BrowserWindow;
