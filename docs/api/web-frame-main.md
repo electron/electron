@@ -133,6 +133,7 @@ An `Integer` representing the operating system `pid` of the process which owns t
 #### `frame.processId` _Readonly_
 
 An `Integer` representing the Chromium internal `pid` of the process which owns this frame.
+This is not the same as the OS process ID; to read that use `frame.osProcessId`.
 
 #### `frame.routingId` _Readonly_
 
