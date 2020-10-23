@@ -146,6 +146,17 @@ describe('dialog module', () => {
       await p2;
     });
 
+    it('releases message box ID after a while', async () => {
+      const w = new BrowserWindow();
+      const p1 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      dialog.closeMessageBox('dialog1');
+      await p1;
+      const p2 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
+      dialog.closeMessageBox('dialog1');
+      await p2;
+    });
+
     it('closes message box immediately', async () => {
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, { id: 'dialog2', message: 'i am message' });
@@ -157,7 +168,7 @@ describe('dialog module', () => {
     it('closes message box after a while', async () => {
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, { id: 'dialog3', message: 'i am message' });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 500));
       dialog.closeMessageBox('dialog3');
       const result = await p;
       expect(result.response).to.equal(0);
@@ -184,7 +195,7 @@ describe('dialog module', () => {
         buttons: ['OK', 'Cancel'],
         cancelId: 1
       });
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 500));
       dialog.closeMessageBox('dialog5');
       const result = await p;
       expect(result.response).to.equal(1);

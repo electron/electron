@@ -96,25 +96,22 @@ void MapToCommonID(const std::vector<std::wstring>& buttons,
   }
 }
 
-// The data passed to dialog threads.
-struct TaskDialogCallbackData {
-  std::string id;
-  HWND* hwnd;
-  std::unique_ptr<base::AutoLock> lock;
-};
-
 // Callback of the task dialog. Used for storing the hwnd of task dialog when
 // it is created.
 HRESULT CALLBACK
 TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
   if (msg == TDN_CREATED) {
-    auto* cdata = reinterpret_cast<TaskDialogCallbackData*>(data);
-    DCHECK(cdata);
-    DCHECK(cdata->hwnd);
-    DCHECK(!cdata->id.empty());
-    *cdata->hwnd = hwnd;
-    // Release lock after HWND is written.
-    cdata->lock.reset();
+    HWND* target = reinterpret_cast<HWND*>(data);
+    base::AutoLock lock(g_hwnd_lock.Get());
+    if (*target == kHwndCancel) {
+      // If the dialog is cancelled then close it directly.
+      ::PostMessage(hwnd, WM_CLOSE, 0, 0);
+    } else if (*target == kHwndReserve) {
+      // Otherwise save the hwnd.
+      *target = hwnd;
+    } else {
+      NOTREACHED();
+    }
   }
   return S_OK;
 }
@@ -131,7 +128,6 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
                                 const std::u16string& checkbox_label,
                                 bool checkbox_checked,
                                 const gfx::ImageSkia& icon,
-                                const absl::optional<std::string>& mb_id,
                                 HWND* hwnd) {
   TASKDIALOG_FLAGS flags =
       TDF_SIZE_TO_CONTENT |           // Show all content.
@@ -214,22 +210,10 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
       config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
-  // When user specifies an ID for message box, we have to store the hwnd of
-  // the dialog to a global map.
-  TaskDialogCallbackData data;
-  if (mb_id) {
-    data.id = *mb_id;
-    data.hwnd = hwnd;
+  // Pass a callback to receive the HWND of the message box.
+  if (hwnd) {
     config.pfCallback = &TaskDialogCallback;
-    config.lpCallbackData = reinterpret_cast<LONG_PTR>(&data);
-    // Lock before reading and modifying HWND, note that the lock will keep
-    // until we get the HWND of the task dialog.
-    data.lock = std::make_unique<base::AutoLock>(g_hwnd_lock.Get());
-    // If the dialog is canceled before TaskDialogIndirect is called, return
-    // immediately.
-    DCHECK(*hwnd == kHwndCancel || *hwnd == kHwndReserve);
-    if (*hwnd == kHwndCancel)
-      return std::make_tuple("", cancel_id, false);
+    config.lpCallbackData = reinterpret_cast<LONG_PTR>(hwnd);
   }
 
   int id = 0;
@@ -248,7 +232,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
-                                HWND* hwnd = nullptr) {
+                                HWND* hwnd) {
   std::vector<std::wstring> buttons;
   for (const auto& button : settings.buttons)
     buttons.push_back(base::UTF8ToWide(button));
@@ -262,15 +246,14 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
   return ShowTaskDialogWstr(
       settings.parent_window, settings.type, buttons, settings.default_id,
       settings.cancel_id, settings.no_link, title, message, detail,
-      checkbox_label, settings.checkbox_checked, settings.icon, settings.id,
-      hwnd);
+      checkbox_label, settings.checkbox_checked, settings.icon, hwnd);
 }
 
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   electron::UnresponsiveSuppressor suppressor;
-  DialogResult result = ShowTaskDialogUTF8(settings);
+  DialogResult result = ShowTaskDialogUTF8(settings, nullptr);
   DCHECK(std::get<0>(result).empty());  // check if there is error
   return std::get<1>(result);
 }
@@ -313,6 +296,7 @@ bool CloseMessageBox(const std::string& id, std::string* error) {
   }
   HWND* hwnd = it->second.get();
   base::AutoLock lock(g_hwnd_lock.Get());
+  DCHECK(*hwnd != kHwndCancel);
   if (*hwnd == kHwndReserve) {
     // If the dialog window has not been created yet, tell it to cancel.
     *hwnd = kHwndCancel;
@@ -327,7 +311,7 @@ void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
                      u"Error", title, content, u"", false, gfx::ImageSkia(),
-                     nullptr, nullptr);
+                     nullptr);
 }
 
 }  // namespace electron
