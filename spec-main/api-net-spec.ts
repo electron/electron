@@ -866,6 +866,36 @@ describe('net module', () => {
       await collectStreamBody(await getResponse(urlRequest));
     });
 
+    it('should set sec-fetch-mode to no-cors by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-mode']).to.equal('no-cors');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    ['navigate', 'cors', 'no-cors', 'same-origin'].forEach((mode) => {
+      it(`should set sec-fetch-mode to ${mode} if requested`, async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          expect(request.headers['sec-fetch-mode']).to.equal(mode);
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.end();
+        });
+        const urlRequest = net.request({
+          url: serverUrl,
+          origin: serverUrl
+        });
+        urlRequest.setHeader('sec-fetch-mode', mode);
+        await collectStreamBody(await getResponse(urlRequest));
+      });
+    });
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end();

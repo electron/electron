@@ -121,6 +121,7 @@ declare namespace NodeJS {
     referrer?: string;
     origin?: string;
     hasUserActivation?: boolean;
+    mode?: string;
   };
   type ResponseHead = {
     statusCode: number;

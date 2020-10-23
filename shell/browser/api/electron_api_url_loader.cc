@@ -387,6 +387,19 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     request->trusted_params->has_user_activation = has_user_activation;
   }
 
+  std::string mode;
+  if (opts.Get("mode", &mode) && !mode.empty()) {
+    if (mode == "navigate") {
+      request->mode = network::mojom::RequestMode::kNavigate;
+    } else if (mode == "cors") {
+      request->mode = network::mojom::RequestMode::kCors;
+    } else if (mode == "no-cors") {
+      request->mode = network::mojom::RequestMode::kNoCors;
+    } else if (mode == "same-origin") {
+      request->mode = network::mojom::RequestMode::kSameOrigin;
+    }
+  }
+
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
   std::vector<std::pair<std::string, std::string>> extra_headers;
