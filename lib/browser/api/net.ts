@@ -256,7 +256,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     headers: {},
     body: null as any,
     useSessionCookies: options.useSessionCookies,
-    credentials: options.credentials
+    credentials: options.credentials,
+    origin: options.origin
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {
@@ -414,6 +415,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       return ret;
     };
     this._urlLoaderOptions.referrer = this.getHeader('referer') || '';
+    this._urlLoaderOptions.origin = this._urlLoaderOptions.origin || this.getHeader('origin') || '';
     const opts = { ...this._urlLoaderOptions, extraHeaders: stringifyValues(this._urlLoaderOptions.headers) };
     this._urlLoader = createURLLoader(opts);
     this._urlLoader.on('response-started', (event, finalUrl, responseHead) => {

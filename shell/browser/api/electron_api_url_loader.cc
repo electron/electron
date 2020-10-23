@@ -376,6 +376,12 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   opts.Get("referrer", &request->referrer);
+  std::string origin;
+  opts.Get("origin", &origin);
+  if (!origin.empty()) {
+    request->request_initiator = url::Origin::Create(GURL(origin));
+  }
+
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
   std::vector<std::pair<std::string, std::string>> extra_headers;

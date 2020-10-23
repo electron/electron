@@ -797,6 +797,48 @@ describe('net module', () => {
       it('should not store cookies');
     });
 
+    it('should set sec-fetch-site to same-origin for request from same origin', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        origin: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-site to same-origin for request with the same origin header', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      urlRequest.setHeader('Origin', serverUrl);
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-site to cross-site for request from other origin', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('cross-site');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        origin: 'https://not-exists.com'
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end();
