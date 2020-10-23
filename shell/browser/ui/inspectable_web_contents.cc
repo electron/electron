@@ -343,6 +343,7 @@ InspectableWebContents::InspectableWebContents(
       pref_service_(pref_service),
       web_contents_(web_contents),
       is_guest_(is_guest),
+      is_docked_(true),
       view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
