@@ -440,26 +440,36 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => BrowserWindowConstructorOptions | boolean) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'allow'} | {action: 'deny', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions})) {
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string) {
+WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string): BrowserWindowConstructorOptions | null {
   if (!this._windowOpenHandler) {
     return null;
   }
   const response = this._windowOpenHandler({ url, frameName, features: rawFeatures });
 
-  if (response === false) {
+  if (typeof response !== 'object') {
+    event.preventDefault();
+    console.error(`The window open handler response must be an object, but was instead of type '${typeof response}'.`);
+    return null;
+  }
+
+  if (response === null) {
+    event.preventDefault();
+    console.error('The window open handler response must be an object, but was instead null.');
+    return null;
+  }
+
+  if (response.action === 'deny') {
     event.preventDefault();
     return null;
-  } else if (response === true) {
-    return null;
-  } else if (response != null && typeof response === 'object') {
-    return response;
+  } else if (response.action === 'allow') {
+    if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) { return response.overrideBrowserWindowOptions; } else { return {}; }
   } else {
-    console.error('The window.open override response must be a boolean or an object of BrowserWindow options.');
     event.preventDefault();
+    console.error('The window open handler response must be an object with an \'action\' property of \'allow\' or \'deny\'.');
     return null;
   }
 };

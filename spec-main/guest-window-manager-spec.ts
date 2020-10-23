@@ -120,8 +120,8 @@ describe('webContents.setWindowOpenHandler', () => {
 
       afterEach(closeAllWindows);
 
-      it('does not fire window creation events if an override returns false', (done) => {
-        browserWindow.webContents.setWindowOpenHandler(() => false);
+      it('does not fire window creation events if an override returns action: deny', (done) => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
         browserWindow.webContents.on('new-window', () => {
           assert.fail('new-window should not to be called with an overridden window.open');
         });
@@ -146,14 +146,14 @@ describe('webContents.setWindowOpenHandler', () => {
           expect(frameName).to.equal(testFrameName);
           expect(features).to.equal(testFeatures);
           done();
-          return false;
+          return { action: 'deny' };
         });
 
         browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
       });
 
-      it('does fire window creation events if an override returns true', async () => {
-        browserWindow.webContents.setWindowOpenHandler(() => true);
+      it('does fire window creation events if an override returns action: allow', async () => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
 
         setImmediate(() => {
           browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
@@ -166,7 +166,7 @@ describe('webContents.setWindowOpenHandler', () => {
       });
 
       it('can change webPreferences of child windows', (done) => {
-        browserWindow.webContents.setWindowOpenHandler(() => ({ webPreferences: { defaultFontSize: 30 } }));
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
         browserWindow.webContents.on('did-create-window', async (childWindow) => {
           await childWindow.webContents.executeJavaScript("document.write('hello')");

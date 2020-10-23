@@ -232,7 +232,7 @@ describe('BrowserView module', () => {
         expect(url).to.equal('http://host/');
         expect(frameName).to.equal('host');
         done();
-        return false;
+        return { action: 'deny' };
       });
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
     });

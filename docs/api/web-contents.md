@@ -1159,12 +1159,16 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<Boolean | BrowserWindowConstructorOptions>
+* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
   * `details` Object
     * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
     * `features` String - Comma separated list of window features provided to `window.open()`.
-  Returns `Boolean | BrowserWindowConstructorOptions` - `false` cancels the creation of the new window. `true` results in the default behavior: a window is created. Returning `BrowserWindowConstructorOptions` allows customization of the created window. Returning `undefined` will result in a console error and cancellation of the window.
+  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  Returning an unrecognized value such as a null, undefined, or an object
+  without a recognized 'action' value will result in a console error and have
+  the same effect as returning `{action: 'deny'}`.
 
 Called before creating a window when `window.open()` is called from the
 renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.

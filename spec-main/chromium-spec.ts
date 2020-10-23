@@ -902,8 +902,11 @@ describe('chromium features', () => {
           it(description, async () => {
             const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
             w.webContents.setWindowOpenHandler(() => ({
-              webPreferences: {
-                sandbox: sandboxPopup
+              action: 'allow',
+              overrideBrowserWindowOptions: {
+                webPreferences: {
+                  sandbox: sandboxPopup
+                }
               }
             }));
             await w.loadURL(parent);
