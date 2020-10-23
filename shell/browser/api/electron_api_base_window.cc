@@ -222,6 +222,10 @@ void BaseWindow::OnWindowResize() {
   Emit("resize");
 }
 
+void BaseWindow::OnWindowResized() {
+  Emit("resized");
+}
+
 void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {
   if (Emit("will-move", new_bounds)) {

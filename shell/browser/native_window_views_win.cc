@@ -259,6 +259,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
     case WM_SIZING: {
+      is_resizing_ = true;
       bool prevent_default = false;
       NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
                              &prevent_default);
@@ -274,7 +275,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       HandleSizeEvent(w_param, l_param);
       return false;
     }
+    case WM_EXITSIZEMOVE: {
+      if (is_resizing_) {
+        NotifyWindowResized();
+        is_resizing_ = false;
+      }
+      if (is_moving_) {
+        NotifyWindowMoved();
+        is_moving_ = false;
+      }
+      return false;
+    }
     case WM_MOVING: {
+      is_moving_ = true;
       bool prevent_default = false;
       NotifyWindowWillMove(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
                            &prevent_default);
