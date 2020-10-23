@@ -296,6 +296,17 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Header$/m);
       expect(data).to.equal('/');
     });
+    
+    it('does not change content-disposition header by default', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        const responseHeaders = details.responseHeaders!;
+        responseHeaders['Content-Disposition'] = [' attachement; filename=aa%CC%ECaa.txt'] as any;
+        callback({ responseHeaders: responseHeaders });
+      });
+      const { data, headers } = await ajax(defaultURL);
+      expect(headers).to.match(/^content-disposition: attachement; filename=aa%CC%ECaa.txt$/m);
+      expect(data).to.equal('/');
+    });
 
     it('follows server redirect', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
