@@ -4,9 +4,12 @@
 
 #include "shell/browser/api/electron_api_browser_view.h"
 
+#include <vector>
+
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -80,6 +83,7 @@ BrowserView::BrowserView(gin::Arguments* args,
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
+  api_web_contents_->AddObserver(this);
   Observe(web_contents->web_contents());
 
   view_.reset(
@@ -98,6 +102,11 @@ void BrowserView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
   Unpin();
+}
+
+void BrowserView::OnDraggableRegionsUpdated(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  view_->UpdateDraggableRegions(regions);
 }
 
 // static
