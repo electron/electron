@@ -507,15 +507,13 @@ source_set("electron_lib") {
       "//ui/wm",
     ]
     if (use_x11) {
+      sources += filenames.lib_sources_linux_x11
       deps += [
         "//ui/gfx/x",
         "//ui/gtk/x",
       ]
     }
     configs += [ ":gio_unix" ]
-    if (use_x11) {
-      deps += [ "//ui/gfx/x" ]
-    }
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
