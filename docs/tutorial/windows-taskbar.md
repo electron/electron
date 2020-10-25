@@ -10,10 +10,10 @@ supports both Windows-only features like [creation of a `JumpList`](#jumplist),
 like [recent documents][recent-documents] and
 [application progress][progress-bar].
 
-### JumpList
+## JumpList
 
 Windows allows apps to define a custom context menu that shows up when users
-right-click the app's icon in the task bar. That context menu is called
+right-click the app's icon in the taskbar. That context menu is called
 `JumpList`. You specify custom actions in the `Tasks` category of JumpList,
 as quoted from [MSDN][msdn-jumplist]:
 
@@ -87,7 +87,7 @@ application, so the icon and program path specified for a task should exist unti
 
 ### Thumbnail Toolbars
 
-In Windows, you can add a thumbnail toolbar with specified buttons to a taskbar
+On Windows, you can add a thumbnail toolbar with specified buttons to a taskbar
 layout of an application window. It provides users with a way to access a
 particular window's command without restoring or activating the window.
 
@@ -154,7 +154,7 @@ win.setThumbarButtons([])
 
 ### Icon Overlays in Taskbar
 
-In Windows, a taskbar button can use a small overlay to display application
+On Windows, a taskbar button can use a small overlay to display application
 status.
 
 As quoted from [MSDN][msdn-icon-overlay]:
@@ -194,7 +194,7 @@ win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 
 ### Flash Frame
 
-In Windows, you can highlight the taskbar button to get the user's attention.
+On Windows, you can highlight the taskbar button to get the user's attention.
 This is similar to bouncing the dock icon in macOS.
 
 As quoted from [MSDN][msdn-flash-frame]:
@@ -220,8 +220,8 @@ win.once('focus', () => win.flashFrame(false))
 win.flashFrame(true)
 ```
 
-> NOTE: Don't forget to call the `flashFrame` method with `false` to turn off
-the flash. In the above example, it is called when the window comes into focus,
+> NOTE: Don't forget to call `win.flashFrame(false)` to turn off the flash.
+In the above example, it is called when the window comes into focus,
 but you might use a timeout or some other event to disable it.
 
 [msdn-flash-frame]: https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-flashwindow#remarks
