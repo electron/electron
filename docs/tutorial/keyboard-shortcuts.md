@@ -105,15 +105,21 @@ following lines:
 const { app, BrowserWindow } = require('electron')
 
 app.whenReady().then(() => {
-  let win = new BrowserWindow({ width: 800, height: 600 })
+  let win = new BrowserWindow({ width: 800, height: 600 , webPreferences: { nodeIntegration: true }})
   
+  win.loadFile('index.html');
   win.webContents.on('before-input-event', (event, input) => {
-    // For example, only enable application menu keyboard shortcuts when
-    // Ctrl/Cmd are down.
-    win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
-  })
+    if (input.control && input.key.toLowerCase() === 'i') {
+      console.log('Pressed Control+I');
+      event.preventDefault();
+    }
+  });
 });
 ```
+
+After launching the Electron application, if you open the terminal that you ran
+your Electron application from, and press `Ctrl+I` key combination, you will
+see that this key combination was successfully intercepted.
 
 #### Using third-party libraries
 
