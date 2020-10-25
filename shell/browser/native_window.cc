@@ -49,7 +49,6 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
-  ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
@@ -63,8 +62,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 }
 
 NativeWindow::~NativeWindow() {
-  ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
-
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the Widget delegate gets destroyed and
   // OnWindowClosed message is still notified.

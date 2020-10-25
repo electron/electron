@@ -1354,13 +1354,6 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 }
 #endif
 
-#if defined(OS_LINUX)
-void NativeWindowViews::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
-  auto const use_dark = observed_theme->ShouldUseDarkColors();
-  SetGTKDarkThemeEnabled(use_dark);
-}
-#endif
-
 void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
                                                   bool active) {
   if (changed_widget != widget())

@@ -2,14 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/native_window_views.h"
-
 #include <dwmapi.h>
 #include <shellapi.h>
 
 #include "content/public/browser/browser_accessibility_state.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/common/electron_constants.h"
 #include "ui/base/win/accessibility_misc_utils.h"
@@ -17,10 +15,6 @@
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/widget/native_widget_private.h"
-
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE)
-#include "shell/browser/win/dark_mode.h"
-#endif
 
 // Must be included after other Windows headers.
 #include <UIAutomationCoreApi.h>
@@ -455,12 +449,6 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   }
 
   return CallNextHookEx(NULL, n_code, w_param, l_param);
-}
-
-void NativeWindowViews::OnNativeThemeUpdated(ui::NativeTheme* theme) {
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE)
-  win::SetDarkModeForWindow(GetAcceleratedWidget(), theme->theme_source());
-#endif
 }
 
 }  // namespace electron
