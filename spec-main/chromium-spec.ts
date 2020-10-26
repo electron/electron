@@ -1529,7 +1529,7 @@ describe('navigator.clipboard', () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await readClipboard();
-    expect(clipboard).to.equal('[object ClipboardItem]');
+    expect(clipboard).to.not.equal('Read permission denied.');
   });
 
   it('returns an error when permission denied', async () => {
@@ -1553,6 +1553,6 @@ describe('navigator.clipboard', () => {
       }
     });
     const clipboard = await readClipboard();
-    expect(clipboard).to.equal('[object ClipboardItem]');
+    expect(clipboard).to.not.equal('Read permission denied.');
   });
 });
