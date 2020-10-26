@@ -32,7 +32,8 @@ In most cases, you should do everything in the `ready` event handler.
 
 Returns:
 
-* `launchInfo` unknown _macOS_
+* `event` Event
+* `launchInfo` Record<string, any> _macOS_
 
 Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
 holds the `userInfo` of the `NSUserNotification` that was used to open the
