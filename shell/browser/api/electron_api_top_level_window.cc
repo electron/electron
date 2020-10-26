@@ -941,7 +941,7 @@ std::vector<v8::Local<v8::Object>> TopLevelWindow::GetChildWindows() const {
 
 v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
     gin_helper::Arguments* args) const {
-  if (browser_views_.size() == 0) {
+  if (browser_views_.empty()) {
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
     auto first_view = browser_views_.begin();

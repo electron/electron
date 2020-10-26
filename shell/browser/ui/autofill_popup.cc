@@ -148,7 +148,7 @@ int AutofillPopup::GetDesiredPopupWidth() {
         kEndPadding + 2 * kPopupBorderThickness +
         gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
         gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
-    if (GetLabelAt(i).length() > 0)
+    if (!GetLabelAt(i).empty())
       row_size += kNamePadding + kEndPadding;
 
     popup_width = std::max(popup_width, row_size);
