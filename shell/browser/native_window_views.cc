@@ -1335,8 +1335,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
     int width_delta = new_bounds.width() - widget_size_.width();
     int height_delta = new_bounds.height() - widget_size_.height();
     for (NativeBrowserView* item : browser_views()) {
-      NativeBrowserViewViews* native_view =
-          static_cast<NativeBrowserViewViews*>(item);
+      auto* native_view = static_cast<NativeBrowserViewViews*>(item);
       native_view->SetAutoResizeProportions(widget_size_);
       native_view->AutoResize(new_bounds, width_delta, height_delta);
     }
@@ -1404,7 +1403,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 
   // And the events on border for dragging resizable frameless window.
   if (!has_frame() && CanResize()) {
-    FramelessView* frame =
+    auto* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
   }
