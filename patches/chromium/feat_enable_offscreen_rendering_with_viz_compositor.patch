@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5daaddd64ec4bcbf96d972dbf8836c5bad416432..8cc25fed0de865cb8a8e11c364070b9a9d8a0a21 100644
+index 5d60d2905d01fe0f8e61990e28a35936e926fdbb..84b1be8096ec46ba0fba205b6e813da2fb7e142a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -115,6 +115,8 @@ viz_component("service") {
@@ -107,10 +107,10 @@ index 5daaddd64ec4bcbf96d972dbf8836c5bad416432..8cc25fed0de865cb8a8e11c364070b9a
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e00016ce9b 100644
+index bd67d4530c8a77fa3c5c6df9a0fb210944d7792c..303637624a4221de79b9ddf95f23e27c1114e607 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -22,6 +22,7 @@
+@@ -24,6 +24,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -118,7 +118,7 @@ index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e0
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -35,6 +36,7 @@
+@@ -37,6 +38,7 @@
  #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
@@ -126,7 +126,7 @@ index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e0
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -245,6 +247,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -250,6 +252,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  

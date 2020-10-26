@@ -111,16 +111,17 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index e08e556858e4079d953027399e04056f62e2db78..2aa72571e44a9027d5bd84498d65f835da87935b 100644
+index 63ee95a80309357293afa0684c2a1cec6a3ba105..a0098e9450b48f03b98008e0e81fe48cc2a7b293 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -10,13 +10,14 @@
+@@ -10,14 +10,15 @@
  #include "base/hash/hash.h"
  #include "base/message_loop/message_pump_type.h"
  #include "base/single_thread_task_runner.h"
 +#include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"
  #include "base/threading/thread_restrictions.h"
+ #include "base/threading/thread_task_runner_handle.h"
  #include "build/build_config.h"
  #include "chrome/browser/media/webrtc/desktop_media_list.h"
 -#include "chrome/grit/generated_resources.h"
@@ -130,7 +131,7 @@ index e08e556858e4079d953027399e04056f62e2db78..2aa72571e44a9027d5bd84498d65f835
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -223,6 +224,8 @@ void NativeDesktopMediaList::Worker::RefreshThumbnails(
+@@ -257,6 +258,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
@@ -138,4 +139,4 @@ index e08e556858e4079d953027399e04056f62e2db78..2aa72571e44a9027d5bd84498d65f835
 +  capturer_.reset();
  }
  
- bool NativeDesktopMediaList::Worker::IsCurrentFrameValid() const {
+ void NativeDesktopMediaList::Worker::OnCaptureResult(
