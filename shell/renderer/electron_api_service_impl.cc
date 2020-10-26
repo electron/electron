@@ -222,14 +222,14 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
     TakeHeapSnapshotCallback callback) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  base::PlatformFile platform_file;
+  base::ScopedPlatformFile platform_file;
   if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
       MOJO_RESULT_OK) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(platform_file);
+  base::File base_file(std::move(platform_file));
 
   bool success =
       electron::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);
