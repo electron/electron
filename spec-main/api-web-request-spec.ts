@@ -296,7 +296,7 @@ describe('webRequest module', () => {
       expect(headers).to.match(/^custom: Header$/m);
       expect(data).to.equal('/');
     });
-    
+
     it('does not change content-disposition header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
