@@ -24,7 +24,7 @@ declare namespace NodeJS {
     isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
-    isWinDarkModeEnabled(): boolean;
+    isWinDarkModeWindowUiEnabled(): boolean;
   }
 
   interface IpcRendererBinding {
