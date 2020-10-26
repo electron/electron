@@ -142,7 +142,7 @@ If you want to apply this example to an existing project:
 ```sh
 $ snapcraft
 
-<output snipped>                                                                                                                                                                                                         
+<output snipped>
 Snapped electron-packager-hello-world_0.1_amd64.snap
 ```
 
