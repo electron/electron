@@ -72,6 +72,10 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       await delay(0);
     }
     w.hide();
+    if (process.platform === 'darwin') {
+      // Wait for a tick, the window being "shown" takes 1 tick on macOS
+      await delay(0);
+    }
     load();
     const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
