@@ -1331,8 +1331,7 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
 
 void NativeWindowViews::UpdateDraggableRegions(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  auto region = DraggableRegionsToSkRegion(regions);
-  draggable_region_ = std::move(region);
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 #if defined(OS_WIN)

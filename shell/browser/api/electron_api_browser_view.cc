@@ -94,6 +94,7 @@ BrowserView::~BrowserView() {
   if (api_web_contents_) {  // destroy() is called
     // Destroy WebContents asynchronously unless app is shutting down,
     // because destroy() might be called inside WebContents's event handler.
+    api_web_contents_->RemoveObserver(this);
     api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
   }
 }
