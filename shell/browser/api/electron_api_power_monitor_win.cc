@@ -83,26 +83,26 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
         // Unretained is OK because this object is eternally pinned.
-        base::ThreadPool::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },
                            base::Unretained(this)));
       } else if (wparam == WTS_SESSION_UNLOCK) {
-        base::ThreadPool::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("unlock-screen"); },
                            base::Unretained(this)));
       }
     }
   } else if (message == WM_POWERBROADCAST) {
     if (wparam == PBT_APMRESUMEAUTOMATIC) {
-      base::ThreadPool::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
           base::BindOnce([](PowerMonitor* pm) { pm->Emit("resume"); },
                          base::Unretained(this)));
     } else if (wparam == PBT_APMSUSPEND) {
-      base::ThreadPool::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
           base::BindOnce([](PowerMonitor* pm) { pm->Emit("suspend"); },
                          base::Unretained(this)));
     }
