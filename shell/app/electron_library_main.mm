@@ -27,7 +27,7 @@ int ElectronMain(int argc, char* argv[]) {
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
-    CHECK(false);
+    CHECK(false) << "run_as_node fuse is disabled";
     return 1;
   }
 
