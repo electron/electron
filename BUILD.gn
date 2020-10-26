@@ -673,6 +673,13 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
+
+  if (is_win && enable_win_dark_mode) {
+    sources += [
+      "shell/browser/win/dark_mode.cc",
+      "shell/browser/win/dark_mode.h",
+    ]
+  }
 }
 
 electron_paks("packed_resources") {
