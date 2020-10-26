@@ -9,7 +9,7 @@ import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 
 /* The whole session API doesn't use standard callbacks */
