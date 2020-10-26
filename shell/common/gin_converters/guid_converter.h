@@ -33,7 +33,7 @@ struct Converter<UUID> {
 
     UUID uid;
 
-    if (guid.length() > 0) {
+    if (!guid.empty()) {
       unsigned char* uid_cstr = (unsigned char*)guid.c_str();
       RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
       if (result == RPC_S_INVALID_STRING_UUID) {
