@@ -25,10 +25,10 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
-"@electron/docs-parser@^0.7.2":
-  version "0.7.2"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.7.2.tgz#f0d5b9f314db519ac1f83359c07c6ec42d3123d1"
-  integrity sha512-b8D+v9I3OGSL/5AlPYry11UtygskWe1ejwXxBePNst45/AclYoIIQnIlXr51tv8Q+Wsuhqh/fJWHO9yAjF30Uw==
+"@electron/docs-parser@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.10.0.tgz#cc399f3847c37a38af8c13c711dc57eb07e21994"
+  integrity sha512-dNUNsW3tC5VWyWDD6awxDsA0Wc91PVaG4KmSBnqQmXE7bNjnEFE1hf5TaH0KOmJq1KMyQ2rbp7rrrvqRoLKP1Q==
   dependencies:
     "@types/markdown-it" "^0.0.9"
     chai "^4.2.0"
