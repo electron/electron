@@ -537,6 +537,27 @@ describe('net module', () => {
       await collectStreamBody(response);
     });
 
+    it('should keep the order of headers', async () => {
+      const customHeaderNameA = 'X-Header-100';
+      const customHeaderNameB = 'X-Header-200';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        const headerNames = Array.from(Object.keys(request.headers));
+        const headerAIndex = headerNames.indexOf(customHeaderNameA.toLowerCase());
+        const headerBIndex = headerNames.indexOf(customHeaderNameB.toLowerCase());
+        expect(headerBIndex).to.be.below(headerAIndex);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+
+      const urlRequest = net.request(serverUrl);
+      urlRequest.setHeader(customHeaderNameB, 'b');
+      urlRequest.setHeader(customHeaderNameA, 'a');
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+    });
+
     it('should be able to set cookie header line', async () => {
       const cookieHeaderName = 'Cookie';
       const cookieHeaderValue = 'test=12345';
