@@ -571,7 +571,7 @@ void OverrideGlobalValueFromIsolatedWorld(
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return;
 
   auto* render_frame = GetRenderFrame(value);
@@ -603,7 +603,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
     gin_helper::Arguments* args) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return false;
 
   auto* render_frame = GetRenderFrame(getter);

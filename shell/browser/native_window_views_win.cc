@@ -378,7 +378,7 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
-    if (forwarding_windows_.size() == 0) {
+    if (forwarding_windows_.empty()) {
       UnhookWindowsHookEx(mouse_hook_);
       mouse_hook_ = NULL;
     }
