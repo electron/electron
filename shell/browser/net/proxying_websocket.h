@@ -122,7 +122,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
 
   void PauseIncomingMethodCallProcessing();
   void ResumeIncomingMethodCallProcessing();
-  void OnError(int result);
+  void OnError(int error_code);
   // This is used for detecting errors on mojo connection with the network
   // service.
   void OnMojoConnectionErrorWithCustomReason(uint32_t custom_reason,

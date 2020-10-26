@@ -99,7 +99,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       const GURL& url,
       bool has_navigation_started,
-      bool has_request_started,
+      bool has_response_started,
       content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
@@ -288,13 +288,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                                   content::RenderFrameHost* speculative_rfh,
                                   content::BrowserContext* browser_context,
                                   const GURL& dest_url,
-                                  bool has_request_started) const;
+                                  bool has_response_started) const;
   bool NavigationWasRedirectedCrossSite(
       content::BrowserContext* browser_context,
       content::SiteInstance* current_instance,
       content::SiteInstance* speculative_instance,
       const GURL& dest_url,
-      bool has_request_started) const;
+      bool has_response_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;

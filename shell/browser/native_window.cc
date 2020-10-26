@@ -350,7 +350,7 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& filename) {}
+void NativeWindow::SetVibrancy(const std::string& type) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
