@@ -802,8 +802,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
-    mojo::Remote<network::mojom::URLLoaderFactory> loader_remote;
-    this->Clone(loader_remote.BindNewPipeAndPassReceiver());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
+    this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
 
     // <scheme, <type, handler>>
     it->second.second.Run(
@@ -811,7 +811,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
         base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
                        std::move(loader), routing_id, request_id, options,
                        request, std::move(client), traffic_annotation,
-                       loader_remote.Unbind(), it->second.first));
+                       std::move(loader_remote), it->second.first));
     return;
   }
 

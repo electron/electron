@@ -213,9 +213,11 @@ void ElectronURLLoaderFactory::OnComplete(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     int32_t request_id,
     const network::URLLoaderCompletionStatus& status) {
-  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-      std::move(client));
-  client_remote->OnComplete(status);
+  if (client.is_valid()) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(status);
+  }
 }
 
 // static
@@ -294,14 +296,13 @@ void ElectronURLLoaderFactory::StartLoading(
     // module.
     //
     // I'm not sure whether this is an intended behavior in Chromium.
-    mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
-        std::move(proxy_factory));
+    if (proxy_factory.is_valid()) {
+      mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
+          std::move(proxy_factory));
 
-    if (proxy_factory_remote.is_bound()) {
       proxy_factory_remote->CreateLoaderAndStart(
           std::move(loader), routing_id, request_id, options, new_request,
           std::move(client), traffic_annotation);
-      proxy_factory = proxy_factory_remote.Unbind();
     } else {
       StartLoadingHttp(std::move(loader), new_request, std::move(client),
                        traffic_annotation,
