@@ -126,7 +126,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
   if (IsUndefined(options::kContextIsolation)) {
     node::Environment* env = node::Environment::GetCurrent(isolate);
     EmitWarning(env,
