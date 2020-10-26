@@ -10,7 +10,7 @@
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
 
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE)
+#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
 #include "shell/browser/win/dark_mode.h"
 #endif
 
@@ -29,7 +29,7 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
                                                     LPARAM l_param,
                                                     LRESULT* result) {
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE)
+#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
   if (message == WM_NCCREATE) {
     HWND const hwnd = GetAcceleratedWidget();
     auto const theme_source =
