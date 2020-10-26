@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/process/process.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 
@@ -68,6 +69,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain> {
   bool Reload(v8::Isolate* isolate);
 
   int FrameTreeNodeID(v8::Isolate* isolate) const;
+  std::string Name(v8::Isolate* isolate) const;
+  base::ProcessId OSProcessID(v8::Isolate* isolate) const;
   int ProcessID(v8::Isolate* isolate) const;
   int RoutingID(v8::Isolate* isolate) const;
   GURL URL(v8::Isolate* isolate) const;
