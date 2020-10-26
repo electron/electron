@@ -108,7 +108,7 @@ void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
 
 // static
 void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
-  ElectronBindings* self = static_cast<ElectronBindings*>(handle->data);
+  auto* self = static_cast<ElectronBindings*>(handle->data);
   for (std::list<node::Environment*>::const_iterator it =
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {

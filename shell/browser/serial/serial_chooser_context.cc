@@ -44,7 +44,7 @@ base::UnguessableToken DecodeToken(base::StringPiece input) {
     return base::UnguessableToken();
   }
 
-  const uint64_t* data = reinterpret_cast<const uint64_t*>(buffer.data());
+  const auto* data = reinterpret_cast<const uint64_t*>(buffer.data());
   return base::UnguessableToken::Deserialize(data[0], data[1]);
 }
 
