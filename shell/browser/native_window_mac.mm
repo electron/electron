@@ -535,10 +535,12 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   original_level_ = [window_ level];
 }
 
-NativeWindowMac::~NativeWindowMac() {
+NativeWindowMac::~NativeWindowMac() {}
+
+void NativeWindowMac::Cleanup() {
+  DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
-  if (wheel_event_monitor_)
-    [NSEvent removeMonitor:wheel_event_monitor_];
+  [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
 void NativeWindowMac::RedrawTrafficLights() {
