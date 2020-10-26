@@ -77,7 +77,7 @@ gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
 DownloadItem* DownloadItem::FromDownloadItem(
     download::DownloadItem* download_item) {
   // ^- say that 7 times fast in a row
-  UserDataLink* data = static_cast<UserDataLink*>(
+  auto* data = static_cast<UserDataLink*>(
       download_item->GetUserData(kElectronApiDownloadItemKey));
   return data ? data->download_item.get() : nullptr;
 }

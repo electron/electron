@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "12.0.0-nightly.20201022",
+  "version": "12.0.0-nightly.20201026",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -23,8 +23,8 @@
     "@types/uuid": "^3.4.6",
     "@types/webpack": "^4.41.21",
     "@types/webpack-env": "^1.15.2",
-    "@typescript-eslint/eslint-plugin": "^3.9.1",
-    "@typescript-eslint/parser": "^3.9.1",
+    "@typescript-eslint/eslint-plugin": "^4.4.1",
+    "@typescript-eslint/parser": "^4.4.1",
     "asar": "^3.0.3",
     "check-for-leaks": "^1.2.1",
     "colors": "^1.4.0",

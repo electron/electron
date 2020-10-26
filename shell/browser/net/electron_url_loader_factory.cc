@@ -549,9 +549,10 @@ void ElectronURLLoaderFactory::SendContents(
   write_data->data = std::move(data);
   write_data->producer =
       std::make_unique<mojo::DataPipeProducer>(std::move(producer));
+  auto* producer_ptr = write_data->producer.get();
 
   base::StringPiece string_piece(write_data->data);
-  write_data->producer->Write(
+  producer_ptr->Write(
       std::make_unique<mojo::StringDataSource>(
           string_piece, mojo::StringDataSource::AsyncWritingMode::
                             STRING_STAYS_VALID_UNTIL_COMPLETION),

@@ -406,7 +406,7 @@ base::string16 GetDefaultPrinterAsync() {
   if (printer_name.empty()) {
     printing::PrinterList printers;
     print_backend->EnumeratePrinters(&printers);
-    if (printers.size() > 0)
+    if (!printers.empty())
       printer_name = printers.front().printer_name;
   }
   return base::UTF8ToUTF16(printer_name);
@@ -855,8 +855,7 @@ void WebContents::AddNewContents(
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
            tracker->referrer, tracker->raw_features, tracker->body)) {
-    // TODO(zcbenz): Can we make this sync?
-    api_web_contents->DestroyWebContents(true /* async */);
+    api_web_contents->DestroyWebContents(false /* async */);
   }
 }
 
@@ -1621,18 +1620,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
-base::ProcessId WebContents::GetOSProcessIdForFrame(
-    const std::string& name,
-    const std::string& document_url) const {
-  for (auto* frame : web_contents()->GetAllFrames()) {
-    if (frame->GetFrameName() == name &&
-        frame->GetLastCommittedURL().spec() == document_url) {
-      return base::GetProcId(frame->GetProcess()->GetProcess().Handle());
-    }
-  }
-  return base::kNullProcessId;
-}
-
 WebContents::Type WebContents::GetType() const {
   return type_;
 }
@@ -2217,7 +2204,7 @@ void WebContents::Print(gin::Arguments* args) {
         continue;
       }
     }
-    if (page_range_list.GetList().size() > 0)
+    if (!page_range_list.GetList().empty())
       settings.SetPath(printing::kSettingPageRange, std::move(page_range_list));
   }
 
@@ -2972,8 +2959,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
-      .SetMethod("_getOSProcessIdForFrame",
-                 &WebContents::GetOSProcessIdForFrame)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
@@ -3128,7 +3113,7 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
 WebContents* WebContents::From(content::WebContents* web_contents) {
   if (!web_contents)
     return nullptr;
-  UserDataLink* data = static_cast<UserDataLink*>(
+  auto* data = static_cast<UserDataLink*>(
       web_contents->GetUserData(kElectronApiWebContentsKey));
   return data ? data->web_contents.get() : nullptr;
 }

@@ -382,8 +382,7 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     content::RenderWidgetHostView* view) {
   DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
               ->IsRenderWidgetHostViewChildFrame());
-  OffScreenRenderWidgetHostView* view_osr =
-      static_cast<OffScreenRenderWidgetHostView*>(view);
+  auto* view_osr = static_cast<OffScreenRenderWidgetHostView*>(view);
   SetBackgroundColor(view_osr->background_color_);
   if (GetDelegatedFrameHost() && view_osr->GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->TakeFallbackContentFrom(
@@ -683,7 +682,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
   SkBitmap frame;
 
   // Optimize for the case when there is no popup
-  if (proxy_views_.size() == 0 && !popup_host_view_) {
+  if (proxy_views_.empty() && !popup_host_view_) {
     frame = GetBacking();
   } else {
     frame.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),

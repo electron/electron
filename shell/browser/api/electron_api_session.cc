@@ -956,6 +956,9 @@ void Session::SetSpellCheckerLanguages(
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
+  // Enable spellcheck if > 0 languages, disable if no languages set
+  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                        !languages.empty());
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
@@ -977,9 +980,11 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_);
 
-  if (!spellcheck)
+  if (!spellcheck) {
     promise.RejectWithErrorMessage(
         "Spellcheck in unexpected state: failed to load custom dictionary.");
+    return handle;
+  }
 
   if (spellcheck->GetCustomDictionary()->IsLoaded()) {
     promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
@@ -1038,7 +1043,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 
 // static
 Session* Session::FromBrowserContext(content::BrowserContext* context) {
-  UserDataLink* data =
+  auto* data =
       static_cast<UserDataLink*>(context->GetUserData(kElectronApiSessionKey));
   return data ? data->session : nullptr;
 }

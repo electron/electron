@@ -120,6 +120,20 @@ int WebFrameMain::FrameTreeNodeID(v8::Isolate* isolate) const {
   return render_frame_->GetFrameTreeNodeId();
 }
 
+std::string WebFrameMain::Name(v8::Isolate* isolate) const {
+  if (!CheckRenderFrame())
+    return std::string();
+  return render_frame_->GetFrameName();
+}
+
+base::ProcessId WebFrameMain::OSProcessID(v8::Isolate* isolate) const {
+  if (!CheckRenderFrame())
+    return -1;
+  base::ProcessHandle process_handle =
+      render_frame_->GetProcess()->GetProcess().Handle();
+  return base::GetProcId(process_handle);
+}
+
 int WebFrameMain::ProcessID(v8::Isolate* isolate) const {
   if (!CheckRenderFrame())
     return -1;
@@ -210,6 +224,8 @@ gin::ObjectTemplateBuilder WebFrameMain::GetObjectTemplateBuilder(
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
+      .SetProperty("name", &WebFrameMain::Name)
+      .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
       .SetProperty("processId", &WebFrameMain::ProcessID)
       .SetProperty("routingId", &WebFrameMain::RoutingID)
       .SetProperty("url", &WebFrameMain::URL)

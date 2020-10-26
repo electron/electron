@@ -127,6 +127,8 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
       expect(webFrame).to.haveOwnProperty('frameTreeNodeId');
+      expect(webFrame).to.haveOwnProperty('name');
+      expect(webFrame).to.haveOwnProperty('osProcessId');
       expect(webFrame).to.haveOwnProperty('processId');
       expect(webFrame).to.haveOwnProperty('routingId');
     });

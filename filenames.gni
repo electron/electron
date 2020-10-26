@@ -1,5 +1,3 @@
-import("//build/config/ui.gni")
-
 filenames = {
   default_app_ts_sources = [
     "default_app/default_app.ts",
@@ -43,6 +41,19 @@ filenames = {
     "shell/common/node_bindings_linux.cc",
     "shell/common/node_bindings_linux.h",
     "shell/common/platform_util_linux.cc",
+  ]
+
+  lib_sources_linux_x11 = [
+    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
+    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
+    "shell/browser/ui/views/global_menu_bar_x11.cc",
+    "shell/browser/ui/views/global_menu_bar_x11.h",
+    "shell/browser/ui/x/event_disabler.cc",
+    "shell/browser/ui/x/event_disabler.h",
+    "shell/browser/ui/x/window_state_watcher.cc",
+    "shell/browser/ui/x/window_state_watcher.h",
+    "shell/browser/ui/x/x_window_utils.cc",
+    "shell/browser/ui/x/x_window_utils.h",
   ]
 
   lib_sources_posix = [
@@ -633,21 +644,6 @@ filenames = {
     "shell/utility/electron_content_utility_client.cc",
     "shell/utility/electron_content_utility_client.h",
   ]
-
-  if (use_x11) {
-    lib_sources_linux += [
-      "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
-      "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
-      "shell/browser/ui/views/global_menu_bar_x11.cc",
-      "shell/browser/ui/views/global_menu_bar_x11.h",
-      "shell/browser/ui/x/event_disabler.cc",
-      "shell/browser/ui/x/event_disabler.h",
-      "shell/browser/ui/x/window_state_watcher.cc",
-      "shell/browser/ui/x/window_state_watcher.h",
-      "shell/browser/ui/x/x_window_utils.cc",
-      "shell/browser/ui/x/x_window_utils.h",
-    ]
-  }
 
   lib_sources_nss = [
     "chromium_src/chrome/browser/certificate_manager_model.cc",

@@ -216,7 +216,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
         await w.loadURL(serverUrl);
 
         const pidMain = w.webContents.getOSProcessId();
-        const pidFrame = (w.webContents as any)._getOSProcessIdForFrame('frame', crossSiteUrl);
+        const pidFrame = w.webContents.mainFrame.frames.find(f => f.name === 'frame')!.osProcessId;
 
         const metrics = app.getAppMetrics();
         const isProcessSandboxed = function (pid: number) {

@@ -203,7 +203,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
       if ((base::CompareCaseInsensitiveASCII(it->Value(), exe.c_str())) == 0) {
         Browser::LaunchItem launch_item;
         base::string16 launch_path = options.path;
-        if (!(launch_path.size() > 0)) {
+        if (launch_path.empty()) {
           GetProcessExecPath(&launch_path);
         }
         launch_item.name = it->Name();
@@ -339,7 +339,7 @@ void GetApplicationInfoForProtocolUsingRegistry(
   }
   const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
 
-  if (app_display_name.length() == 0) {
+  if (app_display_name.empty()) {
     promise.RejectWithErrorMessage(
         "Unable to retrieve application display name");
     return;
@@ -607,7 +607,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::win::RegKey startup_approved_key(
       HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
   PCWSTR key_name =
-      settings.name.size() > 0 ? settings.name.c_str() : GetAppUserModelID();
+      !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;

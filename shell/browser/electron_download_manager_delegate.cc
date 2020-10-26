@@ -107,7 +107,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
 
     if (!settings.parent_window)
       settings.parent_window = window;
-    if (settings.title.size() == 0)
+    if (settings.title.empty())
       settings.title = item->GetURL().spec();
     if (settings.default_path.empty())
       settings.default_path = default_path;
@@ -153,9 +153,8 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   if (!canceled) {
     if (result.Get("filePath", &path)) {
       // Remember the last selected download directory.
-      ElectronBrowserContext* browser_context =
-          static_cast<ElectronBrowserContext*>(
-              download_manager_->GetBrowserContext());
+      auto* browser_context = static_cast<ElectronBrowserContext*>(
+          download_manager_->GetBrowserContext());
       browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
                                             path.DirName());
 
@@ -211,9 +210,8 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
     return true;
   }
 
-  ElectronBrowserContext* browser_context =
-      static_cast<ElectronBrowserContext*>(
-          download_manager_->GetBrowserContext());
+  auto* browser_context = static_cast<ElectronBrowserContext*>(
+      download_manager_->GetBrowserContext());
   base::FilePath default_download_path =
       browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
 
