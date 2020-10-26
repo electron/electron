@@ -33,6 +33,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 
 #if !defined(MAS_BUILD)
 #include "shell/common/crash_keys.h"
@@ -149,6 +150,22 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 
   volatile int* zero = nullptr;
   *zero = 0;
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  v8::Isolate* isolate = context->GetIsolate();
+  if (node::Environment::GetCurrent(isolate) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return false;
+    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
+        context, v8::String::Empty(isolate));
+  }
+
+  return node::Environment::AllowWasmCodeGenerationCallback(
+      context, v8::String::Empty(isolate));
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -440,6 +457,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
     return false;
   };
+
+  // Use a custom callback here to allow us to leverage Blink's logic in the
+  // renderer process.
+  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
 
   if (browser_env_ == BrowserEnvironment::BROWSER) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
