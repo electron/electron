@@ -212,7 +212,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
-    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+    logging::SetMinLogLevel(logging::LOGGING_NUM_SEVERITIES);
   }
 
   logging::InitLogging(settings);
