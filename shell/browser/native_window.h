@@ -21,6 +21,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -54,6 +55,7 @@ typedef gfx::AcceleratedWidget NativeWindowHandle;
 #endif
 
 class NativeWindow : public base::SupportsUserData,
+                     protected ui::NativeThemeObserver,
                      public views::WidgetDelegate {
  public:
   ~NativeWindow() override;

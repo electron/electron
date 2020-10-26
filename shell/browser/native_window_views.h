@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "shell/common/api/api.mojom.h"
+#include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -216,6 +217,9 @@ class NativeWindowViews : public NativeWindow,
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
+
+  // NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
 #if defined(OS_LINUX)
   // ui::EventHandler:

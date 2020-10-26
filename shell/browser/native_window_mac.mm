@@ -349,8 +349,6 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
-  ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
-
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);
