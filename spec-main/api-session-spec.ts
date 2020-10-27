@@ -9,7 +9,7 @@ import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 
 /* The whole session API doesn't use standard callbacks */
@@ -341,9 +341,16 @@ describe('session module', () => {
   describe('ses.setProxy(options)', () => {
     let server: http.Server;
     let customSession: Electron.Session;
+    let created = false;
 
     beforeEach(async () => {
       customSession = session.fromPartition('proxyconfig');
+      if (!created) {
+        // Work around for https://github.com/electron/electron/issues/26166 to
+        // reduce flake
+        await delay(100);
+        created = true;
+      }
     });
 
     afterEach(() => {
