@@ -11,9 +11,7 @@
 #include "base/win/pe_image.h"
 #include "base/win/win_util.h"
 
-#pragma comment(lib, "Uxtheme.lib")
-
-// This namespace contains code from
+// This namespace contains code originally from
 // https://github.com/ysc3839/win32-darkmode/
 // governed by the MIT license and (c) Richard Yu
 namespace {

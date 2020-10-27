@@ -679,6 +679,7 @@ source_set("electron_lib") {
       "shell/browser/win/dark_mode.cc",
       "shell/browser/win/dark_mode.h",
     ]
+    libs += [ "uxtheme.lib" ]
   }
 }
 
