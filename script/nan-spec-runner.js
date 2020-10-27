@@ -35,7 +35,7 @@ async function main () {
   if (process.platform === 'darwin') {
     clangArgs.push('-isysroot', getSDKRoot());
   }
-  clangArgs.push('-std=c++14', '-stdlib=libc++');
+  clangArgs.push('-std=c++14', '-stdlib=libstdc++');
 
   if (process.platform !== 'win32') {
     env.CC = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang')}" ${clangArgs.join(' ')}`;

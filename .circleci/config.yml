@@ -674,6 +674,8 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/cross-arch-snapshots
       - src/third_party/llvm-build
       - src/build/linux
+      - src/buildtools/third_party/libc++
+      - src/buildtools/third_party/libc++abi
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
