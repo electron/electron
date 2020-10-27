@@ -118,7 +118,7 @@ app.whenReady().then(() => {
 ```
 
 After launching the Electron application, if you open the terminal that you ran
-your Electron application from, and press `Ctrl+I` key combination, you will
+your Electron application from and press `Ctrl+I` key combination, you will
 see that this key combination was successfully intercepted.
 
 #### Using third-party libraries
