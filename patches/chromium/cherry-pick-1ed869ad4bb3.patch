@@ -1,7 +1,7 @@
-From 1ed869ad4bb34e9868933cd2b20dc22ab83a5021 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Reilly Grant <reillyg@chromium.org>
 Date: Wed, 7 Oct 2020 23:26:36 +0000
-Subject: [PATCH] usb: Prevent parallel calls to UsbDevice::Open
+Subject: usb: Prevent parallel calls to UsbDevice::Open
 
 This change adds a check to prevent a Mojo client from calling Open()
 multiple times while the open is in progress.
@@ -13,14 +13,9 @@ Auto-Submit: Reilly Grant <reillyg@chromium.org>
 Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
 Commit-Queue: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#814940}
----
- services/device/usb/mojo/device_impl.cc       |  6 +-
- services/device/usb/mojo/device_impl.h        |  4 +-
- .../device/usb/mojo/device_impl_unittest.cc   | 60 ++++++++++++++++---
- 3 files changed, 60 insertions(+), 10 deletions(-)
 
 diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
-index 1e7a6a798cf43..bc70814864760 100644
+index 6507b470afd2756878cd0990cfa7da2b9c730036..3dc07f879d70bc7755e59be1864a17f9a8e0ef10 100644
 --- a/services/device/usb/mojo/device_impl.cc
 +++ b/services/device/usb/mojo/device_impl.cc
 @@ -160,6 +160,7 @@ void DeviceImpl::OnOpen(base::WeakPtr<DeviceImpl> self,
@@ -53,10 +48,10 @@ index 1e7a6a798cf43..bc70814864760 100644
      device_->RequestPermission(
          base::BindOnce(&DeviceImpl::OnPermissionGrantedForOpen,
 diff --git a/services/device/usb/mojo/device_impl.h b/services/device/usb/mojo/device_impl.h
-index ca3bffe4392f7..0965ca72663e1 100644
+index 60ccbcc2e1e3ed964341a7bb8581c142eb27cf40..ab0a3797ae0031708b42f9f1cbc5bddb6f42efac 100644
 --- a/services/device/usb/mojo/device_impl.h
 +++ b/services/device/usb/mojo/device_impl.h
-@@ -106,7 +106,9 @@ class DeviceImpl : public mojom::UsbDevice, public device::UsbDevice::Observer {
+@@ -104,7 +104,9 @@ class DeviceImpl : public mojom::UsbDevice, public device::UsbDevice::Observer {
    ScopedObserver<device::UsbDevice, device::UsbDevice::Observer> observer_;
  
    // The device handle. Will be null before the device is opened and after it
@@ -68,7 +63,7 @@ index ca3bffe4392f7..0965ca72663e1 100644
  
    mojo::SelfOwnedReceiverRef<mojom::UsbDevice> receiver_;
 diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
-index af8398f63e5a5..4987fbe551944 100644
+index 838921f3798b228f0c66a4498c69a6a11df868c2..1bb0d916c3c0c76a15d60ac095e4322cdddaed11 100644
 --- a/services/device/usb/mojo/device_impl_unittest.cc
 +++ b/services/device/usb/mojo/device_impl_unittest.cc
 @@ -22,6 +22,7 @@
@@ -77,9 +72,9 @@ index af8398f63e5a5..4987fbe551944 100644
  #include "base/stl_util.h"
 +#include "base/test/bind_test_util.h"
  #include "base/test/task_environment.h"
+ #include "mojo/public/cpp/bindings/interface_request.h"
  #include "mojo/public/cpp/bindings/receiver.h"
- #include "mojo/public/cpp/bindings/remote.h"
-@@ -264,7 +265,10 @@ class USBDeviceImplTest : public testing::Test {
+@@ -263,7 +264,10 @@ class USBDeviceImplTest : public testing::Test {
    void OpenMockHandle(UsbDevice::OpenCallback& callback) {
      EXPECT_FALSE(is_device_open_);
      is_device_open_ = true;
@@ -91,7 +86,7 @@ index af8398f63e5a5..4987fbe551944 100644
    }
  
    void CloseMockHandle() {
-@@ -514,17 +518,39 @@ TEST_F(USBDeviceImplTest, OpenFailure) {
+@@ -494,17 +498,39 @@ TEST_F(USBDeviceImplTest, OpenFailure) {
        GetMockDeviceProxy(device_client.CreateInterfacePtrAndBind());
  
    EXPECT_CALL(mock_device(), OpenInternal(_))
@@ -138,7 +133,7 @@ index af8398f63e5a5..4987fbe551944 100644
  }
  
  TEST_F(USBDeviceImplTest, OpenDelayedFailure) {
-@@ -548,6 +574,24 @@ TEST_F(USBDeviceImplTest, OpenDelayedFailure) {
+@@ -528,6 +554,24 @@ TEST_F(USBDeviceImplTest, OpenDelayedFailure) {
    std::move(saved_callback).Run(nullptr);
  }
  
@@ -161,5 +156,5 @@ index af8398f63e5a5..4987fbe551944 100644
 +}
 +
  TEST_F(USBDeviceImplTest, Close) {
-   MockUsbDeviceClient device_client;
-   mojo::Remote<mojom::UsbDevice> device =
+   mojo::Remote<mojom::UsbDevice> device = GetMockDeviceProxy();
+ 
