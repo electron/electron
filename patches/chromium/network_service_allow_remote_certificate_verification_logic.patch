@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c7672e42621deff0dd77cf1ac9876853e483bfe5..85f1582e08b7e7d47643905b4505fa2129edcc2a 100644
+index fc37aeb9935326e04f8d2cd18711925899d37e07..12d4c84230994b1ef2e4914945d1f3617c54eb0c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -115,6 +115,11 @@
@@ -102,7 +102,7 @@ index c7672e42621deff0dd77cf1ac9876853e483bfe5..85f1582e08b7e7d47643905b4505fa21
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -570,6 +648,13 @@ void NetworkContext::SetClient(
+@@ -568,6 +646,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index c7672e42621deff0dd77cf1ac9876853e483bfe5..85f1582e08b7e7d47643905b4505fa21
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1832,8 +1917,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1830,8 +1915,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
           "NetworkContext should pass CertVerifierServiceRemoteParams.";
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -127,7 +127,7 @@ index c7672e42621deff0dd77cf1ac9876853e483bfe5..85f1582e08b7e7d47643905b4505fa21
    } else {
      if (params_->cert_verifier_params &&
          params_->cert_verifier_params->is_remote_params()) {
-@@ -1861,14 +1947,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1859,14 +1945,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          cert_net_fetcher_ =
              base::MakeRefCounted<net::CertNetFetcherURLRequest>();
  
@@ -145,7 +145,7 @@ index c7672e42621deff0dd77cf1ac9876853e483bfe5..85f1582e08b7e7d47643905b4505fa21
  
  #if BUILDFLAG(IS_ASH)
      cert_verifier_with_trust_anchors_ =
-@@ -1877,13 +1963,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1875,13 +1961,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      UpdateAdditionalCertificates(
          std::move(params_->initial_additional_certificates));
      cert_verifier_with_trust_anchors_->InitializeOnIOThread(
