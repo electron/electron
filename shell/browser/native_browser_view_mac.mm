@@ -129,8 +129,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 // #ifdef DEBUG_DRAG_REGIONS
 // - (void)drawRect:(NSRect)aRect
 // {
-//   [[NSColor redColor] set];
-//   NSRectFill([self bounds]);
+//     [[NSColor redColor] set];
+//     NSRectFill([self bounds]);
 // }
 // #endif
 
@@ -150,8 +150,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 // #ifdef DEBUG_DRAG_REGIONS
 // - (void)drawRect:(NSRect)aRect
 // {
-//   [[NSColor greenColor] set];
-//   NSRectFill([self bounds]);
+//     [[NSColor greenColor] set];
+//     NSRectFill([self bounds]);
 // }
 // #endif
 
