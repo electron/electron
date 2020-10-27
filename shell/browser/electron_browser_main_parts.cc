@@ -365,10 +365,22 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // happen before the ResourceBundle is loaded
   if (locale.empty())
     l10n_util::OverrideLocaleWithCocoaLocale();
+#elif defined(OS_LINUX)
+  // l10n_util::GetApplicationLocaleInternal uses g_get_language_names(),
+  // which keys off of getenv("LC_ALL").
+  // We must set this env first to make ui::ResourceBundle accept the custom
+  // locale.
+  g_setenv("LC_ALL", locale.c_str(), TRUE);
 #endif
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
+
+#if defined(OS_LINUX)
+  // Reset to the loaded locale if the custom locale is invalid.
+  if (loaded_locale != locale)
+    g_setenv("LC_ALL", loaded_locale.c_str(), TRUE);
+#endif
 
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
