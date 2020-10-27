@@ -95,6 +95,7 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearStorageData(gin::Arguments* args);
   void FlushStorageData();
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
+  v8::Local<v8::Promise> ForceReloadProxyConfig();
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const gin_helper::Dictionary& options);
   void DisableNetworkEmulation();

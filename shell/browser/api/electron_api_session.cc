@@ -27,6 +27,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/proxy_config/proxy_prefs.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -504,30 +505,67 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     return handle;
   }
 
-  std::string proxy_rules, bypass_list, pac_url;
+  std::string mode, proxy_rules, bypass_list, pac_url;
 
   options.Get("pacScript", &pac_url);
   options.Get("proxyRules", &proxy_rules);
   options.Get("proxyBypassRules", &bypass_list);
 
-  // pacScript takes precedence over proxyRules.
-  if (!pac_url.empty()) {
-    browser_context_->in_memory_pref_store()->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_url, true /* pac_mandatory */)),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  ProxyPrefs::ProxyMode proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+  if (!options.Get("mode", &mode)) {
+    // pacScript takes precedence over proxyRules.
+    if (!pac_url.empty()) {
+      proxy_mode = ProxyPrefs::MODE_PAC_SCRIPT;
+    } else {
+      proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+    }
   } else {
-    browser_context_->in_memory_pref_store()->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
-            proxy_rules, bypass_list)),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+    if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
+      promise.RejectWithErrorMessage(
+          "Invalid mode, must be one of direct, auto_detect, pac_script, "
+          "fixed_servers or system");
+      return handle;
+    }
   }
+
+  std::unique_ptr<base::Value> proxy_config;
+  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect());
+  } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateSystem());
+  } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
+    proxy_config = std::make_unique<base::Value>(
+        ProxyConfigDictionary::CreateAutoDetect());
+  } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
+            pac_url, true /* pac_mandatory */));
+  } else {
+    proxy_config = std::make_unique<base::Value>(
+        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list));
+  }
+  browser_context_->in_memory_pref_store()->SetValue(
+      proxy_config::prefs::kProxy, std::move(proxy_config),
+      WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                                 std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ForceReloadProxyConfig() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  auto handle = promise.GetHandle();
+
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      ->GetNetworkContext()
+      ->ForceReloadProxyConfig(base::BindOnce(
+          gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
 }
@@ -1100,6 +1138,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("flushStorageData", &Session::FlushStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
+      .SetMethod("forceReloadProxyConfig", &Session::ForceReloadProxyConfig)
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)

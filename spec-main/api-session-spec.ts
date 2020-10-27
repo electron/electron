@@ -384,10 +384,18 @@ describe('session module', () => {
         res.end(pac);
       });
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-      const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
-      await customSession.setProxy(config);
-      const proxy = await customSession.resolveProxy('https://google.com');
-      expect(proxy).to.equal('PROXY myproxy:8132');
+      {
+        const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+      {
+        const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
     });
 
     it('allows bypassing proxy settings', async () => {
@@ -398,6 +406,70 @@ describe('session module', () => {
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example/');
       expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `direct`', async () => {
+      const config = { mode: 'direct' as any, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `auto_detect`', async () => {
+      const config = { mode: 'auto_detect' as any };
+      await customSession.setProxy(config);
+    });
+
+    it('allows configuring proxy settings with mode `pac_script`', async () => {
+      const config = { mode: 'pac_script' as any };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `fixed_servers`', async () => {
+      const config = { mode: 'fixed_servers' as any, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with mode `system`', async () => {
+      const config = { mode: 'system' as any };
+      await customSession.setProxy(config);
+    });
+
+    it('disallows configuring proxy settings with mode `invalid`', async () => {
+      const config = { mode: 'invalid' as any };
+      await expect(customSession.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+    });
+
+    it('reload proxy configuration', async () => {
+      let proxyPort = 8132;
+      server = http.createServer((req, res) => {
+        const pac = `
+          function FindProxyForURL(url, host) {
+            return "PROXY myproxy:${proxyPort}";
+          }
+        `;
+        res.writeHead(200, {
+          'Content-Type': 'application/x-ns-proxy-autoconfig'
+        });
+        res.end(pac);
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+      await customSession.setProxy(config);
+      {
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
+      {
+        proxyPort = 8133;
+        await customSession.forceReloadProxyConfig();
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
     });
   });
 
