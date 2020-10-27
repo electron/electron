@@ -73,8 +73,8 @@ index c2b1265b2c110be748dfb4505a4ea8603b065de8..d7a75de91248d50c753992f80f296892
      IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
  
      // Page messages.
-@@ -801,6 +803,12 @@ void RenderViewImpl::OnSetRendererPreferences(
- #endif  // defined(USE_X11) || defined(USE_OZONE)
+@@ -749,6 +749,12 @@ void RenderViewImpl::DidUpdateRendererPreferences() {
+ #endif
  }
  
 +void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
