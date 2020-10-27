@@ -673,6 +673,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/third_party/nan
       - src/cross-arch-snapshots
       - src/third_party/llvm-build
+      - src/build/linux
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:

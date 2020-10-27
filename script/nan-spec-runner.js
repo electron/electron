@@ -17,6 +17,12 @@ const args = require('minimist')(process.argv.slice(2), {
   string: ['only']
 });
 
+function getSDKRoot () {
+  if (process.env.SDKROOT) return process.env.SDKROOT;
+  const output = cp.execFileSync('xcrun', ['--sdk', 'macosx', '--show-sdk-path']);
+  return output.toString().trim();
+}
+
 async function main () {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   const env = Object.assign({}, process.env, {
@@ -25,9 +31,15 @@ async function main () {
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true'
   });
-  if (process.platform === 'linux') {
-    env.CC = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang')}"`;
-    env.CXX = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang++')}"`;
+  const clangArgs = [];
+  if (process.platform === 'darwin') {
+    clangArgs.push('-isysroot', getSDKRoot());
+  }
+  clangArgs.push('-std=c++14', '-stdlib=libc++');
+
+  if (process.platform !== 'win32') {
+    env.CC = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang')}" ${clangArgs.join(' ')}`;
+    env.CXX = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang++')}" ${clangArgs.join(' ')}`;
   }
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test', '-j', 'max'], {
     env,
