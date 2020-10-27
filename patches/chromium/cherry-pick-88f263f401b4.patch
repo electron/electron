@@ -1,0 +1,325 @@
+From 88f263f401b4b2f67d96f74fa2c6ce8119fb78c2 Mon Sep 17 00:00:00 2001
+From: Will Cassella <cassew@google.com>
+Date: Thu, 24 Sep 2020 22:54:27 +0000
+Subject: [PATCH] Add callback to WebMediaPlayerImpl to notify when a redirect
+ occurs
+
+(cherry picked from commit 8b18bcfd9aa8096c4551ec34c0225b6017cd211e)
+
+Bug: 1128657
+Change-Id: I9548e1f3bfe5693871a56e23c3373f45147e52e0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2422091
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#809217}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2425223
+Commit-Queue: Will Cassella <cassew@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#993}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+ media/blink/multibuffer_data_source.cc        | 65 ++++++++++---------
+ media/blink/multibuffer_data_source.h         |  9 ++-
+ media/blink/webmediaplayer_impl.cc            | 12 ++++
+ media/blink/webmediaplayer_impl.h             |  3 +
+ .../platform/webaudiosourceprovider_impl.h    |  1 +
+ ..._audio_element_capturer_source_unittest.cc | 34 +++++++++-
+ .../media/webaudiosourceprovider_impl.cc      | 15 +++++
+ 7 files changed, 107 insertions(+), 32 deletions(-)
+
+diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
+index d41162d5295a7..1e5c85595c77f 100644
+--- a/media/blink/multibuffer_data_source.cc
++++ b/media/blink/multibuffer_data_source.cc
+@@ -139,7 +139,7 @@ MultibufferDataSource::MultibufferDataSource(
+   DCHECK(url_data_.get());
+   url_data_->Use();
+   url_data_->OnRedirect(
+-      base::BindOnce(&MultibufferDataSource::OnRedirect, weak_ptr_));
++      base::BindOnce(&MultibufferDataSource::OnRedirected, weak_ptr_));
+ }
+ 
+ MultibufferDataSource::~MultibufferDataSource() {
+@@ -213,10 +213,10 @@ void MultibufferDataSource::Initialize(InitializeCB init_cb) {
+   }
+ }
+ 
+-void MultibufferDataSource::OnRedirect(
+-    const scoped_refptr<UrlData>& destination) {
+-  if (!destination) {
+-    // A failure occured.
++void MultibufferDataSource::OnRedirected(
++    const scoped_refptr<UrlData>& new_destination) {
++  if (!new_destination) {
++    // A failure occurred.
+     failed_ = true;
+     if (init_cb_) {
+       render_task_runner_->PostTask(
+@@ -229,38 +229,39 @@ void MultibufferDataSource::OnRedirect(
+     StopLoader();
+     return;
+   }
+-  if (url_data_->url().GetOrigin() != destination->url().GetOrigin()) {
++  if (url_data_->url().GetOrigin() != new_destination->url().GetOrigin()) {
+     single_origin_ = false;
+   }
+   SetReader(nullptr);
+-  url_data_ = std::move(destination);
++  url_data_ = std::move(new_destination);
+ 
+-  if (url_data_) {
+-    url_data_->OnRedirect(
+-        base::BindOnce(&MultibufferDataSource::OnRedirect, weak_ptr_));
++  url_data_->OnRedirect(
++      base::BindOnce(&MultibufferDataSource::OnRedirected, weak_ptr_));
+ 
+-    if (init_cb_) {
+-      CreateResourceLoader(0, kPositionNotSpecified);
+-      if (reader_->Available()) {
+-        render_task_runner_->PostTask(
+-            FROM_HERE,
+-            base::BindOnce(&MultibufferDataSource::StartCallback, weak_ptr_));
+-      } else {
+-        reader_->Wait(1, base::BindOnce(&MultibufferDataSource::StartCallback,
+-                                        weak_ptr_));
+-      }
+-    } else if (read_op_) {
+-      CreateResourceLoader(read_op_->position(), kPositionNotSpecified);
+-      if (reader_->Available()) {
+-        render_task_runner_->PostTask(
+-            FROM_HERE,
+-            base::BindOnce(&MultibufferDataSource::ReadTask, weak_ptr_));
+-      } else {
+-        reader_->Wait(
+-            1, base::BindOnce(&MultibufferDataSource::ReadTask, weak_ptr_));
+-      }
++  if (init_cb_) {
++    CreateResourceLoader(0, kPositionNotSpecified);
++    if (reader_->Available()) {
++      render_task_runner_->PostTask(
++          FROM_HERE,
++          base::BindOnce(&MultibufferDataSource::StartCallback, weak_ptr_));
++    } else {
++      reader_->Wait(
++          1, base::BindOnce(&MultibufferDataSource::StartCallback, weak_ptr_));
++    }
++  } else if (read_op_) {
++    CreateResourceLoader(read_op_->position(), kPositionNotSpecified);
++    if (reader_->Available()) {
++      render_task_runner_->PostTask(
++          FROM_HERE,
++          base::BindOnce(&MultibufferDataSource::ReadTask, weak_ptr_));
++    } else {
++      reader_->Wait(
++          1, base::BindOnce(&MultibufferDataSource::ReadTask, weak_ptr_));
+     }
+   }
++
++  if (redirect_cb_)
++    redirect_cb_.Run();
+ }
+ 
+ void MultibufferDataSource::SetPreload(Preload preload) {
+@@ -281,6 +282,10 @@ bool MultibufferDataSource::IsCorsCrossOrigin() const {
+   return url_data_->is_cors_cross_origin();
+ }
+ 
++void MultibufferDataSource::OnRedirect(RedirectCB callback) {
++  redirect_cb_ = std::move(callback);
++}
++
+ bool MultibufferDataSource::HasAccessControl() const {
+   return url_data_->has_access_control();
+ }
+diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
+index 013ce7404ddba..8441d15ece8e4 100644
+--- a/media/blink/multibuffer_data_source.h
++++ b/media/blink/multibuffer_data_source.h
+@@ -39,6 +39,7 @@ class MultiBufferReader;
+ class MEDIA_BLINK_EXPORT MultibufferDataSource : public DataSource {
+  public:
+   using DownloadingCB = base::RepeatingCallback<void(bool)>;
++  using RedirectCB = base::RepeatingCallback<void()>;
+ 
+   // Used to specify video preload states. They are "hints" to the browser about
+   // how aggressively the browser should load and buffer data.
+@@ -83,6 +84,9 @@ class MEDIA_BLINK_EXPORT MultibufferDataSource : public DataSource {
+   // This must be called after the response arrives.
+   bool IsCorsCrossOrigin() const;
+ 
++  // Provides a callback to be run when the underlying url is redirected.
++  void OnRedirect(RedirectCB callback);
++
+   // Returns true if the response includes an Access-Control-Allow-Origin
+   // header (that is not "null").
+   bool HasAccessControl() const;
+@@ -129,7 +133,7 @@ class MEDIA_BLINK_EXPORT MultibufferDataSource : public DataSource {
+   bool cancel_on_defer_for_testing() const { return cancel_on_defer_; }
+ 
+  protected:
+-  void OnRedirect(const scoped_refptr<UrlData>& destination);
++  void OnRedirected(const scoped_refptr<UrlData>& new_destination);
+ 
+   // A factory method to create a BufferedResourceLoader based on the read
+   // parameters.
+@@ -244,6 +248,9 @@ class MEDIA_BLINK_EXPORT MultibufferDataSource : public DataSource {
+   // go between different origins.
+   bool single_origin_;
+ 
++  // Callback used when a redirect occurs.
++  RedirectCB redirect_cb_;
++
+   // Close the connection when we have enough data.
+   bool cancel_on_defer_;
+ 
+diff --git a/media/blink/webmediaplayer_impl.cc b/media/blink/webmediaplayer_impl.cc
+index e024cdc14855f..1ddf902cf750f 100644
+--- a/media/blink/webmediaplayer_impl.cc
++++ b/media/blink/webmediaplayer_impl.cc
+@@ -817,6 +817,8 @@ void WebMediaPlayerImpl::DoLoad(LoadType load_type,
+         base::BindRepeating(&WebMediaPlayerImpl::NotifyDownloading,
+                             weak_this_));
+     data_source_.reset(mb_data_source_);
++    mb_data_source_->OnRedirect(base::BindRepeating(
++        &WebMediaPlayerImpl::OnDataSourceRedirected, weak_this_));
+     mb_data_source_->SetPreload(preload_);
+     mb_data_source_->SetIsClientAudioElement(client_->IsAudioElement());
+     mb_data_source_->Initialize(
+@@ -2682,6 +2684,16 @@ void WebMediaPlayerImpl::DataSourceInitialized(bool success) {
+   StartPipeline();
+ }
+ 
++void WebMediaPlayerImpl::OnDataSourceRedirected() {
++  DVLOG(1) << __func__;
++  DCHECK(main_task_runner_->BelongsToCurrentThread());
++  DCHECK(mb_data_source_);
++
++  if (WouldTaintOrigin()) {
++    audio_source_provider_->TaintOrigin();
++  }
++}
++
+ void WebMediaPlayerImpl::NotifyDownloading(bool is_downloading) {
+   DVLOG(1) << __func__ << "(" << is_downloading << ")";
+   if (!is_downloading && network_state_ == WebMediaPlayer::kNetworkStateLoading)
+diff --git a/media/blink/webmediaplayer_impl.h b/media/blink/webmediaplayer_impl.h
+index 1025c7adb8582..3e57234a6b1c7 100644
+--- a/media/blink/webmediaplayer_impl.h
++++ b/media/blink/webmediaplayer_impl.h
+@@ -383,6 +383,9 @@ class MEDIA_BLINK_EXPORT WebMediaPlayerImpl
+   // Called after asynchronous initialization of a data source completed.
+   void DataSourceInitialized(bool success);
+ 
++  // Called if the |MultiBufferDataSource| is redirected.
++  void OnDataSourceRedirected();
++
+   // Called when the data source is downloading or paused.
+   void NotifyDownloading(bool is_downloading);
+ 
+diff --git a/third_party/blink/public/platform/webaudiosourceprovider_impl.h b/third_party/blink/public/platform/webaudiosourceprovider_impl.h
+index 5383074dcbffb..bbf2a0b3d2828 100644
+--- a/third_party/blink/public/platform/webaudiosourceprovider_impl.h
++++ b/third_party/blink/public/platform/webaudiosourceprovider_impl.h
+@@ -75,6 +75,7 @@ class BLINK_PLATFORM_EXPORT WebAudioSourceProviderImpl
+   bool CurrentThreadIsRenderingThread() override;
+   void SwitchOutputDevice(const std::string& device_id,
+                           media::OutputDeviceStatusCB callback) override;
++  void TaintOrigin();
+ 
+   // These methods allow a client to get a copy of the rendered audio.
+   void SetCopyAudioCallback(CopyAudioCB callback);
+diff --git a/third_party/blink/renderer/modules/mediacapturefromelement/html_audio_element_capturer_source_unittest.cc b/third_party/blink/renderer/modules/mediacapturefromelement/html_audio_element_capturer_source_unittest.cc
+index f207c13086809..8fc28f8fc1f4b 100644
+--- a/third_party/blink/renderer/modules/mediacapturefromelement/html_audio_element_capturer_source_unittest.cc
++++ b/third_party/blink/renderer/modules/mediacapturefromelement/html_audio_element_capturer_source_unittest.cc
+@@ -102,7 +102,7 @@ class HTMLAudioElementCapturerSourceTest : public testing::Test {
+     media_stream_component_ = MakeGarbageCollected<MediaStreamComponent>(
+         media_stream_source_->Id(), media_stream_source_);
+ 
+-    // |media_stream_source_| takes wnership of
++    // |media_stream_source_| takes ownership of
+     // HtmlAudioElementCapturerSource.
+     auto capture_source = std::make_unique<HtmlAudioElementCapturerSource>(
+         audio_source_, blink::scheduler::GetSingleThreadTaskRunnerForTesting());
+@@ -182,4 +182,36 @@ TEST_F(HTMLAudioElementCapturerSourceTest,
+   track()->RemoveSink(&sink);
+ }
+ 
++TEST_F(HTMLAudioElementCapturerSourceTest, TaintedPlayerDeliversMutedAudio) {
++  testing::InSequence s;
++
++  base::RunLoop run_loop;
++  base::OnceClosure quit_closure = run_loop.QuitClosure();
++
++  MockMediaStreamAudioSink sink;
++  track()->AddSink(&sink);
++  EXPECT_CALL(sink, OnSetFormat(testing::_)).Times(1);
++  EXPECT_CALL(
++      sink,
++      OnData(testing::AllOf(
++                 testing::Property(&media::AudioBus::channels,
++                                   kNumChannelsForTest),
++                 testing::Property(&media::AudioBus::frames,
++                                   kAudioTrackSamplesPerBuffer),
++                 testing::Property(&media::AudioBus::AreFramesZero, true)),
++             testing::_))
++      .Times(1)
++      .WillOnce([&](const auto&, auto) { std::move(quit_closure).Run(); });
++
++  audio_source_->TaintOrigin();
++
++  std::unique_ptr<media::AudioBus> bus =
++      media::AudioBus::Create(kNumChannelsForTest, kAudioTrackSamplesPerBuffer);
++  InjectAudio(bus.get());
++  run_loop.Run();
++
++  track()->Stop();
++  track()->RemoveSink(&sink);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/webaudiosourceprovider_impl.cc b/third_party/blink/renderer/platform/media/webaudiosourceprovider_impl.cc
+index a1e014ceb2ebc..c54e1768886a7 100644
+--- a/third_party/blink/renderer/platform/media/webaudiosourceprovider_impl.cc
++++ b/third_party/blink/renderer/platform/media/webaudiosourceprovider_impl.cc
+@@ -81,6 +81,10 @@ class WebAudioSourceProviderImpl::TeeFilter
+     const int num_rendered_frames = renderer_->Render(
+         delay, delay_timestamp, prior_frames_skipped, audio_bus);
+ 
++    // Zero out frames after rendering
++    if (origin_tainted_.IsSet())
++      audio_bus->Zero();
++
+     // Avoid taking the copy lock for the vast majority of cases.
+     if (copy_required_) {
+       base::AutoLock auto_lock(copy_lock_);
+@@ -114,11 +118,18 @@ class WebAudioSourceProviderImpl::TeeFilter
+     copy_audio_bus_callback_ = std::move(callback);
+   }
+ 
++  void TaintOrigin() { origin_tainted_.Set(); }
++
+  private:
+   AudioRendererSink::RenderCallback* renderer_ = nullptr;
+   int channels_ = 0;
+   int sample_rate_ = 0;
+ 
++  // Indicates whether the audio source is tainted, and output should be muted.
++  // This can happen if the media element source is a cross-origin source which
++  // the page is not allowed to access due to CORS restrictions.
++  base::AtomicFlag origin_tainted_;
++
+   // The vast majority of the time we're operating in passthrough mode. So only
+   // acquire a lock to read |copy_audio_bus_callback_| when necessary.
+   std::atomic<bool> copy_required_;
+@@ -318,6 +329,10 @@ void WebAudioSourceProviderImpl::SwitchOutputDevice(
+     sink_->SwitchOutputDevice(device_id, std::move(callback));
+ }
+ 
++void WebAudioSourceProviderImpl::TaintOrigin() {
++  tee_filter_->TaintOrigin();
++}
++
+ void WebAudioSourceProviderImpl::SetCopyAudioCallback(CopyAudioCB callback) {
+   DCHECK(!callback.is_null());
+   tee_filter_->SetCopyAudioCallback(std::move(callback));
