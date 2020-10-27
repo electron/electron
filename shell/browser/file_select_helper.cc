@@ -108,6 +108,8 @@ void FileSelectHelper::RunFileChooserEnd() {
 
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
+
+  delete this;
 }
 
 // net::DirectoryLister::DirectoryListerDelegate
@@ -225,6 +227,8 @@ void FileSelectHelper::OnFilesSelected(
   }
 
   render_frame_host_ = nullptr;
+
+  delete this;
 }
 
 void FileSelectHelper::RenderWidgetHostDestroyed(
@@ -260,4 +264,7 @@ void FileSelectHelper::WebContentsDestroyed() {
   web_contents_ = nullptr;
 
   DeleteTemporaryFiles();
+
+  if (!lister_)
+    delete this;
 }

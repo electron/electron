@@ -39,10 +39,6 @@ class FileSelectHelper : public content::WebContentsObserver,
                    FileChooserParams::Mode mode);
   ~FileSelectHelper() override;
 
-  base::WeakPtr<FileSelectHelper> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
   // WebDialogHelper::RunFileChooser
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings);
@@ -116,7 +112,7 @@ class FileSelectHelper : public content::WebContentsObserver,
   base::FilePath lister_base_dir_;
   std::vector<base::FilePath> lister_paths_;
 
-  base::WeakPtrFactory<FileSelectHelper> weak_factory_{this};
+  base::WeakPtrFactory<FileSelectHelper> weak_ptr_factory_{this};
 };
 
 #endif  // SHELL_BROWSER_FILE_SELECT_HELPER_H_

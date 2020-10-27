@@ -23,6 +23,7 @@
 #include "content/public/browser/web_contents.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 
