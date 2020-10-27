@@ -178,26 +178,21 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
-  // Undocumented attribute that VoiceOver happens to set while running.
-  // Chromium uses this too, even though it's not exactly right.
-  if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
-    [self updateAccessibilityEnabled:[value boolValue]];
-  } else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
-    [self updateAccessibilityEnabled:[value boolValue]];
+  // Undocumented attribute that screen reader related functionality
+  // sets when running.
+  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] ||
+      [attribute isEqualToString:@"AXManualAccessibility"]) {
+    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+    if ([value boolValue]) {
+      ax_state->OnScreenReaderDetected();
+    } else {
+      ax_state->DisableAccessibility();
+    }
+
+    electron::Browser::Get()->OnAccessibilitySupportChanged();
   }
+
   return [super accessibilitySetValue:value forAttribute:attribute];
-}
-
-- (void)updateAccessibilityEnabled:(BOOL)enabled {
-  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-
-  if (enabled) {
-    ax_state->OnScreenReaderDetected();
-  } else {
-    ax_state->DisableAccessibility();
-  }
-
-  electron::Browser::Get()->OnAccessibilitySupportChanged();
 }
 
 - (void)orderFrontStandardAboutPanel:(id)sender {
