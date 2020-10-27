@@ -37,8 +37,11 @@ void NotificationPresenter::CloseNotificationWithId(
                          [&notification_id](const Notification* n) {
                            return n->notification_id() == notification_id;
                          });
-  if (it != notifications_.end())
-    (*it)->Dismiss();
+  if (it != notifications_.end()) {
+    Notification* notification = (*it);
+    notification->Dismiss();
+    notifications_.erase(notification);
+  }
 }
 
 }  // namespace electron

@@ -26,14 +26,20 @@
     "ecmaVersion": 6,
     "sourceType": "module"
   },
-  "globals": {
-    "standardScheme": "readonly"
-  },
   "overrides": [
     {
       "files": "*.js",
       "rules": {
           "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      "files": "*.ts",
+      "rules": {
+        "no-undef": "off",
+        "no-redeclare": "off",
+        "@typescript-eslint/no-redeclare": ["error"],
+        "no-use-before-define": "off"
       }
     },
     {

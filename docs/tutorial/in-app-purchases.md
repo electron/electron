@@ -26,7 +26,8 @@ To test In-App Purchase in development with Electron you'll have to change the `
 Here is an example that shows how to use In-App Purchases in Electron. You'll have to replace the product ids by the identifiers of the products created with iTunes Connect (the identifier of `com.example.app.product1` is `product1`). Note that you have to listen to the `transactions-updated` event as soon as possible in your app.
 
 ```javascript
-const { inAppPurchase } = require('electron').remote
+// Main process
+const { inAppPurchase } = require('electron')
 const PRODUCT_IDS = ['id1', 'id2']
 
 // Listen for transactions as soon as possible.
@@ -37,18 +38,18 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
 
   // Check each transaction.
   transactions.forEach(function (transaction) {
-    let payment = transaction.payment
+    const payment = transaction.payment
 
     switch (transaction.transactionState) {
       case 'purchasing':
         console.log(`Purchasing ${payment.productIdentifier}...`)
         break
-      case 'purchased':
 
+      case 'purchased': {
         console.log(`${payment.productIdentifier} purchased.`)
 
         // Get the receipt url.
-        let receiptURL = inAppPurchase.getReceiptURL()
+        const receiptURL = inAppPurchase.getReceiptURL()
 
         console.log(`Receipt URL: ${receiptURL}`)
 
@@ -62,6 +63,8 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
         inAppPurchase.finishTransactionByDate(transaction.transactionDate)
 
         break
+      }
+
       case 'failed':
 
         console.log(`Failed to purchase ${payment.productIdentifier}.`)
@@ -105,8 +108,8 @@ inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
   })
 
   // Ask the user which product he/she wants to purchase.
-  let selectedProduct = products[0]
-  let selectedQuantity = 1
+  const selectedProduct = products[0]
+  const selectedQuantity = 1
 
   // Purchase the selected product.
   inAppPurchase.purchaseProduct(selectedProduct.productIdentifier, selectedQuantity).then(isProductValid => {

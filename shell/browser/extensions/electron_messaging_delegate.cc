@@ -41,8 +41,7 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
 std::unique_ptr<base::DictionaryValue>
 ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
   if (web_contents) {
-    auto* api_contents = electron::api::WebContents::FromWrappedClass(
-        v8::Isolate::GetCurrent(), web_contents);
+    auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
       auto tab = std::make_unique<base::DictionaryValue>();
       tab->SetWithoutPathExpansion(
@@ -63,8 +62,7 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
     content::BrowserContext* browser_context,
     int tab_id) {
-  auto* contents = electron::api::WebContents::FromWeakMapID(
-      v8::Isolate::GetCurrent(), tab_id);
+  auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents) {
     return nullptr;
   }

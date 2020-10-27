@@ -12,6 +12,7 @@
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/guid_converter.h"
@@ -93,14 +94,20 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
 void Tray::OnClicked(const gfx::Rect& bounds,
                      const gfx::Point& location,
                      int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("click", CreateEventFromFlags(modifiers), bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("double-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("right-click", CreateEventFromFlags(modifiers), bounds);
 }
 
@@ -129,22 +136,32 @@ void Tray::OnDropText(const std::string& text) {
 }
 
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-enter", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-leave", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-move", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-up", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
   EmitCustomEvent("mouse-down", CreateEventFromFlags(modifiers), location);
 }
 
@@ -195,18 +212,40 @@ void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(const std::string& title) {
+void Tray::SetTitle(const std::string& title,
+                    const base::Optional<gin_helper::Dictionary>& options,
+                    gin::Arguments* args) {
   if (!CheckAlive())
     return;
-#if defined(OS_MACOSX)
-  tray_icon_->SetTitle(title);
+#if defined(OS_MAC)
+  TrayIcon::TitleOptions title_options;
+  if (options) {
+    if (options->Get("fontType", &title_options.font_type)) {
+      // Validate the font type if it's passed in
+      if (title_options.font_type != "monospaced" &&
+          title_options.font_type != "monospacedDigit") {
+        args->ThrowTypeError(
+            "fontType must be one of 'monospaced' or 'monospacedDigit'");
+        return;
+      }
+    } else if (options->Has("fontType")) {
+      args->ThrowTypeError(
+          "fontType must be one of 'monospaced' or 'monospacedDigit'");
+      return;
+    }
+  } else if (args->Length() >= 2) {
+    args->ThrowTypeError("setTitle options must be an object");
+    return;
+  }
+
+  tray_icon_->SetTitle(title, title_options);
 #endif
 }
 
 std::string Tray::GetTitle() {
   if (!CheckAlive())
     return std::string();
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return tray_icon_->GetTitle();
 #else
   return "";
@@ -216,7 +255,7 @@ std::string Tray::GetTitle() {
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
   if (!CheckAlive())
     return;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
 #endif
 }
@@ -224,7 +263,7 @@ void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 bool Tray::GetIgnoreDoubleClickEvents() {
   if (!CheckAlive())
     return false;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return tray_icon_->GetIgnoreDoubleClickEvents();
 #else
   return false;
@@ -327,7 +366,7 @@ gfx::Rect Tray::GetBounds() {
 
 bool Tray::CheckAlive() {
   if (!tray_icon_) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError("Tray is destroyed");

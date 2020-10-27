@@ -52,12 +52,24 @@ struct Converter<electron::AutoResizeFlags> {
 
 }  // namespace gin
 
+namespace {
+
+int32_t GetNextId() {
+  static int32_t next_id = 1;
+  return next_id++;
+}
+
+}  // namespace
+
 namespace electron {
 
 namespace api {
 
+gin::WrapperInfo BrowserView::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 BrowserView::BrowserView(gin::Arguments* args,
-                         const gin_helper::Dictionary& options) {
+                         const gin_helper::Dictionary& options)
+    : id_(GetNextId()) {
   v8::Isolate* isolate = args->isolate();
   gin_helper::Dictionary web_preferences =
       gin::Dictionary::CreateEmpty(isolate);
@@ -72,8 +84,6 @@ BrowserView::BrowserView(gin::Arguments* args,
 
   view_.reset(
       NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
-
-  InitWithArgs(args);
 }
 
 BrowserView::~BrowserView() {
@@ -87,24 +97,24 @@ BrowserView::~BrowserView() {
 void BrowserView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
+  Unpin();
 }
 
 // static
-gin_helper::WrappableBase* BrowserView::New(gin_helper::ErrorThrower thrower,
-                                            gin::Arguments* args) {
+gin::Handle<BrowserView> BrowserView::New(gin_helper::ErrorThrower thrower,
+                                          gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create BrowserView before app is ready");
-    return nullptr;
+    return gin::Handle<BrowserView>();
   }
 
   gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
-  return new BrowserView(args, options);
-}
-
-int32_t BrowserView::ID() const {
-  return weak_map_id();
+  auto handle =
+      gin::CreateHandle(args->isolate(), new BrowserView(args, options));
+  handle->Pin(args->isolate());
+  return handle;
 }
 
 void BrowserView::SetAutoResize(AutoResizeFlags flags) {
@@ -123,26 +133,25 @@ void BrowserView::SetBackgroundColor(const std::string& color_name) {
   view_->SetBackgroundColor(ParseHexColor(color_name));
 }
 
-v8::Local<v8::Value> BrowserView::GetWebContents() {
+v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
   if (web_contents_.IsEmpty()) {
-    return v8::Null(isolate());
+    return v8::Null(isolate);
   }
 
-  return v8::Local<v8::Value>::New(isolate(), web_contents_);
+  return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
 // static
-void BrowserView::BuildPrototype(v8::Isolate* isolate,
-                                 v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "BrowserView"));
-  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+v8::Local<v8::ObjectTemplate> BrowserView::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
-      .SetProperty("id", &BrowserView::ID);
+      .Build();
 }
 
 }  // namespace api
@@ -158,16 +167,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  BrowserView::SetConstructor(isolate, base::BindRepeating(&BrowserView::New));
 
-  gin_helper::Dictionary browser_view(isolate,
-                                      BrowserView::GetConstructor(isolate)
-                                          ->GetFunction(context)
-                                          .ToLocalChecked());
-  browser_view.SetMethod("fromId", &BrowserView::FromWeakMapID);
-  browser_view.SetMethod("getAllViews", &BrowserView::GetAll);
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("BrowserView", browser_view);
+  dict.Set("BrowserView", BrowserView::GetConstructor(context));
 }
 
 }  // namespace

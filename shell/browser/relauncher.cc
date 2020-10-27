@@ -57,6 +57,11 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   StringVector relaunch_argv;
   relaunch_argv.push_back(helper.value());
   relaunch_argv.push_back(internal::kRelauncherTypeArg);
+  // Relauncher process has its own --type=relauncher which
+  // is not recognized by the service_manager, explicitly set
+  // the sandbox type to avoid CHECK failure in
+  // service_manager::SandboxTypeFromCommandLine
+  relaunch_argv.push_back(FILE_PATH_LITERAL("--no-sandbox"));
 
   relaunch_argv.insert(relaunch_argv.end(), relauncher_args.begin(),
                        relauncher_args.end());

@@ -36,10 +36,11 @@ PluginUtils::GetMimeTypeToExtensionIdMap(
     content::BrowserContext* browser_context) {
   base::flat_map<std::string, std::string> mime_type_to_extension_id_map;
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  std::vector<std::string> whitelist = MimeTypesHandler::GetMIMETypeWhitelist();
+  std::vector<std::string> allowed_extension_ids =
+      MimeTypesHandler::GetMIMETypeAllowlist();
   // Go through the white-listed extensions and try to use them to intercept
   // the URL request.
-  for (const std::string& extension_id : whitelist) {
+  for (const std::string& extension_id : allowed_extension_ids) {
     const extensions::Extension* extension =
         extensions::ExtensionRegistry::Get(browser_context)
             ->enabled_extensions()

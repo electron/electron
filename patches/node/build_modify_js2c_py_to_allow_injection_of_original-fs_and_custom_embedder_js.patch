@@ -14,10 +14,10 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 43c13ea30a0dc56151cba3d4597ae81b27c41300..e9a43592d558409d5fd43e2f51b22efb4e41551d 100644
+index 4c3633e06c60265c974bdd2a5a3d2e615e4aeb82..5e03a3a6e35e934faf71e765d7fc6e356f40e8d0 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
-@@ -23,6 +23,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
+@@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
  
  NativeModuleLoader::NativeModuleLoader() : config_(GetConfig()) {
    LoadJavaScriptSource();
@@ -26,7 +26,7 @@ index 43c13ea30a0dc56151cba3d4597ae81b27c41300..e9a43592d558409d5fd43e2f51b22efb
  
  NativeModuleLoader* NativeModuleLoader::GetInstance() {
 diff --git a/src/node_native_module.h b/src/node_native_module.h
-index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1b2a8d061 100644
+index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e7cb240f6 100644
 --- a/src/node_native_module.h
 +++ b/src/node_native_module.h
 @@ -44,6 +44,7 @@ class NativeModuleLoader {
@@ -38,10 +38,19 @@ index fabaea75686161f488a03349e07049a513b98fad..5a6b01dc12fb77d5f8c26a1153ead2a1
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885c5598e03 100755
+index d5109fcae5542730623f5ec3ca244ec0973109f2..b25a9038ea7cfdb49b81e85f5bf497cc360e2b9e 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -56,13 +56,15 @@ namespace native_module {{
+@@ -38,6 +38,8 @@ import functools
+ import codecs
+ 
+ def ReadFile(filename):
++  if filename.startswith("//v8"):
++    filename = "../../" + filename[2:]
+   if is_verbose:
+     print(filename)
+   with codecs.open(filename, "r", "utf-8") as f:
+@@ -56,13 +58,15 @@ namespace native_module {{
  
  {0}
  
@@ -59,7 +68,7 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885
  
  }}  // namespace native_module
  
-@@ -112,8 +114,8 @@ def GetDefinition(var, source, step=30):
+@@ -112,8 +116,8 @@ def GetDefinition(var, source, step=30):
    return definition, len(code_points)
  
  
@@ -70,16 +79,18 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885
    name = NormalizeFileName(filename)
    slug = SLUGGER_RE.sub('_', name)
    var = slug + '_raw'
-@@ -123,7 +125,7 @@ def AddModule(filename, definitions, initializers):
+@@ -123,7 +127,9 @@ def AddModule(filename, definitions, initializers):
    initializers.append(initializer)
  
  def NormalizeFileName(filename):
 -  split = filename.split(os.path.sep)
++  if filename.startswith('//v8'):
++    filename = "deps/" + filename[2:]
 +  split = os.path.normpath(filename).split(os.path.sep)
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -141,7 +143,7 @@ def NormalizeFileName(filename):
+@@ -141,7 +147,7 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -88,7 +99,7 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885
    # Build source code lines
    definitions = []
    initializers = []
-@@ -149,13 +151,26 @@ def JS2C(source_files, target):
+@@ -149,13 +155,26 @@ def JS2C(source_files, target):
    for filename in source_files['.js']:
      AddModule(filename, definitions, initializers)
  
@@ -96,14 +107,14 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885
 -  definitions.append(config_def)
 +    # Electron: Expose fs module without asar support.
 +    if filename == 'lib/fs.js':
-+      # Node's 'fs' and 'internal/fs/streams' have a lazy-loaded circular
-+      # dependency. So to expose the unmodified Node 'fs' functionality here,
-+      # we have to copy both 'fs' *and* 'internal/fs/streams' and modify the
++      # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
++      # dependencies. So to expose the unmodified Node 'fs' functionality here,
++      # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
 +      # copies to depend on each other instead of on our asarified 'fs' code.
-+      # See https://github.com/electron/electron/pull/16028 for more.
-+      AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/streams')", "require('internal/original-fs/streams')"))
-+    elif filename == 'lib/internal/fs/streams.js':
-+      AddModule('lib/internal/original-fs/streams.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
++      AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
++    elif filename.startswith('lib/internal/fs/'):
++      original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
++      AddModule(original_fs_filename, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
 +
 +  config_size = 0
 +  if not only_js:
@@ -118,7 +129,7 @@ index 9e9883129bed62c591d23f71d139514c5034ac8d..dd7a49c2a13e58be8af343bdded6d885
    write_if_chaged(out, target)
  
  
-@@ -208,17 +223,21 @@ def main():
+@@ -209,17 +228,21 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')

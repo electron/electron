@@ -8,7 +8,7 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, delay } from './spec-helpers';
 import { promisify } from 'util';
 
 describe('powerMonitor', () => {
@@ -60,7 +60,7 @@ describe('powerMonitor', () => {
         while (retriesRemaining-- > 0) {
           calls = await getCalls();
           if (calls.length > 0) break;
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await delay(1000);
         }
         expect(calls).to.be.an('array').that.has.lengthOf(1);
         expect(calls[0].slice(1)).to.deep.equal([

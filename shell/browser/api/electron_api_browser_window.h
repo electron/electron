@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/cancelable_callback.h"
-#include "shell/browser/api/electron_api_top_level_window.h"
+#include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
@@ -18,7 +18,7 @@ namespace electron {
 
 namespace api {
 
-class BrowserWindow : public TopLevelWindow,
+class BrowserWindow : public BaseWindow,
                       public content::RenderWidgetHost::InputEventObserver,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
@@ -51,10 +51,11 @@ class BrowserWindow : public TopLevelWindow,
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
+  void OnRendererResponsive(
+      content::RenderProcessHost* render_process_host) override;
 
   // ExtendedWebContentsObserver:
   void OnCloseContents() override;
-  void OnRendererResponsive() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;
@@ -65,8 +66,9 @@ class BrowserWindow : public TopLevelWindow,
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
+  void OnWindowIsKeyChanged(bool is_key) override;
 
-  // TopLevelWindow:
+  // BaseWindow:
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
@@ -90,7 +92,7 @@ class BrowserWindow : public TopLevelWindow,
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void OverrideNSWindowContentView(InspectableWebContents* iwc);
 #endif
 
@@ -117,7 +119,7 @@ class BrowserWindow : public TopLevelWindow,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 #endif
 

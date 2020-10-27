@@ -1,7 +1,10 @@
 const { app, BrowserWindow } = require('electron');
 
 let win;
-app.whenReady().then(function () {
+// This test uses "app.once('ready')" while the |test-menu-null| test uses
+// "app.whenReady()", the 2 APIs have slight difference on timing to cover
+// more cases.
+app.once('ready', function () {
   win = new BrowserWindow({});
   win.setMenuBarVisibility(false);
 

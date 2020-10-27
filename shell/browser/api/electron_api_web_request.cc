@@ -16,6 +16,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -142,10 +143,9 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   auto* web_contents = content::WebContents::FromRenderFrameHost(
       content::RenderFrameHost::FromID(info->render_process_id,
                                        info->frame_id));
-  int32_t id = api::WebContents::GetIDFromWrappedClass(web_contents);
-  // id must be greater than zero.
-  if (id > 0)
-    details->Set("webContentsId", id);
+  auto* api_web_contents = WebContents::From(web_contents);
+  if (api_web_contents)
+    details->Set("webContentsId", api_web_contents->ID());
 }
 
 void ToDictionary(gin::Dictionary* details,
@@ -409,7 +409,7 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
   if (!MatchesFilterCondition(request_info, info.url_patterns))
     return;
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
@@ -432,7 +432,7 @@ int WebRequest::HandleResponseEvent(ResponseEvent event,
 
   callbacks_[request_info->id] = std::move(callback);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
@@ -454,7 +454,7 @@ void WebRequest::OnListenerResult(uint64_t id,
 
   int result = net::OK;
   if (response->IsObject()) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     gin::Dictionary dict(isolate, response.As<v8::Object>());
 
     bool cancel = false;

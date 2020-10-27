@@ -99,6 +99,10 @@ const char kWebPreferences[] = "webPreferences";
 // Add a vibrancy effect to the browser window
 const char kVibrancyType[] = "vibrancy";
 
+// Specify how the material appearance should reflect window activity state on
+// macOS.
+const char kVisualEffectState[] = "visualEffectState";
+
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoomFactor";
 
@@ -113,6 +117,9 @@ const char kNodeIntegration[] = "nodeIntegration";
 
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
+
+// Enable world safe passing of values when using "executeJavaScript"
+const char kWorldSafeExecuteJavaScript[] = "worldSafeExecuteJavaScript";
 
 // Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
@@ -182,6 +189,10 @@ const char kSpellcheck[] = "spellcheck";
 const char kEnableRemoteModule[] = "enableRemoteModule";
 #endif
 
+const char kEnableWebSQL[] = "enableWebSQL";
+
+const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
+
 }  // namespace options
 
 namespace switches {
@@ -219,6 +230,9 @@ const char kFetchSchemes[] = "fetch-schemes";
 // Register schemes as CORS enabled.
 const char kCORSSchemes[] = "cors-schemes";
 
+// Register schemes as streaming responses.
+const char kStreamingSchemes[] = "streaming-schemes";
+
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 
@@ -233,6 +247,7 @@ const char kPreloadScript[] = "preload";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
 const char kContextIsolation[] = "context-isolation";
+const char kWorldSafeExecuteJavaScript[] = "world-safe-execute-javascript";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[] = "opener-id";
 const char kScrollBounce[] = "scroll-bounce";
@@ -249,6 +264,10 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 // Command switch passed to renderer process to control whether node
 // environments will be created in sub-frames.
 const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
+
+// Command switch passed to render process to control whether WebSQL api
+// is allowed.
+const char kEnableWebSQL[] = "enable-websql";
 
 // Widevine options
 // Path to Widevine CDM binaries.
@@ -272,6 +291,9 @@ const char kAuthNegotiateDelegateWhitelist[] =
 // If set, include the port in generated Kerberos SPNs.
 const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 
+// If set, NTLM v2 is disabled for POSIX platforms.
+const char kDisableNTLMv2[] = "disable-ntlm-v2";
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 const char kEnableSpellcheck[] = "enable-spellcheck";
 #endif
@@ -279,6 +301,8 @@ const char kEnableSpellcheck[] = "enable-spellcheck";
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
 const char kEnableRemoteModule[] = "enable-remote-module";
 #endif
+
+const char kGlobalCrashKeys[] = "global-crash-keys";
 
 }  // namespace switches
 

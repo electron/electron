@@ -9,7 +9,8 @@
 
 namespace content {
 class RenderFrameHost;
-}
+class BrowserContext;
+}  // namespace content
 
 class NetworkHintsHandlerImpl
     : public network_hints::SimpleNetworkHintsHandlerImpl {
@@ -27,7 +28,7 @@ class NetworkHintsHandlerImpl
  private:
   explicit NetworkHintsHandlerImpl(content::RenderFrameHost*);
 
-  content::RenderFrameHost* render_frame_host_ = nullptr;
+  content::BrowserContext* browser_context_ = nullptr;
 };
 
 #endif  // SHELL_BROWSER_NETWORK_HINTS_HANDLER_IMPL_H_

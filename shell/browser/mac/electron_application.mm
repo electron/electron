@@ -41,9 +41,14 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   return (AtomApplication*)[super sharedApplication];
 }
 
+- (void)willPowerOff:(NSNotification*)notify {
+  userStoppedShutdown_ = shouldShutdown_ && !shouldShutdown_.Run();
+}
+
 - (void)terminate:(id)sender {
-  if (shouldShutdown_ && !shouldShutdown_.Run())
-    return;  // User will call Quit later.
+  // User will call Quit later.
+  if (userStoppedShutdown_)
+    return;
 
   // We simply try to close the browser, which in turn will try to close the
   // windows. Termination can proceed if all windows are closed or window close

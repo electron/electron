@@ -22,7 +22,7 @@ index 4b4bb38135e6089eaf6f47afda0199567a2397ef..43b7eca808b82a032055f56ce726ce4f
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.c b/crypto/fipsmodule/digest/digests.c
-index f2fa349c2b32ae88766624af3109ece4b1d69909..bcaed59c5401bef071acba9b9919d9069e3ccd4d 100644
+index 16daeba650e2390c168fb4998450ba5182815816..893dc93cb03bd4518afee795af44316b810fcb20 100644
 --- a/crypto/fipsmodule/digest/digests.c
 +++ b/crypto/fipsmodule/digest/digests.c
 @@ -63,6 +63,7 @@
@@ -33,7 +33,7 @@ index f2fa349c2b32ae88766624af3109ece4b1d69909..bcaed59c5401bef071acba9b9919d906
  
  #include "internal.h"
  #include "../delocate.h"
-@@ -277,4 +278,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
+@@ -293,4 +294,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
    out->ctx_size = sizeof(MD5_SHA1_CTX);
  }
  
@@ -80,10 +80,10 @@ index d540144b293297791c087e0b968a47d368a73695..53cb9d2dc8f1962a70dc12b648d27c32
 +  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  }
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index c3ceb7f22a123353f23cb33de9cc2931fb5e1c11..704d43a326e7cced925c9db1c2a6094a16f9abe9 100644
+index 8e398e8b87f199cf947e097cf99e175bfc9870da..6c0ce559681817cae3273a50e6533468f17177ee 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -88,6 +88,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_sha512(void);
+@@ -89,6 +89,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_sha512_256(void);
  // MD5 and SHA-1, as used in TLS 1.1 and below.
  OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
  

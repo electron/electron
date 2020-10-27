@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/stl_util.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/object_template_builder.h"
@@ -28,6 +29,9 @@ namespace {
 // List of registered custom standard schemes.
 std::vector<std::string> g_standard_schemes;
 
+// List of registered custom streaming schemes.
+std::vector<std::string> g_streaming_schemes;
+
 struct SchemeOptions {
   bool standard = false;
   bool secure = false;
@@ -35,6 +39,7 @@ struct SchemeOptions {
   bool allowServiceWorkers = false;
   bool supportFetchAPI = false;
   bool corsEnabled = false;
+  bool stream = false;
 };
 
 struct CustomScheme {
@@ -66,6 +71,7 @@ struct Converter<CustomScheme> {
       opt.Get("allowServiceWorkers", &(out->options.allowServiceWorkers));
       opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("corsEnabled", &(out->options.corsEnabled));
+      opt.Get("stream", &(out->options.stream));
     }
     return true;
   }
@@ -119,6 +125,9 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     if (custom_scheme.options.allowServiceWorkers) {
       service_worker_schemes.push_back(custom_scheme.scheme);
     }
+    if (custom_scheme.options.stream) {
+      g_streaming_schemes.push_back(custom_scheme.scheme);
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const char* switch_name,
@@ -138,6 +147,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          service_worker_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          g_standard_schemes);
+  AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
+                         g_streaming_schemes);
 }
 
 namespace {
@@ -176,11 +187,12 @@ ProtocolError Protocol::RegisterProtocol(ProtocolType type,
   return added ? ProtocolError::OK : ProtocolError::REGISTERED;
 }
 
-void Protocol::UnregisterProtocol(const std::string& scheme,
+bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
   HandleOptionalCallback(
       args, removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED);
+  return removed;
 }
 
 bool Protocol::IsProtocolRegistered(const std::string& scheme) {
@@ -194,11 +206,12 @@ ProtocolError Protocol::InterceptProtocol(ProtocolType type,
   return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
 }
 
-void Protocol::UninterceptProtocol(const std::string& scheme,
+bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
   HandleOptionalCallback(
       args, removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED);
+  return removed;
 }
 
 bool Protocol::IsProtocolIntercepted(const std::string& scheme) {

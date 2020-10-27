@@ -45,6 +45,7 @@
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
+#include "shell/browser/extensions/electron_kiosk_delegate.h"
 #include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -84,7 +85,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
 }
 
 bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
-  auto context_map = ElectronBrowserContext::browser_context_map();
+  auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)
       return true;
@@ -112,7 +113,7 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
   if (context->IsOffTheRecord()) {
-    return ElectronBrowserContext::From("", false).get();
+    return ElectronBrowserContext::From("", false);
   } else {
     return context;
   }
@@ -310,7 +311,7 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
 
   std::unique_ptr<extensions::Event> event(
       new extensions::Event(histogram_value, event_name, std::move(args)));
-  auto context_map = ElectronBrowserContext::browser_context_map();
+  auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {
       extensions::EventRouter::Get(entry.second.get())
@@ -346,7 +347,9 @@ ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
-  return nullptr;
+  if (!kiosk_delegate_)
+    kiosk_delegate_.reset(new ElectronKioskDelegate());
+  return kiosk_delegate_.get();
 }
 
 bool ElectronExtensionsBrowserClient::IsLockScreenContext(
@@ -363,7 +366,7 @@ std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
 }
 
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
-    service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+    mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
     content::RenderFrameHost* render_frame_host,
     const extensions::Extension* extension) const {
   PopulateExtensionFrameBinders(map, render_frame_host, extension);

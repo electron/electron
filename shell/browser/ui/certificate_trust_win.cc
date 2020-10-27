@@ -10,6 +10,7 @@
 
 #include "net/cert/cert_database.h"
 #include "net/cert/x509_util_win.h"
+#include "shell/browser/javascript_environment.h"
 
 namespace certificate_trust {
 
@@ -60,7 +61,7 @@ v8::Local<v8::Promise> ShowCertificateTrust(
     electron::NativeWindow* parent_window,
     const scoped_refptr<net::X509Certificate>& cert,
     const std::string& message) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

@@ -5,7 +5,7 @@
 #include <string>
 
 #include "shell/common/mouse_util.h"
-#include "ui/base/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 
 using Cursor = ui::mojom::CursorType;
 

@@ -6,6 +6,7 @@
 
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -94,6 +95,25 @@ bool MoveItemToTrash(gin::Arguments* args) {
   return platform_util::MoveItemToTrash(full_path, delete_on_fail);
 }
 
+v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
+                                 const base::FilePath& path) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  platform_util::TrashItem(
+      path, base::BindOnce(
+                [](gin_helper::Promise<void> promise, bool success,
+                   const std::string& error) {
+                  if (success) {
+                    promise.Resolve();
+                  } else {
+                    promise.RejectWithErrorMessage(error);
+                  }
+                },
+                std::move(promise)));
+  return handle;
+}
+
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
@@ -108,6 +128,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   base::win::ShortcutProperties properties;
   base::FilePath path;
   base::string16 str;
+  UUID toastActivatorClsid;
   int index;
   if (options.Get("target", &path))
     properties.set_target(path);
@@ -121,6 +142,8 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
     properties.set_icon(path, index);
   if (options.Get("appUserModelId", &str))
     properties.set_app_id(str);
+  if (options.Get("toastActivatorClsid", &toastActivatorClsid))
+    properties.set_toast_activator_clsid(toastActivatorClsid);
 
   base::win::ScopedCOMInitializer com_initializer;
   return base::win::CreateOrUpdateShortcutLink(shortcut_path, properties,
@@ -145,6 +168,7 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
+  options.Set("toastActivatorClsid", properties.toast_activator_clsid);
   return gin::ConvertToV8(thrower.isolate(), options);
 }
 #endif
@@ -158,6 +182,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
+  dict.SetMethod("trashItem", &TrashItem);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);

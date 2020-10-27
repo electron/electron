@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.
@@ -214,8 +215,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(base::Callback<ReturnType(ArgTypes...)> callback) {
-    v8::MicrotasksScope script_scope(args_->isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -224,8 +224,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::Callback<void(ArgTypes...)> callback) {
-    v8::MicrotasksScope script_scope(args_->isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 

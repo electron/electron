@@ -50,7 +50,7 @@ class WebContentsPreferences
                                  bool is_subframe);
 
   // Modify the WebPreferences according to preferences.
-  void OverrideWebkitPrefs(content::WebPreferences* prefs);
+  void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs);
 
   // Clear the current WebPreferences.
   void Clear();
@@ -71,6 +71,9 @@ class WebContentsPreferences
 
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
+
+  // Checks if the key is not defined
+  bool IsUndefined(base::StringPiece key);
 
   // Set preference value to given bool if user did not provide value
   bool SetDefaultBoolIfUndefined(base::StringPiece key, bool val);

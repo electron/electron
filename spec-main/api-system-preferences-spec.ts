@@ -53,7 +53,7 @@ describe('systemPreferences module', () => {
       for (const badDefault of badDefaults) {
         expect(() => {
           systemPreferences.registerDefaults(badDefault as any);
-        }).to.throw('Invalid userDefault data provided');
+        }).to.throw('Error processing argument at index 0, conversion failure from ');
       }
     });
   });
@@ -269,7 +269,7 @@ describe('systemPreferences module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('systemPreferences.getMediaAccessStatus(mediaType)', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('systemPreferences.getMediaAccessStatus(mediaType)', () => {
     const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown'];
 
     it('returns an access status for a camera access request', () => {

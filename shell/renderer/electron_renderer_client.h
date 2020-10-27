@@ -26,6 +26,8 @@ class ElectronRendererClient : public RendererClientBase {
   ElectronRendererClient();
   ~ElectronRendererClient() override;
 
+  static ElectronRendererClient* Get();
+
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;
@@ -47,7 +49,7 @@ class ElectronRendererClient : public RendererClientBase {
                   const std::string& http_method,
                   bool is_initial_navigation,
                   bool is_server_redirect) override;
-  void DidInitializeWorkerContextOnWorkerThread(
+  void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
@@ -69,6 +71,8 @@ class ElectronRendererClient : public RendererClientBase {
   // its script context. Doing so in a web page without scripts would trigger
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
+
+  static ElectronRendererClient* self_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };

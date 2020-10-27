@@ -11,7 +11,7 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 #include "shell/browser/browser.h"
 #endif
 
@@ -49,7 +49,7 @@ gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
       ->GetWindowAppIcon();
 }
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
     std::string* name,
     std::string* class_name) {

@@ -41,6 +41,10 @@ Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively.
 
+> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> zoom level for a specific domain propagates across all instances of windows with
+> the same domain. Differentiating the window URLs will make zoom work per-window.
+
 ### `webFrame.getZoomLevel()`
 
 Returns `Number` - The current zoom level.
@@ -162,9 +166,13 @@ this limitation.
   * `error` Error
 
 Returns `Promise<any>` - A promise that resolves with the result of the executed
-code or is rejected if execution throws or results in a rejected promise.
+code or is rejected if execution could not start.
 
 Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
+
+Note that when the execution of script fails, the returned promise will not
+reject and the `result` would be `undefined`. This is because Chromium does not
+dispatch errors of isolated worlds to foreign worlds.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
@@ -248,6 +256,20 @@ renderer process.
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
 
 Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+
+### `webFrame.isWordMisspelled(word)`
+
+* `word` String - The word to be spellchecked.
+
+Returns `Boolean` - True if the word is misspelled according to the built in
+spellchecker, false otherwise. If no dictionary is loaded, always return false.
+
+### `webFrame.getWordSuggestions(word)`
+
+* `word` String - The misspelled word.
+
+Returns `String[]` - A list of suggested words for a given word. If the word
+is spelled correctly, the result will be empty.
 
 ## Properties
 

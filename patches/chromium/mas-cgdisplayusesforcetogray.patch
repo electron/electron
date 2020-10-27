@@ -6,7 +6,7 @@ Subject: mas-cgdisplayusesforcetogray.patch
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 0d64613458b5da1211b8d2f8ec3088e19af0c10d..60b0680953647b410a2a7998544689ec2bf73c47 100644
+index 00415aac8b80fc914af6af7209cc431c156e2b95..e37ca0b7cb3c7fdc4a9f47c18d0afc1ff1764dd9 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -133,7 +133,17 @@ Display BuildDisplayForScreen(NSScreen* screen) {

@@ -51,9 +51,11 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void On(const char* event, EventCallback callback);
 
   // URLLoader:
-  void FollowRedirect(const std::vector<std::string>& removed_headers,
-                      const net::HttpRequestHeaders& modified_headers,
-                      const base::Optional<GURL>& new_url) override {}
+  void FollowRedirect(
+      const std::vector<std::string>& removed_headers,
+      const net::HttpRequestHeaders& modified_headers,
+      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      const base::Optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
   void PauseReadingBodyFromNet() override {}
@@ -84,6 +86,11 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // data if the stream was not readable before, so we store the state in a
   // flag.
   bool readable_ = false;
+
+  // It's possible for reads to be queued using nextTick() during read()
+  // which will cause 'readable' to emit during ReadMore, so we track if
+  // that occurred in a flag.
+  bool has_read_waiting_ = false;
 
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;

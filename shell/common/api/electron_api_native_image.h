@@ -7,11 +7,12 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "base/values.h"
 #include "gin/handle.h"
+#include "gin/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -34,11 +35,15 @@ namespace gin_helper {
 class Dictionary;
 }
 
+namespace gin {
+class Arguments;
+}
+
 namespace electron {
 
 namespace api {
 
-class NativeImage : public gin_helper::Wrappable<NativeImage> {
+class NativeImage : public gin::Wrappable<NativeImage> {
  public:
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
@@ -62,10 +67,21 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
   static gin::Handle<NativeImage> CreateFromDataURL(v8::Isolate* isolate,
                                                     const GURL& url);
   static gin::Handle<NativeImage> CreateFromNamedImage(gin::Arguments* args,
-                                                       const std::string& name);
+                                                       std::string name);
+#if !defined(OS_LINUX)
+  static v8::Local<v8::Promise> CreateThumbnailFromPath(
+      v8::Isolate* isolate,
+      const base::FilePath& path,
+      const gfx::Size& size);
+#endif
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
 #if defined(OS_WIN)
   HICON GetHICON(int size);
@@ -84,15 +100,16 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
   v8::Local<v8::Value> ToPNG(gin::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   v8::Local<v8::Value> ToBitmap(gin::Arguments* args);
+  std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
-  gin::Handle<NativeImage> Resize(v8::Isolate* isolate,
+  gin::Handle<NativeImage> Resize(gin::Arguments* args,
                                   base::DictionaryValue options);
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
-  gfx::Size GetSize();
-  float GetAspectRatio();
+  gfx::Size GetSize(const base::Optional<float> scale_factor);
+  float GetAspectRatio(const base::Optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
   // Mark the image as template image.
@@ -106,6 +123,8 @@ class NativeImage : public gin_helper::Wrappable<NativeImage> {
 #endif
 
   gfx::Image image_;
+
+  v8::Isolate* isolate_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };

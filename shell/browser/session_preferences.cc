@@ -4,6 +4,7 @@
 
 #include "shell/browser/session_preferences.h"
 
+#include "base/logging.h"
 #include "base/memory/ptr_util.h"
 
 namespace electron {

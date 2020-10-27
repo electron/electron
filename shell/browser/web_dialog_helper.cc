@@ -26,6 +26,7 @@
 #include "net/base/directory_lister.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -46,7 +47,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE();
 
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
-                   std::unique_ptr<content::FileSelectListener> listener,
+                   scoped_refptr<content::FileSelectListener> listener,
                    blink::mojom::FileChooserParams::Mode mode)
       : render_frame_host_(render_frame_host),
         listener_(std::move(listener)),
@@ -57,7 +58,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   void ShowOpenDialog(const file_dialog::DialogSettings& settings) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
@@ -68,7 +69,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   }
 
   void ShowSaveDialog(const file_dialog::DialogSettings& settings) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
 
@@ -217,7 +218,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   void WebContentsDestroyed() override { render_frame_host_ = nullptr; }
 
   content::RenderFrameHost* render_frame_host_;
-  std::unique_ptr<content::FileSelectListener> listener_;
+  scoped_refptr<content::FileSelectListener> listener_;
   blink::mojom::FileChooserParams::Mode mode_;
 
   // DirectoryLister-specific members
@@ -303,7 +304,7 @@ WebDialogHelper::~WebDialogHelper() = default;
 
 void WebDialogHelper::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   file_dialog::DialogSettings settings;
   settings.force_detached = offscreen_;
@@ -345,7 +346,7 @@ void WebDialogHelper::RunFileChooser(
 
 void WebDialogHelper::EnumerateDirectory(
     content::WebContents* web_contents,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& dir) {
   int types = base::FileEnumerator::FILES | base::FileEnumerator::DIRECTORIES |
               base::FileEnumerator::INCLUDE_DOT_DOT;

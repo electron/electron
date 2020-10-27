@@ -199,6 +199,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "fullscreen");
     case PermissionType::OPEN_EXTERNAL:
       return StringToV8(isolate, "openExternal");
+    case PermissionType::SERIAL:
+      return StringToV8(isolate, "serial");
     default:
       return StringToV8(isolate, "unknown");
   }
@@ -237,6 +239,12 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
 bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               content::WebContents** out) {
+  if (!val->IsObject())
+    return false;
+  // gin's unwrapping converter doesn't expect the pointer inside to ever be
+  // nullptr, so we check here first before attempting to unwrap.
+  if (gin_helper::Destroyable::IsDestroyed(val.As<v8::Object>()))
+    return false;
   electron::api::WebContents* web_contents = nullptr;
   if (!gin::ConvertFromV8(isolate, val, &web_contents) || !web_contents)
     return false;
@@ -302,6 +310,7 @@ v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
 
   using Modifiers = blink::WebInputEvent::Modifiers;
   dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
+  dict.Set("isComposing", (in.GetModifiers() & Modifiers::kIsComposing) != 0);
   dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
   dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
   dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);

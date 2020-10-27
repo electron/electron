@@ -2,7 +2,7 @@
 
 > Create a button in the touch bar for native macOS applications
 
-Process: [Main](../tutorial/application-architecture.md#main-and-renderer-processes)
+Process: [Main](../glossary.md#main-process)
 
 ### `new TouchBarButton(options)`
 
@@ -40,6 +40,10 @@ the button in the touch bar.
 
 A `NativeImage` representing the button's current icon. Changing this value immediately updates the button
 in the touch bar.
+
+#### `touchBarButton.iconPosition`
+
+A `String` - Can be `left`, `right` or `overlay`.  Defaults to `overlay`.
 
 #### `touchBarButton.enabled`
 

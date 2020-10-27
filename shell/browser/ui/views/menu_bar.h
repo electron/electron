@@ -90,7 +90,7 @@ class MenuBar : public views::AccessiblePaneView,
 
   void RefreshColorCache();
   SkColor background_color_;
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   SkColor enabled_color_;
   SkColor disabled_color_;
 #endif

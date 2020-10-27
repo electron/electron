@@ -9,7 +9,7 @@
 
 #include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
-#include "base/logging.h"
+#include "base/check.h"
 
 namespace electron {
 

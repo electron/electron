@@ -9,10 +9,10 @@ change to move more of //chrome spellchecker logic into //components so
 that we can further separate our dependency from //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
-index 5253d1f48e188b0339834c876378677b459e718e..48ac0a24efde0cb7d3ba71c8b8bdf5178f606e80 100644
+index 1d426c35c539064e899b848d0ccc19306f1c4db8..2b7aa1add57dccbcbf8202cead5b7d2d5a174270 100644
 --- a/chrome/browser/spellchecker/spellcheck_factory.cc
 +++ b/chrome/browser/spellchecker/spellcheck_factory.cc
-@@ -78,7 +78,10 @@ void SpellcheckServiceFactory::RegisterProfilePrefs(
+@@ -71,7 +71,10 @@ void SpellcheckServiceFactory::RegisterProfilePrefs(
  
  content::BrowserContext* SpellcheckServiceFactory::GetBrowserContextToUse(
      content::BrowserContext* context) const {

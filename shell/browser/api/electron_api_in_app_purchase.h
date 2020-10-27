@@ -9,26 +9,31 @@
 #include <vector>
 
 #include "gin/handle.h"
+#include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
-#include "shell/common/gin_helper/event_emitter.h"
-#include "shell/common/gin_helper/promise.h"
+#include "v8/include/v8.h"
 
 namespace electron {
 
 namespace api {
 
-class InAppPurchase : public gin_helper::EventEmitter<InAppPurchase>,
+class InAppPurchase : public gin::Wrappable<InAppPurchase>,
+                      public gin_helper::EventEmitterMixin<InAppPurchase>,
                       public in_app_purchase::TransactionObserver {
  public:
   static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
  protected:
-  explicit InAppPurchase(v8::Isolate* isolate);
+  InAppPurchase();
   ~InAppPurchase() override;
 
   v8::Local<v8::Promise> PurchaseProduct(const std::string& product_id,

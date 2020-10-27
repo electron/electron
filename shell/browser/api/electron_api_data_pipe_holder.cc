@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/public/cpp/system/simple_watcher.h"
@@ -27,7 +28,10 @@ namespace {
 int g_next_id = 0;
 
 // Map that manages all the DataPipeHolder objects.
-KeyWeakMap<std::string> g_weak_map;
+KeyWeakMap<std::string>& AllDataPipeHolders() {
+  static base::NoDestructor<KeyWeakMap<std::string>> weak_map;
+  return *weak_map.get();
+}
 
 // Utility class to read from data pipe.
 class DataPipeReader {
@@ -164,15 +168,15 @@ gin::Handle<DataPipeHolder> DataPipeHolder::Create(
     v8::Isolate* isolate,
     const network::DataElement& element) {
   auto handle = gin::CreateHandle(isolate, new DataPipeHolder(element));
-  g_weak_map.Set(isolate, handle->id(),
-                 handle->GetWrapper(isolate).ToLocalChecked());
+  AllDataPipeHolders().Set(isolate, handle->id(),
+                           handle->GetWrapper(isolate).ToLocalChecked());
   return handle;
 }
 
 // static
 gin::Handle<DataPipeHolder> DataPipeHolder::From(v8::Isolate* isolate,
                                                  const std::string& id) {
-  v8::MaybeLocal<v8::Object> object = g_weak_map.Get(isolate, id);
+  v8::MaybeLocal<v8::Object> object = AllDataPipeHolders().Get(isolate, id);
   if (!object.IsEmpty()) {
     gin::Handle<DataPipeHolder> handle;
     if (gin::ConvertFromV8(isolate, object.ToLocalChecked(), &handle))

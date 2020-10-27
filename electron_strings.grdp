@@ -75,4 +75,13 @@
   <message name="IDS_ACCEPT_LANGUAGES" use_name_for_id="true">
     en-US,en
   </message>
+  <if expr="is_win">
+    <message name="IDS_UTILITY_PROCESS_UTILITY_WIN_NAME" desc="The name of the utility process used to handle Windows utility operations.">
+      Windows Utilities
+    </message>
+  </if>
+  <message name="IDS_DOWNLOAD_MORE_ACTIONS"
+          desc="Tooltip of a button on the downloads page that shows a menu with actions like 'Open downloads folder' or 'Clear all'">
+    More actions
+</message>
 </grit-part>

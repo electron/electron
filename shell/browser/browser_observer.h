@@ -60,7 +60,7 @@ class BrowserObserver : public base::CheckedObserver {
   // Refer https://chromium-review.googlesource.com/c/chromium/src/+/2134864
   virtual void OnPreCreateThreads() {}
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // The browser wants to report that an user activity will resume. (macOS only)
   virtual void OnWillContinueUserActivity(bool* prevent_default,
                                           const std::string& type) {}
@@ -82,6 +82,9 @@ class BrowserObserver : public base::CheckedObserver {
       const base::DictionaryValue& user_info) {}
   // User clicked the native macOS new tab button. (macOS only)
   virtual void OnNewWindowForTab() {}
+
+  // Browser did become active.
+  virtual void OnDidBecomeActive() {}
 #endif
 
  protected:

@@ -6,44 +6,20 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/ui/gtk/status_icon.h"
 #include "shell/common/application_info.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_operations.h"
 
 namespace electron {
 
-namespace {
-
-gfx::ImageSkia GetIconFromImage(const gfx::Image& image) {
-  auto icon = image.AsImageSkia();
-  auto size = icon.size();
-
-  // Systray icons are historically 22 pixels tall, e.g. on Ubuntu GNOME,
-  // KDE, and xfce. Taller icons are causing incorrect sizing issues -- e.g.
-  // a 1x1 icon -- so for now, pin the height manually. Similar behavior to
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1042098 ?
-  static constexpr int DESIRED_HEIGHT = 22;
-  if ((size.height() != 0) && (size.height() != DESIRED_HEIGHT)) {
-    const double ratio = DESIRED_HEIGHT / static_cast<double>(size.height());
-    size = gfx::Size(static_cast<int>(ratio * size.width()),
-                     static_cast<int>(ratio * size.height()));
-    icon = gfx::ImageSkiaOperations::CreateResizedImage(
-        icon, skia::ImageOperations::RESIZE_BEST, size);
-  }
-
-  return icon;
-}
-
-}  // namespace
-
 TrayIconGtk::TrayIconGtk() = default;
 
 TrayIconGtk::~TrayIconGtk() = default;
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
-  image_ = GetIconFromImage(image);
+  image_ = image.AsImageSkia();
 
   if (icon_) {
     icon_->SetIcon(image_);
@@ -52,9 +28,8 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
 
   tool_tip_ = base::UTF8ToUTF16(GetApplicationName());
 
-  icon_ = base::MakeRefCounted<StatusIconLinuxDbus>();
-  icon_->SetIcon(image_);
-  icon_->SetToolTip(tool_tip_);
+  icon_ = gtkui::CreateLinuxStatusIcon(image_, tool_tip_,
+                                       Browser::Get()->GetName().c_str());
   icon_->SetDelegate(this);
 }
 

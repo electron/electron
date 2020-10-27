@@ -4,7 +4,7 @@
   "main": "static/main.js",
   "version": "0.1.0",
   "scripts": {
-    "postinstall": "node ../tools/run-if-exists.js node_modules/robotjs node-gyp rebuild"
+    "postinstall": "node ../script/run-if-exists.js node_modules/robotjs node-gyp rebuild"
   },
   "devDependencies": {
     "basic-auth": "^2.0.1",
@@ -19,7 +19,6 @@
     "mocha": "^5.2.0",
     "mocha-junit-reporter": "^1.18.0",
     "mocha-multi-reporters": "^1.1.7",
-    "multiparty": "^4.2.1",
     "send": "^0.16.2",
     "split": "^1.0.1",
     "temp": "^0.9.0",
@@ -27,7 +26,7 @@
     "walkdir": "^0.3.2",
     "winreg": "^1.2.4",
     "ws": "^6.1.4",
-    "yargs": "^12.0.5"
+    "yargs": "^16.0.3"
   },
   "dependencies": {
     "mocha-appveyor-reporter": "^0.4.2"

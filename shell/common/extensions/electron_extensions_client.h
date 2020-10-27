@@ -26,7 +26,7 @@ namespace electron {
 // The app_shell implementation of ExtensionsClient.
 class ElectronExtensionsClient : public extensions::ExtensionsClient {
  public:
-  typedef extensions::ExtensionsClient::ScriptingWhitelist ScriptingWhitelist;
+  using ScriptingAllowlist = extensions::ExtensionsClient::ScriptingAllowlist;
 
   ElectronExtensionsClient();
   ~ElectronExtensionsClient() override;
@@ -41,8 +41,8 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
       const extensions::URLPatternSet& hosts,
       extensions::URLPatternSet* new_hosts,
       extensions::PermissionIDSet* permissions) const override;
-  void SetScriptingWhitelist(const ScriptingWhitelist& whitelist) override;
-  const ScriptingWhitelist& GetScriptingWhitelist() const override;
+  void SetScriptingAllowlist(const ScriptingAllowlist& allowlist) override;
+  const ScriptingAllowlist& GetScriptingAllowlist() const override;
   extensions::URLPatternSet GetPermittedChromeSchemeHosts(
       const extensions::Extension* extension,
       const extensions::APIPermissionSet& api_permissions) const override;
@@ -52,7 +52,7 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
   bool IsBlacklistUpdateURL(const GURL& url) const override;
 
  private:
-  ScriptingWhitelist scripting_whitelist_;
+  ScriptingAllowlist scripting_allowlist_;
 
   const GURL webstore_base_url_;
   const GURL webstore_update_url_;

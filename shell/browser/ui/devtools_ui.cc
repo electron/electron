@@ -9,8 +9,10 @@
 #include <utility>
 
 #include "base/memory/ref_counted_memory.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/browser/web_contents.h"
@@ -20,11 +22,13 @@ namespace electron {
 
 namespace {
 
-const char kChromeUIDevToolsHost[] = "devtools";
-const char kChromeUIDevToolsBundledPath[] = "bundled";
-
 std::string PathWithoutParams(const std::string& path) {
-  return GURL(std::string("devtools://devtools/") + path).path().substr(1);
+  return GURL(base::StrCat({content::kChromeDevToolsScheme,
+                            url::kStandardSchemeSeparator,
+                            chrome::kChromeUIDevToolsHost}))
+      .Resolve(path)
+      .path()
+      .substr(1);
 }
 
 std::string GetMimeTypeForPath(const std::string& path) {
@@ -35,11 +39,19 @@ std::string GetMimeTypeForPath(const std::string& path) {
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "text/css";
   } else if (base::EndsWith(filename, ".js",
+                            base::CompareCase::INSENSITIVE_ASCII) ||
+             base::EndsWith(filename, ".mjs",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "application/javascript";
   } else if (base::EndsWith(filename, ".png",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "image/png";
+  } else if (base::EndsWith(filename, ".map",
+                            base::CompareCase::INSENSITIVE_ASCII)) {
+    return "application/json";
+  } else if (base::EndsWith(filename, ".ts",
+                            base::CompareCase::INSENSITIVE_ASCII)) {
+    return "application/x-typescript";
   } else if (base::EndsWith(filename, ".gif",
                             base::CompareCase::INSENSITIVE_ASCII)) {
     return "image/gif";
@@ -59,14 +71,14 @@ class BundledDataSource : public content::URLDataSource {
   ~BundledDataSource() override = default;
 
   // content::URLDataSource implementation.
-  std::string GetSource() override { return kChromeUIDevToolsHost; }
+  std::string GetSource() override { return chrome::kChromeUIDevToolsHost; }
 
   void StartDataRequest(const GURL& url,
                         const content::WebContents::Getter& wc_getter,
                         GotDataCallback callback) override {
     const std::string path = content::URLDataSource::URLToRequestPath(url);
     // Serve request from local bundle.
-    std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
+    std::string bundled_path_prefix(chrome::kChromeUIDevToolsBundledPath);
     bundled_path_prefix += "/";
     if (base::StartsWith(path, bundled_path_prefix,
                          base::CompareCase::INSENSITIVE_ASCII)) {

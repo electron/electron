@@ -10,10 +10,11 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe } from './spec-helpers';
+import { ifit, ifdescribe, delay, defer } from './spec-helpers';
 import { AddressInfo } from 'net';
+import { PipeTransport } from './pipe-transport';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -221,7 +222,7 @@ describe('web security', () => {
   });
 
   it('engages CORB when web security is not disabled', async () => {
-    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,<script>
         const s = document.createElement('script')
@@ -235,7 +236,7 @@ describe('web security', () => {
   });
 
   it('bypasses CORB when web security is disabled', async () => {
-    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,
       <script>
@@ -244,47 +245,141 @@ describe('web security', () => {
       <script src="${serverUrl}"></script>`);
     await p;
   });
+
+  it('engages CORS when web security is not disabled', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const p = emittedOnce(ipcMain, 'response');
+    await w.loadURL(`data:text/html,<script>
+        (async function() {
+          try {
+            await fetch('${serverUrl}');
+            require('electron').ipcRenderer.send('response', 'passed');
+          } catch {
+            require('electron').ipcRenderer.send('response', 'failed');
+          }
+        })();
+      </script>`);
+    const [, response] = await p;
+    expect(response).to.equal('failed');
+  });
+
+  it('bypasses CORS when web security is disabled', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const p = emittedOnce(ipcMain, 'response');
+    await w.loadURL(`data:text/html,<script>
+        (async function() {
+          try {
+            await fetch('${serverUrl}');
+            require('electron').ipcRenderer.send('response', 'passed');
+          } catch {
+            require('electron').ipcRenderer.send('response', 'failed');
+          }
+        })();
+      </script>`);
+    const [, response] = await p;
+    expect(response).to.equal('passed');
+  });
+
+  it('does not crash when multiple WebContent are created with web security disabled', () => {
+    const options = { show: false, webPreferences: { webSecurity: false } };
+    const w1 = new BrowserWindow(options);
+    w1.loadURL(serverUrl);
+    const w2 = new BrowserWindow(options);
+    w2.loadURL(serverUrl);
+  });
 });
 
 describe('command line switches', () => {
+  let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
+  afterEach(() => {
+    if (appProcess && !appProcess.killed) {
+      appProcess.kill();
+      appProcess = undefined;
+    }
+  });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
-    const testLocale = (locale: string, result: string, done: () => void) => {
+    const testLocale = async (locale: string, result: string) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
-      let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
 
+      let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
-      appProcess.stdout.on('end', () => {
-        output = output.replace(/(\r\n|\n|\r)/gm, '');
-        expect(output).to.equal(result);
-        done();
-      });
+
+      await emittedOnce(appProcess.stdout, 'end');
+      output = output.replace(/(\r\n|\n|\r)/gm, '');
+      expect(output).to.equal(result);
     };
 
-    it('should set the locale', (done) => testLocale('fr', 'fr', done));
-    it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
+    it('should set the locale', async () => testLocale('fr', 'fr'));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+  });
+
+  describe('--remote-debugging-pipe switch', () => {
+    it('should expose CDP via pipe', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(message.result.product).to.contain('Chrome');
+      expect(message.result.userAgent).to.contain('Electron');
+    });
+    it('should override --remote-debugging-port switch', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      let stderr = '';
+      appProcess.stderr.on('data', (data: string) => { stderr += data; });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      const versionPromise = new Promise(resolve => { pipe.onmessage = resolve; });
+      pipe.send({ id: 1, method: 'Browser.getVersion', params: {} });
+      const message = (await versionPromise) as any;
+      expect(message.id).to.equal(1);
+      expect(stderr).to.not.include('DevTools listening on');
+    });
+    it('should shut down Electron upon Browser.close CDP command', async () => {
+      const electronPath = process.execPath;
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+        stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe']
+      });
+      const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
+      const pipe = new PipeTransport(stdio[3], stdio[4]);
+      pipe.send({ id: 1, method: 'Browser.close', params: {} });
+      await new Promise(resolve => { appProcess!.on('exit', resolve); });
+    });
   });
 
   describe('--remote-debugging-port switch', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
 
       appProcess.stderr.on('data', (data) => {
         output += data;
         const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output);
         if (m) {
-          appProcess.stderr.removeAllListeners('data');
+          appProcess!.stderr.removeAllListeners('data');
           const port = m[1];
           http.get(`http://127.0.0.1:${port}`, (res) => {
-            res.destroy();
-            appProcess.kill();
-            expect(res.statusCode).to.eql(200);
-            expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
-            done();
+            try {
+              expect(res.statusCode).to.eql(200);
+              expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              res.destroy();
+            }
           });
         }
       });
@@ -319,7 +414,8 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       const languages = await w.webContents.executeJavaScript('navigator.languages');
-      expect(languages).to.deep.equal([appLocale]);
+      expect(languages.length).to.be.greaterThan(0);
+      expect(languages).to.contain(appLocale);
     });
   });
 
@@ -360,8 +456,6 @@ describe('chromium features', () => {
 
         if (ext === '.js') type = 'application/javascript';
         callback({ data: content, mimeType: type } as any);
-      }, (error) => {
-        if (error) done(error);
       });
 
       const w = new BrowserWindow({
@@ -381,10 +475,38 @@ describe('chromium features', () => {
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
-            customSession.protocol.uninterceptProtocol('file', error => done(error));
+            customSession.protocol.uninterceptProtocol('file');
+            done();
           });
         }
       });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
+
+    it('should not crash when nodeIntegration is enabled', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          partition: 'sw-file-scheme-worker-spec'
+        }
+      });
+
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
+        }
+      });
+
       w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
@@ -397,7 +519,7 @@ describe('chromium features', () => {
       }
     });
 
-    it('returns error when permission is denied', (done) => {
+    it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -405,13 +527,7 @@ describe('chromium features', () => {
           partition: 'geolocation-spec'
         }
       });
-      w.webContents.on('ipc-message', (event, channel) => {
-        if (channel === 'success') {
-          done();
-        } else {
-          done('unexpected response from geolocation api');
-        }
-      });
+      const message = emittedOnce(w.webContents, 'ipc-message');
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
         if (permission === 'geolocation') {
           callback(false);
@@ -420,6 +536,8 @@ describe('chromium features', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
+      const [, channel] = await message;
+      expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
   });
 
@@ -502,7 +620,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
+      it(`inherits parent visibility over parent {show=${show}} option`, async () => {
         const w = new BrowserWindow({ show });
 
         // toggle visibility
@@ -512,12 +630,12 @@ describe('chromium features', () => {
           w.show();
         }
 
-        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          expect(options.show).to.equal(w.isVisible());
-          w.close();
-          done();
-        });
+        defer(() => { w.close(); });
+
+        const newWindow = emittedOnce(w.webContents, 'new-window');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
+        const [,,,, options] = await newWindow;
+        expect(options.show).to.equal(w.isVisible());
       });
     }
 
@@ -549,11 +667,11 @@ describe('chromium features', () => {
       contents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
       contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 });
       const [, window] = await emittedOnce(app, 'browser-window-created');
-      const preferences = (window.webContents as any).getLastWebPreferences();
+      const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
     });
 
-    it('handles cycles when merging the parent options into the child options', (done) => {
+    it('handles cycles when merging the parent options into the child options', async () => {
       const foo = {} as any;
       foo.bar = foo;
       foo.baz = {
@@ -565,22 +683,20 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false, foo: foo } as any);
 
       w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-      w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-        expect(options.show).to.be.false();
-        expect((options as any).foo).to.deep.equal({
-          bar: undefined,
-          baz: {
-            hello: {
-              world: true
-            }
-          },
-          baz2: {
-            hello: {
-              world: true
-            }
+      const [,,,, options] = await emittedOnce(w.webContents, 'new-window');
+      expect(options.show).to.be.false();
+      expect((options as any).foo).to.deep.equal({
+        bar: undefined,
+        baz: {
+          hello: {
+            world: true
           }
-        });
-        done();
+        },
+        baz2: {
+          hello: {
+            world: true
+          }
+        }
       });
     });
 
@@ -653,6 +769,34 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
       const [, window] = await emittedOnce(app, 'browser-window-created');
       expect(window.getTitle()).to.equal('__proto__');
+    });
+
+    it('denies custom open when nativeWindowOpen: true', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true,
+          nativeWindowOpen: true
+        }
+      });
+      w.loadURL('about:blank');
+
+      const previousListeners = process.listeners('uncaughtException');
+      process.removeAllListeners('uncaughtException');
+      try {
+        const uncaughtException = new Promise<Error>(resolve => {
+          process.once('uncaughtException', resolve);
+        });
+        expect(await w.webContents.executeJavaScript(`(${function () {
+          const { ipc } = process._linkedBinding('electron_renderer_ipc');
+          return ipc.sendSync(true, 'GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
+        }})()`)).to.be.null();
+        const exception = await uncaughtException;
+        expect(exception.message).to.match(/denied: expected native window\.open/);
+      } finally {
+        previousListeners.forEach(l => process.on('uncaughtException', l));
+      }
     });
   });
 
@@ -762,8 +906,8 @@ describe('chromium features', () => {
     ];
     const s = (url: string) => url.startsWith('file') ? 'file://...' : url;
 
-    before(async () => {
-      await promisify(protocol.registerFileProtocol)(scheme, (request, callback) => {
+    before(() => {
+      protocol.registerFileProtocol(scheme, (request, callback) => {
         if (request.url.includes('blank')) {
           callback(`${fixturesPath}/pages/blank.html`);
         } else {
@@ -771,8 +915,8 @@ describe('chromium features', () => {
         }
       });
     });
-    after(async () => {
-      await promisify(protocol.unregisterProtocol)(scheme);
+    after(() => {
+      protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
@@ -851,7 +995,7 @@ describe('chromium features', () => {
     describe('custom non standard schemes', () => {
       const protocolName = 'storage';
       let contents: WebContents;
-      before((done) => {
+      before(() => {
         protocol.registerFileProtocol(protocolName, (request, callback) => {
           const parsedUrl = url.parse(request.url);
           let filename;
@@ -864,11 +1008,11 @@ describe('chromium features', () => {
             default : filename = '';
           }
           callback({ path: `${fixturesPath}/pages/storage/${filename}` });
-        }, (error) => done(error));
+        });
       });
 
-      after((done) => {
-        protocol.unregisterProtocol(protocolName, () => done());
+      after(() => {
+        protocol.unregisterProtocol(protocolName);
       });
 
       beforeEach(() => {
@@ -882,44 +1026,39 @@ describe('chromium features', () => {
         contents = null as any;
       });
 
-      it('cannot access localStorage', (done) => {
-        ipcMain.once('local-storage-response', (event, error) => {
-          expect(error).to.equal('Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access localStorage', async () => {
+        const response = emittedOnce(ipcMain, 'local-storage-response');
         contents.loadURL(protocolName + '://host/localStorage');
+        const [, error] = await response;
+        expect(error).to.equal('Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.');
       });
 
-      it('cannot access sessionStorage', (done) => {
-        ipcMain.once('session-storage-response', (event, error) => {
-          expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access sessionStorage', async () => {
+        const response = emittedOnce(ipcMain, 'session-storage-response');
         contents.loadURL(`${protocolName}://host/sessionStorage`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.');
       });
 
-      it('cannot access WebSQL database', (done) => {
-        ipcMain.once('web-sql-response', (event, error) => {
-          expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.');
-          done();
-        });
+      it('cannot access WebSQL database', async () => {
+        const response = emittedOnce(ipcMain, 'web-sql-response');
         contents.loadURL(`${protocolName}://host/WebSQL`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.');
       });
 
-      it('cannot access indexedDB', (done) => {
-        ipcMain.once('indexed-db-response', (event, error) => {
-          expect(error).to.equal('Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.');
-          done();
-        });
+      it('cannot access indexedDB', async () => {
+        const response = emittedOnce(ipcMain, 'indexed-db-response');
         contents.loadURL(`${protocolName}://host/indexedDB`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.');
       });
 
-      it('cannot access cookie', (done) => {
-        ipcMain.once('cookie-response', (event, error) => {
-          expect(error).to.equal('Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.');
-          done();
-        });
+      it('cannot access cookie', async () => {
+        const response = emittedOnce(ipcMain, 'cookie-response');
         contents.loadURL(`${protocolName}://host/cookie`);
+        const [, error] = await response;
+        expect(error).to.equal('Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.');
       });
     });
 
@@ -957,7 +1096,7 @@ describe('chromium features', () => {
       afterEach(closeAllWindows);
 
       const testLocalStorageAfterXSiteRedirect = (testTitle: string, extraPreferences = {}) => {
-        it(testTitle, (done) => {
+        it(testTitle, async () => {
           const w = new BrowserWindow({
             show: false,
             ...extraPreferences
@@ -970,16 +1109,173 @@ describe('chromium features', () => {
             expect(url).to.equal(`${serverCrossSiteUrl}/redirected`);
             redirected = true;
           });
-          w.webContents.on('did-finish-load', () => {
-            expect(redirected).to.be.true('didnt redirect');
-            done();
-          });
-          w.loadURL(`${serverUrl}/redirect-cross-site`);
+          await w.loadURL(`${serverUrl}/redirect-cross-site`);
+          expect(redirected).to.be.true('didnt redirect');
         });
       };
 
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect');
       testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true });
+    });
+
+    describe('enableWebSQL webpreference', () => {
+      const standardScheme = (global as any).standardScheme;
+      const origin = `${standardScheme}://fake-host`;
+      const filePath = path.join(fixturesPath, 'pages', 'storage', 'web_sql.html');
+      const sqlPartition = 'web-sql-preference-test';
+      const sqlSession = session.fromPartition(sqlPartition);
+      const securityError = 'An attempt was made to break through the security policy of the user agent.';
+      let contents: WebContents, w: BrowserWindow;
+
+      before(() => {
+        sqlSession.protocol.registerFileProtocol(standardScheme, (request, callback) => {
+          callback({ path: filePath });
+        });
+      });
+
+      after(() => {
+        sqlSession.protocol.unregisterProtocol(standardScheme);
+      });
+
+      afterEach(async () => {
+        if (contents) {
+          (contents as any).destroy();
+          contents = null as any;
+        }
+        await closeAllWindows();
+        (w as any) = null;
+      });
+
+      it('default value allows websql', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+      });
+
+      it('when set to false can disallow websql', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true,
+          enableWebSQL: false
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.equal(securityError);
+      });
+
+      it('when set to false does not disable indexedDB', async () => {
+        contents = (webContents as any).create({
+          session: sqlSession,
+          nodeIntegration: true,
+          enableWebSQL: false
+        });
+        contents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.equal(securityError);
+        const dbName = 'random';
+        const result = await contents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            try {
+              let req = window.indexedDB.open('${dbName}');
+              req.onsuccess = (event) => {
+                let db = req.result;
+                resolve(db.name);
+              }
+              req.onerror = (event) => { resolve(event.target.code); }
+            } catch (e) {
+              resolve(e.message);
+            }
+          });
+        `);
+        expect(result).to.equal(dbName);
+      });
+
+      it('child webContents can override when the embedder has allowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=0');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.equal(securityError);
+      });
+
+      it('child webContents cannot override when the embedder has disallowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            enableWebSQL: false,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL('data:text/html,<html></html>');
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.equal(securityError);
+      });
+
+      it('child webContents can use websql when the embedder has allowed websql', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            webviewTag: true,
+            session: sqlSession
+          }
+        });
+        w.webContents.loadURL(origin);
+        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        expect(error).to.be.null();
+        const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        await w.webContents.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
+          });
+        `);
+        const [, childError] = await webviewResult;
+        expect(childError).to.be.null();
+      });
     });
   });
 
@@ -995,7 +1291,6 @@ describe('chromium features', () => {
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1003,7 +1298,6 @@ describe('chromium features', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await emittedOnce(contents, 'did-finish-load');
     });
   });
 
@@ -1021,6 +1315,28 @@ describe('chromium features', () => {
         // Initial page + pushed state.
         expect((w.webContents as any).length()).to.equal(2);
       });
+    });
+  });
+
+  describe('chrome://media-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('chrome://media-internals');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
+    });
+  });
+
+  describe('chrome://webrtc-internals', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('chrome://webrtc-internals');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
     });
   });
 });
@@ -1098,47 +1414,92 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', done => {
-    ipcMain.once('fullscreenChange', async () => {
-      const fullscreenWidth = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(fullscreenWidth > 0).to.be.true();
-
-      await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
-      );
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const width = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(width).to.equal(0);
-
-      done();
-    });
-
+  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
     w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+
+    await delay(500);
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
   });
 
-  it('can fullscreen from in-process iframes', done => {
-    ipcMain.once('fullscreenChange', async () => {
-      const fullscreenWidth = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(fullscreenWidth > 0).to.true();
-
-      await w.webContents.executeJavaScript('document.exitFullscreen()');
-      const width = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      expect(width).to.equal(0);
-      done();
-    });
-
+  it('can fullscreen from in-process iframes', async () => {
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.true();
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
+  });
+});
+
+describe('navigator.serial', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const getPorts: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.serial.requestPort().then(port => port.toString()).catch(err => err.toString());
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.removeAllListeners('select-serial-port');
+  });
+
+  it('does not return a port if select-serial-port event is not defined', async () => {
+    w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('does not return a port when permission denied', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    session.defaultSession.setPermissionCheckHandler(() => false);
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('returns a port when select-serial-port event is defined', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    const port = await getPorts();
+    expect(port).to.equal('[object SerialPort]');
   });
 });

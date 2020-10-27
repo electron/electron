@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
+#include "base/no_destructor.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -24,6 +25,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -44,6 +46,27 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
     return dict.GetHandle();
   }
 };
+
+template <>
+struct Converter<network::mojom::CredentialsMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::CredentialsMode* out) {
+    std::string mode;
+    if (!ConvertFromV8(isolate, val, &mode))
+      return false;
+    if (mode == "omit")
+      *out = network::mojom::CredentialsMode::kOmit;
+    else if (mode == "include")
+      *out = network::mojom::CredentialsMode::kInclude;
+    else
+      // "same-origin" is technically a member of this enum as well, but it
+      // doesn't make sense in the context of `net.request()`, so don't convert
+      // it.
+      return false;
+    return true;
+  }
+};  // namespace gin
 
 }  // namespace gin
 
@@ -135,8 +158,6 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
 
     v8::HandleScope handle_scope(isolate_);
-    v8::MicrotasksScope script_scope(isolate_,
-                                     v8::MicrotasksScope::kRunMicrotasks);
     auto maybe_wrapper = GetWrapper(isolate_);
     v8::Local<v8::Value> wrapper;
     if (!maybe_wrapper.ToLocal(&wrapper)) {
@@ -203,10 +224,10 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   }
 
   void Finished() {
-    size_callback_.Reset();
     body_func_.Reset();
-    receiver_.reset();
     data_producer_.reset();
+    receiver_.reset();
+    size_callback_.Reset();
   }
 
   GetSizeCallback size_callback_;
@@ -252,7 +273,8 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderFactory* url_loader_factory)
+    network::mojom::URLLoaderFactory* url_loader_factory,
+    int options)
     : id_(GetAllRequests().Add(this)) {
   // We slightly abuse the |render_frame_id| field in ResourceRequest so that
   // we can correlate any authentication events that arrive with this request.
@@ -269,6 +291,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   }
 
   loader_->SetAllowHttpErrorResults(true);
+  loader_->SetURLLoaderFactoryOptions(options);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
@@ -284,7 +307,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
 void SimpleURLLoaderWrapper::Pin() {
   // Prevent ourselves from being GC'd until the request is complete.  Must be
   // called after gin::CreateHandle, otherwise the wrapper isn't initialized.
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
 }
 
@@ -349,9 +372,12 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
-  request->attach_same_site_cookies = true;
+  request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  opts.Get("referrer", &request->referrer);
+  bool credentials_specified =
+      opts.Get("credentials", &request->credentials_mode);
   std::map<std::string, std::string> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
@@ -366,8 +392,13 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
-  if (!use_session_cookies) {
-    request->load_flags |= net::LOAD_DO_NOT_SEND_COOKIES;
+  int options = 0;
+  if (!credentials_specified && !use_session_cookies) {
+    // This is the default case, as well as the case when credentials is not
+    // specified and useSessionCoookies is false. credentials_mode will be
+    // kInclude, but cookies will be blocked.
+    request->credentials_mode = network::mojom::CredentialsMode::kInclude;
+    options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
   // Chromium filters headers using browser rules, while for net module we have
@@ -410,7 +441,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   auto ret = gin::CreateHandle(
       args->isolate(),
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get()));
+      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get(),
+                                 options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -421,13 +453,13 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
                                             base::OnceClosure resume) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
-  Emit("data", array_buffer);
-  std::move(resume).Run();
+  Emit("data", array_buffer,
+       base::AdaptCallbackForRepeating(std::move(resume)));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
@@ -446,7 +478,7 @@ void SimpleURLLoaderWrapper::OnRetry(base::OnceClosure start_retry) {}
 void SimpleURLLoaderWrapper::OnResponseStarted(
     const GURL& final_url,
     const network::mojom::URLResponseHead& response_head) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("statusCode", response_head.headers->response_code());

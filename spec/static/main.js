@@ -2,7 +2,7 @@
 process.throwDeprecation = false;
 
 const electron = require('electron');
-const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents, session } = electron;
+const { app, BrowserWindow, dialog, ipcMain, session } = electron;
 
 try {
   require('fs').rmdirSync(app.getPath('userData'), { recursive: true });

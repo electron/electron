@@ -8,11 +8,12 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from '
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, delay, defer } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
-const features = process.electronBinding('features');
+const mainFixturesPath = path.resolve(__dirname, 'fixtures');
+const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
   describe('getAllWebContents() API', () => {
@@ -41,30 +42,33 @@ describe('webContents module', () => {
     });
   });
 
-  describe('will-prevent-unload event', () => {
+  describe('will-prevent-unload event', function () {
     afterEach(closeAllWindows);
-    it('does not emit if beforeunload returns undefined', (done) => {
+    it('does not emit if beforeunload returns undefined', async () => {
       const w = new BrowserWindow({ show: false });
-      w.once('closed', () => done());
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
       });
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-undefined.html'));
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
 
     it('emits if beforeunload returns false', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
     it('supports calling preventDefault on will-prevent-unload events', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'close-beforeunload-false.html'));
-      w.webContents.executeJavaScript('run()', true);
-      await emittedOnce(w, 'closed');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
     });
   });
 
@@ -136,6 +140,17 @@ describe('webContents module', () => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print({ pageSize: 'i-am-a-bad-pagesize' }, () => {});
       }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize');
+    });
+
+    it('throws when an invalid custom pageSize is passed', () => {
+      expect(() => {
+        w.webContents.print({
+          pageSize: {
+            width: 100,
+            height: 200
+          }
+        });
+      }).to.throw('height and width properties must be minimum 352 microns.');
     });
 
     it('does not crash with custom margins', () => {
@@ -220,29 +235,23 @@ describe('webContents module', () => {
         server.close();
       });
 
-      it('works after page load and during subframe load', (done) => {
-        w.webContents.once('did-finish-load', () => {
-          // initiate a sub-frame load, then try and execute script during it
-          w.webContents.executeJavaScript(`
-            var iframe = document.createElement('iframe')
-            iframe.src = '${serverUrl}/slow'
-            document.body.appendChild(iframe)
-            null // don't return the iframe
-          `).then(() => {
-            w.webContents.executeJavaScript('console.log(\'hello\')').then(() => {
-              done();
-            });
-          });
-        });
-        w.loadURL(serverUrl);
+      it('works after page load and during subframe load', async () => {
+        await w.loadURL(serverUrl);
+        // initiate a sub-frame load, then try and execute script during it
+        await w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe')
+          iframe.src = '${serverUrl}/slow'
+          document.body.appendChild(iframe)
+          null // don't return the iframe
+        `);
+        await w.webContents.executeJavaScript('console.log(\'hello\')');
       });
 
-      it('executes after page load', (done) => {
-        w.webContents.executeJavaScript('(() => "test")()').then(result => {
-          expect(result).to.equal('test');
-          done();
-        });
+      it('executes after page load', async () => {
+        const executeJavaScript = w.webContents.executeJavaScript('(() => "test")()');
         w.loadURL(serverUrl);
+        const result = await executeJavaScript;
+        expect(result).to.equal('test');
       });
     });
   });
@@ -350,7 +359,7 @@ describe('webContents module', () => {
       let resp = null as unknown as http.ServerResponse;
       const s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<iframe src="data:text/html,hi"></iframe>');
+        res.write('<iframe src="about:blank"></iframe>');
         resp = res;
         // don't end the response yet
       });
@@ -403,7 +412,7 @@ describe('webContents module', () => {
       expect(() => { webContents.getFocusedWebContents(); }).to.not.throw();
 
       // Work around https://github.com/electron/electron/issues/19985
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
 
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
@@ -464,13 +473,11 @@ describe('webContents module', () => {
 
   describe('getWebPreferences() API', () => {
     afterEach(closeAllWindows);
-    it('should not crash when called for devTools webContents', (done) => {
+    it('should not crash when called for devTools webContents', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.openDevTools();
-      w.webContents.once('devtools-opened', () => {
-        expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
-        done();
-      });
+      await emittedOnce(w.webContents, 'devtools-opened');
+      expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
     });
   });
 
@@ -487,7 +494,7 @@ describe('webContents module', () => {
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
       expect(w.isFocused()).to.be.false();
     });
 
@@ -594,28 +601,50 @@ describe('webContents module', () => {
   // On Mac, zooming isn't done with the mouse wheel.
   ifdescribe(process.platform !== 'darwin')('zoom-changed', () => {
     afterEach(closeAllWindows);
-    it('is emitted with the correct zooming info', async () => {
+    it('is emitted with the correct zoom-in info', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
-      const testZoomChanged = async ({ zoomingIn }: { zoomingIn: boolean }) => {
+      const testZoomChanged = async () => {
         w.webContents.sendInputEvent({
           type: 'mouseWheel',
           x: 300,
           y: 300,
           deltaX: 0,
-          deltaY: zoomingIn ? 1 : -1,
+          deltaY: 1,
           wheelTicksX: 0,
-          wheelTicksY: zoomingIn ? 1 : -1,
+          wheelTicksY: 1,
           modifiers: ['control', 'meta']
         });
 
         const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed');
-        expect(zoomDirection).to.equal(zoomingIn ? 'in' : 'out');
+        expect(zoomDirection).to.equal('in');
       };
 
-      await testZoomChanged({ zoomingIn: true });
-      await testZoomChanged({ zoomingIn: false });
+      await testZoomChanged();
+    });
+
+    it('is emitted with the correct zoom-out info', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      const testZoomChanged = async () => {
+        w.webContents.sendInputEvent({
+          type: 'mouseWheel',
+          x: 300,
+          y: 300,
+          deltaX: 0,
+          deltaY: -1,
+          wheelTicksX: 0,
+          wheelTicksY: -1,
+          modifiers: ['control', 'meta']
+        });
+
+        const [, zoomDirection] = await emittedOnce(w.webContents, 'zoom-changed');
+        expect(zoomDirection).to.equal('out');
+      };
+
+      await testZoomChanged();
     });
   });
 
@@ -627,71 +656,66 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
 
-    it('can send keydown events', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('a');
-        expect(code).to.equal('KeyA');
-        expect(keyCode).to.equal(65);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send keydown events', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('a');
+      expect(code).to.equal('KeyA');
+      expect(keyCode).to.equal(65);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.false();
     });
 
-    it('can send keydown events with modifiers', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Z');
-        expect(code).to.equal('KeyZ');
-        expect(keyCode).to.equal(90);
-        expect(shiftKey).to.be.true();
-        expect(ctrlKey).to.be.true();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send keydown events with modifiers', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('Z');
+      expect(code).to.equal('KeyZ');
+      expect(keyCode).to.equal(90);
+      expect(shiftKey).to.be.true();
+      expect(ctrlKey).to.be.true();
+      expect(altKey).to.be.false();
     });
 
-    it('can send keydown events with special keys', (done) => {
-      ipcMain.once('keydown', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Tab');
-        expect(code).to.equal('Tab');
-        expect(keyCode).to.equal(9);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.true();
-        done();
-      });
+    it('can send keydown events with special keys', async () => {
+      const keydown = emittedOnce(ipcMain, 'keydown');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab', modifiers: ['alt'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keydown;
+      expect(key).to.equal('Tab');
+      expect(code).to.equal('Tab');
+      expect(keyCode).to.equal(9);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.true();
     });
 
-    it('can send char events', (done) => {
-      ipcMain.once('keypress', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('a');
-        expect(code).to.equal('KeyA');
-        expect(keyCode).to.equal(65);
-        expect(shiftKey).to.be.false();
-        expect(ctrlKey).to.be.false();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send char events', async () => {
+      const keypress = emittedOnce(ipcMain, 'keypress');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
       w.webContents.sendInputEvent({ type: 'char', keyCode: 'A' });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keypress;
+      expect(key).to.equal('a');
+      expect(code).to.equal('KeyA');
+      expect(keyCode).to.equal(65);
+      expect(shiftKey).to.be.false();
+      expect(ctrlKey).to.be.false();
+      expect(altKey).to.be.false();
     });
 
-    it('can send char events with modifiers', (done) => {
-      ipcMain.once('keypress', (event, key, code, keyCode, shiftKey, ctrlKey, altKey) => {
-        expect(key).to.equal('Z');
-        expect(code).to.equal('KeyZ');
-        expect(keyCode).to.equal(90);
-        expect(shiftKey).to.be.true();
-        expect(ctrlKey).to.be.true();
-        expect(altKey).to.be.false();
-        done();
-      });
+    it('can send char events with modifiers', async () => {
+      const keypress = emittedOnce(ipcMain, 'keypress');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z' });
       w.webContents.sendInputEvent({ type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl'] });
+      const [, key, code, keyCode, shiftKey, ctrlKey, altKey] = await keypress;
+      expect(key).to.equal('Z');
+      expect(code).to.equal('KeyZ');
+      expect(keyCode).to.equal(90);
+      expect(shiftKey).to.be.true();
+      expect(ctrlKey).to.be.true();
+      expect(altKey).to.be.false();
     });
   });
 
@@ -737,7 +761,7 @@ describe('webContents module', () => {
       }).to.throw('Must specify non-empty \'icon\' option');
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename, icon: __filename });
+        w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
       }).to.throw('Must specify non-empty \'icon\' option');
     });
   });
@@ -827,24 +851,23 @@ describe('webContents module', () => {
       host3: 0.2
     };
 
-    before((done) => {
+    before(() => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         const response = `<script>
-                            const {ipcRenderer, remote} = require('electron')
+                            const {ipcRenderer} = require('electron')
                             ipcRenderer.send('set-zoom', window.location.hostname)
                             ipcRenderer.on(window.location.hostname + '-zoom-set', () => {
-                              const { zoomLevel } = remote.getCurrentWebContents()
-                              ipcRenderer.send(window.location.hostname + '-zoom-level', zoomLevel)
+                              ipcRenderer.send(window.location.hostname + '-zoom-level')
                             })
                           </script>`;
         callback({ data: response, mimeType: 'text/html' });
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = session.defaultSession.protocol;
-      protocol.unregisterProtocol(scheme, (error) => done(error));
+      protocol.unregisterProtocol(scheme);
     });
 
     afterEach(closeAllWindows);
@@ -921,52 +944,62 @@ describe('webContents module', () => {
     });
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       let finalNavigation = false;
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host];
         if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
         e.sender.send(`${host}-zoom-set`);
       });
-      ipcMain.on('host1-zoom-level', (e, zoomLevel) => {
-        const expectedZoomLevel = hostZoomMap.host1;
-        expect(zoomLevel).to.equal(expectedZoomLevel);
-        if (finalNavigation) {
-          done();
-        } else {
-          w.loadURL(`${scheme}://host2`);
+      ipcMain.on('host1-zoom-level', (e) => {
+        try {
+          const zoomLevel = e.sender.getZoomLevel();
+          const expectedZoomLevel = hostZoomMap.host1;
+          expect(zoomLevel).to.equal(expectedZoomLevel);
+          if (finalNavigation) {
+            done();
+          } else {
+            w.loadURL(`${scheme}://host2`);
+          }
+        } catch (e) {
+          done(e);
         }
       });
-      ipcMain.once('host2-zoom-level', (e, zoomLevel) => {
-        const expectedZoomLevel = hostZoomMap.host2;
-        expect(zoomLevel).to.equal(expectedZoomLevel);
-        finalNavigation = true;
-        w.webContents.goBack();
+      ipcMain.once('host2-zoom-level', (e) => {
+        try {
+          const zoomLevel = e.sender.getZoomLevel();
+          const expectedZoomLevel = hostZoomMap.host2;
+          expect(zoomLevel).to.equal(expectedZoomLevel);
+          finalNavigation = true;
+          w.webContents.goBack();
+        } catch (e) {
+          done(e);
+        }
       });
       w.loadURL(`${scheme}://host1`);
     });
 
-    it('can propagate zoom level across same session', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, enableRemoteModule: true } });
+    it('can propagate zoom level across same session', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({ show: false });
-      w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(hostZoomMap.host3);
 
-        const zoomLevel2 = w2.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(zoomLevel2);
+      defer(() => {
         w2.setClosable(true);
         w2.close();
-        done();
       });
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.zoomLevel = hostZoomMap.host3;
-        w2.loadURL(`${scheme}://host3`);
-      });
-      w.loadURL(`${scheme}://host3`);
+
+      await w.loadURL(`${scheme}://host3`);
+      w.webContents.zoomLevel = hostZoomMap.host3;
+
+      await w2.loadURL(`${scheme}://host3`);
+      const zoomLevel1 = w.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+      const zoomLevel2 = w2.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(zoomLevel2);
     });
 
-    it('cannot propagate zoom level across different session', (done) => {
+    it('cannot propagate zoom level across different session', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       const w2 = new BrowserWindow({
         show: false,
@@ -977,29 +1010,25 @@ describe('webContents module', () => {
       const protocol = w2.webContents.session.protocol;
       protocol.registerStringProtocol(scheme, (request, callback) => {
         callback('hello');
-      }, (error) => {
-        if (error) return done(error);
-        w2.webContents.on('did-finish-load', () => {
-          const zoomLevel1 = w.webContents.zoomLevel;
-          expect(zoomLevel1).to.equal(hostZoomMap.host3);
-
-          const zoomLevel2 = w2.webContents.zoomLevel;
-          expect(zoomLevel2).to.equal(0);
-          expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-          protocol.unregisterProtocol(scheme, (error) => {
-            if (error) return done(error);
-            w2.setClosable(true);
-            w2.close();
-            done();
-          });
-        });
-        w.webContents.on('did-finish-load', () => {
-          w.webContents.zoomLevel = hostZoomMap.host3;
-          w2.loadURL(`${scheme}://host3`);
-        });
-        w.loadURL(`${scheme}://host3`);
       });
+
+      defer(() => {
+        w2.setClosable(true);
+        w2.close();
+
+        protocol.unregisterProtocol(scheme);
+      });
+
+      await w.loadURL(`${scheme}://host3`);
+      w.webContents.zoomLevel = hostZoomMap.host3;
+
+      await w2.loadURL(`${scheme}://host3`);
+      const zoomLevel1 = w.webContents.zoomLevel;
+      expect(zoomLevel1).to.equal(hostZoomMap.host3);
+
+      const zoomLevel2 = w2.webContents.zoomLevel;
+      expect(zoomLevel2).to.equal(0);
+      expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
     it('can persist when it contains iframe', (done) => {
@@ -1014,12 +1043,17 @@ describe('webContents module', () => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
           if (!isMainFrame) {
-            const zoomLevel = w.webContents.zoomLevel;
-            expect(zoomLevel).to.equal(2.0);
+            try {
+              const zoomLevel = w.webContents.zoomLevel;
+              expect(zoomLevel).to.equal(2.0);
 
-            w.webContents.zoomLevel = 0;
-            server.close();
-            done();
+              w.webContents.zoomLevel = 0;
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              server.close();
+            }
           }
         });
         w.webContents.on('dom-ready', () => {
@@ -1029,29 +1063,25 @@ describe('webContents module', () => {
       });
     });
 
-    it('cannot propagate when used with webframe', (done) => {
+    it('cannot propagate when used with webframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      let finalZoomLevel = 0;
-      const w2 = new BrowserWindow({
-        show: false
-      });
-      w2.webContents.on('did-finish-load', () => {
-        const zoomLevel1 = w.webContents.zoomLevel;
-        expect(zoomLevel1).to.equal(finalZoomLevel);
+      const w2 = new BrowserWindow({ show: false });
 
-        const zoomLevel2 = w2.webContents.zoomLevel;
-        expect(zoomLevel2).to.equal(0);
-        expect(zoomLevel1).to.not.equal(zoomLevel2);
-
-        w2.setClosable(true);
-        w2.close();
-        done();
-      });
-      ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
-        w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
-        finalZoomLevel = zoomLevel;
-      });
+      const temporaryZoomSet = emittedOnce(ipcMain, 'temporary-zoom-set');
       w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'));
+      await temporaryZoomSet;
+
+      const finalZoomLevel = w.webContents.getZoomLevel();
+      await w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
+      const zoomLevel1 = w.webContents.zoomLevel;
+      const zoomLevel2 = w2.webContents.zoomLevel;
+
+      w2.setClosable(true);
+      w2.close();
+
+      expect(zoomLevel1).to.equal(finalZoomLevel);
+      expect(zoomLevel2).to.equal(0);
+      expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
     describe('with unique domains', () => {
@@ -1126,6 +1156,10 @@ describe('webContents module', () => {
             res.end();
           } else if (req.url === '/redirected') {
             res.end('<html><script>window.localStorage</script></html>');
+          } else if (req.url === '/first-window-open') {
+            res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
+          } else if (req.url === '/second-window-open') {
+            res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
           } else {
             res.end();
           }
@@ -1145,13 +1179,9 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows);
 
-    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
-      w.webContents.once('destroyed', () => {
-        expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
-        done();
-      });
       const renderViewDeletedHandler = () => {
         currentRenderViewDeletedEmitted = true;
       };
@@ -1160,40 +1190,62 @@ describe('webContents module', () => {
         w.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
 
-    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+      const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      let currentRenderViewDeletedEmitted = false;
+      let childWindow:BrowserWindow;
+      const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true;
+      };
+      app.once('browser-window-created', (event, window) => {
+        childWindow = window;
+        window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+      });
+      parentWindow.loadURL(`${serverUrl}/first-window-open`);
+      setTimeout(() => {
+        childWindow.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
+        parentWindow.close();
+      }, 500);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
+    });
+
+    it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
-      w.webContents.once('destroyed', () => {
-        expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted');
-        done();
-      });
       w.webContents.on('current-render-view-deleted' as any, () => {
         currentRenderViewDeletedEmitted = true;
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.true('current-render-view-deleted wasn\'t emitted');
     });
 
-    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+    it('emits render-view-deleted if any RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let rvhDeletedCount = 0;
-      w.webContents.once('destroyed', () => {
-        const expectedRenderViewDeletedEventCount = 1;
-        expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times');
-        done();
-      });
       w.webContents.on('render-view-deleted' as any, () => {
         rvhDeletedCount++;
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
       });
+      const destroyed = emittedOnce(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
+      await destroyed;
+      const expectedRenderViewDeletedEventCount = 1;
+      expect(rvhDeletedCount).to.equal(expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times');
     });
   });
 
@@ -1217,6 +1269,54 @@ describe('webContents module', () => {
       expect(code).to.equal(0);
     });
   });
+
+  const crashPrefs = [
+    {
+      nodeIntegration: true
+    },
+    {
+      sandbox: true
+    }
+  ];
+
+  const nicePrefs = (o: any) => {
+    let s = '';
+    for (const key of Object.keys(o)) {
+      s += `${key}=${o[key]}, `;
+    }
+    return `(${s.slice(0, s.length - 2)})`;
+  };
+
+  for (const prefs of crashPrefs) {
+    describe(`crash  with webPreferences ${nicePrefs(prefs)}`, () => {
+      let w: BrowserWindow;
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        await w.loadURL('about:blank');
+      });
+      afterEach(closeAllWindows);
+
+      it('isCrashed() is false by default', () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+
+      it('forcefullyCrashRenderer() crashes the process with reason=killed||crashed', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+        w.webContents.forcefullyCrashRenderer();
+        const [, details] = await crashEvent;
+        expect(details.reason === 'killed' || details.reason === 'crashed').to.equal(true, 'reason should be killed || crashed');
+        expect(w.webContents.isCrashed()).to.equal(true);
+      });
+
+      it('a crashed process is recoverable with reload()', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        w.webContents.forcefullyCrashRenderer();
+        w.webContents.reload();
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+    });
+  }
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
@@ -1275,19 +1375,24 @@ describe('webContents module', () => {
     }
   });
 
-  describe('did-change-theme-color event', () => {
+  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
+  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct theme color', (done) => {
       const w = new BrowserWindow({ show: true });
       let count = 0;
       w.webContents.on('did-change-theme-color', (e, color) => {
-        if (count === 0) {
-          count += 1;
-          expect(color).to.equal('#FFEEDD');
-          w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-        } else if (count === 1) {
-          expect(color).to.be.null();
-          done();
+        try {
+          if (count === 0) {
+            count += 1;
+            expect(color).to.equal('#FFEEDD');
+            w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+          } else if (count === 1) {
+            expect(color).to.be.null();
+            done();
+          }
+        } catch (e) {
+          done(e);
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
@@ -1351,9 +1456,14 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
-          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-          server.close();
-          return done();
+          try {
+            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+            return done();
+          } catch (e) {
+            return done(e);
+          } finally {
+            server.close();
+          }
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
       });
@@ -1376,8 +1486,12 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
-          expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-          return done();
+          try {
+            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+            return done();
+          } catch (e) {
+            return done(e);
+          }
         }
         res.end('');
       });
@@ -1539,6 +1653,39 @@ describe('webContents module', () => {
     });
   });
 
+  describe('getBackgroundThrottling()', () => {
+    afterEach(closeAllWindows);
+    it('works via getter', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.setBackgroundThrottling(false);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(false);
+
+      w.webContents.setBackgroundThrottling(true);
+      expect(w.webContents.getBackgroundThrottling()).to.equal(true);
+    });
+
+    it('works via property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.backgroundThrottling = false;
+      expect(w.webContents.backgroundThrottling).to.equal(false);
+
+      w.webContents.backgroundThrottling = true;
+      expect(w.webContents.backgroundThrottling).to.equal(true);
+    });
+
+    it('works via BrowserWindow', () => {
+      const w = new BrowserWindow({ show: false });
+
+      (w as any).setBackgroundThrottling(false);
+      expect((w as any).getBackgroundThrottling()).to.equal(false);
+
+      (w as any).setBackgroundThrottling(true);
+      expect((w as any).getBackgroundThrottling()).to.equal(true);
+    });
+  });
+
   ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
     afterEach(closeAllWindows);
     it('can get printer list', async () => {
@@ -1584,8 +1731,7 @@ describe('webContents module', () => {
     });
 
     it('respects custom settings', async () => {
-      w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-      await emittedOnce(w.webContents, 'did-finish-load');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
 
       const data = await w.webContents.printToPDF({
         pageRanges: {
@@ -1606,12 +1752,25 @@ describe('webContents module', () => {
       expect(width).to.be.greaterThan(height);
     });
 
-    it('does not crash when called multiple times', async () => {
+    it('does not crash when called multiple times in parallel', async () => {
       const promises = [];
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 3; i++) {
         promises.push(w.webContents.printToPDF({}));
       }
+
       const results = await Promise.all(promises);
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      }
+    });
+
+    it('does not crash when called multiple times in sequence', async () => {
+      const results = [];
+      for (let i = 0; i < 3; i++) {
+        const result = await w.webContents.printToPDF({});
+        results.push(result);
+      }
+
       for (const data of results) {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
@@ -1620,15 +1779,12 @@ describe('webContents module', () => {
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', (done) => {
+    it('works as expected', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      w.webContents.once('did-finish-load', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `runTest(${features.isPictureInPictureEnabled()})`, true);
-        expect(result).to.be.true();
-        done();
-      });
-      w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+      await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+      const result = await w.webContents.executeJavaScript(
+        `runTest(${features.isPictureInPictureEnabled()})`, true);
+      expect(result).to.be.true();
     });
   });
 
@@ -1848,7 +2004,7 @@ describe('webContents module', () => {
       wasCalled = true;
     });
     await w.loadURL('about:blank');
-    await w.webContents.executeJavaScript(`window.open('about:blank')`);
+    await w.webContents.executeJavaScript('window.open(\'about:blank\')');
     await new Promise((resolve) => { process.nextTick(resolve); });
     expect(wasCalled).to.equal(false);
     await closeAllWindows();

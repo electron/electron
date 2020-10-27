@@ -37,9 +37,9 @@ bool SpecialStoragePolicy::HasSessionOnlyOrigins() {
   return false;
 }
 
-network::SessionCleanupCookieStore::DeleteCookiePredicate
+network::DeleteCookiePredicate
 SpecialStoragePolicy::CreateDeleteCookieOnExitPredicate() {
-  return network::SessionCleanupCookieStore::DeleteCookiePredicate();
+  return network::DeleteCookiePredicate();
 }
 
 }  // namespace electron

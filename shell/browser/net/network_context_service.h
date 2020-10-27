@@ -24,8 +24,10 @@ class NetworkContextService : public KeyedService {
   NetworkContextService(const NetworkContextService&) = delete;
   NetworkContextService& operator=(const NetworkContextService&) = delete;
 
-  // Creates a NetworkContext for the BrowserContext.
-  mojo::Remote<network::mojom::NetworkContext> CreateNetworkContext();
+  void ConfigureNetworkContextParams(
+      network::mojom::NetworkContextParams* network_context_params,
+      network::mojom::CertVerifierCreationParams*
+          cert_verifier_creation_params);
 
  private:
   // Creates parameters for the NetworkContext.

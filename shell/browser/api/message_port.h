@@ -12,6 +12,7 @@
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
+#include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace gin {
 class Arguments;
@@ -31,7 +32,7 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
   void Start();
   void Close();
 
-  void Entangle(mojo::ScopedMessagePipeHandle handle);
+  void Entangle(blink::MessagePortDescriptor handle);
   void Entangle(blink::MessagePortChannel channel);
 
   blink::MessagePortChannel Disentangle();
@@ -77,6 +78,10 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
   bool closed_ = false;
 
   v8::Global<v8::Value> pinned_;
+
+  // The internal port owned by this class. The handle itself is moved into the
+  // |connector_| while entangled.
+  blink::MessagePortDescriptor port_;
 
   base::WeakPtrFactory<MessagePort> weak_factory_{this};
 };

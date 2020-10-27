@@ -23,9 +23,14 @@ template("webpack_build") {
              ] + invoker.inputs
 
     args = [
+      "--config",
       rebase_path(invoker.config_file),
-      rebase_path(invoker.out_file),
+      "--output-filename=" + get_path_info(invoker.out_file, "file"),
+      "--output-path=" + rebase_path(get_path_info(invoker.out_file, "dir")),
+      "--env.buildflags=" +
+          rebase_path("$target_gen_dir/buildflags/buildflags.h"),
     ]
+    deps += [ "buildflags" ]
 
     outputs = [ invoker.out_file ]
   }

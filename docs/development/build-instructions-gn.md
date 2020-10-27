@@ -10,6 +10,10 @@ Check the build prerequisites for your platform before proceeding
   * [Linux](build-instructions-linux.md#prerequisites)
   * [Windows](build-instructions-windows.md#prerequisites)
 
+## Build Tools
+
+[Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
+
 ## GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset
@@ -24,13 +28,12 @@ try to download a Google-internal version that only Googlers have access to).
 
 [depot-tools]: http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
 
-## Cached builds (optional step)
+### Setting up the git cache
 
-### GIT\_CACHE\_PATH
-
-If you plan on building Electron more than once, adding a git cache will
-speed up subsequent calls to `gclient`. To do this, set a `GIT_CACHE_PATH`
-environment variable:
+If you plan on checking out Electron more than once (for example, to have
+multiple parallel directories checked out to different branches), using the git
+cache will speed up subsequent calls to `gclient`. To do this, set a
+`GIT_CACHE_PATH` environment variable:
 
 ```sh
 $ export GIT_CACHE_PATH="${HOME}/.git_cache"
@@ -38,22 +41,10 @@ $ mkdir -p "${GIT_CACHE_PATH}"
 # This will use about 16G.
 ```
 
-### sccache
-
-Thousands of files must be compiled to build Chromium and Electron.
-You can avoid much of the wait by reusing Electron CI's build output via
-[sccache](https://github.com/mozilla/sccache). This requires some
-optional steps (listed below) and these two environment variables:
-
-```sh
-export SCCACHE_BUCKET="electronjs-sccache-ci"
-export SCCACHE_TWO_TIER=true
-```
-
 ## Getting the code
 
 ```sh
-$ mkdir electron-gn && cd electron-gn
+$ mkdir electron && cd electron
 $ gclient config --name "src/electron" --unmanaged https://github.com/electron/electron
 $ gclient sync --with_branch_heads --with_tags
 # This will take a while, go get a coffee.
@@ -263,9 +254,24 @@ New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\Lanmanworkstatio
 
 ## Troubleshooting
 
-### Stale locks in the git cache
-If `gclient sync` is interrupted while using the git cache, it will leave
-the cache locked. To remove the lock, pass the `--ignore_locks` argument to `gclient sync`.
+### gclient sync complains about rebase
+
+If `gclient sync` is interrupted the git tree may be left in a bad state, leading to a cryptic message when running `gclient sync` in the future:
+
+```plaintext
+2> Conflict while rebasing this branch.
+2> Fix the conflict and run gclient again.
+2> See man git-rebase for details.
+```
+
+If there are no git conflicts or rebases in `src/electron`, you may need to abort a `git am` in `src`:
+
+```sh
+$ cd ../
+$ git am --abort
+$ cd electron
+$ gclient sync -f
+```
 
 ### I'm being asked for a username/password for chromium-internal.googlesource.com
 If you see a prompt for `Username for 'https://chrome-internal.googlesource.com':` when running `gclient sync` on Windows, it's probably because the `DEPOT_TOOLS_WIN_TOOLCHAIN` environment variable is not set to 0. Open `Control Panel` → `System and Security` → `System` → `Advanced system settings` and add a system variable

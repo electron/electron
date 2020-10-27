@@ -44,18 +44,24 @@ def getBrokenLinks(filepath):
     f = open(filepath, 'r')
     lines = f.readlines()
   except KeyboardInterrupt:
-    print('Keyboard interruption whle parsing. Please try again.')
+    print('Keyboard interruption while parsing. Please try again.')
   finally:
     f.close()
 
-  regexLink = re.compile('\[(.*?)\]\((?P<links>(.*?))\)')
+  linkRegexLink = re.compile('\[(.*?)\]\((?P<link>(.*?))\)')
+  referenceLinkRegex = re.compile('^\s{0,3}\[.*?\]:\s*(?P<link>[^<\s]+|<[^<>\r\n]+>)')
   links = []
   for line in lines:
-    matchLinks = regexLink.search(line)
+    matchLinks = linkRegexLink.search(line)
+    matchReferenceLinks = referenceLinkRegex.search(line)
     if matchLinks:
-      relativeLink = matchLinks.group('links')
+      relativeLink = matchLinks.group('link')
       if not str(relativeLink).startswith('http'):
         links.append(relativeLink)
+    if matchReferenceLinks:
+      referenceLink = matchReferenceLinks.group('link').strip('<>')
+      if not str(referenceLink).startswith('http'):
+        links.append(referenceLink)
 
   for link in links:
     sections = link.split('#')
@@ -72,7 +78,7 @@ def getBrokenLinks(filepath):
           newFile = open(tempFile, 'r')
           newLines = newFile.readlines()
         except KeyboardInterrupt:
-          print('Keyboard interruption whle parsing. Please try again.')
+          print('Keyboard interruption while parsing. Please try again.')
         finally:
           newFile.close()
 

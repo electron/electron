@@ -24,19 +24,27 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
+
+#if !defined(MAS_BUILD)
+#include "shell/common/crash_keys.h"
+#endif
 
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
   V(electron_browser_auto_updater)       \
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
+  V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
   V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
@@ -50,17 +58,18 @@
   V(electron_browser_protocol)           \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
-  V(electron_browser_top_level_window)   \
+  V(electron_browser_base_window)        \
   V(electron_browser_tray)               \
+  V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
-  V(electron_browser_view)               \
+  V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
-  V(electron_common_crash_reporter)      \
+  V(electron_common_environment)         \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_native_theme)        \
@@ -69,6 +78,7 @@
   V(electron_common_shell)               \
   V(electron_common_v8_util)             \
   V(electron_renderer_context_bridge)    \
+  V(electron_renderer_crash_reporter)    \
   V(electron_renderer_ipc)               \
   V(electron_renderer_web_frame)
 
@@ -94,25 +104,27 @@ ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 namespace {
 
 void stop_and_close_uv_loop(uv_loop_t* loop) {
-  // Close any active handles
   uv_stop(loop);
-  uv_walk(
-      loop,
-      [](uv_handle_t* handle, void*) {
-        if (!uv_is_closing(handle)) {
-          uv_close(handle, nullptr);
-        }
-      },
-      nullptr);
 
-  // Run the loop to let it finish all the closing handles
-  // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
+  auto const ensure_closing = [](uv_handle_t* handle, void*) {
+    // We should be using the UvHandle wrapper everywhere, in which case
+    // all handles should already be in a closing state...
+    DCHECK(uv_is_closing(handle));
+    // ...but if a raw handle got through, through, do the right thing anyway
+    if (!uv_is_closing(handle)) {
+      uv_close(handle, nullptr);
+    }
+  };
+
+  uv_walk(loop, ensure_closing, nullptr);
+
+  // All remaining handles are in a closing state now.
+  // Pump the event loop so that they can finish closing.
   for (;;)
-    if (!uv_run(loop, UV_RUN_DEFAULT))
+    if (uv_run(loop, UV_RUN_DEFAULT) == 0)
       break;
 
-  DCHECK(!uv_loop_alive(loop));
-  uv_loop_close(loop);
+  DCHECK_EQ(0, uv_loop_alive(loop));
 }
 
 bool g_is_initialized = false;
@@ -128,6 +140,34 @@ bool IsPackagedApp() {
 #else
   return base_name != FILE_PATH_LITERAL("electron");
 #endif
+}
+
+void V8FatalErrorCallback(const char* location, const char* message) {
+  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
+
+#if !defined(MAS_BUILD)
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
+
+  volatile int* zero = nullptr;
+  *zero = 0;
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  v8::Isolate* isolate = context->GetIsolate();
+  if (node::Environment::GetCurrent(isolate) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return false;
+    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
+        context, v8::String::Empty(isolate));
+  }
+
+  return node::AllowWasmCodeGenerationCallback(context,
+                                               v8::String::Empty(isolate));
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -225,20 +265,8 @@ namespace electron {
 
 namespace {
 
-// Convert the given vector to an array of C-strings. The strings in the
-// returned vector are only guaranteed valid so long as the vector of strings
-// is not modified.
-std::unique_ptr<const char* []> StringVectorToArgArray(
-    const std::vector<std::string>& vector) {
-  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
-  for (size_t i = 0; i < vector.size(); ++i) {
-    array[i] = vector[i].c_str();
-  }
-  return array;
-}
-
 base::FilePath GetResourcesPath() {
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -265,6 +293,7 @@ NodeBindings::~NodeBindings() {
   // Quit the embed thread.
   embed_closed_ = true;
   uv_sem_post(&embed_sem_);
+
   WakeupEmbedThread();
 
   // Wait for everything to be done.
@@ -272,10 +301,10 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
+  dummy_uv_handle_.reset();
 
   // Clean up worker loop
-  if (uv_loop_ == &worker_loop_)
+  if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
 }
 
@@ -298,7 +327,6 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_standalone_mode = browser_env_ == BrowserEnvironment::BROWSER;
   node::g_upstream_node_mode = false;
 
 #if defined(OS_LINUX)
@@ -373,17 +401,38 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ != BrowserEnvironment::BROWSER)
     global.Set("_noBrowserGlobals", true);
 
+  std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
 
-  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   isolate_data_ =
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
-  node::Environment* env = node::CreateEnvironment(
-      isolate_data_, context, args.size(), c_argv.get(), 0, nullptr);
-  DCHECK(env);
+
+  node::Environment* env;
+  if (browser_env_ != BrowserEnvironment::BROWSER) {
+    // Only one ESM loader can be registered per isolate -
+    // in renderer processes this should be blink. We need to tell Node.js
+    // not to register its handler (overriding blinks) in non-browser processes.
+    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                     node::EnvironmentFlags::kNoRegisterESMLoader |
+                     node::EnvironmentFlags::kNoInitializeInspector;
+    v8::TryCatch try_catch(context->GetIsolate());
+    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
+                                  (node::EnvironmentFlags::Flags)flags);
+    DCHECK(env);
+
+    // This will only be caught when something has gone terrible wrong as all
+    // electron scripts are wrapped in a try {} catch {} by webpack
+    if (try_catch.HasCaught()) {
+      LOG(ERROR) << "Failed to initialize node environment in process: "
+                 << process_type;
+    }
+  } else {
+    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
+    DCHECK(env);
+  }
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
@@ -393,15 +442,42 @@ node::Environment* NodeBindings::CreateEnvironment(
     global.Delete("_noBrowserGlobals");
   }
 
+  node::IsolateSettings is;
+
+  // Use a custom fatal error callback to allow us to add
+  // crash message and location to CrashReports.
+  is.fatal_error_callback = V8FatalErrorCallback;
+
+  // We don't want to abort either in the renderer or browser processes.
+  // We already listen for uncaught exceptions and handle them there.
+  is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+    return false;
+  };
+
+  // Use a custom callback here to allow us to leverage Blink's logic in the
+  // renderer process.
+  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+
   if (browser_env_ == BrowserEnvironment::BROWSER) {
-    // SetAutorunMicrotasks is no longer called in node::CreateEnvironment
-    // so instead call it here to match expected node behavior
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+    // Node.js requires that microtask checkpoints be explicitly invoked.
+    is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
-    // Node uses the deprecated SetAutorunMicrotasks(false) mode, we should
-    // switch to use the scoped policy to match blink's behavior.
-    context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+    // Match Blink's behavior by allowing microtasks invocation to be controlled
+    // by MicrotasksScope objects.
+    is.policy = v8::MicrotasksPolicy::kScoped;
+
+    // We do not want to use Node.js' message listener as it interferes with
+    // Blink's.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+
+    // We do not want to use the promise rejection callback that Node.js uses,
+    // because it does not send PromiseRejectionEvents to the global script
+    // context. We need to use the one Blink already provides.
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
   }
+
+  node::SetIsolateUpForNode(context->GetIsolate(), is);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
@@ -422,7 +498,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 void NodeBindings::PrepareMessageLoop() {
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(uv_loop_, &dummy_uv_handle_, nullptr);
+  uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -454,8 +530,7 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Perform microtask checkpoint after running JavaScript.
-  v8::MicrotasksScope script_scope(env->isolate(),
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope(env->isolate());
 
   if (browser_env_ != BrowserEnvironment::BROWSER)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
@@ -480,7 +555,7 @@ void NodeBindings::WakeupMainThread() {
 }
 
 void NodeBindings::WakeupEmbedThread() {
-  uv_async_send(&dummy_uv_handle_);
+  uv_async_send(dummy_uv_handle_.get());
 }
 
 // static

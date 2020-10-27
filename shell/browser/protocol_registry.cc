@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 
+#include "content/public/browser/non_network_url_loader_factory_base.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
@@ -14,11 +15,24 @@ namespace electron {
 namespace {
 
 // Provide support for accessing asar archives in file:// protocol.
-class AsarURLLoaderFactory : public network::mojom::URLLoaderFactory {
+class AsarURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
  public:
-  AsarURLLoaderFactory() {}
+  static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create() {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
+
+    // The AsarURLLoaderFactory will delete itself when there are no more
+    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
+
+    return pending_remote;
+  }
 
  private:
+  AsarURLLoaderFactory(
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
+      : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)) {}
+  ~AsarURLLoaderFactory() override = default;
+
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -32,13 +46,6 @@ class AsarURLLoaderFactory : public network::mojom::URLLoaderFactory {
     asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
                               new net::HttpResponseHeaders(""));
   }
-
-  void Clone(
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader) override {
-    receivers_.Add(this, std::move(loader));
-  }
-
-  mojo::ReceiverSet<network::mojom::URLLoaderFactory> receivers_;
 };
 
 }  // namespace
@@ -63,18 +70,17 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
     // Note that Chromium calls |emplace| to create the default file factory
     // after this call, so it won't override our asar factory.
     DCHECK(!base::Contains(*factories, url::kFileScheme));
-    factories->emplace(url::kFileScheme,
-                       std::make_unique<AsarURLLoaderFactory>());
+    factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
   } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
     // Only support requesting file:// subresource URLs when Chromium does so,
     // it is usually supported under file:// or about:blank documents.
     auto file_factory = factories->find(url::kFileScheme);
     if (file_factory != factories->end())
-      file_factory->second = std::make_unique<AsarURLLoaderFactory>();
+      file_factory->second = AsarURLLoaderFactory::Create();
   }
 
   for (const auto& it : handlers_) {
-    factories->emplace(it.first, std::make_unique<ElectronURLLoaderFactory>(
+    factories->emplace(it.first, ElectronURLLoaderFactory::Create(
                                      it.second.first, it.second.second));
   }
 }

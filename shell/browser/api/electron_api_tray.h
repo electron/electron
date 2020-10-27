@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
@@ -85,7 +86,9 @@ class Tray : public gin::Wrappable<Tray>,
   void SetImage(gin::Handle<NativeImage> image);
   void SetPressedImage(gin::Handle<NativeImage> image);
   void SetToolTip(const std::string& tool_tip);
-  void SetTitle(const std::string& title);
+  void SetTitle(const std::string& title,
+                const base::Optional<gin_helper::Dictionary>& options,
+                gin::Arguments* args);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
   bool GetIgnoreDoubleClickEvents();

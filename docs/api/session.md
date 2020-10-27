@@ -12,7 +12,7 @@ property of [`WebContents`](web-contents.md), or from the `session` module.
 ```javascript
 const { BrowserWindow } = require('electron')
 
-let win = new BrowserWindow({ width: 800, height: 600 })
+const win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('http://github.com')
 
 const ses = win.webContents.session
@@ -91,6 +91,40 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
 })
 ```
 
+#### Event: 'extension-loaded'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is loaded. This occurs whenever an extension is
+added to the "enabled" set of extensions. This includes:
+- Extensions being loaded from `Session.loadExtension`.
+- Extensions being reloaded:
+   * from a crash.
+   * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
+
+#### Event: 'extension-unloaded'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is unloaded. This occurs when
+`Session.removeExtension` is called.
+
+#### Event: 'extension-ready'
+
+Returns:
+
+* `event` Event
+* `extension` [Extension](structures/extension.md)
+
+Emitted after an extension is loaded and all necessary browser state is
+initialized to support the start of the extension's background page.
+
 #### Event: 'preconnect'
 
 Returns:
@@ -144,6 +178,76 @@ Emitted when a hunspell dictionary file download fails.  For details
 on the failure you should collect a netlog and inspect the download
 request.
 
+#### Event: 'select-serial-port' _Experimental_
+
+Returns:
+
+* `event` Event
+* `portList` [SerialPort[]](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+* `callback` Function
+  * `portId` String
+
+Emitted when a serial port needs to be selected when a call to
+`navigator.serial.requestPort` is made. `callback` should be called with
+`portId` to be selected, passing an empty string to `callback` will
+cancel the request.  Additionally, permissioning on `navigator.serial` can
+be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
+with the `serial` permission.
+
+Because this is an experimental feature it is disabled by default.  To enable this feature, you
+will need to use the `--enable-features=ElectronSerialChooser` command line switch.  Additionally
+because this is an experimental Chromium feature you will need to set `enableBlinkFeatures: 'Serial'`
+on the `webPreferences` property when opening a BrowserWindow.
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser')
+
+app.whenReady().then(() => {
+  win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      enableBlinkFeatures: 'Serial'
+    }
+  })
+  win.webContents.session.on('select-serial-port', (event, portList, callback) => {
+    event.preventDefault()
+    const selectedPort = portList.find((device) => {
+      return device.vendorId === 0x2341 && device.productId === 0x0043
+    })
+    if (!selectedPort) {
+      callback('')
+    } else {
+      callback(result1.portId)
+    }
+  })
+})
+```
+
+#### Event: 'serial-port-added' _Experimental_
+
+Returns:
+
+* `event` Event
+* `port` [SerialPort](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+
+Emitted after `navigator.serial.requestPort` has been called and `select-serial-port` has fired if a new serial port becomes available.  For example, this event will fire when a new USB device is plugged in.
+
+#### Event: 'serial-port-removed' _Experimental_
+
+Returns:
+
+* `event` Event
+* `port` [SerialPort](structures/serial-port.md)
+* `webContents` [WebContents](web-contents.md)
+
+Emitted after `navigator.serial.requestPort` has been called and `select-serial-port` has fired if a serial port has been removed.  For example, this event will fire when a USB device is unplugged.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -190,6 +294,9 @@ Sets the proxy settings.
 
 When `pacScript` and `proxyRules` are provided together, the `proxyRules`
 option is ignored and `pacScript` configuration is applied.
+
+You may need `ses.closeAllConnections` to close currently in flight connections to prevent
+pooled sockets using previous proxy from being reused by future requests.
 
 The `proxyRules` has to follow the rules below:
 
@@ -300,6 +407,12 @@ window.webContents.session.enableNetworkEmulation({ offline: true })
 
 Preconnects the given number of sockets to an origin.
 
+#### `ses.closeAllConnections()`
+
+Returns `Promise<void>` - Resolves when all connections are closed.
+
+**Note:** It will terminate / fail all requests currently in flight.
+
 #### `ses.disableNetworkEmulation()`
 
 Disables any network emulation already active for the `session`. Resets to
@@ -332,7 +445,7 @@ verify proc.
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow()
+const win = new BrowserWindow()
 
 win.webContents.session.setCertificateVerifyProc((request, callback) => {
   const { hostname } = request
@@ -348,8 +461,16 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 * `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` String - Enum of 'media', 'geolocation', 'notifications', 'midiSysex',
-    'pointerLock', 'fullscreen', 'openExternal'.
+  * `permission` String - The type of requested permission.
+    * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `mediaKeySystem` - Request access to DRM protected content.
+    * `geolocation` - Request access to user's current location.
+    * `notifications` - Request notification creation and the ability to display them in the user's system tray.
+    * `midi` - Request MIDI access in the `webmidi` API.
+    * `midiSysex` - Request the use of system exclusive messages in the `webmidi` API.
+    * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more.
+    * `fullscreen` - Request for the app to enter fullscreen mode.
+    * `openExternal` - Request to open links in external applications.
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
@@ -378,10 +499,10 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 
 * `handler` Function<Boolean> | null
   * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` String - Enum of 'media'.
+  * `permission` String - Type of permission check.  Valid values are `midiSysex`, `notifications`, `geolocation`, `media`,`mediaKeySystem`,`midi`, `pointerLock`, `fullscreen`, `openExternal`, or `serial`.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
-    * `securityOrigin` String - The security orign of the `media` check.
+    * `securityOrigin` String - The security origin of the `media` check.
     * `mediaType` String - The type of media access being requested, can be `video`,
       `audio` or `unknown`
     * `requestingUrl` String - The last URL the requesting frame loaded
@@ -449,6 +570,29 @@ will be temporary.
 #### `ses.getUserAgent()`
 
 Returns `String` - The user agent for this session.
+
+#### `ses.setSSLConfig(config)`
+
+* `config` Object
+  * `minVersion` String (optional) - Can be `tls1`, `tls1.1`, `tls1.2` or `tls1.3`. The
+    minimum SSL version to allow when connecting to remote servers. Defaults to
+    `tls1`.
+  * `maxVersion` String (optional) - Can be `tls1.2` or `tls1.3`. The maximum SSL version
+    to allow when connecting to remote servers. Defaults to `tls1.3`.
+  * `disabledCipherSuites` Integer[] (optional) - List of cipher suites which
+    should be explicitly prevented from being used in addition to those
+    disabled by the net built-in policy.
+    Supported literal forms: 0xAABB, where AA is `cipher_suite[0]` and BB is
+    `cipher_suite[1]`, as defined in RFC 2246, Section 7.4.1.2. Unrecognized but
+    parsable cipher suites in this form will not return an error.
+    Ex: To disable TLS_RSA_WITH_RC4_128_MD5, specify 0x0004, while to
+    disable TLS_ECDH_ECDSA_WITH_RC4_128_SHA, specify 0xC002.
+    Note that TLSv1.3 ciphers cannot be disabled using this mechanism.
+
+Sets the SSL configuration for the session. All subsequent network requests
+will use the new configuration. Existing network connections (such as WebSocket
+connections) will not be terminated, but old sockets in the pool will not be
+reused for new connections.
 
 #### `ses.getBlobData(identifier)`
 
@@ -518,7 +662,7 @@ Returns `String[]` - An array of language codes the spellchecker is enabled for.
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
-**Note:** On macOS the OS spellchecker is used and has it's own list of languages.  This API is a no-op on macOS.
+**Note:** On macOS the OS spellchecker is used and has its own list of languages.  This API is a no-op on macOS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
@@ -630,7 +774,7 @@ The following properties are available on instances of `Session`:
 #### `ses.availableSpellCheckerLanguages` _Readonly_
 
 A `String[]` array which consists of all the known available spell checker languages.  Providing a language
-code to the `setSpellCheckerLanaguages` API that isn't in this array will result in an error.
+code to the `setSpellCheckerLanguages` API that isn't in this array will result in an error.
 
 #### `ses.cookies` _Readonly_
 
@@ -654,12 +798,12 @@ const path = require('path')
 
 app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
-  protocol.registerFileProtocol('atom', (request, callback) => {
-    let url = request.url.substr(7)
+  if (!protocol.registerFileProtocol('atom', (request, callback) => {
+    const url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
-  }, (error) => {
-    if (error) console.error('Failed to register protocol')
-  })
+  })) {
+    console.error('Failed to register protocol')
+  }
 })
 ```
 

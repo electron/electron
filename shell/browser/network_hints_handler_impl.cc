@@ -21,7 +21,7 @@ NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     : network_hints::SimpleNetworkHintsHandlerImpl(
           frame_host->GetProcess()->GetID(),
           frame_host->GetRoutingID()),
-      render_frame_host_(frame_host) {}
+      browser_context_(frame_host->GetProcess()->GetBrowserContext()) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;
 
@@ -29,11 +29,10 @@ void NetworkHintsHandlerImpl::Preconnect(const GURL& url,
                                          bool allow_credentials) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  content::BrowserContext* browser_context =
-      render_frame_host_->GetProcess()->GetBrowserContext();
-  auto* session = electron::api::Session::FromWrappedClass(
-      v8::Isolate::GetCurrent(),
-      static_cast<electron::ElectronBrowserContext*>(browser_context));
+  if (!browser_context_) {
+    return;
+  }
+  auto* session = electron::api::Session::FromBrowserContext(browser_context_);
   if (session) {
     session->Emit("preconnect", url, allow_credentials);
   }

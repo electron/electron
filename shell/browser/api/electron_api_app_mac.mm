@@ -6,7 +6,7 @@
 
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
-#include "shell/browser/electron_paths.h"
+#include "shell/common/electron_paths.h"
 
 #import <Cocoa/Cocoa.h>
 

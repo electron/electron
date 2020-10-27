@@ -4,29 +4,31 @@
 
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
-#include "base/containers/flat_set.h"
+#include <algorithm>
+#include <vector>
+
 #include "base/no_destructor.h"
 
 namespace gin_helper {
 
-base::flat_set<CleanedUpAtExit*>& GetDoomed() {
-  static base::NoDestructor<base::flat_set<CleanedUpAtExit*>> doomed;
+std::vector<CleanedUpAtExit*>& GetDoomed() {
+  static base::NoDestructor<std::vector<CleanedUpAtExit*>> doomed;
   return *doomed;
 }
 CleanedUpAtExit::CleanedUpAtExit() {
-  GetDoomed().insert(this);
+  GetDoomed().emplace_back(this);
 }
 CleanedUpAtExit::~CleanedUpAtExit() {
-  GetDoomed().erase(this);
+  auto& doomed = GetDoomed();
+  doomed.erase(std::remove(doomed.begin(), doomed.end(), this), doomed.end());
 }
 
 // static
 void CleanedUpAtExit::DoCleanup() {
   auto& doomed = GetDoomed();
   while (!doomed.empty()) {
-    auto iter = doomed.begin();
-    delete *iter;
-    // It removed itself from the list.
+    CleanedUpAtExit* next = doomed.back();
+    delete next;
   }
 }
 

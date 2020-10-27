@@ -6,7 +6,7 @@
 * `trace_buffer_size_in_events` number (optional) - maximum size of the trace
   recording buffer in events.
 * `enable_argument_filter` boolean (optional) - if true, filter event data
-  according to a whitelist of events that have been manually vetted to not
+  according to a specific list of events that have been manually vetted to not
   include any PII. See [the implementation in
   Chromium][trace_event_args_whitelist.cc] for specifics.
 * `included_categories` String[] (optional) - a list of tracing categories to
@@ -41,7 +41,7 @@ An example TraceConfig that roughly matches what Chrome DevTools records:
     'disabled-by-default-v8.cpu_profiler',
     'disabled-by-default-v8.cpu_profiler.hires'
   ],
-  excluded_categories: [ '*' ]
+  excluded_categories: ['*']
 }
 ```
 

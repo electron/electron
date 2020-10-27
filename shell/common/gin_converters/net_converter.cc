@@ -186,7 +186,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
     std::string value;
     gin::ConvertFromV8(isolate, localStrVal, &value);
-    out->AddHeader(key + ": " + value);
+    out->AddHeader(key, value);
     return true;
   };
 
@@ -273,8 +273,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       case network::mojom::DataElementType::kDataPipe: {
         upload_data.Set("type", "blob");
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
-        // becomes unecessarily complex, we should deprecate the getBlobData API
-        // and return the DataPipeHolder wrapper directly.
+        // becomes unnecessarily complex, we should deprecate the getBlobData
+        // API and return the DataPipeHolder wrapper directly.
         auto holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.
@@ -334,10 +334,6 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),
                               base::Time::FromDoubleT(modification_time));
-    } else if (type == "blob") {
-      std::string uuid;
-      dict->GetString("blobUUID", &uuid);
-      (*out)->AppendBlob(uuid);
     }
   }
   return true;

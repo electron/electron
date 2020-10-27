@@ -1,8 +1,11 @@
 import * as path from 'path';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce, emittedUntil } from './events-helpers';
+import { ifdescribe } from './spec-helpers';
 import { expect } from 'chai';
+
+const features = process._linkedBinding('electron_common_features');
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`
@@ -28,6 +31,20 @@ describe('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
 
   afterEach(closeAllWindows);
+
+  function hideChildWindows (e: any, wc: WebContents) {
+    wc.on('new-window', (event, url, frameName, disposition, options) => {
+      options.show = false;
+    });
+  }
+
+  before(() => {
+    app.on('web-contents-created', hideChildWindows);
+  });
+
+  after(() => {
+    app.off('web-contents-created', hideChildWindows);
+  });
 
   it('works without script tag in page', async () => {
     const w = new BrowserWindow({
@@ -200,16 +217,16 @@ describe('<webview> tag', function () {
     const zoomScheme = standardScheme;
     const webviewSession = session.fromPartition('webview-temp');
 
-    before((done) => {
+    before(() => {
       const protocol = webviewSession.protocol;
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
         callback('hello');
-      }, (error) => done(error));
+      });
     });
 
-    after((done) => {
+    after(() => {
       const protocol = webviewSession.protocol;
-      protocol.unregisterProtocol(zoomScheme, (error) => done(error));
+      protocol.unregisterProtocol(zoomScheme);
     });
 
     it('inherits the zoomFactor of the parent window', async () => {
@@ -297,6 +314,25 @@ describe('<webview> tag', function () {
 
       const [, zoomLevel] = await emittedOnce(ipcMain, 'webview-origin-zoom-level');
       expect(zoomLevel).to.equal(2.0);
+    });
+
+    it('does not crash when navigating with zoom level inherited from parent', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          zoomFactor: 1.2,
+          session: webviewSession
+        }
+      });
+      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      const readyPromise = emittedOnce(ipcMain, 'dom-ready');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      const [, webview] = await attachPromise;
+      await readyPromise;
+      expect(webview.getZoomFactor()).to.equal(1.2);
+      await w.loadURL(`${zoomScheme}://host1`);
     });
   });
 
@@ -398,18 +434,17 @@ describe('<webview> tag', function () {
       await emittedOnce(app, 'browser-window-created');
     });
 
-    it('emits a web-contents-created event', (done) => {
-      app.on('web-contents-created', function listener (event, contents) {
-        if (contents.getType() === 'window') {
-          app.removeListener('web-contents-created', listener);
-          done();
-        }
-      });
+    it('emits a web-contents-created event', async () => {
+      const webContentsCreated = emittedUntil(app, 'web-contents-created',
+        (event: Electron.Event, contents: Electron.WebContents) => contents.getType() === 'window');
+
       loadWebView(w.webContents, {
         allowpopups: 'on',
         webpreferences: 'nativeWindowOpen=1',
         src: `file://${fixtures}/pages/window-open.html`
       });
+
+      await webContentsCreated;
     });
   });
 
@@ -570,7 +605,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('enableremotemodule attribute', () => {
+  ifdescribe(features.isRemoteModuleEnabled())('enableremotemodule attribute', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
@@ -590,7 +625,7 @@ describe('<webview> tag', function () {
             sandbox: sandbox.toString()
           });
           const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-          const [, , message] = await emittedOnce(webViewContents, 'console-message');
+          const [, , message] = await emittedUntil(webViewContents, 'console-message', (event: any, level: any, message: string) => !/deprecated/.test(message));
 
           const typeOfRemote = JSON.parse(message);
           expect(typeOfRemote).to.equal('object');

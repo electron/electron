@@ -19,7 +19,7 @@ class WebContents;
 class ElectronJavaScriptDialogManager
     : public content::JavaScriptDialogManager {
  public:
-  explicit ElectronJavaScriptDialogManager(api::WebContents* api_web_contents);
+  ElectronJavaScriptDialogManager();
   ~ElectronJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
@@ -43,7 +43,6 @@ class ElectronJavaScriptDialogManager
                             int code,
                             bool checkbox_checked);
 
-  api::WebContents* api_web_contents_;
   std::map<std::string, int> origin_counts_;
 };
 

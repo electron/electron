@@ -67,16 +67,9 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
                                    render_frame_host)
     IPC_MESSAGE_HANDLER(PrintHostMsg_MetafileReadyForPrinting,
                         OnMetafileReadyForPrinting)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-  if (handled)
-    return true;
-
-  handled = true;
-  IPC_BEGIN_MESSAGE_MAP(PrintPreviewMessageHandler, message)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed, OnPrintPreviewFailed)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewCancelled,
-                        OnPrintPreviewCancelled)
+    IPC_MESSAGE_HANDLER(PrintHostMsg_DidPreviewPage, OnDidPreviewPage)
+    IPC_MESSAGE_HANDLER(PrintHostMsg_DidPrepareDocumentForPreview,
+                        OnDidPrepareForDocumentToPdf)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
@@ -84,47 +77,80 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     content::RenderFrameHost* render_frame_host,
-    const PrintHostMsg_DidPreviewDocument_Params& params,
-    const PrintHostMsg_PreviewIds& ids) {
+    const printing::mojom::DidPreviewDocumentParams& params,
+    const printing::mojom::PreviewIds& ids) {
   // Always try to stop the worker.
   StopWorker(params.document_cookie);
 
-  const PrintHostMsg_DidPrintContent_Params& content = params.content;
-  if (!content.metafile_data_region.IsValid() ||
-      params.expected_pages_count <= 0) {
+  if (params.expected_pages_count == 0) {
     RejectPromise(ids.request_id);
     return;
   }
+
+  const base::ReadOnlySharedMemoryRegion& metafile =
+      params.content->metafile_data_region;
 
   if (printing::IsOopifEnabled()) {
     auto* client =
         printing::PrintCompositeClient::FromWebContents(web_contents());
     DCHECK(client);
 
-    auto callback =
-        base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
-                       weak_ptr_factory_.GetWeakPtr(), ids);
-    client->DoCompositeDocumentToPdf(
-        params.document_cookie, render_frame_host, content,
+    auto callback = base::BindOnce(
+        &PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone,
+        weak_ptr_factory_.GetWeakPtr(), ids);
+
+    client->DoCompleteDocumentToPdf(
+        params.document_cookie, params.expected_pages_count,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
             std::move(callback),
             printing::mojom::PrintCompositor::Status::kCompositingFailure,
             base::ReadOnlySharedMemoryRegion()));
   } else {
-    ResolvePromise(ids.request_id,
-                   base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
-                       content.metafile_data_region));
+    ResolvePromise(
+        ids.request_id,
+        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(metafile));
   }
 }
 
-void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
-    const PrintHostMsg_PreviewIds& ids,
+void PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone(
+    const printing::mojom::PreviewIds& ids,
+    printing::mojom::PrintCompositor::Status status) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
+    LOG(ERROR) << "Preparing document for pdf failed with error " << status;
+  }
+}
+
+void PrintPreviewMessageHandler::OnDidPrepareForDocumentToPdf(
+    content::RenderFrameHost* render_frame_host,
+    int document_cookie,
+    const printing::mojom::PreviewIds& ids) {
+  if (printing::IsOopifEnabled()) {
+    auto* client =
+        printing::PrintCompositeClient::FromWebContents(web_contents());
+    DCHECK(client);
+
+    if (client->GetIsDocumentConcurrentlyComposited(document_cookie))
+      return;
+
+    client->DoPrepareForDocumentToPdf(
+        document_cookie, render_frame_host,
+        mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+            base::BindOnce(
+                &PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone,
+                weak_ptr_factory_.GetWeakPtr(), ids),
+            printing::mojom::PrintCompositor::Status::kCompositingFailure));
+  }
+}
+
+void PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone(
+    const printing::mojom::PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
-    DLOG(ERROR) << "Compositing pdf failed with error " << status;
+    LOG(ERROR) << "Compositing pdf failed with error " << status;
     RejectPromise(ids.request_id);
     return;
   }
@@ -134,20 +160,61 @@ void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
       base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(region));
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewFailed(
+void PrintPreviewMessageHandler::OnCompositePdfPageDone(
+    int page_number,
     int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
-  StopWorker(document_cookie);
-
-  RejectPromise(ids.request_id);
+    const printing::mojom::PreviewIds& ids,
+    printing::mojom::PrintCompositor::Status status,
+    base::ReadOnlySharedMemoryRegion region) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
+    LOG(ERROR) << "Compositing pdf failed on page: " << page_number
+               << " with error: " << status;
+  }
 }
 
-void PrintPreviewMessageHandler::OnPrintPreviewCancelled(
-    int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+void PrintPreviewMessageHandler::OnDidPreviewPage(
+    content::RenderFrameHost* render_frame_host,
+    const printing::mojom::DidPreviewPageParams& params,
+    const printing::mojom::PreviewIds& ids) {
+  int page_number = params.page_number;
+  const printing::mojom::DidPrintContentParams& content = *params.content;
+
+  if (page_number < printing::FIRST_PAGE_INDEX ||
+      !content.metafile_data_region.IsValid()) {
+    RejectPromise(ids.request_id);
+    return;
+  }
+
+  if (printing::IsOopifEnabled()) {
+    auto* client =
+        printing::PrintCompositeClient::FromWebContents(web_contents());
+    DCHECK(client);
+
+    // Use utility process to convert skia metafile to pdf.
+    client->DoCompositePageToPdf(
+        params.document_cookie, render_frame_host, content,
+        mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+            base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfPageDone,
+                           weak_ptr_factory_.GetWeakPtr(), page_number,
+                           params.document_cookie, ids),
+            printing::mojom::PrintCompositor::Status::kCompositingFailure,
+            base::ReadOnlySharedMemoryRegion()));
+  }
+}
+
+void PrintPreviewMessageHandler::PrintPreviewFailed(int32_t document_cookie,
+                                                    int32_t request_id) {
   StopWorker(document_cookie);
 
-  RejectPromise(ids.request_id);
+  RejectPromise(request_id);
+}
+
+void PrintPreviewMessageHandler::PrintPreviewCancelled(int32_t document_cookie,
+                                                       int32_t request_id) {
+  StopWorker(document_cookie);
+
+  RejectPromise(request_id);
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
@@ -162,8 +229,13 @@ void PrintPreviewMessageHandler::PrintToPDF(
                   ? focused_frame
                   : web_contents()->GetMainFrame();
 
-  if (!print_render_frame_.is_bound())
+  if (!print_render_frame_.is_bound()) {
     rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);
+  }
+  if (!receiver_.is_bound()) {
+    print_render_frame_->SetPrintPreviewUI(
+        receiver_.BindNewEndpointAndPassRemote());
+  }
   print_render_frame_->PrintPreview(options.Clone());
 }
 

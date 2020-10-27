@@ -34,7 +34,6 @@
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
-#include "ui/native_theme/native_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -44,21 +43,32 @@
 #include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 #include "base/strings/string_util.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/ui/views/frameless_view.h"
-#include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/views/native_frame_view.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
+#include "ui/views/window/native_frame_view.h"
+
+#if defined(USE_X11)
+#include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/window_state_watcher.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
+#include "ui/gfx/x/shape.h"
+#include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/x11_types.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
-#include "ui/views/window/native_frame_view.h"
+#endif
+
+#if defined(USE_OZONE) || defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#endif
+
 #elif defined(OS_WIN)
+#include "base/win/win_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
@@ -114,9 +124,9 @@ class NativeWindowClientView : public views::ClientView {
       : views::ClientView(widget, root_view), window_(window) {}
   ~NativeWindowClientView() override = default;
 
-  bool CanClose() override {
+  views::CloseRequestResult OnWindowCloseRequested() override {
     window_->NotifyWindowCloseButtonClicked();
-    return false;
+    return views::CloseRequestResult::kCannotClose;
   }
 
  private:
@@ -154,7 +164,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (enable_larger_than_screen())
     // We need to set a default maximum window size here otherwise Windows
     // will not allow us to resize the window larger than scree.
-    // Setting directly to INT_MAX somehow doesn't work, so we just devide
+    // Setting directly to INT_MAX somehow doesn't work, so we just divide
     // by 10, which should still be large enough.
     SetContentSizeConstraints(extensions::SizeConstraints(
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
@@ -191,7 +201,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     params.parent = parent->GetNativeWindow();
 
   params.native_widget = new ElectronDesktopNativeWidgetAura(this);
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
@@ -209,44 +219,56 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   options.Get(options::kType, &window_type);
 
 #if defined(USE_X11)
-  // Start monitoring window states.
-  window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
+  if (!features::IsUsingOzonePlatform()) {
+    // Start monitoring window states.
+    window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
 
-  // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
-  bool use_dark_theme =
-      ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-  options.Get(options::kDarkTheme, &use_dark_theme);
-  SetGTKDarkThemeEnabled(use_dark_theme);
-
-  // Before the window is mapped the SetWMSpecState can not work, so we have
-  // to manually set the _NET_WM_STATE.
-  std::vector<::Atom> state_atom_list;
-  bool skip_taskbar = false;
-  if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
+    bool use_dark_theme = false;
+    if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
+      SetGTKDarkThemeEnabled(use_dark_theme);
+    }
   }
+#endif
 
-  // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
-  if (fullscreen) {
-    state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
-  }
-
-  if (parent) {
+#if defined(OS_LINUX)
+  if (parent)
     SetParentWindow(parent);
-    // Force using dialog type for child window.
-    window_type = "dialog";
-    // Modal window needs the _NET_WM_STATE_MODAL hint.
-    if (is_modal())
-      state_atom_list.push_back(GetAtom("_NET_WM_STATE_MODAL"));
+#endif
+
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform()) {
+    // Before the window is mapped the SetWMSpecState can not work, so we have
+    // to manually set the _NET_WM_STATE.
+    std::vector<x11::Atom> state_atom_list;
+    bool skip_taskbar = false;
+    if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
+      state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    }
+
+    // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
+    if (fullscreen) {
+      state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_FULLSCREEN"));
+    }
+
+    if (parent) {
+      // Force using dialog type for child window.
+      window_type = "dialog";
+
+      // Modal window needs the _NET_WM_STATE_MODAL hint.
+      if (is_modal())
+        state_atom_list.push_back(gfx::GetAtom("_NET_WM_STATE_MODAL"));
+    }
+
+    if (!state_atom_list.empty())
+      ui::SetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                               "_NET_WM_STATE", "ATOM", state_atom_list);
+
+    // Set the _NET_WM_WINDOW_TYPE.
+    if (!window_type.empty())
+      SetWindowType(static_cast<x11::Window>(GetAcceleratedWidget()),
+                    window_type);
   }
-
-  if (!state_atom_list.empty())
-    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                             state_atom_list);
-
-  // Set the _NET_WM_WINDOW_TYPE.
-  if (!window_type.empty())
-    SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
 #if defined(OS_WIN)
@@ -326,6 +348,17 @@ NativeWindowViews::~NativeWindowViews() {
 #endif
 }
 
+void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform()) {
+    const std::string color = use_dark_theme ? "dark" : "light";
+    ui::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                          gfx::GetAtom("_GTK_THEME_VARIANT"),
+                          gfx::GetAtom("UTF8_STRING"), color);
+  }
+#endif
+}
+
 void NativeWindowViews::SetContentView(views::View* view) {
   if (content_view()) {
     root_view_->RemoveChildView(content_view());
@@ -378,7 +411,7 @@ void NativeWindowViews::Show() {
   NotifyWindowShow();
 
 #if defined(USE_X11)
-  if (global_menu_bar_)
+  if (!features::IsUsingOzonePlatform() && global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
 #endif
 }
@@ -389,7 +422,7 @@ void NativeWindowViews::ShowInactive() {
   NotifyWindowShow();
 
 #if defined(USE_X11)
-  if (global_menu_bar_)
+  if (!features::IsUsingOzonePlatform() && global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
 #endif
 }
@@ -403,7 +436,7 @@ void NativeWindowViews::Hide() {
   NotifyWindowHide();
 
 #if defined(USE_X11)
-  if (global_menu_bar_)
+  if (!features::IsUsingOzonePlatform() && global_menu_bar_)
     global_menu_bar_->OnWindowUnmapped();
 #endif
 }
@@ -415,8 +448,14 @@ bool NativeWindowViews::IsVisible() {
 bool NativeWindowViews::IsEnabled() {
 #if defined(OS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
-#elif defined(USE_X11)
-  return !event_disabler_.get();
+#elif defined(OS_LINUX)
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform()) {
+    return !event_disabler_.get();
+  }
+#endif
+  NOTIMPLEMENTED();
+  return true;
 #endif
 }
 
@@ -453,20 +492,22 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if defined(OS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
-  views::DesktopWindowTreeHostLinux* tree_host =
-      views::DesktopWindowTreeHostLinux::GetHostForWidget(
-          GetAcceleratedWidget());
-  if (enable) {
-    tree_host->RemoveEventRewriter(event_disabler_.get());
-    event_disabler_.reset();
-  } else {
-    event_disabler_ = std::make_unique<EventDisabler>();
-    tree_host->AddEventRewriter(event_disabler_.get());
+  if (!features::IsUsingOzonePlatform()) {
+    views::DesktopWindowTreeHostPlatform* tree_host =
+        views::DesktopWindowTreeHostLinux::GetHostForWidget(
+            GetAcceleratedWidget());
+    if (enable) {
+      tree_host->RemoveEventRewriter(event_disabler_.get());
+      event_disabler_.reset();
+    } else {
+      event_disabler_ = std::make_unique<EventDisabler>();
+      tree_host->AddEventRewriter(event_disabler_.get());
+    }
   }
 #endif
 }
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 void NativeWindowViews::Maximize() {
   if (IsVisible())
     widget()->Maximize();
@@ -567,7 +608,7 @@ bool NativeWindowViews::IsFullscreen() const {
 }
 
 void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
-#if defined(OS_WIN) || defined(USE_X11)
+#if defined(OS_WIN) || defined(OS_LINUX)
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
   if (!resizable_) {
@@ -658,10 +699,13 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
-  if (!IsWindowValid(id.id))
-    return false;
+  if (!features::IsUsingOzonePlatform()) {
+    if (!IsWindowValid(static_cast<x11::Window>(id.id)))
+      return false;
 
-  electron::MoveWindowAbove(GetAcceleratedWidget(), id.id);
+    electron::MoveWindowAbove(static_cast<x11::Window>(GetAcceleratedWidget()),
+                              static_cast<x11::Window>(id.id));
+  }
 #endif
 
   return true;
@@ -677,7 +721,10 @@ void NativeWindowViews::MoveTop() {
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #elif defined(USE_X11)
-  electron::MoveWindowToForeground(GetAcceleratedWidget());
+  if (!features::IsUsingOzonePlatform()) {
+    electron::MoveWindowToForeground(
+        static_cast<x11::Window>(GetAcceleratedWidget()));
+  }
 #endif
 }
 
@@ -780,7 +827,7 @@ bool NativeWindowViews::IsClosable() {
     return false;
   }
   return !(info.fState & MFS_DISABLED);
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   return true;
 #endif
 }
@@ -862,8 +909,10 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
 #elif defined(USE_X11)
-  SetWMSpecState(GetAcceleratedWidget(), skip,
-                 GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+  if (!features::IsUsingOzonePlatform()) {
+    SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
+                   gfx::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+  }
 #endif
 }
 
@@ -881,6 +930,14 @@ void NativeWindowViews::SetKiosk(bool kiosk) {
 
 bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
+}
+
+bool NativeWindowViews::IsTabletMode() const {
+#if defined(OS_WIN)
+  return base::win::IsWindows10TabletMode(GetAcceleratedWidget());
+#else
+  return false;
+#endif
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {
@@ -953,20 +1010,34 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #elif defined(USE_X11)
-  if (ignore) {
-    XRectangle r = {0, 0, 1, 1};
-    XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
-                            ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
-  } else {
-    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
-                      0, x11::None, ShapeSet);
+  if (!features::IsUsingOzonePlatform()) {
+    auto* connection = x11::Connection::Get();
+    if (ignore) {
+      x11::Rectangle r{0, 0, 1, 1};
+      connection->shape().Rectangles({
+          .operation = x11::Shape::So::Set,
+          .destination_kind = x11::Shape::Sk::Input,
+          .ordering = x11::ClipOrdering::YXBanded,
+          .destination_window =
+              static_cast<x11::Window>(GetAcceleratedWidget()),
+          .rectangles = {r},
+      });
+    } else {
+      connection->shape().Mask({
+          .operation = x11::Shape::So::Set,
+          .destination_kind = x11::Shape::Sk::Input,
+          .destination_window =
+              static_cast<x11::Window>(GetAcceleratedWidget()),
+          .source_bitmap = x11::Pixmap::None,
+      });
+    }
   }
 #endif
 }
 
 void NativeWindowViews::SetContentProtection(bool enable) {
 #if defined(OS_WIN)
-  DWORD affinity = enable ? WDA_MONITOR : WDA_NONE;
+  DWORD affinity = enable ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE;
   ::SetWindowDisplayAffinity(GetAcceleratedWidget(), affinity);
 #endif
 }
@@ -987,21 +1058,23 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if defined(USE_X11)
-  // Remove global menu bar.
-  if (global_menu_bar_ && menu_model == nullptr) {
-    global_menu_bar_.reset();
-    root_view_->UnregisterAcceleratorsWithFocusManager();
-    return;
-  }
-
-  // Use global application menu bar when possible.
-  if (ShouldUseGlobalMenuBar()) {
-    if (!global_menu_bar_)
-      global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
-    if (global_menu_bar_->IsServerStarted()) {
-      root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
-      global_menu_bar_->SetMenu(menu_model);
+  if (!features::IsUsingOzonePlatform()) {
+    // Remove global menu bar.
+    if (global_menu_bar_ && menu_model == nullptr) {
+      global_menu_bar_.reset();
+      root_view_->UnregisterAcceleratorsWithFocusManager();
       return;
+    }
+
+    // Use global application menu bar when possible.
+    if (ShouldUseGlobalMenuBar()) {
+      if (!global_menu_bar_)
+        global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
+      if (global_menu_bar_->IsServerStarted()) {
+        root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
+        global_menu_bar_->SetMenu(menu_model);
+        return;
+      }
     }
   }
 #endif
@@ -1044,9 +1117,9 @@ void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-
-  content_view()->AddChildView(
-      view->GetInspectableWebContentsView()->GetView());
+  if (view->GetInspectableWebContentsView())
+    content_view()->AddChildView(
+        view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
@@ -1057,8 +1130,9 @@ void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  content_view()->RemoveChildView(
-      view->GetInspectableWebContentsView()->GetView());
+  if (view->GetInspectableWebContentsView())
+    content_view()->RemoveChildView(
+        view->GetInspectableWebContentsView()->GetView());
   remove_browser_view(view);
 }
 
@@ -1066,10 +1140,13 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if defined(USE_X11)
-  XDisplay* xdisplay = gfx::GetXDisplay();
-  XSetTransientForHint(
-      xdisplay, GetAcceleratedWidget(),
-      parent ? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
+  if (!features::IsUsingOzonePlatform()) {
+    ui::SetProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
+        parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
+               : ui::GetX11RootWindow());
+  }
 #elif defined(OS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1107,7 +1184,7 @@ void NativeWindowViews::SetProgressBar(double progress,
                                        NativeWindow::ProgressState state) {
 #if defined(OS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   if (unity::IsRunning()) {
     unity::SetProgressFraction(progress);
   }
@@ -1137,19 +1214,23 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
-void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
+                                                  bool visibleOnFullScreen) {
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 #if defined(USE_X11)
-  // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
-  // determine whether the current window is visible on all workspaces.
-  XAtom sticky_atom = GetAtom("_NET_WM_STATE_STICKY");
-  std::vector<XAtom> wm_states;
-  ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
-  return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
-         wm_states.end();
+  if (!features::IsUsingOzonePlatform()) {
+    // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
+    // determine whether the current window is visible on all workspaces.
+    x11::Atom sticky_atom = gfx::GetAtom("_NET_WM_STATE_STICKY");
+    std::vector<x11::Atom> wm_states;
+    ui::GetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                             "_NET_WM_STATE", &wm_states);
+    return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
+           wm_states.end();
+  }
 #endif
   return false;
 }
@@ -1161,8 +1242,8 @@ content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
 #if defined(OS_WIN)
   window_handle =
       reinterpret_cast<content::DesktopMediaID::Id>(accelerated_widget);
-#elif defined(USE_X11)
-  window_handle = accelerated_widget;
+#elif defined(OS_LINUX)
+  window_handle = static_cast<uint32_t>(accelerated_widget);
 #endif
   aura::WindowTreeHost* const host =
       aura::WindowTreeHost::GetForAcceleratedWidget(accelerated_widget);
@@ -1264,30 +1345,11 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   SendMessage(hwnd, WM_SETICON, ICON_BIG,
               reinterpret_cast<LPARAM>(app_icon_.get()));
 }
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   auto* tree_host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
       GetAcceleratedWidget());
   tree_host->SetWindowIcons(icon, {});
-}
-#endif
-
-#if defined(USE_X11)
-void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-  XDisplay* xdisplay = gfx::GetXDisplay();
-  if (use_dark_theme) {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"), 4);
-  } else {
-    XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
-                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
-                    PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("light"), 5);
-  }
 }
 #endif
 
@@ -1368,7 +1430,7 @@ bool NativeWindowViews::CanMaximize() const {
 bool NativeWindowViews::CanMinimize() const {
 #if defined(OS_WIN)
   return minimizable_;
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   return true;
 #endif
 }
@@ -1403,17 +1465,17 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView(widget, root_view_.get(), this);
 }
 
-views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
-    views::Widget* widget) {
+std::unique_ptr<views::NonClientFrameView>
+NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
 #if defined(OS_WIN)
-  WinFrameView* frame_view = new WinFrameView;
+  auto frame_view = std::make_unique<WinFrameView>();
   frame_view->Init(this, widget);
   return frame_view;
 #else
   if (has_frame()) {
-    return new NativeFrameView(this, widget);
+    return std::make_unique<NativeFrameView>(this, widget);
   } else {
-    FramelessView* frame_view = new FramelessView;
+    auto frame_view = std::make_unique<FramelessView>();
     frame_view->Init(this, widget);
     return frame_view;
   }

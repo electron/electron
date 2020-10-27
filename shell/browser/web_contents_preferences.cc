@@ -17,15 +17,17 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/web_preferences.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
-#include "services/service_manager/sandbox/switches.h"
+#include "sandbox/policy/switches.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -74,17 +76,17 @@ bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
 
 bool GetAsAutoplayPolicy(const base::Value* val,
                          base::StringPiece path,
-                         content::AutoplayPolicy* out) {
+                         blink::mojom::AutoplayPolicy* out) {
   std::string policy_str;
   if (GetAsString(val, path, &policy_str)) {
     if (policy_str == "no-user-gesture-required") {
-      *out = content::AutoplayPolicy::kNoUserGestureRequired;
+      *out = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
       return true;
     } else if (policy_str == "user-gesture-required") {
-      *out = content::AutoplayPolicy::kUserGestureRequired;
+      *out = blink::mojom::AutoplayPolicy::kUserGestureRequired;
       return true;
     } else if (policy_str == "document-user-activation-required") {
-      *out = content::AutoplayPolicy::kDocumentUserActivationRequired;
+      *out = blink::mojom::AutoplayPolicy::kDocumentUserActivationRequired;
       return true;
     }
     return false;
@@ -125,14 +127,26 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
+  if (IsUndefined(options::kContextIsolation)) {
+    node::Environment* env = node::Environment::GetCurrent(isolate);
+    EmitWarning(env,
+                "The default of contextIsolation is deprecated and will be "
+                "changing from false to true in a future release of Electron.  "
+                "See https://github.com/electron/electron/issues/23506 for "
+                "more information",
+                "electron");
+  }
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
   SetDefaultBoolIfUndefined(options::kWebGL, true);
+  SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
+  SetDefaultBoolIfUndefined(options::kEnablePreferredSizeMode, false);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
-  // If webSecurity was explicity set to false, let's inherit that into
+  // If webSecurity was explicitly set to false, let's inherit that into
   // insecureContent
   if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
       !webSecurity) {
@@ -140,7 +154,7 @@ WebContentsPreferences::WebContentsPreferences(
   } else {
     SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
@@ -179,6 +193,10 @@ void WebContentsPreferences::SetDefaults() {
   }
 
   last_preference_ = preference_.Clone();
+}
+
+bool WebContentsPreferences::IsUndefined(base::StringPiece key) {
+  return !preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(base::StringPiece key,
@@ -302,7 +320,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kSandbox) || can_sandbox_frame) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
@@ -335,6 +353,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kContextIsolation))
     command_line->AppendSwitch(switches::kContextIsolation);
 
+  if (IsEnabled(options::kWorldSafeExecuteJavaScript))
+    command_line->AppendSwitch(switches::kWorldSafeExecuteJavaScript);
+
   // --background-color.
   std::string s;
   if (GetAsString(&preference_, options::kBackgroundColor, &s)) {
@@ -362,7 +383,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::NumberToString(opener_id));
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
     command_line->AppendSwitch(switches::kScrollBounce);
@@ -419,6 +440,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 #endif
 
+  // Whether to allow the WebSQL api
+  if (IsEnabled(options::kEnableWebSQL))
+    command_line->AppendSwitch(switches::kEnableWebSQL);
+
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
@@ -426,7 +451,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
-    content::WebPreferences* prefs) {
+    blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled =
       IsEnabled(options::kJavaScript, true /* default_value */);
   prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
@@ -436,7 +461,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
-    prefs->autoplay_policy = content::AutoplayPolicy::kNoUserGestureRequired;
+    prefs->autoplay_policy =
+        blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
@@ -457,17 +483,17 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (fonts_dict) {
     base::string16 font;
     if (GetAsString(fonts_dict, "standard", &font))
-      prefs->standard_font_family_map[content::kCommonScript] = font;
+      prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "serif", &font))
-      prefs->serif_font_family_map[content::kCommonScript] = font;
+      prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "sansSerif", &font))
-      prefs->sans_serif_font_family_map[content::kCommonScript] = font;
+      prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "monospace", &font))
-      prefs->fixed_font_family_map[content::kCommonScript] = font;
+      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "cursive", &font))
-      prefs->cursive_font_family_map[content::kCommonScript] = font;
+      prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "fantasy", &font))
-      prefs->fantasy_font_family_map[content::kCommonScript] = font;
+      prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
   }
 
   int size;
@@ -480,6 +506,23 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+
+  std::string v8_cache_options;
+  if (GetAsString(&preference_, "v8CacheOptions", &v8_cache_options)) {
+    if (v8_cache_options == "none") {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kNone;
+    } else if (v8_cache_options == "code") {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kCode;
+    } else if (v8_cache_options == "bypassHeatCheck") {
+      prefs->v8_cache_options =
+          blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
+    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
+      prefs->v8_cache_options =
+          blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
+    } else {
+      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kDefault;
+    }
+  }
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)

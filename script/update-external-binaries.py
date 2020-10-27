@@ -20,7 +20,10 @@ def parse_args():
 
   parser.add_argument('--base-url', required=False,
                       help="Base URL for all downloads")
-  parser.add_argument('--force', action='store_true', default=False, required=False)
+  parser.add_argument('--force',
+                      action='store_true',
+                      default=False,
+                      required=False)
 
   return parser.parse_args()
 
@@ -97,16 +100,23 @@ def sha256(file_path):
   return hash_256.hexdigest()
 
 
-def download_binary(base_url, sha, binary_name):
+def download_binary(base_url, sha, binary_name, attempt=3):
   full_url = '{0}/{1}/{2}'.format(base_url, sha, binary_name)
-  temp_path = download_to_temp_dir(full_url, filename=binary_name, sha=sha)
-  return temp_path
+  try:
+    temp_path = download_to_temp_dir(full_url, filename=binary_name, sha=sha)
+    return temp_path
+  except Exception as e:
+    if attempt == 1:
+       raise e
+    return download_binary(base_url, sha, binary_name, attempt - 1)
 
 
 def validate_sha(file_path, sha):
   downloaded_sha = sha256(file_path)
   if downloaded_sha != sha:
-    raise Exception("SHA for external binary file {} does not match expected '{}' != '{}'".format(file_path, downloaded_sha, sha))
+    raise Exception("SHA for external binary file {} does not match "
+                    "expected '{}' != '{}'".format(
+                      file_path, downloaded_sha, sha))
 
 
 def download_to_temp_dir(url, filename, sha):

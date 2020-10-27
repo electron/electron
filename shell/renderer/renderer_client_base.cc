@@ -20,6 +20,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
+#include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -39,7 +40,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif
 
@@ -62,13 +63,12 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
-#include "printing/print_settings.h"
+#include "printing/print_settings.h"  // nogncheck
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"
 #include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
@@ -107,6 +107,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kCORSSchemes);
   for (const std::string& scheme : cors_schemes_list)
     url::AddCorsEnabledScheme(scheme.c_str());
+  // Parse --streaming-schemes=scheme1,scheme2
+  std::vector<std::string> streaming_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
+  for (const std::string& scheme : streaming_schemes_list)
+    media::AddStreamingScheme(scheme.c_str());
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the
@@ -162,10 +167,13 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
-  // Enables printing from Chrome PDF viewer.
-  pdf::PepperPDFHost::SetPrintClient(new ChromePDFPrintClient());
-
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  // Enables printing from Chrome PDF viewer.
+  pdf_print_client_.reset(new ChromePDFPrintClient());
+  pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -355,7 +363,7 @@ void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #endif
 }
 
-content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
+guest_view::GuestViewContainer* RendererClientBase::CreateBrowserPluginDelegate(
     content::RenderFrame* render_frame,
     const content::WebPluginInfo& info,
     const std::string& mime_type,
@@ -374,7 +382,7 @@ bool RendererClientBase::IsPluginHandledExternally(
     const blink::WebElement& plugin_element,
     const GURL& original_url,
     const std::string& mime_type) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) && BUILDFLAG(ENABLE_PLUGINS)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
   // TODO(nornagon): this info should be shared with the data in

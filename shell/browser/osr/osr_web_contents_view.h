@@ -12,8 +12,9 @@
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "third_party/blink/public/common/page/drag_mojom_traits.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #ifdef __OBJC__
 @class OffScreenView;
 #else
@@ -43,8 +44,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   gfx::NativeView GetNativeView() const override;
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
-  void GetContainerBounds(gfx::Rect* out) const override;
-  void SizeContents(const gfx::Size& size) override;
+  gfx::Rect GetContainerBounds() const override;
   void Focus() override;
   void SetInitialFocus() override;
   void StoreFocus() override;
@@ -63,26 +63,25 @@ class OffScreenWebContentsView : public content::WebContentsView,
                              content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;
 #endif
 
   // content::RenderViewHostDelegateView
   void StartDragging(const content::DropData& drop_data,
-                     blink::WebDragOperationsMask allowed_ops,
+                     blink::DragOperationsMask allowed_ops,
                      const gfx::ImageSkia& image,
                      const gfx::Vector2d& image_offset,
-                     const content::DragEventSourceInfo& event_info,
+                     const blink::mojom::DragEventSourceInfo& event_info,
                      content::RenderWidgetHostImpl* source_rwh) override;
-  void UpdateDragCursor(blink::WebDragOperation operation) override;
-
+  void UpdateDragCursor(blink::DragOperation operation) override;
   void SetPainting(bool painting);
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
  private:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void PlatformCreate();
   void PlatformDestroy();
 #endif
@@ -99,7 +98,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   // Weak refs.
   content::WebContents* web_contents_ = nullptr;
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   OffScreenView* offScreenView_;
 #endif
 };

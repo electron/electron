@@ -2,21 +2,15 @@ import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifdescribe } from './spec-helpers';
-
-const timeout = async (milliseconds: number) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-};
+import { ifdescribe, delay } from './spec-helpers';
 
 // FIXME: The tests are skipped on arm/arm64.
-ifdescribe(!(process.platform === 'linux' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
+ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
   const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
     await app.whenReady();
 
     await contentTracing.startRecording(options);
-    await timeout(recordTimeInMilliseconds);
+    await delay(recordTimeInMilliseconds);
     const resultFilePath = await contentTracing.stopRecording(outputFilePath);
 
     return resultFilePath;
@@ -124,6 +118,32 @@ ifdescribe(!(process.platform === 'linux' && ['arm', 'arm64'].includes(process.a
     it('creates a temporary file when no path is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
       expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+    });
+  });
+
+  describe('captured events', () => {
+    it('include V8 samples from the main process', async function () {
+      // This test is flaky on macOS CI.
+      this.retries(3);
+
+      await contentTracing.startRecording({
+        categoryFilter: 'disabled-by-default-v8.cpu_profiler',
+        traceOptions: 'record-until-full'
+      });
+      {
+        const start = +new Date();
+        let n = 0;
+        const f = () => {};
+        while (+new Date() - start < 200 || n < 500) {
+          await delay(0);
+          f();
+          n++;
+        }
+      }
+      const path = await contentTracing.stopRecording();
+      const data = fs.readFileSync(path, 'utf8');
+      const parsed = JSON.parse(data);
+      expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
     });
   });
 });

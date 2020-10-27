@@ -69,8 +69,7 @@ way of figuring out which is which.
 ### Which Process Should I Attach to?
 
 Code executed within the main process (that is, code found in or eventually run
-by your main JavaScript file) as well as code called using the remote
-(`require('electron').remote`) will run inside the main process, while other
+by your main JavaScript file) will run inside the main process, while other
 code will execute inside its respective renderer process.
 
 You can be attached to multiple programs when you are debugging, but only one

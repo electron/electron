@@ -209,13 +209,13 @@ void CommonWebContentsDelegate::InitWithWebContents(
       web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
-  // Determien whether the WebContents is offscreen.
+  // Determine whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   offscreen_ =
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(InspectableWebContents::Create(
+  web_contents_.reset(new InspectableWebContents(
       web_contents, browser_context->prefs(), is_guest));
   web_contents_->SetDelegate(this);
 }
@@ -250,14 +250,8 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // is destroyed.
     // //electron/patches/chromium/content_browser_main_loop.patch
     // is required to get the right quit closure for the main message loop.
-    base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](scoped_refptr<ElectronBrowserContext> browser_context,
-               std::unique_ptr<InspectableWebContents> web_contents) {
-              web_contents.reset();
-            },
-            base::RetainedRef(browser_context_), std::move(web_contents_)));
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                    web_contents_.release());
   } else {
     web_contents_.reset();
   }
@@ -330,7 +324,7 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
 
 void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
   if (!web_dialog_helper_)
     web_dialog_helper_ =
@@ -341,7 +335,7 @@ void CommonWebContentsDelegate::RunFileChooser(
 
 void CommonWebContentsDelegate::EnumerateDirectory(
     content::WebContents* guest,
-    std::unique_ptr<content::FileSelectListener> listener,
+    scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   if (!web_dialog_helper_)
     web_dialog_helper_ =
@@ -350,11 +344,11 @@ void CommonWebContentsDelegate::EnumerateDirectory(
 }
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
-    content::WebContents* source,
-    const GURL& origin,
+    content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
   if (!owner_window_)
     return;
+  auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;

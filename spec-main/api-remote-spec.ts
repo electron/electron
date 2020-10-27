@@ -5,8 +5,11 @@ import { ifdescribe } from './spec-helpers';
 
 import { ipcMain, BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
+import { NativeImage } from 'electron/common';
+import { serialize, deserialize } from '../lib/common/type-utils';
+import { nativeImage } from 'electron';
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const expectPathsEqual = (path1: string, path2: string) => {
   if (process.platform === 'win32') {
@@ -75,8 +78,143 @@ function makeEachWindow () {
   return () => w;
 }
 
+describe('typeUtils serialization/deserialization', () => {
+  it('serializes and deserializes an empty NativeImage', () => {
+    const image = nativeImage.createEmpty();
+    const serializedImage = serialize(image);
+    const empty = deserialize(serializedImage);
+
+    expect(empty.isEmpty()).to.be.true();
+    expect(empty.getAspectRatio()).to.equal(1);
+    expect(empty.toDataURL()).to.equal('data:image/png;base64,');
+    expect(empty.toDataURL({ scaleFactor: 2.0 })).to.equal('data:image/png;base64,');
+    expect(empty.getSize()).to.deep.equal({ width: 0, height: 0 });
+    expect(empty.getBitmap()).to.be.empty();
+    expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
+    expect(empty.toBitmap()).to.be.empty();
+    expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty();
+    expect(empty.toJPEG(100)).to.be.empty();
+    expect(empty.toPNG()).to.be.empty();
+    expect(empty.toPNG({ scaleFactor: 2.0 })).to.be.empty();
+  });
+
+  it('serializes and deserializes a non-empty NativeImage', () => {
+    const dataURL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==';
+    const image = nativeImage.createFromDataURL(dataURL);
+    const serializedImage = serialize(image);
+    const nonEmpty = deserialize(serializedImage);
+
+    expect(nonEmpty.isEmpty()).to.be.false();
+    expect(nonEmpty.getAspectRatio()).to.equal(1);
+    expect(nonEmpty.toDataURL()).to.not.be.empty();
+    expect(nonEmpty.toBitmap({ scaleFactor: 1.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 1.0 }));
+    expect(nonEmpty.getSize()).to.deep.equal({ width: 2, height: 2 });
+    expect(nonEmpty.getBitmap()).to.not.be.empty();
+    expect(nonEmpty.toPNG()).to.not.be.empty();
+  });
+
+  it('serializes and deserializes a non-empty NativeImage with multiple representations', () => {
+    const image = nativeImage.createEmpty();
+
+    const dataURL1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=';
+    image.addRepresentation({ scaleFactor: 1.0, dataURL: dataURL1 });
+
+    const dataURL2 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==';
+    image.addRepresentation({ scaleFactor: 2.0, dataURL: dataURL2 });
+
+    const serializedImage = serialize(image);
+    const nonEmpty = deserialize(serializedImage);
+
+    expect(nonEmpty.isEmpty()).to.be.false();
+    expect(nonEmpty.getAspectRatio()).to.equal(1);
+    expect(nonEmpty.getSize()).to.deep.equal({ width: 1, height: 1 });
+    expect(nonEmpty.getBitmap()).to.not.be.empty();
+    expect(nonEmpty.getBitmap({ scaleFactor: 1.0 })).to.not.be.empty();
+    expect(nonEmpty.getBitmap({ scaleFactor: 2.0 })).to.not.be.empty();
+    expect(nonEmpty.toBitmap()).to.not.be.empty();
+    expect(nonEmpty.toBitmap({ scaleFactor: 1.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 1.0 }));
+    expect(nonEmpty.toBitmap({ scaleFactor: 2.0 })).to.deep.equal(image.toBitmap({ scaleFactor: 2.0 }));
+    expect(nonEmpty.toPNG()).to.not.be.empty();
+    expect(nonEmpty.toPNG({ scaleFactor: 1.0 })).to.not.be.empty();
+    expect(nonEmpty.toPNG({ scaleFactor: 2.0 })).to.not.be.empty();
+    expect(nonEmpty.toDataURL()).to.not.be.empty();
+  });
+
+  it('serializes and deserializes an Array', () => {
+    const array = [1, 2, 3, 4, 5];
+    const serialized = serialize(array);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.deep.equal(array);
+  });
+
+  it('serializes and deserializes a Buffer', () => {
+    const buffer = Buffer.from('hello world!', 'utf-8');
+    const serialized = serialize(buffer);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.deep.equal(buffer);
+  });
+
+  it('serializes and deserializes a Boolean', () => {
+    const bool = true;
+    const serialized = serialize(bool);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(bool);
+  });
+
+  it('serializes and deserializes a Date', () => {
+    const date = new Date();
+    const serialized = serialize(date);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(date);
+  });
+
+  it('serializes and deserializes a Number', () => {
+    const number = 42;
+    const serialized = serialize(number);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(number);
+  });
+
+  it('serializes and deserializes a Regexp', () => {
+    const regex = new RegExp('ab+c');
+    const serialized = serialize(regex);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(regex);
+  });
+
+  it('serializes and deserializes a String', () => {
+    const str = 'hello world';
+    const serialized = serialize(str);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(str);
+  });
+
+  it('serializes and deserializes an Error', () => {
+    const err = new Error('oh crap');
+    const serialized = serialize(err);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.equal(err);
+  });
+
+  it('serializes and deserializes a simple Object', () => {
+    const obj = { hello: 'world', 'answer-to-everything': 42 };
+    const serialized = serialize(obj);
+    const deserialized = deserialize(serialized);
+
+    expect(deserialized).to.deep.equal(obj);
+  });
+});
+
 ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(__dirname, 'fixtures', 'remote');
 
   describe('', () => {
     const w = makeWindow();
@@ -178,7 +316,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       w().webContents.once('did-finish-load', () => {
         w().webContents.loadURL('about:blank');
       });
-      w().loadFile(path.join(fixtures, 'api', 'send-on-exit.html'));
+      w().loadFile(path.join(fixtures, 'send-on-exit.html'));
       await emittedOnce(ipcMain, 'SENT_ON_EXIT');
     });
   });
@@ -190,7 +328,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     afterEach(closeAllWindows);
 
     it('works when created in preload script', async () => {
-      const preload = path.join(fixtures, 'module', 'preload-remote-function.js');
+      const preload = path.join(fixtures, 'preload-remote-function.js');
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -204,7 +342,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
   });
 
   describe('remote objects registry', () => {
-    it('does not dereference until the render view is deleted (regression)', (done) => {
+    it('does not dereference until the render view is deleted (regression)', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -213,12 +351,78 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         }
       });
 
-      ipcMain.once('error-message', (event, message) => {
-        expect(message).to.match(/^Cannot call method 'getURL' on missing remote object/);
-        done();
+      const message = emittedOnce(ipcMain, 'error-message');
+      w.loadFile(path.join(fixtures, 'render-view-deleted.html'));
+      const [, msg] = await message;
+      expect(msg).to.match(/^Cannot call method 'getURL' on missing remote object/);
+    });
+  });
+
+  describe('nativeImage serialization', () => {
+    const w = makeWindow();
+    const remotely = makeRemotely(w);
+
+    it('can serialize an empty nativeImage from renderer to main', async () => {
+      const getImageEmpty = (img: NativeImage) => img.isEmpty();
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getImageEmpty;
       });
 
-      w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'));
+      await expect(remotely(() => {
+        const emptyImage = require('electron').nativeImage.createEmpty();
+        return require('electron').remote.getGlobal('someFunction')(emptyImage);
+      })).to.eventually.be.true();
+    });
+
+    it('can serialize an empty nativeImage from main to renderer', async () => {
+      w().webContents.once('remote-get-global', (event) => {
+        const emptyImage = require('electron').nativeImage.createEmpty();
+        event.returnValue = emptyImage;
+      });
+
+      await expect(remotely(() => {
+        const image = require('electron').remote.getGlobal('someFunction');
+        return image.isEmpty();
+      })).to.eventually.be.true();
+    });
+
+    it('can serialize a non-empty nativeImage from renderer to main', async () => {
+      const getImageSize = (img: NativeImage) => img.getSize();
+
+      w().webContents.once('remote-get-global', (event) => {
+        event.returnValue = getImageSize;
+      });
+
+      await expect(remotely(() => {
+        const { nativeImage } = require('electron');
+        const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+        return require('electron').remote.getGlobal('someFunction')(nonEmptyImage);
+      })).to.eventually.deep.equal({ width: 2, height: 2 });
+    });
+
+    it('can serialize a non-empty nativeImage from main to renderer', async () => {
+      w().webContents.once('remote-get-global', (event) => {
+        const nonEmptyImage = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==');
+        event.returnValue = nonEmptyImage;
+      });
+
+      await expect(remotely(() => {
+        const image = require('electron').remote.getGlobal('someFunction');
+        return image.getSize();
+      })).to.eventually.deep.equal({ width: 2, height: 2 });
+    });
+
+    it('can properly create a menu with an nativeImage icon in the renderer', async () => {
+      await expect(remotely(() => {
+        const { remote, nativeImage } = require('electron');
+        remote.Menu.buildFromTemplate([
+          {
+            label: 'hello',
+            icon: nativeImage.createEmpty()
+          }
+        ]);
+      })).to.be.fulfilled();
     });
   });
 
@@ -233,7 +437,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
           enableRemoteModule: true
         }
       });
-      await w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'));
+      await w.loadFile(path.join(fixtures, 'remote-event-handler.html'));
       w.webContents.reload();
       await emittedOnce(w.webContents, 'did-finish-load');
 
@@ -276,12 +480,12 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       expect(a).to.equal(b);
     });
 
-    remotely.it(path.join(fixtures, 'module', 'id.js'))('should work when object contains id property', (module: string) => {
+    remotely.it(path.join(fixtures, 'id.js'))('should work when object contains id property', (module: string) => {
       const { id } = require('electron').remote.require(module);
       expect(id).to.equal(1127);
     });
 
-    remotely.it(path.join(fixtures, 'module', 'no-prototype.js'))('should work when object has no prototype', (module: string) => {
+    remotely.it(path.join(fixtures, 'no-prototype.js'))('should work when object has no prototype', (module: string) => {
       const a = require('electron').remote.require(module);
       expect(a.foo.bar).to.equal('baz');
       expect(a.foo.baz).to.equal(false);
@@ -292,11 +496,17 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     it('should search module from the user app', async () => {
       expectPathsEqual(
-        path.normalize(await remotely(() => require('electron').remote.process.mainModule!.filename)),
+        path.normalize(await remotely(() => {
+          const { remote } = require('electron');
+          return (remote as any).process.mainModule.filename;
+        })),
         path.resolve(__dirname, 'index.js')
       );
       expectPathsEqual(
-        path.normalize(await remotely(() => require('electron').remote.process.mainModule!.paths[0])),
+        path.normalize(await remotely(() => {
+          const { remote } = require('electron');
+          return (remote as any).process.mainModule.paths[0];
+        })),
         path.resolve(__dirname, 'node_modules')
       );
     });
@@ -305,13 +515,13 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const path = require('path');
 
       {
-        const a = require('electron').remote.require(path.join(fixtures, 'module', 'export-function-with-properties.js'));
+        const a = require('electron').remote.require(path.join(fixtures, 'export-function-with-properties.js'));
         expect(typeof a).to.equal('function');
         expect(a.bar).to.equal('baz');
       }
 
       {
-        const a = require('electron').remote.require(path.join(fixtures, 'module', 'function-with-properties.js'));
+        const a = require('electron').remote.require(path.join(fixtures, 'function-with-properties.js'));
         expect(typeof a).to.equal('object');
         expect(a.foo()).to.equal('hello');
         expect(a.foo.bar).to.equal('baz');
@@ -321,7 +531,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       }
 
       {
-        const a = require('electron').remote.require(path.join(fixtures, 'module', 'function-with-missing-properties.js')).setup();
+        const a = require('electron').remote.require(path.join(fixtures, 'function-with-missing-properties.js')).setup();
         expect(a.bar()).to.equal(true);
         expect(a.bar.baz).to.be.undefined();
       }
@@ -329,7 +539,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     remotely.it(fixtures)('should work with static class members', (fixtures: string) => {
       const path = require('path');
-      const a = require('electron').remote.require(path.join(fixtures, 'module', 'remote-static.js'));
+      const a = require('electron').remote.require(path.join(fixtures, 'remote-static.js'));
       expect(typeof a.Foo).to.equal('function');
       expect(a.Foo.foo()).to.equal(3);
       expect(a.Foo.bar).to.equal('baz');
@@ -338,7 +548,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     remotely.it(fixtures)('includes the length of functions specified as arguments', (fixtures: string) => {
       const path = require('path');
-      const a = require('electron').remote.require(path.join(fixtures, 'module', 'function-with-args.js'));
+      const a = require('electron').remote.require(path.join(fixtures, 'function-with-args.js'));
       /* eslint-disable @typescript-eslint/no-unused-vars */
       expect(a((a: any, b: any, c: any) => {})).to.equal(3);
       expect(a((a: any) => {})).to.equal(1);
@@ -348,7 +558,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     remotely.it(fixtures)('handles circular references in arrays and objects', (fixtures: string) => {
       const path = require('path');
-      const a = require('electron').remote.require(path.join(fixtures, 'module', 'circular.js'));
+      const a = require('electron').remote.require(path.join(fixtures, 'circular.js'));
 
       let arrayA: any[] = ['foo'];
       const arrayB = [arrayA, 'bar'];
@@ -407,7 +617,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const { remote } = require('electron');
       const path = require('path');
       const buf = Buffer.from('test');
-      const call = remote.require(path.join(fixtures, 'module', 'call.js'));
+      const call = remote.require(path.join(fixtures, 'call.js'));
       const result = call.call((remote as any).createFunctionWithReturnValue(buf));
       expect(result).to.be.an.instanceOf(Uint8Array);
     });
@@ -428,7 +638,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       const { readText } = require('electron').remote.clipboard;
       expect(readText.toString().startsWith('function')).to.be.true();
 
-      const { functionWithToStringProperty } = require('electron').remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'));
+      const { functionWithToStringProperty } = require('electron').remote.require(path.join(fixtures, 'to-string-non-function.js'));
       expect(functionWithToStringProperty.toString).to.equal('hello');
     });
   });
@@ -438,7 +648,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const remotely = makeRemotely(win);
 
     remotely.it(fixtures)('can change its properties', (fixtures: string) => {
-      const module = require('path').join(fixtures, 'module', 'property.js');
+      const module = require('path').join(fixtures, 'property.js');
       const property = require('electron').remote.require(module);
       expect(property.property).to.equal(1127);
       property.property = null;
@@ -460,7 +670,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     });
 
     remotely.it(fixtures)('rethrows errors getting/setting properties', (fixtures: string) => {
-      const foo = require('electron').remote.require(require('path').join(fixtures, 'module', 'error-properties.js'));
+      const foo = require('electron').remote.require(require('path').join(fixtures, 'error-properties.js'));
 
       expect(() => {
         // eslint-disable-next-line
@@ -474,18 +684,18 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
     remotely.it(fixtures)('can set a remote property with a remote object', (fixtures: string) => {
       const { remote } = require('electron');
-      const foo = remote.require(require('path').join(fixtures, 'module', 'remote-object-set.js'));
+      const foo = remote.require(require('path').join(fixtures, 'remote-object-set.js'));
       foo.bar = remote.getCurrentWindow();
     });
 
     remotely.it(fixtures)('can construct an object from its member', (fixtures: string) => {
-      const call = require('electron').remote.require(require('path').join(fixtures, 'module', 'call.js'));
+      const call = require('electron').remote.require(require('path').join(fixtures, 'call.js'));
       const obj = new call.constructor();
       expect(obj.test).to.equal('test');
     });
 
     remotely.it(fixtures)('can reassign and delete its member functions', (fixtures: string) => {
-      const remoteFunctions = require('electron').remote.require(require('path').join(fixtures, 'module', 'function.js'));
+      const remoteFunctions = require('electron').remote.require(require('path').join(fixtures, 'function.js'));
       expect(remoteFunctions.aFunction()).to.equal(1127);
 
       remoteFunctions.aFunction = () => { return 1234; };
@@ -512,7 +722,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
   describe('remote value in browser', () => {
     const remotely = makeRemotely(makeWindow());
-    const print = path.join(fixtures, 'module', 'print_name.js');
+    const print = path.join(fixtures, 'print_name.js');
 
     remotely.it(print)('preserves NaN', (print: string) => {
       const printName = require('electron').remote.require(print);
@@ -624,13 +834,13 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const remotely = makeRemotely(makeWindow());
 
     remotely.it(fixtures)('can be used as promise in each side', async (fixtures: string) => {
-      const promise = require('electron').remote.require(require('path').join(fixtures, 'module', 'promise.js'));
+      const promise = require('electron').remote.require(require('path').join(fixtures, 'promise.js'));
       const value = await promise.twicePromise(Promise.resolve(1234));
       expect(value).to.equal(2468);
     });
 
     remotely.it(fixtures)('handles rejections via catch(onRejected)', async (fixtures: string) => {
-      const promise = require('electron').remote.require(require('path').join(fixtures, 'module', 'rejected-promise.js'));
+      const promise = require('electron').remote.require(require('path').join(fixtures, 'rejected-promise.js'));
       const error = await new Promise<Error>(resolve => {
         promise.reject(Promise.resolve(1234)).catch(resolve);
       });
@@ -638,7 +848,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     });
 
     remotely.it(fixtures)('handles rejections via then(onFulfilled, onRejected)', async (fixtures: string) => {
-      const promise = require('electron').remote.require(require('path').join(fixtures, 'module', 'rejected-promise.js'));
+      const promise = require('electron').remote.require(require('path').join(fixtures, 'rejected-promise.js'));
       const error = await new Promise<Error>(resolve => {
         promise.reject(Promise.resolve(1234)).then(() => {}, resolve);
       });
@@ -652,7 +862,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
       process.once('unhandledRejection', onUnhandledRejection);
 
       remotely(async (fixtures: string) => {
-        const promise = require('electron').remote.require(require('path').join(fixtures, 'module', 'unhandled-rejection.js'));
+        const promise = require('electron').remote.require(require('path').join(fixtures, 'unhandled-rejection.js'));
         return new Promise((resolve, reject) => {
           promise.reject().then(() => {
             reject(new Error('Promise was not rejected'));
@@ -685,7 +895,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         promise.reject().then(() => {
           reject(new Error('Promise was not rejected'));
         });
-      }), path.join(fixtures, 'module', 'unhandled-rejection.js')).then(
+      }), path.join(fixtures, 'unhandled-rejection.js')).then(
         (message) => {
           try {
             expect(message).to.equal('rejected');
@@ -735,17 +945,17 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const remotely = makeRemotely(makeWindow());
 
     remotely.it(fixtures)('can get methods', (fixtures: string) => {
-      const { base } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      const { base } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       expect(base.method()).to.equal('method');
     });
 
     remotely.it(fixtures)('can get properties', (fixtures: string) => {
-      const { base } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      const { base } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       expect(base.readonly).to.equal('readonly');
     });
 
     remotely.it(fixtures)('can change properties', (fixtures: string) => {
-      const { base } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      const { base } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       expect(base.value).to.equal('old');
       base.value = 'new';
       expect(base.value).to.equal('new');
@@ -753,13 +963,13 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     });
 
     remotely.it(fixtures)('has unenumerable methods', (fixtures: string) => {
-      const { base } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      const { base } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       expect(base).to.not.have.ownProperty('method');
       expect(Object.getPrototypeOf(base)).to.have.ownProperty('method');
     });
 
     remotely.it(fixtures)('keeps prototype chain in derived class', (fixtures: string) => {
-      const { derived } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      const { derived } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       expect(derived.method()).to.equal('method');
       expect(derived.readonly).to.equal('readonly');
       expect(derived).to.not.have.ownProperty('method');
@@ -769,7 +979,7 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     });
 
     remotely.it(fixtures)('is referenced by methods in prototype chain', (fixtures: string) => {
-      let { derived } = require('electron').remote.require(require('path').join(fixtures, 'module', 'class.js'));
+      let { derived } = require('electron').remote.require(require('path').join(fixtures, 'class.js'));
       const method = derived.method;
       derived = null;
       global.gc();
@@ -781,14 +991,14 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
     const remotely = makeRemotely(makeWindow());
 
     remotely.it(fixtures)('throws errors from the main process', (fixtures: string) => {
-      const throwFunction = require('electron').remote.require(require('path').join(fixtures, 'module', 'exception.js'));
+      const throwFunction = require('electron').remote.require(require('path').join(fixtures, 'exception.js'));
       expect(() => {
         throwFunction();
       }).to.throw(/undefined/);
     });
 
     remotely.it(fixtures)('tracks error cause', (fixtures: string) => {
-      const throwFunction = require('electron').remote.require(require('path').join(fixtures, 'module', 'exception.js'));
+      const throwFunction = require('electron').remote.require(require('path').join(fixtures, 'exception.js'));
       try {
         throwFunction(new Error('error from main'));
         expect.fail();
@@ -796,6 +1006,31 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
         expect(e.message).to.match(/Could not call remote function/);
         expect(e.cause.message).to.equal('error from main');
       }
+    });
+  });
+
+  describe('gc behavior', () => {
+    const win = makeWindow();
+    const remotely = makeRemotely(win);
+    it('is resilient to gc happening between request and response', async () => {
+      const obj = { x: 'y' };
+      win().webContents.on('remote-get-global', (event) => {
+        event.returnValue = obj;
+      });
+      await remotely(() => {
+        const { ipc } = process._linkedBinding('electron_renderer_ipc');
+        const originalSendSync = ipc.sendSync.bind(ipc) as any;
+        ipc.sendSync = (...args: any[]): any => {
+          const ret = originalSendSync(...args);
+          (window as any).gc();
+          return ret;
+        };
+
+        for (let i = 0; i < 100; i++) {
+          // eslint-disable-next-line
+          require('electron').remote.getGlobal('test').x;
+        }
+      });
     });
   });
 });

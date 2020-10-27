@@ -13,30 +13,40 @@ interface and is therefore an [EventEmitter][event-emitter].
 the request URL. If it is an object, it is expected to fully specify an HTTP request via the
 following properties:
   * `method` String (optional) - The HTTP request method. Defaults to the GET
-method.
+    method.
   * `url` String (optional) - The request URL. Must be provided in the absolute
-form with the protocol scheme specified as http or https.
+    form with the protocol scheme specified as http or https.
   * `session` Session (optional) - The [`Session`](session.md) instance with
-which the request is associated.
+    which the request is associated.
   * `partition` String (optional) - The name of the [`partition`](session.md)
-  with which the request is associated. Defaults to the empty string. The
-`session` option prevails on `partition`. Thus if a `session` is explicitly
-specified, `partition` is ignored.
+    with which the request is associated. Defaults to the empty string. The
+    `session` option supersedes `partition`. Thus if a `session` is explicitly
+    specified, `partition` is ignored.
+  * `credentials` String (optional) - Can be `include` or `omit`. Whether to
+    send [credentials](https://fetch.spec.whatwg.org/#credentials) with this
+    request. If set to `include`, credentials from the session associated with
+    the request will be used. If set to `omit`, credentials will not be sent
+    with the request (and the `'login'` event will not be triggered in the
+    event of a 401). This matches the behavior of the
+    [fetch](https://fetch.spec.whatwg.org/#concept-request-credentials-mode)
+    option of the same name. If this option is not specified, authentication
+    data from the session will be sent, and cookies will not be sent (unless
+    `useSessionCookies` is set).
   * `useSessionCookies` Boolean (optional) - Whether to send cookies with this
-    request from the provided session.  This will make the `net` request's
-    cookie behavior match a `fetch` request. Default is `false`.
-  * `protocol` String (optional) - The protocol scheme in the form 'scheme:'.
-Currently supported values are 'http:' or 'https:'. Defaults to 'http:'.
+    request from the provided session. If `credentials` is specified, this
+    option has no effect. Default is `false`.
+  * `protocol` String (optional) - Can be `http:` or `https:`. The protocol
+    scheme in the form 'scheme:'. Defaults to 'http:'.
   * `host` String (optional) - The server host provided as a concatenation of
-the hostname and the port number 'hostname:port'.
+    the hostname and the port number 'hostname:port'.
   * `hostname` String (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
   * `path` String (optional) - The path part of the request URL.
-  * `redirect` String (optional) - The redirect mode for this request. Should be
-one of `follow`, `error` or `manual`. Defaults to `follow`. When mode is `error`,
-any redirection will be aborted. When mode is `manual` the redirection will be
-cancelled unless [`request.followRedirect`](#requestfollowredirect) is invoked
-synchronously during the [`redirect`](#event-redirect) event.
+  * `redirect` String (optional) - Can be `follow`, `error` or `manual`. The
+    redirect mode for this request. When mode is `error`, any redirection will
+    be aborted. When mode is `manual` the redirection will be cancelled unless
+    [`request.followRedirect`](#requestfollowredirect) is invoked synchronously
+    during the [`redirect`](#event-redirect) event.  Defaults to `follow`.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -170,6 +180,20 @@ Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
 the first write will throw an error. If the passed value is not a `String`, its
 `toString()` method will be called to obtain the final value.
+
+Certain headers are restricted from being set by apps. These headers are
+listed below. More information on restricted headers can be found in
+[Chromium's header utils](https://source.chromium.org/chromium/chromium/src/+/master:services/network/public/cpp/header_util.cc;drc=1562cab3f1eda927938f8f4a5a91991fefde66d3;bpv=1;bpt=1;l=22).
+
+* `Content-Length`
+* `Host`
+* `Trailer` or `Te`
+* `Upgrade`
+* `Cookie2`
+* `Keep-Alive`
+* `Transfer-Encoding`
+
+Additionally, setting the `Connection` header to the value `upgrade` is also disallowed.
 
 #### `request.getHeader(name)`
 

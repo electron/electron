@@ -6,17 +6,13 @@
 
 #include <string>
 
+#include "chrome/common/webui_url_constants.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/devtools_ui.h"
+#include "shell/browser/ui/webui/accessibility_ui.h"
 
 namespace electron {
-
-namespace {
-
-const char kChromeUIDevToolsBundledHost[] = "devtools";
-
-}  // namespace
 
 // static
 ElectronWebUIControllerFactory* ElectronWebUIControllerFactory::GetInstance() {
@@ -30,7 +26,8 @@ ElectronWebUIControllerFactory::~ElectronWebUIControllerFactory() = default;
 content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) {
-  if (url.host() == kChromeUIDevToolsBundledHost) {
+  if (url.host() == chrome::kChromeUIDevToolsHost ||
+      url.host() == chrome::kChromeUIAccessibilityHost) {
     return const_cast<ElectronWebUIControllerFactory*>(this);
   }
 
@@ -53,10 +50,13 @@ std::unique_ptr<content::WebUIController>
 ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
     content::WebUI* web_ui,
     const GURL& url) {
-  if (url.host() == kChromeUIDevToolsBundledHost) {
+  if (url.host() == chrome::kChromeUIDevToolsHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return std::make_unique<DevToolsUI>(browser_context, web_ui);
+  } else if (url.host() == chrome::kChromeUIAccessibilityHost) {
+    return std::make_unique<ElectronAccessibilityUI>(web_ui);
   }
+
   return std::unique_ptr<content::WebUIController>();
 }
 

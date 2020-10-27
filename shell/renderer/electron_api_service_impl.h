@@ -35,11 +35,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                int32_t sender_id) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  void DereferenceRemoteJSCallback(const std::string& context_id,
-                                   int32_t object_id) override;
-#endif
-  void UpdateCrashpadPipeName(const std::string& pipe_name) override;
+  void NotifyUserActivation() override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 

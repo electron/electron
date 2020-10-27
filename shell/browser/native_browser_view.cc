@@ -13,16 +13,20 @@ namespace electron {
 
 NativeBrowserView::NativeBrowserView(
     InspectableWebContents* inspectable_web_contents)
-    : inspectable_web_contents_(inspectable_web_contents) {}
+    : inspectable_web_contents_(inspectable_web_contents) {
+  Observe(inspectable_web_contents_->GetWebContents());
+}
 
 NativeBrowserView::~NativeBrowserView() = default;
 
 InspectableWebContentsView* NativeBrowserView::GetInspectableWebContentsView() {
+  if (!inspectable_web_contents_)
+    return nullptr;
   return inspectable_web_contents_->GetView();
 }
 
-content::WebContents* NativeBrowserView::GetWebContents() {
-  return inspectable_web_contents_->GetWebContents();
+void NativeBrowserView::WebContentsDestroyed() {
+  inspectable_web_contents_ = nullptr;
 }
 
 }  // namespace electron

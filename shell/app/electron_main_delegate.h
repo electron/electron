@@ -41,9 +41,12 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
       const content::MainFunctionParams& main_function_params) override;
   bool ShouldCreateFeatureList() override;
   bool ShouldLockSchemeRegistry() override;
+#if defined(OS_LINUX)
+  void ZygoteForked() override;
+#endif
 
  private:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   void OverrideChildProcessPath();
   void OverrideFrameworkBundlePath();
   void SetUpBundleOverrides();

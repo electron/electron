@@ -16,6 +16,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 
 namespace gin_helper {
 
@@ -110,8 +111,7 @@ class Promise : public PromiseBase {
   v8::Maybe<bool> Resolve(const RT& value) {
     gin_helper::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    v8::MicrotasksScope script_scope(isolate(),
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(isolate());
     v8::Context::Scope context_scope(GetContext());
 
     return GetInner()->Resolve(GetContext(),

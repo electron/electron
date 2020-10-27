@@ -18,6 +18,7 @@ const { app, protocol } = require('electron');
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
+app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser');
 // Prevent the spec runner quiting when the first window closes
 app.on('window-all-closed', () => null);
 
@@ -27,17 +28,18 @@ app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
 protocol.registerSchemesAsPrivileged([
-  { scheme: global.standardScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.standardScheme, privileges: { standard: true, secure: true, stream: false } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
+  { scheme: 'stream', privileges: { standard: true, stream: true } },
   { scheme: 'foo', privileges: { standard: true } },
   { scheme: 'bar', privileges: { standard: true } }
 ]);
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   require('ts-node/register');
 
   const argv = require('yargs')
@@ -59,66 +61,72 @@ app.whenReady().then(() => {
   }
   const mocha = new Mocha(mochaOptions);
 
+  // The cleanup method is registered this way rather than through an
+  // `afterEach` at the top level so that it can run before other `afterEach`
+  // methods.
+  //
+  // The order of events is:
+  // 1. test completes,
+  // 2. `defer()`-ed methods run, in reverse order,
+  // 3. regular `afterEach` hooks run.
+  const { runCleanupFunctions } = require('./spec-helpers');
+  mocha.suite.on('suite', function attach (suite) {
+    suite.afterEach('cleanup', runCleanupFunctions);
+    suite.on('suite', attach);
+  });
+
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter('tap');
   }
-  mocha.timeout(30000);
+  const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
+  mocha.timeout(mochaTimeout);
 
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();
 
-  // Read all test files.
-  const walker = require('walkdir').walk(__dirname, {
-    no_recurse: true
-  });
-
-  // This allows you to run specific modules only:
-  // npm run test -match=menu
-  const moduleMatch = process.env.npm_config_match
-    ? new RegExp(process.env.npm_config_match, 'g')
-    : null;
-
-  const testFiles = [];
-  walker.on('file', (file) => {
-    if (/-spec\.[tj]s$/.test(file) &&
-        (!moduleMatch || moduleMatch.test(file))) {
-      testFiles.push(file);
+  const filter = (file) => {
+    if (!/-spec\.[tj]s$/.test(file)) {
+      return false;
     }
+
+    // This allows you to run specific modules only:
+    // npm run test -match=menu
+    const moduleMatch = process.env.npm_config_match
+      ? new RegExp(process.env.npm_config_match, 'g')
+      : null;
+    if (moduleMatch && !moduleMatch.test(file)) {
+      return false;
+    }
+
+    const baseElectronDir = path.resolve(__dirname, '..');
+    if (argv.files && !argv.files.includes(path.relative(baseElectronDir, file))) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const getFiles = require('../spec/static/get-files');
+  const testFiles = await getFiles(__dirname, { filter });
+  testFiles.sort().forEach((file) => {
+    mocha.addFile(file);
   });
 
-  const baseElectronDir = path.resolve(__dirname, '..');
-
-  walker.on('end', () => {
-    testFiles.sort();
-    sortToEnd(testFiles, f => f.includes('crash-reporter')).forEach((file) => {
-      if (!argv.files || argv.files.includes(path.relative(baseElectronDir, file))) {
-        mocha.addFile(file);
-      }
+  const cb = () => {
+    // Ensure the callback is called after runner is defined
+    process.nextTick(() => {
+      process.exit(runner.failures);
     });
-    const cb = () => {
-      // Ensure the callback is called after runner is defined
-      process.nextTick(() => {
-        process.exit(runner.failures);
-      });
-    };
+  };
 
-    // Set up chai in the correct order
-    const chai = require('chai');
-    chai.use(require('chai-as-promised'));
-    chai.use(require('dirty-chai'));
+  // Set up chai in the correct order
+  const chai = require('chai');
+  chai.use(require('chai-as-promised'));
+  chai.use(require('dirty-chai'));
 
-    const runner = mocha.run(cb);
-  });
+  const runner = mocha.run(cb);
+}).catch((err) => {
+  console.error('An error occurred while running the spec-main spec runner');
+  console.error(err);
+  process.exit(1);
 });
-
-function partition (xs, f) {
-  const trues = [];
-  const falses = [];
-  xs.forEach(x => (f(x) ? trues : falses).push(x));
-  return [trues, falses];
-}
-
-function sortToEnd (xs, f) {
-  const [end, beginning] = partition(xs, f);
-  return beginning.concat(end);
-}

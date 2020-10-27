@@ -14,12 +14,15 @@
 
 namespace electron {
 
-class InspectableWebContentsImpl;
+class InspectableWebContents;
 
 class InspectableWebContentsViewMac : public InspectableWebContentsView {
  public:
   explicit InspectableWebContentsViewMac(
-      InspectableWebContentsImpl* inspectable_web_contents_impl);
+      InspectableWebContents* inspectable_web_contents);
+  InspectableWebContentsViewMac(const InspectableWebContentsViewMac&) = delete;
+  InspectableWebContentsViewMac& operator=(
+      const InspectableWebContentsViewMac&) = delete;
   ~InspectableWebContentsViewMac() override;
 
   gfx::NativeView GetNativeView() const override;
@@ -32,17 +35,15 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const base::string16& title) override;
 
-  InspectableWebContentsImpl* inspectable_web_contents() {
+  InspectableWebContents* inspectable_web_contents() {
     return inspectable_web_contents_;
   }
 
  private:
   // Owns us.
-  InspectableWebContentsImpl* inspectable_web_contents_;
+  InspectableWebContents* inspectable_web_contents_;
 
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
-
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };
 
 }  // namespace electron

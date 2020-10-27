@@ -15,8 +15,6 @@ app.whenReady().then(() => {
   protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
-  }, (error) => {
-    if (error) console.error('Failed to register protocol')
   })
 })
 ```
@@ -26,9 +24,15 @@ of the `app` module gets emitted.
 
 ## Using `protocol` with a custom `partition` or `session`
 
-A protocol is registered to a specific Electron [`session`](./session.md) object. If you don't specify a session, then your `protocol` will be applied to the default session that Electron uses. However, if you define a `partition` or `session` on your `browserWindow`'s `webPreferences`, then that window will use a different session and your custom protocol will not work if you just use `electron.protocol.XXX`.
+A protocol is registered to a specific Electron [`session`](./session.md)
+object. If you don't specify a session, then your `protocol` will be applied to
+the default session that Electron uses. However, if you define a `partition` or
+`session` on your `browserWindow`'s `webPreferences`, then that window will use
+a different session and your custom protocol will not work if you just use
+`electron.protocol.XXX`.
 
-To have your custom protocol work in combination with a custom session, you need to register it to that session explicitly.
+To have your custom protocol work in combination with a custom session, you need
+to register it to that session explicitly.
 
 ```javascript
 const { session, app, protocol } = require('electron')
@@ -41,17 +45,9 @@ app.whenReady().then(() => {
   ses.protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
     callback({ path: path.normalize(`${__dirname}/${url}`) })
-  }, (error) => {
-    if (error) console.error('Failed to register protocol')
   })
 
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      partition: partition
-    }
-  })
+  mainWindow = new BrowserWindow({ webPreferences: { partition } })
 })
 ```
 
@@ -63,15 +59,15 @@ The `protocol` module has the following methods:
 
 * `customSchemes` [CustomScheme[]](structures/custom-scheme.md)
 
-
 **Note:** This method can only be used before the `ready` event of the `app`
 module gets emitted and can be called only once.
 
-Registers the `scheme` as standard, secure, bypasses content security policy for resources,
-allows registering ServiceWorker and supports fetch API.
+Registers the `scheme` as standard, secure, bypasses content security policy for
+resources, allows registering ServiceWorker, supports fetch API, and streaming
+video/audio. Specify a privilege with the value of `true` to enable the capability.
 
-Specify a privilege with the value of `true` to enable the capability.
-An example of registering a privileged scheme, with bypassing Content Security Policy:
+An example of registering a privileged scheme, that bypasses Content Security
+Policy:
 
 ```javascript
 const { protocol } = require('electron')
@@ -84,7 +80,7 @@ A standard scheme adheres to what RFC 3986 calls [generic URI
 syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
 `https` are standard schemes, while `file` is not.
 
-Registering a scheme as standard, will allow relative and absolute resources to
+Registering a scheme as standard allows relative and absolute resources to
 be resolved correctly when served. Otherwise the scheme will behave like the
 `file` protocol, but without the ability to resolve relative URLs.
 
@@ -102,168 +98,107 @@ Registering a scheme as standard will allow access to files through the
 [FileSystem API][file-system-api]. Otherwise the renderer will throw a security
 error for the scheme.
 
-By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB, cookies)
-are disabled for non standard schemes. So in general if you want to register a
-custom protocol to replace the `http` protocol, you have to register it as a standard scheme.
+By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB,
+cookies) are disabled for non standard schemes. So in general if you want to
+register a custom protocol to replace the `http` protocol, you have to register
+it as a standard scheme.
 
-`protocol.registerSchemesAsPrivileged` can be used to replicate the functionality of the previous `protocol.registerStandardSchemes`, `webFrame.registerURLSchemeAs*` and `protocol.registerServiceWorkerSchemes` functions that existed prior to Electron 5.0.0, for example:
+Protocols that use streams (http and stream protocols) should set `stream: true`.
+The `<video>` and `<audio>` HTML elements expect protocols to buffer their
+responses by default. The `stream` flag configures those elements to correctly
+expect streaming responses.
 
-**before (<= v4.x)**
-```javascript
-// Main
-protocol.registerStandardSchemes(['scheme1', 'scheme2'], { secure: true })
-// Renderer
-webFrame.registerURLSchemeAsPrivileged('scheme1', { secure: true })
-webFrame.registerURLSchemeAsPrivileged('scheme2', { secure: true })
-```
-
-**after (>= v5.x)**
-```javascript
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'scheme1', privileges: { standard: true, secure: true } },
-  { scheme: 'scheme2', privileges: { standard: true, secure: true } }
-])
-```
-
-### `protocol.registerFileProtocol(scheme, handler[, completion])`
+### `protocol.registerFileProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `filePath` String | [FilePathWithHeaders](structures/file-path-with-headers.md) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
 
-Registers a protocol of `scheme` that will send the file as a response. The
-`handler` will be called with `handler(request, callback)` when a `request` is
-going to be created with `scheme`. `completion` will be called with
-`completion(null)` when `scheme` is successfully registered or
-`completion(error)` when failed.
+Returns `Boolean` - Whether the protocol was successfully registered
+
+Registers a protocol of `scheme` that will send a file as the response. The
+`handler` will be called with `request` and `callback` where `request` is
+an incoming request for the `scheme`.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
-`callback({ path: filePath })`. The object may also have a `headers` property
-which gives a map of headers to values for the response headers, e.g.
-`callback({ path: filePath, headers: {"Content-Security-Policy": "default-src 'none'"]})`.
-
-When `callback` is called with nothing, a number, or an object that has an
-`error` property, the `request` will fail with the `error` number you
-specified. For the available error numbers you can use, please see the
-[net error list][net-error].
+`callback({ path: filePath })`. The `filePath` must be an absolute path.
 
 By default the `scheme` is treated like `http:`, which is parsed differently
-than protocols that follow the "generic URI syntax" like `file:`.
+from protocols that follow the "generic URI syntax" like `file:`.
 
-### `protocol.registerBufferProtocol(scheme, handler[, completion])`
+### `protocol.registerBufferProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `buffer` (Buffer | [MimeTypedBuffer](structures/mime-typed-buffer.md)) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully registered
 
 Registers a protocol of `scheme` that will send a `Buffer` as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with either a `Buffer` object or an object that has the `data`,
-`mimeType`, and `charset` properties.
+should be called with either a `Buffer` object or an object that has the `data`
+property.
 
 Example:
 
 ```javascript
-const { protocol } = require('electron')
-
 protocol.registerBufferProtocol('atom', (request, callback) => {
   callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
-}, (error) => {
-  if (error) console.error('Failed to register protocol')
 })
 ```
 
-### `protocol.registerStringProtocol(scheme, handler[, completion])`
+### `protocol.registerStringProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `data` (String | [StringProtocolResponse](structures/string-protocol-response.md)) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully registered
 
 Registers a protocol of `scheme` that will send a `String` as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with either a `String` or an object that has the `data`,
-`mimeType`, and `charset` properties.
+should be called with either a `String` or an object that has the `data`
+property.
 
-### `protocol.registerHttpProtocol(scheme, handler[, completion])`
+### `protocol.registerHttpProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `redirectRequest` Object
-      * `url` String
-      * `method` String (optional)
-      * `session` Session | null (optional)
-      * `uploadData` [ProtocolResponseUploadData](structures/protocol-response-upload-data.md) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` ProtocolResponse
+
+Returns `Boolean` - Whether the protocol was successfully registered
 
 Registers a protocol of `scheme` that will send an HTTP request as a response.
 
 The usage is the same with `registerFileProtocol`, except that the `callback`
-should be called with a `redirectRequest` object that has the `url`, `method`,
-`referrer`, `uploadData` and `session` properties.
+should be called with an object that has the `url` property.
 
-By default the HTTP request will reuse the current session. If you want the
-request to have a different session you should set `session` to `null`.
-
-For POST requests the `uploadData` object must be provided.
-
-### `protocol.registerStreamProtocol(scheme, handler[, completion])`
+### `protocol.registerStreamProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
 
-Registers a protocol of `scheme` that will send a `Readable` as a response.
+Returns `Boolean` - Whether the protocol was successfully registered
 
-The usage is similar to the other `register{Any}Protocol`, except that the
-`callback` should be called with either a `Readable` object or an object that
-has the `data`, `statusCode`, and `headers` properties.
+Registers a protocol of `scheme` that will send a stream as a response.
+
+The usage is the same with `registerFileProtocol`, except that the
+`callback` should be called with either a [`ReadableStream`](https://nodejs.org/api/stream.html#stream_class_stream_readable) object or an object that
+has the `data` property.
 
 Example:
 
@@ -286,8 +221,6 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
     },
     data: createStream('<h5>Response</h5>')
   })
-}, (error) => {
-  if (error) console.error('Failed to register protocol')
 })
 ```
 
@@ -295,132 +228,102 @@ It is possible to pass any object that implements the readable stream API (emits
 `data`/`end`/`error` events). For example, here's how a file could be returned:
 
 ```javascript
-const { protocol } = require('electron')
-const fs = require('fs')
-
 protocol.registerStreamProtocol('atom', (request, callback) => {
   callback(fs.createReadStream('index.html'))
-}, (error) => {
-  if (error) console.error('Failed to register protocol')
 })
 ```
 
-### `protocol.unregisterProtocol(scheme[, completion])`
+### `protocol.unregisterProtocol(scheme)`
 
 * `scheme` String
-* `completion` Function (optional)
-  * `error` Error
+
+Returns `Boolean` - Whether the protocol was successfully unregistered
 
 Unregisters the custom protocol of `scheme`.
 
-### `protocol.isProtocolHandled(scheme)`
+### `protocol.isProtocolRegistered(scheme)`
 
 * `scheme` String
 
-Returns `Promise<Boolean>` - fulfilled with a boolean that indicates whether there is
-already a handler for `scheme`.
+Returns `Boolean` - Whether `scheme` is already registered.
 
-### `protocol.interceptFileProtocol(scheme, handler[, completion])`
+### `protocol.interceptFileProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `filePath` String
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
 
-### `protocol.interceptStringProtocol(scheme, handler[, completion])`
+### `protocol.interceptStringProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `data` (String | [StringProtocolResponse](structures/string-protocol-response.md)) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
 
-### `protocol.interceptBufferProtocol(scheme, handler[, completion])`
+### `protocol.interceptBufferProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `buffer` Buffer (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
 
-### `protocol.interceptHttpProtocol(scheme, handler[, completion])`
+### `protocol.interceptHttpProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `redirectRequest` Object
-      * `url` String
-      * `method` String (optional)
-      * `session` Session | null (optional)
-      * `uploadData` [ProtocolResponseUploadData](structures/protocol-response-upload-data.md) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` [ProtocolResponse](structures/protocol-response.md)
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
 
-### `protocol.interceptStreamProtocol(scheme, handler[, completion])`
+### `protocol.interceptStreamProtocol(scheme, handler)`
 
 * `scheme` String
 * `handler` Function
-  * `request` Object
-    * `url` String
-    * `headers` Record<String, String>
-    * `referrer` String
-    * `method` String
-    * `uploadData` [UploadData[]](structures/upload-data.md)
+  * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `stream` (ReadableStream | [StreamProtocolResponse](structures/stream-protocol-response.md)) (optional)
-* `completion` Function (optional)
-  * `error` Error
+    * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
+
+Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Same as `protocol.registerStreamProtocol`, except that it replaces an existing
 protocol handler.
 
-### `protocol.uninterceptProtocol(scheme[, completion])`
+### `protocol.uninterceptProtocol(scheme)`
 
 * `scheme` String
-* `completion` Function (optional)
-  * `error` Error
+
+Returns `Boolean` - Whether the protocol was successfully unintercepted
 
 Remove the interceptor installed for `scheme` and restore its original handler.
 
-[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+### `protocol.isProtocolIntercepted(scheme)`
+
+* `scheme` String
+
+Returns `Boolean` - Whether `scheme` is already intercepted.
+
 [file-system-api]: https://developer.mozilla.org/en-US/docs/Web/API/LocalFileSystem

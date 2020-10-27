@@ -24,13 +24,38 @@
   if ((self = [super init])) {
     NSDistributedNotificationCenter* distCenter =
         [NSDistributedNotificationCenter defaultCenter];
+    // A notification that the screen was locked.
     [distCenter addObserver:self
                    selector:@selector(onScreenLocked:)
                        name:@"com.apple.screenIsLocked"
                      object:nil];
+    // A notification that the screen was unlocked by the user.
     [distCenter addObserver:self
                    selector:@selector(onScreenUnlocked:)
                        name:@"com.apple.screenIsUnlocked"
+                     object:nil];
+    // A notification that the workspace posts before the machine goes to sleep.
+    [distCenter addObserver:self
+                   selector:@selector(isSuspending:)
+                       name:NSWorkspaceWillSleepNotification
+                     object:nil];
+    // A notification that the workspace posts when the machine wakes from
+    // sleep.
+    [distCenter addObserver:self
+                   selector:@selector(isResuming:)
+                       name:NSWorkspaceDidWakeNotification
+                     object:nil];
+    // A notification that the workspace posts when the user session becomes
+    // active.
+    [distCenter addObserver:self
+                   selector:@selector(onUserDidBecomeActive:)
+                       name:NSWorkspaceSessionDidBecomeActiveNotification
+                     object:nil];
+    // A notification that the workspace posts when the user session becomes
+    // inactive.
+    [distCenter addObserver:self
+                   selector:@selector(onUserDidResignActive:)
+                       name:NSWorkspaceSessionDidResignActiveNotification
                      object:nil];
   }
   return self;
@@ -45,15 +70,39 @@
   self->emitters.push_back(monitor_);
 }
 
+- (void)isSuspending:(NSNotification*)notify {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("suspend");
+  }
+}
+
+- (void)isResuming:(NSNotification*)notify {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("resume");
+  }
+}
+
 - (void)onScreenLocked:(NSNotification*)notification {
-  for (auto*& emitter : self->emitters) {
+  for (auto* emitter : self->emitters) {
     emitter->Emit("lock-screen");
   }
 }
 
 - (void)onScreenUnlocked:(NSNotification*)notification {
-  for (auto*& emitter : self->emitters) {
+  for (auto* emitter : self->emitters) {
     emitter->Emit("unlock-screen");
+  }
+}
+
+- (void)onUserDidBecomeActive:(NSNotification*)notification {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("user-did-become-active");
+  }
+}
+
+- (void)onUserDidResignActive:(NSNotification*)notification {
+  for (auto* emitter : self->emitters) {
+    emitter->Emit("user-did-resign-active");
   }
 }
 

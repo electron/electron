@@ -5,13 +5,14 @@ import * as http from 'http';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
-const features = process.electronBinding('features');
+const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -209,21 +210,17 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
-    it('prevents the second launch of app', function (done) {
+    it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
       const first = cp.spawn(process.execPath, [appPath]);
-      first.once('exit', code => {
-        expect(code).to.equal(0);
-      });
+      await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
-      first.stdout.once('data', () => {
-        const second = cp.spawn(process.execPath, [appPath]);
-        second.once('exit', code => {
-          expect(code).to.equal(1);
-          done();
-        });
-      });
+      const second = cp.spawn(process.execPath, [appPath]);
+      const [code2] = await emittedOnce(second, 'exit');
+      expect(code2).to.equal(1);
+      const [code1] = await emittedOnce(first, 'exit');
+      expect(code1).to.equal(0);
     });
 
     it('passes arguments to the second-instance event', async () => {
@@ -376,47 +373,38 @@ describe('app module', () => {
 
     afterEach(() => closeWindow(w).then(() => { w = null as any; }));
 
-    it('should emit browser-window-focus event when window is focused', (done) => {
-      app.once('browser-window-focus', (e, window) => {
-        expect(w.id).to.equal(window.id);
-        done();
-      });
+    it('should emit browser-window-focus event when window is focused', async () => {
+      const emitted = emittedOnce(app, 'browser-window-focus');
       w = new BrowserWindow({ show: false });
       w.emit('focus');
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit browser-window-blur event when window is blured', (done) => {
-      app.once('browser-window-blur', (e, window) => {
-        expect(w.id).to.equal(window.id);
-        done();
-      });
+    it('should emit browser-window-blur event when window is blured', async () => {
+      const emitted = emittedOnce(app, 'browser-window-blur');
       w = new BrowserWindow({ show: false });
       w.emit('blur');
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit browser-window-created event when window is created', (done) => {
-      app.once('browser-window-created', (e, window) => {
-        setImmediate(() => {
-          expect(w.id).to.equal(window.id);
-          done();
-        });
-      });
+    it('should emit browser-window-created event when window is created', async () => {
+      const emitted = emittedOnce(app, 'browser-window-created');
       w = new BrowserWindow({ show: false });
+      const [, window] = await emitted;
+      expect(window.id).to.equal(w.id);
     });
 
-    it('should emit web-contents-created event when a webContents is created', (done) => {
-      app.once('web-contents-created', (e, webContents) => {
-        setImmediate(() => {
-          expect(w.webContents.id).to.equal(webContents.id);
-          done();
-        });
-      });
+    it('should emit web-contents-created event when a webContents is created', async () => {
+      const emitted = emittedOnce(app, 'web-contents-created');
       w = new BrowserWindow({ show: false });
+      const [, webContents] = await emitted;
+      expect(webContents.id).to.equal(w.webContents.id);
     });
 
-    it('should emit renderer-process-crashed event when renderer crashes', async function () {
-      // FIXME: re-enable this test on win32.
-      if (process.platform === 'win32') { return this.skip(); }
+    // FIXME: re-enable this test on win32.
+    ifit(process.platform !== 'win32')('should emit renderer-process-crashed event when renderer crashes', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -425,11 +413,29 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const promise = emittedOnce(app, 'renderer-process-crashed');
+      const emitted = emittedOnce(app, 'renderer-process-crashed');
       w.webContents.executeJavaScript('process.crash()');
 
-      const [, webContents] = await promise;
+      const [, webContents] = await emitted;
       expect(webContents).to.equal(w.webContents);
+    });
+
+    // FIXME: re-enable this test on win32.
+    ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const emitted = emittedOnce(app, 'render-process-gone');
+      w.webContents.executeJavaScript('process.crash()');
+
+      const [, webContents, details] = await emitted;
+      expect(webContents).to.equal(w.webContents);
+      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
@@ -613,7 +619,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
     });
 
-    it('sets and returns the app as a login item', done => {
+    ifit(process.platform !== 'win32')('sets and returns the app as a login item', function () {
       app.setLoginItemSettings({ openAtLogin: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -622,10 +628,28 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       });
-      done();
     });
 
-    it('adds a login item that loads in hidden mode', done => {
+    ifit(process.platform === 'win32')('sets and returns the app as a login item (windows)', function () {
+      app.setLoginItemSettings({ openAtLogin: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+    });
+
+    ifit(process.platform !== 'win32')('adds a login item that loads in hidden mode', function () {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -634,7 +658,25 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       });
-      done();
+    });
+
+    ifit(process.platform === 'win32')('adds a login item that loads in hidden mode (windows)', function () {
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
     });
 
     it('correctly sets and unsets the LoginItem', function () {
@@ -662,16 +704,77 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
     });
 
-    it('allows you to pass a custom executable and arguments', function () {
-      if (process.platform !== 'win32') this.skip();
-
-      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs });
-
+    ifit(process.platform === 'win32')('allows you to pass a custom executable and arguments', function () {
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: true });
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
-      expect(app.getLoginItemSettings({
+      const openAtLoginTrueEnabledTrue = app.getLoginItemSettings({
         path: updateExe,
         args: processStartArgs
-      }).openAtLogin).to.equal(true);
+      });
+
+      expect(openAtLoginTrueEnabledTrue.openAtLogin).to.equal(true);
+      expect(openAtLoginTrueEnabledTrue.executableWillLaunchAtLogin).to.equal(true);
+
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginTrueEnabledFalse = app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      });
+
+      expect(openAtLoginTrueEnabledFalse.openAtLogin).to.equal(true);
+      expect(openAtLoginTrueEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs, enabled: false });
+      const openAtLoginFalseEnabledFalse = app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      });
+
+      expect(openAtLoginFalseEnabledFalse.openAtLogin).to.equal(false);
+      expect(openAtLoginFalseEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+    });
+
+    ifit(process.platform === 'win32')('allows you to pass a custom name', function () {
+      app.setLoginItemSettings({ openAtLogin: true });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: false
+        }, {
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+
+      app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: true
+        }]
+      });
     });
   });
 
@@ -737,6 +840,22 @@ describe('app module', () => {
       app.setPath('music', __dirname);
       expect(app.getPath('music')).to.equal(__dirname);
     });
+
+    if (process.platform === 'win32') {
+      it('gets the folder for recent files', () => {
+        const recent = app.getPath('recent');
+
+        // We expect that one of our test machines have overriden this
+        // to be something crazy, it'll always include the word "Recent"
+        // unless people have been registry-hacking like crazy
+        expect(recent).to.include('Recent');
+      });
+
+      it('can override the recent files path', () => {
+        app.setPath('recent', 'C:\\fake-path');
+        expect(app.getPath('recent')).to.equal('C:\\fake-path');
+      });
+    }
   });
 
   describe('setPath(name, path)', () => {
@@ -870,34 +989,24 @@ describe('app module', () => {
       expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
 
-    it('creates a registry entry for the protocol class', (done) => {
+    it('creates a registry entry for the protocol class', async () => {
       app.setAsDefaultProtocolClient(protocol);
 
-      classesKey.keys((error: Error, keys: any[]) => {
-        if (error) throw error;
-
-        const exists = !!keys.find(key => key.key.includes(protocol));
-        expect(exists).to.equal(true);
-
-        done();
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(true);
     });
 
-    it('completely removes a registry entry for the protocol class', (done) => {
+    it('completely removes a registry entry for the protocol class', async () => {
       app.setAsDefaultProtocolClient(protocol);
       app.removeAsDefaultProtocolClient(protocol);
 
-      classesKey.keys((error: Error, keys: any[]) => {
-        if (error) throw error;
-
-        const exists = !!keys.find(key => key.key.includes(protocol));
-        expect(exists).to.equal(false);
-
-        done();
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(false);
     });
 
-    it('only unsets a class registry key if it contains other data', (done) => {
+    it('only unsets a class registry key if it contains other data', async () => {
       app.setAsDefaultProtocolClient(protocol);
 
       const protocolKey = new Winreg({
@@ -905,18 +1014,12 @@ describe('app module', () => {
         key: `\\Software\\Classes\\${protocol}`
       });
 
-      protocolKey.set('test-value', 'REG_BINARY', '123', () => {
-        app.removeAsDefaultProtocolClient(protocol);
+      await promisify(protocolKey.set).call(protocolKey, 'test-value', 'REG_BINARY', '123');
+      app.removeAsDefaultProtocolClient(protocol);
 
-        classesKey.keys((error: Error, keys: any[]) => {
-          if (error) throw error;
-
-          const exists = !!keys.find(key => key.key.includes(protocol));
-          expect(exists).to.equal(true);
-
-          done();
-        });
-      });
+      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
+      const exists = !!keys.find(key => key.key.includes(protocol));
+      expect(exists).to.equal(true);
     });
 
     it('sets the default client such that getApplicationNameForProtocol returns Electron', () => {
@@ -948,6 +1051,23 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+    it('returns promise rejection for a bogus protocol', async function () {
+      await expect(
+        app.getApplicationInfoForProtocol('bogus-protocol://')
+      ).to.eventually.be.rejectedWith(
+        'Unable to retrieve installation path to app'
+      );
+    });
+
+    it('returns resolved promise with appPath, displayName and icon', async function () {
+      const appInfo = await app.getApplicationInfoForProtocol('https://');
+      expect(appInfo.path).not.to.be.undefined();
+      expect(appInfo.name).not.to.be.undefined();
+      expect(appInfo.icon).not.to.be.undefined();
+    });
+  });
+
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
@@ -961,34 +1081,28 @@ describe('app module', () => {
       }
     });
 
-    it('does not launch for argument following a URL', done => {
+    it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
       const first = cp.spawn(process.execPath, [appPath, 'electron-test:?', 'abc']);
-      first.once('exit', code => {
-        expect(code).to.not.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.not.equal(123);
     });
 
-    it('launches successfully for argument following a file path', done => {
+    it('launches successfully for argument following a file path', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, 'e:\\abc', 'abc']);
-      first.once('exit', code => {
-        expect(code).to.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.equal(123);
     });
 
-    it('launches successfully for multiple URIs following --', done => {
+    it('launches successfully for multiple URIs following --', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata']);
-      first.once('exit', code => {
-        expect(code).to.equal(123);
-        done();
-      });
+      const [code] = await emittedOnce(first, 'exit');
+      expect(code).to.equal(123);
     });
   });
 
@@ -1062,6 +1176,14 @@ describe('app module', () => {
         expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0);
         expect(entry.memory).to.have.property('peakWorkingSetSize').that.is.greaterThan(0);
 
+        if (entry.type === 'Utility' || entry.type === 'GPU') {
+          expect(entry.serviceName).to.be.a('string').that.does.not.equal('');
+        }
+
+        if (entry.type === 'Utility') {
+          expect(entry).to.have.property('name').that.is.a('string');
+        }
+
         if (process.platform === 'win32') {
           expect(entry.memory).to.have.property('privateBytes').that.is.greaterThan(0);
         }
@@ -1091,7 +1213,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getGPUInfo() API', () => {
+  // FIXME https://github.com/electron/electron/issues/24224
+  ifdescribe(process.platform !== 'linux')('getGPUInfo() API', () => {
     const appPath = path.join(fixturesPath, 'api', 'gpu-info.js');
 
     const getGPUInfo = async (type: string) => {
@@ -1272,7 +1395,7 @@ describe('app module', () => {
 
       it('keeps references to the menu', () => {
         app.dock.setMenu(new Menu());
-        const v8Util = process.electronBinding('v8_util');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
     });
@@ -1318,6 +1441,16 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.hide', () => {
+      it('should not throw', () => {
+        app.dock.hide();
+        expect(app.dock.isVisible()).to.equal(false);
+      });
+    });
+
+    // Note that dock.show tests should run after dock.hide tests, to work
+    // around a bug of macOS.
+    // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
         return app.dock.show().then(() => {
@@ -1331,13 +1464,6 @@ describe('app module', () => {
 
       it('eventually fulfills', async () => {
         await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
-      });
-    });
-
-    describe('dock.hide', () => {
-      it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
       });
     });
   });
@@ -1412,6 +1538,15 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line');
       expect(getSwitchValue).to.equal('');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('app.setSecureKeyboardEntryEnabled', () => {
+    it('changes Secure Keyboard Entry is enabled', () => {
+      app.setSecureKeyboardEntryEnabled(true);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(true);
+      app.setSecureKeyboardEntryEnabled(false);
+      expect(app.isSecureKeyboardEntryEnabled()).to.equal(false);
     });
   });
 });

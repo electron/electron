@@ -4,13 +4,12 @@ import { expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
+import { ifit, delay } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('Menu module', function () {
-  this.timeout(5000);
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
@@ -86,16 +85,23 @@ describe('Menu module', function () {
         Menu.buildFromTemplate([{ visible: true }]);
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/);
     });
+
     it('does throw exception for undefined', () => {
       expect(() => {
         Menu.buildFromTemplate([undefined as any]);
       }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/);
     });
 
+    it('throws when an non-array is passed as a template', () => {
+      expect(() => {
+        Menu.buildFromTemplate('hello' as any);
+      }).to.throw(/Invalid template for Menu: Menu template must be an array/);
+    });
+
     describe('Menu sorting and building', () => {
       describe('sorts groups', () => {
         it('does a simple sort', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               label: 'two',
               id: '2',
@@ -140,7 +146,7 @@ describe('Menu module', function () {
         });
 
         it('resolves cycles by ignoring things that conflict', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '2',
               label: 'two',
@@ -172,7 +178,7 @@ describe('Menu module', function () {
         });
 
         it('ignores references to commands that do not exist', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -202,7 +208,7 @@ describe('Menu module', function () {
         });
 
         it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -254,7 +260,7 @@ describe('Menu module', function () {
 
       describe('moves an item to a different group by merging groups', () => {
         it('can move a group of one item', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -294,7 +300,7 @@ describe('Menu module', function () {
         });
 
         it("moves all items in the moving item's group", () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -342,7 +348,7 @@ describe('Menu module', function () {
         });
 
         it("ignores positions relative to commands that don't exist", () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -430,7 +436,7 @@ describe('Menu module', function () {
         });
 
         it('can merge multiple groups when given a list of before/after commands', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -468,7 +474,7 @@ describe('Menu module', function () {
         });
 
         it('can merge multiple groups based on both before/after commands', () => {
-          const items = [
+          const items: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
@@ -591,6 +597,32 @@ describe('Menu module', function () {
         expect(menuTwo.items[0].label).to.equal('a');
         expect(menuTwo.items[1].label).to.equal('b');
         expect(menuTwo.items[2].label).to.equal('c');
+      });
+
+      it('should only filter excess menu separators AFTER the re-ordering for before/after is done', () => {
+        const menuOne = Menu.buildFromTemplate([
+          {
+            type: 'separator'
+          },
+          {
+            type: 'normal',
+            label: 'Foo',
+            id: 'foo'
+          },
+          {
+            type: 'normal',
+            label: 'Bar',
+            id: 'bar'
+          },
+          {
+            type: 'separator',
+            before: ['bar']
+          }]);
+
+        expect(menuOne.items).to.have.length(3);
+        expect(menuOne.items[0].label).to.equal('Foo');
+        expect(menuOne.items[1].type).to.equal('separator');
+        expect(menuOne.items[2].label).to.equal('Bar');
       });
 
       it('should continue inserting items at next index when no specifier is present', () => {
@@ -830,29 +862,29 @@ describe('Menu module', function () {
       });
     });
 
-    it('prevents menu from getting garbage-collected when popuping', (done) => {
+    it('prevents menu from getting garbage-collected when popuping', async () => {
       const menu = Menu.buildFromTemplate([{ role: 'paste' }]);
       menu.popup({ window: w });
 
       // Keep a weak reference to the menu.
-      const v8Util = process.electronBinding('v8_util');
-      const map = v8Util.createIDWeakMap<Electron.Menu>();
-      map.set(0, menu);
+      // eslint-disable-next-line no-undef
+      const wr = new (globalThis as any).WeakRef(menu);
 
-      setTimeout(() => {
-        // Do garbage collection, since |menu| is not referenced in this closure
-        // it would be gone after next call.
-        v8Util.requestGarbageCollectionForTesting();
-        setTimeout(() => {
-          // Try to receive menu from weak reference.
-          if (map.has(0)) {
-            map.get(0)!.closePopup();
-            done();
-          } else {
-            done('Menu is garbage-collected while popuping');
-          }
-        });
-      });
+      await delay();
+
+      // Do garbage collection, since |menu| is not referenced in this closure
+      // it would be gone after next call.
+      const v8Util = process._linkedBinding('electron_common_v8_util');
+      v8Util.requestGarbageCollectionForTesting();
+
+      await delay();
+
+      // Try to receive menu from weak reference.
+      if (wr.deref()) {
+        wr.deref().closePopup();
+      } else {
+        throw new Error('Menu is garbage-collected while popuping');
+      }
     });
   });
 
@@ -878,9 +910,14 @@ describe('Menu module', function () {
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';
-      appProcess.stdout.on('data', data => { output += data; });
-
-      await emittedOnce(appProcess, 'exit');
+      await new Promise((resolve) => {
+        appProcess.stdout.on('data', data => {
+          output += data;
+          if (data.indexOf('Window has') > -1) {
+            resolve();
+          }
+        });
+      });
       expect(output).to.include('Window has no menu');
     });
 

@@ -17,7 +17,7 @@
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/widget/widget.h"
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 #include "ui/gtk/gtk_util.h"
 #endif
 
@@ -282,7 +282,7 @@ void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
 void MenuBar::RefreshColorCache() {
   const ui::NativeTheme* theme = GetNativeTheme();
   if (theme) {
-#if defined(USE_X11)
+#if defined(OS_LINUX)
     background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
     enabled_color_ =
         gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
@@ -305,7 +305,7 @@ void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button =
-        new SubmenuButton(menu_model_->GetLabelAt(i), this, background_color_);
+        new SubmenuButton(this, menu_model_->GetLabelAt(i), background_color_);
     button->set_tag(i);
     AddChildView(button);
   }
@@ -319,7 +319,7 @@ void MenuBar::UpdateViewColors() {
   // set child colors
   if (menu_model_ == nullptr)
     return;
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
   for (auto* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);

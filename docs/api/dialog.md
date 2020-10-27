@@ -11,14 +11,6 @@ const { dialog } = require('electron')
 console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 ```
 
-The Dialog is opened from Electron's main thread. If you want to use the dialog
-object from a renderer process, remember to access it using the remote:
-
-```javascript
-const { dialog } = require('electron').remote
-console.log(dialog)
-```
-
 ## Methods
 
 The `dialog` module has the following methods:
@@ -229,6 +221,7 @@ expanding and collapsing the dialog.
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -238,7 +231,6 @@ expanding and collapsing the dialog.
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
@@ -269,12 +261,13 @@ Shows a message box, it will block the process until the message box is closed.
 It returns the index of the clicked button.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
-If `browserWindow` is not shown dialog will not be attached to it. In such case It will be displayed as independed window.
+If `browserWindow` is not shown dialog will not be attached to it. In such case it will be displayed as an independent window.
 
 ### `dialog.showMessageBox([browserWindow, ]options)`
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -284,7 +277,6 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
@@ -314,7 +306,7 @@ Returns `Promise<Object>` - resolves with a promise containing the following pro
   * `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
-Shows a message box, it will block the process until the message box is closed.
+Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 

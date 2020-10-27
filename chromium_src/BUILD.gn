@@ -12,8 +12,12 @@ import("//third_party/widevine/cdm/widevine.gni")
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/accessibility/accessibility_ui.cc",
+    "//chrome/browser/accessibility/accessibility_ui.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
+    "//chrome/browser/crash_upload_list/crash_upload_list_crashpad.cc",
+    "//chrome/browser/crash_upload_list/crash_upload_list_crashpad.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
@@ -22,18 +26,10 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
-    "//chrome/browser/extensions/global_shortcut_listener_mac.h",
-    "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
-    "//chrome/browser/extensions/global_shortcut_listener_win.cc",
-    "//chrome/browser/extensions/global_shortcut_listener_win.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
-    "//chrome/browser/icon_loader_mac.mm",
-    "//chrome/browser/icon_loader_win.cc",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
-    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
-    "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
     "//chrome/browser/net/proxy_config_monitor.cc",
@@ -53,30 +49,62 @@ static_library("chrome") {
     "//chrome/browser/ssl/tls_deprecation_config.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
-    "//chrome/browser/win/chrome_process_finder.cc",
-    "//chrome/browser/win/chrome_process_finder.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
+
+  if (is_mac) {
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+      "//chrome/browser/icon_loader_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+    ]
+  }
+
+  if (is_win) {
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_win.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_win.h",
+      "//chrome/browser/icon_loader_win.cc",
+      "//chrome/browser/win/chrome_process_finder.cc",
+      "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/child/v8_crashpad_support_win.cc",
+      "//chrome/child/v8_crashpad_support_win.h",
+    ]
+  }
+
   public_deps = [
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
+    "//components/paint_preview/buildflags",
     "//components/proxy_config",
     "//components/security_state/content",
     "//content/public/browser",
   ]
+
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
-    "//components/feature_engagement:buildflags",
+    "//chrome/services/speech:buildflags",
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    if (use_x11) {
+      sources += [
+        "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
+        "//chrome/browser/extensions/global_shortcut_listener_x11.h",
+      ]
+    } else if (use_ozone) {
+      sources += [
+        "//chrome/browser/extensions/global_shortcut_listener_ozone.cc",
+        "//chrome/browser/extensions/global_shortcut_listener_ozone.h",
+      ]
+    }
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
-      "//chrome/browser/extensions/global_shortcut_listener_x11.h",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
@@ -86,6 +114,14 @@ static_library("chrome") {
       "//components/dbus/menu",
       "//components/dbus/thread_linux",
     ]
+  }
+
+  if (is_win) {
+    sources += [
+      "//chrome/browser/win/icon_reader_service.cc",
+      "//chrome/browser/win/icon_reader_service.h",
+    ]
+    public_deps += [ "//chrome/services/util_win:lib" ]
   }
 
   if (enable_desktop_capturer) {
@@ -146,13 +182,6 @@ static_library("chrome") {
     if (is_linux) {
       sources += [ "//chrome/browser/media/webrtc/window_icon_util_x11.cc" ]
     }
-  }
-
-  if (enable_tts) {
-    sources += [
-      "//chrome/browser/speech/tts_controller_delegate_impl.cc",
-      "//chrome/browser/speech/tts_controller_delegate_impl.h",
-    ]
   }
 
   if (enable_widevine) {
@@ -239,24 +268,38 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/extensions/chrome_url_request_util.cc",
       "//chrome/browser/extensions/chrome_url_request_util.h",
-      "//chrome/browser/pdf/pdf_extension_util.cc",
-      "//chrome/browser/pdf/pdf_extension_util.h",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
       "//chrome/renderer/extensions/extension_hooks_delegate.cc",
       "//chrome/renderer/extensions/extension_hooks_delegate.h",
       "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
       "//chrome/renderer/extensions/tabs_hooks_delegate.h",
-      "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
-      "//chrome/renderer/pepper/chrome_pdf_print_client.h",
     ]
+
+    if (enable_pdf_viewer) {
+      sources += [
+        "//chrome/browser/pdf/pdf_extension_util.cc",
+        "//chrome/browser/pdf/pdf_extension_util.h",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
+      ]
+    }
+  }
+
+  sources += [ "//chrome/browser/hang_monitor/hang_crash_dump.h" ]
+  if (is_mac) {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump_mac.cc" ]
+  } else if (is_win) {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump_win.cc" ]
+  } else {
+    sources += [ "//chrome/browser/hang_monitor/hang_crash_dump.cc" ]
   }
 }
 
 source_set("plugins") {
   sources = []
   deps = []
-  libs = []
+  frameworks = []
 
   # browser side
   sources += [
@@ -268,31 +311,13 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
   deps += [
-    "//components/pdf/browser",
     "//media:media_buildflags",
     "//ppapi/buildflags",
     "//ppapi/proxy:ipc",
     "//services/device/public/mojom",
   ]
-  if (enable_pepper_flash) {
-    sources += [
-      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc",
-      "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h",
-    ]
-    if (is_mac) {
-      sources += [
-        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
-        "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
-      ]
-      libs += [ "CoreGraphics.framework" ]
-    }
-    if (is_linux) {
-      deps += [ "//components/services/font/public/cpp" ]
-    }
+  if (enable_pdf_viewer) {
+    deps += [ "//components/pdf/browser" ]
   }
 
   # renderer side
@@ -302,26 +327,16 @@ source_set("plugins") {
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
-  if (enable_pepper_flash) {
-    sources += [
-      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
-      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
-      "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_menu_host.h",
-      "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
-    ]
-  }
-  if (enable_pepper_flash || enable_pdf_viewer) {
+  if (enable_pdf_viewer) {
     sources += [
       "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
       "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     ]
+    if (enable_pdf_viewer) {
+      deps += [ "//components/pdf/renderer" ]
+    }
   }
   deps += [
-    "//components/pdf/renderer",
     "//components/strings",
     "//media:media_buildflags",
     "//ppapi/host",
@@ -339,6 +354,7 @@ source_set("chrome_spellchecker") {
   sources = []
   deps = []
   libs = []
+  public_deps = []
 
   if (enable_builtin_spellchecker) {
     sources += [
@@ -350,13 +366,12 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_factory.h",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
-      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.cc",
-      "//chrome/browser/spellchecker/spellcheck_language_blacklist_policy_handler.h",
+      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.cc",
+      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
       "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_service.cc",
       "//chrome/browser/spellchecker/spellcheck_service.h",
-      "//chrome/common/pref_names.h",
     ]
 
     if (has_spellcheck_panel) {
@@ -379,9 +394,11 @@ source_set("chrome_spellchecker") {
       "//components/spellcheck:buildflags",
       "//components/sync",
     ]
+
+    public_deps += [ "//chrome/common:constants" ]
   }
 
-  public_deps = [
+  public_deps += [
     "//components/spellcheck/browser",
     "//components/spellcheck/common",
     "//components/spellcheck/renderer",

@@ -21,7 +21,7 @@ bool CommonWebContentsDelegate::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
   if (event.skip_in_browser ||
-      event.GetType() == content::NativeWebKeyboardEvent::kChar)
+      event.GetType() == content::NativeWebKeyboardEvent::Type::kChar)
     return false;
 
   // Escape exits tabbed fullscreen mode.

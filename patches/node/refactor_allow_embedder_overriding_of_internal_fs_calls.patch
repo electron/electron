@@ -7,10 +7,10 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index bb9a2b177c4304496dab1f1beaedc1ae9d9f55d9..36d06759aac57b1aa813b52c94e2168b8a8f9087 100644
+index 6d6ca2af629c41df68fe1a4652cf94fef30be038..e1f70addc28e4fe31d3a7089ecec3b5874dde75a 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -57,6 +57,10 @@ setupBuffer();
+@@ -56,6 +56,10 @@ setupBuffer();
  process.domain = null;
  process._exiting = false;
  
@@ -20,31 +20,21 @@ index bb9a2b177c4304496dab1f1beaedc1ae9d9f55d9..36d06759aac57b1aa813b52c94e2168b
 +
  // process.config is serialized config.gypi
  process.config = JSONParse(internalBinding('native_module').config);
- 
+ require('internal/worker/js_transferable').setup();
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index d66e8dfce3dd34ecfd6aa67dfacf2282a2de893e..8bb5dae46966541884dbad5bb9c3a3f790c56358 100644
+index 5bebce776dc60052aa01422af29d7766033e7331..541c18d8032c5247433367f9e04c946cf203d475 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -54,10 +54,7 @@ const assert = require('internal/assert');
- const fs = require('fs');
+@@ -70,7 +70,7 @@ const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
--const {
--  internalModuleReadJSON,
--  internalModuleStat
--} = internalBinding('fs');
+ const { sep } = path;
+-const { internalModuleStat } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
+ const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-   makeRequireFunction,
-@@ -141,14 +138,12 @@ function enrichCJSError(err) {
- }
- 
- function stat(filename) {
--  // FIXME(codebytere): determine why this needs to be done and remove
--  const internalModuleStat = process.binding('fs').internalModuleStat;
-   filename = path.toNamespacedPath(filename);
-   if (statCache !== null) {
+@@ -142,7 +142,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
@@ -53,12 +43,25 @@ index d66e8dfce3dd34ecfd6aa67dfacf2282a2de893e..8bb5dae46966541884dbad5bb9c3a3f7
    if (statCache !== null) statCache.set(filename, result);
    return result;
  }
-@@ -254,7 +249,7 @@ function readPackage(requestPath) {
-   const existing = packageJsonCache.get(jsonPath);
-   if (existing !== undefined) return existing;
+diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
+index 4a2b0e6ddb3ed8881f896c6f556c9debaf778b81..209df9033a26c29c6e60bd173f71055884a0db89 100644
+--- a/lib/internal/modules/package_json_reader.js
++++ b/lib/internal/modules/package_json_reader.js
+@@ -1,7 +1,7 @@
+ 'use strict';
  
--  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
-+  const json = internalFsBinding.internalModuleReadJSON(path.toNamespacedPath(jsonPath));
-   if (json === undefined) {
-     packageJsonCache.set(jsonPath, false);
-     return false;
+ const { SafeMap } = primordials;
+-const { internalModuleReadJSON } = internalBinding('fs');
++const internalFsBinding = internalBinding('fs');
+ const { pathToFileURL } = require('url');
+ const { toNamespacedPath } = require('path');
+ 
+@@ -18,7 +18,7 @@ function read(jsonPath) {
+     return cache.get(jsonPath);
+   }
+ 
+-  const [string, containsKeys] = internalModuleReadJSON(
++  const [string, containsKeys] = internalFsBinding.internalModuleReadJSON(
+     toNamespacedPath(jsonPath)
+   );
+   const result = { string, containsKeys };

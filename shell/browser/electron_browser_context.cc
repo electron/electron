@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -38,16 +39,16 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
-#include "shell/browser/electron_paths.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/pref_store_delegate.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
-#include "shell/browser/ui/inspectable_web_contents_impl.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -91,18 +92,21 @@ std::string MakePartitionName(const std::string& input) {
 }  // namespace
 
 // static
-ElectronBrowserContext::BrowserContextMap
-    ElectronBrowserContext::browser_context_map_;
+ElectronBrowserContext::BrowserContextMap&
+ElectronBrowserContext::browser_context_map() {
+  static base::NoDestructor<ElectronBrowserContext::BrowserContextMap>
+      browser_context_map;
+  return *browser_context_map;
+}
 
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : base::RefCountedDeleteOnSequence<ElectronBrowserContext>(
-          base::ThreadTaskRunnerHandle::Get()),
-      in_memory_pref_store_(nullptr),
+    : in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
+      ssl_config_(network::mojom::SSLConfig::New()),
       weak_factory_(this) {
   // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
   base::ScopedAllowBlockingForTesting allow_blocking;
@@ -139,13 +143,15 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  BrowserContextDependencyManager::GetInstance()->CreateBrowserContextServices(
-      this);
+  if (!in_memory_) {
+    BrowserContextDependencyManager::GetInstance()
+        ->CreateBrowserContextServices(this);
 
-  extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(this));
-  extension_system_->InitForRegularProfile(true /* extensions_enabled */);
-  extension_system_->FinishInitialization();
+    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+        extensions::ExtensionSystem::Get(this));
+    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system_->FinishInitialization();
+  }
 #endif
 }
 
@@ -171,10 +177,12 @@ void ElectronBrowserContext::InitPrefs() {
   prefs_factory.set_user_prefs(pref_store);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* ext_pref_store = new ExtensionPrefStore(
-      ExtensionPrefValueMapFactory::GetForBrowserContext(this),
-      IsOffTheRecord());
-  prefs_factory.set_extension_prefs(ext_pref_store);
+  if (!in_memory_) {
+    auto* ext_pref_store = new ExtensionPrefStore(
+        ExtensionPrefValueMapFactory::GetForBrowserContext(this),
+        IsOffTheRecord());
+    prefs_factory.set_extension_prefs(ext_pref_store);
+  }
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
@@ -191,12 +199,13 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-  InspectableWebContentsImpl::RegisterPrefs(registry.get());
+  InspectableWebContents::RegisterPrefs(registry.get());
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
+  if (!in_memory_)
+    extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -219,7 +228,7 @@ void ElectronBrowserContext::InitPrefs() {
   auto* current_dictionaries =
       prefs()->Get(spellcheck::prefs::kSpellCheckDictionaries);
   // No configured dictionaries, the default will be en-US
-  if (current_dictionaries->GetList().size() == 0) {
+  if (current_dictionaries->GetList().empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
@@ -328,8 +337,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, &factory_receiver, &header_client,
-          nullptr, nullptr, nullptr);
+          url::Origin(), base::nullopt, base::kInvalidUkmSourceId,
+          &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -438,20 +447,38 @@ ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   return resolve_proxy_helper_.get();
 }
 
+network::mojom::SSLConfigPtr ElectronBrowserContext::GetSSLConfig() {
+  return ssl_config_.Clone();
+}
+
+void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  ssl_config_ = std::move(config);
+  if (ssl_config_client_) {
+    ssl_config_client_->OnSSLConfigUpdated(ssl_config_.Clone());
+  }
+}
+
+void ElectronBrowserContext::SetSSLConfigClient(
+    mojo::Remote<network::mojom::SSLConfigClient> client) {
+  ssl_config_client_ = std::move(client);
+}
+
 // static
-scoped_refptr<ElectronBrowserContext> ElectronBrowserContext::From(
+ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictionaryValue options) {
   PartitionKey key(partition, in_memory);
-  auto* browser_context = browser_context_map_[key].get();
-  if (browser_context)
-    return scoped_refptr<ElectronBrowserContext>(browser_context);
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
+  if (browser_context) {
+    return browser_context;
+  }
 
   auto* new_context =
       new ElectronBrowserContext(partition, in_memory, std::move(options));
-  browser_context_map_[key] = new_context->GetWeakPtr();
-  return scoped_refptr<ElectronBrowserContext>(new_context);
+  browser_context_map()[key] =
+      std::unique_ptr<ElectronBrowserContext>(new_context);
+  return new_context;
 }
 
 }  // namespace electron

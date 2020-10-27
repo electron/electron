@@ -5,7 +5,6 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,6 +24,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
@@ -32,26 +32,13 @@
 
 namespace electron {
 
-namespace {
-
-// Called when there is a fatal error in V8, we just crash the process here so
-// we can get the stack trace.
-void FatalErrorCallback(const char* location, const char* message) {
-  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  ElectronBindings::Crash();
-}
-
-}  // namespace
-
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
-  uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
-  call_next_tick_async_.data = this;
+  uv_async_init(loop, call_next_tick_async_.get(), OnCallNextTick);
+  call_next_tick_async_.get()->data = this;
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-ElectronBindings::~ElectronBindings() {
-  uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
-}
+ElectronBindings::~ElectronBindings() {}
 
 // static
 void ElectronBindings::BindProcess(v8::Isolate* isolate,
@@ -60,7 +47,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   // These bindings are shared between sandboxed & unsandboxed renderers
   process->SetMethod("crash", &Crash);
   process->SetMethod("hang", &Hang);
-  process->SetMethod("log", &Log);
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
@@ -85,8 +71,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
 
 void ElectronBindings::BindTo(v8::Isolate* isolate,
                               v8::Local<v8::Object> process) {
-  isolate->SetFatalErrorHandler(FatalErrorCallback);
-
   gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
 
@@ -119,7 +103,7 @@ void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
     return;
 
   pending_next_ticks_.push_back(env);
-  uv_async_send(&call_next_tick_async_);
+  uv_async_send(call_next_tick_async_.get());
 }
 
 // static
@@ -131,17 +115,13 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
     node::Environment* env = *it;
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
-    node::InternalCallbackScope scope(
-        env, v8::Local<v8::Object>(), {0, 0},
-        node::InternalCallbackScope::kAllowEmptyResource);
+    v8::HandleScope handle_scope(env->isolate());
+    node::InternalCallbackScope scope(env, v8::Object::New(env->isolate()),
+                                      {0, 0},
+                                      node::InternalCallbackScope::kNoFlags);
   }
 
   self->pending_next_ticks_.clear();
-}
-
-// static
-void ElectronBindings::Log(const base::string16& message) {
-  std::cout << message << std::flush;
 }
 
 // static
@@ -220,7 +200,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
   dict.Set("free", free);
 
   // NB: These return bogus values on macOS
-#if !defined(OS_MACOSX)
+#if !defined(OS_MAC)
   dict.Set("swapTotal", mem_info.swap_total);
   dict.Set("swapFree", mem_info.swap_free);
 #endif
@@ -271,8 +251,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   v8::Isolate* isolate = promise.isolate();
   gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::MicrotasksScope script_scope(isolate,
-                                   v8::MicrotasksScope::kRunMicrotasks);
+  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
   v8::Context::Scope context_scope(
       v8::Local<v8::Context>::New(isolate, context));
 

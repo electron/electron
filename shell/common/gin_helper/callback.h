@@ -9,10 +9,11 @@
 #include <vector>
 
 #include "base/bind.h"
+#include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
-
+#include "shell/common/gin_helper/microtasks_scope.h"
 // Implements safe convertions between JS functions and base::Callback.
 
 namespace gin_helper {
@@ -47,8 +48,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
-    v8::MicrotasksScope script_scope(isolate,
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -72,8 +72,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
-    v8::MicrotasksScope script_scope(isolate,
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -96,8 +95,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
       return ret;
-    v8::MicrotasksScope script_scope(isolate,
-                                     v8::MicrotasksScope::kRunMicrotasks);
+    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);

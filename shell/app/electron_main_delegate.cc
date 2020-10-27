@@ -15,23 +15,25 @@
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
+#include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
-#include "services/service_manager/embedder/switches.h"
-#include "services/service_manager/sandbox/switches.h"
+#include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -40,15 +42,28 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "shell/app/electron_main_delegate_mac.h"
 #endif
 
 #if defined(OS_WIN)
 #include "base/win/win_util.h"
-#if defined(_WIN64)
-#include "shell/common/crash_reporter/crash_reporter_win.h"
+#include "chrome/child/v8_crashpad_support_win.h"
 #endif
+
+#if defined(OS_LINUX)
+#include "components/crash/core/app/breakpad_linux.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
+#include "v8/include/v8.h"
+#endif
+
+#if !defined(MAS_BUILD)
+#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/common/crash_key.h"
+#include "components/crash/core/common/crash_keys.h"
+#include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/api/electron_api_crash_reporter.h"
+#include "shell/common/crash_keys.h"
 #endif
 
 namespace electron {
@@ -64,18 +79,18 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
 
 bool IsSandboxEnabled(base::CommandLine* command_line) {
   return command_line->HasSwitch(switches::kEnableSandbox) ||
-         !command_line->HasSwitch(service_manager::switches::kNoSandbox);
+         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if defined(OS_LINUX)
       // The zygote process opens the resources for the renderers.
-      process_type == service_manager::switches::kZygoteProcess ||
+      process_type == ::switches::kZygoteProcess ||
 #endif
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
       process_type == ::switches::kPpapiPluginProcess ||
@@ -98,6 +113,41 @@ void InvalidParameterHandler(const wchar_t*,
 
 }  // namespace
 
+// TODO(nornagon): move path provider overriding to its own file in
+// shell/common
+namespace electron {
+
+bool GetDefaultCrashDumpsPath(base::FilePath* path) {
+  base::FilePath cur;
+  if (!base::PathService::Get(DIR_USER_DATA, &cur))
+    return false;
+#if defined(OS_MAC) || defined(OS_WIN)
+  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+#else
+  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+#endif
+  // TODO(bauerb): http://crbug.com/259796
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
+    return false;
+  *path = cur;
+  return true;
+}
+
+bool ElectronPathProvider(int key, base::FilePath* path) {
+  if (key == DIR_CRASH_DUMPS) {
+    return GetDefaultCrashDumpsPath(path);
+  }
+  return false;
+}
+
+void RegisterPathProvider() {
+  base::PathService::RegisterProvider(ElectronPathProvider, PATH_START,
+                                      PATH_END);
+}
+
+}  // namespace electron
+
 void LoadResourceBundle(const std::string& locale) {
   const bool initialized = ui::ResourceBundle::HasSharedInstance();
   if (initialized)
@@ -105,7 +155,7 @@ void LoadResourceBundle(const std::string& locale) {
 
   // Load other resource files.
   base::FilePath pak_dir;
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   pak_dir =
       base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
@@ -134,9 +184,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
-#if defined(_WIN64)
-  crash_reporter::CrashReporterWin::SetUnhandledExceptionFilter();
-#endif
+  v8_crashpad_support::SetUp();
 
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
@@ -173,24 +221,26 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-  // Enable convient stack printing. This is enabled by default in non-official
-  // builds.
+  // Enable convenient stack printing. This is enabled by default in
+  // non-official builds.
   if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
     base::debug::EnableInProcessStackDumping();
 
   if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
   chrome::RegisterPathProvider();
+  electron::RegisterPathProvider();
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
 #endif
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
   SetUpBundleOverrides();
@@ -211,7 +261,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // Check for --no-sandbox parameter when running as root.
   if (getuid() == 0 && IsSandboxEnabled(command_line))
     LOG(FATAL) << "Running as root without --"
-               << service_manager::switches::kNoSandbox
+               << sandbox::policy::switches::kNoSandbox
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
@@ -255,7 +305,7 @@ void ElectronMainDelegate::PostEarlyInitialization(bool is_running_tests) {
     }
   }
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   if (custom_locale.empty())
     l10n_util::OverrideLocaleWithCocoaLocale();
 #endif
@@ -272,6 +322,10 @@ void ElectronMainDelegate::PreSandboxStartup() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+#if !defined(MAS_BUILD)
+  crash_reporter::InitializeCrashKeys();
+#endif
+
   // Initialize ResourceBundle which handles files loaded from external
   // sources. The language should have been passed in to us from the
   // browser process as a command line flag.
@@ -280,17 +334,39 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-  // Only append arguments for browser process.
-  if (!IsBrowserProcess(command_line))
-    return;
-
-  // Allow file:// URIs to read other file:// URIs by default.
-  command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
-
-#if defined(OS_MACOSX)
-  // Enable AVFoundation.
-  command_line->AppendSwitch("enable-avfoundation");
+#if defined(OS_WIN) || (defined(OS_MAC) && !defined(MAS_BUILD))
+  // In the main process, we wait for JS to call crashReporter.start() before
+  // initializing crashpad. If we're in the renderer, we want to initialize it
+  // immediately at boot.
+  if (!process_type.empty()) {
+    ElectronCrashReporterClient::Create();
+    crash_reporter::InitializeCrashpad(false, process_type);
+  }
 #endif
+
+#if defined(OS_LINUX)
+  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
+    ElectronCrashReporterClient::Create();
+    breakpad::InitCrashReporter(process_type);
+  }
+#endif
+
+#if !defined(MAS_BUILD)
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
+  crash_keys::SetPlatformCrashKey();
+#endif
+
+  if (IsBrowserProcess(command_line)) {
+    // Only append arguments for browser process.
+
+    // Allow file:// URIs to read other file:// URIs by default.
+    command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
+
+#if defined(OS_MAC)
+    // Enable AVFoundation.
+    command_line->AppendSwitch("enable-avfoundation");
+#endif
+  }
 }
 
 void ElectronMainDelegate::PreCreateMainMessageLoop() {
@@ -298,7 +374,7 @@ void ElectronMainDelegate::PreCreateMainMessageLoop() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   InitializeFeatureList();
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
   RegisterAtomCrApp();
 #endif
 }
@@ -349,5 +425,21 @@ bool ElectronMainDelegate::ShouldCreateFeatureList() {
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
+
+#if defined(OS_LINUX)
+void ElectronMainDelegate::ZygoteForked() {
+  // Needs to be called after we have DIR_USER_DATA.  BrowserMain sets
+  // this up for the browser process in a different manner.
+  ElectronCrashReporterClient::Create();
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  breakpad::InitCrashReporter(process_type);
+
+  // Reset the command line for the newly spawned process.
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
+}
+#endif  // defined(OS_LINUX)
 
 }  // namespace electron

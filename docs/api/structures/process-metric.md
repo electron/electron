@@ -11,6 +11,9 @@
   * `Pepper Plugin`
   * `Pepper Plugin Broker`
   * `Unknown`
+* `serviceName` String (optional) - The non-localized name of the process.
+* `name` String (optional) - The name of the process.
+    Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 * `cpu` [CPUUsage](cpu-usage.md) - CPU usage of the process.
 * `creationTime` Number - Creation time for this process.
     The time is represented as number of milliseconds since epoch.

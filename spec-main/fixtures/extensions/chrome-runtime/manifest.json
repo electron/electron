@@ -5,8 +5,12 @@
     {
       "matches": ["<all_urls>"],
       "js": ["main.js"],
-      "run_at": "document_start"
+      "run_at": "document_end"
     }
   ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
   "manifest_version": 2
 }

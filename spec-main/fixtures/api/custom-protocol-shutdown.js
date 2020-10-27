@@ -12,7 +12,7 @@ app.whenReady().then(function () {
     callback('Hello World!');
   });
 
-  web.webContents.loadURL('test://abc/hello.txt');
+  web.loadURL('test://abc/hello.txt');
 
-  web.webContents.on('did-finish-load', () => app.quit());
+  web.on('did-finish-load', () => app.quit());
 });

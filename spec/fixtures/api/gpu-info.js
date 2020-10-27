@@ -4,16 +4,16 @@ app.commandLine.appendSwitch('--disable-software-rasterizer');
 
 app.whenReady().then(() => {
   const infoType = process.argv.pop();
-  const w = new BrowserWindow({ show: false });
+  const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
   w.webContents.once('did-finish-load', () => {
     app.getGPUInfo(infoType).then(
       (gpuInfo) => {
         console.log(JSON.stringify(gpuInfo));
-        app.exit(0);
+        setImmediate(() => app.exit(0));
       },
       (error) => {
         console.error(error);
-        app.exit(1);
+        setImmediate(() => app.exit(1));
       }
     );
   });

@@ -8,10 +8,10 @@ common.gypi is a file that's included in the node header bundle, despite
 the fact that we do not build node with gyp.
 
 diff --git a/common.gypi b/common.gypi
-index 38a22fc5f1ddd6164291c5d21df8fc1203bcc2b7..bf6dda11463d0bee97262ccc6d344d8b2efad8d2 100644
+index 4745bb5ac77639a97b30a9730d0ab990fdcca05e..81568d5afabd6d80b4df445124ccd7108801769d 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -77,6 +77,22 @@
+@@ -81,6 +81,22 @@
  
      ##### end V8 defaults #####
  
@@ -32,5 +32,5 @@ index 38a22fc5f1ddd6164291c5d21df8fc1203bcc2b7..bf6dda11463d0bee97262ccc6d344d8b
 +    'enable_lto%': 'false',
 +
      'conditions': [
-       ['target_arch=="arm64"', {
-         # Disabled pending https://github.com/nodejs/node/issues/23913.
+       ['OS == "win"', {
+         'os_posix': 0,

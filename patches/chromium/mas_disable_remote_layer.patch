@@ -17,7 +17,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index a298747e3b755acd4f8d366d625142371ed1995e..9c9bdc53016637c6d6dbb27f3581b343ec96fb97 100644
+index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73ca10c2b0 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -20,7 +20,9 @@
@@ -30,7 +30,7 @@ index a298747e3b755acd4f8d366d625142371ed1995e..9c9bdc53016637c6d6dbb27f3581b343
  @class CALayer;
  
  namespace ui {
-@@ -97,7 +99,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
+@@ -116,7 +118,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -41,26 +41,27 @@ index a298747e3b755acd4f8d366d625142371ed1995e..9c9bdc53016637c6d6dbb27f3581b343
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index eb46993b8f40fdc7da35dae1b850dad637f6b47d..05a9ae47620d17b5a53f991c0b3a0a5c153b599c 100644
+index 67e0efb23c717c3194f27695215a8bd20dbbb957..cf02fab328d9fe7a6e9f53c712a7c1c871b8b304 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -63,6 +63,7 @@ ImageTransportSurfaceOverlayMacBase<
- template <typename BaseClass>
- bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
-     gl::GLSurfaceFormat format) {
+@@ -51,7 +51,7 @@
+ 
+   ca_layer_tree_coordinator_.reset(new ui::CALayerTreeCoordinator(
+       use_remote_layer_api_, allow_av_sample_buffer_display_layer));
+-
 +#ifndef MAS_BUILD
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -71,6 +72,7 @@ bool ImageTransportSurfaceOverlayMacBase<BaseClass>::Initialize(
-         [CAContext contextWithCGSConnection:connection_id options:@{}] retain]);
+@@ -60,6 +60,7 @@
+                                                    options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
 +#endif
-   return true;
  }
  
-@@ -139,7 +141,9 @@ ImageTransportSurfaceOverlayMacBase<BaseClass>::SwapBuffersInternal(
+ template <typename BaseClass>
+@@ -140,7 +141,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -71,10 +72,10 @@ index eb46993b8f40fdc7da35dae1b850dad637f6b47d..05a9ae47620d17b5a53f991c0b3a0a5c
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329fc8954826 100644
+index a55934320e475af475f7169a5b30954c7e98d775..78d626f2c5be20106ebd54b71a9b0663c55086da 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -97,6 +97,7 @@ void DisplayCALayerTree::UpdateCALayerTree(
+@@ -99,6 +99,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -82,7 +83,7 @@ index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329f
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -121,6 +122,9 @@ void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
+@@ -123,6 +124,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }
@@ -93,12 +94,12 @@ index 38f25d6314f653d7138d30c67c5ae49963863327..f2fda251ed975bd848a49b33830d329f
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 2057fe69d1bb4a2eb0b1dabc5473a30d676847fe..2aba330fc488660ef874caae26a06e6847cdaf93 100644
+index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bfd2f9c3be 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -13,6 +13,7 @@
  
- #include "ui/base/ui_base_export.h"
+ #include "base/component_export.h"
  
 +#ifndef MAS_BUILD
  // The CGSConnectionID is used to create the CAContext in the process that is

@@ -13,6 +13,7 @@
 #include "base/macros.h"
 #include "build/build_config.h"
 #include "extensions/browser/extensions_browser_client.h"
+#include "extensions/browser/kiosk/kiosk_delegate.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
@@ -31,8 +32,6 @@ namespace electron {
 
 // An ExtensionsBrowserClient that supports a single content::BrowserContext
 // with no related incognito context.
-// Must be initialized via InitWithBrowserContext() once the BrowserContext is
-// created.
 class ElectronExtensionsBrowserClient
     : public extensions::ExtensionsBrowserClient {
  public:
@@ -117,14 +116,9 @@ class ElectronExtensionsBrowserClient
   std::string GetApplicationLocale() override;
   std::string GetUserAgent() const override;
   void RegisterBrowserInterfaceBindersForFrame(
-      service_manager::BinderMapWithContext<content::RenderFrameHost*>* map,
+      mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
-
-  // |context| is the single BrowserContext used for IsValidContext().
-  // |pref_service| is used for GetPrefServiceForContext().
-  void InitWithBrowserContext(content::BrowserContext* context,
-                              PrefService* pref_service);
 
   // Sets the API client.
   void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
@@ -139,6 +133,8 @@ class ElectronExtensionsBrowserClient
 
   // The extension cache used for download and installation.
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
+
+  std::unique_ptr<extensions::KioskDelegate> kiosk_delegate_;
 
   std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
       resource_manager_;

@@ -4,9 +4,17 @@
 
 #include "shell/browser/ui/electron_menu_model.h"
 
+#include <utility>
+
 #include "base/stl_util.h"
 
 namespace electron {
+
+#if defined(OS_MAC)
+ElectronMenuModel::SharingItem::SharingItem() = default;
+ElectronMenuModel::SharingItem::SharingItem(SharingItem&&) = default;
+ElectronMenuModel::SharingItem::~SharingItem() = default;
+#endif
 
 bool ElectronMenuModel::Delegate::GetAcceleratorForCommandId(
     int command_id,
@@ -41,12 +49,13 @@ base::string16 ElectronMenuModel::GetRoleAt(int index) {
   return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
-void ElectronMenuModel::SetSublabel(int index, const base::string16& sublabel) {
+void ElectronMenuModel::SetSecondaryLabel(int index,
+                                          const base::string16& sublabel) {
   int command_id = GetCommandIdAt(index);
   sublabels_[command_id] = sublabel;
 }
 
-base::string16 ElectronMenuModel::GetSublabelAt(int index) const {
+base::string16 ElectronMenuModel::GetSecondaryLabelAt(int index) const {
   int command_id = GetCommandIdAt(index);
   const auto iter = sublabels_.find(command_id);
   return iter == std::end(sublabels_) ? base::string16() : iter->second;
@@ -77,6 +86,23 @@ bool ElectronMenuModel::WorksWhenHiddenAt(int index) const {
   }
   return true;
 }
+
+#if defined(OS_MAC)
+bool ElectronMenuModel::GetSharingItemAt(int index, SharingItem* item) const {
+  if (delegate_)
+    return delegate_->GetSharingItemForCommandId(GetCommandIdAt(index), item);
+  return false;
+}
+
+void ElectronMenuModel::SetSharingItem(SharingItem item) {
+  sharing_item_.emplace(std::move(item));
+}
+
+const base::Optional<ElectronMenuModel::SharingItem>&
+ElectronMenuModel::GetSharingItem() const {
+  return sharing_item_;
+}
+#endif
 
 void ElectronMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
