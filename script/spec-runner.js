@@ -26,6 +26,10 @@ for (const flag of unknownFlags) {
   }
 }
 
+const extraTestArgs = [
+  '--disable-backgrounding-occluded-windows'
+];
+
 const utils = require('./lib/utils');
 const { YARN_VERSION } = require('./yarn');
 
@@ -125,7 +129,7 @@ async function runElectronTests () {
 
 async function runRemoteBasedElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec());
-  const runnerArgs = ['electron/spec', ...unknownArgs.slice(2)];
+  const runnerArgs = ['electron/spec', ...unknownArgs.slice(2)].concat(extraTestArgs);
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python';
@@ -196,7 +200,7 @@ async function runNativeElectronTests () {
 
 async function runMainProcessElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec());
-  const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)];
+  const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)].concat(extraTestArgs);
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python';
