@@ -90,7 +90,7 @@ ipcMainInternal.on(
       }
     });
 
-    if (guest) (event as any).returnValue = guest.webContents.id;
+    (event as any).returnValue = guest ? guest.webContents.id : null;
   }
 );
 
