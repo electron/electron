@@ -19,7 +19,7 @@ describe('webRequest module', () => {
       res.end();
     } else if (req.url === '/contentDisposition') {
       res.setHeader('content-disposition', [' attachement; filename=aa%E4%B8%ADaa.txt']);
-      let content = req.url;
+      const content = req.url;
       res.end(content);
     } else {
       res.setHeader('Custom', ['Header']);
