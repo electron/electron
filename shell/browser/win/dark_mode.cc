@@ -4,6 +4,13 @@
 
 #include "shell/browser/win/dark_mode.h"
 
+#include <dwmapi.h>  // DwmSetWindowAttribute()
+
+#include "base/files/file_path.h"
+#include "base/scoped_native_library.h"
+#include "base/win/pe_image.h"
+#include "base/win/win_util.h"
+
 #pragma comment(lib, "Uxtheme.lib")
 
 // This namespace contains code from
@@ -39,14 +46,11 @@ bool IsHighContrast() {
   return false;
 }
 
-using fnDwmSetWindowAttribute = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
-fnDwmSetWindowAttribute _DwmSetWindowAttribute = {};
-
 void RefreshTitleBarThemeColor(HWND hWnd, bool dark) {
   LONG ldark = dark;
   if (g_buildNumber >= 20161) {
     // DWMA_USE_IMMERSIVE_DARK_MODE = 20
-    _DwmSetWindowAttribute(hWnd, 20, &ldark, sizeof dark);
+    DwmSetWindowAttribute(hWnd, 20, &ldark, sizeof dark);
     return;
   }
   if (g_buildNumber >= 18363) {
@@ -55,23 +59,7 @@ void RefreshTitleBarThemeColor(HWND hWnd, bool dark) {
     _SetWindowCompositionAttribute(hWnd, &data);
     return;
   }
-  _DwmSetWindowAttribute(hWnd, 0x13, &ldark, sizeof ldark);
-}
-
-// helper to load symbols from a module
-template <typename P>
-bool Symbol(HMODULE h, P* pointer, const char* name) {
-  if (P p = reinterpret_cast<P>(GetProcAddress(h, name))) {
-    *pointer = p;
-    return true;
-  }
-  return false;
-}
-
-// helper to load symbols from a module
-template <typename P>
-bool Symbol(HMODULE h, P* pointer, int number) {
-  return Symbol(h, pointer, MAKEINTRESOURCEA(number));
+  DwmSetWindowAttribute(hWnd, 0x13, &ldark, sizeof ldark);
 }
 
 bool CheckBuildNumber(DWORD buildNumber) {
@@ -82,15 +70,13 @@ bool CheckBuildNumber(DWORD buildNumber) {
 }
 
 void InitDarkMode() {
-  HMODULE hDwmApi = LoadLibrary(L"DWMAPI");
-  if (hDwmApi != 0) {
-    Symbol(hDwmApi, &_DwmSetWindowAttribute, "DwmSetWindowAttribute");
-  }
-
   // get the "get version & build numbers" function
+  auto nt_snl =
+      base::ScopedNativeLibrary(base::FilePath(FILE_PATH_LITERAL("ntdll.dll")));
+  auto nt_pei = base::win::PEImage(nt_snl.get());
   using fnRtlGetNtVersionNumbers = VOID(WINAPI*)(LPDWORD, LPDWORD, LPDWORD);
   auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(
-      GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetNtVersionNumbers"));
+      nt_pei.GetProcAddress("RtlGetNtVersionNumbers"));
   if (!RtlGetNtVersionNumbers) {
     return;
   }
@@ -104,8 +90,12 @@ void InitDarkMode() {
   }
 
   // load "SetWindowCompositionAttribute", used in RefreshTitleBarThemeColor()
-  Symbol(GetModuleHandleW(L"user32.dll"), &_SetWindowCompositionAttribute,
-         "SetWindowCompositionAttribute");
+  _SetWindowCompositionAttribute =
+      reinterpret_cast<decltype(_SetWindowCompositionAttribute)>(
+          base::win::GetUser32FunctionPointer("SetWindowCompositionAttribute"));
+  if (_SetWindowCompositionAttribute == nullptr) {
+    return;
+  }
 
   // load the dark mode functions from uxtheme.dll
   // * RefreshImmersiveColorPolicyState()
@@ -115,32 +105,41 @@ void InitDarkMode() {
   // * AllowDarkModeForApp() (build < 18362)
   // * SetPreferredAppMode() (build >= 18362)
 
-  HMODULE hUxtheme =
-      LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-  if (!hUxtheme) {
+  base::NativeLibrary uxtheme =
+      base::PinSystemLibrary(FILE_PATH_LITERAL("uxtheme.dll"));
+  if (!uxtheme) {
     return;
   }
+  auto ux_pei = base::win::PEImage(uxtheme);
+  auto get_ux_proc_from_ordinal = [&ux_pei](int ordinal, auto* setme) {
+    FARPROC proc = ux_pei.GetProcAddress(reinterpret_cast<LPCSTR>(ordinal));
+    *setme = reinterpret_cast<decltype(*setme)>(proc);
+  };
 
-  using fnRefreshImmersiveColorPolicyState = VOID(WINAPI*)();  // ordinal 104
+  // ordinal 104
+  using fnRefreshImmersiveColorPolicyState = VOID(WINAPI*)();
   fnRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = {};
-  Symbol(hUxtheme, &_RefreshImmersiveColorPolicyState, 104);
+  get_ux_proc_from_ordinal(104, &_RefreshImmersiveColorPolicyState);
 
-  using fnShouldAppsUseDarkMode = BOOL(WINAPI*)();  // ordinal 132
-  fnShouldAppsUseDarkMode _ShouldAppsUseDarkMode = nullptr;
-  Symbol(hUxtheme, &_ShouldAppsUseDarkMode, 132);
+  // ordinal 132
+  using fnShouldAppsUseDarkMode = BOOL(WINAPI*)();
+  fnShouldAppsUseDarkMode _ShouldAppsUseDarkMode = {};
+  get_ux_proc_from_ordinal(132, &_ShouldAppsUseDarkMode);
 
-  using fnAllowDarkModeForApp =
-      BOOL(WINAPI*)(BOOL allow);  // ordinal 135, in 1809
+  // ordinal 135, in 1809
+  using fnAllowDarkModeForApp = BOOL(WINAPI*)(BOOL allow);
   fnAllowDarkModeForApp _AllowDarkModeForApp = {};
 
-  typedef PreferredAppMode(WINAPI * fnSetPreferredAppMode)(
-      PreferredAppMode appMode);  // ordinal 135, in 1903
+  // ordinal 135, in 1903
+  typedef PreferredAppMode(WINAPI *
+                           fnSetPreferredAppMode)(PreferredAppMode appMode);
   fnSetPreferredAppMode _SetPreferredAppMode = {};
 
-  if (g_buildNumber < 18362)
-    Symbol(hUxtheme, &_AllowDarkModeForApp, 135);
-  else
-    Symbol(hUxtheme, &_SetPreferredAppMode, 135);
+  if (g_buildNumber < 18362) {
+    get_ux_proc_from_ordinal(135, &_AllowDarkModeForApp);
+  } else {
+    get_ux_proc_from_ordinal(135, &_SetPreferredAppMode);
+  }
 
   // dark mode is supported iff we found the functions
   g_darkModeSupported = _RefreshImmersiveColorPolicyState &&
@@ -151,10 +150,11 @@ void InitDarkMode() {
   }
 
   // initial setup: allow dark mode to be used
-  if (_AllowDarkModeForApp)
+  if (_AllowDarkModeForApp) {
     _AllowDarkModeForApp(true);
-  else if (_SetPreferredAppMode)
+  } else if (_SetPreferredAppMode) {
     _SetPreferredAppMode(AllowDark);
+  }
   _RefreshImmersiveColorPolicyState();
 
   // check to see if dark mode is currently enabled
