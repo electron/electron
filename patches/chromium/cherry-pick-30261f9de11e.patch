@@ -1,7 +1,7 @@
-From 30261f9de11e776b50dc8c726308b8495db4232c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Lei Zhang <thestig@chromium.org>
-Date: Thu, 01 Oct 2020 19:18:54 +0000
-Subject: [PATCH] Check RF is alive In PrintRenderFrameHelper::PreviewPageRendered().
+Date: Thu, 1 Oct 2020 19:18:54 +0000
+Subject: Check RF is alive In PrintRenderFrameHelper::PreviewPageRendered().
 
 Do not take an accessibility snapshot if the RenderFrame is gone.
 
@@ -11,13 +11,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2442375
 Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
 Commit-Queue: Lei Zhang <thestig@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#812851}
----
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 8568856..959aa10 100644
+index c0107f561f444d537735d4725c6dbecbcaf45226..1f7b7294aa5afb7f967ec260ab9f62d8b27d6827 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -2467,6 +2467,10 @@
+@@ -2463,6 +2463,10 @@ bool PrintRenderFrameHelper::PreviewPageRendered(
                 "page_number", page_number);
  
  #if BUILDFLAG(ENABLE_TAGGED_PDF)
