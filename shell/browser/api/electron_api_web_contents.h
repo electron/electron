@@ -31,6 +31,7 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/common_web_contents_delegate.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/extended_web_contents_observer.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -119,22 +120,6 @@ class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
-
-// Certain events are only in WebContentsDelegate, provide our own Observer to
-// dispatch those events.
-class ExtendedWebContentsObserver : public base::CheckedObserver {
- public:
-  virtual void OnCloseContents() {}
-  virtual void OnDraggableRegionsUpdated(
-      const std::vector<mojom::DraggableRegionPtr>& regions) {}
-  virtual void OnSetContentBounds(const gfx::Rect& rect) {}
-  virtual void OnActivateContents() {}
-  virtual void OnPageTitleUpdated(const base::string16& title,
-                                  bool explicit_set) {}
-
- protected:
-  ~ExtendedWebContentsObserver() override {}
-};
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
