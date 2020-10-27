@@ -698,10 +698,10 @@ if (is_mac) {
   action("fake_v8_context_snapshot_generator") {
     script = "build/fake_v8_context_snapshot_generator.py"
     args = [
-      rebase_path("$root_out_dir/v8_context_snapshot.bin"),
-      rebase_path("$root_out_dir/fake/v8_context_snapshot.bin"),
+      rebase_path("$root_out_dir/$v8_context_snapshot_filename"),
+      rebase_path("$root_out_dir/fake/$v8_context_snapshot_filename"),
     ]
-    outputs = [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+    outputs = [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
   }
 
   bundle_data("electron_framework_resources") {
@@ -715,10 +715,10 @@ if (is_mac) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         if (use_prebuilt_v8_context_snapshot) {
-          sources += [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
           public_deps += [ ":fake_v8_context_snapshot_generator" ]
         } else {
-          sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/$v8_context_snapshot_filename" ]
           public_deps += [ "//tools/v8_context_snapshot" ]
         }
       } else {

@@ -3,11 +3,14 @@ Electron.app/Contents/
 Electron.app/Contents/Frameworks/
 Electron.app/Contents/Frameworks/Electron Framework.framework/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Helpers
 Electron.app/Contents/Frameworks/Electron Framework.framework/Libraries
 Electron.app/Contents/Frameworks/Electron Framework.framework/Resources
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib
@@ -123,7 +126,7 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/tr.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/locale.pak
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/v8_context_snapshot.x86_64.bin
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/v8_context_snapshot.arm64.bin
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/zh_CN.lproj/
@@ -155,15 +158,35 @@ Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/Info.pl
 Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/
 Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)
 Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Mantle.framework/
+Electron.app/Contents/Frameworks/Mantle.framework/Mantle
+Electron.app/Contents/Frameworks/Mantle.framework/Resources
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/A/
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/A/Mantle
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/A/Resources/
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/A/Resources/Info.plist
+Electron.app/Contents/Frameworks/Mantle.framework/Versions/Current
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/ReactiveObjC
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Resources
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/ReactiveObjC
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/Resources/
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A/Resources/Info.plist
+Electron.app/Contents/Frameworks/ReactiveObjC.framework/Versions/Current
+Electron.app/Contents/Frameworks/Squirrel.framework/
+Electron.app/Contents/Frameworks/Squirrel.framework/Resources
+Electron.app/Contents/Frameworks/Squirrel.framework/Squirrel
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/A/
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/Info.plist
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel
+Electron.app/Contents/Frameworks/Squirrel.framework/Versions/Current
 Electron.app/Contents/Info.plist
-Electron.app/Contents/Library/
-Electron.app/Contents/Library/LoginItems/
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/Info.plist
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/MacOS/
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/MacOS/Electron Login Helper
-Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/PkgInfo
 Electron.app/Contents/MacOS/
 Electron.app/Contents/MacOS/Electron
 Electron.app/Contents/PkgInfo
