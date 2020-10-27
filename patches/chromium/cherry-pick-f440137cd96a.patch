@@ -1,7 +1,7 @@
-From f440137cd96a18f64b9931e8f369670197204d55 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Stephen Chenney <schenney@chromium.org>
 Date: Wed, 14 Oct 2020 02:52:47 +0000
-Subject: [PATCH] [Image-Orientation] Implement WebGL image-orientation
+Subject: Implement WebGL image-orientation
 
 M-86 merge.
 
@@ -24,20 +24,13 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2469776
 Reviewed-by: Stephen Chenney <schenney@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1237}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
-index 88eaa1a..b291d1b8 100644
+index badef2c51ad7ab06c800b0f6e05807255820ea39..577424eba6ecc0953fec62dbdc978b2671c26727 100644
 --- a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
 +++ b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
-@@ -190,11 +190,12 @@
- 
- // This function results in a readback due to using SkImage::readPixels().
- // Returns transparent black pixels if the input SkImageInfo.bounds() does
--// not intersect with the input image boundaries.
-+// not intersect with the input image boundaries. When apply_orientation
-+// is true this method will orient the data according to the source's EXIF
-+// information.
+@@ -205,11 +205,11 @@ SkImageInfo GetSkImageInfo(const scoped_refptr<StaticBitmapImage>& input) {
+ // not intersect with the input image boundaries.
  Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input,
                                const SkImageInfo& info,
 -                              const unsigned x = 0,
@@ -45,13 +38,18 @@ index 88eaa1a..b291d1b8 100644
 +                              bool apply_orientation = true) {
    if (info.isEmpty())
      return {};
-   PaintImage paint_image = input->PaintImageForCurrentFrame();
-@@ -206,16 +207,29 @@
+-  sk_sp<SkImage> sk_image = input->PaintImageForCurrentFrame().GetSkImage();
++  PaintImage paint_image = input->PaintImageForCurrentFrame();
++  sk_sp<SkImage> sk_image = paint_image.GetSkImage();
+   if (sk_image->bounds().isEmpty())
+     return {};
+ 
+@@ -218,16 +218,30 @@ Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input,
    Vector<uint8_t> dst_buffer(byte_length);
  
    bool read_pixels_successful =
--      paint_image.readPixels(info, dst_buffer.data(), info.minRowBytes(), x, y);
-+      paint_image.readPixels(info, dst_buffer.data(), info.minRowBytes(), 0, 0);
+-      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), x, y);
++      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), 0, 0);
    DCHECK(read_pixels_successful);
    if (!read_pixels_successful)
      return {};
@@ -61,7 +59,8 @@ index 88eaa1a..b291d1b8 100644
 +    paint_image = Image::ResizeAndOrientImage(
 +        paint_image, input->CurrentFrameOrientation(), FloatSize(1, 1), 1,
 +        kInterpolationNone);
-+    read_pixels_successful = paint_image.readPixels(info, dst_buffer.data(),
++    sk_image = paint_image.GetSkImage();
++    read_pixels_successful = sk_image->readPixels(info, dst_buffer.data(),
 +                                                    info.minRowBytes(), 0, 0);
 +    DCHECK(read_pixels_successful);
 +    if (!read_pixels_successful)
@@ -78,7 +77,7 @@ index 88eaa1a..b291d1b8 100644
  }
  
  static inline bool ShouldAvoidPremul(
-@@ -1071,12 +1085,13 @@
+@@ -1067,12 +1081,13 @@ Vector<uint8_t> ImageBitmap::CopyBitmapData(AlphaDisposition alpha_op,
    auto color_type = info.colorType();
    if (color_type == kN32_SkColorType && u8_color_type == kRGBAColorType)
      color_type = kRGBA_8888_SkColorType;
@@ -93,7 +92,7 @@ index 88eaa1a..b291d1b8 100644
  }
  
  Vector<uint8_t> ImageBitmap::CopyBitmapData() {
-@@ -1108,7 +1123,7 @@
+@@ -1102,7 +1117,7 @@ IntSize ImageBitmap::Size() const {
      return IntSize();
    DCHECK_GT(image_->width(), 0);
    DCHECK_GT(image_->height(), 0);
@@ -101,18 +100,18 @@ index 88eaa1a..b291d1b8 100644
 +  return image_->SizeRespectingOrientation();
  }
  
- ScriptPromise ImageBitmap::CreateImageBitmap(ScriptState* script_state,
+ ScriptPromise ImageBitmap::CreateImageBitmap(
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-index ed7ae52..f7874b0 100644
+index 4e518f9dfbb1bca34f5717685a3878154c1050e8..b838046b1823bac7f7ed83327a21c7191dfa2eba 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-@@ -5309,10 +5309,12 @@
+@@ -5179,10 +5179,12 @@ void WebGLRenderingContextBase::TexImageHelperHTMLImageElement(
      return;
  
    scoped_refptr<Image> image_for_render = image->CachedImage()->GetImage();
--  if (IsA<SVGImage>(image_for_render.get())) {
+-  if (image_for_render && image_for_render->IsSVGImage()) {
 -    if (canvas()) {
-+  bool have_svg_image = IsA<SVGImage>(image_for_render.get());
++  bool have_svg_image = image_for_render->IsSVGImage();
 +  if (have_svg_image || !image_for_render->HasDefaultOrientation()) {
 +    if (have_svg_image && canvas()) {
        UseCounter::Count(canvas()->GetDocument(), WebFeature::kSVGInWebGL);
@@ -121,7 +120,7 @@ index ed7ae52..f7874b0 100644
      image_for_render =
          DrawImageIntoBuffer(std::move(image_for_render), image->width(),
                              image->height(), func_name);
-@@ -5848,6 +5850,7 @@
+@@ -5709,6 +5711,7 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
                         level, internalformat, width, height, depth, 0, format,
                         type, xoffset, yoffset, zoffset))
      return;
@@ -129,7 +128,7 @@ index ed7ae52..f7874b0 100644
    scoped_refptr<StaticBitmapImage> image = bitmap->BitmapImage();
    DCHECK(image);
  
-@@ -5874,9 +5877,16 @@
+@@ -5735,9 +5738,16 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
      return;
    }
  
