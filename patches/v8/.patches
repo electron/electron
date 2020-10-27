@@ -12,3 +12,4 @@ backport_986051.patch
 fix_alreadycalled_checking_in_element_closures.patch
 wasm_do_not_log_code_of_functions_whose_module_is_not_fully_loaded.patch
 cherry-pick-7e5c7b5964.patch
+cherry-pick-6aa1e71fbd09.patch
