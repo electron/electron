@@ -174,13 +174,39 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     v8::Isolate* isolate,
     const content::PermissionType& val) {
   using PermissionType = electron::WebContentsPermissionHelper::PermissionType;
+  // Based on mappings from content/browser/devtools/protocol/browser_handler.cc
+  // Not all permissions are currently used by Electron but this will future
+  // proof these conversions.
   switch (val) {
+    case content::PermissionType::BACKGROUND_FETCH:
+      return StringToV8(isolate, "background-fetch");
+    case content::PermissionType::BACKGROUND_SYNC:
+      return StringToV8(isolate, "background-sync");
     case content::PermissionType::CLIPBOARD_READ_WRITE:
       return StringToV8(isolate, "clipboard-read");
+    case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
+      return StringToV8(isolate, "clipboard-sanitized-write");
+    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
+    case content::PermissionType::VIDEO_CAPTURE:
+      return StringToV8(isolate, "camera");
+    case content::PermissionType::FONT_ACCESS:
+      return StringToV8(isolate, "font-access");
+    case content::PermissionType::IDLE_DETECTION:
+      return StringToV8(isolate, "idle-detection");
+    case content::PermissionType::AUDIO_CAPTURE:
+      return StringToV8(isolate, "microphone");
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
+    case content::PermissionType::NFC:
+      return StringToV8(isolate, "nfc");
     case content::PermissionType::NOTIFICATIONS:
       return StringToV8(isolate, "notifications");
+    case content::PermissionType::PAYMENT_HANDLER:
+      return StringToV8(isolate, "payment-handler");
+    case content::PermissionType::PERIODIC_BACKGROUND_SYNC:
+      return StringToV8(isolate, "periodic-background-sync");
+    case content::PermissionType::DURABLE_STORAGE:
+      return StringToV8(isolate, "persistent-storage");
     case content::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");
     case content::PermissionType::AUDIO_CAPTURE:
@@ -190,6 +216,14 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "mediaKeySystem");
     case content::PermissionType::MIDI:
       return StringToV8(isolate, "midi");
+    case content::PermissionType::WAKE_LOCK_SCREEN:
+      return StringToV8(isolate, "screen-wake-lock");
+    case content::PermissionType::SENSORS:
+      return StringToV8(isolate, "sensors");
+    case content::PermissionType::WAKE_LOCK_SYSTEM:
+      return StringToV8(isolate, "system-wake-lock");
+    case content::PermissionType::WINDOW_PLACEMENT:
+      return StringToV8(isolate, "window-placement");
     default:
       break;
   }
