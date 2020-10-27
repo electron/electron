@@ -56,7 +56,7 @@ Add the following lines to the `index.html` file:
 <body>
     <h1>Hello World!</h1>
     <p>Current theme source: <strong id="theme-source">System</strong></p>
-    
+
     <button id="toggle-dark-mode">Toggle Dark Mode</button>
     <button id="reset-to-system">Reset to System Theme</button>
 
@@ -71,17 +71,17 @@ Next, add event listeners to the toggle buttons and response handlers.
 Add the following lines to the `renderer.js` file:
 
 ```js
-const { ipcRenderer } = require('electron');
+const { ipcRenderer } = require('electron')
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
-  const isDarkMode = await ipcRenderer.invoke('dark-mode:toggle');
-  document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light';
-});
+  const isDarkMode = await ipcRenderer.invoke('dark-mode:toggle')
+  document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light'
+})
 
 document.getElementById('reset-to-system').addEventListener('click', async () => {
-  await ipcRenderer.invoke('dark-mode:system');
-  document.getElementById('theme-source').innerHTML = 'System';
-});
+  await ipcRenderer.invoke('dark-mode:system')
+  document.getElementById('theme-source').innerHTML = 'System'
+})
 ```
 
 Next step is to update the `main.js` file to handle events from the Renderer
@@ -105,16 +105,16 @@ function createWindow () {
 
   ipcMain.handle('dark-mode:toggle', () => {
     if (nativeTheme.shouldUseDarkColors) {
-      nativeTheme.themeSource = 'light';
+      nativeTheme.themeSource = 'light'
     } else {
-      nativeTheme.themeSource = 'dark';
+      nativeTheme.themeSource = 'dark'
     }
-    return nativeTheme.shouldUseDarkColors;
-  });
+    return nativeTheme.shouldUseDarkColors
+  })
 
   ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSouce = 'system';
-  });
+    nativeTheme.themeSouce = 'system'
+  })
 }
 
 app.whenReady().then(createWindow)
