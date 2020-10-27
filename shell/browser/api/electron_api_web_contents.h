@@ -146,12 +146,12 @@ class WebContents : public gin::Wrappable<WebContents>,
                     public mojom::ElectronBrowser {
  public:
   enum class Type {
-    BACKGROUND_PAGE,  // An extension background page.
-    BROWSER_WINDOW,   // Used by BrowserWindow.
-    BROWSER_VIEW,     // Used by BrowserView.
-    REMOTE,           // Thin wrap around an existing WebContents.
-    WEB_VIEW,         // Used by <webview>.
-    OFF_SCREEN,       // Used for offscreen rendering
+    kBackgroundPage,  // An extension background page.
+    kBrowserWindow,   // Used by BrowserWindow.
+    kBrowserView,     // Used by BrowserView.
+    kRemote,          // Thin wrap around an existing WebContents.
+    kWebView,         // Used by <webview>.
+    kOffScreen,       // Used for offscreen rendering
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
@@ -677,7 +677,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
-  Type type_ = Type::BROWSER_WINDOW;
+  Type type_ = Type::kBrowserWindow;
 
   int32_t id_;
 

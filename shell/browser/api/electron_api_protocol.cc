@@ -160,13 +160,13 @@ const char* kBuiltinSchemes[] = {
 // Convert error code to string.
 std::string ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case ProtocolError::REGISTERED:
+    case ProtocolError::kRegistered:
       return "The scheme has been registered";
-    case ProtocolError::NOT_REGISTERED:
+    case ProtocolError::kNotRegistered:
       return "The scheme has not been registered";
-    case ProtocolError::INTERCEPTED:
+    case ProtocolError::kIntercepted:
       return "The scheme has been intercepted";
-    case ProtocolError::NOT_INTERCEPTED:
+    case ProtocolError::kNotIntercepted:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";
@@ -184,14 +184,14 @@ ProtocolError Protocol::RegisterProtocol(ProtocolType type,
                                          const std::string& scheme,
                                          const ProtocolHandler& handler) {
   bool added = protocol_registry_->RegisterProtocol(type, scheme, handler);
-  return added ? ProtocolError::OK : ProtocolError::REGISTERED;
+  return added ? ProtocolError::kOK : ProtocolError::kRegistered;
 }
 
 bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
   HandleOptionalCallback(
-      args, removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED);
+      args, removed ? ProtocolError::kOK : ProtocolError::kNotRegistered);
   return removed;
 }
 
@@ -203,14 +203,14 @@ ProtocolError Protocol::InterceptProtocol(ProtocolType type,
                                           const std::string& scheme,
                                           const ProtocolHandler& handler) {
   bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
-  return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
+  return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
 }
 
 bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
   HandleOptionalCallback(
-      args, removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED);
+      args, removed ? ProtocolError::kOK : ProtocolError::kNotIntercepted);
   return removed;
 }
 
@@ -248,7 +248,7 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
         env,
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");
-    if (error == ProtocolError::OK)
+    if (error == ProtocolError::kOK)
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(

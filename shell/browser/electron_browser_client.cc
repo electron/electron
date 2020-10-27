@@ -237,10 +237,10 @@ const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
 // granted to their RenderProcessHosts.  This classification allows us to make
 // sure URLs are served by hosts with the right set of privileges.
 enum class RenderProcessHostPrivilege {
-  Normal,
-  Hosted,
-  Isolated,
-  Extension,
+  kNormal,
+  kHosted,
+  kIsolated,
+  kExtension,
 };
 
 RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
@@ -253,12 +253,12 @@ RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
   // than normal webrenderer, the navigation logic will correct us out of band
   // anyways.
   if (!url.is_valid())
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
   if (!url.SchemeIs(extensions::kExtensionScheme))
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
-  return RenderProcessHostPrivilege::Extension;
+  return RenderProcessHostPrivilege::kExtension;
 }
 
 RenderProcessHostPrivilege GetProcessPrivilege(
@@ -268,9 +268,9 @@ RenderProcessHostPrivilege GetProcessPrivilege(
   std::set<std::string> extension_ids =
       process_map->GetExtensionsInProcess(process_host->GetID());
   if (extension_ids.empty())
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
-  return RenderProcessHostPrivilege::Extension;
+  return RenderProcessHostPrivilege::kExtension;
 }
 
 const extensions::Extension* GetEnabledExtensionFromEffectiveURL(

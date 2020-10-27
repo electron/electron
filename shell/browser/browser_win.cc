@@ -403,10 +403,10 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
     return false;
 
   JumpListCategory category;
-  category.type = JumpListCategory::Type::TASKS;
+  category.type = JumpListCategory::Type::kTasks;
   category.items.reserve(tasks.size());
   JumpListItem item;
-  item.type = JumpListItem::Type::TASK;
+  item.type = JumpListItem::Type::kTask;
   for (const auto& task : tasks) {
     item.title = task.title;
     item.path = task.program;

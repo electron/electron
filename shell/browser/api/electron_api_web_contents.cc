@@ -273,22 +273,22 @@ struct Converter<electron::api::WebContents::Type> {
     using Type = electron::api::WebContents::Type;
     std::string type;
     switch (val) {
-      case Type::BACKGROUND_PAGE:
+      case Type::kBackgroundPage:
         type = "backgroundPage";
         break;
-      case Type::BROWSER_WINDOW:
+      case Type::kBrowserWindow:
         type = "window";
         break;
-      case Type::BROWSER_VIEW:
+      case Type::kBrowserView:
         type = "browserView";
         break;
-      case Type::REMOTE:
+      case Type::kRemote:
         type = "remote";
         break;
-      case Type::WEB_VIEW:
+      case Type::kWebView:
         type = "webview";
         break;
-      case Type::OFF_SCREEN:
+      case Type::kOffScreen:
         type = "offscreen";
         break;
       default:
@@ -305,14 +305,14 @@ struct Converter<electron::api::WebContents::Type> {
     if (!ConvertFromV8(isolate, val, &type))
       return false;
     if (type == "backgroundPage") {
-      *out = Type::BACKGROUND_PAGE;
+      *out = Type::kBackgroundPage;
     } else if (type == "browserView") {
-      *out = Type::BROWSER_VIEW;
+      *out = Type::kBrowserView;
     } else if (type == "webview") {
-      *out = Type::WEB_VIEW;
+      *out = Type::kWebView;
 #if BUILDFLAG(ENABLE_OSR)
     } else if (type == "offscreen") {
-      *out = Type::OFF_SCREEN;
+      *out = Type::kOffScreen;
 #endif
     } else {
       return false;
@@ -428,7 +428,7 @@ const void* kElectronApiWebContentsKey = &kElectronApiWebContentsKey;
 WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
   switch (view_type) {
     case extensions::VIEW_TYPE_EXTENSION_BACKGROUND_PAGE:
-      return WebContents::Type::BACKGROUND_PAGE;
+      return WebContents::Type::kBackgroundPage;
 
     case extensions::VIEW_TYPE_APP_WINDOW:
     case extensions::VIEW_TYPE_COMPONENT:
@@ -438,7 +438,7 @@ WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
     case extensions::VIEW_TYPE_EXTENSION_GUEST:
     case extensions::VIEW_TYPE_TAB_CONTENTS:
     case extensions::VIEW_TYPE_INVALID:
-      return WebContents::Type::REMOTE;
+      return WebContents::Type::kRemote;
   }
 }
 
@@ -447,7 +447,7 @@ WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      type_(Type::REMOTE),
+      type_(Type::kRemote),
       id_(GetAllWebContents().Add(this)),
       weak_factory_(this) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -485,7 +485,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       type_(type),
       id_(GetAllWebContents().Add(this)),
       weak_factory_(this) {
-  DCHECK(type != Type::REMOTE)
+  DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
@@ -505,7 +505,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_OSR)
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
-    type_ = Type::OFF_SCREEN;
+    type_ = Type::kOffScreen;
 #endif
 
   // Init embedder earlier
@@ -517,7 +517,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   // BrowserViews are not attached to a window initially so they should start
   // off as hidden. This is also important for compositor recycling. See:
   // https://github.com/electron/electron/pull/21372
-  initially_shown_ = type_ != Type::BROWSER_VIEW;
+  initially_shown_ = type_ != Type::kBrowserView;
   options.Get(options::kShow, &initially_shown_);
 
   // Obtain the session.
@@ -685,7 +685,7 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         extensions::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
-  if (GetType() == Type::REMOTE)
+  if (GetType() == Type::kRemote)
     return;
 
   // Allow toggling DevTools for background pages
@@ -701,7 +701,7 @@ WebContents::~WebContents() {
   // The destroy() is called.
   if (managed_web_contents()) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-    if (type_ == Type::BACKGROUND_PAGE) {
+    if (type_ == Type::kBackgroundPage) {
       // Background pages are owned by extensions::ExtensionHost
       managed_web_contents()->ReleaseWebContents();
     }
@@ -713,7 +713,7 @@ WebContents::~WebContents() {
       RenderViewDeleted(web_contents()->GetRenderViewHost());
     }
 
-    if (type_ == Type::BROWSER_WINDOW && owner_window()) {
+    if (type_ == Type::kBrowserWindow && owner_window()) {
       // For BrowserWindow we should close the window and clean up everything
       // before WebContents is destroyed.
       for (ExtendedWebContentsObserver& observer : observers_)
@@ -727,7 +727,7 @@ WebContents::~WebContents() {
     } else {
       // Destroy WebContents asynchronously unless app is shutting down,
       // because destroy() might be called inside WebContents's event handler.
-      bool is_browser_view = type_ == Type::BROWSER_VIEW;
+      bool is_browser_view = type_ == Type::kBrowserView;
       DestroyWebContents(!(IsGuest() || is_browser_view) /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
@@ -820,7 +820,7 @@ void WebContents::AddNewContents(
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
-      CreateAndTake(isolate, std::move(new_contents), Type::BROWSER_WINDOW);
+      CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
@@ -848,7 +848,7 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == Type::BROWSER_WINDOW || type_ == Type::OFF_SCREEN)
+  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen)
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -890,7 +890,7 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
 bool WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (type_ == Type::WEB_VIEW && embedder_) {
+  if (type_ == Type::kWebView && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
     return embedder_->HandleKeyboardEvent(source, event);
   } else {
@@ -1800,14 +1800,14 @@ v8::Local<v8::Promise> WebContents::SavePage(
 }
 
 void WebContents::OpenDevTools(gin::Arguments* args) {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   if (!enable_devtools_)
     return;
 
   std::string state;
-  if (type_ == Type::WEB_VIEW || type_ == Type::BACKGROUND_PAGE ||
+  if (type_ == Type::kWebView || type_ == Type::kBackgroundPage ||
       !owner_window()) {
     state = "detach";
   }
@@ -1826,7 +1826,7 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 }
 
 void WebContents::CloseDevTools() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   DCHECK(managed_web_contents());
@@ -1834,7 +1834,7 @@ void WebContents::CloseDevTools() {
 }
 
 bool WebContents::IsDevToolsOpened() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return false;
 
   DCHECK(managed_web_contents());
@@ -1842,7 +1842,7 @@ bool WebContents::IsDevToolsOpened() {
 }
 
 bool WebContents::IsDevToolsFocused() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return false;
 
   DCHECK(managed_web_contents());
@@ -1851,7 +1851,7 @@ bool WebContents::IsDevToolsFocused() {
 
 void WebContents::EnableDeviceEmulation(
     const blink::DeviceEmulationParams& params) {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   DCHECK(web_contents());
@@ -1869,7 +1869,7 @@ void WebContents::EnableDeviceEmulation(
 }
 
 void WebContents::DisableDeviceEmulation() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   DCHECK(web_contents());
@@ -1894,7 +1894,7 @@ void WebContents::ToggleDevTools() {
 }
 
 void WebContents::InspectElement(int x, int y) {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   if (!enable_devtools_)
@@ -1907,7 +1907,7 @@ void WebContents::InspectElement(int x, int y) {
 }
 
 void WebContents::InspectSharedWorkerById(const std::string& workerId) {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   if (!enable_devtools_)
@@ -1929,7 +1929,7 @@ std::vector<scoped_refptr<content::DevToolsAgentHost>>
 WebContents::GetAllSharedWorkers() {
   std::vector<scoped_refptr<content::DevToolsAgentHost>> shared_workers;
 
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return shared_workers;
 
   if (!enable_devtools_)
@@ -1945,7 +1945,7 @@ WebContents::GetAllSharedWorkers() {
 }
 
 void WebContents::InspectSharedWorker() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   if (!enable_devtools_)
@@ -1962,7 +1962,7 @@ void WebContents::InspectSharedWorker() {
 }
 
 void WebContents::InspectServiceWorker() {
-  if (type_ == Type::REMOTE)
+  if (type_ == Type::kRemote)
     return;
 
   if (!enable_devtools_)
@@ -2356,7 +2356,7 @@ bool WebContents::IsFocused() const {
   if (!view)
     return false;
 
-  if (GetType() != Type::BACKGROUND_PAGE) {
+  if (GetType() != Type::kBackgroundPage) {
     auto* window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
@@ -2624,7 +2624,7 @@ void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
 }
 
 bool WebContents::IsGuest() const {
-  return type_ == Type::WEB_VIEW;
+  return type_ == Type::kWebView;
 }
 
 void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
@@ -2635,7 +2635,7 @@ void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
 
 bool WebContents::IsOffScreen() const {
 #if BUILDFLAG(ENABLE_OSR)
-  return type_ == Type::OFF_SCREEN;
+  return type_ == Type::kOffScreen;
 #else
   return false;
 #endif
