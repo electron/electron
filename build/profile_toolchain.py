@@ -1,9 +1,11 @@
-from __future__ import with_statement
+from __future__ import unicode_literals
+
 import contextlib
 import sys
 import os
 import optparse
 import json
+import subprocess
 
 sys.path.append("%s/../../build" % os.path.dirname(os.path.realpath(__file__)))
 
@@ -33,36 +35,45 @@ def calculate_hash(root):
         return CalculateHash('.', None)
 
 def windows_installed_software():
-    import win32com.client
-    strComputer = "."
-    objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-    objSWbemServices = objWMIService.ConnectServer(strComputer, "root\cimv2")
-    colItems = objSWbemServices.ExecQuery("Select * from Win32_Product")
-    items = []
+    powershell_command = [
+        "Get-CimInstance",
+        "-Namespace",
+        "root\cimv2",
+        "-Class",
+        "Win32_product",
+        "|",
+        "Select",
+        "vendor,",
+        "description,",
+        "@{l='install_location';e='InstallLocation'},",
+        "@{l='install_date';e='InstallDate'},",
+        "@{l='install_date_2';e='InstallDate2'},",
+        "caption,",
+        "version,",
+        "name,",
+        "@{l='sku_number';e='SKUNumber'}",
+        "|",
+        "ConvertTo-Json",
+    ]
 
-    for objItem in colItems:
-        item = {}
-        if objItem.Caption:
-            item['caption'] = objItem.Caption
-        if objItem.Caption:
-            item['description'] = objItem.Description
-        if objItem.InstallDate:
-            item['install_date'] = objItem.InstallDate
-        if objItem.InstallDate2:
-            item['install_date_2'] = objItem.InstallDate2
-        if objItem.InstallLocation:
-            item['install_location'] = objItem.InstallLocation
-        if objItem.Name:
-            item['name'] = objItem.Name
-        if objItem.SKUNumber:
-            item['sku_number'] = objItem.SKUNumber
-        if objItem.Vendor:
-            item['vendor'] = objItem.Vendor
-        if objItem.Version:
-            item['version'] = objItem.Version
-        items.append(item)
+    proc = subprocess.Popen(
+        ["powershell.exe", "-Command", "-"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
 
-    return items
+    stdout, _ = proc.communicate(" ".join(powershell_command).encode("utf-8"))
+
+    if proc.returncode != 0:
+        raise RuntimeError("Failed to get list of installed software")
+
+    # Filter out missing keys
+    return list(
+        map(
+            lambda info: {k: info[k] for k in info if info[k]},
+            json.loads(stdout.decode("utf-8")),
+        )
+    )
 
 
 def windows_profile():
@@ -89,7 +100,7 @@ def windows_profile():
 
 def main(options):
     if sys.platform == 'win32':
-        with open(options.output_json, 'wb') as f:
+        with open(options.output_json, 'w') as f:
             json.dump(windows_profile(), f)
     else:
         raise OSError("Unsupported OS")
