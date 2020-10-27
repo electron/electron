@@ -122,8 +122,7 @@ void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GObject* /* ignored */,
                                                    GParamSpec* /* ignored */) {
   // If the name owner changed, we need to reregister all the live xids with
   // the system.
-  for (std::set<unsigned long>::const_iterator it = live_xids_.begin();
-       it != live_xids_.end(); ++it) {
-    RegisterXID(*it);
+  for (auto xid : live_xids_) {
+    RegisterXID(xid);
   }
 }

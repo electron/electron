@@ -487,10 +487,10 @@ void OnClientCertificateSelected(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
-    for (size_t i = 0; i < identities->size(); ++i) {
-      if (cert->EqualsExcludingChain((*identities)[i]->certificate())) {
+    for (auto& identity : *identities) {
+      if (cert->EqualsExcludingChain(identity->certificate())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
-            std::move((*identities)[i]),
+            std::move(identity),
             base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
         break;
       }
