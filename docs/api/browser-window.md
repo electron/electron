@@ -353,9 +353,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       can't unsafely cross between worlds when using `contextIsolation`.  The default
       is `false`. In Electron 12, the default will be changed to `true`. _Deprecated_
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `false`. Child windows will always have node
-      integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently
-      experimental.
+      `window.open()`. Defaults to `true`. If enabled, child windows will always have node
+      integration disabled unless `nodeIntegrationInSubFrames` is true.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
