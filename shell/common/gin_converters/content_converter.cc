@@ -187,14 +187,10 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
     case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
     case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
-    case content::PermissionType::VIDEO_CAPTURE:
-      return StringToV8(isolate, "camera");
     case content::PermissionType::FONT_ACCESS:
       return StringToV8(isolate, "font-access");
     case content::PermissionType::IDLE_DETECTION:
       return StringToV8(isolate, "idle-detection");
-    case content::PermissionType::AUDIO_CAPTURE:
-      return StringToV8(isolate, "microphone");
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
     case content::PermissionType::NFC:
