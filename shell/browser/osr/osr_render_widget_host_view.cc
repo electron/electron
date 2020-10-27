@@ -683,7 +683,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
   SkBitmap frame;
 
   // Optimize for the case when there is no popup
-  if (proxy_views_.size() == 0 && !popup_host_view_) {
+  if (proxy_views_.empty() && !popup_host_view_) {
     frame = GetBacking();
   } else {
     frame.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
