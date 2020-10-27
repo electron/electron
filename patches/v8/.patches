@@ -17,3 +17,4 @@ debugger_allow_termination-on-resume_when_paused_at_a_breakpoint.patch
 backport_1084820.patch
 backport_986051.patch
 cherry-pick-7e5c7b5964.patch
+cherry-pick-6a4cd97d6691.patch
