@@ -184,7 +184,6 @@ target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
 typescript_build("default_app_js") {
   deps = [ ":build_electron_definitions" ]
-  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
 
   sources = filenames.default_app_ts_sources
 
