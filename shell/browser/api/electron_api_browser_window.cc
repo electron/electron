@@ -304,8 +304,9 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MAC)
-  if (!draggable_regions_.empty())
-    UpdateDraggableRegions(draggable_regions_);
+  // Always update draggable regions here to ensure draggable bounds
+  // are recalculated for BrowserViews if any exist.
+  UpdateDraggableRegions(draggable_regions_);
 #endif
   BaseWindow::OnWindowResize();
 }
