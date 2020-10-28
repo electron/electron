@@ -3506,9 +3506,7 @@ void WebContents::DevToolsSearchInPath(int request_id,
 gfx::ImageSkia WebContents::GetDevToolsWindowIcon() {
   if (!owner_window())
     return gfx::ImageSkia();
-  return static_cast<views::WidgetDelegate*>(
-             static_cast<NativeWindowViews*>(owner_window()))
-      ->GetWindowAppIcon();
+  return owner_window()->GetWindowAppIcon();
 }
 #endif
 
