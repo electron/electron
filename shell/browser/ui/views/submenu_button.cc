@@ -24,7 +24,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* button_listener,
                              const base::string16& title,
                              const SkColor& background_color)
     : views::MenuButton(
-          button_listener,
+          views::Button::PressedCallback(button_listener, this),
           gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr)),
       background_color_(background_color) {
 #if defined(OS_LINUX)

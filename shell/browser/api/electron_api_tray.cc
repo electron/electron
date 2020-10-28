@@ -33,19 +33,19 @@ struct Converter<electron::TrayIcon::IconType> {
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
       if (mode == "none") {
-        *out = IconType::None;
+        *out = IconType::kNone;
         return true;
       } else if (mode == "info") {
-        *out = IconType::Info;
+        *out = IconType::kInfo;
         return true;
       } else if (mode == "warning") {
-        *out = IconType::Warning;
+        *out = IconType::kWarning;
         return true;
       } else if (mode == "error") {
-        *out = IconType::Error;
+        *out = IconType::kError;
         return true;
       } else if (mode == "custom") {
-        *out = IconType::Custom;
+        *out = IconType::kCustom;
         return true;
       }
     }

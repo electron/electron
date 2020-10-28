@@ -13,7 +13,6 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/master/docs/development/testing.md)
 - [ ] relevant documentation is changed or added
-- [ ] PR title follows semantic [commit guidelines](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md#commit-message-guidelines)
 - [ ] [PR release notes](https://github.com/electron/clerk/blob/master/README.md) describe the change in a way relevant to app developers, and are [capitalized, punctuated, and past tense](https://github.com/electron/clerk/blob/master/README.md#examples).
 
 #### Release Notes

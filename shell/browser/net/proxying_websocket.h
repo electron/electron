@@ -40,16 +40,16 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
   enum class AuthRequiredResponse {
     // No credentials were provided.
-    AUTH_REQUIRED_RESPONSE_NO_ACTION,
+    kNoAction,
     // AuthCredentials is filled in with a username and password, which should
     // be used in a response to the provided auth challenge.
-    AUTH_REQUIRED_RESPONSE_SET_AUTH,
+    kSetAuth,
     // The request should be canceled.
-    AUTH_REQUIRED_RESPONSE_CANCEL_AUTH,
+    kCancelAuth,
     // The action will be decided asynchronously. |callback| will be invoked
     // when the decision is made, and one of the other AuthRequiredResponse
     // values will be passed in with the same semantics as described above.
-    AUTH_REQUIRED_RESPONSE_IO_PENDING,
+    kIoPending,
   };
 
   ProxyingWebSocket(
@@ -122,7 +122,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
 
   void PauseIncomingMethodCallProcessing();
   void ResumeIncomingMethodCallProcessing();
-  void OnError(int result);
+  void OnError(int error_code);
   // This is used for detecting errors on mojo connection with the network
   // service.
   void OnMojoConnectionErrorWithCustomReason(uint32_t custom_reason,

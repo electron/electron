@@ -14,6 +14,7 @@
 #include "base/strings/string_split.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
+#include "electron/fuses.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/options_switches.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
@@ -100,6 +101,9 @@ void GetCrashKeys(std::map<std::string, std::string>* keys) {
 namespace {
 bool IsRunningAsNode() {
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
+  if (!electron::fuses::IsRunAsNodeEnabled())
+    return false;
+
   return base::Environment::Create()->HasVar(electron::kRunAsNode);
 #else
   return false;

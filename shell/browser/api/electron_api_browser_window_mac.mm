@@ -37,26 +37,6 @@ namespace electron {
 
 namespace api {
 
-namespace {
-
-// Return a vector of non-draggable regions that fill a window of size
-// |width| by |height|, but leave gaps where the window should be draggable.
-std::vector<gfx::Rect> CalculateNonDraggableRegions(
-    std::unique_ptr<SkRegion> draggable,
-    int width,
-    int height) {
-  std::vector<gfx::Rect> result;
-  SkRegion non_draggable;
-  non_draggable.op({0, 0, width, height}, SkRegion::kUnion_Op);
-  non_draggable.op(*draggable, SkRegion::kDifference_Op);
-  for (SkRegion::Iterator it(non_draggable); !it.done(); it.next()) {
-    result.push_back(gfx::SkIRectToRect(it.rect()));
-  }
-  return result;
-}
-
-}  // namespace
-
 void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   // Make NativeWindow use a NSView as content view.
   static_cast<NativeWindowMac*>(window())->OverrideNSWindowContentView();
@@ -109,17 +89,18 @@ void BrowserWindow::UpdateDraggableRegions(
     for (const auto& r : regions)
       draggable_regions_.push_back(r.Clone());
   }
+
+  auto browser_views = window_->browser_views();
+  for (NativeBrowserView* view : browser_views) {
+    view->UpdateDraggableRegions(draggable_regions_);
+  }
+
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
     drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
-  }
-
-  auto browser_views = window_->browser_views();
-  for (NativeBrowserView* view : browser_views) {
-    view->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be

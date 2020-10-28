@@ -414,19 +414,6 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-// Convert draggable regions in raw format to SkRegion format.
-std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  auto sk_region = std::make_unique<SkRegion>();
-  for (const auto& region : regions) {
-    sk_region->op(
-        {region->bounds.x(), region->bounds.y(), region->bounds.right(),
-         region->bounds.bottom()},
-        region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
-}
-
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;

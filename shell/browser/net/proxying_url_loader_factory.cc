@@ -15,6 +15,7 @@
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_util.h"
+#include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/options_switches.h"
@@ -110,7 +111,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       routing_id_, request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
-      base::kInvalidUkmSourceId));
+      ukm::kInvalidSourceIdObj));
 
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
@@ -802,8 +803,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
-    mojo::Remote<network::mojom::URLLoaderFactory> loader_remote;
-    this->Clone(loader_remote.BindNewPipeAndPassReceiver());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
+    this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
 
     // <scheme, <type, handler>>
     it->second.second.Run(
@@ -811,7 +812,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
         base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
                        std::move(loader), routing_id, request_id, options,
                        request, std::move(client), traffic_annotation,
-                       loader_remote.Unbind(), it->second.first));
+                       std::move(loader_remote), it->second.first));
     return;
   }
 

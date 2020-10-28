@@ -90,7 +90,7 @@ class Notification : public gin::Wrappable<Notification>,
   void SetSound(const base::string16& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
   void SetCloseButtonText(const base::string16& text);
-  void SetToastXml(const base::string16& text);
+  void SetToastXml(const base::string16& new_toast_xml);
 
  private:
   base::string16 title_;

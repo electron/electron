@@ -63,7 +63,7 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> loader,
+  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> request,
                          network::mojom::URLLoaderFactory* url_loader_factory,
                          int options);
 

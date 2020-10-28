@@ -231,10 +231,10 @@ void BindNetworkHintsHandler(
 // granted to their RenderProcessHosts.  This classification allows us to make
 // sure URLs are served by hosts with the right set of privileges.
 enum class RenderProcessHostPrivilege {
-  Normal,
-  Hosted,
-  Isolated,
-  Extension,
+  kNormal,
+  kHosted,
+  kIsolated,
+  kExtension,
 };
 
 RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
@@ -247,12 +247,12 @@ RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
   // than normal webrenderer, the navigation logic will correct us out of band
   // anyways.
   if (!url.is_valid())
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
   if (!url.SchemeIs(extensions::kExtensionScheme))
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
-  return RenderProcessHostPrivilege::Extension;
+  return RenderProcessHostPrivilege::kExtension;
 }
 
 RenderProcessHostPrivilege GetProcessPrivilege(
@@ -262,9 +262,9 @@ RenderProcessHostPrivilege GetProcessPrivilege(
   std::set<std::string> extension_ids =
       process_map->GetExtensionsInProcess(process_host->GetID());
   if (extension_ids.empty())
-    return RenderProcessHostPrivilege::Normal;
+    return RenderProcessHostPrivilege::kNormal;
 
-  return RenderProcessHostPrivilege::Extension;
+  return RenderProcessHostPrivilege::kExtension;
 }
 
 const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
@@ -1277,7 +1277,7 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
     int frame_tree_node_id,
-    base::UkmSourceId ukm_source_id,
+    ukm::SourceIdObj ukm_source_id,
     NonNetworkURLLoaderFactoryMap* factories) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
@@ -1480,7 +1480,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
     base::Optional<int64_t> navigation_id,
-    base::UkmSourceId ukm_source_id,
+    ukm::SourceIdObj ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,

@@ -27,11 +27,11 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
 
 // Possible errors.
 enum class ProtocolError {
-  OK,  // no error
-  REGISTERED,
-  NOT_REGISTERED,
-  INTERCEPTED,
-  NOT_INTERCEPTED,
+  kOK,  // no error
+  kRegistered,
+  kNotRegistered,
+  kIntercepted,
+  kNotIntercepted,
 };
 
 // Protocol implementation based on network services.
@@ -78,7 +78,7 @@ class Protocol : public gin::Wrappable<Protocol> {
                            gin::Arguments* args) {
     auto result = RegisterProtocol(type, scheme, handler);
     HandleOptionalCallback(args, result);
-    return result == ProtocolError::OK;
+    return result == ProtocolError::kOK;
   }
   template <ProtocolType type>
   bool InterceptProtocolFor(const std::string& scheme,
@@ -86,7 +86,7 @@ class Protocol : public gin::Wrappable<Protocol> {
                             gin::Arguments* args) {
     auto result = InterceptProtocol(type, scheme, handler);
     HandleOptionalCallback(args, result);
-    return result == ProtocolError::OK;
+    return result == ProtocolError::kOK;
   }
 
   // Be compatible with old interface, which accepts optional callback.

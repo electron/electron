@@ -281,7 +281,7 @@ base::FilePath GetResourcesPath() {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env), weak_factory_(this) {
-  if (browser_env == BrowserEnvironment::WORKER) {
+  if (browser_env == BrowserEnvironment::kWorker) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
   } else {
@@ -331,7 +331,7 @@ void NodeBindings::Initialize() {
 
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
@@ -360,7 +360,7 @@ void NodeBindings::Initialize() {
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
-  if (browser_env_ == BrowserEnvironment::BROWSER ||
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
       env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
@@ -383,13 +383,13 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Feed node the path to initialization script.
   std::string process_type;
   switch (browser_env_) {
-    case BrowserEnvironment::BROWSER:
+    case BrowserEnvironment::kBrowser:
       process_type = "browser";
       break;
-    case BrowserEnvironment::RENDERER:
+    case BrowserEnvironment::kRenderer:
       process_type = "renderer";
       break;
-    case BrowserEnvironment::WORKER:
+    case BrowserEnvironment::kWorker:
       process_type = "worker";
       break;
   }
@@ -398,7 +398,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
 
   std::vector<std::string> exec_args;
@@ -411,7 +411,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
-  if (browser_env_ != BrowserEnvironment::BROWSER) {
+  if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
@@ -436,7 +436,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
-  if (browser_env_ != BrowserEnvironment::BROWSER) {
+  if (browser_env_ != BrowserEnvironment::kBrowser) {
     // We need to bootstrap the env in non-browser processes so that
     // _noBrowserGlobals is read correctly before we remove it
     global.Delete("_noBrowserGlobals");
@@ -458,7 +458,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
 
-  if (browser_env_ == BrowserEnvironment::BROWSER) {
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
@@ -532,13 +532,13 @@ void NodeBindings::UvRunOnce() {
   // Perform microtask checkpoint after running JavaScript.
   gin_helper::MicrotasksScope microtasks_scope(env->isolate());
 
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
   if (r == 0)

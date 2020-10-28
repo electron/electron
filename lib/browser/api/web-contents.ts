@@ -492,7 +492,7 @@ const addReplyInternalToEvent = (event: any) => {
 
 const addReturnValueToEvent = (event: any) => {
   Object.defineProperty(event, 'returnValue', {
-    set: (value) => event.sendReply([value]),
+    set: (value) => event.sendReply(value),
     get: () => {}
   });
 };

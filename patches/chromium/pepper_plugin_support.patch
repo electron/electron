@@ -6,39 +6,6 @@ Subject: pepper plugin support
 This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
-diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index 82fa5b7026e62cfe69700f30fcc84731fc30afe8..f4ad9fbc72a5cb27ed22ab014ccb2fcb4cb49284 100644
---- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-+++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-@@ -6,10 +6,12 @@
- 
- #include <string>
- 
-+#if 0
- #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
- #include "chrome/browser/profiles/profile.h"
- #include "components/content_settings/core/browser/host_content_settings_map.h"
- #include "components/content_settings/core/common/content_settings.h"
-+#endif
- #include "content/public/browser/browser_ppapi_host.h"
- #include "content/public/browser/browser_task_traits.h"
- #include "content/public/browser/browser_thread.h"
-@@ -58,6 +60,7 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
-       RenderProcessHost::FromID(render_process_id_);
-   if (!render_process_host)
-     return PP_ERROR_FAILED;
-+#if 0
-   Profile* profile =
-       Profile::FromBrowserContext(render_process_host->GetBrowserContext());
-   HostContentSettingsMap* content_settings =
-@@ -67,5 +70,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
-       std::string());
-   if (setting == CONTENT_SETTING_ALLOW)
-     return PP_OK;
--  return PP_ERROR_FAILED;
-+#endif
-+  return PP_OK;
- }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f401783ac7133 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
