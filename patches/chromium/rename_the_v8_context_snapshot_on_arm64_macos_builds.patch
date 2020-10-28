@@ -22,7 +22,7 @@ index 3c15429a9db345644192648a55696d9c94f82fcc..8eab9949c34cb71f44f9a332af9f489e
      arch_suffix = "32"
      if (use_v8_context_snapshot) {
 -      renaming_sources = [ "$_secondary_abi_out_dir/v8_context_snapshot.bin" ]
-+      renaming_sources = [ "$_secondary_abi_out_dir/$v8_context_snapshot_filename"]
++      renaming_sources = [ "$_secondary_abi_out_dir/$v8_context_snapshot_filename" ]
        renaming_destinations = [ "v8_context_snapshot_$arch_suffix.bin" ]
      } else {
        renaming_sources = [ "$_secondary_abi_out_dir/snapshot_blob.bin" ]
