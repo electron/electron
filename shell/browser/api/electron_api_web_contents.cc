@@ -3502,6 +3502,24 @@ void WebContents::DevToolsSearchInPath(int request_id,
                           file_system_path));
 }
 
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
+gfx::ImageSkia WebContents::GetDevToolsWindowIcon() {
+  if (!owner_window())
+    return gfx::ImageSkia();
+  return static_cast<views::WidgetDelegate*>(
+             static_cast<NativeWindowViews*>(owner_window()))
+      ->GetWindowAppIcon();
+}
+#endif
+
+#if defined(OS_LINUX)
+void WebContents::GetDevToolsWindowWMClass(std::string* name,
+                                           std::string* class_name) {
+  *class_name = Browser::Get()->GetName();
+  *name = base::ToLowerASCII(*class_name);
+}
+#endif
+
 void WebContents::OnDevToolsIndexingWorkCalculated(
     int request_id,
     const std::string& file_system_path,
