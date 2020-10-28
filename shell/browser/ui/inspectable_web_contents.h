@@ -23,7 +23,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefService;
