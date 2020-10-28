@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Tue, 25 Aug 2020 11:46:46 +0200
+Subject: Merged: [wasm][streaming] Avoid aborting the stream after it finished
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+With WebAssembly streaming compilation it is possible that FinishStream
+indirectly calls AbortStream. This had the effect that while
+FinishStream fulfilled the promise, AbortStream disposed the promise
+by removing the compile job from the wasm engine and thereby deallocated
+AsyncCompileJob and all the state that belongs to it. Without that
+state, FinishStream could not finish fulfilling the promise correctly.
+
+With this CL the streaming decoder remembers that the stream has
+already been finished. When the stream has been finished, all calls to
+Abort get ignored.
+
+The regression test for this issue requires the Chrome embedding, see
+https://crrev.com/c/2368359
+
+R=​clemensb@chromium.org
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+(cherry picked from commit 32dd54709cd2ecdfc553aff3f7ab5377ff7c91a2)
+
+Bug: chromium:1117258
+Change-Id: Ifc28a1ee38c228b051c4d7d85b305fe2a721fa1f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2367858
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#69549}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2465830
+Cr-Commit-Position: refs/branch-heads/8.6@{#22}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/wasm/streaming-decoder.cc b/src/wasm/streaming-decoder.cc
+index c88a2c77b89be74b21c4e92a9abadea63353ab82..3ec0b154dafc8595b63d21b9d067d2eaf6cd4c0a 100644
+--- a/src/wasm/streaming-decoder.cc
++++ b/src/wasm/streaming-decoder.cc
+@@ -62,6 +62,8 @@ size_t StreamingDecoder::DecodingState::ReadBytes(StreamingDecoder* streaming,
+ 
+ void StreamingDecoder::Finish() {
+   TRACE_STREAMING("Finish\n");
++  DCHECK(!stream_finished_);
++  stream_finished_ = true;
+   if (!ok()) return;
+ 
+   if (deserializing()) {
+@@ -101,6 +103,8 @@ void StreamingDecoder::Finish() {
+ 
+ void StreamingDecoder::Abort() {
+   TRACE_STREAMING("Abort\n");
++  if (stream_finished_) return;
++  stream_finished_ = true;
+   if (!ok()) return;  // Failed already.
+   processor_->OnAbort();
+   Fail();
+diff --git a/src/wasm/streaming-decoder.h b/src/wasm/streaming-decoder.h
+index f3203e702746f090a2e43e4557a1ad5ca68d5ac8..09a75a21f4a6fa0b0fa9b04478dd3dec007a0fbf 100644
+--- a/src/wasm/streaming-decoder.h
++++ b/src/wasm/streaming-decoder.h
+@@ -272,6 +272,7 @@ class V8_EXPORT_PRIVATE StreamingDecoder {
+   uint32_t module_offset_ = 0;
+   size_t total_size_ = 0;
+   std::string url_;
++  bool stream_finished_ = false;
+ 
+   // Caching support.
+   ModuleCompiledCallback module_compiled_callback_ = nullptr;
