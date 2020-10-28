@@ -65,22 +65,24 @@ index 320751d301f7cebe40e59127a1a631a010009385..11fabe50abd47d0b0a7ff24a3b979067
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -228,6 +230,7 @@
+@@ -274,7 +274,7 @@ gfx::NativeViewAccessible AttributeInvoker::PropertyNodeToUIElement(
+   }
    return uielement;
  }
- 
+-
 +#ifndef MAS_BUILD
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -295,6 +298,7 @@
+@@ -342,7 +342,7 @@ id AttributeInvoker::PropertyNodeToTextMarkerRange(
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
+-
 +#endif
- 
- }  // namespace a11y
- }  // namespace content
+ OptionalNSObject TextMarkerRangeGetStartMarker(const OptionalNSObject& obj) {
+   if (!IsAXTextMarkerRange(*obj))
+     return OptionalNSObject::NotApplicable();
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
 index a5324dfd0c8a6bcd8fb7f89ce30d1f1b1ade0304..02564098d67f044cef54d285772a449d991b8d06 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
