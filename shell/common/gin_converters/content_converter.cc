@@ -178,6 +178,10 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
   // Not all permissions are currently used by Electron but this will future
   // proof these conversions.
   switch (val) {
+    case content::PermissionType::ACCESSIBILITY_EVENTS:
+      return StringToV8(isolate, "accessibilityEvents");
+    case content::PermissionType::AR:
+      return StringToV8(isolate, "ar");
     case content::PermissionType::BACKGROUND_FETCH:
       return StringToV8(isolate, "background-fetch");
     case content::PermissionType::BACKGROUND_SYNC:
@@ -186,6 +190,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-read");
     case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
+    case content::PermissionType::FLASH:
+      return StringToV8(isolate, "flash");
     case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
     case content::PermissionType::FONT_ACCESS:
       return StringToV8(isolate, "font-access");
@@ -216,11 +222,15 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "screen-wake-lock");
     case content::PermissionType::SENSORS:
       return StringToV8(isolate, "sensors");
+    case content::PermissionType::STORAGE_ACCESS_GRANT:
+      return StringToV8(isolate, "storage-access");
+    case content::PermissionType::VR:
+      return StringToV8(isolate, "vr");
     case content::PermissionType::WAKE_LOCK_SYSTEM:
       return StringToV8(isolate, "system-wake-lock");
     case content::PermissionType::WINDOW_PLACEMENT:
       return StringToV8(isolate, "window-placement");
-    default:
+    case content::PermissionType::NUM:
       break;
   }
 
