@@ -13,6 +13,7 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "net/http/http_content_disposition.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
@@ -115,6 +116,20 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
       base::Value* values = response_headers.FindListKey(key);
+      // Note that Web servers not developed with nodejs allow non-utf8
+      // characters in content-disposition's filename field. Use Chromium's
+      // HttpContentDisposition class to decode the correct encoding instead of
+      // arbitrarily converting it to UTF8. It should also be noted that if the
+      // encoding is not specified, HttpContentDisposition will transcode
+      // according to the system's encoding.
+      if (base::EqualsCaseInsensitiveASCII("Content-Disposition", key) &&
+          !value.empty()) {
+        net::HttpContentDisposition header(value, std::string());
+        std::string decodedFilename =
+            header.is_attachment() ? " attachement" : " inline";
+        decodedFilename += "; filename=" + header.filename();
+        value = decodedFilename;
+      }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
       values->Append(value);
