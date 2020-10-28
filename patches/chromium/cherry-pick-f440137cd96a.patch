@@ -1,7 +1,7 @@
-From f440137cd96a18f64b9931e8f369670197204d55 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Stephen Chenney <schenney@chromium.org>
 Date: Wed, 14 Oct 2020 02:52:47 +0000
-Subject: [PATCH] [Image-Orientation] Implement WebGL image-orientation
+Subject: Implement WebGL image-orientation
 
 M-86 merge.
 
@@ -24,13 +24,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2469776
 Reviewed-by: Stephen Chenney <schenney@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1237}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
-index 88eaa1a..b291d1b8 100644
+index 234ae964ad1ac8df7fd369ff8b62a9917757517d..f0bf8d0f5c2d74d942dfbfd194753dd03e3de758 100644
 --- a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
 +++ b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
-@@ -190,11 +190,12 @@
+@@ -195,14 +195,16 @@ SkImageInfo GetSkImageInfo(const scoped_refptr<Image>& input) {
  
  // This function results in a readback due to using SkImage::readPixels().
  // Returns transparent black pixels if the input SkImageInfo.bounds() does
@@ -45,13 +44,18 @@ index 88eaa1a..b291d1b8 100644
 +                              bool apply_orientation = true) {
    if (info.isEmpty())
      return {};
-   PaintImage paint_image = input->PaintImageForCurrentFrame();
-@@ -206,16 +207,29 @@
+-  sk_sp<SkImage> sk_image = input->PaintImageForCurrentFrame().GetSkImage();
++  PaintImage paint_image = input->PaintImageForCurrentFrame();
++  sk_sp<SkImage> sk_image = paint_image.GetSkImage();
+   if (sk_image->bounds().isEmpty())
+     return {};
+ 
+@@ -211,16 +213,30 @@ Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input,
    Vector<uint8_t> dst_buffer(byte_length);
  
    bool read_pixels_successful =
--      paint_image.readPixels(info, dst_buffer.data(), info.minRowBytes(), x, y);
-+      paint_image.readPixels(info, dst_buffer.data(), info.minRowBytes(), 0, 0);
+-      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), x, y);
++      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), 0, 0);
    DCHECK(read_pixels_successful);
    if (!read_pixels_successful)
      return {};
@@ -61,8 +65,9 @@ index 88eaa1a..b291d1b8 100644
 +    paint_image = Image::ResizeAndOrientImage(
 +        paint_image, input->CurrentFrameOrientation(), FloatSize(1, 1), 1,
 +        kInterpolationNone);
-+    read_pixels_successful = paint_image.readPixels(info, dst_buffer.data(),
-+                                                    info.minRowBytes(), 0, 0);
++    sk_image = paint_image.GetSkImage();
++    read_pixels_successful = sk_image->readPixels(info, dst_buffer.data(),
++                                                  info.minRowBytes(), 0, 0);
 +    DCHECK(read_pixels_successful);
 +    if (!read_pixels_successful)
 +      return {};
@@ -78,7 +83,7 @@ index 88eaa1a..b291d1b8 100644
  }
  
  static inline bool ShouldAvoidPremul(
-@@ -1071,12 +1085,13 @@
+@@ -1055,12 +1071,13 @@ Vector<uint8_t> ImageBitmap::CopyBitmapData(AlphaDisposition alpha_op,
    auto color_type = info.colorType();
    if (color_type == kN32_SkColorType && u8_color_type == kRGBAColorType)
      color_type = kRGBA_8888_SkColorType;
@@ -93,7 +98,7 @@ index 88eaa1a..b291d1b8 100644
  }
  
  Vector<uint8_t> ImageBitmap::CopyBitmapData() {
-@@ -1108,7 +1123,7 @@
+@@ -1090,7 +1107,7 @@ IntSize ImageBitmap::Size() const {
      return IntSize();
    DCHECK_GT(image_->width(), 0);
    DCHECK_GT(image_->height(), 0);
@@ -103,10 +108,10 @@ index 88eaa1a..b291d1b8 100644
  
  ScriptPromise ImageBitmap::CreateImageBitmap(ScriptState* script_state,
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-index ed7ae52..f7874b0 100644
+index 39d00937e8a17183c22dcfc99692aed9a8638ac6..fe5d33eca1ae6564a2528c60e880e619d1f59b62 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-@@ -5309,10 +5309,12 @@
+@@ -5212,10 +5212,12 @@ void WebGLRenderingContextBase::TexImageHelperHTMLImageElement(
      return;
  
    scoped_refptr<Image> image_for_render = image->CachedImage()->GetImage();
@@ -121,7 +126,7 @@ index ed7ae52..f7874b0 100644
      image_for_render =
          DrawImageIntoBuffer(std::move(image_for_render), image->width(),
                              image->height(), func_name);
-@@ -5848,6 +5850,7 @@
+@@ -5751,6 +5753,7 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
                         level, internalformat, width, height, depth, 0, format,
                         type, xoffset, yoffset, zoffset))
      return;
@@ -129,7 +134,7 @@ index ed7ae52..f7874b0 100644
    scoped_refptr<StaticBitmapImage> image = bitmap->BitmapImage();
    DCHECK(image);
  
-@@ -5874,9 +5877,16 @@
+@@ -5777,9 +5780,16 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
      return;
    }
  
