@@ -105,4 +105,5 @@ avoid_use-after-free.patch
 don_t_create_providers_if_context_is_lost.patch
 fix_use_electron_generated_resources.patch
 chore_expose_v8_initialization_isolate_callbacks.patch
+cherry-pick-88f263f401b4.patch
 cherry-pick-229fdaf8fc05.patch
