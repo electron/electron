@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 26 Oct 2020 16:53:25 -0500
+Subject: perf: make GetPositionInfoSlow() faster
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Halve the number of lookups in ExtractLocationForJSFunction() by calling
+GetPositionInfo() directly instead of making separate calls for column
+and line number.
+
+Improve the efficiency of position lookups in slow mode. The current
+code does a linear walk through the source by calling String::Get() for
+each character. This PR also does a linear walk, but avoids the overhead
+of multiple Get() calls by pulling the String's flat content into a
+local vector and walking through that.
+
+Downstream Electron discussion of this can be found at
+https://github.com/electron/electron/issues/24509
+
+Change-Id: I22b034dc1bfe967164d2f8515a9a0c1d7f043c83
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2496065
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Ulan Degenbaev <ulan@chromium.org>
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#70783}
+
+diff --git a/AUTHORS b/AUTHORS
+index 7036ecd42bc4618fd0a2bcd0763848fbba101571..536998c8761c748b0b9fc03b24d0821c77eabb2f 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -68,6 +68,7 @@ Bert Belder <bertbelder@gmail.com>
+ Burcu Dogan <burcujdogan@gmail.com>
+ Caitlin Potter <caitpotter88@gmail.com>
+ Craig Schlenter <craig.schlenter@gmail.com>
++Charles Kerr <charles@charleskerr.com>
+ Chengzhong Wu <legendecas@gmail.com>
+ Choongwoo Han <cwhan.tunz@gmail.com>
+ Chris Nardi <hichris123@gmail.com>
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index c45562965124cb6c0b4f70a2f74e2478bc8e9758..8a90a0c17b4527c98fcc6ab565c66da98abbe3a0 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4776,30 +4776,43 @@ bool Script::ContainsAsmModule() {
+ }
+ 
+ namespace {
+-bool GetPositionInfoSlow(const Script script, int position,
+-                         Script::PositionInfo* info) {
+-  if (!script.source().IsString()) return false;
+-  if (position < 0) position = 0;
+ 
+-  String source_string = String::cast(script.source());
++template <typename Char>
++bool GetPositionInfoSlowImpl(const Vector<Char>& source, int position,
++                             Script::PositionInfo* info) {
++  if (position < 0) {
++    position = 0;
++  }
+   int line = 0;
+-  int line_start = 0;
+-  int len = source_string.length();
+-  for (int pos = 0; pos <= len; ++pos) {
+-    if (pos == len || source_string.Get(pos) == '\n') {
+-      if (position <= pos) {
+-        info->line = line;
+-        info->column = position - line_start;
+-        info->line_start = line_start;
+-        info->line_end = pos;
+-        return true;
+-      }
+-      line++;
+-      line_start = pos + 1;
++  const auto begin = std::cbegin(source);
++  const auto end = std::cend(source);
++  for (auto line_begin = begin; line_begin < end;) {
++    const auto line_end = std::find(line_begin, end, '\n');
++    if (position <= (line_end - begin)) {
++      info->line = line;
++      info->column = static_cast<int>((begin + position) - line_begin);
++      info->line_start = static_cast<int>(line_begin - begin);
++      info->line_end = static_cast<int>(line_end - begin);
++      return true;
+     }
++    ++line;
++    line_begin = line_end + 1;
+   }
+   return false;
+ }
++bool GetPositionInfoSlow(const Script script, int position,
++                         const DisallowHeapAllocation& no_gc,
++                         Script::PositionInfo* info) {
++  if (!script.source().IsString()) {
++    return false;
++  }
++  auto source = String::cast(script.source());
++  const auto flat = source.GetFlatContent(no_gc);
++  return flat.IsOneByte()
++             ? GetPositionInfoSlowImpl(flat.ToOneByteVector(), position, info)
++             : GetPositionInfoSlowImpl(flat.ToUC16Vector(), position, info);
++}
++
+ }  // namespace
+ 
+ bool Script::GetPositionInfo(int position, PositionInfo* info,
+@@ -4821,7 +4834,9 @@ bool Script::GetPositionInfo(int position, PositionInfo* info,
+ 
+   if (line_ends().IsUndefined()) {
+     // Slow mode: we do not have line_ends. We have to iterate through source.
+-    if (!GetPositionInfoSlow(*this, position, info)) return false;
++    if (!GetPositionInfoSlow(*this, position, no_allocation, info)) {
++      return false;
++    }
+   } else {
+     DCHECK(line_ends().IsFixedArray());
+     FixedArray ends = FixedArray::cast(line_ends());
+diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
+index 2ae22224193fb9bd3069a8042c54971946c33aa7..dc133bb7d45d710a318fa4cd9a3472961ad762f2 100644
+--- a/src/profiler/heap-snapshot-generator.cc
++++ b/src/profiler/heap-snapshot-generator.cc
+@@ -572,9 +572,9 @@ void V8HeapExplorer::ExtractLocationForJSFunction(HeapEntry* entry,
+   Script script = Script::cast(func.shared().script());
+   int scriptId = script.id();
+   int start = func.shared().StartPosition();
+-  int line = script.GetLineNumber(start);
+-  int col = script.GetColumnNumber(start);
+-  snapshot_->AddLocation(entry, scriptId, line, col);
++  Script::PositionInfo info;
++  script.GetPositionInfo(start, &info, Script::WITH_OFFSET);
++  snapshot_->AddLocation(entry, scriptId, info.line, info.column);
+ }
+ 
+ HeapEntry* V8HeapExplorer::AddEntry(HeapObject object) {
