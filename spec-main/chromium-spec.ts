@@ -302,7 +302,7 @@ describe('command line switches', () => {
     const testLocale = async (locale: string, result: string) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
 
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
