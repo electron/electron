@@ -2,7 +2,29 @@
 
 ## Overview
 
-## macOS
+### Automatically update the native interfaces
+
+"Native interfaces" include the file picker, window border, dialogs, context
+menus, and more - anything where the UI comes from your operating system and
+not from your app. The default behavior is to opt into this automatic theming
+from the OS.
+
+### Automatically update your own interfaces
+
+If your app has its own dark mode, you should toggle it on and off in sync with
+the system's dark mode setting. You can do this by using the
+[prefer-color-scheme] CSS media query.
+
+### Manually update your own interfaces
+
+If you want to manually switch between light/dark modes, you can do this by
+setting the desired mode in the
+[themeSource](https://www.electronjs.org/docs/api/native-theme#nativethemethemesource)
+property of the `nativeTheme` module. This property's value will be propagated
+to your Renderer process. Any CSS rules related to `prefers-color-scheme` will
+be updated accordingly.
+
+## macOS settings
 
 In macOS 10.14 Mojave, Apple introduced a new [system-wide dark mode][system-wide-dark-mode]
 for all macOS computers. If your Electron app has a dark mode, you can make it
@@ -11,10 +33,10 @@ follow the system-wide dark mode setting using
 
 In macOS 10.15 Catalina, Apple introduced a new "automatic" dark mode option
 for all macOS computers. In order for the `nativeTheme.shouldUseDarkColors` and
-`Tray` APIs to work correctly in this mode on Catalina, you need to either have
-`NSRequiresAquaSystemAppearance` set to `false` in your `Info.plist` file, or
-use Electron `>=7.0.0`. Both [Electron Packager][electron-packager] and
-[Electron Forge][electron-forge] have a
+`Tray` APIs to work correctly in this mode on Catalina, you need to use Electron
+`>=7.0.0`, or set `NSRequiresAquaSystemAppearance` to `false` in your
+`Info.plist` file for older versions. Both [Electron Packager][electron-packager]
+and [Electron Forge][electron-forge] have a
 [`darwinDarkModeSupport` option][packager-darwindarkmode-api]
 to automate the `Info.plist` changes during app build time.
 
@@ -23,34 +45,16 @@ set the `NSRequiresAquaSystemAppearance` key in the `Info.plist` file to
 `true`. Please note that Electron 8.0.0 and above will not let you opt-out
 of this theming, due to the use of the macOS 10.14 SDK.
 
-## Automatically update the native interfaces
-
-"Native interfaces" include the file picker, window border, dialogs, context
-menus, and more - anything where the UI comes from your operating system and
-not from your app. The default behavior is to opt into this automatic theming
-from the OS.
-
-## Automatically update your own interfaces
-
-If your app has its own dark mode, you should toggle it on and off in sync with
-the system's dark mode setting. You can do this by using the
-[prefer-color-scheme] CSS @media query.
-
-## Manually update your own interfaces
-
-If you want to manually switch between light/dark modes, you can do this by
-setting the desired mode in the
-[themeSource](https://www.electronjs.org/docs/api/native-theme#nativethemethemesource)
-property of the `nativeTheme` module.
-
 ## Example
 
 We'll start with a working application from the
 [Quick Start Guide](quick-start.md) and add functionality gradually.
 
-First, let's add a page where a user can toggle between light and dark modes.
-By default, Electron will follow the system's dark mode preference, so we
-initially set the theme source as "System".
+First, let's edit our interface so users can toggle between light and dark
+modes.  This basic UI contains buttons to change the `nativeTheme.themeSource`
+setting and a text element indicating which `themeSource` value is selected.
+By default, Electron follows the system's dark mode preference, so we
+will hardcode the theme source as "System".
 
 Add the following lines to the `index.html` file:
 
@@ -76,20 +80,21 @@ Add the following lines to the `index.html` file:
 </html>
 ```
 
-Next, add event listeners to the toggle buttons and response handlers. The
-listeners will listen for click events and update the content on the web page
-accordingly:
+Next, add [event listeners](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener)
+that listen for `click` events on the toggle buttons. Because the `nativeTheme`
+module only exposed in the Main process, you need to set up each listener's
+callback to use IPC to send messages to and handle responses from the Main
+process:
 
-* when the "Toggle Dark Mode" button is clicked, Electron sends the
-`dark-mode:toggle` message (event) to the Main process that triggers theme
-change, and sets the Current theme source based on the response from the
-Main process.
-* when the "Reset to System Theme" button is clicked, Electron sends
-the `dark-mode:system` message (event) to the Main process that tells that
-the theme should be set to default and sets the Current theme source to
-`System`.
+* when the "Toggle Dark Mode" button is clicked, we send the
+`dark-mode:toggle` message (event) to tell the Main process to trigger a theme
+change, and update the "Current Theme Source" label in the UI based on the
+response from the Main process.
+* when the "Reset to System Theme" button is clicked, we send the
+`dark-mode:system` message (event) to tell the Main process to use the system
+color scheme, and update the "Current Theme Source" label to `System`.
 
-To ddd listeners and handlers, add the following lines to the `renderer.js` file:
+To add listeners and handlers, add the following lines to the `renderer.js` file:
 
 ```js
 const { ipcRenderer } = require('electron')
@@ -105,11 +110,24 @@ document.getElementById('reset-to-system').addEventListener('click', async () =>
 })
 ```
 
-The next step is to update the `main.js` file to handle events from the
-Renderer process. Depending on the received event (`dark-mode:toggle` or
-`dark-mode:system`), we update the [`nativeTheme.themeSource`](../api/native-theme.md#nativethemethemesource)
-API to apply the desired theme on the system's native UI elements (e.g. context
-menus on macOS).
+If you run your code at this point, you'll see that your buttons don't do
+anything just yet, and your Main process will output an error like this when
+you click on your buttons:
+`Error occurred in handler for 'dark-mode:toggle': No handler registered for 'dark-mode:toggle'`
+This is expected — we haven't actually touched any `nativeTheme` code yet.
+
+Now that we're done wiring the IPC from the Renderer's side, the next step
+is to update the `main.js` file to handle events from the Renderer process.
+
+Depending on the received event, we update the
+[`nativeTheme.themeSource`](../api/native-theme.md#nativethemethemesource)
+property to apply the desired theme on the system's native UI elements
+(e.g. context menus) and propagate the preferred color scheme to the Renderer
+process:
+* Upon receiving `dark-mode:toggle`, we check if the dark theme is currently
+active using the `nativeTheme.shouldUseDarkColors` property, and set the
+`themeSource` to the opposite theme.
+* Upon receiving `dark-mode:system`, we reset the `themeSource` to `system`.
 
 ```js
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
