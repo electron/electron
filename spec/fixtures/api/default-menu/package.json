@@ -1,4 +1,4 @@
 {
-  "name": "default-menu",
+  "name": "electron-test-default-menu",
   "main": "main.js"
 }
