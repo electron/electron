@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Thu, 1 Oct 2020 19:18:54 +0000
+Subject: Check RF is alive In PrintRenderFrameHelper::PreviewPageRendered().
+
+Do not take an accessibility snapshot if the RenderFrame is gone.
+
+Bug: 1133983
+Change-Id: I612cc72936a1dcedc5180c24eae067e47237b09b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2442375
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#812851}
+
+diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
+index 9dd56e9df0d91ccd1d6789e3b3f261a533d373e8..340c31dc77d719dcf37f23770f16ca9e64536b03 100644
+--- a/components/printing/renderer/print_render_frame_helper.cc
++++ b/components/printing/renderer/print_render_frame_helper.cc
+@@ -2403,6 +2403,10 @@ bool PrintRenderFrameHelper::PreviewPageRendered(
+   DCHECK(print_preview_context_.IsModifiable());
+ 
+ #if BUILDFLAG(ENABLE_TAGGED_PDF)
++  // Make sure the RenderFrame is alive before taking the snapshot.
++  if (render_frame_gone_)
++    snapshotter_.reset();
++
+   // For tagged PDF exporting, send a snapshot of the accessibility tree
+   // along with page 0. The accessibility tree contains the content for
+   // all of the pages of the main frame.
