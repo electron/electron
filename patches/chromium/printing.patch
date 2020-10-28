@@ -274,7 +274,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
        NOTREACHED();
        break;
      }
-@@ -752,8 +778,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -754,8 +754,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -286,7 +286,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
 +  }
  
    // We can't print if there is no renderer.
-   if (!web_contents()->GetRenderViewHost() ||
+   if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
 @@ -774,8 +802,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
