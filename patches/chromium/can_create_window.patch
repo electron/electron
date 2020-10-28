@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 365d0d8cf45c664160048a7a9606907cb5414292..dd52048e922904826c5b31d13f17dfc954dff6d3 100644
+index 1abc0f555c6d91780d06857b38e6e9ef7775ccb2..ede79b44932356d4c5a2dfa4bd224c44239bd59d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5030,6 +5030,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index 365d0d8cf45c664160048a7a9606907cb5414292..dd52048e922904826c5b31d13f17dfc9
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 962cd0fb5a428530cd9e2f8e689f2d09bc95ce1b..e099a6cc44e73da8b24603fd86b72139f0735fb2 100644
+index 303b4637c78b9d5276b36a055d0b10de2a9d2ced..32f1c3ba50ba6b4c01fd71260a19ad706728f0ea 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3624,9 +3624,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3628,9 +3628,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -66,7 +66,7 @@ index df7dd27659ab16f81b5960610eb883e5dd1df7f4..c180b0ab0081631acfc675dacd2df92d
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0f1befe8b66a32e079f087bdbb3cd072162faa1a..dfee3e388a9097c511d47cf09756dc37c5b63cda 100644
+index 0b89b6f5229cd6dcf6a0891d097f4ae2cd15d924..88cf85931ad903b705b9ffd2cfb5189ee9f238a3 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -153,6 +153,7 @@ class NetworkService;
@@ -77,7 +77,7 @@ index 0f1befe8b66a32e079f087bdbb3cd072162faa1a..dfee3e388a9097c511d47cf09756dc37
  }  // namespace network
  
  namespace sandbox {
-@@ -864,6 +865,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -872,6 +873,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -135,7 +135,7 @@ index 5f8ccea8e3a48057bdb0180ae5a9b499be4e710a..94f576a6d52731f92c65adb958be5ca0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 253d22d0f171fc4897e8ae3c01c053ea24ce1d26..3569e6f3940d71c09720ada159f54e524e247f43 100644
+index 54ac908f8fac3f20cf4bc934327ab2575420db19..e71e4dca4544f6f0a9afdc3786d4b3055cd6d9c6 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -27,6 +27,7 @@

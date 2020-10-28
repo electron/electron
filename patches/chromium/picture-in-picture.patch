@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
-index 8c1466ff0b7862ac350fc981abc65f712bf577fc..de757dca84cdfd6a091193398d27b38db1ce0ff2 100644
+index 664500224b99779388b5fabfface02a9ff599fdc..2be06a3e1934a73b9825953a3b897f5bc0f12540 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 @@ -4,7 +4,7 @@
@@ -22,7 +22,7 @@ index 8c1466ff0b7862ac350fc981abc65f712bf577fc..de757dca84cdfd6a091193398d27b38d
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index f35abd09439f96d997ddac672fb3b0ebeec0fd07..16e1c3d908ebce0c55a831299b64d1a7b9d43b1e 100644
+index 7bc1f27c0d2c181aa365e8b7b71877969567a8b0..6a43456834fa62df17419153d25474892088b559 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,7 +4,7 @@
@@ -77,7 +77,7 @@ index f07d400f5830ca01a0a0cbc897de1be693e646ba..4b74e2301ab6627f954d661f4b327ab7
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
 diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
-index 5f90df7fc899e2ca47fce69ac109653f51587131..2c209a3d4a1f9a2aa3bfef85990ce36c9a565bb7 100644
+index 36261d8e71b00aadbecc4d5e7c5d0568742481f4..13f4f6b451cd73e67792a5d8750a89af483b2d12 100644
 --- a/chrome/browser/ui/views/overlay/playback_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
 @@ -5,7 +5,7 @@
@@ -90,7 +90,7 @@ index 5f90df7fc899e2ca47fce69ac109653f51587131..2c209a3d4a1f9a2aa3bfef85990ce36c
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/resize_handle_button.cc b/chrome/browser/ui/views/overlay/resize_handle_button.cc
-index 583900afa70e217f23ead999535bdebe674a25d5..f0cde61f3d95894281c13cc82a1d18405f6993c6 100644
+index b1272d8664afdd5c05afcb38a2f533741f210554..20f7ffa8be09b046122430c4497edce807f5d69f 100644
 --- a/chrome/browser/ui/views/overlay/resize_handle_button.cc
 +++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
 @@ -5,7 +5,7 @@
@@ -103,7 +103,7 @@ index 583900afa70e217f23ead999535bdebe674a25d5..f0cde61f3d95894281c13cc82a1d1840
  #include "ui/base/hit_test.h"
  #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
-index cda0a756c8c2934b166127b36f9618c194f6a80b..9f10712c37740b63828beac225e4d0d213cf5adf 100644
+index 251503cb7154c77333d85be892fe89253523a94a..052e74bb54e8b32985af7b5f870159c80ca44d87 100644
 --- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 @@ -4,7 +4,7 @@
@@ -116,7 +116,7 @@ index cda0a756c8c2934b166127b36f9618c194f6a80b..9f10712c37740b63828beac225e4d0d2
  #include "ui/gfx/color_palette.h"
  #include "ui/views/background.h"
 diff --git a/chrome/browser/ui/views/overlay/track_image_button.cc b/chrome/browser/ui/views/overlay/track_image_button.cc
-index 3390876fe53a68a814dc5adcfa5d76bdd126f6c5..fb1420d2c4ed67da0135df8ffb59ba1e03934e54 100644
+index d5fe4187200354d18c778591e2383d9c23f4783f..ccb0ed6fef88b7ec228055ded708637c3e094571 100644
 --- a/chrome/browser/ui/views/overlay/track_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/track_image_button.cc
 @@ -5,7 +5,7 @@

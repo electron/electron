@@ -42,10 +42,10 @@ index 8e22428ddd0c545a94b04942fe9a2bf5f137b374..2436871e3d04ec276620d97ddd0a20dd
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index a81443b8c7941389098ce69941b4a16dfa080b1a..f91ceb7065984ab2559669059d2693806d2cbdf8 100644
+index 6f948f835934aa35241b23c7cedc6948d1f75648..2335284b59fc5b6edd6f2d06235a2794a56b27ca 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -1396,6 +1396,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1397,6 +1397,21 @@ void NavigationRequest::BeginNavigation() {
      is_loaded_from_mhtml_archive_ = IsForMhtmlSubframe();
      ComputeSandboxFlagsToCommit();
  
@@ -67,7 +67,7 @@ index a81443b8c7941389098ce69941b4a16dfa080b1a..f91ceb7065984ab2559669059d269380
      // Select an appropriate RenderFrameHost.
      render_frame_host_ =
          frame_tree_node_->render_manager()->GetFrameHostForNavigation(this);
-@@ -5085,6 +5100,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5086,6 +5101,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index a81443b8c7941389098ce69941b4a16dfa080b1a..f91ceb7065984ab2559669059d269380
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5098,10 +5114,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5099,10 +5115,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -106,7 +106,7 @@ index 3096bce6a0bacab77c5f480dae0aa3dc85f586f4..9fed13c1fc1b228280036f4add4f4b52
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index a9beb656551babf75c6d64ef1a512e732f327981..f3138cd74e9e6a210c6fd5a6974bf979176030e0 100644
+index 64762f93d86066c8892658aa339facf2fa5c9afe..7185fd2c63e3eb15b27fe2930da02102e177a68a 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
 @@ -2567,6 +2567,16 @@ RenderFrameHostManager::GetCoopCoepCrossOriginIsolationInfo(
@@ -255,7 +255,7 @@ index c180b0ab0081631acfc675dacd2df92d8838ef02..4ebd54c35de3880b4b07e8bade975fa5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index dfee3e388a9097c511d47cf09756dc37c5b63cda..555366e79fdf081c09ec3cdb3406b705947f8a6b 100644
+index 88cf85931ad903b705b9ffd2cfb5189ee9f238a3..b00f6a97aa004ecbaecea450fd752f582845e5a0 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -252,8 +252,45 @@ class CONTENT_EXPORT ContentBrowserClient {

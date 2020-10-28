@@ -102,7 +102,7 @@ index 89c7798d8ddf21eb74e726c142377afa05b59c26..dd75b8e82552a54868ce86caf90ba175
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788abdf33772 100644
+index 277f2ca033d1be253da6c489897bb9cbedceb9e9..82d920addbb1bb8a07986d75004a0e73c1078650 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,10 +29,7 @@
@@ -274,7 +274,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
        NOTREACHED();
        break;
      }
-@@ -754,8 +754,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -754,8 +780,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -287,7 +287,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
-@@ -774,8 +802,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -779,8 +807,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
  
@@ -296,7 +296,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
    printing_succeeded_ = false;
    return true;
  }
-@@ -824,14 +850,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -829,14 +855,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -321,7 +321,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -867,7 +901,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -872,7 +906,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
