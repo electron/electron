@@ -18,6 +18,7 @@
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
+#include "services/metrics/public/cpp/ukm_source_id.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 
 namespace content {
@@ -179,7 +180,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
-      base::UkmSourceId ukm_source_id,
+      ukm::SourceIdObj ukm_source_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -204,7 +205,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       base::Optional<int64_t> navigation_id,
-      base::UkmSourceId ukm_source_id,
+      ukm::SourceIdObj ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,

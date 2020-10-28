@@ -94,7 +94,6 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
       process_type == ::switches::kPpapiPluginProcess ||
-      process_type == ::switches::kPpapiBrokerProcess ||
       process_type == ::switches::kGpuProcess ||
 #endif
       process_type == ::switches::kRendererProcess ||
@@ -213,7 +212,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
-    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+    logging::SetMinLogLevel(logging::LOGGING_NUM_SEVERITIES);
   }
 
   logging::InitLogging(settings);

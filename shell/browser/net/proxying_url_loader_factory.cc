@@ -15,6 +15,7 @@
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_util.h"
+#include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/options_switches.h"
@@ -110,7 +111,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       routing_id_, request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
-      base::kInvalidUkmSourceId));
+      ukm::kInvalidSourceIdObj));
 
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&

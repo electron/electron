@@ -224,6 +224,7 @@ class InspectableWebContents
   content::WebContents* external_devtools_web_contents_ = nullptr;
 
   bool is_guest_;
+  bool is_docked_;
   std::unique_ptr<InspectableWebContentsView> view_;
 
   class NetworkResourceLoader;

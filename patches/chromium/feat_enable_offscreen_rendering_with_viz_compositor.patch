@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f17e070e91c06d28a110437856decc2f4271130d..3eedd746e7f83be3e7b448d88ea1a719f8e75f9b 100644
+index 5d60d2905d01fe0f8e61990e28a35936e926fdbb..84b1be8096ec46ba0fba205b6e813da2fb7e142a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -115,6 +115,8 @@ viz_component("service") {
@@ -107,10 +107,10 @@ index f17e070e91c06d28a110437856decc2f4271130d..3eedd746e7f83be3e7b448d88ea1a719
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e00016ce9b 100644
+index bd67d4530c8a77fa3c5c6df9a0fb210944d7792c..303637624a4221de79b9ddf95f23e27c1114e607 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -22,6 +22,7 @@
+@@ -24,6 +24,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -118,7 +118,7 @@ index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e0
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -35,6 +36,7 @@
+@@ -37,6 +38,7 @@
  #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
@@ -126,7 +126,7 @@ index 89dec4750aac279fe7fc98e549e55a4f1b6d0362..9241ccc5d81dd582a197b3413cc455e0
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -245,6 +247,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -250,6 +252,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
@@ -527,7 +527,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 32cdffd116b768fe20f556a1cebd90e269754bd1..eab5ccc8239e0a5ae84a3bcb97bdfdaee4236801 100644
+index dc011fe48e2a627f9243d6075c107bd3197f575e..a3d367c4be584600abde4dffab4cc66efb6addbb 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -75,6 +75,7 @@ class ExternalBeginFrameController;

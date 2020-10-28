@@ -2881,7 +2881,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       electron_renderer.get());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
-      mojo::WrapPlatformFile(file.TakePlatformFile()),
+      mojo::WrapPlatformFile(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
           [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {
