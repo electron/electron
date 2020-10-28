@@ -193,7 +193,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
-      electron::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER) {
+      electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
     [[self delegate] windowShouldClose:self];
   } else if (shell_->IsSimpleFullScreen()) {
     if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
@@ -234,7 +234,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)performMiniaturize:(id)sender {
   if (shell_->title_bar_style() ==
-      electron::NativeWindowMac::TitleBarStyle::CUSTOM_BUTTONS_ON_HOVER)
+      electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover)
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];

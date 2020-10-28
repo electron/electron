@@ -47,6 +47,7 @@
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
@@ -128,7 +129,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #endif
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  bool run_as_node = IsEnvSet(electron::kRunAsNode);
+  bool run_as_node =
+      electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode);
 #else
   bool run_as_node = false;
 #endif
@@ -141,7 +143,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   std::transform(arguments.argv, arguments.argv + arguments.argc, argv.begin(),
                  [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (run_as_node) {
+  if (electron::fuses::IsRunAsNodeEnabled() && run_as_node) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     auto ret = electron::NodeMain(argv.size(), argv.data());
@@ -216,7 +218,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(electron::kRunAsNode)) {
+  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return electron::NodeMain(argc, argv);
@@ -237,7 +239,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (IsEnvSet(electron::kRunAsNode)) {
+  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif

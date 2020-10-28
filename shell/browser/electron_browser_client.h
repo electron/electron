@@ -18,6 +18,7 @@
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
+#include "services/metrics/public/cpp/ukm_source_id.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 
 namespace content {
@@ -99,7 +100,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       const GURL& url,
       bool has_navigation_started,
-      bool has_request_started,
+      bool has_response_started,
       content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
@@ -179,7 +180,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
-      base::UkmSourceId ukm_source_id,
+      ukm::SourceIdObj ukm_source_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -204,7 +205,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       base::Optional<int64_t> navigation_id,
-      base::UkmSourceId ukm_source_id,
+      ukm::SourceIdObj ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
@@ -288,13 +289,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                                   content::RenderFrameHost* speculative_rfh,
                                   content::BrowserContext* browser_context,
                                   const GURL& dest_url,
-                                  bool has_request_started) const;
+                                  bool has_response_started) const;
   bool NavigationWasRedirectedCrossSite(
       content::BrowserContext* browser_context,
       content::SiteInstance* current_instance,
       content::SiteInstance* speculative_instance,
       const GURL& dest_url,
-      bool has_request_started) const;
+      bool has_response_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;

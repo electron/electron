@@ -25,15 +25,15 @@ namespace {
 UINT ConvertIconType(electron::TrayIcon::IconType type) {
   using IconType = electron::TrayIcon::IconType;
   switch (type) {
-    case IconType::None:
+    case IconType::kNone:
       return NIIF_NONE;
-    case IconType::Info:
+    case IconType::kInfo:
       return NIIF_INFO;
-    case IconType::Warning:
+    case IconType::kWarning:
       return NIIF_WARNING;
-    case IconType::Error:
+    case IconType::kError:
       return NIIF_ERROR;
-    case IconType::Custom:
+    case IconType::kCustom:
       return NIIF_USER;
     default:
       NOTREACHED() << "Invalid icon type";

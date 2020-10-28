@@ -9,6 +9,7 @@
 
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -81,16 +82,29 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
-        Emit("lock-screen");
+        // Unretained is OK because this object is eternally pinned.
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },
+                           base::Unretained(this)));
       } else if (wparam == WTS_SESSION_UNLOCK) {
-        Emit("unlock-screen");
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce([](PowerMonitor* pm) { pm->Emit("unlock-screen"); },
+                           base::Unretained(this)));
       }
     }
   } else if (message == WM_POWERBROADCAST) {
     if (wparam == PBT_APMRESUMEAUTOMATIC) {
-      Emit("resume");
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
+          base::BindOnce([](PowerMonitor* pm) { pm->Emit("resume"); },
+                         base::Unretained(this)));
     } else if (wparam == PBT_APMSUSPEND) {
-      Emit("suspend");
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
+          base::BindOnce([](PowerMonitor* pm) { pm->Emit("suspend"); },
+                         base::Unretained(this)));
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);

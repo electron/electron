@@ -184,7 +184,6 @@ target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
 typescript_build("default_app_js") {
   deps = [ ":build_electron_definitions" ]
-  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
 
   sources = filenames.default_app_ts_sources
 
@@ -303,6 +302,19 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
+action("electron_fuses") {
+  script = "build/fuses/build.py"
+
+  inputs = [ "build/fuses/fuses.json" ]
+
+  outputs = [
+    "$target_gen_dir/fuses.h",
+    "$target_gen_dir/fuses.cc",
+  ]
+
+  args = rebase_path(outputs)
+}
+
 source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -313,6 +325,7 @@ source_set("electron_lib") {
   ]
 
   deps = [
+    ":electron_fuses",
     ":electron_js2c",
     ":electron_version_header",
     ":manifests",
@@ -372,6 +385,7 @@ source_set("electron_lib") {
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
+    "//third_party/zlib/google:zip",
     "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
@@ -657,6 +671,8 @@ source_set("electron_lib") {
       "shell/browser/electron_pdf_web_contents_helper_client.h",
     ]
   }
+
+  sources += get_target_outputs(":electron_fuses")
 }
 
 electron_paks("packed_resources") {
@@ -682,10 +698,10 @@ if (is_mac) {
   action("fake_v8_context_snapshot_generator") {
     script = "build/fake_v8_context_snapshot_generator.py"
     args = [
-      rebase_path("$root_out_dir/v8_context_snapshot.bin"),
-      rebase_path("$root_out_dir/fake/v8_context_snapshot.bin"),
+      rebase_path("$root_out_dir/$v8_context_snapshot_filename"),
+      rebase_path("$root_out_dir/fake/$v8_context_snapshot_filename"),
     ]
-    outputs = [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+    outputs = [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
   }
 
   bundle_data("electron_framework_resources") {
@@ -699,10 +715,10 @@ if (is_mac) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         if (use_prebuilt_v8_context_snapshot) {
-          sources += [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
           public_deps += [ ":fake_v8_context_snapshot_generator" ]
         } else {
-          sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/$v8_context_snapshot_filename" ]
           public_deps += [ "//tools/v8_context_snapshot" ]
         }
       } else {

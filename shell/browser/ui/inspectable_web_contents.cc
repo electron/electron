@@ -343,6 +343,7 @@ InspectableWebContents::InspectableWebContents(
       pref_service_(pref_service),
       web_contents_(web_contents),
       is_guest_(is_guest),
+      is_docked_(true),
       view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
@@ -626,7 +627,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 #endif
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
-  DevToolsContentsResizingStrategy strategy(rect);
+  DevToolsContentsResizingStrategy strategy(rect, is_docked_);
   if (contents_resizing_strategy_.Equals(strategy))
     return;
 
@@ -703,6 +704,7 @@ void InspectableWebContents::LoadNetworkResource(
 
 void InspectableWebContents::SetIsDocked(const DispatchCallback& callback,
                                          bool docked) {
+  is_docked_ = docked;
   if (managed_devtools_web_contents_)
     view_->SetIsDocked(docked, activate_);
   if (!callback.is_null())

@@ -306,7 +306,7 @@ describe('command line switches', () => {
     const testLocale = async (locale: string, result: string) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
 
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
@@ -765,7 +765,7 @@ describe('chromium features', () => {
         });
         expect(await w.webContents.executeJavaScript(`(${function () {
           const { ipc } = process._linkedBinding('electron_renderer_ipc');
-          return ipc.sendSync(true, 'GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
+          return ipc.sendSync(true, 'GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', '']);
         }})()`)).to.be.null();
         const exception = await uncaughtException;
         expect(exception.message).to.match(/denied: expected native window\.open/);

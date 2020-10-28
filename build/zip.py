@@ -9,7 +9,8 @@ EXTENSIONS_TO_SKIP = [
   '.pdb',
   '.mojom.js',
   '.mojom-lite.js',
-  '.info'
+  '.info',
+  '.m.js'
 ]
 
 PATHS_TO_SKIP = [

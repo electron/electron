@@ -26,11 +26,11 @@ struct ProcessMemoryInfo {
 
 #if defined(OS_WIN)
 enum class ProcessIntegrityLevel {
-  Unknown,
-  Untrusted,
-  Low,
-  Medium,
-  High,
+  kUnknown,
+  kUntrusted,
+  kLow,
+  kMedium,
+  kHigh,
 };
 #endif
 

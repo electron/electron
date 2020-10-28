@@ -46,7 +46,7 @@ ProxyingWebSocket::ProxyingWebSocket(
           /*is_async=*/true,
           /*is_service_worker_script=*/false,
           /*navigation_id=*/base::nullopt,
-          /*ukm_source_id=*/base::kInvalidUkmSourceId)) {}
+          /*ukm_source_id=*/ukm::kInvalidSourceIdObj)) {}
 
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
@@ -380,15 +380,15 @@ void ProxyingWebSocket::OnAuthRequiredComplete(AuthRequiredResponse rv) {
   CHECK(auth_required_callback_);
   ResumeIncomingMethodCallProcessing();
   switch (rv) {
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION:
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH:
+    case AuthRequiredResponse::kNoAction:
+    case AuthRequiredResponse::kCancelAuth:
       std::move(auth_required_callback_).Run(base::nullopt);
       break;
 
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH:
+    case AuthRequiredResponse::kSetAuth:
       std::move(auth_required_callback_).Run(auth_credentials_);
       break;
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING:
+    case AuthRequiredResponse::kIoPending:
       NOTREACHED();
       break;
   }
@@ -406,7 +406,7 @@ void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
 
   auto continuation = base::BindRepeating(
       &ProxyingWebSocket::OnAuthRequiredComplete, weak_factory_.GetWeakPtr());
-  auto auth_rv = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
+  auto auth_rv = AuthRequiredResponse::kIoPending;
   PauseIncomingMethodCallProcessing();
 
   OnAuthRequiredComplete(auth_rv);

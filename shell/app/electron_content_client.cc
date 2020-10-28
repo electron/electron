@@ -49,29 +49,34 @@ namespace electron {
 
 namespace {
 
+enum class WidevineCdmFileCheck {
+  kNotChecked,
+  kFound,
+  kNotFound,
+};
+
 #if defined(WIDEVINE_CDM_AVAILABLE)
 bool IsWidevineAvailable(
     base::FilePath* cdm_path,
     std::vector<media::VideoCodec>* codecs_supported,
     base::flat_set<media::CdmSessionType>* session_types_supported,
     base::flat_set<media::EncryptionMode>* modes_supported) {
-  static enum {
-    NOT_CHECKED,
-    FOUND,
-    NOT_FOUND,
-  } widevine_cdm_file_check = NOT_CHECKED;
+  static WidevineCdmFileCheck widevine_cdm_file_check =
+      WidevineCdmFileCheck::kNotChecked;
 
-  if (widevine_cdm_file_check == NOT_CHECKED) {
+  if (widevine_cdm_file_check == WidevineCdmFileCheck::kNotChecked) {
     base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
     *cdm_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
     if (!cdm_path->empty()) {
       *cdm_path = cdm_path->AppendASCII(
           base::GetNativeLibraryName(kWidevineCdmLibraryName));
-      widevine_cdm_file_check = base::PathExists(*cdm_path) ? FOUND : NOT_FOUND;
+      widevine_cdm_file_check = base::PathExists(*cdm_path)
+                                    ? WidevineCdmFileCheck::kFound
+                                    : WidevineCdmFileCheck::kNotFound;
     }
   }
 
-  if (widevine_cdm_file_check == FOUND) {
+  if (widevine_cdm_file_check == WidevineCdmFileCheck::kFound) {
     // Add the supported codecs as if they came from the component manifest.
     // This list must match the CDM that is being bundled with Chrome.
     codecs_supported->push_back(media::VideoCodec::kCodecVP8);

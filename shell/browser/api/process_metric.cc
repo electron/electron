@@ -92,7 +92,7 @@ ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
 ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
   HANDLE token = nullptr;
   if (!::OpenProcessToken(process.Handle(), TOKEN_QUERY, &token)) {
-    return ProcessIntegrityLevel::Unknown;
+    return ProcessIntegrityLevel::kUnknown;
   }
 
   base::win::ScopedHandle token_scoped(token);
@@ -101,7 +101,7 @@ ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
   if (::GetTokenInformation(token, TokenIntegrityLevel, nullptr, 0,
                             &token_info_length) ||
       ::GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-    return ProcessIntegrityLevel::Unknown;
+    return ProcessIntegrityLevel::kUnknown;
   }
 
   auto token_label_bytes = std::make_unique<char[]>(token_info_length);
@@ -109,7 +109,7 @@ ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
       reinterpret_cast<TOKEN_MANDATORY_LABEL*>(token_label_bytes.get());
   if (!::GetTokenInformation(token, TokenIntegrityLevel, token_label,
                              token_info_length, &token_info_length)) {
-    return ProcessIntegrityLevel::Unknown;
+    return ProcessIntegrityLevel::kUnknown;
   }
 
   DWORD integrity_level = *::GetSidSubAuthority(
@@ -119,31 +119,31 @@ ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
 
   if (integrity_level >= SECURITY_MANDATORY_UNTRUSTED_RID &&
       integrity_level < SECURITY_MANDATORY_LOW_RID) {
-    return ProcessIntegrityLevel::Untrusted;
+    return ProcessIntegrityLevel::kUntrusted;
   }
 
   if (integrity_level >= SECURITY_MANDATORY_LOW_RID &&
       integrity_level < SECURITY_MANDATORY_MEDIUM_RID) {
-    return ProcessIntegrityLevel::Low;
+    return ProcessIntegrityLevel::kLow;
   }
 
   if (integrity_level >= SECURITY_MANDATORY_MEDIUM_RID &&
       integrity_level < SECURITY_MANDATORY_HIGH_RID) {
-    return ProcessIntegrityLevel::Medium;
+    return ProcessIntegrityLevel::kMedium;
   }
 
   if (integrity_level >= SECURITY_MANDATORY_HIGH_RID &&
       integrity_level < SECURITY_MANDATORY_SYSTEM_RID) {
-    return ProcessIntegrityLevel::High;
+    return ProcessIntegrityLevel::kHigh;
   }
 
-  return ProcessIntegrityLevel::Unknown;
+  return ProcessIntegrityLevel::kUnknown;
 }
 
 // static
 bool ProcessMetric::IsSandboxed(ProcessIntegrityLevel integrity_level) {
-  return integrity_level > ProcessIntegrityLevel::Unknown &&
-         integrity_level < ProcessIntegrityLevel::Medium;
+  return integrity_level > ProcessIntegrityLevel::kUnknown &&
+         integrity_level < ProcessIntegrityLevel::kMedium;
 }
 
 #elif defined(OS_MAC)

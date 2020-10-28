@@ -33,6 +33,7 @@
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -128,22 +129,6 @@ class OffScreenWebContentsView;
 
 namespace api {
 
-// Certain events are only in WebContentsDelegate, provide our own Observer to
-// dispatch those events.
-class ExtendedWebContentsObserver : public base::CheckedObserver {
- public:
-  virtual void OnCloseContents() {}
-  virtual void OnDraggableRegionsUpdated(
-      const std::vector<mojom::DraggableRegionPtr>& regions) {}
-  virtual void OnSetContentBounds(const gfx::Rect& rect) {}
-  virtual void OnActivateContents() {}
-  virtual void OnPageTitleUpdated(const base::string16& title,
-                                  bool explicit_set) {}
-
- protected:
-  ~ExtendedWebContentsObserver() override {}
-};
-
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
                     public gin_helper::EventEmitterMixin<WebContents>,
@@ -156,12 +141,12 @@ class WebContents : public gin::Wrappable<WebContents>,
                     public mojom::ElectronBrowser {
  public:
   enum class Type {
-    BACKGROUND_PAGE,  // An extension background page.
-    BROWSER_WINDOW,   // Used by BrowserWindow.
-    BROWSER_VIEW,     // Used by BrowserView.
-    REMOTE,           // Thin wrap around an existing WebContents.
-    WEB_VIEW,         // Used by <webview>.
-    OFF_SCREEN,       // Used for offscreen rendering
+    kBackgroundPage,  // An extension background page.
+    kBrowserWindow,   // Used by BrowserWindow.
+    kBrowserView,     // Used by BrowserView.
+    kRemote,          // Thin wrap around an existing WebContents.
+    kWebView,         // Used by <webview>.
+    kOffScreen,       // Used for offscreen rendering
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
@@ -791,7 +776,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
-  Type type_ = Type::BROWSER_WINDOW;
+  Type type_ = Type::kBrowserWindow;
 
   int32_t id_;
 
