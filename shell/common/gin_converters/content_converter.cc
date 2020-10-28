@@ -179,7 +179,7 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
   // proof these conversions.
   switch (val) {
     case content::PermissionType::ACCESSIBILITY_EVENTS:
-      return StringToV8(isolate, "accessibilityEvents");
+      return StringToV8(isolate, "accessibility-events");
     case content::PermissionType::AR:
       return StringToV8(isolate, "ar");
     case content::PermissionType::BACKGROUND_FETCH:
