@@ -10,6 +10,7 @@
 #include "base/scoped_native_library.h"
 #include "base/win/pe_image.h"
 #include "base/win/win_util.h"
+#include "base/win/windows_version.h"
 
 // This namespace contains code originally from
 // https://github.com/ysc3839/win32-darkmode/
@@ -60,30 +61,14 @@ void RefreshTitleBarThemeColor(HWND hWnd, bool dark) {
   DwmSetWindowAttribute(hWnd, 0x13, &ldark, sizeof ldark);
 }
 
-bool CheckBuildNumber(DWORD buildNumber) {
-  return (buildNumber == 17763 ||  // 1809
-          buildNumber == 18362 ||  // 1903
-          buildNumber == 18363 ||  // 1909
-          buildNumber == 19041);   // 2004
-}
-
 void InitDarkMode() {
-  // get the "get version & build numbers" function
-  auto nt_snl =
-      base::ScopedNativeLibrary(base::FilePath(FILE_PATH_LITERAL("ntdll.dll")));
-  auto nt_pei = base::win::PEImage(nt_snl.get());
-  using fnRtlGetNtVersionNumbers = VOID(WINAPI*)(LPDWORD, LPDWORD, LPDWORD);
-  auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(
-      nt_pei.GetProcAddress("RtlGetNtVersionNumbers"));
-  if (!RtlGetNtVersionNumbers) {
-    return;
-  }
-
-  // check to see if the major/minor/build support these dark mode APIS
-  DWORD major = 0, minor = 0;
-  RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
-  g_buildNumber &= ~0xF0000000;
-  if (major != 10 || minor != 0 || !CheckBuildNumber(g_buildNumber)) {
+  // confirm that we're running on a version of Windows
+  // where the Dark Mode API is known
+  auto* os_info = base::win::OSInfo::GetInstance();
+  g_buildNumber = os_info->version_number().build;
+  auto const version = os_info->version();
+  if ((version < base::win::Version::WIN10_RS5) ||
+      (version > base::win::Version::WIN10_20H1)) {
     return;
   }
 
