@@ -1,7 +1,7 @@
-From 229fdaf8fc05e0eeadad380d401c191afd822d92 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Wed, 14 Oct 2020 19:40:12 +0000
-Subject: [PATCH] Validate input of MediaStreamDispatcherHost::OpenDevice()
+Subject: Validate input of MediaStreamDispatcherHost::OpenDevice()
 
 This method forwards to MediaStreamManager::OpenDevice(), which
 DCHECKs for the stream type to be device video or audio capture
@@ -19,26 +19,21 @@ Auto-Submit: Guido Urdaneta <guidou@chromium.org>
 Commit-Queue: Guido Urdaneta <guidou@chromium.org>
 Reviewed-by: Avi Drissman <avi@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#817151}
----
- content/browser/bad_message.h                              | 1 +
- .../renderer_host/media/media_stream_dispatcher_host.cc    | 7 +++++++
- tools/metrics/histograms/enums.xml                         | 1 +
- 3 files changed, 9 insertions(+)
 
 diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
-index 25f1a395469e2..c6675ef501de6 100644
+index d29ce2e7422b66e53f7c27a25fb987237d6221e0..44147439a50096e09be41dbba14b5452d2268157 100644
 --- a/content/browser/bad_message.h
 +++ b/content/browser/bad_message.h
-@@ -259,6 +259,7 @@ enum BadMessageReason {
-   RFH_CSP_ATTRIBUTE = 231,
-   RFH_RECEIVED_ASSOCIATED_MESSAGE_WHILE_BFCACHED = 232,
-   RWH_CLOSE_PORTAL = 233,
+@@ -246,6 +246,7 @@ enum BadMessageReason {
+   MDDH_INVALID_STREAM_SELECTION_INFO = 218,
+   REGISTER_PROTOCOL_HANDLER_INVALID_URL = 219,
+   NC_SAME_DOCUMENT_POST_COMMIT_ERROR = 220,
 +  MSDH_INVALID_STREAM_TYPE = 234,
  
    // Please add new elements here. The naming convention is abbreviated class
    // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
 diff --git a/content/browser/renderer_host/media/media_stream_dispatcher_host.cc b/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
-index 3e43ba7ad5c9e..835c9be6981b0 100644
+index 1a3b5b446bbff28e60278bfe5f29e13acc3c5306..488b6746a3545f687159dabfee4dd278c1eaea0e 100644
 --- a/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
 +++ b/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
 @@ -196,6 +196,13 @@ void MediaStreamDispatcherHost::OpenDevice(int32_t page_request_id,
@@ -54,15 +49,15 @@ index 3e43ba7ad5c9e..835c9be6981b0 100644
 +  }
  
    base::PostTaskAndReplyWithResult(
-       GetUIThreadTaskRunner({}).get(), FROM_HERE,
+       base::CreateSingleThreadTaskRunner({BrowserThread::UI}).get(), FROM_HERE,
 diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
-index 855239b60066c..0e1aede17b7ba 100644
+index d3b774e16ed7b99362119ba7a999fe8df6df0d84..2f6f37eaa989f4baf2c9dcab487f5545d392a89f 100644
 --- a/tools/metrics/histograms/enums.xml
 +++ b/tools/metrics/histograms/enums.xml
-@@ -6486,6 +6486,7 @@ Called by update_bad_message_reasons.py.-->
-   <int value="231" label="RFH_CSP_ATTRIBUTE"/>
-   <int value="232" label="RFH_RECEIVED_ASSOCIATED_MESSAGE_WHILE_BFCACHED"/>
-   <int value="233" label="RWH_CLOSE_PORTAL"/>
+@@ -5362,6 +5362,7 @@ Unknown properties are collapsed to zero. -->
+   <int value="218" label="MDDH_INVALID_STREAM_SELECTION_INFO"/>
+   <int value="219" label="REGISTER_PROTOCOL_HANDLER_INVALID_URL"/>
+   <int value="220" label="NC_SAME_DOCUMENT_POST_COMMIT_ERROR"/>
 +  <int value="234" label="MSDH_INVALID_STREAM_TYPE"/>
  </enum>
  
