@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Wed, 14 Oct 2020 19:40:12 +0000
+Subject: Validate input of MediaStreamDispatcherHost::OpenDevice()
+
+This method forwards to MediaStreamManager::OpenDevice(), which
+DCHECKs for the stream type to be device video or audio capture
+(i.e., webcam or mic). However, MSDH admits other stream types,
+which cause MSM::OpenDevice to hit this DCHECK.
+
+This CL ensures that a message containing an incorrect stream type,
+which could be sent by a malicious renderer, results in killing the
+renderer process.
+
+Bug: 1135018
+Change-Id: I3884dde95d92c41f44966a8ab1dd7bdfd4b23b9b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2472397
+Auto-Submit: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#817151}
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index 473a6a93edc4491e36ebc28b28e8a05b9fb64d62..3a2bcf0655dd02b95425c43caa3b8e5d896d7375 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -253,6 +253,7 @@ enum BadMessageReason {
+   RFH_BAD_DOCUMENT_POLICY_HEADER = 225,
+   RFMF_INVALID_PLUGIN_EMBEDDER_ORIGIN = 226,
+   RFH_INVALID_CALL_FROM_NOT_MAIN_FRAME = 227,
++  MSDH_INVALID_STREAM_TYPE = 234,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/renderer_host/media/media_stream_dispatcher_host.cc b/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
+index 1a3b5b446bbff28e60278bfe5f29e13acc3c5306..488b6746a3545f687159dabfee4dd278c1eaea0e 100644
+--- a/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
++++ b/content/browser/renderer_host/media/media_stream_dispatcher_host.cc
+@@ -196,6 +196,13 @@ void MediaStreamDispatcherHost::OpenDevice(int32_t page_request_id,
+                                            blink::mojom::MediaStreamType type,
+                                            OpenDeviceCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  // OpenDevice is only supported for microphone or webcam capture.
++  if (type != blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE &&
++      type != blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
++    bad_message::ReceivedBadMessage(
++        render_process_id_, bad_message::MDDH_INVALID_DEVICE_TYPE_REQUEST);
++    return;
++  }
+ 
+   base::PostTaskAndReplyWithResult(
+       base::CreateSingleThreadTaskRunner({BrowserThread::UI}).get(), FROM_HERE,
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index d69575e355a2692531a9c76ccdb6bb69eae07da8..21dc7d1d1b07e246232d128cd6a7084915ca0c6c 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -5668,6 +5668,7 @@ Unknown properties are collapsed to zero. -->
+   <int value="225" label="RFH_BAD_DOCUMENT_POLICY_HEADER"/>
+   <int value="226" label="RFMF_INVALID_PLUGIN_EMBEDDER_ORIGIN"/>
+   <int value="227" label="RFH_INVALID_CALL_FROM_NOT_MAIN_FRAME"/>
++  <int value="234" label="MSDH_INVALID_STREAM_TYPE"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonExtensions">
