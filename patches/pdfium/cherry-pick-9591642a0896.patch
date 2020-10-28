@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Mon, 19 Oct 2020 17:07:57 +0000
+Subject: Reverse order of CPWL_ListCtrl and CPWL_List_Notify cleanup
+
+(Speculative) fix for the crash in 1137630, since it only reproduces
+sporadically on my system, but hasn't re-occured since applying the
+patch.
+
+TBR: thestig@chromium.org
+Bug: chromium:1137630
+Change-Id: I4f52c7109eca00dfa8faee9bc6341cd94c25b60c
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/75090
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+(cherry picked from commit 7dd9dbd6dd4959a568e7701da19871f859f8dce2)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/75350
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fpdfsdk/pwl/cpwl_list_box.h b/fpdfsdk/pwl/cpwl_list_box.h
+index 48b53e514dcb5a307b099b4ae427f83e9311f20c..1e56697f86318a5d371a6690fce9ec50c60e5150 100644
+--- a/fpdfsdk/pwl/cpwl_list_box.h
++++ b/fpdfsdk/pwl/cpwl_list_box.h
+@@ -97,8 +97,8 @@ class CPWL_ListBox : public CPWL_Wnd {
+  protected:
+   bool m_bMouseDown = false;
+   bool m_bHoverSel = false;
++  std::unique_ptr<CPWL_List_Notify> m_pListNotify;  // Must outlive |m_pList|.
+   std::unique_ptr<CPWL_ListCtrl> m_pList;
+-  std::unique_ptr<CPWL_List_Notify> m_pListNotify;
+   UnownedPtr<IPWL_Filler_Notify> m_pFillerNotify;
+ 
+  private:
