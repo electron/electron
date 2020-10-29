@@ -64,7 +64,7 @@ class FileChooserDialog {
 
     dialog_ = GTK_NATIVE_DIALOG(
         gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
-                                        confirm_text, gtk_util::kCancelLabel));
+                                    confirm_text, gtk_util::kCancelLabel));
 
     if (parent_) {
       parent_->SetEnabled(false);
@@ -73,7 +73,8 @@ class FileChooserDialog {
     }
 
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog_), TRUE);
+      gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog_),
+                                                     TRUE);
     if (action != GTK_FILE_CHOOSER_ACTION_OPEN)
       gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(dialog_), TRUE);
 
@@ -84,7 +85,8 @@ class FileChooserDialog {
       } else {
         if (settings.default_path.IsAbsolute()) {
           gtk_file_chooser_set_current_folder(
-              GTK_FILE_CHOOSER(dialog_), settings.default_path.DirName().value().c_str());
+              GTK_FILE_CHOOSER(dialog_),
+              settings.default_path.DirName().value().c_str());
         }
 
         gtk_file_chooser_set_current_name(
