@@ -17,10 +17,6 @@
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gtk/gtk_util.h"
 
-#if defined(USE_X11)
-#include "ui/events/platform/x11/x11_event_source.h"
-#endif
-
 #if defined(USE_OZONE) || defined(USE_X11)
 #include "ui/base/ui_base_features.h"
 #endif
