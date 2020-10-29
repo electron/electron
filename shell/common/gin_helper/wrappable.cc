@@ -63,8 +63,7 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
 // static
 void WrappableBase::FirstWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  WrappableBase* wrappable =
-      static_cast<WrappableBase*>(data.GetInternalField(0));
+  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
   if (wrappable) {
     wrappable->wrapper_.Reset();
     data.SetSecondPassCallback(SecondWeakCallback);
@@ -74,8 +73,7 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  WrappableBase* wrappable =
-      static_cast<WrappableBase*>(data.GetInternalField(0));
+  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
   if (wrappable)
     delete wrappable;
 }

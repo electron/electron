@@ -101,7 +101,7 @@ ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
   }
 
   auto token_label_bytes = std::make_unique<char[]>(token_info_length);
-  TOKEN_MANDATORY_LABEL* token_label =
+  auto* token_label =
       reinterpret_cast<TOKEN_MANDATORY_LABEL*>(token_label_bytes.get());
   if (!::GetTokenInformation(token, TokenIntegrityLevel, token_label,
                              token_info_length, &token_info_length)) {

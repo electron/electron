@@ -87,7 +87,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon(base::Optional<UUID> guid) {
   if (guid.has_value()) {
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {
-      NotifyIcon* current_win_icon = static_cast<NotifyIcon*>(*i);
+      auto* current_win_icon = static_cast<NotifyIcon*>(*i);
       if (current_win_icon->guid() == guid.value()) {
         LOG(WARNING)
             << "Guid already in use. Existing tray entry will be replaced.";
@@ -95,7 +95,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon(base::Optional<UUID> guid) {
     }
   }
 
-  NotifyIcon* notify_icon =
+  auto* notify_icon =
       new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage,
                      guid.has_value() ? guid.value() : GUID_DEFAULT);
 
@@ -119,7 +119,7 @@ LRESULT CALLBACK NotifyIconHost::WndProcStatic(HWND hwnd,
                                                UINT message,
                                                WPARAM wparam,
                                                LPARAM lparam) {
-  NotifyIconHost* msg_wnd =
+  auto* msg_wnd =
       reinterpret_cast<NotifyIconHost*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (msg_wnd)
     return msg_wnd->WndProc(hwnd, message, wparam, lparam);
@@ -135,7 +135,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     // We need to reset all of our icons because the taskbar went away.
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {
-      NotifyIcon* win_icon = static_cast<NotifyIcon*>(*i);
+      auto* win_icon = static_cast<NotifyIcon*>(*i);
       win_icon->ResetIcon();
     }
     return TRUE;
@@ -145,7 +145,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     // Find the selected status icon.
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {
-      NotifyIcon* current_win_icon = static_cast<NotifyIcon*>(*i);
+      auto* current_win_icon = static_cast<NotifyIcon*>(*i);
       if (current_win_icon->icon_id() == wparam) {
         win_icon = current_win_icon;
         break;

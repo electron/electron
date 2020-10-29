@@ -391,7 +391,7 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  LPARAM l_param,
                                                  UINT_PTR subclass_id,
                                                  DWORD_PTR ref_data) {
-  NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
+  auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
     case WM_MOUSELEAVE: {
       // When input is forwarded to underlying windows, this message is posted.

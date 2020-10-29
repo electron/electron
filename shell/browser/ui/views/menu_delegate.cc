@@ -39,7 +39,7 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
   id_ = button->tag();
   adapter_ = std::make_unique<MenuModelAdapter>(model);
 
-  views::MenuItemView* item = new views::MenuItemView(this);
+  auto* item = new views::MenuItemView(this);
   static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
 
   menu_runner_ = std::make_unique<views::MenuRunner>(
