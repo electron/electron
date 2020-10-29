@@ -42,18 +42,18 @@ diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/
 index fd190e3ab45317adc4f66c6c7f9c03e99d3f914a..33b1a3e129fe7ae03a3058da5e27825be275c3cd 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -122,6 +122,11 @@ class ChromeContentRendererClient
+@@ -123,6 +123,11 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
 +  bool ShouldFork(blink::WebLocalFrame* frame,
-+                const GURL& url,
-+                const std::string& http_method,
-+                bool is_initial_navigation,
-+                bool is_server_redirect) override;
++                  const GURL& url,
++                  const std::string& http_method,
++                  bool is_initial_navigation,
++                  bool is_server_redirect) override;
+   blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
+       override;
    void WillSendRequest(blink::WebLocalFrame* frame,
-                        ui::PageTransition transition_type,
-                        const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
 index 098c3e1d6aaabdcf57c8fdbf10bd43035afabdec..68f04e7dd49ca486a4fdcbde5fa64d313b9587a9 100644
 --- a/content/public/renderer/content_renderer_client.cc
