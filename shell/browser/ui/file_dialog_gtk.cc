@@ -68,7 +68,6 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      SetGtkTransientForAura(parent_->GetNativeWindow());
       gtk_native_dialog_set_modal(dialog_, TRUE);
     }
 
@@ -197,19 +196,6 @@ class FileChooserDialog {
   Filters filters_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> open_promise_;
-
-  // Sets |dialog| as transient for |parent|, which will keep it on top and
-  // center it above |parent|. Do nothing if |parent| is nullptr.
-  void SetGtkTransientForAura(aura::Window* parent) {
-    static const char kAuraTransientParent[] = "aura-transient-parent";
-
-    if (!parent || !parent->GetHost())
-      return;
-
-    gtk_native_dialog_set_transient_for(dialog_,
-                                        reinterpret_cast<GtkWindow*>(parent));
-    g_object_set_data(G_OBJECT(dialog_), kAuraTransientParent, parent);
-  }
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
