@@ -11,7 +11,6 @@ const path = require('path');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
-const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
@@ -23,6 +22,53 @@ const IGNORELIST = new Set([
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
+
+function getDepotToolsEnv () {
+  let depotToolsEnv;
+
+  const findDepotToolsOnPath = () => {
+    const result = childProcess.spawnSync(
+      IS_WINDOWS ? 'where' : 'which',
+      ['gclient']
+    );
+
+    if (result.status === 0) {
+      return process.env;
+    }
+  };
+
+  const checkForBuildTools = () => {
+    const result = childProcess.spawnSync(
+      'electron-build-tools',
+      ['show', 'env', '--json'],
+      { shell: true }
+    );
+
+    if (result.status === 0) {
+      return {
+        ...process.env,
+        ...JSON.parse(result.stdout.toString().trim())
+      };
+    }
+  };
+
+  try {
+    depotToolsEnv = findDepotToolsOnPath();
+    if (!depotToolsEnv) depotToolsEnv = checkForBuildTools();
+  } catch {}
+
+  if (!depotToolsEnv) {
+    throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
+  }
+
+  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
+    throw new Error(
+      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
+    );
+  }
+
+  return depotToolsEnv;
+}
 
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = Object.assign({ stdio: 'inherit' }, opts);
@@ -100,10 +146,12 @@ const LINTERS = [{
   roots: ['script'],
   test: filename => filename.endsWith('.py'),
   run: (opts, filenames) => {
-    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
-    const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
-    spawnAndCheckExitCode('pylint', args, { env });
+    const args = [...filenames];
+    const env = {
+      PYTHONPATH: path.join(SOURCE_ROOT, 'script'),
+      ...getDepotToolsEnv()
+    };
+    spawnAndCheckExitCode('pylint', args, { env, shell: true });
   }
 }, {
   key: 'javascript',
@@ -142,15 +190,9 @@ const LINTERS = [{
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
-      const env = Object.assign({
-        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-      }, process.env);
-      // Users may not have depot_tools in PATH.
-      env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
       if (!opts.fix) args.push('--dry-run');
-      const result = childProcess.spawnSync('gn', args, { env, stdio: 'inherit', shell: true });
+      const result = childProcess.spawnSync('gn', args, { env: getDepotToolsEnv(), stdio: 'inherit', shell: true });
       if (result.status === 0) {
         return true;
       } else if (result.status === 2) {
