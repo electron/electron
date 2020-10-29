@@ -128,7 +128,7 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
       return false;
   }
 
-  const unsigned char* data =
+  const auto* data =
       reinterpret_cast<const unsigned char*>(file_contents.data());
   size_t size = file_contents.size();
 

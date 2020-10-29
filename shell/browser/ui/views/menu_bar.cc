@@ -272,7 +272,7 @@ void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   }
 
   // Deleted in MenuDelegate::OnMenuClosed
-  MenuDelegate* menu_delegate = new MenuDelegate(this);
+  auto* menu_delegate = new MenuDelegate(this);
   menu_delegate->RunMenu(
       menu_model_->GetSubmenuModelAt(id), source,
       event.IsKeyEvent() ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
