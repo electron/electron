@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Peraza <jperaza@chromium.org>
+Date: Wed, 21 Oct 2020 11:10:25 -0700
+Subject: Initialize logging for crashpad
+
+Although logging to files is not yet supported by mini_chromium, it is
+the default behavior for OS_WIN in chromium. This change should
+cause crashpad to log via OutputDebugString() on Windows, instead of
+debug.log files. Future work (crbug.com/crashpad/26) should arrange for
+logs to be uploaded with reports, embedded in associated minidumps or as
+file attachments.
+
+Bug: chromium:711159
+Change-Id: I0f9004f7de94dd29d555cc7d23c48a63da6b4bba
+Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/2425108
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+
+diff --git a/base/logging.cc b/base/logging.cc
+index b5cf2c4933d0cbb89f2f1b410c5c249a0b8647f0..698dca03914934b294457d05d89722a27cdebb56 100644
+--- a/base/logging.cc
++++ b/base/logging.cc
+@@ -369,21 +369,23 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
+   g_log_format = settings.log_format;
+ #endif
+ 
+-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+-  // Don't bother initializing |g_vlog_info| unless we use one of the
+-  // vlog switches.
+-  if (command_line->HasSwitch(switches::kV) ||
+-      command_line->HasSwitch(switches::kVModule)) {
+-    // NOTE: If |g_vlog_info| has already been initialized, it might be in use
+-    // by another thread. Don't delete the old VLogInfo, just create a second
+-    // one. We keep track of both to avoid memory leak warnings.
+-    CHECK(!g_vlog_info_prev);
+-    g_vlog_info_prev = g_vlog_info;
+-
+-    g_vlog_info =
+-        new VlogInfo(command_line->GetSwitchValueASCII(switches::kV),
+-                     command_line->GetSwitchValueASCII(switches::kVModule),
+-                     &g_min_log_level);
++  if (base::CommandLine::InitializedForCurrentProcess()) {
++    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
++    // Don't bother initializing |g_vlog_info| unless we use one of the
++    // vlog switches.
++    if (command_line->HasSwitch(switches::kV) ||
++        command_line->HasSwitch(switches::kVModule)) {
++      // NOTE: If |g_vlog_info| has already been initialized, it might be in use
++      // by another thread. Don't delete the old VLogInfo, just create a second
++      // one. We keep track of both to avoid memory leak warnings.
++      CHECK(!g_vlog_info_prev);
++      g_vlog_info_prev = g_vlog_info;
++
++      g_vlog_info =
++          new VlogInfo(command_line->GetSwitchValueASCII(switches::kV),
++                       command_line->GetSwitchValueASCII(switches::kVModule),
++                       &g_min_log_level);
++    }
+   }
+ 
+   g_logging_destination = settings.logging_dest;
+@@ -394,7 +396,10 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
+     config.min_severity = FX_LOG_INFO;
+     config.console_fd = -1;
+     config.log_service_channel = ZX_HANDLE_INVALID;
+-    std::string log_tag = command_line->GetProgram().BaseName().AsUTF8Unsafe();
++    std::string log_tag = base::CommandLine::ForCurrentProcess()
++                              ->GetProgram()
++                              .BaseName()
++                              .AsUTF8Unsafe();
+     const char* log_tag_data = log_tag.data();
+     config.tags = &log_tag_data;
+     config.num_tags = 1;
+diff --git a/third_party/crashpad/crashpad/DEPS b/third_party/crashpad/crashpad/DEPS
+index 83995e0cdea91522c272415330c57af764d23163..7e83327aac2582e81a38720086a52832de58a37a 100644
+--- a/third_party/crashpad/crashpad/DEPS
++++ b/third_party/crashpad/crashpad/DEPS
+@@ -42,7 +42,7 @@ deps = {
+       '7bde79cc274d06451bf65ae82c012a5d3e476b5a',
+   'crashpad/third_party/mini_chromium/mini_chromium':
+       Var('chromium_git') + '/chromium/mini_chromium@' +
+-      '76a9bb7475f6217eaf108789246379d3972b4e6a',
++      '5fc64bfbf1c000161445c586de45e40464ff2314',
+   'crashpad/third_party/libfuzzer/src':
+       Var('chromium_git') + '/chromium/llvm-project/compiler-rt/lib/fuzzer.git@' +
+       'fda403cf93ecb8792cb1d061564d89a6553ca020',
+diff --git a/third_party/crashpad/crashpad/handler/handler_main.cc b/third_party/crashpad/crashpad/handler/handler_main.cc
+index 33649291e253a7a9bd281b892bab415ff1950b6a..a3ba9bb17e221e8330b09eae572d116bd29e4ba4 100644
+--- a/third_party/crashpad/crashpad/handler/handler_main.cc
++++ b/third_party/crashpad/crashpad/handler/handler_main.cc
+@@ -504,16 +504,26 @@ class ScopedStoppable {
+   DISALLOW_COPY_AND_ASSIGN(ScopedStoppable);
+ };
+ 
++void InitCrashpadLogging() {
++  logging::LoggingSettings settings;
++#if defined(OS_CHROMEOS)
++  settings.logging_dest = logging::LOG_TO_FILE;
++  settings.log_file_path = "/var/log/chrome/chrome";
++#elif defined(OS_WIN)
++  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
++#else
++  settings.logging_dest =
++      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
++#endif
++  logging::InitLogging(settings);
++}
++
+ }  // namespace
+ 
+ int HandlerMain(int argc,
+                 char* argv[],
+                 const UserStreamDataSources* user_stream_sources) {
+-#if defined(OS_CHROMEOS)
+-  if (freopen("/var/log/chrome/chrome", "a", stderr) == nullptr) {
+-    PLOG(ERROR) << "Failed to redirect stderr to /var/log/chrome/chrome";
+-  }
+-#endif
++  InitCrashpadLogging();
+ 
+   InstallCrashHandler();
+   CallMetricsRecordNormalExit metrics_record_normal_exit;
+diff --git a/third_party/crashpad/crashpad/test/gtest_main.cc b/third_party/crashpad/crashpad/test/gtest_main.cc
+index 67cfa0d72d7eb469775201f3a9df906f27c302a9..c67b8e24bb940935d5da88428ed3058a135f5a57 100644
+--- a/third_party/crashpad/crashpad/test/gtest_main.cc
++++ b/third_party/crashpad/crashpad/test/gtest_main.cc
+@@ -12,6 +12,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++#include "base/logging.h"
+ #include "build/build_config.h"
+ #include "gtest/gtest.h"
+ #include "test/main_arguments.h"
+@@ -99,6 +100,12 @@ int main(int argc, char* argv[]) {
+ 
+ #endif  // CRASHPAD_IS_IN_CHROMIUM
+ 
++  // base::TestSuite initializes logging when using Chromium's test launcher.
++  logging::LoggingSettings settings;
++  settings.logging_dest =
++      logging::LOG_TO_STDERR | logging::LOG_TO_SYSTEM_DEBUG_LOG;
++  logging::InitLogging(settings);
++
+ #if defined(CRASHPAD_TEST_LAUNCHER_GOOGLEMOCK)
+   testing::InitGoogleMock(&argc, argv);
+ #elif defined(CRASHPAD_TEST_LAUNCHER_GOOGLETEST)
