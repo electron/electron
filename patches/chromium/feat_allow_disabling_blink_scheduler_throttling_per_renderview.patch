@@ -5,10 +5,34 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 
 This allows us to disable throttling for hidden windows.
 
+diff --git a/content/common/content_message_generator.h b/content/common/content_message_generator.h
+index 59e855ad33363cf65f3d7b514e69647ad15e43a5..c4274c5544400eb6972884d4a9943ba39d4ff653 100644
+--- a/content/common/content_message_generator.h
++++ b/content/common/content_message_generator.h
+@@ -36,6 +36,11 @@
+ #ifndef CONTENT_COMMON_UNFREEZABLE_FRAME_MESSAGES_H_
+ #error "Failed to include content/common/unfreezable_frame_messages.h"
+ #endif
++#undef CONTENT_COMMON_VIEW_MESSAGES_H_
++#include "content/common/view_messages.h"
++#ifndef CONTENT_COMMON_VIEW_MESSAGES_H_
++#error "Failed to include content/common/view_messages.h"
++#endif
+ #include "media/media_buildflags.h"
+ 
+ #if defined(OS_ANDROID)
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
 index 9669200e15533044b91193047ba7348eabee965e..ad130f5934e6a8ce6ef6bdd34a7648eafa1f51ed 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
+@@ -59,6 +59,7 @@
+ #include "content/common/page_messages.h"
+ #include "content/common/render_message_filter.mojom.h"
+ #include "content/common/renderer.mojom.h"
++#include "content/common/view_messages.h"
+ #include "content/public/browser/ax_event_notification_details.h"
+ #include "content/public/browser/browser_accessibility_state.h"
+ #include "content/public/browser/browser_context.h"
 @@ -578,6 +578,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
@@ -27,32 +51,47 @@ index 09180f2761f039b4f335998d13ea4c9e09d383b9..6bff529846cb6271c8a7fa62f6e38fd2
 @@ -132,6 +132,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    SiteInstanceImpl* GetSiteInstance() override;
    bool IsRenderViewLive() override;
-   void NotifyMoveOrResizeStarted() override;
-+  void SetSchedulerThrottling(bool allowed) override;
  
++  void SetSchedulerThrottling(bool allowed) override;
    void SendWebPreferencesToRenderer();
    void SendRendererPreferencesToRenderer(
+       const blink::RendererPreferences& preferences);
 diff --git a/content/common/view_messages.h b/content/common/view_messages.h
-index ccc8f80a123e834fef4fc1e7aade2a35ffb5e223..3010d83f27eca9eede294d11fc3b9d2a6f9014fb 100644
---- a/content/common/view_messages.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb6ecb451db7e585a76a6fd4b3954333ad6b839c
+--- /dev/null
 +++ b/content/common/view_messages.h
-@@ -92,6 +92,9 @@ IPC_STRUCT_TRAITS_END()
- 
- // Messages sent from the browser to the renderer.
- 
+@@ -0,0 +1,23 @@
++// Copyright (c) 2012 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef CONTENT_COMMON_VIEW_MESSAGES_H_
++#define CONTENT_COMMON_VIEW_MESSAGES_H_
++
++// IPC messages for page rendering.
++
++#include "ipc/ipc_message_macros.h"
++
++
++#undef IPC_MESSAGE_EXPORT
++#define IPC_MESSAGE_EXPORT CONTENT_EXPORT
++
++#define IPC_MESSAGE_START ViewMsgStart
++
++// Messages sent from the browser to the renderer.
++
 +// Whether to enable the Renderer scheduler background throttling.
 +IPC_MESSAGE_ROUTED1(ViewMsg_SetSchedulerThrottling, bool /* allowed */)
 +
- // Notification that a move or resize renderer's containing window has
- // started.
- IPC_MESSAGE_ROUTED0(ViewMsg_MoveOrResizeStarted)
++#endif  // CONTENT_COMMON_VIEW_MESSAGES_H_
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
 index 8a0e60f3a783fd9e21c0d03e23ba421b94fc1ecd..577bf986f9efa45d432ce017663daeb8e9369729 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -95,6 +95,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
-   // started.
-   virtual void NotifyMoveOrResizeStarted() = 0;
+@@ -91,6 +91,9 @@ class CONTENT_EXPORT RenderViewHost : public IPC::Sender {
+   // Returns true if the RenderView is active and has not crashed.
+   virtual bool IsRenderViewLive() = 0;
  
 +  // Disable/Enable scheduler throttling.
 +  virtual void SetSchedulerThrottling(bool allowed) = 0;
@@ -64,17 +103,25 @@ diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view
 index e71e4dca4544f6f0a9afdc3786d4b3055cd6d9c6..6c1e05e893f4fa28eb3145598d0d6c74853317a2 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -346,6 +346,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -13,6 +13,7 @@
+ #include "base/strings/string_piece.h"
+ #include "content/child/webthemeengine_impl_default.h"
+ #include "content/common/page_messages.h"
++#include "content/common/view_messages.h"
+ #include "content/public/common/content_client.h"
+ #include "content/public/common/content_constants.h"
+ #include "content/public/common/content_features.h"
+@@ -345,6 +345,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
  
    bool handled = true;
    IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
-+    IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
-+                        OnSetSchedulerThrottling)
-     IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
- 
++     IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
++                         OnSetSchedulerThrottling)
      // Page messages.
-@@ -747,6 +749,12 @@ void RenderViewImpl::DidUpdateRendererPreferences() {
- #endif
+     IPC_MESSAGE_HANDLER(PageMsg_SetHistoryOffsetAndLength,
+                         OnSetHistoryOffsetAndLength)
+@@ -732,6 +732,12 @@ blink::WebView* RenderViewImpl::GetWebView() {
+   return webview_;
  }
  
 +void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
@@ -83,21 +130,22 @@ index e71e4dca4544f6f0a9afdc3786d4b3055cd6d9c6..6c1e05e893f4fa28eb3145598d0d6c74
 +  GetWebView()->SetSchedulerThrottling(allowed);
 +}
 +
- void RenderViewImpl::OnMoveOrResizeStarted() {
-   if (GetWebView())
-     GetWebView()->CancelPagePopup();
+ void RenderViewImpl::DidUpdateRendererPreferences() {
+ #if defined(OS_WIN)
+   // Update Theme preferences on Windows.
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
 index e54c06b5d2a25997a8b9d545dbf326d9eaff1a4a..c4183c124cd6a5c17819b544e827cb76a343a75c 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -323,6 +323,7 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -322,6 +322,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+ 
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
- 
++
 +  void OnSetSchedulerThrottling(bool allowed);
-   void OnMoveOrResizeStarted();
  
    // Misc private functions ----------------------------------------------------
+ 
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
 index 500f7da6e87a1ce7a822b88d56cef8c09c7fccc3..19f4e08ffe5b95e33d4d17b36ef89c963f62fa18 100644
 --- a/third_party/blink/public/web/web_view.h
