@@ -82,8 +82,8 @@ void BrowserWindow::UpdateDraggableRegions(
     if ([subview isKindOfClass:[ControlRegionView class]])
       [subview removeFromSuperview];
 
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
   if (&draggable_regions_ != &regions) {
     draggable_regions_.clear();
     for (const auto& r : regions)
