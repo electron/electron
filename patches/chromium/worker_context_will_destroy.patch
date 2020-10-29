@@ -46,14 +46,14 @@ diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/
 index d66c255d4fa5b053ea908c447df0fdec6f4f43ae..04f13f3b8d1b66937ba9e383185e9a35407cad71 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -190,6 +190,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -191,6 +191,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
 +  void WorkerContextWillDestroy(const v8::Local<v8::Context>& worker) override;
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
-   bool IsExcludedHeaderForServiceWorkerFetchEvent(
+   blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
 index 96d20cbb05d1d5c0d00b0118a23c1815fc6b06bb..488ff32f8c398a8bf97b50241ae147fa70821d2e 100644
 --- a/third_party/blink/public/platform/platform.h
