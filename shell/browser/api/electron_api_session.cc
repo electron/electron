@@ -930,7 +930,7 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 
 // static
 Session* Session::FromBrowserContext(content::BrowserContext* context) {
-  UserDataLink* data =
+  auto* data =
       static_cast<UserDataLink*>(context->GetUserData(kElectronApiSessionKey));
   return data ? data->session : nullptr;
 }
