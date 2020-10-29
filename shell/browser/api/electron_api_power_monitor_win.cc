@@ -57,7 +57,7 @@ LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,
                                              UINT message,
                                              WPARAM wparam,
                                              LPARAM lparam) {
-  PowerMonitor* msg_wnd =
+  auto* msg_wnd =
       reinterpret_cast<PowerMonitor*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (msg_wnd)
     return msg_wnd->WndProc(hwnd, message, wparam, lparam);

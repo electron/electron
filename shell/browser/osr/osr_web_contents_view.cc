@@ -127,15 +127,13 @@ OffScreenWebContentsView::CreateViewForWidget(
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForChildWidget(
     content::RenderWidgetHost* render_widget_host) {
-  content::WebContentsImpl* web_contents_impl =
+  auto* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
-  OffScreenRenderWidgetHostView* view =
-      static_cast<OffScreenRenderWidgetHostView*>(
-          web_contents_impl->GetOuterWebContents()
-              ? web_contents_impl->GetOuterWebContents()
-                    ->GetRenderWidgetHostView()
-              : web_contents_impl->GetRenderWidgetHostView());
+  auto* view = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents_impl->GetOuterWebContents()
+          ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
+          : web_contents_impl->GetRenderWidgetHostView());
 
   return new OffScreenRenderWidgetHostView(transparent_, painting_,
                                            view->GetFrameRate(), callback_,

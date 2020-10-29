@@ -462,7 +462,7 @@ void NodeBindings::WakeupEmbedThread() {
 
 // static
 void NodeBindings::EmbedThreadRunner(void* arg) {
-  NodeBindings* self = static_cast<NodeBindings*>(arg);
+  auto* self = static_cast<NodeBindings*>(arg);
 
   while (true) {
     // Wait for the main loop to deal with events.
