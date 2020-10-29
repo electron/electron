@@ -664,7 +664,7 @@ WebContents.prototype._init = function () {
   });
 
   if ((this.getWebPreferences() || {}).nativeWindowOpen === false) {
-    electron.deprecate.log('A webContents was just created with nativeWindowOpen=false. The ability to set nativeWindowOpen to false will be removed in a future Electron version.');
+    deprecate.log('A webContents was just created with nativeWindowOpen=false. The ability to set nativeWindowOpen to false will be removed in a future Electron version.');
   }
 };
 
