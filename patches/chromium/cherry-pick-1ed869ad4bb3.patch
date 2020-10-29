@@ -1,0 +1,160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Wed, 7 Oct 2020 23:26:36 +0000
+Subject: usb: Prevent parallel calls to UsbDevice::Open
+
+This change adds a check to prevent a Mojo client from calling Open()
+multiple times while the open is in progress.
+
+Bug: 1135857
+Change-Id: Ib467de9129673710b883d9e186c32c359f8592d8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2454846
+Auto-Submit: Reilly Grant <reillyg@chromium.org>
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#814940}
+
+diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
+index 6507b470afd2756878cd0990cfa7da2b9c730036..3dc07f879d70bc7755e59be1864a17f9a8e0ef10 100644
+--- a/services/device/usb/mojo/device_impl.cc
++++ b/services/device/usb/mojo/device_impl.cc
+@@ -160,6 +160,7 @@ void DeviceImpl::OnOpen(base::WeakPtr<DeviceImpl> self,
+     return;
+   }
+ 
++  self->opening_ = false;
+   self->device_handle_ = std::move(handle);
+   if (self->device_handle_ && self->client_)
+     self->client_->OnDeviceOpened();
+@@ -175,16 +176,19 @@ void DeviceImpl::OnPermissionGrantedForOpen(OpenCallback callback,
+     device_->Open(base::BindOnce(
+         &DeviceImpl::OnOpen, weak_factory_.GetWeakPtr(), std::move(callback)));
+   } else {
++    opening_ = false;
+     std::move(callback).Run(mojom::UsbOpenDeviceError::ACCESS_DENIED);
+   }
+ }
+ 
+ void DeviceImpl::Open(OpenCallback callback) {
+-  if (device_handle_) {
++  if (opening_ || device_handle_) {
+     std::move(callback).Run(mojom::UsbOpenDeviceError::ALREADY_OPEN);
+     return;
+   }
+ 
++  opening_ = true;
++
+   if (!device_->permission_granted()) {
+     device_->RequestPermission(
+         base::BindOnce(&DeviceImpl::OnPermissionGrantedForOpen,
+diff --git a/services/device/usb/mojo/device_impl.h b/services/device/usb/mojo/device_impl.h
+index 60ccbcc2e1e3ed964341a7bb8581c142eb27cf40..ab0a3797ae0031708b42f9f1cbc5bddb6f42efac 100644
+--- a/services/device/usb/mojo/device_impl.h
++++ b/services/device/usb/mojo/device_impl.h
+@@ -104,7 +104,9 @@ class DeviceImpl : public mojom::UsbDevice, public device::UsbDevice::Observer {
+   ScopedObserver<device::UsbDevice, device::UsbDevice::Observer> observer_;
+ 
+   // The device handle. Will be null before the device is opened and after it
+-  // has been closed.
++  // has been closed. |opening_| is set to true while the asynchronous open is
++  // in progress.
++  bool opening_ = false;
+   scoped_refptr<UsbDeviceHandle> device_handle_;
+ 
+   mojo::SelfOwnedReceiverRef<mojom::UsbDevice> receiver_;
+diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
+index 838921f3798b228f0c66a4498c69a6a11df868c2..1bb0d916c3c0c76a15d60ac095e4322cdddaed11 100644
+--- a/services/device/usb/mojo/device_impl_unittest.cc
++++ b/services/device/usb/mojo/device_impl_unittest.cc
+@@ -22,6 +22,7 @@
+ #include "base/memory/ref_counted_memory.h"
+ #include "base/run_loop.h"
+ #include "base/stl_util.h"
++#include "base/test/bind_test_util.h"
+ #include "base/test/task_environment.h"
+ #include "mojo/public/cpp/bindings/interface_request.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+@@ -263,7 +264,10 @@ class USBDeviceImplTest : public testing::Test {
+   void OpenMockHandle(UsbDevice::OpenCallback& callback) {
+     EXPECT_FALSE(is_device_open_);
+     is_device_open_ = true;
+-    std::move(callback).Run(mock_handle_);
++    // Simulate the asynchronous device opening process.
++    base::SequencedTaskRunnerHandle::Get()->PostDelayedTask(
++        FROM_HERE, base::BindOnce(std::move(callback), mock_handle_),
++        base::TimeDelta::FromMilliseconds(1));
+   }
+ 
+   void CloseMockHandle() {
+@@ -494,17 +498,39 @@ TEST_F(USBDeviceImplTest, OpenFailure) {
+       GetMockDeviceProxy(device_client.CreateInterfacePtrAndBind());
+ 
+   EXPECT_CALL(mock_device(), OpenInternal(_))
+-      .WillOnce(Invoke([](UsbDevice::OpenCallback& callback) {
++      .WillOnce([](UsbDevice::OpenCallback& callback) {
+         std::move(callback).Run(nullptr);
+-      }));
++      });
+   EXPECT_CALL(device_client, OnDeviceOpened()).Times(0);
+   EXPECT_CALL(device_client, OnDeviceClosed()).Times(0);
+ 
+-  base::RunLoop loop;
+-  device->Open(base::BindOnce(&ExpectOpenAndThen,
+-                              mojom::UsbOpenDeviceError::ACCESS_DENIED,
+-                              loop.QuitClosure()));
+-  loop.Run();
++  {
++    base::RunLoop loop;
++    device->Open(
++        base::BindLambdaForTesting([&](mojom::UsbOpenDeviceError result) {
++          EXPECT_EQ(result, mojom::UsbOpenDeviceError::ACCESS_DENIED);
++          loop.Quit();
++        }));
++    loop.Run();
++  }
++
++  // A second attempt can succeed.
++  EXPECT_CALL(mock_device(), OpenInternal(_));
++  EXPECT_CALL(device_client, OnDeviceOpened());
++  EXPECT_CALL(device_client, OnDeviceClosed());
++
++  {
++    base::RunLoop loop;
++    device->Open(
++        base::BindLambdaForTesting([&](mojom::UsbOpenDeviceError result) {
++          EXPECT_EQ(result, mojom::UsbOpenDeviceError::OK);
++          loop.Quit();
++        }));
++    loop.Run();
++  }
++
++  device.reset();
++  base::RunLoop().RunUntilIdle();
+ }
+ 
+ TEST_F(USBDeviceImplTest, OpenDelayedFailure) {
+@@ -528,6 +554,24 @@ TEST_F(USBDeviceImplTest, OpenDelayedFailure) {
+   std::move(saved_callback).Run(nullptr);
+ }
+ 
++TEST_F(USBDeviceImplTest, MultipleOpenNotAllowed) {
++  MockUsbDeviceClient device_client;
++  mojo::Remote<mojom::UsbDevice> device =
++      GetMockDeviceProxy(device_client.CreateInterfacePtrAndBind());
++
++  base::RunLoop loop;
++  device->Open(
++      base::BindLambdaForTesting([&](mojom::UsbOpenDeviceError result) {
++        EXPECT_EQ(result, mojom::UsbOpenDeviceError::OK);
++      }));
++  device->Open(
++      base::BindLambdaForTesting([&](mojom::UsbOpenDeviceError result) {
++        EXPECT_EQ(result, mojom::UsbOpenDeviceError::ALREADY_OPEN);
++        loop.Quit();
++      }));
++  loop.Run();
++}
++
+ TEST_F(USBDeviceImplTest, Close) {
+   mojo::Remote<mojom::UsbDevice> device = GetMockDeviceProxy();
+ 

@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Wed, 30 Sep 2020 15:19:13 +0200
+Subject: Merged: [parser] Fix AST func reindexing for function fields
+
+AST reindexing has to skip visiting fields that are already in the
+member initializer, as they will have already been visited when
+visiting said initializer. This is the case for private fields and
+fields with computed names.
+
+However, the reindexer was incorrectly assuming that all properties
+with a FunctionLiteral value are methods (and thus not fields, and
+can safely be visited). This is not the case for fields with
+function expression values.
+
+Now, we correctly use the class property's "kind" when making this
+visitation decision.
+
+(cherry picked from commit a769ea7a4462115579ba87bc16fbffbae01310c1)
+
+Bug: chromium:1132111
+Tbr: leszeks@chromium.org
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I33ac5664bb5334e964d351de1ba7e2c57f3398f8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2465056
+Commit-Queue: Adam Klein <adamk@chromium.org>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.6@{#24}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/ast/ast-function-literal-id-reindexer.cc b/src/ast/ast-function-literal-id-reindexer.cc
+index b583b5e4214ad469848844923ef03dba06b6554c..8c9318bfe7475d3c9b8cc2bdb50786b9118fd4a0 100644
+--- a/src/ast/ast-function-literal-id-reindexer.cc
++++ b/src/ast/ast-function-literal-id-reindexer.cc
+@@ -54,10 +54,10 @@ void AstFunctionLiteralIdReindexer::VisitClassLiteral(ClassLiteral* expr) {
+     // Private fields have their key and value present in
+     // instance_members_initializer_function, so they will
+     // already have been visited.
+-    if (prop->value()->IsFunctionLiteral()) {
+-      Visit(prop->value());
+-    } else {
++    if (prop->kind() == ClassLiteralProperty::Kind::FIELD) {
+       CheckVisited(prop->value());
++    } else {
++      Visit(prop->value());
+     }
+   }
+   ZonePtrList<ClassLiteral::Property>* props = expr->public_members();
+@@ -67,7 +67,8 @@ void AstFunctionLiteralIdReindexer::VisitClassLiteral(ClassLiteral* expr) {
+     // Public fields with computed names have their key
+     // and value present in instance_members_initializer_function, so they will
+     // already have been visited.
+-    if (prop->is_computed_name() && !prop->value()->IsFunctionLiteral()) {
++    if (prop->is_computed_name() &&
++        prop->kind() == ClassLiteralProperty::Kind::FIELD) {
+       if (!prop->key()->IsLiteral()) {
+         CheckVisited(prop->key());
+       }
+diff --git a/test/mjsunit/regress/regress-1132111.js b/test/mjsunit/regress/regress-1132111.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1dd1b58806862aaf6c0847f107377095105dcab1
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1132111.js
+@@ -0,0 +1,23 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Public function field with computed name
++eval(`
++  buggy = ((bug = new class { [0] = x => 1337.0; }) => bug);
++`);
++
++// Public method with computed name
++eval(`
++  buggy = ((bug = new class { [0](x) { return 1337.0}; }) => bug);
++`);
++
++// Private function field with computed name
++eval(`
++  buggy = ((bug = new class { #foo = x => 1337.0; }) => bug);
++`);
++
++// Private method with computed name
++eval(`
++  buggy = ((bug = new class { #foo(x) { return 1337.0; } }) => bug);
++`);

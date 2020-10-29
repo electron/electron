@@ -1,4 +1,4 @@
 {
-  "name": "net-log",
+  "name": "electron-test-net-log",
   "main": "main.js"
 }
