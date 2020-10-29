@@ -473,8 +473,6 @@ int GetPathConstant(const std::string& name) {
   else if (name == "recent")
     return electron::DIR_RECENT;
 #endif
-  else if (name == "pepperFlashSystemPlugin")
-    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
     return -1;
 }
