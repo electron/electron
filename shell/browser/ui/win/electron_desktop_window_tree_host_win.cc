@@ -5,8 +5,14 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
 #include "base/win/windows_version.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
+
+#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
+#include "shell/browser/win/dark_mode.h"
+#endif
 
 namespace electron {
 
@@ -23,6 +29,15 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
                                                     LPARAM l_param,
                                                     LRESULT* result) {
+#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
+  if (message == WM_NCCREATE) {
+    HWND const hwnd = GetAcceleratedWidget();
+    auto const theme_source =
+        ui::NativeTheme::GetInstanceForNativeUi()->theme_source();
+    win::SetDarkModeForWindow(hwnd, theme_source);
+  }
+#endif
+
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
 
