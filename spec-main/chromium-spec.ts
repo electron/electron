@@ -295,7 +295,7 @@ describe('command line switches', () => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
       let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      const appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
 
       appProcess.stdout.on('data', (data) => { output += data; });
       appProcess.stdout.on('end', () => {
