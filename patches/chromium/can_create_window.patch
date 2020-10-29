@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 1abc0f555c6d91780d06857b38e6e9ef7775ccb2..ede79b44932356d4c5a2dfa4bd224c44239bd59d 100644
+index b516c9c92a44bd41f25d91558391eea1c43750b7..25ba1bd43073f115de051011ae53afd2ec576c3a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5030,6 +5030,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5036,6 +5036,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 1abc0f555c6d91780d06857b38e6e9ef7775ccb2..ede79b44932356d4c5a2dfa4bd224c44
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 303b4637c78b9d5276b36a055d0b10de2a9d2ced..32f1c3ba50ba6b4c01fd71260a19ad706728f0ea 100644
+index 025c1326a03b39c32dc519d4f3788f241fb04c3e..a511ad28bf3929f83cc6a3ad7078fcf40bfc929e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3628,9 +3628,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3630,9 +3630,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
  
    if (delegate_) {
@@ -87,10 +87,10 @@ index 0b89b6f5229cd6dcf6a0891d097f4ae2cd15d924..88cf85931ad903b705b9ffd2cfb5189e
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 331be91414da82a8311b55c7568a4c6f5c5a6977..b0513d20bd48fe8ffe8398b5387e13545749c508 100644
+index bc5adba64f839d6289511d3c066402282c83a17f..4d5640c65e0ace341d61d2d55f355d2c3542139c 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -26,6 +26,17 @@ namespace content {
+@@ -27,6 +27,17 @@ namespace content {
  
  WebContentsDelegate::WebContentsDelegate() = default;
  
@@ -109,7 +109,7 @@ index 331be91414da82a8311b55c7568a4c6f5c5a6977..b0513d20bd48fe8ffe8398b5387e1354
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 5f8ccea8e3a48057bdb0180ae5a9b499be4e710a..94f576a6d52731f92c65adb958be5ca0a3391d4c 100644
+index 374ca0c758687f721834d7d7c0f0e75d7a957b34..b9896c249b20fa8de3a1f7c25e4bf677e91c569e 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
@@ -120,7 +120,7 @@ index 5f8ccea8e3a48057bdb0180ae5a9b499be4e710a..94f576a6d52731f92c65adb958be5ca0
  #include "content/public/browser/bluetooth_chooser.h"
  #include "content/public/browser/bluetooth_scanning_prompt.h"
  #include "content/public/browser/eye_dropper.h"
-@@ -338,6 +339,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -339,6 +340,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const std::string& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -135,10 +135,10 @@ index 5f8ccea8e3a48057bdb0180ae5a9b499be4e710a..94f576a6d52731f92c65adb958be5ca0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 54ac908f8fac3f20cf4bc934327ab2575420db19..e71e4dca4544f6f0a9afdc3786d4b3055cd6d9c6 100644
+index 68e06b040b0fcff74fb64d0fac96b080996ee582..ec3ba60242986651abfcdc5ed5ea4367c515f9b0 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -27,6 +27,7 @@
+@@ -26,6 +26,7 @@
  #include "content/renderer/render_thread_impl.h"
  #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
  #include "third_party/blink/public/platform/url_conversion.h"
@@ -146,7 +146,7 @@ index 54ac908f8fac3f20cf4bc934327ab2575420db19..e71e4dca4544f6f0a9afdc3786d4b305
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -406,6 +407,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -403,6 +404,10 @@ WebView* RenderViewImpl::CreateView(
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
