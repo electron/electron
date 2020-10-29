@@ -15,6 +15,19 @@ Change-Id: I0f9004f7de94dd29d555cc7d23c48a63da6b4bba
 Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/2425108
 Reviewed-by: Mark Mentovai <mark@chromium.org>
 
+diff --git a/third_party/crashpad/crashpad/DEPS b/third_party/crashpad/crashpad/DEPS
+index 83995e0cdea91522c272415330c57af764d23163..7e83327aac2582e81a38720086a52832de58a37a 100644
+--- a/third_party/crashpad/crashpad/DEPS
++++ b/third_party/crashpad/crashpad/DEPS
+@@ -42,7 +42,7 @@ deps = {
+       '7bde79cc274d06451bf65ae82c012a5d3e476b5a',
+   'crashpad/third_party/mini_chromium/mini_chromium':
+       Var('chromium_git') + '/chromium/mini_chromium@' +
+-      '76a9bb7475f6217eaf108789246379d3972b4e6a',
++      '5fc64bfbf1c000161445c586de45e40464ff2314',
+   'crashpad/third_party/libfuzzer/src':
+       Var('chromium_git') + '/chromium/llvm-project/compiler-rt/lib/fuzzer.git@' +
+       'fda403cf93ecb8792cb1d061564d89a6553ca020',
 diff --git a/third_party/crashpad/crashpad/handler/handler_main.cc b/third_party/crashpad/crashpad/handler/handler_main.cc
 index 33649291e253a7a9bd281b892bab415ff1950b6a..a3ba9bb17e221e8330b09eae572d116bd29e4ba4 100644
 --- a/third_party/crashpad/crashpad/handler/handler_main.cc
