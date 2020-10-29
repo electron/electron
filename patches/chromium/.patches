@@ -138,3 +138,4 @@ cherry-pick-3b5f65c0aeca.patch
 cherry-pick-1ed869ad4bb3.patch
 cherry-pick-229fdaf8fc05.patch
 cherry-pick-88f263f401b4.patch
+worker_feat_add_hook_to_notify_script_ready.patch
