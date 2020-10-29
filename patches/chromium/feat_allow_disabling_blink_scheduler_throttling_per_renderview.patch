@@ -6,10 +6,10 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 8420718b0e4868665c6c3a2208701e841aec035c..a56df44ee4d4ee64c640efd3257113105dbd3319 100644
+index 8420718b0e4868665c6c3a2208701e841aec035c..c7bd42f22a206263e48a255d64e85f6130405c32 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -576,6 +577,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -576,6 +576,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -33,7 +33,7 @@ index d7456cfab182827136334a6d634c8849e640ef88..6e62b27bb99a8fa992625375bed01816
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/common/page_messages.h b/content/common/page_messages.h
-index 4d21d11352a897b9e91eb5b4868b179c5ce86c02..12bda180845aef57bea75fcbeed34b243c1c30cb 100644
+index 4d21d11352a897b9e91eb5b4868b179c5ce86c02..926284a93a2fec4854d06649652d189f40844216 100644
 --- a/content/common/page_messages.h
 +++ b/content/common/page_messages.h
 @@ -26,6 +26,9 @@ IPC_MESSAGE_ROUTED2(PageMsg_SetHistoryOffsetAndLength,
@@ -61,10 +61,10 @@ index 2f2375ca2889ae2b91b6aca7842456663fcddee0..3ab9fb51fd0b9a73d338236a86a7ec05
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index ec3ba60242986651abfcdc5ed5ea4367c515f9b0..039ef2f91ce1a27f4283a7cde4f116d6d7f791c1 100644
+index ec3ba60242986651abfcdc5ed5ea4367c515f9b0..34d87d749b5e988bce16bf0d9500bb28d79cd7d4 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -351,7 +351,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
+@@ -348,7 +348,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
      // Page messages.
      IPC_MESSAGE_HANDLER(PageMsg_SetHistoryOffsetAndLength,
                          OnSetHistoryOffsetAndLength)
@@ -74,7 +74,7 @@ index ec3ba60242986651abfcdc5ed5ea4367c515f9b0..039ef2f91ce1a27f4283a7cde4f116d6
      // Adding a new message? Add platform independent ones first, then put the
      // platform specific ones at the end.
    IPC_END_MESSAGE_MAP()
-@@ -732,6 +735,12 @@ blink::WebView* RenderViewImpl::GetWebView() {
+@@ -732,6 +733,12 @@ blink::WebView* RenderViewImpl::GetWebView() {
    return webview_;
  }
  
