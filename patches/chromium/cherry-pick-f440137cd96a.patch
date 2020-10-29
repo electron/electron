@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 14 Oct 2020 02:52:47 +0000
+Subject: Implement WebGL image-orientation
+
+M-86 merge.
+
+When creating textures for WebGL, always orient images
+with EXIF orientation data.
+
+This change also corrects the transposed size reported by
+ImageBitmap. And it removes superfluous arguments from
+CopyImageData.
+
+(cherry picked from commit f373458c504c2d115c42f31b29ff5c19674acbbc)
+
+Bug: 1100470, 1125337
+Change-Id: I79aa798327a3582939aa574723926b3325c80e7c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2459400
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#815359}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2469776
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1237}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
+index 234ae964ad1ac8df7fd369ff8b62a9917757517d..f0bf8d0f5c2d74d942dfbfd194753dd03e3de758 100644
+--- a/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
++++ b/third_party/blink/renderer/core/imagebitmap/image_bitmap.cc
+@@ -195,14 +195,16 @@ SkImageInfo GetSkImageInfo(const scoped_refptr<Image>& input) {
+ 
+ // This function results in a readback due to using SkImage::readPixels().
+ // Returns transparent black pixels if the input SkImageInfo.bounds() does
+-// not intersect with the input image boundaries.
++// not intersect with the input image boundaries. When apply_orientation
++// is true this method will orient the data according to the source's EXIF
++// information.
+ Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input,
+                               const SkImageInfo& info,
+-                              const unsigned x = 0,
+-                              const unsigned y = 0) {
++                              bool apply_orientation = true) {
+   if (info.isEmpty())
+     return {};
+-  sk_sp<SkImage> sk_image = input->PaintImageForCurrentFrame().GetSkImage();
++  PaintImage paint_image = input->PaintImageForCurrentFrame();
++  sk_sp<SkImage> sk_image = paint_image.GetSkImage();
+   if (sk_image->bounds().isEmpty())
+     return {};
+ 
+@@ -211,16 +213,30 @@ Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input,
+   Vector<uint8_t> dst_buffer(byte_length);
+ 
+   bool read_pixels_successful =
+-      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), x, y);
++      sk_image->readPixels(info, dst_buffer.data(), info.minRowBytes(), 0, 0);
+   DCHECK(read_pixels_successful);
+   if (!read_pixels_successful)
+     return {};
++
++  // Orient the data, and re-read the pixels.
++  if (apply_orientation && !input->HasDefaultOrientation()) {
++    paint_image = Image::ResizeAndOrientImage(
++        paint_image, input->CurrentFrameOrientation(), FloatSize(1, 1), 1,
++        kInterpolationNone);
++    sk_image = paint_image.GetSkImage();
++    read_pixels_successful = sk_image->readPixels(info, dst_buffer.data(),
++                                                  info.minRowBytes(), 0, 0);
++    DCHECK(read_pixels_successful);
++    if (!read_pixels_successful)
++      return {};
++  }
++
+   return dst_buffer;
+ }
+ 
+ Vector<uint8_t> CopyImageData(const scoped_refptr<StaticBitmapImage>& input) {
+   SkImageInfo info = GetSkImageInfo(input);
+-  return CopyImageData(std::move(input), info);
++  return CopyImageData(std::move(input), info, false);
+ }
+ 
+ static inline bool ShouldAvoidPremul(
+@@ -1055,12 +1071,13 @@ Vector<uint8_t> ImageBitmap::CopyBitmapData(AlphaDisposition alpha_op,
+   auto color_type = info.colorType();
+   if (color_type == kN32_SkColorType && u8_color_type == kRGBAColorType)
+     color_type = kRGBA_8888_SkColorType;
++  // Note that width() and height() here apply EXIF orientation
+   info =
+       SkImageInfo::Make(width(), height(), color_type,
+                         (alpha_op == kPremultiplyAlpha) ? kPremul_SkAlphaType
+                                                         : kUnpremul_SkAlphaType,
+                         info.refColorSpace());
+-  return CopyImageData(image_, info);
++  return CopyImageData(image_, info, true);
+ }
+ 
+ Vector<uint8_t> ImageBitmap::CopyBitmapData() {
+@@ -1090,7 +1107,7 @@ IntSize ImageBitmap::Size() const {
+     return IntSize();
+   DCHECK_GT(image_->width(), 0);
+   DCHECK_GT(image_->height(), 0);
+-  return IntSize(image_->width(), image_->height());
++  return image_->SizeRespectingOrientation();
+ }
+ 
+ ScriptPromise ImageBitmap::CreateImageBitmap(ScriptState* script_state,
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+index 39d00937e8a17183c22dcfc99692aed9a8638ac6..fe5d33eca1ae6564a2528c60e880e619d1f59b62 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -5212,10 +5212,12 @@ void WebGLRenderingContextBase::TexImageHelperHTMLImageElement(
+     return;
+ 
+   scoped_refptr<Image> image_for_render = image->CachedImage()->GetImage();
+-  if (IsA<SVGImage>(image_for_render.get())) {
+-    if (canvas()) {
++  bool have_svg_image = IsA<SVGImage>(image_for_render.get());
++  if (have_svg_image || !image_for_render->HasDefaultOrientation()) {
++    if (have_svg_image && canvas()) {
+       UseCounter::Count(canvas()->GetDocument(), WebFeature::kSVGInWebGL);
+     }
++    // DrawImageIntoBuffer always respects orientation
+     image_for_render =
+         DrawImageIntoBuffer(std::move(image_for_render), image->width(),
+                             image->height(), func_name);
+@@ -5751,6 +5753,7 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
+                        level, internalformat, width, height, depth, 0, format,
+                        type, xoffset, yoffset, zoffset))
+     return;
++
+   scoped_refptr<StaticBitmapImage> image = bitmap->BitmapImage();
+   DCHECK(image);
+ 
+@@ -5777,9 +5780,16 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
+     return;
+   }
+ 
++  // Apply orientation if necessary
++  PaintImage paint_image = bitmap->BitmapImage()->PaintImageForCurrentFrame();
++  if (!image->HasDefaultOrientation()) {
++    paint_image = Image::ResizeAndOrientImage(
++        paint_image, image->CurrentFrameOrientation(), FloatSize(1, 1), 1,
++        kInterpolationNone);
++  }
++
+   // TODO(kbr): refactor this away to use TexImageImpl on image.
+-  sk_sp<SkImage> sk_image =
+-      bitmap->BitmapImage()->PaintImageForCurrentFrame().GetSkImage();
++  sk_sp<SkImage> sk_image = paint_image.GetSkImage();
+   if (!sk_image) {
+     SynthesizeGLError(GL_OUT_OF_MEMORY, func_name,
+                       "ImageBitmap unexpectedly empty");
