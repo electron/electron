@@ -9,20 +9,12 @@ diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/br
 index 8420718b0e4868665c6c3a2208701e841aec035c..a56df44ee4d4ee64c640efd3257113105dbd3319 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -59,6 +59,7 @@
- #include "content/common/page_messages.h"
- #include "content/common/render_message_filter.mojom.h"
- #include "content/common/renderer.mojom.h"
-+#include "content/common/view_messages.h"
- #include "content/public/browser/ax_event_notification_details.h"
- #include "content/public/browser/browser_accessibility_state.h"
- #include "content/public/browser/browser_context.h"
 @@ -576,6 +577,10 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
 +void RenderViewHostImpl::SetSchedulerThrottling(bool allowed) {
-+  Send(new ViewMsg_SetSchedulerThrottling(GetRoutingID(), allowed));
++  Send(new PageMsg_SetSchedulerThrottling(GetRoutingID(), allowed));
 +}
 +
  bool RenderViewHostImpl::IsMainFrameActive() {
@@ -40,51 +32,20 @@ index d7456cfab182827136334a6d634c8849e640ef88..6e62b27bb99a8fa992625375bed01816
    void SendWebPreferencesToRenderer();
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
-diff --git a/content/common/content_message_generator.h b/content/common/content_message_generator.h
-index 59e855ad33363cf65f3d7b514e69647ad15e43a5..c4274c5544400eb6972884d4a9943ba39d4ff653 100644
---- a/content/common/content_message_generator.h
-+++ b/content/common/content_message_generator.h
-@@ -36,6 +36,11 @@
- #ifndef CONTENT_COMMON_UNFREEZABLE_FRAME_MESSAGES_H_
- #error "Failed to include content/common/unfreezable_frame_messages.h"
- #endif
-+#undef CONTENT_COMMON_VIEW_MESSAGES_H_
-+#include "content/common/view_messages.h"
-+#ifndef CONTENT_COMMON_VIEW_MESSAGES_H_
-+#error "Failed to include content/common/view_messages.h"
-+#endif
- #include "media/media_buildflags.h"
+diff --git a/content/common/page_messages.h b/content/common/page_messages.h
+index 4d21d11352a897b9e91eb5b4868b179c5ce86c02..12bda180845aef57bea75fcbeed34b243c1c30cb 100644
+--- a/content/common/page_messages.h
++++ b/content/common/page_messages.h
+@@ -26,6 +26,9 @@ IPC_MESSAGE_ROUTED2(PageMsg_SetHistoryOffsetAndLength,
+                     int /* history_offset */,
+                     int /* history_length */)
  
- #if defined(OS_ANDROID)
-diff --git a/content/common/view_messages.h b/content/common/view_messages.h
-new file mode 100644
-index 0000000000000000000000000000000000000000..fb6ecb451db7e585a76a6fd4b3954333ad6b839c
---- /dev/null
-+++ b/content/common/view_messages.h
-@@ -0,0 +1,23 @@
-+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-+// Use of this source code is governed by a BSD-style license that can be
-+// found in the LICENSE file.
-+
-+#ifndef CONTENT_COMMON_VIEW_MESSAGES_H_
-+#define CONTENT_COMMON_VIEW_MESSAGES_H_
-+
-+// IPC messages for page rendering.
-+
-+#include "ipc/ipc_message_macros.h"
-+
-+
-+#undef IPC_MESSAGE_EXPORT
-+#define IPC_MESSAGE_EXPORT CONTENT_EXPORT
-+
-+#define IPC_MESSAGE_START ViewMsgStart
-+
-+// Messages sent from the browser to the renderer.
-+
 +// Whether to enable the Renderer scheduler background throttling.
-+IPC_MESSAGE_ROUTED1(ViewMsg_SetSchedulerThrottling, bool /* allowed */)
++IPC_MESSAGE_ROUTED1(PageMsg_SetSchedulerThrottling, bool /* allowed */)
 +
-+#endif  // CONTENT_COMMON_VIEW_MESSAGES_H_
+ // -----------------------------------------------------------------------------
+ // Messages sent from the renderer to the browser.
+ 
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
 index 2f2375ca2889ae2b91b6aca7842456663fcddee0..3ab9fb51fd0b9a73d338236a86a7ec05d16f4fe7 100644
 --- a/content/public/browser/render_view_host.h
@@ -103,23 +64,16 @@ diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view
 index ec3ba60242986651abfcdc5ed5ea4367c515f9b0..039ef2f91ce1a27f4283a7cde4f116d6d7f791c1 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -13,6 +13,7 @@
- #include "base/strings/string_piece.h"
- #include "content/child/webthemeengine_impl_default.h"
- #include "content/common/page_messages.h"
-+#include "content/common/view_messages.h"
- #include "content/public/common/content_client.h"
- #include "content/public/common/content_constants.h"
- #include "content/public/common/content_features.h"
-@@ -345,6 +346,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
- 
-   bool handled = true;
-   IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
-+     IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
-+                         OnSetSchedulerThrottling)
+@@ -351,7 +351,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
      // Page messages.
      IPC_MESSAGE_HANDLER(PageMsg_SetHistoryOffsetAndLength,
                          OnSetHistoryOffsetAndLength)
+-
++    IPC_MESSAGE_HANDLER(PageMsg_SetSchedulerThrottling,
++                        OnSetSchedulerThrottling)
+     // Adding a new message? Add platform independent ones first, then put the
+     // platform specific ones at the end.
+   IPC_END_MESSAGE_MAP()
 @@ -732,6 +735,12 @@ blink::WebView* RenderViewImpl::GetWebView() {
    return webview_;
  }
