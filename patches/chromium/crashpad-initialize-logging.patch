@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Peraza <jperaza@chromium.org>
+Date: Wed, 21 Oct 2020 11:10:25 -0700
+Subject: Initialize logging for crashpad
+
+Although logging to files is not yet supported by mini_chromium, it is
+the default behavior for OS_WIN in chromium. This change should
+cause crashpad to log via OutputDebugString() on Windows, instead of
+debug.log files. Future work (crbug.com/crashpad/26) should arrange for
+logs to be uploaded with reports, embedded in associated minidumps or as
+file attachments.
+
+Bug: chromium:711159
+Change-Id: I0f9004f7de94dd29d555cc7d23c48a63da6b4bba
+Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/2425108
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+
+diff --git a/third_party/crashpad/crashpad/handler/handler_main.cc b/third_party/crashpad/crashpad/handler/handler_main.cc
+index 33649291e253a7a9bd281b892bab415ff1950b6a..a3ba9bb17e221e8330b09eae572d116bd29e4ba4 100644
+--- a/third_party/crashpad/crashpad/handler/handler_main.cc
++++ b/third_party/crashpad/crashpad/handler/handler_main.cc
+@@ -504,16 +504,26 @@ class ScopedStoppable {
+   DISALLOW_COPY_AND_ASSIGN(ScopedStoppable);
+ };
+ 
++void InitCrashpadLogging() {
++  logging::LoggingSettings settings;
++#if defined(OS_CHROMEOS)
++  settings.logging_dest = logging::LOG_TO_FILE;
++  settings.log_file_path = "/var/log/chrome/chrome";
++#elif defined(OS_WIN)
++  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
++#else
++  settings.logging_dest =
++      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
++#endif
++  logging::InitLogging(settings);
++}
++
+ }  // namespace
+ 
+ int HandlerMain(int argc,
+                 char* argv[],
+                 const UserStreamDataSources* user_stream_sources) {
+-#if defined(OS_CHROMEOS)
+-  if (freopen("/var/log/chrome/chrome", "a", stderr) == nullptr) {
+-    PLOG(ERROR) << "Failed to redirect stderr to /var/log/chrome/chrome";
+-  }
+-#endif
++  InitCrashpadLogging();
+ 
+   InstallCrashHandler();
+   CallMetricsRecordNormalExit metrics_record_normal_exit;
+diff --git a/third_party/crashpad/crashpad/test/gtest_main.cc b/third_party/crashpad/crashpad/test/gtest_main.cc
+index 67cfa0d72d7eb469775201f3a9df906f27c302a9..c67b8e24bb940935d5da88428ed3058a135f5a57 100644
+--- a/third_party/crashpad/crashpad/test/gtest_main.cc
++++ b/third_party/crashpad/crashpad/test/gtest_main.cc
+@@ -12,6 +12,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++#include "base/logging.h"
+ #include "build/build_config.h"
+ #include "gtest/gtest.h"
+ #include "test/main_arguments.h"
+@@ -99,6 +100,12 @@ int main(int argc, char* argv[]) {
+ 
+ #endif  // CRASHPAD_IS_IN_CHROMIUM
+ 
++  // base::TestSuite initializes logging when using Chromium's test launcher.
++  logging::LoggingSettings settings;
++  settings.logging_dest =
++      logging::LOG_TO_STDERR | logging::LOG_TO_SYSTEM_DEBUG_LOG;
++  logging::InitLogging(settings);
++
+ #if defined(CRASHPAD_TEST_LAUNCHER_GOOGLEMOCK)
+   testing::InitGoogleMock(&argc, argv);
+ #elif defined(CRASHPAD_TEST_LAUNCHER_GOOGLETEST)
