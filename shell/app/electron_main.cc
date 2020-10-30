@@ -48,6 +48,7 @@
 #include "base/i18n/icu_util.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "headless/public/headless_shell.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
@@ -208,6 +209,16 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
+
+  // Chrome-specific headless modes.
+  const base::StringPiece kHeadless{"headless"};
+  base::CommandLine::Init(argv.size(), argv.data());
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(kHeadless)) {
+    return headless::HeadlessShellMain(params);
+  }
+  
   electron::ElectronCommandLine::Init(arguments.argc, arguments.argv);
   return content::ContentMain(params);
 }
@@ -230,6 +241,16 @@ int main(int argc, char* argv[]) {
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
   electron::ElectronCommandLine::Init(argc, argv);
+
+  // Chrome-specific headless modes.
+  const char kHeadless[] = "headless";
+  base::CommandLine::Init(argc, argv);
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(kHeadless)) {
+    return headless::HeadlessShellMain(params);
+  }
+  	
   return content::ContentMain(params);
 }
 

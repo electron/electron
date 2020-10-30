@@ -691,5 +691,19 @@ index 896d1b26f492862b3ae501ca5b756cfb201d1c75..a3762cb0e222d425359bd803c8406f7a
 +  explicit PrintingContext(Delegate* delegate);
 +
    // Does bookkeeping when an error occurs.
-   PrintingContext::Result OnError();
+   PrintingContext::Result OnError(); 
+diff --git a/headless/lib/browser/headless_print_manager.cc b/headless/lib/browser/headless_print_manager.cc
+index d524f7b786f119d574fca4facb8991e36a54b377..093c4ddd37a5ebc9870b9ebf4fd7d6fd11ad23f7 100644
+--- a/headless/lib/browser/headless_print_manager.cc
++++ b/headless/lib/browser/headless_print_manager.cc
+@@ -139,7 +139,9 @@ void HeadlessPrintManager::GetPDFContents(content::RenderFrameHost* rfh,
+   print_params_ = GetPrintParamsFromSettings(settings);
+   page_ranges_text_ = settings.page_ranges;
+   ignore_invalid_page_ranges_ = settings.ignore_invalid_page_ranges;
+-  GetPrintRenderFrame(rfh)->PrintRequestedPages();
++  base::Value print_settings;
++  GetPrintRenderFrame(rfh)->PrintRequestedPages(true,
++                                                std::move(print_settings));
+ }
  
+ std::unique_ptr<PrintMsg_PrintPages_Params>
