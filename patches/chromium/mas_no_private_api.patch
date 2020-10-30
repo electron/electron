@@ -46,7 +46,7 @@ index b41aef49ca9c07e36216146abc066b94195a48a2..bf62870243a4d3a783338f149df2cfcd
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 11001ab895b2aaf8e3e5a0f1b646d764566e5457..86dac06f970ccba215067c14f06b307a5c7099e5 100644
+index 11001ab895b2aaf8e3e5a0f1b646d764566e5457..1ddbf9f9acc233fb34c19bede7f19b8be71c8d88 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 @@ -203,6 +203,7 @@
@@ -74,15 +74,15 @@ index 11001ab895b2aaf8e3e5a0f1b646d764566e5457..86dac06f970ccba215067c14f06b307a
  id AttributeInvoker::DictNodeToTextMarker(const PropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
      TEXTMARKER_FAIL(dictnode, "dictionary is expected")
-@@ -342,7 +344,7 @@
- 
-   return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
+@@ -378,7 +380,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+   return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
+       cocoa_node, position->text_offset(), position->affinity()));
  }
 -
 +#endif
- OptionalNSObject TextMarkerRangeGetStartMarker(const OptionalNSObject& obj) {
-   if (!IsAXTextMarkerRange(*obj))
-     return OptionalNSObject::NotApplicable();
+ OptionalNSObject MakePairArray(const OptionalNSObject& obj1,
+                                const OptionalNSObject& obj2) {
+   if (!obj1.IsNotNil() || !obj2.IsNotNil())
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
 index a5324dfd0c8a6bcd8fb7f89ce30d1f1b1ade0304..02564098d67f044cef54d285772a449d991b8d06 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
@@ -127,7 +127,7 @@ index a5324dfd0c8a6bcd8fb7f89ce30d1f1b1ade0304..02564098d67f044cef54d285772a449d
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index d792b573258714648c8ce66bedc2fbb4e7417028..b93e2280b459c60d6287c08392dd5aef94eafcd3 100644
+index d792b573258714648c8ce66bedc2fbb4e7417028..2fed4257026236b22eba912e95284c42050baab8 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -208,6 +208,7 @@
@@ -368,6 +368,22 @@ index d792b573258714648c8ce66bedc2fbb4e7417028..b93e2280b459c60d6287c08392dd5aef
  
    return nil;
  }
+@@ -3786,6 +3820,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+         AXPlatformRange(_owner->CreatePositionAt(range.location),
+                         _owner->CreatePositionAt(NSMaxRange(range))));
+   }
++#ifndef MAS_BUILD
+   if ([attribute
+           isEqualToString:NSAccessibilitySelectedTextMarkerRangeAttribute]) {
+     AXPlatformRange range = CreateRangeFromTextMarkerRange(value);
+@@ -3795,6 +3830,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+     manager->SetSelection(AXPlatformRange(range.anchor()->AsLeafTextPosition(),
+                                           range.focus()->AsLeafTextPosition()));
+   }
++#endif
+ }
+ 
+ // Returns the deepest accessibility child that should not be ignored.
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 index d508c73a0b335b08be4b00510b3d8c02804c149c..9717e9efde2e2bb4f877adee26bcdce3a2d672a7 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
