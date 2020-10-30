@@ -136,6 +136,7 @@ declare namespace Electron {
     overrideReadOnlyProperty(property: string, value: any): void;
     groupId: number;
     getDefaultRoleAccelerator(): Accelerator | undefined;
+    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
   }
 

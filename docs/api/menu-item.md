@@ -88,6 +88,7 @@ The `role` property can have following values:
 * `resetZoom` - Reset the focused page's zoom level to the original size.
 * `zoomIn` - Zoom in the focused page by 10%.
 * `zoomOut` - Zoom out the focused page by 10%.
+* `toggleSpellChecker` - Enable/disable builtin spell checker.
 * `fileMenu` - Whole default "File" menu (Close / Quit)
 * `editMenu` - Whole default "Edit" menu (Undo, Copy, etc.).
 * `viewMenu` - Whole default "View" menu (Reload, Toggle Developer Tools, etc.)

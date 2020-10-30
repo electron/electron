@@ -22,7 +22,7 @@ const MenuItem = function (this: any, options: any) {
     throw new Error('Invalid submenu');
   }
 
-  this.overrideReadOnlyProperty('type', 'normal');
+  this.overrideReadOnlyProperty('type', roles.getDefaultType(this.role));
   this.overrideReadOnlyProperty('role');
   this.overrideReadOnlyProperty('accelerator');
   this.overrideReadOnlyProperty('icon');
@@ -46,7 +46,8 @@ const MenuItem = function (this: any, options: any) {
   const click = options.click;
   this.click = (event: Event, focusedWindow: BrowserWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.
-    if (this.type === 'checkbox' || this.type === 'radio') {
+    if (!roles.shouldOverrideCheckStatus(this.role) &&
+        (this.type === 'checkbox' || this.type === 'radio')) {
       this.checked = !this.checked;
     }
 
@@ -64,6 +65,11 @@ MenuItem.types = ['normal', 'separator', 'submenu', 'checkbox', 'radio'];
 
 MenuItem.prototype.getDefaultRoleAccelerator = function () {
   return roles.getDefaultAccelerator(this.role);
+};
+
+MenuItem.prototype.getCheckStatus = function () {
+  if (!roles.shouldOverrideCheckStatus(this.role)) return this.checked;
+  return roles.getCheckStatus(this.role);
 };
 
 MenuItem.prototype.overrideProperty = function (name: string, defaultValue: any = null) {
