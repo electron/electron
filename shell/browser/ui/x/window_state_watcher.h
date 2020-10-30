@@ -6,7 +6,7 @@
 #define SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
 
 #include "ui/events/platform/x11/x11_event_source.h"
-#include "ui/gfx/x/x11.h"
+#include "ui/gfx/x/event.h"
 
 #include "shell/browser/native_window_views.h"
 

@@ -73,7 +73,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gfx/x/x11_types.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/xproto_util.h"
 #include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #endif
