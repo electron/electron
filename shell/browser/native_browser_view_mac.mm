@@ -206,6 +206,9 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   view.frame =
       NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
                  bounds.width(), bounds.height());
+
+  // Ensure draggable regions are properly updated to reflect new bounds.
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
@@ -243,8 +246,22 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
 
   NSInteger webViewWidth = NSWidth([web_view bounds]);
   NSInteger webViewHeight = NSHeight([web_view bounds]);
-  auto drag_exclude_rects = CalculateNonDraggableRegions(
-      DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+
+  std::vector<gfx::Rect> drag_exclude_rects;
+  if (regions.empty()) {
+    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+  } else {
+    drag_exclude_rects = CalculateNonDraggableRegions(
+        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  }
+
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.
