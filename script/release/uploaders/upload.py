@@ -161,7 +161,7 @@ def run_python_upload_script(script, *args):
 
 
 def get_electron_build_version():
-  if get_target_arch().startswith('arm') or os.environ.has_key('CI'):
+  if get_target_arch().startswith('arm') or 'CI' in os.environ:
     # In CI we just build as told.
     return ELECTRON_VERSION
   electron = get_electron_exec()
