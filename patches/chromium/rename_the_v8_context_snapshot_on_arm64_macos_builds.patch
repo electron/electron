@@ -14,10 +14,10 @@ Bug: 1142017
 Change-Id: I8449b72ba3a36e7ce69b9d9ec7768bd80ecc3e3a
 
 diff --git a/android_webview/BUILD.gn b/android_webview/BUILD.gn
-index a07040de159b5a060c30cc5d9b16c82686f12363..c616d7cd872349d8ead7d6605b437d7330a22034 100644
+index 169a790b48dd6a76b59bc17c94871e23499bd6fb..3dbca6cfba89ffbbddb23832a090c4ca5a2323b6 100644
 --- a/android_webview/BUILD.gn
 +++ b/android_webview/BUILD.gn
-@@ -792,7 +792,7 @@ if (android_64bit_target_cpu) {
+@@ -790,7 +790,7 @@ if (android_64bit_target_cpu) {
             "32-bit targets shouldn't have secondary abi")
      arch_suffix = "32"
      if (use_v8_context_snapshot) {
