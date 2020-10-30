@@ -114,8 +114,8 @@ class FileChooserDialog {
 
     // GtkFileChooserNative does not support preview widgets through the
     // org.freedesktop.portal.FileChooser portal. In the case of running through
-    // the org.freedesktop.portal.FileChooser portal, the following calls will
-    // just be ignored by GTK.
+    // the org.freedesktop.portal.FileChooser portal, anything having to do with
+    // the update-preview signal or the preview widget will just be ignored.
     preview_ = gtk_image_new();
     g_signal_connect(dialog_, "update-preview",
                      G_CALLBACK(OnUpdatePreviewThunk), this);
