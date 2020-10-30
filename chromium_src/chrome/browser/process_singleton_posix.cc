@@ -826,10 +826,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   to_send.append(current_dir.value());
 
   const std::vector<std::string>& argv = electron::ElectronCommandLine::argv();
-  for (std::vector<std::string>::const_iterator it = argv.begin();
-       it != argv.end(); ++it) {
+  for (const auto& arg : argv) {
     to_send.push_back(kTokenDelimiter);
-    to_send.append(*it);
+    to_send.append(arg);
   }
 
   // Send the message
