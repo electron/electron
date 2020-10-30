@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/ref_counted.h"
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
@@ -30,11 +29,9 @@
 
 namespace electron {
 
-// This class is responsible for following tasks when NetworkService is enabled:
-// 1. handling intercepted protocols;
-// 2. implementing webRequest module;
+// This class is responsible for implementing webRequest module.
 //
-// For the task #2, the code is referenced from the
+// The code is referenced from the
 // extensions::WebRequestProxyingURLLoaderFactory class.
 class ProxyingURLLoaderFactory
     : public network::mojom::URLLoaderFactory,
@@ -173,50 +170,14 @@ class ProxyingURLLoaderFactory
     DISALLOW_COPY_AND_ASSIGN(InProgressRequest);
   };
 
-  class InterceptedRequest
-      : public base::RefCountedThreadSafe<InterceptedRequest> {
-   public:
-    InterceptedRequest(
-        mojo::PendingReceiver<network::mojom::URLLoader> loader,
-        mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-        mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory);
-
-    void SendResponse(int32_t routing_id,
-                      int32_t request_id,
-                      uint32_t options,
-                      const network::ResourceRequest& request,
-                      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-                      ProtocolType type,
-                      gin::Arguments* args);
-    void ContinueRequest(int32_t routing_id,
-                         int32_t request_id,
-                         uint32_t options,
-                         const network::ResourceRequest& request,
-                         const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-                         ProxyingURLLoaderFactory* proxy_factory,
-                         gin::Arguments* args);
-
-   private:
-    ~InterceptedRequest();
-    friend class base::RefCountedThreadSafe<InterceptedRequest>;
-
-    mojo::PendingReceiver<network::mojom::URLLoader> loader_;
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client_;
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory_;
-
-    bool callbackFired_ = false;
-
-    DISALLOW_COPY_AND_ASSIGN(InterceptedRequest);
-  };
-
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
-      const InterceptHandlersMap& intercepted_handlers,
       int render_process_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
       base::Optional<int64_t> navigation_id,
-      network::mojom::URLLoaderFactoryRequest loader_request,
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory>
+          interceptor_receiver,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>
           target_factory_remote,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
@@ -257,28 +218,8 @@ class ProxyingURLLoaderFactory
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
   void MaybeDeleteThis();
 
-  bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
-
-  void DefaultLoader(
-      mojo::PendingReceiver<network::mojom::URLLoader> loader,
-      int32_t routing_id,
-      int32_t request_id,
-      uint32_t options,
-      const network::ResourceRequest& request,
-      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation);
-
   // Passed from api::WebRequest.
   WebRequestAPI* web_request_api_;
-
-  // This is passed from api::Protocol.
-  //
-  // The Protocol instance lives through the lifetime of BrowserContext,
-  // which is guaranteed to cover the lifetime of URLLoaderFactory, so the
-  // reference is guaranteed to be valid.
-  //
-  // In this way we can avoid using code from api namespace in this file.
-  const InterceptHandlersMap& intercepted_handlers_;
 
   const int render_process_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
@@ -298,8 +239,6 @@ class ProxyingURLLoaderFactory
   // A mapping from the network stack's notion of request ID to our own
   // internally generated request ID for the same request.
   std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
-
-  std::vector<std::string> ignore_connections_limit_domains_;
 
   DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };

@@ -73,7 +73,7 @@ class ElectronURLLoaderFactory
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor_factory,
       ProtocolType type,
       gin::Arguments* args);
 

@@ -6,9 +6,6 @@
 
 #include <utility>
 
-#include "base/command_line.h"
-#include "base/memory/scoped_refptr.h"
-#include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
@@ -19,7 +16,6 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
-#include "shell/common/options_switches.h"
 
 namespace electron {
 
@@ -354,62 +350,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
   HandleResponseOrRedirectHeaders(
       base::BindOnce(&InProgressRequest::ContinueToHandleOverrideHeaders,
                      weak_factory_.GetWeakPtr()));
-}
-
-ProxyingURLLoaderFactory::InterceptedRequest::InterceptedRequest(
-    mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory)
-    : loader_(std::move(loader)),
-      client_(std::move(client)),
-      proxy_factory_(std::move(proxy_factory)) {}
-
-ProxyingURLLoaderFactory::InterceptedRequest::~InterceptedRequest() = default;
-
-void ProxyingURLLoaderFactory::InterceptedRequest::SendResponse(
-    int32_t routing_id,
-    int32_t request_id,
-    uint32_t options,
-    const network::ResourceRequest& request,
-    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    ProtocolType type,
-    gin::Arguments* args) {
-  if (callbackFired_) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Intercepted request was already continued");
-    return;
-  }
-
-  callbackFired_ = true;
-
-  ElectronURLLoaderFactory::StartLoading(std::move(loader_), routing_id,
-                                         request_id, options, request,
-                                         std::move(client_), traffic_annotation,
-                                         std::move(proxy_factory_), type, args);
-}
-
-void ProxyingURLLoaderFactory::InterceptedRequest::ContinueRequest(
-    int32_t routing_id,
-    int32_t request_id,
-    uint32_t options,
-    const network::ResourceRequest& request,
-    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    ProxyingURLLoaderFactory* proxy_factory,
-    gin::Arguments* args) {
-  if (callbackFired_) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Response already sent to intercepted request");
-    return;
-  }
-
-  callbackFired_ = true;
-
-  DCHECK(proxy_factory_.is_valid());
-  mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
-      std::move(proxy_factory_));
-  proxy_factory->DefaultLoader(std::move(loader_), routing_id, request_id,
-                               options, request, std::move(client_),
-                               traffic_annotation);
 }
 
 void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(
@@ -796,18 +736,17 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
-    const InterceptHandlersMap& intercepted_handlers,
     int render_process_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     base::Optional<int64_t> navigation_id,
-    network::mojom::URLLoaderFactoryRequest loader_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory>
+        interceptor_receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_api_(web_request_api),
-      intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
@@ -816,30 +755,15 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
   target_factory_.Bind(std::move(target_factory_remote));
   target_factory_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
-  proxy_receivers_.Add(this, std::move(loader_request));
+  proxy_receivers_.Add(this, std::move(interceptor_receiver));
   proxy_receivers_.set_disconnect_handler(base::BindRepeating(
       &ProxyingURLLoaderFactory::OnProxyBindingError, base::Unretained(this)));
 
   if (header_client_receiver)
     url_loader_header_client_receiver_.Bind(std::move(header_client_receiver));
-
-  ignore_connections_limit_domains_ = base::SplitString(
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kIgnoreConnectionsLimit),
-      ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
-
-bool ProxyingURLLoaderFactory::ShouldIgnoreConnectionsLimit(
-    const network::ResourceRequest& request) {
-  for (const auto& domain : ignore_connections_limit_domains_) {
-    if (request.url.DomainIs(domain)) {
-      return true;
-    }
-  }
-  return false;
-}
 
 void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -852,33 +776,43 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Take a copy so we can mutate the request.
   network::ResourceRequest request = original_request;
 
-  if (ShouldIgnoreConnectionsLimit(request)) {
-    request.priority = net::RequestPriority::MAXIMUM_PRIORITY;
-    request.load_flags |= net::LOAD_IGNORE_LIMITS;
-  }
-
-  // Check if user has intercepted this scheme.
-  auto it = intercepted_handlers_.find(request.url.scheme());
-  if (it != intercepted_handlers_.end()) {
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
-    this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
-    scoped_refptr<InterceptedRequest> proxying_loader =
-        base::MakeRefCounted<InterceptedRequest>(
-            std::move(loader), std::move(client), std::move(loader_remote));
-
-    // <scheme, <type, handler>>
-    it->second.second.Run(
-        request,
-        base::BindOnce(&InterceptedRequest::SendResponse, proxying_loader, routing_id,
-                       request_id, options, request, traffic_annotation,
-                       it->second.first),
-        base::BindOnce(&InterceptedRequest::ContinueRequest, proxying_loader, routing_id,
-                       request_id, options, request, traffic_annotation, this));
+  // The loader of ServiceWorker forbids loading scripts from file:// URLs, and
+  // Chromium does not provide a way to override this behavior. So in order to
+  // make ServiceWorker work with file:// URLs, we have to intercept its
+  // requests here.
+  if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
+    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                              new net::HttpResponseHeaders(""));
     return;
   }
 
-  DefaultLoader(std::move(loader), routing_id, request_id, options, request,
-                std::move(client), traffic_annotation);
+  if (!web_request_api()->HasListener()) {
+    // Pass-through to the original factory.
+    target_factory_->CreateLoaderAndStart(
+        std::move(loader), routing_id, request_id, options, request,
+        std::move(client), traffic_annotation);
+    return;
+  }
+
+  // The request ID doesn't really matter. It just needs to be unique
+  // per-BrowserContext so extensions can make sense of it.  Note that
+  // |network_service_request_id_| by contrast is not necessarily unique, so we
+  // don't use it for identity here.
+  const uint64_t web_request_id = ++(*request_id_generator_);
+
+  // Notes: Chromium assumes that requests with zero-ID would never use the
+  // "extraHeaders" code path, however in Electron requests started from
+  // the net module would have zero-ID because they do not have renderer process
+  // associated.
+  if (request_id)
+    network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
+
+  auto result = requests_.emplace(
+      web_request_id,
+      std::make_unique<InProgressRequest>(
+          this, web_request_id, routing_id, request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
+  result.first->second->Restart();
 }
 
 void ProxyingURLLoaderFactory::Clone(
@@ -933,56 +867,6 @@ void ProxyingURLLoaderFactory::MaybeDeleteThis() {
     return;
 
   delete this;
-}
-
-void ProxyingURLLoaderFactory::DefaultLoader(
-    mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    int32_t routing_id,
-    int32_t request_id,
-    uint32_t options,
-    const network::ResourceRequest& original_request,
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
-  // Take a copy so we can mutate the request.
-  network::ResourceRequest request = original_request;
-
-  // The loader of ServiceWorker forbids loading scripts from file:// URLs, and
-  // Chromium does not provide a way to override this behavior. So in order to
-  // make ServiceWorker work with file:// URLs, we have to intercept its
-  // requests here.
-  if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
-    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
-                              new net::HttpResponseHeaders(""));
-    return;
-  }
-
-  if (!web_request_api()->HasListener()) {
-    // Pass-through to the original factory.
-    target_factory_->CreateLoaderAndStart(
-        std::move(loader), routing_id, request_id, options, request,
-        std::move(client), traffic_annotation);
-    return;
-  }
-
-  // The request ID doesn't really matter. It just needs to be unique
-  // per-BrowserContext so extensions can make sense of it.  Note that
-  // |network_service_request_id_| by contrast is not necessarily unique, so we
-  // don't use it for identity here.
-  const uint64_t web_request_id = ++(*request_id_generator_);
-
-  // Notes: Chromium assumes that requests with zero-ID would never use the
-  // "extraHeaders" code path, however in Electron requests started from
-  // the net module would have zero-ID because they do not have renderer process
-  // associated.
-  if (request_id)
-    network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
-
-  auto result = requests_.emplace(
-      web_request_id,
-      std::make_unique<InProgressRequest>(
-          this, web_request_id, routing_id, request_id, options, request,
-          traffic_annotation, std::move(loader), std::move(client)));
-  result.first->second->Restart();
 }
 
 }  // namespace electron

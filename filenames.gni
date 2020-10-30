@@ -401,6 +401,8 @@ filenames = {
     "shell/browser/net/cert_verifier_client.h",
     "shell/browser/net/electron_url_loader_factory.cc",
     "shell/browser/net/electron_url_loader_factory.h",
+    "shell/browser/net/intercepting_url_loader_factory.cc",
+    "shell/browser/net/intercepting_url_loader_factory.h",
     "shell/browser/net/network_context_service.cc",
     "shell/browser/net/network_context_service.h",
     "shell/browser/net/network_context_service_factory.cc",
