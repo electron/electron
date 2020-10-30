@@ -171,6 +171,31 @@ npm install --verbose electron
 If you need to force a re-download of the asset and the SHASUM file set the
 `force_no_cache` environment variable to `true`.
 
+
+Other users may face with some broken packages when trying to install npm on Ubuntu with `sudo apt install npm`:
+
+bash
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+Some packages could not be installed. This may mean that you have
+requested an impossible situation or if you are using the unstable
+distribution that some required packages have not yet been created
+or been moved out of Incoming.
+The following information may help to resolve the situation:
+
+The following packages have unmet dependencies:
+ npm : Depends: node-gyp (>= 0.10.9) but it is not going to be installed
+E: Unable to correct problems, you have held broken packages.
+
+
+
+You may need to install some libraries with the follwing command:
+
+bash 
+sudo apt-get install nodejs-dev node-gyp libssl1.0-dev
+
+
 [npm]: https://docs.npmjs.com
 [versioning]: ./electron-versioning.md
 [releases]: https://github.com/electron/electron/releases
