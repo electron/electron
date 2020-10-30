@@ -212,7 +212,7 @@ class FileChooserDialog {
   CHROMEG_CALLBACK_1(FileChooserDialog,
                      void,
                      OnFileDialogResponse,
-                     GtkFileChooser*,
+                     GtkWidget*,
                      int);
 
   static bool supports_gtk_native_dialog() {
@@ -234,11 +234,11 @@ class FileChooserDialog {
       dl_gtk_file_chooser_native_new;
 
  private:
-  static GModule* gtk_module_ = nullptr;
-  static bool attempted_to_open_gtk_module_ = false;
-  static bool supports_gtk_native_dialog_ = false;
+  static GModule* gtk_module_;
+  static bool attempted_to_open_gtk_module_;
+  static bool supports_gtk_native_dialog_;
 
-  static InitGtkNativeDialogSupport();
+  static void InitGtkNativeDialogSupport();
 
   void AddFilters(const Filters& filters);
 
@@ -345,7 +345,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   if (supports_gtk_native_dialog_) {
     dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
   } else {
-    gtk_widget_hide(dialog_);
+    gtk_widget_hide(GTK_WIDGET(dialog_));
   }
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
