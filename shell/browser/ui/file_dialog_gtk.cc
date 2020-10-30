@@ -30,6 +30,23 @@
 
 namespace file_dialog {
 
+static GModule* gtk_module_ = nullptr;
+static bool attempted_to_open_gtk_module_ = false;
+static bool supports_gtk_native_dialog_ = false;
+
+static std::function<void(void*)> dl_gtk_native_dialog_show = nullptr;
+static std::function<void(void*)> dl_gtk_native_dialog_destroy = nullptr;
+static std::function<void(void*, gboolean)> dl_gtk_native_dialog_set_modal =
+    nullptr;
+static std::function<int(void*)> dl_gtk_native_dialog_run = nullptr;
+static std::function<void(void*)> dl_gtk_native_dialog_hide = nullptr;
+static std::function<void*(const char*,
+                           GtkWindow*,
+                           GtkFileChooserAction,
+                           const char*,
+                           const char*)>
+    dl_gtk_file_chooser_native_new = nullptr;
+
 DialogSettings::DialogSettings() = default;
 DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
@@ -222,25 +239,7 @@ class FileChooserDialog {
 
   GtkFileChooser* dialog() const { return dialog_; }
 
-  static std::function<void(void*)> dl_gtk_native_dialog_show;
-  static std::function<void(void*)> dl_gtk_native_dialog_destroy;
-  static std::function<void(void*, gboolean)> dl_gtk_native_dialog_set_modal;
-  static std::function<int(void*)> dl_gtk_native_dialog_run;
-  static std::function<void(void*)> dl_gtk_native_dialog_hide;
-  static std::function<void*(const char*,
-                             GtkWindow*,
-                             GtkFileChooserAction,
-                             const char*,
-                             const char*)>
-      dl_gtk_file_chooser_native_new;
-
  private:
-  static GModule* gtk_module_;
-  static bool attempted_to_open_gtk_module_;
-  static bool supports_gtk_native_dialog_;
-
-  static void InitGtkNativeDialogSupport();
-
   void AddFilters(const Filters& filters);
 
   electron::NativeWindowViews* parent_;
@@ -258,89 +257,6 @@ class FileChooserDialog {
 
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
-
-void FileChooserDialog::InitGtkNativeDialogSupport() {
-  // Return early if we have already setup the static members or we have tried
-  // once before and failed. Avoid running expensive dynamic library operations.
-  if (supports_gtk_native_dialog_ || attempted_to_open_gtk_module_) {
-    return;
-  }
-
-  // Mark that we have attempted to initialize support at least once
-  attempted_to_open_gtk_module_ = true;
-
-  if (!g_module_supported()) {
-    return;
-  }
-
-  gtk_module_ = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
-  if (!gtk_module_) {
-    return;
-  }
-
-  // Will never be unloaded
-  g_module_make_resident(gtk_module_);
-
-  void* (*_dl_gtk_file_chooser_native_new)(
-      const char*, GtkWindow*, GtkFileChooserAction, const char*, const char*) =
-      nullptr;
-  bool found = g_module_symbol(
-      gtk_module_, "gtk_file_chooser_native_new",
-      reinterpret_cast<void**>(&_dl_gtk_file_chooser_native_new));
-  if (!found) {
-    return;
-  }
-  dl_gtk_file_chooser_native_new = _dl_gtk_file_chooser_native_new;
-
-  void (*_dl_gtk_native_dialog_set_modal)(void*, gboolean) = nullptr;
-  found = g_module_symbol(
-      gtk_module_, "gtk_native_dialog_set_modal",
-      reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
-  if (!found) {
-    return;
-  }
-  dl_gtk_native_dialog_set_modal = _dl_gtk_native_dialog_set_modal;
-
-  void (*_dl_gtk_native_dialog_destroy)(void*) = nullptr;
-  found =
-      g_module_symbol(gtk_module_, "gtk_native_dialog_destroy",
-                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_destroy));
-  if (!found) {
-    return;
-  }
-  dl_gtk_native_dialog_destroy = _dl_gtk_native_dialog_destroy;
-
-  void (*_dl_gtk_native_dialog_show)(void*) = NULL;
-  found =
-      g_module_symbol(gtk_module_, "gtk_native_dialog_show",
-                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_show));
-  if (!found) {
-    return;
-  }
-  dl_gtk_native_dialog_show = _dl_gtk_native_dialog_show;
-
-  void (*_dl_gtk_native_dialog_hide)(void*) = NULL;
-  found =
-      g_module_symbol(gtk_module_, "gtk_native_dialog_hide",
-                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_hide));
-  if (!found) {
-    return;
-  }
-  dl_gtk_native_dialog_hide = _dl_gtk_native_dialog_hide;
-
-  int (*_dl_gtk_native_dialog_run)(void*) = NULL;
-  found = g_module_symbol(gtk_module_, "gtk_native_dialog_run",
-                          reinterpret_cast<void**>(&_dl_gtk_native_dialog_run));
-  if (!found) {
-    return;
-  }
-  dl_gtk_native_dialog_run = _dl_gtk_native_dialog_run;
-
-  supports_gtk_native_dialog_ =
-      dl_gtk_file_chooser_native_new && dl_gtk_native_dialog_set_modal &&
-      dl_gtk_native_dialog_destroy && dl_gtk_native_dialog_run &&
-      dl_gtk_native_dialog_show && dl_gtk_native_dialog_hide;
-}
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   if (supports_gtk_native_dialog_) {
@@ -425,8 +341,7 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
   if (dialog.supports_gtk_native_dialog()) {
-    FileChooserDialog::dl_gtk_native_dialog_show(
-        static_cast<void*>(dialog.dialog()));
+    dl_gtk_native_dialog_show(static_cast<void*>(dialog.dialog()));
   } else {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   }
@@ -435,8 +350,7 @@ void ShowFileDialog(const FileChooserDialog& dialog) {
 int RunFileDialog(const FileChooserDialog& dialog) {
   int response = 0;
   if (dialog.supports_gtk_native_dialog()) {
-    response = FileChooserDialog::dl_gtk_native_dialog_run(
-        static_cast<void*>(dialog.dialog()));
+    response = dl_gtk_native_dialog_run(static_cast<void*>(dialog.dialog()));
   } else {
     response = gtk_dialog_run(GTK_DIALOG(dialog.dialog()));
   }
@@ -490,6 +404,89 @@ void ShowSaveDialog(const DialogSettings& settings,
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));
+}
+
+void InitGtkNativeDialogSupport() {
+  // Return early if we have already setup the static members or we have tried
+  // once before and failed. Avoid running expensive dynamic library operations.
+  if (supports_gtk_native_dialog_ || attempted_to_open_gtk_module_) {
+    return;
+  }
+
+  // Mark that we have attempted to initialize support at least once
+  attempted_to_open_gtk_module_ = true;
+
+  if (!g_module_supported()) {
+    return;
+  }
+
+  gtk_module_ = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
+  if (!gtk_module_) {
+    return;
+  }
+
+  // Will never be unloaded
+  g_module_make_resident(gtk_module_);
+
+  void* (*_dl_gtk_file_chooser_native_new)(
+      const char*, GtkWindow*, GtkFileChooserAction, const char*, const char*) =
+      nullptr;
+  bool found = g_module_symbol(
+      gtk_module_, "gtk_file_chooser_native_new",
+      reinterpret_cast<void**>(&_dl_gtk_file_chooser_native_new));
+  if (!found) {
+    return;
+  }
+  dl_gtk_file_chooser_native_new = _dl_gtk_file_chooser_native_new;
+
+  void (*_dl_gtk_native_dialog_set_modal)(void*, gboolean) = nullptr;
+  found = g_module_symbol(
+      gtk_module_, "gtk_native_dialog_set_modal",
+      reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
+  if (!found) {
+    return;
+  }
+  dl_gtk_native_dialog_set_modal = _dl_gtk_native_dialog_set_modal;
+
+  void (*_dl_gtk_native_dialog_destroy)(void*) = nullptr;
+  found =
+      g_module_symbol(gtk_module_, "gtk_native_dialog_destroy",
+                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_destroy));
+  if (!found) {
+    return;
+  }
+  dl_gtk_native_dialog_destroy = _dl_gtk_native_dialog_destroy;
+
+  void (*_dl_gtk_native_dialog_show)(void*) = NULL;
+  found =
+      g_module_symbol(gtk_module_, "gtk_native_dialog_show",
+                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_show));
+  if (!found) {
+    return;
+  }
+  dl_gtk_native_dialog_show = _dl_gtk_native_dialog_show;
+
+  void (*_dl_gtk_native_dialog_hide)(void*) = NULL;
+  found =
+      g_module_symbol(gtk_module_, "gtk_native_dialog_hide",
+                      reinterpret_cast<void**>(&_dl_gtk_native_dialog_hide));
+  if (!found) {
+    return;
+  }
+  dl_gtk_native_dialog_hide = _dl_gtk_native_dialog_hide;
+
+  int (*_dl_gtk_native_dialog_run)(void*) = NULL;
+  found = g_module_symbol(gtk_module_, "gtk_native_dialog_run",
+                          reinterpret_cast<void**>(&_dl_gtk_native_dialog_run));
+  if (!found) {
+    return;
+  }
+  dl_gtk_native_dialog_run = _dl_gtk_native_dialog_run;
+
+  supports_gtk_native_dialog_ =
+      dl_gtk_file_chooser_native_new && dl_gtk_native_dialog_set_modal &&
+      dl_gtk_native_dialog_destroy && dl_gtk_native_dialog_run &&
+      dl_gtk_native_dialog_show && dl_gtk_native_dialog_hide;
 }
 
 }  // namespace file_dialog
