@@ -131,6 +131,8 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
   bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
+  void SetSpellCheckerEnabled(bool b);
+  bool IsSpellCheckerEnabled() const;
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
