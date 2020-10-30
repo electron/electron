@@ -211,7 +211,7 @@ class ProxyingURLLoaderFactory
 
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
-      const HandlersMap& intercepted_handlers,
+      const InterceptHandlersMap& intercepted_handlers,
       int render_process_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
@@ -278,7 +278,7 @@ class ProxyingURLLoaderFactory
   // reference is guaranteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
-  const HandlersMap& intercepted_handlers_;
+  const InterceptHandlersMap& intercepted_handlers_;
 
   const int render_process_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient

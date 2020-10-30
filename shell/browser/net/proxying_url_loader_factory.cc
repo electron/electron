@@ -796,7 +796,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
-    const HandlersMap& intercepted_handlers,
+    const InterceptHandlersMap& intercepted_handlers,
     int render_process_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
@@ -862,8 +862,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   if (it != intercepted_handlers_.end()) {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
     this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
-    scoped_refptr<InterceptedRequest> proxying_loader = base::MakeRefCounted<InterceptedRequest>(
-        std::move(loader), std::move(client), std::move(loader_remote));
+    scoped_refptr<InterceptedRequest> proxying_loader =
+        base::MakeRefCounted<InterceptedRequest>(
+            std::move(loader), std::move(client), std::move(loader_remote));
 
     // <scheme, <type, handler>>
     it->second.second.Run(

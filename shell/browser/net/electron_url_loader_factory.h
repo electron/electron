@@ -33,13 +33,18 @@ enum class ProtocolType {
 
 using StartLoadingCallback = base::OnceCallback<void(gin::Arguments*)>;
 using RunDefaultLoaderCallback = base::OnceCallback<void(gin::Arguments*)>;
-using ProtocolHandler = base::Callback<void(const network::ResourceRequest&,
-                                            StartLoadingCallback,
-                                            RunDefaultLoaderCallback)>;
+using ProtocolHandler =
+    base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
+using InterceptProtocolHandler =
+    base::Callback<void(const network::ResourceRequest&,
+                        StartLoadingCallback,
+                        RunDefaultLoaderCallback)>;
 
 // scheme => (type, handler).
 using HandlersMap =
     std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
+using InterceptHandlersMap =
+    std::map<std::string, std::pair<ProtocolType, InterceptProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
 class ElectronURLLoaderFactory

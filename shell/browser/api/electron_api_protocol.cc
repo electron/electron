@@ -199,9 +199,10 @@ bool Protocol::IsProtocolRegistered(const std::string& scheme) {
   return protocol_registry_->IsProtocolRegistered(scheme);
 }
 
-ProtocolError Protocol::InterceptProtocol(ProtocolType type,
-                                          const std::string& scheme,
-                                          const ProtocolHandler& handler) {
+ProtocolError Protocol::InterceptProtocol(
+    ProtocolType type,
+    const std::string& scheme,
+    const InterceptProtocolHandler& handler) {
   bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
   return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
 }
