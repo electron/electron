@@ -254,11 +254,13 @@ Returns `Boolean` - Whether `scheme` is already registered.
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+  * `next` Function
 
 Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
-which sends a file as a response.
+which sends a file as a response, or continues the response to the original
+handler.
 
 ### `protocol.interceptStringProtocol(scheme, handler)`
 
@@ -267,11 +269,13 @@ which sends a file as a response.
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (String | [ProtocolResponse](structures/protocol-response.md))
+  * `next` Function
 
 Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
-which sends a `String` as a response.
+which sends a `String` as a response, or continues the response to the original
+handler.
 
 ### `protocol.interceptBufferProtocol(scheme, handler)`
 
@@ -280,11 +284,13 @@ which sends a `String` as a response.
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (Buffer | [ProtocolResponse](structures/protocol-response.md))
+  * `next` Function
 
 Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
-which sends a `Buffer` as a response.
+which sends a `Buffer` as a response, or continues the response to the original
+handler.
 
 ### `protocol.interceptHttpProtocol(scheme, handler)`
 
@@ -293,11 +299,13 @@ which sends a `Buffer` as a response.
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` [ProtocolResponse](structures/protocol-response.md)
+  * `next` Function
 
 Returns `Boolean` - Whether the protocol was successfully intercepted
 
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
-which sends a new HTTP request as a response.
+which sends a new HTTP request as a response, or continues the response to the
+original handler.
 
 ### `protocol.interceptStreamProtocol(scheme, handler)`
 
@@ -306,6 +314,7 @@ which sends a new HTTP request as a response.
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
     * `response` (ReadableStream | [ProtocolResponse](structures/protocol-response.md))
+  * `next` Function
 
 Returns `Boolean` - Whether the protocol was successfully intercepted
 
