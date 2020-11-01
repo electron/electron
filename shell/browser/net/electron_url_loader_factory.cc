@@ -153,15 +153,13 @@ struct WriteData {
 };
 
 void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    network::URLLoaderCompletionStatus status(net::ERR_FAILED);
-    return;
+  network::URLLoaderCompletionStatus status(net::ERR_FAILED);
+  if (result == MOJO_RESULT_OK) {
+    status = network::URLLoaderCompletionStatus(net::OK);
+    status.encoded_data_length = write_data->data.size();
+    status.encoded_body_length = write_data->data.size();
+    status.decoded_body_length = write_data->data.size();
   }
-
-  network::URLLoaderCompletionStatus status(net::OK);
-  status.encoded_data_length = write_data->data.size();
-  status.encoded_body_length = write_data->data.size();
-  status.decoded_body_length = write_data->data.size();
   write_data->client->OnComplete(status);
 }
 
