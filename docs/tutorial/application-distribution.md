@@ -5,7 +5,7 @@
 To distribute your app with Electron, you need to package and rebrand it.
 To do this, you can either use specialized tooling or manual approaches.
 
-## With Tooling
+## With tooling
 
 You can use the following tools to distribute your application:
 
@@ -14,15 +14,15 @@ You can use the following tools to distribute your application:
 * [electron-packager](https://github.com/electron/electron-packager)
 
 These tools will take care of all the steps you need to take to end up with a
-distributable Electron applications, such as packaging your application,
+distributable Electron application, such as packaging your application,
 rebranding the executable, setting the right icons and optionally creating installers.
 
-You can check the example of how to package you app with `electron-forge` in
+You can check the example of how to package your app with `electron-forge` in
 our [Quick Start Guide](quick-start.md#package-and-distribute-the-application).
 
-## Manual Distribution
+## Manual distribution
 
-### With Prebuilt Binaries
+### With prebuilt binaries
 
 To distribute your app manually, you need to download Electron's [prebuilt
 binaries](https://github.com/electron/electron/releases). Next, the folder
@@ -54,15 +54,15 @@ Then execute `Electron.app` (`electron` on Linux, `electron.exe` on Windows),
 and Electron will start as your app. The `electron` directory will then be
 your distribution to deliver to users.
 
-### With asar Archive
+### With asar archive
 
 Apart from shipping your app by copying all of its source files, you can also
 package your app into an [asar] archive to avoid exposing your app's source
 code to users.
 
-To use an `asar` archive, you need to rename your `app` folder into `app.asar`,
-and put it under Electron's resources directory like below, and Electron will
-then try to read the archive and start from it.
+To use an `asar` archive to replace the `app` folder, you need to rename the
+archive to `app.asar`, and put it under Electron's resources directory like
+below, and Electron will then try to read the archive and start from it.
 
 *On macOS:*
 
@@ -78,9 +78,10 @@ electron/resources/
 └── app.asar
 ```
 
-More details on how to use `asar` you can find [here][asar].
+You can find more details on how to use `asar` in the
+[electron/asar repository][asar].
 
-### Rebranding with Downloaded Binaries
+### Rebranding with downloaded binaries
 
 After bundling your app into Electron, you will want to rebrand Electron
 before distributing it to users.
@@ -121,7 +122,7 @@ information with tools like [rcedit](https://github.com/electron/rcedit).
 
 You can rename the `electron` executable to any name you like.
 
-### Rebranding by Rebuilding Electron from Source
+### Rebranding by rebuilding Electron from source
 
 It is also possible to rebrand Electron by changing the product name and
 building it from source. To do this you need to set the build argument
