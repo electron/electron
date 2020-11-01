@@ -186,7 +186,6 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   const messageBoxType = messageBoxTypes.indexOf(type);
   if (messageBoxType === -1) throw new TypeError('Invalid message box type');
   if (!Array.isArray(buttons)) throw new TypeError('Buttons must be an array');
-  if (options.normalizeAccessKeys) buttons = buttons.map(normalizeAccessKey);
   if (typeof title !== 'string') throw new TypeError('Title must be a string');
   if (typeof noLink !== 'boolean') throw new TypeError('noLink must be a boolean');
   if (typeof message !== 'string') throw new TypeError('Message must be a string');
@@ -203,13 +202,16 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     // If the defaultId is set to 0, ensure the cancel button is a different index (1)
     cancelId = (defaultId === 0 && buttons.length > 1) ? 1 : 0;
     for (let i = 0; i < buttons.length; i++) {
-      const text = buttons[i].toLowerCase();
+      var text = buttons[i].toLowerCase();
+      if (options.normalizeAccessKeys) text = text.replace('?', '');
       if (text === 'cancel' || text === 'no') {
         cancelId = i;
         break;
       }
     }
   }
+
+  if (options.normalizeAccessKeys) buttons = buttons.map(normalizeAccessKey);
 
   const settings = {
     window,
