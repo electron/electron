@@ -13,6 +13,7 @@
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
+#include "components/spellcheck/spellcheck_buildflags.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
@@ -26,6 +27,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "shell/renderer/binder_registry_holder.h"
 #include "shell/renderer/browser_exposed_renderer_interfaces.h"
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
@@ -52,6 +54,9 @@
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+#include "components/spellcheck/renderer/spellcheck_panel.h"
+#endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -291,8 +296,13 @@ void RendererClientBase::RenderFrameCreated(
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (render_frame->GetBlinkPreferences().enable_spellcheck)
+  if (render_frame->GetBlinkPreferences().enable_spellcheck) {
     new SpellCheckProvider(render_frame, spellcheck_.get(), this);
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+    auto* holder = new BinderRegistryHolder(render_frame);
+    new SpellCheckPanel(render_frame, holder->registry(), this);
+#endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  }
 #endif
 }
 

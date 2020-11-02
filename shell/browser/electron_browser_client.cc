@@ -29,6 +29,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "components/spellcheck/spellcheck_buildflags.h"
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -122,6 +123,9 @@
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"  // nogncheck
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+#include "chrome/browser/spellchecker/spell_check_panel_host_impl.h"  // nogncheck
+#endif
 #endif
 
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -1620,6 +1624,14 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
                                      std::move(host_receiver));
     return;
   }
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  if (auto host_receiver =
+          receiver.As<spellcheck::mojom::SpellCheckPanelHost>()) {
+    SpellCheckPanelHostImpl::Create(render_process_host->GetID(),
+                                    std::move(host_receiver));
+    return;
+  }
+#endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
 #endif
 }
 
