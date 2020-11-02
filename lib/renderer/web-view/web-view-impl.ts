@@ -5,6 +5,7 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
+import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { deserialize } from '@electron/internal/common/type-utils';
 const { webFrame } = electron;
 
@@ -33,7 +34,7 @@ export class WebViewImpl {
   public internalElement: HTMLIFrameElement
 
   // Replaced in web-view-attributes
-  public attributes: Record<string, any> = {}
+  public attributes = new Map<string, WebViewAttribute>();
   public setupWebViewAttributes (): void {}
 
   constructor (public webviewNode: HTMLElement) {
@@ -76,7 +77,7 @@ export class WebViewImpl {
     }
 
     this.beforeFirstNavigation = true;
-    this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION].validPartitionId = true;
+    (this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION) as PartitionAttribute).validPartitionId = true;
 
     // Since attachment swaps a local frame for a remote frame, we need our
     // internal iframe element to be local again before we can reattach.
@@ -95,12 +96,12 @@ export class WebViewImpl {
   // attribute, if necessary. See BrowserPlugin::UpdateDOMAttribute for more
   // details.
   handleWebviewAttributeMutation (attributeName: string, oldValue: any, newValue: any) {
-    if (!this.attributes[attributeName] || this.attributes[attributeName].ignoreMutation) {
+    if (!this.attributes.has(attributeName) || this.attributes.get(attributeName)!.ignoreMutation) {
       return;
     }
 
     // Let the changed attribute handle its own mutation
-    this.attributes[attributeName].handleMutation(oldValue, newValue);
+    this.attributes.get(attributeName)!.handleMutation(oldValue, newValue);
   }
 
   onElementResize () {
@@ -149,7 +150,7 @@ export class WebViewImpl {
       // Touching the src attribute triggers a navigation. To avoid
       // triggering a page reload on every guest-initiated navigation,
       // we do not handle this mutation.
-      this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC].setValueIgnoreMutation(newValue);
+      this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC)!.setValueIgnoreMutation(newValue);
     }
   }
 
@@ -163,7 +164,7 @@ export class WebViewImpl {
   }
 
   onAttach (storagePartitionId: number) {
-    return this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION].setValue(storagePartitionId);
+    return this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION)!.setValue(storagePartitionId);
   }
 
   buildParams () {
@@ -172,10 +173,8 @@ export class WebViewImpl {
       userAgentOverride: this.userAgentOverride
     };
 
-    for (const attributeName in this.attributes) {
-      if (Object.prototype.hasOwnProperty.call(this.attributes, attributeName)) {
-        params[attributeName] = this.attributes[attributeName].getValue();
-      }
+    for (const [attributeName, attribute] of this.attributes) {
+      params[attributeName] = attribute.getValue();
     }
 
     return params;
