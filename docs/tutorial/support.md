@@ -105,21 +105,13 @@ Running apps packaged with previous versions is possible using the ia32 binary.
 
 ### Linux
 
-The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
-Ubuntu 12.04, the `armv7l` binary is built against ARM v7 with hard-float ABI and
-NEON for Debian Wheezy.
-
-[Until the release of Electron 2.0][arm-breaking-change], Electron will also
-continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries
-are identical.
+The prebuilt binaries of Electron are built on Ubuntu 18.04.
 
 Whether the prebuilt binary can run on a distribution depends on whether the
 distribution includes the libraries that Electron is linked to on the building
-platform, so only Ubuntu 12.04 is guaranteed to work, but following platforms
+platform, so only Ubuntu 18.04 is guaranteed to work, but following platforms
 are also verified to be able to run the prebuilt binaries of Electron:
 
-* Ubuntu 12.04 and newer
-* Fedora 21
-* Debian 8
-
-[arm-breaking-change]: ../breaking-changes.md#duplicate-arm-assets
+* Ubuntu 14.04 and newer
+* Fedora 24 and newer
+* Debian 8 and newer
