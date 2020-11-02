@@ -10,6 +10,7 @@
 #include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace gfx {
@@ -49,7 +50,7 @@ class NativeBrowserView : public content::WebContentsObserver {
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-      const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
+      const std::vector<mojom::DraggableRegionPtr>& regions) {}
 
  protected:
   explicit NativeBrowserView(InspectableWebContents* inspectable_web_contents);

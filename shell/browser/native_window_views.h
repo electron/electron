@@ -11,7 +11,9 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <vector>
 
+#include "shell/common/api/api.mojom.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -137,7 +139,8 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
-  void UpdateDraggableRegions(std::unique_ptr<SkRegion> region);
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   void IncrementChildModals();
   void DecrementChildModals();
