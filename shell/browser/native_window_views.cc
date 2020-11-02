@@ -20,6 +20,7 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -1274,8 +1275,8 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
 }
 
 void NativeWindowViews::UpdateDraggableRegions(
-    std::unique_ptr<SkRegion> region) {
-  draggable_region_ = std::move(region);
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 #if defined(OS_WIN)

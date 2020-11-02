@@ -27,6 +27,7 @@
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/common_web_contents_delegate.h"
+#include "shell/browser/extended_web_contents_observer.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "third_party/blink/public/mojom/favicon/favicon_url.mojom.h"
 #include "ui/gfx/image/image.h"
@@ -112,19 +113,6 @@ class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
-
-// Certain events are only in WebContentsDelegate, provide our own Observer to
-// dispatch those events.
-class ExtendedWebContentsObserver : public base::CheckedObserver {
- public:
-  virtual void OnCloseContents() {}
-  virtual void OnRendererResponsive() {}
-  virtual void OnDraggableRegionsUpdated(
-      const std::vector<mojom::DraggableRegionPtr>& regions) {}
-
- protected:
-  ~ExtendedWebContentsObserver() override {}
-};
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin_helper::TrackableObject<WebContents>,

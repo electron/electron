@@ -12,6 +12,7 @@
 #include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_top_level_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
 namespace electron {
@@ -97,10 +98,6 @@ class BrowserWindow : public TopLevelWindow,
 
   // Called when the window needs to update its draggable region.
   void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
-  // Convert draggable regions in raw format to SkRegion format.
-  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Schedule a notification unresponsive event.
