@@ -661,6 +661,14 @@ source_set("electron_lib") {
       "shell/browser/electron_pdf_web_contents_helper_client.h",
     ]
   }
+
+  if (is_win && enable_win_dark_mode_window_ui) {
+    sources += [
+      "shell/browser/win/dark_mode.cc",
+      "shell/browser/win/dark_mode.h",
+    ]
+    libs += [ "uxtheme.lib" ]
+  }
 }
 
 electron_paks("packed_resources") {
