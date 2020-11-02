@@ -88,7 +88,7 @@ win.show()
 * On Linux, users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,
   this is caused by an upstream bug that [alpha channel doesn't work on some
-  NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on
+  NVidia drivers](https://bugs.chromium.org/p/chromium/issues/detail?id=369209) on
   Linux.
 * On Mac, the native window shadow will not be shown on a transparent window.
 

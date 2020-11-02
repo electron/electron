@@ -129,4 +129,4 @@ will explain more complex debugging scenarios.
 
 [lldb-command-structure]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-basics.html#//apple_ref/doc/uid/TP40012917-CH2-SW2
 [lldb-standalone]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-terminal-workflow-tutorial.html
-[lldb-tutorial]: http://lldb.llvm.org/tutorial.html
+[lldb-tutorial]: https://lldb.llvm.org/tutorial.html

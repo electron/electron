@@ -26,7 +26,7 @@ Security` → `System` → `Advanced system settings` and add a system variable
 your locally installed version of Visual Studio (by default, `depot_tools` will
 try to download a Google-internal version that only Googlers have access to).
 
-[depot-tools]: http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
+[depot-tools]: https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
 
 ### Setting up the git cache
 

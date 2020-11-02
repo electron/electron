@@ -31,4 +31,4 @@
 * `uploadData` ProtocolResponseUploadData (optional) - The data used as upload data. This is only
   used for URL responses when `method` is `"POST"`.
 
-[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+[net-error]: https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h
