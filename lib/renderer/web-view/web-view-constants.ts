@@ -16,9 +16,6 @@ export const enum WEB_VIEW_CONSTANTS {
   ATTRIBUTE_DISABLEBLINKFEATURES = 'disableblinkfeatures',
   ATTRIBUTE_WEBPREFERENCES = 'webpreferences',
 
-  // Internal attribute.
-  ATTRIBUTE_INTERNALINSTANCEID = 'internalinstanceid',
-
   // Error messages.
   ERROR_MSG_ALREADY_NAVIGATED = 'The object has already navigated, so its partition cannot be changed.',
   ERROR_MSG_CANNOT_INJECT_SCRIPT = '<webview> = ' + 'Script cannot be injected into content until the page has loaded.',
