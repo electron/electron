@@ -90,6 +90,7 @@ env-release-build: &env-release-build
   STRIP_BINARIES: true
   GENERATE_SYMBOLS: true
   CHECK_DIST_MANIFEST: '1'
+  IS_RELEASE: true
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
@@ -228,23 +229,25 @@ step-gclient-sync: &step-gclient-sync
           "$CIRCLE_REPOSITORY_URL"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
-        # Re-export all the patches to check if there were changes.
-        python src/electron/script/export_all_patches.py src/electron/patches/config.json
-        cd src/electron
-        git update-index --refresh || true
-        if ! git diff-index --quiet HEAD --; then
-          # There are changes to the patches. Make a git commit with the updated patches
-          git add patches
-          GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
-          # Export it
-          mkdir -p ../../patches
-          git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-          echo
-          echo "======================================================================"
-          echo "There were changes to the patches when applying."
-          echo "Check the CI artifacts for a patch you can apply to fix it."
-          echo "======================================================================"
-          exit 1
+        if [ "$IS_RELEASE" != "true" ]; then
+          # Re-export all the patches to check if there were changes.
+          python src/electron/script/export_all_patches.py src/electron/patches/config.json
+          cd src/electron
+          git update-index --refresh || true
+          if ! git diff-index --quiet HEAD --; then
+            # There are changes to the patches. Make a git commit with the updated patches
+            git add patches
+            GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
+            # Export it
+            mkdir -p ../../patches
+            git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+            echo
+            echo "======================================================================"
+            echo "There were changes to the patches when applying."
+            echo "Check the CI artifacts for a patch you can apply to fix it."
+            echo "======================================================================"
+            exit 1
+          fi
         fi
       fi
 
