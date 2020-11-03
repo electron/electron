@@ -1,6 +1,7 @@
 ---
 name: Feature request
 about: Suggest an idea for Electron
+labels: "enhancement :sparkles:"
 
 ---
 
