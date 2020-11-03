@@ -657,6 +657,14 @@ source_set("electron_lib") {
       "shell/browser/electron_pdf_web_contents_helper_client.h",
     ]
   }
+  if (enable_builtin_spellchecker && has_spellcheck_panel) {
+    sources += [
+      "shell/browser/ui/cocoa/electron_render_widget_host_view_mac_delegate.h",
+      "shell/browser/ui/cocoa/electron_render_widget_host_view_mac_delegate.mm",
+      "shell/browser/ui/cocoa/electron_web_contents_view_delegate.h",
+      "shell/browser/ui/cocoa/electron_web_contents_view_delegate.mm",
+    ]
+  }
 
   sources += get_target_outputs(":electron_fuses")
 

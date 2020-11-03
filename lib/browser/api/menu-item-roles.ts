@@ -6,7 +6,8 @@ const isLinux = process.platform === 'linux';
 
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' | 'startspeaking' | 'stopspeaking' |
-  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
+  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' |
+  'togglespellchecker' | 'showspellingpanel' |
   'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
   label: string;
@@ -194,6 +195,10 @@ export const roleList: Record<RoleId, Role> = {
       const ses = wc ? wc.session : session.defaultSession;
       ses.spellCheckerEnabled = !ses.spellCheckerEnabled;
     }
+  },
+  showspellingpanel: {
+    label: 'Show Spelling and Grammar',
+    nonNativeMacOSRole: true
   },
   // App submenu should be used for Mac only
   appmenu: {

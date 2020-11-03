@@ -13,6 +13,7 @@
 
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
+#include "components/spellcheck/spellcheck_buildflags.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/browser/web_contents.h"
@@ -77,6 +78,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const base::CommandLine& command_line,
       int child_process_id,
       content::PosixFileDescriptorInfo* mappings) override;
+#endif
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER) && BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  content::WebContentsViewDelegate* GetWebContentsViewDelegate(
+      content::WebContents* web_contents) override;
 #endif
 
   std::string GetUserAgent() override;

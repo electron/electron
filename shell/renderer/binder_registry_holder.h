@@ -2,6 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef SHELL_RENDERER_BINDER_REGISTRY_HOLDER_H_
+#define SHELL_RENDERER_BINDER_REGISTRY_HOLDER_H_
+
+#include <string>
+
 #include "content/public/renderer/render_frame_observer.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 
@@ -27,3 +32,5 @@ class BinderRegistryHolder : public content::RenderFrameObserver {
 };
 
 }  // namespace electron
+
+#endif  // SHELL_RENDERER_BINDER_REGISTRY_HOLDER_H_
