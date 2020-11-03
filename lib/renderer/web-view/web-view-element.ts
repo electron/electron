@@ -10,6 +10,7 @@
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { WebViewImpl as IWebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl';
+import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
@@ -49,7 +50,7 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
       if (!internal.elementAttached) {
         guestViewInternal.registerEvents(internal, internal.viewInstanceId);
         internal.elementAttached = true;
-        internal.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC].parse();
+        (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();
       }
     }
 
