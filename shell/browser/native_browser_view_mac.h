@@ -28,6 +28,8 @@ class NativeBrowserViewMac : public NativeBrowserView {
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
  private:
+  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
+
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewMac);
 };
 
