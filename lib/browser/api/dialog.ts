@@ -202,7 +202,7 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     // If the defaultId is set to 0, ensure the cancel button is a different index (1)
     cancelId = (defaultId === 0 && buttons.length > 1) ? 1 : 0;
     for (let i = 0; i < buttons.length; i++) {
-      var text = buttons[i].toLowerCase();
+      let text = buttons[i].toLowerCase();
       if (options.normalizeAccessKeys) text = text.replace('?', '');
       if (text === 'cancel' || text === 'no') {
         cancelId = i;
