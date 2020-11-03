@@ -54,11 +54,12 @@ Then execute `Electron.app` (`electron` on Linux, `electron.exe` on Windows),
 and Electron will start as your app. The `electron` directory will then be
 your distribution to deliver to users.
 
-### With asar archive
+### With an app source code archive
 
-Apart from shipping your app by copying all of its source files, you can also
-package your app into an [asar] archive to avoid exposing your app's source
-code to users.
+Instead of from shipping your app by copying all of its source files, you can
+package your app into an [asar] archive to improve the performance of reading
+files on platforms like Windows, if you are not already using a bundler such
+as Parcel or Webpack.
 
 To use an `asar` archive to replace the `app` folder, you need to rename the
 archive to `app.asar`, and put it under Electron's resources directory like
