@@ -587,7 +587,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
     default margin, 1 for no margin, and 2 for minimum margin.
     and `width` in microns.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
-  * `pageRanges` Object[] (optional) - The page range to print.
+  * `pageRanges` Record<string, number> (optional) - The page range to print.
     * `from` Number - Index of the first page to print (0-based).
     * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
