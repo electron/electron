@@ -7,7 +7,7 @@ const isLinux = process.platform === 'linux';
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' | 'startspeaking' | 'stopspeaking' |
   'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' |
-  'togglespellchecker' | 'showspellingpanel' |
+  'togglespellchecker' | 'showspellingpanel' | 'checkspelling' |
   'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
   label: string;
@@ -197,8 +197,10 @@ export const roleList: Record<RoleId, Role> = {
     }
   },
   showspellingpanel: {
-    label: 'Show Spelling and Grammar',
-    nonNativeMacOSRole: true
+    label: 'Show Spelling and Grammar'
+  },
+  checkspelling: {
+    label: 'Check Document Now'
   },
   // App submenu should be used for Mac only
   appmenu: {

@@ -26,6 +26,20 @@
   return self;
 }
 
+- (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item
+                      isValidItem:(BOOL*)valid {
+  SEL action = [item action];
+  if (action == @selector(checkSpelling:)) {
+    *valid = content::RenderViewHost::From(_renderWidgetHost) != nullptr;
+    return YES;
+  }
+  if (action == @selector(showGuessPanel:)) {
+    *valid = YES;
+    return YES;
+  }
+  return NO;
+}
+
 // Spellchecking methods
 // The implementations are copied from
 // chrome/browser/renderer_host/chrome_render_widget_host_view_mac_delegate.mm

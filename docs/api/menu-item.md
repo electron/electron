@@ -97,6 +97,7 @@ The `role` property can have following values:
 The following additional roles are available on _macOS_:
 
 * `showSpellingPanel` - Open the "Spelling and Grammar" panel.
+* `checkSpelling` - Check document's spelling now.
 * `appMenu` - Whole default "App" menu (About, Services, etc.)
 * `hide` - Map to the `hide` action.
 * `hideOthers` - Map to the `hideOtherApplications` action.

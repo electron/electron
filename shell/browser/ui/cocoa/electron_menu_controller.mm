@@ -67,6 +67,7 @@ Role kRolesMap[] = {
     {@selector(moveTabToNewWindow:), "movetabtonewwindow"},
     {@selector(clearRecentDocuments:), "clearrecentdocuments"},
     {@selector(showGuessPanel:), "showspellingpanel"},
+    {@selector(checkSpelling:), "checkspelling"},
 };
 
 // Called when adding a submenu to the menu and checks if the submenu, via its
