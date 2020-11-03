@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/spellcheck/spellcheck_buildflags.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
@@ -115,6 +116,7 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
+#include "components/spellcheck/browser/spellcheck_platform.h"
 #endif
 
 namespace electron {
@@ -518,6 +520,13 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
 void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if defined(OS_MAC)
   FreeAppDelegate();
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER) && BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  // We have to close the spelling panel on shutdown, otherwise macOS would
+  // automatically show the spelling panel on next start, which most apps do
+  // not do.
+  spellcheck_platform::ShowSpellingPanel(false);
 #endif
 
   // Shutdown the DownloadManager before destroying Node to prevent
