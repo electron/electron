@@ -1,8 +1,8 @@
 # Debugging in VSCode
 
-This guide goes over how to setup VSCode debugging for both your own Electron project as well as the native Electron codebase.
+This guide goes over how to set up VSCode debugging for both your own Electron project as well as the native Electron codebase.
 
-## Main Process
+## Main process
 
 ### 1. Open an Electron project in VSCode.
 
@@ -77,9 +77,9 @@ $ code electron-quick-start
 ```
 **Note:** `args` should also have one parameter, either the path to the folder or `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `electron-quick-start`.
 
-**Note:** `${workspaceFolder}` is the full path to the `src` directory
+**Note:** `${workspaceFolder}` is the full path to Chromium's `src` directory
 
-**Note:** `cppvsdbg` requires the built-in C/C++ extension be enabled
+**Note:** `cppvsdbg` requires the [built-in C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) be enabled
 
 ### 3. Debugging
 
