@@ -39,7 +39,13 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
 
     constructor () {
       super();
-      v8Util.setHiddenValue(this, 'internal', new WebViewImpl(this));
+      const internal = new WebViewImpl(this);
+      internal.dispatchEventInMainWorld = (eventName, props) => {
+        const event = new Event(eventName);
+        Object.assign(event, props);
+        return internal.webviewNode.dispatchEvent(event);
+      };
+      v8Util.setHiddenValue(this, 'internal', internal);
     }
 
     connectedCallback () {
