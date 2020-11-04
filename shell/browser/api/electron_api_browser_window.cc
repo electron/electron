@@ -13,6 +13,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_browser_view.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -301,8 +302,15 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MACOSX)
-  if (!draggable_regions_.empty())
+  if (!draggable_regions_.empty()) {
     UpdateDraggableRegions(draggable_regions_);
+  } else {
+    // Ensure draggable bounds are recalculated for BrowserViews if any exist.
+    auto browser_views = window_->browser_views();
+    for (NativeBrowserView* view : browser_views) {
+      view->UpdateDraggableRegions(draggable_regions_);
+    }
+  }
 #endif
   TopLevelWindow::OnWindowResize();
 }
