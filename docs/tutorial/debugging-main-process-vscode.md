@@ -75,7 +75,7 @@ $ code electron-quick-start
   ]
 }
 ```
-**Note:** `args` should also have one parameter, either the path to the folder or `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `electron-quick-start`.
+**Note:** the `args` array should also hold one value: the absolute path to either the folder or the `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `electron-quick-start`.
 
 **Note:** `${workspaceFolder}` is the full path to Chromium's `src` directory
 
