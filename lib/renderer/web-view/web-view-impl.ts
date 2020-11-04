@@ -37,6 +37,8 @@ export class WebViewImpl {
   public attributes = new Map<string, WebViewAttribute>();
   public setupWebViewAttributes (): void {}
 
+  public dispatchEventInMainWorld?: (eventName: string, props: any) => boolean;
+
   constructor (public webviewNode: HTMLElement) {
     // Create internal iframe element.
     this.internalElement = this.createInternalElement();
@@ -107,10 +109,11 @@ export class WebViewImpl {
   }
 
   onElementResize () {
-    const resizeEvent = new Event('resize') as ElectronInternal.WebFrameResizeEvent;
-    resizeEvent.newWidth = this.webviewNode.clientWidth;
-    resizeEvent.newHeight = this.webviewNode.clientHeight;
-    this.dispatchEvent(resizeEvent);
+    const props = {
+      newWidth: this.webviewNode.clientWidth,
+      newHeight: this.webviewNode.clientHeight
+    };
+    this.dispatchEvent('resize', props);
   }
 
   createGuest () {
@@ -119,8 +122,8 @@ export class WebViewImpl {
     });
   }
 
-  dispatchEvent (webViewEvent: Electron.Event) {
-    this.webviewNode.dispatchEvent(webViewEvent);
+  dispatchEvent (eventName: string, props: Record<string, any> = {}) {
+    this.dispatchEventInMainWorld!(eventName, props);
   }
 
   // Adds an 'on<event>' property on the webview, which can be used to set/unset
@@ -145,10 +148,10 @@ export class WebViewImpl {
   }
 
   // Updates state upon loadcommit.
-  onLoadCommit (webViewEvent: ElectronInternal.WebViewEvent) {
+  onLoadCommit (props: Record<string, any>) {
     const oldValue = this.webviewNode.getAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC);
-    const newValue = webViewEvent.url;
-    if (webViewEvent.isMainFrame && (oldValue !== newValue)) {
+    const newValue = props.url;
+    if (props.isMainFrame && (oldValue !== newValue)) {
       // Touching the src attribute triggers a navigation. To avoid
       // triggering a page reload on every guest-initiated navigation,
       // we do not handle this mutation.
@@ -161,7 +164,7 @@ export class WebViewImpl {
     const hasFocus = this.webviewNode.ownerDocument.activeElement === this.webviewNode;
     if (hasFocus !== this.hasFocus) {
       this.hasFocus = hasFocus;
-      this.dispatchEvent(new Event(hasFocus ? 'focus' : 'blur'));
+      this.dispatchEvent(hasFocus ? 'focus' : 'blur');
     }
   }
 
