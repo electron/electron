@@ -4,7 +4,6 @@ Date: Tue, 3 Nov 2020 16:49:32 -0800
 Subject: export gin::V8Platform::PageAllocator for usage outside of the gin
  platform
 
-
 diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
 index da2aeb2f2da84fe47d5cc7d721f8d3dade0c0972..4ddad9065782fad5927bc0481ad772014af0d689 100644
 --- a/gin/public/v8_platform.h
