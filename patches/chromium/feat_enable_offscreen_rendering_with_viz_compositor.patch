@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 7c66192cbcc4d9603b00aa6bc7292acffda6337b..017f519228c3105438ef40aa280a2f48a2e7118e 100644
+index 92acbc3a25c6174cdb92b9c4d4003b6a51ca2110..1f5191a2a171f664b0d01b8dc5eda2d8d660fb3d 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -117,6 +117,8 @@ viz_component("service") {
@@ -107,7 +107,7 @@ index 7c66192cbcc4d9603b00aa6bc7292acffda6337b..017f519228c3105438ef40aa280a2f48
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index f403ee5cf320fa7ee20539f17a2c28c17ddfa162..1708e336f9436a521b5a19335e5565b444f980ba 100644
+index cd43e14ab05c6f8a8fc7e0b91f7880ede5fab949..f2e20df13ab2880cbf575377a0492fa3aa0aa461 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -24,6 +24,7 @@
@@ -126,7 +126,7 @@ index f403ee5cf320fa7ee20539f17a2c28c17ddfa162..1708e336f9436a521b5a19335e5565b4
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -251,6 +253,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
+@@ -244,6 +246,22 @@ OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
    if (headless_)
      return std::make_unique<SoftwareOutputDevice>();
  
