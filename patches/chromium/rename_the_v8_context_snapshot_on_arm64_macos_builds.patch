@@ -27,10 +27,10 @@ index 169a790b48dd6a76b59bc17c94871e23499bd6fb..3dbca6cfba89ffbbddb23832a090c4ca
      } else {
        renaming_sources = [ "$_secondary_abi_out_dir/snapshot_blob.bin" ]
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 56f5ff4c628daa7f42f4c84c9a4b98f3f250a2b0..15f7a164662b9e90fa43eb893d743182e05b48fa 100644
+index 174df0243f3058dce3481affea390560950a2a78..1a4a98c25b39b5879c19f999dfd680141500ef09 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -772,7 +772,7 @@ if (is_win) {
+@@ -775,7 +775,7 @@ if (is_win) {
      if (v8_use_external_startup_data) {
        public_deps += [ "//v8" ]
        if (use_v8_context_snapshot) {

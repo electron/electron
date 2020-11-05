@@ -66,7 +66,7 @@ index da3aceed75b10087a86bcb8427c241fe647cdcfe..cafd45df059293bc1cf31e1d7b798e67
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 27b7e117b531bb370ea948e56b33d1a07eef11c6..9953cc472c04c2dc6ae0f70b64ea2b8d6ac86a05 100644
+index 811bc7be6b174e0695beac6ee604ca19e9402739..3b93afa004fb4d56ade2ab16147b42f26e90e3db 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -153,6 +153,7 @@ class NetworkService;
@@ -77,7 +77,7 @@ index 27b7e117b531bb370ea948e56b33d1a07eef11c6..9953cc472c04c2dc6ae0f70b64ea2b8d
  }  // namespace network
  
  namespace sandbox {
-@@ -868,6 +869,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -876,6 +877,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
