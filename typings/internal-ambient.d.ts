@@ -227,7 +227,7 @@ declare namespace NodeJS {
   }
 }
 
-declare module NodeJS  {
+declare module NodeJS {
   interface Global {
     require: NodeRequire;
     module: NodeModule;
@@ -319,7 +319,7 @@ interface ResizeObserverEntry {
 // https://github.com/microsoft/TypeScript/pull/38232
 
 interface WeakRef<T extends object> {
-  readonly [Symbol.toStringTag]: "WeakRef";
+  readonly [Symbol.toStringTag]: 'WeakRef';
 
   /**
    * Returns the WeakRef instance's target object, or undefined if the target object has been
@@ -341,7 +341,7 @@ interface WeakRefConstructor {
 declare var WeakRef: WeakRefConstructor;
 
 interface FinalizationRegistry {
-  readonly [Symbol.toStringTag]: "FinalizationRegistry";
+  readonly [Symbol.toStringTag]: 'FinalizationRegistry';
 
   /**
    * Registers an object with the registry.
