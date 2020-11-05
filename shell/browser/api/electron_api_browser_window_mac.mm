@@ -12,26 +12,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-
-@interface NSView (WebContentsView)
-- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
-@end
-
-@interface ControlRegionView : NSView
-@end
-
-@implementation ControlRegionView
-
-- (BOOL)mouseDownCanMoveWindow {
-  return NO;
-}
-
-- (NSView*)hitTest:(NSPoint)aPoint {
-  return nil;
-}
-
-@end
 
 namespace electron {
 
