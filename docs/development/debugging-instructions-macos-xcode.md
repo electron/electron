@@ -1,10 +1,13 @@
 ## Debugging with XCode
 
 ### Generate xcode project for debugging sources (cannot build code from xcode)
+
 Run `gn gen` with the --ide=xcode argument.
+
 ```sh
 $ gn gen out/Testing --ide=xcode
 ```
+
 This will generate the electron.ninja.xcworkspace. You will have to open this workspace
 to set breakpoints and inspect.
 

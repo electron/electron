@@ -205,9 +205,10 @@ The `filters` specifies an array of file types that can be displayed, see
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `canceled` Boolean - whether or not the dialog was canceled.
-  * `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
-  * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
+
+* `canceled` Boolean - whether or not the dialog was canceled.
+* `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
+* `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -302,8 +303,9 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     via `Alt-W` on Windows and Linux.
 
 Returns `Promise<Object>` - resolves with a promise containing the following properties:
-  * `response` Number - The index of the clicked button.
-  * `checkboxChecked` Boolean - The checked state of the checkbox if
+
+* `response` Number - The index of the clicked button.
+* `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
 Shows a message box.

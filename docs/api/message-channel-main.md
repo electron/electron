@@ -12,6 +12,7 @@ channel messaging.
 Process: [Main](../glossary.md#main-process)
 
 Example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()

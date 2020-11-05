@@ -124,6 +124,7 @@ Depending on the received event, we update the
 property to apply the desired theme on the system's native UI elements
 (e.g. context menus) and propagate the preferred color scheme to the Renderer
 process:
+
 * Upon receiving `dark-mode:toggle`, we check if the dark theme is currently
 active using the `nativeTheme.shouldUseDarkColors` property, and set the
 `themeSource` to the opposite theme.
