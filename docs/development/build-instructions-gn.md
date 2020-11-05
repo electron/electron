@@ -53,7 +53,7 @@ $ gclient sync --with_branch_heads --with_tags
 > Instead of `https://github.com/electron/electron`, you can use your own fork
 > here (something like `https://github.com/<username>/electron`).
 
-#### A note on pulling/pushing
+### A note on pulling/pushing
 
 If you intend to `git pull` or `git push` from the official `electron`
 repository in the future, you now need to update the respective folder's
