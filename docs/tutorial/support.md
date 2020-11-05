@@ -9,6 +9,7 @@ If you're looking for programming help,
 for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
+
 - [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
   - Getting help
   - Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
@@ -62,6 +63,7 @@ threshold, we will attempt to support backwards compatibility beyond two version
 until the maintainers feel the maintenance burden is too high to continue doing so.
 
 ### Currently supported versions
+
 - 10.x.y
 - 9.x.y
 - 8.x.y

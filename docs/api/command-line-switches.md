@@ -64,6 +64,7 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 ### --enable-api-filtering-logging
 
 Enables caller stack logging for the following APIs (filtering events):
+
 - `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
 - `remote.require()` / `remote-require`
 - `remote.getGlobal()` / `remote-get-builtin`
@@ -227,6 +228,7 @@ See the [Debugging the Main Process][debugging-main-process] guide for more deta
 Aliased to `--debug[=[host:]port`.
 
 ### --inspect-publish-uid=stderr,http
+
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.

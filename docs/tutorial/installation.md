@@ -45,6 +45,7 @@ value, plus additional environment variables depending on your host system's Nod
 * [Before Node 10][proxy-env]
 
 ## Custom Mirrors and Caches
+
 During installation, the `electron` module will call out to
 [`@electron/get`][electron-get] to download prebuilt binaries of
 Electron for your platform. It will do so by contacting GitHub's
@@ -55,6 +56,7 @@ If you are unable to access GitHub or you need to provide a custom build, you
 can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
+
 You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The URL used by `@electron/get`
 is composed as follows:
@@ -84,6 +86,7 @@ The above configuration will download from URLs such as
 `https://npm.taobao.org/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
 
 #### Cache
+
 Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
 that cache folder to provide custom builds of Electron or to avoid making contact
@@ -126,12 +129,14 @@ a text file. A typical cache might look like this:
 ```
 
 ## Skip binary download
+
 When installing the `electron` NPM package, it automatically downloads the electron binary.
 
 This can sometimes be unnecessary, e.g. in a CI environment, when testing another component.
 
 To prevent the binary from being downloaded when you install all npm dependencies you can set the environment variable `ELECTRON_SKIP_BINARY_DOWNLOAD`.
 E.g.:
+
 ```sh
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
 ```

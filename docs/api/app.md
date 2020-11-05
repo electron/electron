@@ -859,9 +859,10 @@ This method returns the application name of the default handler for the protocol
   minimum (e.g. `https://`).
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `icon` NativeImage - the display icon of the app handling the protocol.
-  * `path` String  - installation path of the app handling the protocol.
-  * `name` String - display name of the app handling the protocol.
+
+* `icon` NativeImage - the display icon of the app handling the protocol.
+* `path` String  - installation path of the app handling the protocol.
+* `name` String - display name of the app handling the protocol.
 
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
@@ -1091,6 +1092,7 @@ Changes the [Application User Model ID][app-user-model-id] to `id`.
 Sets the activation policy for a given app.
 
 Activation policy types:
+
 * 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
@@ -1142,6 +1144,7 @@ For `infoType` equal to `complete`:
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
+
 ```js
 {
   auxAttributes:
