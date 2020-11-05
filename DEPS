@@ -78,6 +78,8 @@ vars = {
     False,
   'checkout_google_benchmark':
     False,
+  'checkout_clang_tidy':
+    True,
 }
 
 deps = {
