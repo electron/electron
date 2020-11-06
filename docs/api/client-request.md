@@ -98,6 +98,7 @@ request.on('login', (authInfo, callback) => {
   callback('username', 'password')
 })
 ```
+
 Providing empty credentials will cancel the request and report an authentication
 error on the response object:
 
@@ -138,7 +139,6 @@ follow and no response object will be provided.
 Emitted as the last event in the HTTP request-response transaction. The `close`
 event indicates that no more events will be emitted on either the `request` or
 `response` objects.
-
 
 #### Event: 'redirect'
 

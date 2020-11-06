@@ -438,6 +438,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 #### Event: 'zoom-changed'
 
 Returns:
+
 * `event` Event
 * `zoomDirection` String - Can be `in` or `out`.
 
@@ -1690,6 +1691,7 @@ process by accessing the `ports` property of the emitted event. When they
 arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()

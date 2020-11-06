@@ -254,7 +254,7 @@ declare namespace ElectronInternal {
     loader: ModuleLoader;
   }
 
-  interface WebFrameResizeEvent extends Electron.Event {
+  interface WebFrameResizeEvent extends WebViewEvent {
     newWidth: number;
     newHeight: number;
   }

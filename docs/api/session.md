@@ -100,10 +100,11 @@ Returns:
 
 Emitted after an extension is loaded. This occurs whenever an extension is
 added to the "enabled" set of extensions. This includes:
+
 - Extensions being loaded from `Session.loadExtension`.
 - Extensions being reloaded:
-   * from a crash.
-   * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
+  * from a crash.
+  * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
 
 #### Event: 'extension-unloaded'
 
@@ -354,7 +355,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
      "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
      "https://x.*.y.com:99"
 
- * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
+* `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
 
    Match a particular domain suffix.
 
@@ -454,7 +455,7 @@ the original network configuration.
     * `errorCode` Integer - Error code.
   * `callback` Function
     * `verificationResult` Integer - Value can be one of certificate error codes
-    from [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+    from [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
     Apart from the certificate error codes, the following special codes can be used.
       * `0` - Indicates success and disables Certificate Transparency verification.
       * `-2` - Indicates failure.

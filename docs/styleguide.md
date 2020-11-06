@@ -48,7 +48,7 @@ For API references, there are exceptions to this rule.
 * Lines should be wrapped at 80 columns.
 * No nesting lists more than 2 levels (due to the markdown renderer).
 * All `js` and `javascript` code blocks are linted with
-[standard-markdown](http://npm.im/standard-markdown).
+[standard-markdown](https://www.npmjs.com/package/standard-markdown).
 
 ## Picking words
 

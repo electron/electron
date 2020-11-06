@@ -468,6 +468,7 @@ window.onbeforeunload = (e) => {
   e.returnValue = false // equivalent to `return false` but not recommended
 }
 ```
+
 _**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
 
 #### Event: 'closed'
@@ -859,7 +860,7 @@ A `Boolean` property that determines whether the menu bar should be visible.
 
 **Note:** If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
 
-####  `win.kiosk`
+#### `win.kiosk`
 
 A `Boolean` property that determines whether the window is in kiosk mode.
 
@@ -1049,7 +1050,7 @@ Returns `Boolean` - Whether the window is in normal state (not maximized, not mi
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
- * `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
 maintaining the aspect ratio.
 
 This will make a window maintain an aspect ratio. The extra size allows a

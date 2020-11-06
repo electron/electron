@@ -24,22 +24,22 @@ Using the [React Developer Tools][react-devtools] as an example:
      * `~/.config/chromium/Default/Extensions/`
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
-API. For React Developer Tools `v4.9.0`, it looks something like:
-  ```javascript
-  const { app, session } = require('electron')
-  const path = require('path')
-  const os = require('os')
+   API. For React Developer Tools `v4.9.0`, it looks something like:
+   ```javascript
+    const { app, session } = require('electron')
+    const path = require('path')
+    const os = require('os')
 
-  // on macOS
-  const reactDevToolsPath = path.join(
-    os.homedir(),
-    '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.9.0_0'
-  )
+    // on macOS
+    const reactDevToolsPath = path.join(
+      os.homedir(),
+      '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.9.0_0'
+    )
 
-  app.whenReady().then(async () => {
-    await session.defaultSession.loadExtension(reactDevToolsPath)
-  })
-  ```
+    app.whenReady().then(async () => {
+      await session.defaultSession.loadExtension(reactDevToolsPath)
+    })
+   ```
 
 **Notes:**
 

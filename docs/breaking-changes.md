@@ -301,6 +301,7 @@ messages, but also brings some breaking changes in behavior.
 - Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
   converting the functions to `undefined`.
+
 ```js
 // Previously:
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
@@ -310,6 +311,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 // => throws Error("() => {} could not be cloned.")
 ```
+
 - `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
 - Objects containing cyclic references will now be correctly serialized,
@@ -327,6 +329,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 - Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
+
 ```js
 Buffer.from(value.buffer, value.byteOffset, value.byteLength)
 ```
@@ -462,6 +465,7 @@ the folder, similarly to Chrome, Firefox, and Edge
 ([link to MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/webkitdirectory)).
 
 As an illustration, take a folder with this structure:
+
 ```console
 folder
 ├── file1
@@ -470,11 +474,13 @@ folder
 ```
 
 In Electron <=6, this would return a `FileList` with a `File` object for:
+
 ```console
 path/to/folder
 ```
 
 In Electron 7, this now returns a `FileList` with a `File` object for:
+
 ```console
 /path/to/folder/file3
 /path/to/folder/file2
@@ -629,7 +635,9 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ### API Changed: `webFrame.setSpellCheckProvider` now takes an asynchronous callback
+
 The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+
 ```js
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {
