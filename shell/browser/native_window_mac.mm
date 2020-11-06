@@ -38,6 +38,8 @@
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -1033,7 +1035,22 @@ ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() {
 }
 
 void NativeWindowMac::Center() {
-  [window_ center];
+  // Call to NSWindow::center places the window somewhat above center
+  // vertically so we can't use it and we must make the calculations
+  // manually.
+
+  // We use work_area() instead of bounds() to include possible dock
+  // and menu bar.
+  gfx::Rect screen_rect = display::Screen::GetScreen()
+                              ->GetDisplayNearestView(GetNativeView())
+                              .work_area();
+  gfx::Rect window_rect = GetBounds();
+  window_rect.set_x((screen_rect.width() - window_rect.width()) / 2);
+  window_rect.set_y((screen_rect.height() - window_rect.height()) / 2);
+  // We have to offset the window by position of the screen's coordinates
+  // to put it on the proper screen (monitor).
+  window_rect.Offset(screen_rect.x(), screen_rect.y());
+  SetBounds(window_rect);
 }
 
 void NativeWindowMac::Invalidate() {
