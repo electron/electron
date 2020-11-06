@@ -548,6 +548,7 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;
+  void DevToolsResized() override;
 
  private:
   ElectronBrowserContext* GetBrowserContext() const;

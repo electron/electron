@@ -86,6 +86,14 @@
     inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
+- (void)notifyDevToolsResized {
+  // When devtools is opened, resizing devtools would not trigger
+  // UpdateDraggableRegions for WebContents, so we have to notify the window
+  // to do an update of draggable regions.
+  if (inspectableWebContentsView_->GetDelegate())
+    inspectableWebContentsView_->GetDelegate()->DevToolsResized();
+}
+
 - (void)setDevToolsVisible:(BOOL)visible activate:(BOOL)activate {
   if (visible == devtools_visible_)
     return;
@@ -117,6 +125,7 @@
       [devToolsView removeFromSuperview];
       [devtools_mask_ removeFromSuperview];
       [self adjustSubviews];
+      [self notifyDevToolsResized];
     }
   } else {
     if (visible) {
@@ -233,6 +242,8 @@
     devtools_frame.size.height = sb.size.height;
   }
   [devtools_mask_ setFrame:devtools_frame];
+
+  [self notifyDevToolsResized];
 }
 
 - (void)setTitle:(NSString*)title {
