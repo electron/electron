@@ -2072,17 +2072,17 @@ domain-browser@^1.1.1:
   resolved "https://registry.yarnpkg.com/domain-browser/-/domain-browser-1.2.0.tgz#3d31f50191a6749dd1375a7f522e823d42e54eda"
   integrity sha512-jnjyiM6eRyZl2H+W8Q/zLMA481hzi0eszAaBUzIVnmYVDBbnLxVNnfu1HgEBvCbL+71FrxMl3E6lpKH7Ge3OXA==
 
-dotenv-safe@^4.0.4:
-  version "4.0.4"
-  resolved "https://registry.yarnpkg.com/dotenv-safe/-/dotenv-safe-4.0.4.tgz#8b0e7ced8e70b1d3c5d874ef9420e406f39425b3"
-  integrity sha1-iw587Y5wsdPF2HTvlCDkBvOUJbM=
+dotenv-safe@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/dotenv-safe/-/dotenv-safe-8.2.0.tgz#8d548c7318a62c09a66c4dc8c31864cc007c78ba"
+  integrity sha512-uWwWWdUQkSs5a3mySDB22UtNwyEYi0JtEQu+vDzIqr9OjbDdC2Ip13PnSpi/fctqlYmzkxCeabiyCAOROuAIaA==
   dependencies:
-    dotenv "^4.0.0"
+    dotenv "^8.2.0"
 
-dotenv@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-4.0.0.tgz#864ef1379aced55ce6f95debecdce179f7a0cd1d"
-  integrity sha1-hk7xN5rO1Vzm+V3r7NzhefegzR0=
+dotenv@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.2.0.tgz#97e619259ada750eea3e4ea3e26bceea5424b16a"
+  integrity sha512-8sJ78ElpbDJBHNeBzUbUVLsqKdccaa/BXF1uPTw3GrvQTBgrQrtObr2mUrE38vzYd8cEv+m/JBfDLioYcfXoaw==
 
 dugite@1.87.0:
   version "1.87.0"
