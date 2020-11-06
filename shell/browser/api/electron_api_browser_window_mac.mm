@@ -36,6 +36,10 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   [contentView viewDidMoveToWindow];
 }
 
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
+}
+
 void BrowserWindow::UpdateDraggableRegions(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (window_->has_frame())
