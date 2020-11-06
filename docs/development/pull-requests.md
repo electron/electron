@@ -36,9 +36,9 @@ $ git fetch upstream
 Build steps and dependencies differ slightly depending on your operating system.
 See these detailed guides on building Electron locally:
 
-* [Building on macOS](https://electronjs.org/docs/development/build-instructions-macos)
-* [Building on Linux](https://electronjs.org/docs/development/build-instructions-linux)
-* [Building on Windows](https://electronjs.org/docs/development/build-instructions-windows)
+* [Building on macOS](build-instructions-macos.md)
+* [Building on Linux](build-instructions-linux.md)
+* [Building on Windows](build-instructions-windows.md)
 
 Once you've built the project locally, you're ready to start making changes!
 
@@ -63,7 +63,7 @@ or tests in the `spec/` folder.
 Please be sure to run `npm run lint` from time to time on any code changes
 to ensure that they follow the project's code style.
 
-See [coding style](https://electronjs.org/docs/development/coding-style) for
+See [coding style](coding-style.md) for
 more information about best practice when modifying code in different parts of
 the project.
 
@@ -144,7 +144,7 @@ master.
 ### Step 7: Test
 
 Bug fixes and features should always come with tests. A
-[testing guide](https://electronjs.org/docs/development/testing) has been
+[testing guide](testing.md) has been
 provided to make the process easier. Looking at other tests to see how they
 should be structured can also help.
 
