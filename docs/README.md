@@ -28,7 +28,7 @@ an issue:
 
 ### Learning the basics
 
-* [Application architecture](tutorial/quick-start.md#application-architecture)
+* [Electron's Process Model](tutorial/quick-start.md#application-architecture)
   * [Main and Renderer Processes](tutorial/quick-start.md#main-and-renderer-processes)
   * [Electron API](tutorial/quick-start.md#electron-api)
   * [Node.js API](tutorial/quick-start.md#nodejs-api)
@@ -55,10 +55,9 @@ an issue:
 
 ### Advanced steps
 
-* [Application Architecture](tutorial/quick-start.md#application-architecture)
-  * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
-  * [Performance Strategies](tutorial/performance.md)
-  * [Security Strategies](tutorial/security.md)
+* [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
+* [Performance Strategies](tutorial/performance.md)
+* [Security Strategies](tutorial/security.md)
 * [Accessibility](tutorial/accessibility.md)
   * [Manually Enabling Accessibility Features](tutorial/accessibility.md#manually-enabling-accessibility-features)
 * [Testing and Debugging](tutorial/application-debugging.md)
