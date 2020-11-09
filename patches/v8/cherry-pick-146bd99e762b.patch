@@ -1,7 +1,7 @@
-From 146bd99e762bd93f6c5520bb94f02b8ab0aa8d42 Mon Sep 17 00:00:00 2001
-From: ishell@chromium.org <ishell@chromium.org>
-Date: Tue, 03 Nov 2020 12:42:43 +0100
-Subject: [PATCH] Merged: Squashed multiple commits.
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
+Date: Tue, 3 Nov 2020 12:42:43 +0100
+Subject: Merged: Squashed multiple commits.
 
 Merged: [map] Try to in-place transition during map update
 Revision: 8e3ae62d294818733a0322d8e8abd53d4e410f19
@@ -21,13 +21,12 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.7@{#31}
 Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
 Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
----
 
 diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
-index e51bcfc..b4b1587 100644
+index e51bcfc76010a8c616dccc0af5daff5d498b7e81..b4b158749381efcf780d5c8ba07c286be6ba6b30 100644
 --- a/src/objects/map-updater.cc
 +++ b/src/objects/map-updater.cc
-@@ -232,10 +232,7 @@
+@@ -232,10 +232,7 @@ MapUpdater::State MapUpdater::TryReconfigureToDataFieldInplace() {
          handle(old_descriptors_->GetFieldType(modified_descriptor_), isolate_),
          MaybeHandle<Object>(), new_field_type_, MaybeHandle<Object>());
    }
@@ -39,7 +38,7 @@ index e51bcfc..b4b1587 100644
                    new_representation_, new_field_type_);
    // Check that the descriptor array was updated.
    DCHECK(old_descriptors_->GetDetails(modified_descriptor_)
-@@ -401,7 +398,13 @@
+@@ -401,7 +398,13 @@ MapUpdater::State MapUpdater::FindTargetMap() {
      }
      Representation tmp_representation = tmp_details.representation();
      if (!old_details.representation().fits_into(tmp_representation)) {
@@ -55,10 +54,10 @@ index e51bcfc..b4b1587 100644
  
      if (tmp_details.location() == kField) {
 diff --git a/src/objects/map.cc b/src/objects/map.cc
-index dd941b3..d1370ae 100644
+index d85d5893c43798a6ee643da46267c77eacd49c0e..cc98acd0e2840da52cc84b076fdea987bf96a047 100644
 --- a/src/objects/map.cc
 +++ b/src/objects/map.cc
-@@ -610,6 +610,7 @@
+@@ -611,6 +611,7 @@ void Map::DeprecateTransitionTree(Isolate* isolate) {
      transitions.GetTarget(i).DeprecateTransitionTree(isolate);
    }
    DCHECK(!constructor_or_backpointer().IsFunctionTemplateInfo());
@@ -67,10 +66,10 @@ index dd941b3..d1370ae 100644
    if (FLAG_trace_maps) {
      LOG(isolate, MapEvent("Deprecate", handle(*this, isolate), Handle<Map>()));
 diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
-index a9fa589..2f59d7b 100644
+index a8ef298fb0d2a7da15a4b58e5088dcec7e88b426..740ae05c1eaf8104ad5c3c443b2e39429fc7fca5 100644
 --- a/test/cctest/test-field-type-tracking.cc
 +++ b/test/cctest/test-field-type-tracking.cc
-@@ -1038,7 +1038,8 @@
+@@ -1038,7 +1038,8 @@ namespace {
  // where "p2A" and "p2B" differ only in the attributes.
  //
  void TestReconfigureDataFieldAttribute_GeneralizeField(
@@ -80,7 +79,7 @@ index a9fa589..2f59d7b 100644
    Isolate* isolate = CcTest::i_isolate();
  
    Expectations expectations(isolate);
-@@ -1107,24 +1108,29 @@
+@@ -1107,24 +1108,29 @@ void TestReconfigureDataFieldAttribute_GeneralizeField(
    CHECK_NE(*map2, *new_map);
    CHECK(expectations2.Check(*map2));
  
@@ -122,7 +121,7 @@ index a9fa589..2f59d7b 100644
  }
  
  // This test ensures that trivial field generalization (from HeapObject to
-@@ -1240,22 +1246,22 @@
+@@ -1240,22 +1246,22 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToDouble) {
    TestReconfigureDataFieldAttribute_GeneralizeField(
        {PropertyConstness::kConst, Representation::Smi(), any_type},
        {PropertyConstness::kConst, Representation::Double(), any_type},
@@ -149,7 +148,7 @@ index a9fa589..2f59d7b 100644
  }
  
  TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToTagged) {
-@@ -1270,22 +1276,26 @@
+@@ -1270,22 +1276,26 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToTagged) {
    TestReconfigureDataFieldAttribute_GeneralizeField(
        {PropertyConstness::kConst, Representation::Smi(), any_type},
        {PropertyConstness::kConst, Representation::HeapObject(), value_type},
@@ -180,7 +179,7 @@ index a9fa589..2f59d7b 100644
  }
  
  TEST(ReconfigureDataFieldAttribute_GeneralizeDoubleFieldToTagged) {
-@@ -1300,22 +1310,26 @@
+@@ -1300,22 +1310,26 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeDoubleFieldToTagged) {
    TestReconfigureDataFieldAttribute_GeneralizeField(
        {PropertyConstness::kConst, Representation::Double(), any_type},
        {PropertyConstness::kConst, Representation::HeapObject(), value_type},
@@ -211,7 +210,7 @@ index a9fa589..2f59d7b 100644
  }
  
  TEST(ReconfigureDataFieldAttribute_GeneralizeHeapObjFieldToHeapObj) {
-@@ -1401,7 +1415,8 @@
+@@ -1401,7 +1415,8 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeHeapObjectFieldToTagged) {
    TestReconfigureDataFieldAttribute_GeneralizeField(
        {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
        {PropertyConstness::kMutable, Representation::Smi(), any_type},
@@ -223,7 +222,7 @@ index a9fa589..2f59d7b 100644
  // Checks that given |map| is deprecated and that it updates to given |new_map|
 diff --git a/test/mjsunit/regress/regress-1143772.js b/test/mjsunit/regress/regress-1143772.js
 new file mode 100644
-index 0000000..40bc494
+index 0000000000000000000000000000000000000000..40bc494d458afec816fd72e3fbb36b20a7942649
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-1143772.js
 @@ -0,0 +1,71 @@
