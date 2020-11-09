@@ -20,7 +20,7 @@ from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      s3put, get_electron_exec, get_out_dir, \
-                     SRC_DIR, ELECTRON_DIR
+                     SRC_DIR, ELECTRON_DIR, TS_NODE
 
 
 ELECTRON_REPO = 'electron/electron'
@@ -337,8 +337,8 @@ def upload_io_to_github(release, filename, filepath, version):
   print('Uploading %s to Github' % \
       (filename))
   script_path = os.path.join(
-    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.js')
-  execute(['node', script_path, filepath, filename, str(release['id']),
+    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
+  execute([TS_NODE, script_path, filepath, filename, str(release['id']),
           version])
 
 
