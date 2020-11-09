@@ -10,3 +10,4 @@ fix_build_deprecated_attirbute_for_older_msvc_versions.patch
 cherry-pick-6aa1e71fbd09.patch
 perf_make_getpositioninfoslow_faster.patch
 cherry-pick-6a4cd97d6691.patch
+cherry-pick-f44fcbf803ac.patch
