@@ -1463,3 +1463,56 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 });
+
+describe('navigator.clipboard', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const readClipboard: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
+    const clipboard = await readClipboard();
+    expect(clipboard).to.not.equal('Read permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-read') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const clipboard = await readClipboard();
+    expect(clipboard).to.equal('Read permission denied.');
+  });
+
+  it('returns clipboard contents when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-read') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const clipboard = await readClipboard();
+    expect(clipboard).to.not.equal('Read permission denied.');
+  });
+});
