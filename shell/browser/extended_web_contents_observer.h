@@ -25,6 +25,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   virtual void OnActivateContents() {}
   virtual void OnPageTitleUpdated(const base::string16& title,
                                   bool explicit_set) {}
+  virtual void OnDevToolsResized() {}
 
  protected:
   ~ExtendedWebContentsObserver() override {}
