@@ -178,8 +178,11 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   // See node/lib/internal/process/execution.js#L176-L180
 
   // Ensure that the async id stack is properly cleared so the async
-  // hook stack does not becomes corrupted.
-  env->async_hooks()->clear_async_id_stack();
+  // hook stack does not become corrupted.
+
+  if (env) {
+    env->async_hooks()->clear_async_id_stack();
+  }
 }
 
 // Initialize Node.js cli options to pass to Node.js
