@@ -55,9 +55,10 @@ an issue:
 
 ### Advanced steps
 
-* [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
-* [Performance Strategies](tutorial/performance.md)
-* [Security Strategies](tutorial/security.md)
+* Application Architecture
+  * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
+  * [Performance Strategies](tutorial/performance.md)
+  * [Security Strategies](tutorial/security.md)
 * [Accessibility](tutorial/accessibility.md)
   * [Manually Enabling Accessibility Features](tutorial/accessibility.md#manually-enabling-accessibility-features)
 * [Testing and Debugging](tutorial/application-debugging.md)
