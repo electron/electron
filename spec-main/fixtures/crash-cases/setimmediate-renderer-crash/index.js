@@ -10,7 +10,7 @@ app.whenReady().then(() => {
     }
   });
 
-  win.loadURL('data:text/html,<body>');
+  win.loadURL('about:blank');
 
   win.webContents.on('render-process-gone', () => {
     process.exit(1);
