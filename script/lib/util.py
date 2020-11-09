@@ -25,11 +25,13 @@ from lib.config import is_verbose_mode
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 )
+TS_NODE = os.path.join(ELECTRON_DIR, 'node_modules', '.bin', 'ts-node')
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 
 NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
   NPM += '.cmd'
+  TS_NODE += '.cmd'
 
 
 def tempdir(prefix=''):

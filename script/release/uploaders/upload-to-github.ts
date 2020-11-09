@@ -1,11 +1,11 @@
-if (!process.env.CI) require('dotenv-safe').load();
+import { Octokit } from '@octokit/rest';
+import * as fs from 'fs';
 
-const fs = require('fs');
-
-const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
 });
+
+if (!process.env.CI) require('dotenv-safe').load();
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId');
@@ -14,13 +14,20 @@ if (process.argv.length < 6) {
 
 const filePath = process.argv[2];
 const fileName = process.argv[3];
-const releaseId = process.argv[4];
+const releaseId = parseInt(process.argv[4], 10);
 const releaseVersion = process.argv[5];
 
-const getHeaders = (filePath, fileName) => {
+if (isNaN(releaseId)) {
+  throw new Error('Provided release ID was not a valid integer');
+}
+
+const getHeaders = (filePath: string, fileName: string) => {
   const extension = fileName.split('.').pop();
+  if (!extension) {
+    throw new Error(`Failed to get headers for extensionless file: ${fileName}`);
+  }
   const size = fs.statSync(filePath).size;
-  const options = {
+  const options: Record<string, string> = {
     json: 'text/json',
     zip: 'application/zip',
     txt: 'text/plain',
@@ -41,8 +48,11 @@ function uploadToGitHub () {
   octokit.repos.uploadReleaseAsset({
     url: uploadUrl,
     headers: getHeaders(filePath, fileName),
-    data: fs.createReadStream(filePath),
-    name: fileName
+    data: fs.createReadStream(filePath) as any,
+    name: fileName,
+    owner: 'electron',
+    repo: targetRepo,
+    release_id: releaseId
   }).then(() => {
     console.log(`Successfully uploaded ${fileName} to GitHub.`);
     process.exit();
