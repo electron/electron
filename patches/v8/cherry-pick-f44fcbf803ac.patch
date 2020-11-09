@@ -1,0 +1,96 @@
+From f44fcbf803aca41a4d51ba9614017ea14d03df47 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Thu, 22 Oct 2020 11:38:50 +0200
+Subject: [PATCH] Merged: [wasm][liftoff][ia32] Fix register allocation of CompareExchange
+
+The register that holds the {new_value} for the AtomicCompareExchange8U
+has to be a byte register on ia32. There was code to guarantee that, but
+after that code there was code that frees the {eax} register, and that
+code moved the {new_value} to a different register again. With this CL
+we first free {eax}, and then find a byte register for the {new_value}.
+
+R=​clemensb@chromium.org
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+(cherry picked from commit 70a389ac8778064e470a95412d40e17f97898142)
+
+Bug: chromium:1140549
+Change-Id: I1679f3f9ab26c5416ea251c7925366ff43336d85
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2491031
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#70721}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2504512
+Cr-Commit-Position: refs/branch-heads/8.6@{#38}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+---
+
+diff --git a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+index 82b5d90..70af522 100644
+--- a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
++++ b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+@@ -890,6 +890,16 @@
+     Register expected_reg = is_64_bit_op ? expected.low_gp() : expected.gp();
+     Register result_reg = expected_reg;
+ 
++    // The cmpxchg instruction uses eax to store the old value of the
++    // compare-exchange primitive. Therefore we have to spill the register and
++    // move any use to another register.
++    ClearRegister(eax, {&dst_addr, &value_reg},
++                  LiftoffRegList::ForRegs(dst_addr, value_reg, expected_reg));
++    if (expected_reg != eax) {
++      mov(eax, expected_reg);
++      expected_reg = eax;
++    }
++
+     bool is_byte_store = type.size() == 1;
+     LiftoffRegList pinned =
+         LiftoffRegList::ForRegs(dst_addr, value_reg, expected_reg);
+@@ -903,13 +913,6 @@
+       pinned.clear(LiftoffRegister(value_reg));
+     }
+ 
+-    // The cmpxchg instruction uses eax to store the old value of the
+-    // compare-exchange primitive. Therefore we have to spill the register and
+-    // move any use to another register.
+-    ClearRegister(eax, {&dst_addr, &value_reg}, pinned);
+-    if (expected_reg != eax) {
+-      mov(eax, expected_reg);
+-    }
+ 
+     Operand dst_op = Operand(dst_addr, offset_imm);
+ 
+diff --git a/test/mjsunit/regress/wasm/regress-1140549.js b/test/mjsunit/regress/wasm/regress-1140549.js
+new file mode 100644
+index 0000000..65191e1
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1140549.js
+@@ -0,0 +1,25 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-staging
++
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(16, 32, false, true);
++builder.addType(makeSig([], []));
++builder.addFunction(undefined, 0 /* sig */)
++  .addBodyWithEnd([
++// signature: v_v
++// body:
++kExprI32Const, 0x00,
++kExprI32Const, 0x00,
++kExprI32Const, 0x00,
++kAtomicPrefix, kExprI32AtomicCompareExchange8U, 0x00, 0xc3, 0x01,
++kExprDrop,
++kExprEnd,  // end @193
++]);
++builder.addExport('main', 0);
++const instance = builder.instantiate();
++print(instance.exports.main(1, 2, 3));
