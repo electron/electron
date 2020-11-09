@@ -11,5 +11,7 @@
 
   "src/electron/patches/freetype": "src/third_party/freetype/src",
   
-  "src/electron/patches/pdfium": "src/third_party/pdfium"
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+  
+  "src/electron/patches/angle": "src/third_party/angle"
 }
