@@ -1,7 +1,10 @@
-From 8c725f7b5bbfcfd5741c2bc722827487831311ec Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thibaud Michaud <thibaudm@chromium.org>
 Date: Thu, 15 Oct 2020 12:45:34 +0200
-Subject: [PATCH] Merged: [codegen] Skip invalid optimization in tail calls
+Subject: Merged: [codegen] Skip invalid optimization in tail calls
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Preparing for tail call is usually done by emitting the gap moves and
 then moving the stack pointer to its new position. An optimization
@@ -54,13 +57,12 @@ Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.6@{#42}
 Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
 Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
----
 
 diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
-index 6e740b1..a3b2f69 100644
+index 9dbd5fac333c557f8e7de9b63d18b68f94b817e7..0a2e37c5e67d6d2d512bb970ec38d9a25c2560c9 100644
 --- a/src/compiler/backend/code-generator.cc
 +++ b/src/compiler/backend/code-generator.cc
-@@ -613,8 +613,8 @@
+@@ -607,8 +607,8 @@ void CodeGenerator::GetPushCompatibleMoves(Instruction* instr,
          // then the full gap resolver must be used since optimization with
          // pushes don't participate in the parallel move and might clobber
          // values needed for the gap resolve.
@@ -73,7 +75,7 @@ index 6e740b1..a3b2f69 100644
          }
 diff --git a/test/mjsunit/regress/wasm/regress-1137608.js b/test/mjsunit/regress/wasm/regress-1137608.js
 new file mode 100644
-index 0000000..5011dce
+index 0000000000000000000000000000000000000000..5011dced2f70ffbe2b6096a4e1863f434c8898a8
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-1137608.js
 @@ -0,0 +1,46 @@
