@@ -1,0 +1,818 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
+Date: Tue, 27 Oct 2020 13:13:08 +0100
+Subject: Merged: [runtime] Fix sorted order of DescriptorArray entries
+
+Revision: 518d67ad652fc24b7eb03e48bb342f952d4ccf74
+
+BUG=chromium:1133527
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=verwaest@chromium.org
+
+Change-Id: I10831b27c5c10b9a967e47a5fd08f806ef5d306d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2502328
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.6@{#34}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
+index 3c23d6fc64ec99cd10d66ee34e590165d1531aae..980a11ee4e65ba54aba8c03949e7d28df7caa2f9 100644
+--- a/src/codegen/code-stub-assembler.cc
++++ b/src/codegen/code-stub-assembler.cc
+@@ -1905,12 +1905,13 @@ TNode<IntPtrT> CodeStubAssembler::LoadJSReceiverIdentityHash(
+   return var_hash.value();
+ }
+ 
+-TNode<Uint32T> CodeStubAssembler::LoadNameHashField(SloppyTNode<Name> name) {
+-  CSA_ASSERT(this, IsName(name));
+-  return LoadObjectField<Uint32T>(name, Name::kHashFieldOffset);
++TNode<Uint32T> CodeStubAssembler::LoadNameHashAssumeComputed(TNode<Name> name) {
++  TNode<Uint32T> hash_field = LoadNameHashField(name);
++  CSA_ASSERT(this, IsClearWord32(hash_field, Name::kHashNotComputedMask));
++  return Unsigned(Word32Shr(hash_field, Int32Constant(Name::kHashShift)));
+ }
+ 
+-TNode<Uint32T> CodeStubAssembler::LoadNameHash(SloppyTNode<Name> name,
++TNode<Uint32T> CodeStubAssembler::LoadNameHash(TNode<Name> name,
+                                                Label* if_hash_not_computed) {
+   TNode<Uint32T> hash_field = LoadNameHashField(name);
+   if (if_hash_not_computed != nullptr) {
+@@ -8296,7 +8297,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
+   TNode<Uint32T> limit =
+       Unsigned(Int32Sub(NumberOfEntries<Array>(array), Int32Constant(1)));
+   TVARIABLE(Uint32T, var_high, limit);
+-  TNode<Uint32T> hash = LoadNameHashField(unique_name);
++  TNode<Uint32T> hash = LoadNameHashAssumeComputed(unique_name);
+   CSA_ASSERT(this, Word32NotEqual(hash, Int32Constant(0)));
+ 
+   // Assume non-empty array.
+@@ -8314,7 +8315,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
+     TNode<Uint32T> sorted_key_index = GetSortedKeyIndex<Array>(array, mid);
+     TNode<Name> mid_name = GetKey<Array>(array, sorted_key_index);
+ 
+-    TNode<Uint32T> mid_hash = LoadNameHashField(mid_name);
++    TNode<Uint32T> mid_hash = LoadNameHashAssumeComputed(mid_name);
+ 
+     Label mid_greater(this), mid_less(this), merge(this);
+     Branch(Uint32GreaterThanOrEqual(mid_hash, hash), &mid_greater, &mid_less);
+@@ -8341,7 +8342,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
+     TNode<Uint32T> sort_index =
+         GetSortedKeyIndex<Array>(array, var_low.value());
+     TNode<Name> current_name = GetKey<Array>(array, sort_index);
+-    TNode<Uint32T> current_hash = LoadNameHashField(current_name);
++    TNode<Uint32T> current_hash = LoadNameHashAssumeComputed(current_name);
+     GotoIf(Word32NotEqual(current_hash, hash), if_not_found);
+     Label next(this);
+     GotoIf(TaggedNotEqual(current_name, unique_name), &next);
+diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
+index 2c838f3738295bf0ceee75f4a0329ebbcce6ea03..03caddda08e90b7cae5f84cefe2c2d1a2c329712 100644
+--- a/src/codegen/code-stub-assembler.h
++++ b/src/codegen/code-stub-assembler.h
+@@ -1212,13 +1212,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+   // Check if the map is set for slow properties.
+   TNode<BoolT> IsDictionaryMap(SloppyTNode<Map> map);
+ 
+-  // Load the hash field of a name as an uint32 value.
+-  TNode<Uint32T> LoadNameHashField(SloppyTNode<Name> name);
+-  // Load the hash value of a name as an uint32 value.
++  // Load the Name::hash() value of a name as an uint32 value.
+   // If {if_hash_not_computed} label is specified then it also checks if
+   // hash is actually computed.
+-  TNode<Uint32T> LoadNameHash(SloppyTNode<Name> name,
++  TNode<Uint32T> LoadNameHash(TNode<Name> name,
+                               Label* if_hash_not_computed = nullptr);
++  TNode<Uint32T> LoadNameHashAssumeComputed(TNode<Name> name);
+ 
+   // Load length field of a String object as Smi value.
+   TNode<Smi> LoadStringLengthAsSmi(TNode<String> string);
+diff --git a/src/diagnostics/objects-debug.cc b/src/diagnostics/objects-debug.cc
+index 104068c4491dd5a042cd6ea62767c3fdea55dd4f..353cfaddb5b01f0348bbe52a378842693ac83630 100644
+--- a/src/diagnostics/objects-debug.cc
++++ b/src/diagnostics/objects-debug.cc
+@@ -1709,12 +1709,13 @@ bool DescriptorArray::IsSortedNoDuplicates(int valid_entries) {
+   uint32_t current = 0;
+   for (int i = 0; i < number_of_descriptors(); i++) {
+     Name key = GetSortedKey(i);
++    CHECK(key.HasHashCode());
+     if (key == current_key) {
+       Print();
+       return false;
+     }
+     current_key = key;
+-    uint32_t hash = GetSortedKey(i).Hash();
++    uint32_t hash = key.hash();
+     if (hash < current) {
+       Print();
+       return false;
+@@ -1733,7 +1734,8 @@ bool TransitionArray::IsSortedNoDuplicates(int valid_entries) {
+ 
+   for (int i = 0; i < number_of_transitions(); i++) {
+     Name key = GetSortedKey(i);
+-    uint32_t hash = key.Hash();
++    CHECK(key.HasHashCode());
++    uint32_t hash = key.hash();
+     PropertyKind kind = kData;
+     PropertyAttributes attributes = NONE;
+     if (!TransitionsAccessor::IsSpecialTransition(key.GetReadOnlyRoots(),
+diff --git a/src/objects/descriptor-array-inl.h b/src/objects/descriptor-array-inl.h
+index cfbc4f7ec814659c46e92ac12d37aed338f944bc..228b73a6924515dbccc14fa305f37f350eea03d1 100644
+--- a/src/objects/descriptor-array-inl.h
++++ b/src/objects/descriptor-array-inl.h
+@@ -229,7 +229,7 @@ void DescriptorArray::Append(Descriptor* desc) {
+ 
+   for (insertion = descriptor_number; insertion > 0; --insertion) {
+     Name key = GetSortedKey(insertion - 1);
+-    if (key.Hash() <= hash) break;
++    if (key.hash() <= hash) break;
+     SetSortedKey(insertion, GetSortedKeyIndex(insertion - 1));
+   }
+ 
+diff --git a/src/objects/descriptor-array.h b/src/objects/descriptor-array.h
+index 0085a1d78dc698f6765b740549809c10032ee36c..9d2688c3cdca47b9df6acdc0dca5e83223c153ff 100644
+--- a/src/objects/descriptor-array.h
++++ b/src/objects/descriptor-array.h
+@@ -112,7 +112,7 @@ class DescriptorArray : public HeapObject {
+       int slack = 0);
+ 
+   // Sort the instance descriptors by the hash codes of their keys.
+-  void Sort();
++  V8_EXPORT_PRIVATE void Sort();
+ 
+   // Search the instance descriptors for given name.
+   V8_INLINE InternalIndex Search(Name name, int number_of_own_descriptors);
+diff --git a/src/objects/fixed-array-inl.h b/src/objects/fixed-array-inl.h
+index 4608f2ea21a019294059cec7565d273cde4eb075..68fb7cb3ee15f167279d068f1e03a2a98be0704b 100644
+--- a/src/objects/fixed-array-inl.h
++++ b/src/objects/fixed-array-inl.h
+@@ -219,7 +219,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
+   DCHECK(search_mode == ALL_ENTRIES || out_insertion_index == nullptr);
+   int low = 0;
+   int high = array->number_of_entries() - 1;
+-  uint32_t hash = name.hash_field();
++  uint32_t hash = name.hash();
+   int limit = high;
+ 
+   DCHECK(low <= high);
+@@ -227,7 +227,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
+   while (low != high) {
+     int mid = low + (high - low) / 2;
+     Name mid_name = array->GetSortedKey(mid);
+-    uint32_t mid_hash = mid_name.hash_field();
++    uint32_t mid_hash = mid_name.hash();
+ 
+     if (mid_hash >= hash) {
+       high = mid;
+@@ -239,7 +239,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
+   for (; low <= limit; ++low) {
+     int sort_index = array->GetSortedKeyIndex(low);
+     Name entry = array->GetKey(InternalIndex(sort_index));
+-    uint32_t current_hash = entry.hash_field();
++    uint32_t current_hash = entry.hash();
+     if (current_hash != hash) {
+       if (search_mode == ALL_ENTRIES && out_insertion_index != nullptr) {
+         *out_insertion_index = sort_index + (current_hash > hash ? 0 : 1);
+@@ -266,12 +266,12 @@ template <SearchMode search_mode, typename T>
+ int LinearSearch(T* array, Name name, int valid_entries,
+                  int* out_insertion_index) {
+   if (search_mode == ALL_ENTRIES && out_insertion_index != nullptr) {
+-    uint32_t hash = name.hash_field();
++    uint32_t hash = name.hash();
+     int len = array->number_of_entries();
+     for (int number = 0; number < len; number++) {
+       int sorted_index = array->GetSortedKeyIndex(number);
+       Name entry = array->GetKey(InternalIndex(sorted_index));
+-      uint32_t current_hash = entry.hash_field();
++      uint32_t current_hash = entry.hash();
+       if (current_hash > hash) {
+         *out_insertion_index = sorted_index;
+         return T::kNotFound;
+diff --git a/src/objects/name-inl.h b/src/objects/name-inl.h
+index 0735b4e506fbcb453d4e1a5a832225ca83ca1b96..ffcd287fd37454e3449b5064b4aa37196dadfdbd 100644
+--- a/src/objects/name-inl.h
++++ b/src/objects/name-inl.h
+@@ -94,6 +94,12 @@ uint32_t Name::Hash() {
+   return String::cast(*this).ComputeAndSetHash();
+ }
+ 
++uint32_t Name::hash() const {
++  uint32_t field = hash_field();
++  DCHECK(IsHashFieldComputed(field));
++  return field >> kHashShift;
++}
++
+ DEF_GETTER(Name, IsInterestingSymbol, bool) {
+   return IsSymbol(isolate) && Symbol::cast(*this).is_interesting_symbol();
+ }
+diff --git a/src/objects/name.h b/src/objects/name.h
+index b56a0cc33711752230ba51ee7ece0ed0fcc3cc6b..b76c724bf8b57784023efe9141fbb455900000ef 100644
+--- a/src/objects/name.h
++++ b/src/objects/name.h
+@@ -22,9 +22,15 @@ class Name : public TorqueGeneratedName<Name, PrimitiveHeapObject> {
+   // Tells whether the hash code has been computed.
+   inline bool HasHashCode();
+ 
+-  // Returns a hash value used for the property table
++  // Returns a hash value used for the property table. Ensures that the hash
++  // value is computed.
++  // TODO(ishell): rename to EnsureHash().
+   inline uint32_t Hash();
+ 
++  // Returns a hash value used for the property table (same as Hash()), assumes
++  // the hash is already computed.
++  inline uint32_t hash() const;
++
+   // Equality operations.
+   inline bool Equals(Name other);
+   inline static bool Equals(Isolate* isolate, Handle<Name> one,
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 8a446bb109fd248a42a750bcb2f6747c46833cec..021e36c96c1302aa355cf13ccb7a54abf1f8f385 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4252,16 +4252,16 @@ void DescriptorArray::Sort() {
+   // Reset sorting since the descriptor array might contain invalid pointers.
+   for (int i = 0; i < len; ++i) SetSortedKey(i, i);
+   // Bottom-up max-heap construction.
+-  // Index of the last node with children
++  // Index of the last node with children.
+   const int max_parent_index = (len / 2) - 1;
+   for (int i = max_parent_index; i >= 0; --i) {
+     int parent_index = i;
+-    const uint32_t parent_hash = GetSortedKey(i).Hash();
++    const uint32_t parent_hash = GetSortedKey(i).hash();
+     while (parent_index <= max_parent_index) {
+       int child_index = 2 * parent_index + 1;
+-      uint32_t child_hash = GetSortedKey(child_index).Hash();
++      uint32_t child_hash = GetSortedKey(child_index).hash();
+       if (child_index + 1 < len) {
+-        uint32_t right_child_hash = GetSortedKey(child_index + 1).Hash();
++        uint32_t right_child_hash = GetSortedKey(child_index + 1).hash();
+         if (right_child_hash > child_hash) {
+           child_index++;
+           child_hash = right_child_hash;
+@@ -4280,13 +4280,13 @@ void DescriptorArray::Sort() {
+     SwapSortedKeys(0, i);
+     // Shift down the new top element.
+     int parent_index = 0;
+-    const uint32_t parent_hash = GetSortedKey(parent_index).Hash();
++    const uint32_t parent_hash = GetSortedKey(parent_index).hash();
+     const int max_parent_index = (i / 2) - 1;
+     while (parent_index <= max_parent_index) {
+       int child_index = parent_index * 2 + 1;
+-      uint32_t child_hash = GetSortedKey(child_index).Hash();
++      uint32_t child_hash = GetSortedKey(child_index).hash();
+       if (child_index + 1 < i) {
+-        uint32_t right_child_hash = GetSortedKey(child_index + 1).Hash();
++        uint32_t right_child_hash = GetSortedKey(child_index + 1).hash();
+         if (right_child_hash > child_hash) {
+           child_index++;
+           child_hash = right_child_hash;
+diff --git a/src/objects/transitions-inl.h b/src/objects/transitions-inl.h
+index 5694d66d948325bb139b67a3a34c22759224d139..09157b7f5d0051b80e60de51f358d4fd5bde0b99 100644
+--- a/src/objects/transitions-inl.h
++++ b/src/objects/transitions-inl.h
+@@ -169,12 +169,20 @@ int TransitionArray::SearchNameForTesting(Name name, int* out_insertion_index) {
+   return SearchName(name, out_insertion_index);
+ }
+ 
++Map TransitionArray::SearchAndGetTargetForTesting(
++    PropertyKind kind, Name name, PropertyAttributes attributes) {
++  return SearchAndGetTarget(kind, name, attributes);
++}
++
+ int TransitionArray::SearchSpecial(Symbol symbol, int* out_insertion_index) {
+   return SearchName(symbol, out_insertion_index);
+ }
+ 
+ int TransitionArray::SearchName(Name name, int* out_insertion_index) {
+   DCHECK(name.IsUniqueName());
++  // The name is taken from DescriptorArray, so it must already has a computed
++  // hash.
++  DCHECK(name.HasHashCode());
+   return internal::Search<ALL_ENTRIES>(this, name, number_of_entries(),
+                                        out_insertion_index);
+ }
+diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
+index e0ba40ce7d023059c6e63710a0c91c032d6c7187..e240878b33d767790b965d66267b8ab9fab0c8d6 100644
+--- a/src/objects/transitions.cc
++++ b/src/objects/transitions.cc
+@@ -619,8 +619,8 @@ void TransitionArray::Sort() {
+         temp_kind = details.kind();
+         temp_attributes = details.attributes();
+       }
+-      int cmp = CompareKeys(temp_key, temp_key.Hash(), temp_kind,
+-                            temp_attributes, key, key.Hash(), kind, attributes);
++      int cmp = CompareKeys(temp_key, temp_key.hash(), temp_kind,
++                            temp_attributes, key, key.hash(), kind, attributes);
+       if (cmp > 0) {
+         SetKey(j + 1, temp_key);
+         SetRawTarget(j + 1, temp_target);
+diff --git a/src/objects/transitions.h b/src/objects/transitions.h
+index 5a7db13e516cf9be9314cf99f274145d21090f64..055bf41c9144197288bd7d9eb0275adb7a667ba7 100644
+--- a/src/objects/transitions.h
++++ b/src/objects/transitions.h
+@@ -143,6 +143,8 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+     return encoding_;
+   }
+ 
++  inline TransitionArray transitions();
++
+  private:
+   friend class MarkCompactCollector;  // For HasSimpleTransitionTo.
+   friend class TransitionArray;
+@@ -175,8 +177,6 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   void TraverseTransitionTreeInternal(TraverseCallback callback, void* data,
+                                       DisallowHeapAllocation* no_gc);
+ 
+-  inline TransitionArray transitions();
+-
+   Isolate* isolate_;
+   Handle<Map> map_handle_;
+   Map map_;
+@@ -231,7 +231,7 @@ class TransitionArray : public WeakFixedArray {
+   V8_EXPORT_PRIVATE bool IsSortedNoDuplicates(int valid_entries = -1);
+ #endif
+ 
+-  void Sort();
++  V8_EXPORT_PRIVATE void Sort();
+ 
+   void PrintInternal(std::ostream& os);
+ 
+@@ -260,6 +260,9 @@ class TransitionArray : public WeakFixedArray {
+   inline int SearchNameForTesting(Name name,
+                                   int* out_insertion_index = nullptr);
+ 
++  inline Map SearchAndGetTargetForTesting(PropertyKind kind, Name name,
++                                          PropertyAttributes attributes);
++
+  private:
+   friend class Factory;
+   friend class MarkCompactCollector;
+@@ -296,8 +299,8 @@ class TransitionArray : public WeakFixedArray {
+   int Search(PropertyKind kind, Name name, PropertyAttributes attributes,
+              int* out_insertion_index = nullptr);
+ 
+-  Map SearchAndGetTarget(PropertyKind kind, Name name,
+-                         PropertyAttributes attributes);
++  V8_EXPORT_PRIVATE Map SearchAndGetTarget(PropertyKind kind, Name name,
++                                           PropertyAttributes attributes);
+ 
+   // Search a non-property transition (like elements kind, observe or frozen
+   // transitions).
+diff --git a/test/cctest/BUILD.gn b/test/cctest/BUILD.gn
+index ce83dc36daa7a4d4819eaf71d9ce77c2dfad4038..86a5287079381f11e45beef2693a70a889f67837 100644
+--- a/test/cctest/BUILD.gn
++++ b/test/cctest/BUILD.gn
+@@ -203,6 +203,7 @@ v8_source_set("cctest_sources") {
+     "test-debug.cc",
+     "test-decls.cc",
+     "test-deoptimization.cc",
++    "test-descriptor-array.cc",
+     "test-dictionary.cc",
+     "test-diy-fp.cc",
+     "test-double.cc",
+diff --git a/test/cctest/test-descriptor-array.cc b/test/cctest/test-descriptor-array.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..7abd36ec6c84959c3da59b8e78d9e4a0ee291632
+--- /dev/null
++++ b/test/cctest/test-descriptor-array.cc
+@@ -0,0 +1,424 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "src/base/logging.h"
++#include "src/codegen/code-stub-assembler.h"
++#include "src/common/globals.h"
++#include "src/objects/descriptor-array.h"
++#include "src/objects/property-details.h"
++#include "src/objects/string-inl.h"
++#include "src/objects/transitions-inl.h"
++#include "test/cctest/cctest.h"
++#include "test/cctest/compiler/code-assembler-tester.h"
++#include "test/cctest/compiler/function-tester.h"
++#include "test/cctest/test-transitions.h"
++
++namespace v8 {
++namespace internal {
++
++namespace {
++
++using Label = compiler::CodeAssemblerLabel;
++template <class T>
++using TVariable = compiler::TypedCodeAssemblerVariable<T>;
++
++Handle<Name> NewNameWithHash(Isolate* isolate, const char* str, uint32_t hash,
++                             bool is_integer) {
++  uint32_t hash_field = hash << Name::kHashShift;
++
++  static_assert(Name::kNofHashBitFields == 2, "This test needs updating");
++  static_assert(Name::kHashNotComputedMask == 1, "This test needs updating");
++  static_assert(Name::kIsNotIntegerIndexMask == 2, "This test needs updating");
++
++  if (!is_integer) {
++    hash_field |= Name::kIsNotIntegerIndexMask;
++  }
++  Handle<Name> name = isolate->factory()->NewOneByteInternalizedString(
++      OneByteVector(str), hash_field);
++  name->set_hash_field(hash_field);
++  CHECK(name->IsUniqueName());
++  return name;
++}
++
++template <typename... Args>
++MaybeHandle<Object> Call(Isolate* isolate, Handle<JSFunction> function,
++                         Args... args) {
++  const int nof_args = sizeof...(Args);
++  Handle<Object> call_args[] = {args...};
++  Handle<Object> receiver = isolate->factory()->undefined_value();
++  return Execution::Call(isolate, function, receiver, nof_args, call_args);
++}
++
++void CheckDescriptorArrayLookups(Isolate* isolate, Handle<Map> map,
++                                 std::vector<Handle<Name>>& names,
++                                 Handle<JSFunction> csa_lookup) {
++  // Test C++ implementation.
++  {
++    DisallowHeapAllocation no_gc;
++    DescriptorArray descriptors = map->instance_descriptors();
++    DCHECK(descriptors.IsSortedNoDuplicates());
++    int nof_descriptors = descriptors.number_of_descriptors();
++
++    for (size_t i = 0; i < names.size(); ++i) {
++      Name name = *names[i];
++      InternalIndex index = descriptors.Search(name, nof_descriptors, false);
++      CHECK(index.is_found());
++      CHECK_EQ(i, index.as_uint32());
++    }
++  }
++
++  // Test CSA implementation.
++  if (!FLAG_jitless) {
++    for (size_t i = 0; i < names.size(); ++i) {
++      Handle<Object> name_index =
++          Call(isolate, csa_lookup, map, names[i]).ToHandleChecked();
++      CHECK(name_index->IsSmi());
++      CHECK_EQ(DescriptorArray::ToKeyIndex(static_cast<int>(i)),
++               Smi::ToInt(*name_index));
++    }
++  }
++}
++
++void CheckTransitionArrayLookups(Isolate* isolate,
++                                 Handle<TransitionArray> transitions,
++                                 std::vector<Handle<Map>>& maps,
++                                 Handle<JSFunction> csa_lookup) {
++  // Test C++ implementation.
++  {
++    DisallowHeapAllocation no_gc;
++    DCHECK(transitions->IsSortedNoDuplicates());
++
++    for (size_t i = 0; i < maps.size(); ++i) {
++      Map expected_map = *maps[i];
++      Name name =
++          expected_map.instance_descriptors().GetKey(expected_map.LastAdded());
++
++      Map map = transitions->SearchAndGetTargetForTesting(PropertyKind::kData,
++                                                          name, NONE);
++      CHECK(!map.is_null());
++      CHECK_EQ(expected_map, map);
++    }
++  }
++
++  // Test CSA implementation.
++  if (!FLAG_jitless) {
++    for (size_t i = 0; i < maps.size(); ++i) {
++      Handle<Map> expected_map = maps[i];
++      Handle<Name> name(expected_map->instance_descriptors().GetKey(
++                            expected_map->LastAdded()),
++                        isolate);
++
++      Handle<Object> transition_map =
++          Call(isolate, csa_lookup, transitions, name).ToHandleChecked();
++      CHECK(transition_map->IsMap());
++      CHECK_EQ(*expected_map, *transition_map);
++    }
++  }
++}
++
++// Creates function with (Map, Name) arguments. Returns Smi with the index of
++// the name value of the found descriptor (DescriptorArray::ToKeyIndex())
++// or null otherwise.
++Handle<JSFunction> CreateCsaDescriptorArrayLookup(Isolate* isolate) {
++  // We are not allowed to generate code in jitless mode.
++  if (FLAG_jitless) return Handle<JSFunction>();
++
++  // Preallocate handle for the result in the current handle scope.
++  Handle<JSFunction> result_function(JSFunction{}, isolate);
++
++  const int kNumParams = 2;
++
++  compiler::CodeAssemblerTester asm_tester(
++      isolate, kNumParams + 1,  // +1 to include receiver.
++      CodeKind::STUB);
++  {
++    CodeStubAssembler m(asm_tester.state());
++
++    TNode<Map> map = m.CAST(m.Parameter(1));
++    TNode<Name> unique_name = m.CAST(m.Parameter(2));
++
++    Label passed(&m), failed(&m);
++    Label if_found(&m), if_not_found(&m);
++    TVariable<IntPtrT> var_name_index(&m);
++
++    TNode<Uint32T> bit_field3 = m.LoadMapBitField3(map);
++    TNode<DescriptorArray> descriptors = m.LoadMapDescriptors(map);
++
++    m.DescriptorLookup(unique_name, descriptors, bit_field3, &if_found,
++                       &var_name_index, &if_not_found);
++
++    m.BIND(&if_found);
++    m.Return(m.SmiTag(var_name_index.value()));
++
++    m.BIND(&if_not_found);
++    m.Return(m.NullConstant());
++  }
++
++  {
++    compiler::FunctionTester ft(asm_tester.GenerateCode(), kNumParams);
++    // Copy function value to a handle created in the outer handle scope.
++    *(result_function.location()) = ft.function->ptr();
++  }
++
++  return result_function;
++}
++
++// Creates function with (TransitionArray, Name) arguments. Returns transition
++// map if transition is found or null otherwise.
++Handle<JSFunction> CreateCsaTransitionArrayLookup(Isolate* isolate) {
++  // We are not allowed to generate code in jitless mode.
++  if (FLAG_jitless) return Handle<JSFunction>();
++
++  // Preallocate handle for the result in the current handle scope.
++  Handle<JSFunction> result_function(JSFunction{}, isolate);
++
++  const int kNumParams = 2;
++  compiler::CodeAssemblerTester asm_tester(
++      isolate, kNumParams + 1,  // +1 to include receiver.
++      CodeKind::STUB);
++  {
++    CodeStubAssembler m(asm_tester.state());
++
++    TNode<TransitionArray> transitions = m.CAST(m.Parameter(1));
++    TNode<Name> unique_name = m.CAST(m.Parameter(2));
++
++    Label passed(&m), failed(&m);
++    Label if_found(&m), if_not_found(&m);
++    TVariable<IntPtrT> var_name_index(&m);
++
++    m.TransitionLookup(unique_name, transitions, &if_found, &var_name_index,
++                       &if_not_found);
++
++    m.BIND(&if_found);
++    {
++      STATIC_ASSERT(kData == 0);
++      STATIC_ASSERT(NONE == 0);
++      const int kKeyToTargetOffset = (TransitionArray::kEntryTargetIndex -
++                                      TransitionArray::kEntryKeyIndex) *
++                                     kTaggedSize;
++      TNode<Map> transition_map = m.CAST(m.GetHeapObjectAssumeWeak(
++          m.LoadArrayElement(transitions, WeakFixedArray::kHeaderSize,
++                             var_name_index.value(), kKeyToTargetOffset)));
++      m.Return(transition_map);
++    }
++
++    m.BIND(&if_not_found);
++    m.Return(m.NullConstant());
++  }
++
++  {
++    compiler::FunctionTester ft(asm_tester.GenerateCode(), kNumParams);
++    // Copy function value to a handle created in the outer handle scope.
++    *(result_function.location()) = ft.function->ptr();
++  }
++
++  return result_function;
++}
++
++}  // namespace
++
++TEST(DescriptorArrayHashCollisionMassive) {
++  CcTest::InitializeVM();
++  Isolate* isolate = CcTest::i_isolate();
++  HandleScope handle_scope(isolate);
++
++  static_assert(Name::kNofHashBitFields == 2, "This test needs updating");
++
++  std::vector<Handle<Name>> names;
++
++  // Use the same hash value for all names.
++  uint32_t hash =
++      static_cast<uint32_t>(isolate->GenerateIdentityHash(Name::kHashBitMask));
++
++  for (int i = 0; i < kMaxNumberOfDescriptors / 2; ++i) {
++    // Add pairs of names having the same base hash value but having different
++    // values of is_integer bit.
++    bool first_is_integer = (i & 1) != 0;
++    bool second_is_integer = (i & 2) != 0;
++
++    names.push_back(NewNameWithHash(isolate, "a", hash, first_is_integer));
++    names.push_back(NewNameWithHash(isolate, "b", hash, second_is_integer));
++  }
++
++  // Create descriptor array with the created names by appending fields to some
++  // map. DescriptorArray marking relies on the fact that it's attached to an
++  // owning map.
++  Handle<Map> map = Map::Create(isolate, 0);
++
++  Handle<FieldType> any_type = FieldType::Any(isolate);
++
++  for (size_t i = 0; i < names.size(); ++i) {
++    map = Map::CopyWithField(isolate, map, names[i], any_type, NONE,
++                             PropertyConstness::kMutable,
++                             Representation::Tagged(), OMIT_TRANSITION)
++              .ToHandleChecked();
++  }
++
++  Handle<JSFunction> csa_lookup = CreateCsaDescriptorArrayLookup(isolate);
++
++  CheckDescriptorArrayLookups(isolate, map, names, csa_lookup);
++
++  // Sort descriptor array and check it again.
++  map->instance_descriptors().Sort();
++  CheckDescriptorArrayLookups(isolate, map, names, csa_lookup);
++}
++
++TEST(DescriptorArrayHashCollision) {
++  CcTest::InitializeVM();
++  Isolate* isolate = CcTest::i_isolate();
++  HandleScope handle_scope(isolate);
++
++  static_assert(Name::kNofHashBitFields == 2, "This test needs updating");
++
++  std::vector<Handle<Name>> names;
++  uint32_t hash = 0;
++
++  for (int i = 0; i < kMaxNumberOfDescriptors / 2; ++i) {
++    if (i % 2 == 0) {
++      // Change hash value for every pair of names.
++      hash = static_cast<uint32_t>(
++          isolate->GenerateIdentityHash(Name::kHashBitMask));
++    }
++
++    // Add pairs of names having the same base hash value but having different
++    // values of is_integer bit.
++    bool first_is_integer = (i & 1) != 0;
++    bool second_is_integer = (i & 2) != 0;
++
++    names.push_back(NewNameWithHash(isolate, "a", hash, first_is_integer));
++    names.push_back(NewNameWithHash(isolate, "b", hash, second_is_integer));
++  }
++
++  // Create descriptor array with the created names by appending fields to some
++  // map. DescriptorArray marking relies on the fact that it's attached to an
++  // owning map.
++  Handle<Map> map = Map::Create(isolate, 0);
++
++  Handle<FieldType> any_type = FieldType::Any(isolate);
++
++  for (size_t i = 0; i < names.size(); ++i) {
++    map = Map::CopyWithField(isolate, map, names[i], any_type, NONE,
++                             PropertyConstness::kMutable,
++                             Representation::Tagged(), OMIT_TRANSITION)
++              .ToHandleChecked();
++  }
++
++  Handle<JSFunction> csa_lookup = CreateCsaDescriptorArrayLookup(isolate);
++
++  CheckDescriptorArrayLookups(isolate, map, names, csa_lookup);
++
++  // Sort descriptor array and check it again.
++  map->instance_descriptors().Sort();
++  CheckDescriptorArrayLookups(isolate, map, names, csa_lookup);
++}
++
++TEST(TransitionArrayHashCollisionMassive) {
++  CcTest::InitializeVM();
++  Isolate* isolate = CcTest::i_isolate();
++  HandleScope handle_scope(isolate);
++
++  static_assert(Name::kNofHashBitFields == 2, "This test needs updating");
++
++  std::vector<Handle<Name>> names;
++
++  // Use the same hash value for all names.
++  uint32_t hash =
++      static_cast<uint32_t>(isolate->GenerateIdentityHash(Name::kHashBitMask));
++
++  for (int i = 0; i < TransitionsAccessor::kMaxNumberOfTransitions / 2; ++i) {
++    // Add pairs of names having the same base hash value but having different
++    // values of is_integer bit.
++    bool first_is_integer = (i & 1) != 0;
++    bool second_is_integer = (i & 2) != 0;
++
++    names.push_back(NewNameWithHash(isolate, "a", hash, first_is_integer));
++    names.push_back(NewNameWithHash(isolate, "b", hash, second_is_integer));
++  }
++
++  // Create transitions for each name.
++  Handle<Map> root_map = Map::Create(isolate, 0);
++
++  std::vector<Handle<Map>> maps;
++
++  Handle<FieldType> any_type = FieldType::Any(isolate);
++
++  for (size_t i = 0; i < names.size(); ++i) {
++    Handle<Map> map =
++        Map::CopyWithField(isolate, root_map, names[i], any_type, NONE,
++                           PropertyConstness::kMutable,
++                           Representation::Tagged(), INSERT_TRANSITION)
++            .ToHandleChecked();
++    maps.push_back(map);
++  }
++
++  Handle<JSFunction> csa_lookup = CreateCsaTransitionArrayLookup(isolate);
++
++  Handle<TransitionArray> transition_array(
++      TestTransitionsAccessor(isolate, root_map).transitions(), isolate);
++
++  CheckTransitionArrayLookups(isolate, transition_array, maps, csa_lookup);
++
++  // Sort transition array and check it again.
++  transition_array->Sort();
++  CheckTransitionArrayLookups(isolate, transition_array, maps, csa_lookup);
++}
++
++TEST(TransitionArrayHashCollision) {
++  CcTest::InitializeVM();
++  Isolate* isolate = CcTest::i_isolate();
++  HandleScope handle_scope(isolate);
++
++  static_assert(Name::kNofHashBitFields == 2, "This test needs updating");
++
++  std::vector<Handle<Name>> names;
++
++  // Use the same hash value for all names.
++  uint32_t hash =
++      static_cast<uint32_t>(isolate->GenerateIdentityHash(Name::kHashBitMask));
++
++  for (int i = 0; i < TransitionsAccessor::kMaxNumberOfTransitions / 2; ++i) {
++    if (i % 2 == 0) {
++      // Change hash value for every pair of names.
++      hash = static_cast<uint32_t>(
++          isolate->GenerateIdentityHash(Name::kHashBitMask));
++    }
++    // Add pairs of names having the same base hash value but having different
++    // values of is_integer bit.
++    bool first_is_integer = (i & 1) != 0;
++    bool second_is_integer = (i & 2) != 0;
++
++    names.push_back(NewNameWithHash(isolate, "a", hash, first_is_integer));
++    names.push_back(NewNameWithHash(isolate, "b", hash, second_is_integer));
++  }
++
++  // Create transitions for each name.
++  Handle<Map> root_map = Map::Create(isolate, 0);
++
++  std::vector<Handle<Map>> maps;
++
++  Handle<FieldType> any_type = FieldType::Any(isolate);
++
++  for (size_t i = 0; i < names.size(); ++i) {
++    Handle<Map> map =
++        Map::CopyWithField(isolate, root_map, names[i], any_type, NONE,
++                           PropertyConstness::kMutable,
++                           Representation::Tagged(), INSERT_TRANSITION)
++            .ToHandleChecked();
++    maps.push_back(map);
++  }
++
++  Handle<JSFunction> csa_lookup = CreateCsaTransitionArrayLookup(isolate);
++
++  Handle<TransitionArray> transition_array(
++      TestTransitionsAccessor(isolate, root_map).transitions(), isolate);
++
++  CheckTransitionArrayLookups(isolate, transition_array, maps, csa_lookup);
++
++  // Sort transition array and check it again.
++  transition_array->Sort();
++  CheckTransitionArrayLookups(isolate, transition_array, maps, csa_lookup);
++}
++
++}  // namespace internal
++}  // namespace v8
+diff --git a/test/cctest/test-transitions.h b/test/cctest/test-transitions.h
+index 724eb3d3c544b5e9535e7a1b14d95eccec34f4cc..66bbbfa76dd7c2aa4c84363a69705d2564fee8a6 100644
+--- a/test/cctest/test-transitions.h
++++ b/test/cctest/test-transitions.h
+@@ -24,6 +24,8 @@ class TestTransitionsAccessor : public TransitionsAccessor {
+   bool IsFullTransitionArrayEncoding() {
+     return encoding() == kFullTransitionArray;
+   }
++
++  TransitionArray transitions() { return TransitionsAccessor::transitions(); }
+ };
+ 
+ }  // namespace internal
