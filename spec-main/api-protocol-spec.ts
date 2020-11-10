@@ -529,6 +529,15 @@ describe('protocol module', () => {
       expect(r.data).to.equal(text);
     });
 
+    it('can asynchronously continue request unhandled', async () => {
+      const port = await createServer();
+      interceptStringProtocol('http', (request, callback, next) => {
+        setTimeout(next, 500);
+      });
+      const r = await ajax(`http://127.0.0.1:${port}`);
+      expect(r.data).to.equal(text);
+    });
+
     it('does not crash when next and callback are both called, in either order', async () => {
       interceptStringProtocol('http', (request, callback, next) => {
         callback(text);
