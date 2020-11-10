@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 20 Oct 2020 09:45:23 -0400
+Subject: Fix missing validation cache update on VAO binding.
+
+Bug: chromium:1139398
+Change-Id: I85a0d7a72bc2c97b07ebc5f86effd8e36aefd544
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2485581
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index c2d3868ff04af0813d496432c0f34b4f4a134fda..a6fa42c33a36a3e83f1bf959cbb566c6160e551e 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -8666,6 +8666,7 @@ void StateCache::onVertexArrayBindingChange(Context *context)
+     updateActiveAttribsMask(context);
+     updateVertexElementLimits(context);
+     updateBasicDrawStatesError();
++    updateBasicDrawElementsError();
+ }
+ 
+ void StateCache::onProgramExecutableChange(Context *context)
+diff --git a/src/libANGLE/Context.h b/src/libANGLE/Context.h
+index 10fa566d0040b2abe8d7193d668198bc2e461e38..8f33d1db627ccadb8f4bb8755bb43713365a6c6d 100644
+--- a/src/libANGLE/Context.h
++++ b/src/libANGLE/Context.h
+@@ -203,6 +203,7 @@ class StateCache final : angle::NonCopyable
+     // 2. onVertexArrayBufferStateChange.
+     // 3. onBufferBindingChange.
+     // 4. onVertexArrayStateChange.
++    // 5. onVertexArrayBindingStateChange.
+     intptr_t getBasicDrawElementsError(const Context *context) const
+     {
+         if (mCachedBasicDrawElementsError != kInvalidPointer)
+diff --git a/src/tests/gl_tests/StateChangeTest.cpp b/src/tests/gl_tests/StateChangeTest.cpp
+index 7356edc230e0f067e47023d952cb18f41b154ada..1c886e9c66caaf7508867bf06c94b8910d5fd736 100644
+--- a/src/tests/gl_tests/StateChangeTest.cpp
++++ b/src/tests/gl_tests/StateChangeTest.cpp
+@@ -5206,6 +5206,25 @@ TEST_P(RobustBufferAccessWebGL2ValidationStateChangeTest, BindZeroSizeBufferThen
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Tests DrawElements with an empty buffer using a VAO.
++TEST_P(WebGL2ValidationStateChangeTest, DrawElementsEmptyVertexArray)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    glUseProgram(program);
++
++    // Draw with empty buffer. Out of range but valid.
++    GLBuffer buffer;
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
++    glDrawElements(GL_TRIANGLES, 0, GL_UNSIGNED_SHORT, reinterpret_cast<const GLvoid *>(0x1000));
++
++    // Switch VAO. No buffer bound, should be an error.
++    GLVertexArray vao;
++    glBindVertexArray(vao);
++    glDrawElements(GL_LINE_STRIP, 0x1000, GL_UNSIGNED_SHORT,
++                   reinterpret_cast<const GLvoid *>(0x1000));
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++}
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2(StateChangeTest);
