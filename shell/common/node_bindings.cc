@@ -135,6 +135,23 @@ bool IsPackagedApp() {
 #endif
 }
 
+void ErrorMessageListener(v8::Local<v8::Message> message,
+                          v8::Local<v8::Value> data) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+
+  // TODO(codebytere): properly emit the after() hooks now
+  // that the exception has been handled.
+  // See node/lib/internal/process/execution.js#L176-L180
+
+  // Ensure that the async id stack is properly cleared so the async
+  // hook stack does not become corrupted.
+
+  if (env) {
+    env->async_hooks()->clear_async_id_stack();
+  }
+}
+
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
@@ -438,6 +455,12 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
     context->GetIsolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
+
+    // Isolate message listeners are additive (you can add multiple), so instead
+    // we add an extra one here to ensure that the async hook stack is properly
+    // cleared when errors are thrown.
+    context->GetIsolate()->AddMessageListenerWithErrorLevel(
+        ErrorMessageListener, v8::Isolate::kMessageError);
   }
 
   // This needs to be called before the inspector is initialized.
