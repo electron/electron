@@ -1,0 +1,78 @@
+From bbb64b5c69168b190e75ff7d1a77b6af6612a452 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Sat, 07 Nov 2020 19:07:34 +0000
+Subject: [PATCH] Prevent UB if a WeakPtr to an already-destroyed object is dereferenced.
+
+If a WeakPtr references an already-destroyed object, operator-> and
+operator* end up simply dereferencing nullptr. However, dereferencing
+nullptr is undefined behavior and can be optimized in surprising ways
+by compilers. To prevent this from happening, add a defence of last
+resort and CHECK that the WeakPtr is still valid.
+
+(cherry picked from commit 0b308a0e37b9d14a335c3b487511b7117c98d74b)
+
+Bug: 817982
+Change-Id: Ib3a025c18fbd9d5db88770fced2063135086847b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2463857
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Wez <wez@chromium.org>
+Reviewed-by: Jan Wilken Dörrie <jdoerrie@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#816701}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2524521
+Reviewed-by: Adrian Taylor <adetaylor@chromium.org>
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Commit-Queue: Adrian Taylor <adetaylor@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1410}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/base/memory/weak_ptr.h b/base/memory/weak_ptr.h
+index d977a0da..50e0b34 100644
+--- a/base/memory/weak_ptr.h
++++ b/base/memory/weak_ptr.h
+@@ -248,11 +248,11 @@
+   }
+ 
+   T& operator*() const {
+-    DCHECK(get() != nullptr);
++    CHECK(ref_.IsValid());
+     return *get();
+   }
+   T* operator->() const {
+-    DCHECK(get() != nullptr);
++    CHECK(ref_.IsValid());
+     return get();
+   }
+ 
+diff --git a/base/memory/weak_ptr_unittest.cc b/base/memory/weak_ptr_unittest.cc
+index 6b1e9bf..6425a88 100644
+--- a/base/memory/weak_ptr_unittest.cc
++++ b/base/memory/weak_ptr_unittest.cc
+@@ -798,4 +798,26 @@
+   ASSERT_DCHECK_DEATH(arrow.target.get());
+ }
+ 
++TEST(WeakPtrDeathTest, ArrowOperatorChecksOnBadDereference) {
++  // The default style "fast" does not support multi-threaded tests
++  // (introduces deadlock on Linux).
++  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
++
++  auto target = std::make_unique<Target>();
++  WeakPtr<Target> weak = target->AsWeakPtr();
++  target.reset();
++  EXPECT_CHECK_DEATH(weak->AsWeakPtr());
++}
++
++TEST(WeakPtrDeathTest, StarOperatorChecksOnBadDereference) {
++  // The default style "fast" does not support multi-threaded tests
++  // (introduces deadlock on Linux).
++  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
++
++  auto target = std::make_unique<Target>();
++  WeakPtr<Target> weak = target->AsWeakPtr();
++  target.reset();
++  EXPECT_CHECK_DEATH((*weak).AsWeakPtr());
++}
++
+ }  // namespace base
