@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Avi Drissman <avi@chromium.org>
+Date: Sat, 25 Jul 2020 17:38:19 +0000
+Subject: Make macOS OS version numbers consistent
+
+The "IsOS/IsAtLeastOS/IsAtMostOS" functions are driven from the Darwin
+version number, which is always accurate. Adjust the
+SysInfo::OperatingSystemVersionNumbers() function to return accurate
+version numbers (or the best we can deduce) so that all version
+numbers returned by helper functions are accurate and consistent.
+
+Bug: 1101439
+Bug: 1108832
+Change-Id: I2ca92478d76bf572cc55875cba443f4978482d10
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2315490
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#791491}
+
+Fixes Electron Issue #26419 https://github.com/electron/electron/issues/26419
+
+diff --git a/base/system/sys_info_mac.mm b/base/system/sys_info_mac.mm
+index c6c772cf6982151eff6e461a4cb84af6d7186bb4..dc47fa306236f4aebf94facf21db823e2a2b65c8 100644
+--- a/base/system/sys_info_mac.mm
++++ b/base/system/sys_info_mac.mm
+@@ -63,6 +63,19 @@ void SysInfo::OperatingSystemVersionNumbers(int32_t* major_version,
+   *major_version = version.majorVersion;
+   *minor_version = version.minorVersion;
+   *bugfix_version = version.patchVersion;
++
++  // TODO(https://crbug.com/1108832): If an app is built against a pre-macOS
++  // 11.0 SDK, macOS will lie as to what version it is, saying that it is macOS
++  // "10.16" rather than "11.0". The problem is that the "IsOS/IsAtLeastOS/
++  // IsAtMostOS" functions are driven from the Darwin version number, which
++  // isn't lied about, and therefore the values returned by this function and
++  // those functions are inconsistent. Therefore, unlie about these values.
++
++  if (*major_version == 10 && *minor_version >= 16) {
++    *major_version = *minor_version - 5;
++    *minor_version = *bugfix_version;
++    *bugfix_version = 0;
++  }
+ }
+ 
+ // static
