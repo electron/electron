@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 20 Oct 2020 09:45:23 -0400
+Subject: Fix missing validation cache update on VAO binding.
+
+Bug: chromium:1139398
+Change-Id: I85a0d7a72bc2c97b07ebc5f86effd8e36aefd544
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2485581
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 3233d12dd233786b0988f299ace57d932e0d0fe6..0bdc3f6e5e8ebfcc6bbb2ff1bef57a1d50736368 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -8441,6 +8441,7 @@ void StateCache::onVertexArrayBindingChange(Context *context)
+     updateActiveAttribsMask(context);
+     updateVertexElementLimits(context);
+     updateBasicDrawStatesError();
++    updateBasicDrawElementsError();
+ }
+ 
+ void StateCache::onProgramExecutableChange(Context *context)
+diff --git a/src/libANGLE/Context.h b/src/libANGLE/Context.h
+index 06eeff3b94c937067e674fc127afdeab34e63f21..1e61266921bc7aafb26388b12d0aa1b914c4b5a9 100644
+--- a/src/libANGLE/Context.h
++++ b/src/libANGLE/Context.h
+@@ -203,6 +203,7 @@ class StateCache final : angle::NonCopyable
+     // 2. onVertexArrayBufferStateChange.
+     // 3. onBufferBindingChange.
+     // 4. onVertexArrayStateChange.
++    // 5. onVertexArrayBindingStateChange.
+     intptr_t getBasicDrawElementsError(const Context *context) const
+     {
+         if (mCachedBasicDrawElementsError != kInvalidPointer)
