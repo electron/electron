@@ -307,6 +307,9 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
     promise.RejectWithErrorMessage(error);
     return handle;
   }
+  bool same_party =
+      details.FindBoolKey("sameParty")
+          .value_or(secure && same_site != net::CookieSameSite::STRICT_MODE);
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
@@ -322,7 +325,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       ParseTimeProperty(details.FindDoubleKey("creationDate")),
       ParseTimeProperty(details.FindDoubleKey("expirationDate")),
       ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CookieInclusionStatus(
