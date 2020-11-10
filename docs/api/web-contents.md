@@ -73,8 +73,8 @@ Returns:
 This event will be emitted after `did-start-loading` and always before the
 `did-fail-load` event for the same navigation.
 
-Settings `event.returnValue` to an HTML string will result in a custom error page being
-displayed using that HTML.
+Settings `event.returnValue` to the appropriate object will result in a custom error page being
+displayed using custom HTML.
 
 #### Event: 'did-fail-load'
 
@@ -262,8 +262,8 @@ this purpose.
 
 Calling `event.preventDefault()` will prevent the navigation.
 
-Settings `event.returnValue` to an HTML string will result in a custom error page being
-displayed using that HTML and the navigation being cancelled.
+Settings `event.returnValue` to the appropriate object will result in a custom error page being
+displayed using custom HTML and the navigation being cancelled.
 
 #### Event: 'did-start-navigation'
 
