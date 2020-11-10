@@ -1,22 +1,19 @@
-From 2882e1afd98253db2d6e5bb892dd3bfd3c69cb6a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Tue, 20 Oct 2020 09:45:23 -0400
-Subject: [PATCH] Fix missing validation cache update on VAO binding.
-
-
+Subject: Fix missing validation cache update on VAO binding.
 
 Bug: chromium:1139398
 Change-Id: I85a0d7a72bc2c97b07ebc5f86effd8e36aefd544
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2485581
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 Commit-Queue: Jamie Madill <jmadill@chromium.org>
----
 
 diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
-index b7e431f..ec2a1d4 100644
+index c2d3868ff04af0813d496432c0f34b4f4a134fda..a6fa42c33a36a3e83f1bf959cbb566c6160e551e 100644
 --- a/src/libANGLE/Context.cpp
 +++ b/src/libANGLE/Context.cpp
-@@ -8705,6 +8705,7 @@
+@@ -8666,6 +8666,7 @@ void StateCache::onVertexArrayBindingChange(Context *context)
      updateActiveAttribsMask(context);
      updateVertexElementLimits(context);
      updateBasicDrawStatesError();
@@ -25,10 +22,10 @@ index b7e431f..ec2a1d4 100644
  
  void StateCache::onProgramExecutableChange(Context *context)
 diff --git a/src/libANGLE/Context.h b/src/libANGLE/Context.h
-index 74a0e98..bfc8980 100644
+index 10fa566d0040b2abe8d7193d668198bc2e461e38..8f33d1db627ccadb8f4bb8755bb43713365a6c6d 100644
 --- a/src/libANGLE/Context.h
 +++ b/src/libANGLE/Context.h
-@@ -204,6 +204,7 @@
+@@ -203,6 +203,7 @@ class StateCache final : angle::NonCopyable
      // 2. onVertexArrayBufferStateChange.
      // 3. onBufferBindingChange.
      // 4. onVertexArrayStateChange.
@@ -37,10 +34,10 @@ index 74a0e98..bfc8980 100644
      {
          if (mCachedBasicDrawElementsError != kInvalidPointer)
 diff --git a/src/tests/gl_tests/StateChangeTest.cpp b/src/tests/gl_tests/StateChangeTest.cpp
-index e7568dc..7c86993 100644
+index 7356edc230e0f067e47023d952cb18f41b154ada..1c886e9c66caaf7508867bf06c94b8910d5fd736 100644
 --- a/src/tests/gl_tests/StateChangeTest.cpp
 +++ b/src/tests/gl_tests/StateChangeTest.cpp
-@@ -5800,6 +5800,25 @@
+@@ -5206,6 +5206,25 @@ TEST_P(RobustBufferAccessWebGL2ValidationStateChangeTest, BindZeroSizeBufferThen
      ASSERT_GL_NO_ERROR();
  }
  
