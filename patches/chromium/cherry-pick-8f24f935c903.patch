@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adrian Taylor <adetaylor@chromium.org>
+Date: Thu, 5 Nov 2020 08:50:39 +0000
+Subject: Prevent overflow of drag image on Windows.
+
+(cherry picked from commit 236b1a349111fc945c741f85e1b1e2e04d9c42ff)
+
+(cherry picked from commit 5f61af8f3af5efd0d915a51da6df822678d959b9)
+
+Bug: 1144489
+Change-Id: I130adffc1c69073295537aaff3ce7054260064fc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2513345
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Cr-Original-Original-Commit-Position: refs/branch-heads/4310@{#4}
+Cr-Original-Original-Branched-From: 3e31ebb7467fdc4295f123385825b8c95ef13332-refs/heads/master@{#822916}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2513349
+Reviewed-by: Adrian Taylor <adetaylor@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4240@{#1373}
+Cr-Original-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2517728
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4240_112@{#18}
+Cr-Branched-From: 427c00d3874b6abcf4c4c2719768835fc3ef26d6-refs/branch-heads/4240@{#1291}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/ui/base/dragdrop/os_exchange_data_provider_win.cc b/ui/base/dragdrop/os_exchange_data_provider_win.cc
+index 4b7c0656c60b09f61ab201c2900d5b4d6844f4d2..8bf76629985db49bf431f4ce4da6aee141656cc3 100644
+--- a/ui/base/dragdrop/os_exchange_data_provider_win.cc
++++ b/ui/base/dragdrop/os_exchange_data_provider_win.cc
+@@ -714,7 +714,7 @@ void OSExchangeDataProviderWin::SetDragImage(
+   int width = unpremul_bitmap.width();
+   int height = unpremul_bitmap.height();
+   size_t rowbytes = unpremul_bitmap.rowBytes();
+-  DCHECK_EQ(rowbytes, static_cast<size_t>(width) * 4u);
++  CHECK_EQ(rowbytes, static_cast<size_t>(width) * 4u);
+ 
+   void* bits;
+   HBITMAP hbitmap;
