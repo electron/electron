@@ -611,22 +611,29 @@ windows at runtime.
 
 ### How?
 
-[`webContents`][web-contents] will emit the [`new-window`][new-window] event
-before creating new windows. That event will be passed, amongst other
-parameters, the `url` the window was requested to open and the options used to
-create it. We recommend that you use the event to scrutinize the creation of
-windows, limiting it to only what you need.
+[`webContents`][web-contents] will delegate to its [window open
+handler][window-open-handler] before creating new windows. The handler will
+receive, amongst other parameters, the `url` the window was requested to open
+and the options used to create it. We recommend that you register a handler to
+monitor the creation of windows, and deny any unexpected window creation.
 
 ```js
 const { shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', async (event, navigationUrl) => {
+  contents.setWindowOpenHandler(({ url }) => {
     // In this example, we'll ask the operating system
     // to open this event's url in the default browser.
-    event.preventDefault()
+    //
+    // See the following item for considerations regarding what
+    // URLs should be allowed through to shell.openExternal.
+    if (isSafeForExternalOpen(url)) {
+      setImmediate(() => {
+        shell.openExternal(url)
+      })
+    }
 
-    await shell.openExternal(navigationUrl)
+    return { action: 'deny' }
   })
 })
 ```
@@ -811,7 +818,7 @@ which potential security issues are not as widely known.
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
-[new-window]: ../api/web-contents.md#event-new-window
+[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandler-handler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md

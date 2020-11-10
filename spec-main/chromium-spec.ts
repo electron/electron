@@ -82,15 +82,19 @@ describe('window.postMessage', () => {
     await closeAllWindows();
   });
 
-  it('sets the source and origin correctly', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-    w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
-    const [, message] = await emittedOnce(ipcMain, 'complete');
-    expect(message.data).to.equal('testing');
-    expect(message.origin).to.equal('file://');
-    expect(message.sourceEqualsOpener).to.equal(true);
-    expect(message.eventOrigin).to.equal('file://');
-  });
+  for (const nativeWindowOpen of [true, false]) {
+    describe(`when nativeWindowOpen: ${nativeWindowOpen}`, () => {
+      it('sets the source and origin correctly', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+        w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
+        const [, message] = await emittedOnce(ipcMain, 'complete');
+        expect(message.data).to.equal('testing');
+        expect(message.origin).to.equal('file://');
+        expect(message.sourceEqualsOpener).to.equal(true);
+        expect(message.eventOrigin).to.equal('file://');
+      });
+    });
+  }
 });
 
 describe('focus handling', () => {
@@ -620,7 +624,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, async () => {
+      it(`shows the child regardless of parent visibility when parent {show=${show}}`, async () => {
         const w = new BrowserWindow({ show });
 
         // toggle visibility
@@ -635,7 +639,7 @@ describe('chromium features', () => {
         const newWindow = emittedOnce(w.webContents, 'new-window');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
         const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(w.isVisible());
+        expect(options.show).to.equal(true);
       });
     }
 
@@ -669,35 +673,6 @@ describe('chromium features', () => {
       const [, window] = await emittedOnce(app, 'browser-window-created');
       const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
-    });
-
-    it('handles cycles when merging the parent options into the child options', async () => {
-      const foo = {} as any;
-      foo.bar = foo;
-      foo.baz = {
-        hello: {
-          world: true
-        }
-      };
-      foo.baz2 = foo.baz;
-      const w = new BrowserWindow({ show: false, foo: foo } as any);
-
-      w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-      const [,,,, options] = await emittedOnce(w.webContents, 'new-window');
-      expect(options.show).to.be.false();
-      expect((options as any).foo).to.deep.equal({
-        bar: undefined,
-        baz: {
-          hello: {
-            world: true
-          }
-        },
-        baz2: {
-          hello: {
-            world: true
-          }
-        }
-      });
     });
 
     it('defines a window.location getter', async () => {
@@ -925,10 +900,15 @@ describe('chromium features', () => {
         for (const sandboxPopup of [false, true]) {
           const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
-            const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
-            w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-              options!.webPreferences!.sandbox = sandboxPopup;
-            });
+            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+            w.webContents.setWindowOpenHandler(() => ({
+              action: 'allow',
+              overrideBrowserWindowOptions: {
+                webPreferences: {
+                  sandbox: sandboxPopup
+                }
+              }
+            }));
             await w.loadURL(parent);
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {

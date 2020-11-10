@@ -9,21 +9,22 @@
     "frame name",
     "new-window",
     {
+      "show": true,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
       "top": 5,
       "left": 10,
       "resizable": false,
       "x": 10,
       "y": 5,
-      "title": "frame name",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -42,10 +43,13 @@
     "frame name",
     "new-window",
     {
+      "show": true,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
       "resizable": false,
       "x": 0,
       "y": 10,
-      "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
         "nodeIntegration": false,
@@ -53,9 +57,7 @@
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -74,6 +76,10 @@
     "frame name",
     "new-window",
     {
+      "show": true,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
       "backgroundColor": "gray",
       "webPreferences": {
         "nodeIntegration": false,
@@ -84,10 +90,7 @@
       },
       "x": 100,
       "y": 100,
-      "title": "frame name",
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -106,18 +109,19 @@
     "frame name",
     "new-window",
     {
+      "show": true,
+      "title": "sup",
+      "width": 800,
+      "height": 600,
       "x": 50,
       "y": 20,
-      "title": "sup",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -137,19 +141,20 @@
     "new-window",
     {
       "show": false,
+      "title": "frame name",
+      "width": 800,
+      "height": 600,
       "top": 1,
       "left": 1,
       "x": 1,
       "y": 1,
-      "title": "frame name",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600
+      "webContents": "[WebContents]"
     },
     [],
     {

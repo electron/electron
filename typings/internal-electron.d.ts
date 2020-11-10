@@ -64,6 +64,9 @@ declare namespace Electron {
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
+    _windowOpenHandler: ((opts: {url: string, frameName: string, features: string}) => any) | null;
+    _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
+    _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;

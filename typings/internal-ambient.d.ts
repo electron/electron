@@ -1,3 +1,4 @@
+/* eslint-disable no-var */
 declare var internalBinding: any;
 declare var nodeProcess: any;
 declare var isolatedWorld: any;
@@ -45,8 +46,8 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+    isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
-    isSameOrigin(left: string, right: string): boolean;
   }
 
   interface EnvironmentBinding {
@@ -118,7 +119,7 @@ declare namespace NodeJS {
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
-  }
+  };
   type ResponseHead = {
     statusCode: number;
     statusMessage: string;

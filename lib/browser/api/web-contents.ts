@@ -1,13 +1,12 @@
-import { app, ipcMain, session, deprecate } from 'electron/main';
-import type { MenuItem, MenuItemConstructorOptions } from 'electron/main';
+import { app, ipcMain, session, deprecate, BrowserWindowConstructorOptions } from 'electron/main';
+import type { MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
-import { internalWindowOpen } from '@electron/internal/browser/guest-window-manager';
+import { openGuestWindow, makeWebPreferences } from '@electron/internal/browser/guest-window-manager';
 import { NavigationController } from '@electron/internal/browser/navigation-controller';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -20,6 +19,8 @@ let nextId = 0;
 const getNextId = function () {
   return ++nextId;
 };
+
+type PostData = LoadURLOptions['postData']
 
 /* eslint-disable camelcase */
 type MediaSize = {
@@ -439,6 +440,40 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'allow'} | {action: 'deny', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions})) {
+  this._windowOpenHandler = handler;
+};
+
+WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string): BrowserWindowConstructorOptions | null {
+  if (!this._windowOpenHandler) {
+    return null;
+  }
+  const response = this._windowOpenHandler({ url, frameName, features: rawFeatures });
+
+  if (typeof response !== 'object') {
+    event.preventDefault();
+    console.error(`The window open handler response must be an object, but was instead of type '${typeof response}'.`);
+    return null;
+  }
+
+  if (response === null) {
+    event.preventDefault();
+    console.error('The window open handler response must be an object, but was instead null.');
+    return null;
+  }
+
+  if (response.action === 'deny') {
+    event.preventDefault();
+    return null;
+  } else if (response.action === 'allow') {
+    if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) { return response.overrideBrowserWindowOptions; } else { return {}; }
+  } else {
+    event.preventDefault();
+    console.error('The window open handler response must be an object with an \'action\' property of \'allow\' or \'deny\'.');
+    return null;
+  }
+};
+
 const addReplyToEvent = (event: any) => {
   event.reply = (...args: any[]) => {
     event.sender.sendToFrame(event.frameId, ...args);
@@ -489,6 +524,8 @@ WebContents.prototype._init = function () {
   this.goToOffset = navigationController.goToOffset.bind(navigationController);
   this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
   this.length = navigationController.length.bind(navigationController);
+
+  this._windowOpenHandler = null;
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
@@ -570,43 +607,67 @@ WebContents.prototype._init = function () {
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: string, postData: Electron.UploadRawData[]) => {
-      const { options, webPreferences, additionalFeatures } = parseFeatures(rawFeatures);
-      const mergedOptions = {
-        show: true,
-        width: 800,
-        height: 600,
-        title: frameName,
-        webPreferences,
-        ...options
-      };
+      rawFeatures: string, referrer: any, postData: PostData) => {
+      openGuestWindow({
+        event,
+        embedder: event.sender,
+        disposition,
+        referrer,
+        postData,
+        overrideBrowserWindowOptions: {},
+        windowOpenArgs: {
+          url,
+          frameName,
+          features: rawFeatures
+        }
+      });
+    });
 
-      internalWindowOpen(event, url, referrer, frameName, disposition, mergedOptions, additionalFeatures, postData);
+    let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
+    this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string, rawFeatures: string) => {
+      windowOpenOverriddenOptions = this._callWindowOpenHandler(event, url, frameName, rawFeatures);
+      if (!event.defaultPrevented) {
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
+          // Allow setting of backgroundColor as a webPreference even though
+          // it's technically a BrowserWindowConstructorOptions option because
+          // we need to access it in the renderer at init time.
+          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+          ...windowOpenOverriddenOptions.webPreferences
+        } : undefined;
+        this._setNextChildWebPreferences(
+          makeWebPreferences({ embedder: event.sender, secureOverrideWebPreferences })
+        );
+      }
     });
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
     this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
-      userGesture: boolean, left: number, top: number, width: number, height: number, url: string, frameName: string,
-      referrer: string, rawFeatures: string, postData: Electron.UploadRawData[]) => {
+      _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
+      referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
+      const overriddenOptions = windowOpenOverriddenOptions || undefined;
+      windowOpenOverriddenOptions = null;
+
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
         event.preventDefault();
         return;
       }
 
-      const { options, webPreferences, additionalFeatures } = parseFeatures(rawFeatures);
-      const mergedOptions = {
-        show: true,
-        width: 800,
-        height: 600,
-        webContents,
-        title: frameName,
-        webPreferences,
-        ...options
-      };
-
-      internalWindowOpen(event, url, referrer, frameName, disposition, mergedOptions, additionalFeatures, postData);
+      openGuestWindow({
+        event,
+        embedder: event.sender,
+        guest: webContents,
+        overrideBrowserWindowOptions: overriddenOptions,
+        disposition,
+        referrer,
+        postData,
+        windowOpenArgs: {
+          url,
+          frameName,
+          features: rawFeatures
+        }
+      });
     });
 
     const prefs = this.getWebPreferences() || {};
