@@ -1,7 +1,7 @@
-From 815b12dfb5ecd30bd524902d5692d2a6415fcdc1 Mon Sep 17 00:00:00 2001
-From: ishell@chromium.org <ishell@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
 Date: Tue, 27 Oct 2020 13:13:08 +0100
-Subject: [PATCH] Merged: [runtime] Fix sorted order of DescriptorArray entries
+Subject: Merged: [runtime] Fix sorted order of DescriptorArray entries
 
 Revision: 518d67ad652fc24b7eb03e48bb342f952d4ccf74
 
@@ -17,13 +17,12 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.6@{#34}
 Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
 Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
----
 
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index 5a8d0ba..9f0faf5 100644
+index 3c23d6fc64ec99cd10d66ee34e590165d1531aae..980a11ee4e65ba54aba8c03949e7d28df7caa2f9 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
-@@ -1754,12 +1754,13 @@
+@@ -1905,12 +1905,13 @@ TNode<IntPtrT> CodeStubAssembler::LoadJSReceiverIdentityHash(
    return var_hash.value();
  }
  
@@ -41,7 +40,7 @@ index 5a8d0ba..9f0faf5 100644
                                                 Label* if_hash_not_computed) {
    TNode<Uint32T> hash_field = LoadNameHashField(name);
    if (if_hash_not_computed != nullptr) {
-@@ -7967,7 +7968,7 @@
+@@ -8296,7 +8297,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
    TNode<Uint32T> limit =
        Unsigned(Int32Sub(NumberOfEntries<Array>(array), Int32Constant(1)));
    TVARIABLE(Uint32T, var_high, limit);
@@ -50,7 +49,7 @@ index 5a8d0ba..9f0faf5 100644
    CSA_ASSERT(this, Word32NotEqual(hash, Int32Constant(0)));
  
    // Assume non-empty array.
-@@ -7985,7 +7986,7 @@
+@@ -8314,7 +8315,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
      TNode<Uint32T> sorted_key_index = GetSortedKeyIndex<Array>(array, mid);
      TNode<Name> mid_name = GetKey<Array>(array, sorted_key_index);
  
@@ -59,7 +58,7 @@ index 5a8d0ba..9f0faf5 100644
  
      Label mid_greater(this), mid_less(this), merge(this);
      Branch(Uint32GreaterThanOrEqual(mid_hash, hash), &mid_greater, &mid_less);
-@@ -8012,7 +8013,7 @@
+@@ -8341,7 +8342,7 @@ void CodeStubAssembler::LookupBinary(TNode<Name> unique_name,
      TNode<Uint32T> sort_index =
          GetSortedKeyIndex<Array>(array, var_low.value());
      TNode<Name> current_name = GetKey<Array>(array, sort_index);
@@ -69,10 +68,10 @@ index 5a8d0ba..9f0faf5 100644
      Label next(this);
      GotoIf(TaggedNotEqual(current_name, unique_name), &next);
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index de2c16d..0cd1971 100644
+index 2c838f3738295bf0ceee75f4a0329ebbcce6ea03..03caddda08e90b7cae5f84cefe2c2d1a2c329712 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -1240,13 +1240,12 @@
+@@ -1212,13 +1212,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
    // Check if the map is set for slow properties.
    TNode<BoolT> IsDictionaryMap(SloppyTNode<Map> map);
  
@@ -90,10 +89,10 @@ index de2c16d..0cd1971 100644
    // Load length field of a String object as Smi value.
    TNode<Smi> LoadStringLengthAsSmi(TNode<String> string);
 diff --git a/src/diagnostics/objects-debug.cc b/src/diagnostics/objects-debug.cc
-index 054b9de..dcd9234 100644
+index 104068c4491dd5a042cd6ea62767c3fdea55dd4f..353cfaddb5b01f0348bbe52a378842693ac83630 100644
 --- a/src/diagnostics/objects-debug.cc
 +++ b/src/diagnostics/objects-debug.cc
-@@ -1702,12 +1702,13 @@
+@@ -1709,12 +1709,13 @@ bool DescriptorArray::IsSortedNoDuplicates(int valid_entries) {
    uint32_t current = 0;
    for (int i = 0; i < number_of_descriptors(); i++) {
      Name key = GetSortedKey(i);
@@ -108,7 +107,7 @@ index 054b9de..dcd9234 100644
      if (hash < current) {
        Print();
        return false;
-@@ -1725,7 +1726,8 @@
+@@ -1733,7 +1734,8 @@ bool TransitionArray::IsSortedNoDuplicates(int valid_entries) {
  
    for (int i = 0; i < number_of_transitions(); i++) {
      Name key = GetSortedKey(i);
@@ -119,10 +118,10 @@ index 054b9de..dcd9234 100644
      PropertyAttributes attributes = NONE;
      if (!TransitionsAccessor::IsSpecialTransition(key.GetReadOnlyRoots(),
 diff --git a/src/objects/descriptor-array-inl.h b/src/objects/descriptor-array-inl.h
-index d9e3408..a7c6443 100644
+index cfbc4f7ec814659c46e92ac12d37aed338f944bc..228b73a6924515dbccc14fa305f37f350eea03d1 100644
 --- a/src/objects/descriptor-array-inl.h
 +++ b/src/objects/descriptor-array-inl.h
-@@ -228,7 +228,7 @@
+@@ -229,7 +229,7 @@ void DescriptorArray::Append(Descriptor* desc) {
  
    for (insertion = descriptor_number; insertion > 0; --insertion) {
      Name key = GetSortedKey(insertion - 1);
@@ -132,32 +131,32 @@ index d9e3408..a7c6443 100644
    }
  
 diff --git a/src/objects/descriptor-array.h b/src/objects/descriptor-array.h
-index f689481..890863d 100644
+index 0085a1d78dc698f6765b740549809c10032ee36c..9d2688c3cdca47b9df6acdc0dca5e83223c153ff 100644
 --- a/src/objects/descriptor-array.h
 +++ b/src/objects/descriptor-array.h
-@@ -113,7 +113,7 @@
+@@ -112,7 +112,7 @@ class DescriptorArray : public HeapObject {
        int slack = 0);
  
    // Sort the instance descriptors by the hash codes of their keys.
 -  void Sort();
 +  V8_EXPORT_PRIVATE void Sort();
  
-   // Search the instance descriptors for given name. {concurrent_search} signals
-   // if we are doing the search on a background thread. If so, we will sacrifice
+   // Search the instance descriptors for given name.
+   V8_INLINE InternalIndex Search(Name name, int number_of_own_descriptors);
 diff --git a/src/objects/fixed-array-inl.h b/src/objects/fixed-array-inl.h
-index f6c52b8..501129c 100644
+index 4608f2ea21a019294059cec7565d273cde4eb075..68fb7cb3ee15f167279d068f1e03a2a98be0704b 100644
 --- a/src/objects/fixed-array-inl.h
 +++ b/src/objects/fixed-array-inl.h
-@@ -234,7 +234,7 @@
-   // index). After doing the binary search and getting the correct internal
-   // index we check to have the index lower than valid_entries, if needed.
+@@ -219,7 +219,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
+   DCHECK(search_mode == ALL_ENTRIES || out_insertion_index == nullptr);
+   int low = 0;
    int high = array->number_of_entries() - 1;
 -  uint32_t hash = name.hash_field();
 +  uint32_t hash = name.hash();
    int limit = high;
  
    DCHECK(low <= high);
-@@ -242,7 +242,7 @@
+@@ -227,7 +227,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
    while (low != high) {
      int mid = low + (high - low) / 2;
      Name mid_name = array->GetSortedKey(mid);
@@ -166,16 +165,16 @@ index f6c52b8..501129c 100644
  
      if (mid_hash >= hash) {
        high = mid;
-@@ -254,7 +254,7 @@
+@@ -239,7 +239,7 @@ int BinarySearch(T* array, Name name, int valid_entries,
    for (; low <= limit; ++low) {
      int sort_index = array->GetSortedKeyIndex(low);
      Name entry = array->GetKey(InternalIndex(sort_index));
 -    uint32_t current_hash = entry.hash_field();
 +    uint32_t current_hash = entry.hash();
      if (current_hash != hash) {
-       // 'search_mode == ALL_ENTRIES' here and below is not needed since
-       // 'out_insertion_index != nullptr' implies 'search_mode == ALL_ENTRIES'.
-@@ -286,12 +286,12 @@
+       if (search_mode == ALL_ENTRIES && out_insertion_index != nullptr) {
+         *out_insertion_index = sort_index + (current_hash > hash ? 0 : 1);
+@@ -266,12 +266,12 @@ template <SearchMode search_mode, typename T>
  int LinearSearch(T* array, Name name, int valid_entries,
                   int* out_insertion_index) {
    if (search_mode == ALL_ENTRIES && out_insertion_index != nullptr) {
@@ -191,10 +190,10 @@ index f6c52b8..501129c 100644
          *out_insertion_index = sorted_index;
          return T::kNotFound;
 diff --git a/src/objects/name-inl.h b/src/objects/name-inl.h
-index 0735b4e..ffcd287 100644
+index 0735b4e506fbcb453d4e1a5a832225ca83ca1b96..ffcd287fd37454e3449b5064b4aa37196dadfdbd 100644
 --- a/src/objects/name-inl.h
 +++ b/src/objects/name-inl.h
-@@ -94,6 +94,12 @@
+@@ -94,6 +94,12 @@ uint32_t Name::Hash() {
    return String::cast(*this).ComputeAndSetHash();
  }
  
@@ -208,10 +207,10 @@ index 0735b4e..ffcd287 100644
    return IsSymbol(isolate) && Symbol::cast(*this).is_interesting_symbol();
  }
 diff --git a/src/objects/name.h b/src/objects/name.h
-index 533d8b0..6309de9 100644
+index b56a0cc33711752230ba51ee7ece0ed0fcc3cc6b..b76c724bf8b57784023efe9141fbb455900000ef 100644
 --- a/src/objects/name.h
 +++ b/src/objects/name.h
-@@ -23,9 +23,15 @@
+@@ -22,9 +22,15 @@ class Name : public TorqueGeneratedName<Name, PrimitiveHeapObject> {
    // Tells whether the hash code has been computed.
    inline bool HasHashCode();
  
@@ -229,10 +228,10 @@ index 533d8b0..6309de9 100644
    inline bool Equals(Name other);
    inline static bool Equals(Isolate* isolate, Handle<Name> one,
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index a8dfa6a..e61091e 100644
+index 8a446bb109fd248a42a750bcb2f6747c46833cec..021e36c96c1302aa355cf13ccb7a54abf1f8f385 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -4347,16 +4347,16 @@
+@@ -4252,16 +4252,16 @@ void DescriptorArray::Sort() {
    // Reset sorting since the descriptor array might contain invalid pointers.
    for (int i = 0; i < len; ++i) SetSortedKey(i, i);
    // Bottom-up max-heap construction.
@@ -253,7 +252,7 @@ index a8dfa6a..e61091e 100644
          if (right_child_hash > child_hash) {
            child_index++;
            child_hash = right_child_hash;
-@@ -4375,13 +4375,13 @@
+@@ -4280,13 +4280,13 @@ void DescriptorArray::Sort() {
      SwapSortedKeys(0, i);
      // Shift down the new top element.
      int parent_index = 0;
@@ -271,10 +270,10 @@ index a8dfa6a..e61091e 100644
            child_index++;
            child_hash = right_child_hash;
 diff --git a/src/objects/transitions-inl.h b/src/objects/transitions-inl.h
-index ac5b103..b2ee536 100644
+index 5694d66d948325bb139b67a3a34c22759224d139..09157b7f5d0051b80e60de51f358d4fd5bde0b99 100644
 --- a/src/objects/transitions-inl.h
 +++ b/src/objects/transitions-inl.h
-@@ -169,12 +169,20 @@
+@@ -169,12 +169,20 @@ int TransitionArray::SearchNameForTesting(Name name, int* out_insertion_index) {
    return SearchName(name, out_insertion_index);
  }
  
@@ -296,10 +295,10 @@ index ac5b103..b2ee536 100644
                                         out_insertion_index);
  }
 diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
-index 5b0c867..d2c5f56 100644
+index e0ba40ce7d023059c6e63710a0c91c032d6c7187..e240878b33d767790b965d66267b8ab9fab0c8d6 100644
 --- a/src/objects/transitions.cc
 +++ b/src/objects/transitions.cc
-@@ -644,8 +644,8 @@
+@@ -619,8 +619,8 @@ void TransitionArray::Sort() {
          temp_kind = details.kind();
          temp_attributes = details.attributes();
        }
@@ -311,19 +310,19 @@ index 5b0c867..d2c5f56 100644
          SetKey(j + 1, temp_key);
          SetRawTarget(j + 1, temp_target);
 diff --git a/src/objects/transitions.h b/src/objects/transitions.h
-index 3e3dc1a..f0038f7 100644
+index 5a7db13e516cf9be9314cf99f274145d21090f64..055bf41c9144197288bd7d9eb0275adb7a667ba7 100644
 --- a/src/objects/transitions.h
 +++ b/src/objects/transitions.h
-@@ -150,6 +150,8 @@
- 
-   inline int Capacity();
+@@ -143,6 +143,8 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+     return encoding_;
+   }
  
 +  inline TransitionArray transitions();
 +
   private:
    friend class MarkCompactCollector;  // For HasSimpleTransitionTo.
    friend class TransitionArray;
-@@ -182,8 +184,6 @@
+@@ -175,8 +177,6 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
    void TraverseTransitionTreeInternal(TraverseCallback callback, void* data,
                                        DisallowHeapAllocation* no_gc);
  
@@ -332,8 +331,8 @@ index 3e3dc1a..f0038f7 100644
    Isolate* isolate_;
    Handle<Map> map_handle_;
    Map map_;
-@@ -239,7 +239,7 @@
-   V8_EXPORT_PRIVATE bool IsSortedNoDuplicates();
+@@ -231,7 +231,7 @@ class TransitionArray : public WeakFixedArray {
+   V8_EXPORT_PRIVATE bool IsSortedNoDuplicates(int valid_entries = -1);
  #endif
  
 -  void Sort();
@@ -341,7 +340,7 @@ index 3e3dc1a..f0038f7 100644
  
    void PrintInternal(std::ostream& os);
  
-@@ -268,6 +268,9 @@
+@@ -260,6 +260,9 @@ class TransitionArray : public WeakFixedArray {
    inline int SearchNameForTesting(Name name,
                                    int* out_insertion_index = nullptr);
  
@@ -351,7 +350,7 @@ index 3e3dc1a..f0038f7 100644
   private:
    friend class Factory;
    friend class MarkCompactCollector;
-@@ -304,8 +307,8 @@
+@@ -296,8 +299,8 @@ class TransitionArray : public WeakFixedArray {
    int Search(PropertyKind kind, Name name, PropertyAttributes attributes,
               int* out_insertion_index = nullptr);
  
@@ -363,10 +362,10 @@ index 3e3dc1a..f0038f7 100644
    // Search a non-property transition (like elements kind, observe or frozen
    // transitions).
 diff --git a/test/cctest/BUILD.gn b/test/cctest/BUILD.gn
-index 35a2234..ad9c72d 100644
+index ce83dc36daa7a4d4819eaf71d9ce77c2dfad4038..86a5287079381f11e45beef2693a70a889f67837 100644
 --- a/test/cctest/BUILD.gn
 +++ b/test/cctest/BUILD.gn
-@@ -209,6 +209,7 @@
+@@ -203,6 +203,7 @@ v8_source_set("cctest_sources") {
      "test-debug.cc",
      "test-decls.cc",
      "test-deoptimization.cc",
@@ -376,7 +375,7 @@ index 35a2234..ad9c72d 100644
      "test-double.cc",
 diff --git a/test/cctest/test-descriptor-array.cc b/test/cctest/test-descriptor-array.cc
 new file mode 100644
-index 0000000..7abd36e
+index 0000000000000000000000000000000000000000..7abd36ec6c84959c3da59b8e78d9e4a0ee291632
 --- /dev/null
 +++ b/test/cctest/test-descriptor-array.cc
 @@ -0,0 +1,424 @@
@@ -805,13 +804,13 @@ index 0000000..7abd36e
 +}  // namespace internal
 +}  // namespace v8
 diff --git a/test/cctest/test-transitions.h b/test/cctest/test-transitions.h
-index d30f8cf..6db1c64 100644
+index 724eb3d3c544b5e9535e7a1b14d95eccec34f4cc..66bbbfa76dd7c2aa4c84363a69705d2564fee8a6 100644
 --- a/test/cctest/test-transitions.h
 +++ b/test/cctest/test-transitions.h
-@@ -27,6 +27,8 @@
+@@ -24,6 +24,8 @@ class TestTransitionsAccessor : public TransitionsAccessor {
+   bool IsFullTransitionArrayEncoding() {
+     return encoding() == kFullTransitionArray;
    }
- 
-   int Capacity() { return TransitionsAccessor::Capacity(); }
 +
 +  TransitionArray transitions() { return TransitionsAccessor::transitions(); }
  };
