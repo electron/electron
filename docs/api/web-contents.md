@@ -57,7 +57,7 @@ Process: [Main](../glossary.md#main-process)
 Emitted when the navigation is done, i.e. the spinner of the tab has stopped
 spinning, and the `onload` event was dispatched.
 
-#### Event: 'will-fail-load'
+#### Event: 'will-fail-load' _Experimental_
 
 Returns:
 
@@ -243,7 +243,7 @@ Not emitted if the creation of the window is canceled from
 
 See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
 
-#### Event: 'will-navigate'
+#### Event: 'will-navigate' _Experimental_
 
 Returns:
 

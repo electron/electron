@@ -5,9 +5,9 @@
 #ifndef SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
 #define SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
 
-#include "content/public/browser/navigation_throttle.h"
-
 #include <string>
+
+#include "content/public/browser/navigation_throttle.h"
 
 namespace electron {
 
