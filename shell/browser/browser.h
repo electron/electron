@@ -306,8 +306,7 @@ class Browser : public WindowListObserver {
   void SetSecureKeyboardEntryEnabled(bool enabled);
 #endif
 
-  bool is_shutting_down() const { return is_shutdown_; }
-  bool is_quiting() const { return is_quiting_; }
+  bool is_shutting_down() const { return is_shutting_down_; }
   bool is_ready() const { return is_ready_; }
   v8::Local<v8::Value> WhenReady(v8::Isolate* isolate);
 
@@ -324,7 +323,7 @@ class Browser : public WindowListObserver {
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
-  bool is_quiting_ = false;
+  bool is_quitting_ = false;
 
  private:
   // WindowListObserver implementations:
@@ -344,7 +343,7 @@ class Browser : public WindowListObserver {
   bool is_ready_ = false;
 
   // The browser is being shutdown.
-  bool is_shutdown_ = false;
+  bool is_shutting_down_ = false;
 
   // Null until/unless the default main message loop is running.
   base::OnceClosure quit_main_message_loop_;
