@@ -86,7 +86,7 @@ content::NavigationThrottle::ThrottleCheckResult
 ElectronNavigationThrottle::WillStartRequest() {
   auto* handle = navigation_handle();
   if (handle->IsRendererInitiated() && handle->IsInMainFrame())
-    return DelegateEventToWebContents("-will-navigate", net::ERR_FAILED);
+    return DelegateEventToWebContents("-will-navigate", net::ERR_ABORTED);
   return PROCEED;
 }
 
