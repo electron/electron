@@ -1,7 +1,11 @@
-From bbb64b5c69168b190e75ff7d1a77b6af6612a452 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Cheng <dcheng@chromium.org>
-Date: Sat, 07 Nov 2020 19:07:34 +0000
-Subject: [PATCH] Prevent UB if a WeakPtr to an already-destroyed object is dereferenced.
+Date: Sat, 7 Nov 2020 19:07:34 +0000
+Subject: Prevent UB if a WeakPtr to an already-destroyed object is
+ dereferenced.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 If a WeakPtr references an already-destroyed object, operator-> and
 operator* end up simply dereferencing nullptr. However, dereferencing
@@ -25,13 +29,12 @@ Commit-Queue: Krishna Govind <govind@chromium.org>
 Commit-Queue: Adrian Taylor <adetaylor@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1410}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/base/memory/weak_ptr.h b/base/memory/weak_ptr.h
-index d977a0da..50e0b34 100644
+index 42aa3412c5ed13c8cdf94584e65e2549548ed125..63508a6043dd55572f0683681f01b238751c360f 100644
 --- a/base/memory/weak_ptr.h
 +++ b/base/memory/weak_ptr.h
-@@ -248,11 +248,11 @@
+@@ -248,11 +248,11 @@ class WeakPtr : public internal::WeakPtrBase {
    }
  
    T& operator*() const {
@@ -46,10 +49,10 @@ index d977a0da..50e0b34 100644
    }
  
 diff --git a/base/memory/weak_ptr_unittest.cc b/base/memory/weak_ptr_unittest.cc
-index 6b1e9bf..6425a88 100644
+index 6b1e9bf3c50d3da276c0d9d9de5322355719a61e..6425a88a36f716c58951f0bd52ef1979f598e895 100644
 --- a/base/memory/weak_ptr_unittest.cc
 +++ b/base/memory/weak_ptr_unittest.cc
-@@ -798,4 +798,26 @@
+@@ -798,4 +798,26 @@ TEST(WeakPtrDeathTest, NonOwnerThreadReferencesObjectAfterDeletion) {
    ASSERT_DCHECK_DEATH(arrow.target.get());
  }
  
