@@ -149,3 +149,4 @@ cherry-pick-30261f9de11e.patch
 cherry-pick-88f263f401b4.patch
 cherry-pick-229fdaf8fc05.patch
 cherry-pick-1ed869ad4bb3.patch
+crashpad-initialize-logging.patch
