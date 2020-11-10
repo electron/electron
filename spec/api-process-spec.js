@@ -70,6 +70,9 @@ describe('process module', () => {
   describe('process.getSystemVersion()', () => {
     it('returns a string', () => {
       expect(process.getSystemVersion()).to.be.a('string');
+      if (process.platform === 'darwin') {
+        expect(process.getSystemVersion()).to.not.equal('10.16'); // #26419
+      }
     });
   });
 
