@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: sentialx <sentialx@gmail.com>
-Date: Tue, 10 Nov 2020 21:06:56 +0100
+Date: Tue, 10 Nov 2020 21:23:30 +0100
 Subject: fix: disable COOP process swap for <webview>
 
 Guest WebContents don't support swapping BrowsingInstance, which COOP tries to trigger, hence the crash on i.e. twitter.com.
@@ -19,31 +19,3 @@ index 3296a4c90e208dd5885fc83d6d93765e9463e7ba..fdc82fdcf87726595359c11ebd99f3b8
  
      // If this response's COOP causes a BrowsingInstance swap that severs an
      // opener, report this to the previous COOP reporter and/or the COOP
-diff --git a/electron b/electron
-new file mode 160000
-index 0000000000000000000000000000000000000000..d54c1c7072bc001ff341bde66a4f291d18bb891c
---- /dev/null
-+++ b/electron
-@@ -0,0 +1 @@
-+Subproject commit d54c1c7072bc001ff341bde66a4f291d18bb891c
-diff --git a/third_party/electron_node b/third_party/electron_node
-new file mode 160000
-index 0000000000000000000000000000000000000000..d43245efa169e2e0aedc8fb79d0b4ab15b19de14
---- /dev/null
-+++ b/third_party/electron_node
-@@ -0,0 +1 @@
-+Subproject commit d43245efa169e2e0aedc8fb79d0b4ab15b19de14
-diff --git a/third_party/nan b/third_party/nan
-new file mode 160000
-index 0000000000000000000000000000000000000000..2c4ee8a32a299eada3cd6e468bbd0a473bfea96d
---- /dev/null
-+++ b/third_party/nan
-@@ -0,0 +1 @@
-+Subproject commit 2c4ee8a32a299eada3cd6e468bbd0a473bfea96d
-diff --git a/third_party/squirrel.mac b/third_party/squirrel.mac
-new file mode 160000
-index 0000000000000000000000000000000000000000..49bcf30624531bc45f53bd89cac957a4e011036e
---- /dev/null
-+++ b/third_party/squirrel.mac
-@@ -0,0 +1 @@
-+Subproject commit 49bcf30624531bc45f53bd89cac957a4e011036e
