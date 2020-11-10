@@ -16,7 +16,7 @@ Follow the guidelines below for building Electron on Windows.
   * [Python for Windows (pywin32) Extensions](https://pypi.org/project/pywin32/#files)
   is also needed in order to run the build process.
 * [Node.js](https://nodejs.org/download/)
-* [Git](http://git-scm.com)
+* [Git](https://git-scm.com)
 * Debugging Tools for Windows of Windows SDK 10.0.15063.468 if you plan on
 creating a full distribution since `symstore.exe` is used for creating a symbol
 store from `.pdb` files.

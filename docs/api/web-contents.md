@@ -134,7 +134,7 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window'
+#### Event: 'new-window' _Deprecated_
 
 Returns:
 
@@ -154,6 +154,8 @@ Returns:
   will be sent to the new window, along with the appropriate headers that will
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
+
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -188,6 +190,39 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
   event.newGuest = win
 })
 ```
+
+#### Event: 'did-create-window'
+
+Returns:
+* `window` BrowserWindow
+* `details` Object
+    * `url` String - URL for the created window.
+    * `frameName` String - Name given to the created window in the
+      `window.open()` call.
+    * `options` BrowserWindowConstructorOptions - The options used to create the
+      BrowserWindow. They are merged in increasing precedence: options inherited
+      from the parent, parsed options from the `features` string from
+      `window.open()`, and options given by
+      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+      Unrecognized options are not filtered out.
+    * `additionalFeatures` String[] - The non-standard features (features not
+      handled Chromium or Electron) _Deprecated_
+    * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+      passed to the new window. May or may not result in the `Referer` header
+      being sent, depending on the referrer policy.
+    * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+      that will be sent to the new window, along with the appropriate headers
+      that will be set. If no post data is to be sent, the value will be `null`.
+      Only defined when the window is being created by a form that set
+      `target=_blank`.
+    * `disposition` String - Can be `default`, `foreground-tab`,
+      `background-tab`, `new-window`, `save-to-disk` and `other`.
+
+Emitted _after_ successful creation of a window via `window.open` in the renderer.
+Not emitted if the creation of the window is canceled from
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+
+See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
 
 #### Event: 'will-navigate'
 
@@ -438,6 +473,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 #### Event: 'zoom-changed'
 
 Returns:
+
 * `event` Event
 * `zoomDirection` String - Can be `in` or `out`.
 
@@ -1122,6 +1158,22 @@ Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
 Ignore application menu shortcuts while this web contents is focused.
 
+#### `contents.setWindowOpenHandler(handler)`
+
+* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+  * `details` Object
+    * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
+    * `frameName` String - Name of the window provided in `window.open()`
+    * `features` String - Comma separated list of window features provided to `window.open()`.
+  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  Returning an unrecognized value such as a null, undefined, or an object
+  without a recognized 'action' value will result in a console error and have
+  the same effect as returning `{action: 'deny'}`.
+
+Called before creating a window when `window.open()` is called from the
+renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
+
 #### `contents.setAudioMuted(muted)`
 
 * `muted` Boolean
@@ -1690,6 +1742,7 @@ process by accessing the `ports` property of the emitted event. When they
 arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()

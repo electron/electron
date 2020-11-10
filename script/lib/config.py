@@ -39,7 +39,7 @@ verbose_mode = False
 
 
 def get_platform_key():
-  if os.environ.has_key('MAS_BUILD'):
+  if 'MAS_BUILD' in os.environ:
     return 'mas'
   else:
     return PLATFORM

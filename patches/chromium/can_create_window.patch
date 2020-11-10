@@ -26,17 +26,32 @@ index 20e9fb48faa73c8f59060d280bc6727a39e28bc5..8ff1d61fc2f74bce4e8ccca9ea334f0d
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3627,9 +3627,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
+   auto* new_contents_impl = new_contents.get();
  
-   if (delegate_) {
--    delegate_->WebContentsCreated(this, render_process_id,
--                                  opener->GetRoutingID(), params.frame_name,
--                                  params.target_url, new_contents_impl);
++  // Call this earlier than Chrome to associate the web preferences with the
++  // WebContents before the view gets created.
++  if (delegate_) {
 +    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
 +                                                opener->GetRoutingID(),
 +                                                params, new_contents_impl);
++  }
++
+   new_contents_impl->GetController().SetSessionStorageNamespace(
+       partition_id, session_storage_namespace);
+ 
+@@ -3623,12 +3631,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+     AddDestructionObserver(new_contents_impl);
    }
  
+-  if (delegate_) {
+-    delegate_->WebContentsCreated(this, render_process_id,
+-                                  opener->GetRoutingID(), params.frame_name,
+-                                  params.target_url, new_contents_impl);
+-  }
+-
    observers_.ForEachObserver([&](WebContentsObserver* observer) {
+     observer->DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
+                                   params.referrer.To<Referrer>(),
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index dab17d428c9165b1cb3ad18c0a3fd3f6236d024b..2b58d99b3750b80c9cc784925110000592e20c48 100644
 --- a/content/common/frame.mojom

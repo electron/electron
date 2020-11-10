@@ -242,14 +242,14 @@ Electron uses following cryptographic algorithms:
 * ECDH - ANS X9.63–2001
 * HKDF - [NIST SP 800-56C](https://csrc.nist.gov/publications/nistpubs/800-56C/SP-800-56C.pdf)
 * PBKDF2 - [RFC 2898](https://tools.ietf.org/html/rfc2898)
-* RSA - [RFC 3447](http://www.ietf.org/rfc/rfc3447)
+* RSA - [RFC 3447](https://www.ietf.org/rfc/rfc3447)
 * SHA - [FIPS 180-4](https://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf)
 * Blowfish - https://www.schneier.com/cryptography/blowfish/
 * CAST - [RFC 2144](https://tools.ietf.org/html/rfc2144), [RFC 2612](https://tools.ietf.org/html/rfc2612)
 * DES - [FIPS 46-3](https://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf)
 * DH - [RFC 2631](https://tools.ietf.org/html/rfc2631)
 * DSA - [ANSI X9.30](https://webstore.ansi.org/RecordDetail.aspx?sku=ANSI+X9.30-1%3A1997)
-* EC - [SEC 1](http://www.secg.org/sec1-v2.pdf)
+* EC - [SEC 1](https://www.secg.org/sec1-v2.pdf)
 * IDEA - "On the Design and Security of Block Ciphers" book by X. Lai
 * MD2 - [RFC 1319](https://tools.ietf.org/html/rfc1319)
 * MD4 - [RFC 6150](https://tools.ietf.org/html/rfc6150)
@@ -257,7 +257,7 @@ Electron uses following cryptographic algorithms:
 * MDC2 - [ISO/IEC 10118-2](https://wiki.openssl.org/index.php/Manual:Mdc2(3))
 * RC2 - [RFC 2268](https://tools.ietf.org/html/rfc2268)
 * RC4 - [RFC 4345](https://tools.ietf.org/html/rfc4345)
-* RC5 - http://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
+* RC5 - https://people.csail.mit.edu/rivest/Rivest-rc5rev.pdf
 * RIPEMD - [ISO/IEC 10118-3](https://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/

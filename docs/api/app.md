@@ -859,9 +859,10 @@ This method returns the application name of the default handler for the protocol
   minimum (e.g. `https://`).
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `icon` NativeImage - the display icon of the app handling the protocol.
-  * `path` String  - installation path of the app handling the protocol.
-  * `name` String - display name of the app handling the protocol.
+
+* `icon` NativeImage - the display icon of the app handling the protocol.
+* `path` String  - installation path of the app handling the protocol.
+* `name` String - display name of the app handling the protocol.
 
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
@@ -1091,6 +1092,7 @@ Changes the [Application User Model ID][app-user-model-id] to `id`.
 Sets the activation policy for a given app.
 
 Activation policy types:
+
 * 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
@@ -1105,7 +1107,7 @@ Activation policy types:
 
 Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
-indicates success while any other value indicates failure according to Chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+indicates success while any other value indicates failure according to Chromium [net_error_list](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 ### `app.disableHardwareAcceleration()`
 
@@ -1142,6 +1144,7 @@ For `infoType` equal to `complete`:
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
+
 ```js
 {
   auxAttributes:
@@ -1342,7 +1345,7 @@ systems Application folder. Use in combination with `app.moveToApplicationsFolde
 ### `app.moveToApplicationsFolder([options])` _macOS_
 
 * `options` Object (optional)
-  * `conflictHandler` Function<Boolean> (optional) - A handler for potential conflict in move failure.
+  * `conflictHandler` Function\<Boolean> (optional) - A handler for potential conflict in move failure.
     * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if

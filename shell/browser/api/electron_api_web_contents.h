@@ -11,14 +11,17 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -29,9 +32,11 @@
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
-#include "shell/browser/common_web_contents_delegate.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_delegate.h"
+#include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -114,9 +119,12 @@ class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 class FrameSubscriber;
+class WebDialogHelper;
+class NativeWindow;
 
 #if BUILDFLAG(ENABLE_OSR)
 class OffScreenRenderWidgetHostView;
+class OffScreenWebContentsView;
 #endif
 
 namespace api {
@@ -126,8 +134,10 @@ class WebContents : public gin::Wrappable<WebContents>,
                     public gin_helper::EventEmitterMixin<WebContents>,
                     public gin_helper::Constructible<WebContents>,
                     public gin_helper::CleanedUpAtExit,
-                    public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
+                    public content::WebContentsDelegate,
+                    public InspectableWebContentsDelegate,
+                    public InspectableWebContentsViewDelegate,
                     public mojom::ElectronBrowser {
  public:
   enum class Type {
@@ -252,6 +262,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
 
+  void SetNextChildWebPreferences(const gin_helper::Dictionary);
+
   // DevTools workspace api.
   void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
   void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
@@ -354,7 +366,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the preload script path of current WebContents.
-  std::vector<base::FilePath::StringType> GetPreloadPaths() const;
+  std::vector<base::FilePath> GetPreloadPaths() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
@@ -423,7 +435,30 @@ class WebContents : public gin::Wrappable<WebContents>,
   }
 #endif
 
- protected:
+  // Set the window as owner window.
+  void SetOwnerWindow(NativeWindow* owner_window);
+  void SetOwnerWindow(content::WebContents* web_contents,
+                      NativeWindow* owner_window);
+
+  // Returns the WebContents managed by this delegate.
+  content::WebContents* GetWebContents() const;
+
+  // Returns the WebContents of devtools.
+  content::WebContents* GetDevToolsWebContents() const;
+
+  InspectableWebContents* managed_web_contents() const {
+    return web_contents_.get();
+  }
+
+  NativeWindow* owner_window() const { return owner_window_.get(); }
+
+  bool is_html_fullscreen() const { return html_fullscreen_; }
+
+  void set_fullscreen_frame(content::RenderFrameHost* rfh) {
+    fullscreen_frame_ = rfh;
+  }
+
+ private:
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
@@ -433,6 +468,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Creates a new content::WebContents.
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
+
+  // Creates a InspectableWebContents object and takes ownership of
+  // |web_contents|.
+  void InitWithWebContents(content::WebContents* web_contents,
+                           ElectronBrowserContext* browser_context,
+                           bool is_guest);
 
   void InitWithSessionAndOptions(
       v8::Isolate* isolate,
@@ -456,8 +497,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,
       const GURL& opener_url,
-      const std::string& frame_name,
-      const GURL& target_url) override;
+      const content::mojom::CreateNewWindowParams& params) override;
   content::WebContents* CreateCustomWebContents(
       content::RenderFrameHost* opener,
       content::SiteInstance* source_site_instance,
@@ -494,6 +534,9 @@ class WebContents : public gin::Wrappable<WebContents>,
   bool HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
+  bool PlatformHandleKeyboardEvent(
+      content::WebContents* source,
+      const content::NativeWebKeyboardEvent& event);
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
@@ -590,6 +633,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;
+  void DevToolsResized() override;
 
  private:
   ElectronBrowserContext* GetBrowserContext() const;
@@ -604,7 +648,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   uint32_t GetNextRequestId() { return ++request_id_; }
 
 #if BUILDFLAG(ENABLE_OSR)
-  OffScreenWebContentsView* GetOffScreenWebContentsView() const override;
+  OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
@@ -643,6 +687,77 @@ class WebContents : public gin::Wrappable<WebContents>,
   void InitZoomController(content::WebContents* web_contents,
                           const gin_helper::Dictionary& options);
 
+  // content::WebContentsDelegate:
+  bool CanOverscrollContent() override;
+  content::ColorChooser* OpenColorChooser(
+      content::WebContents* web_contents,
+      SkColor color,
+      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
+      override;
+  void RunFileChooser(content::RenderFrameHost* render_frame_host,
+                      scoped_refptr<content::FileSelectListener> listener,
+                      const blink::mojom::FileChooserParams& params) override;
+  void EnumerateDirectory(content::WebContents* web_contents,
+                          scoped_refptr<content::FileSelectListener> listener,
+                          const base::FilePath& path) override;
+  bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
+  blink::SecurityStyle GetSecurityStyle(
+      content::WebContents* web_contents,
+      content::SecurityStyleExplanations* explanations) override;
+  bool TakeFocus(content::WebContents* source, bool reverse) override;
+  content::PictureInPictureResult EnterPictureInPicture(
+      content::WebContents* web_contents,
+      const viz::SurfaceId&,
+      const gfx::Size& natural_size) override;
+  void ExitPictureInPicture() override;
+
+  // InspectableWebContentsDelegate:
+  void DevToolsSaveToFile(const std::string& url,
+                          const std::string& content,
+                          bool save_as) override;
+  void DevToolsAppendToFile(const std::string& url,
+                            const std::string& content) override;
+  void DevToolsRequestFileSystems() override;
+  void DevToolsAddFileSystem(const std::string& type,
+                             const base::FilePath& file_system_path) override;
+  void DevToolsRemoveFileSystem(
+      const base::FilePath& file_system_path) override;
+  void DevToolsIndexPath(int request_id,
+                         const std::string& file_system_path,
+                         const std::string& excluded_folders_message) override;
+  void DevToolsStopIndexing(int request_id) override;
+  void DevToolsSearchInPath(int request_id,
+                            const std::string& file_system_path,
+                            const std::string& query) override;
+
+  // InspectableWebContentsViewDelegate:
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
+  gfx::ImageSkia GetDevToolsWindowIcon() override;
+#endif
+#if defined(OS_LINUX)
+  void GetDevToolsWindowWMClass(std::string* name,
+                                std::string* class_name) override;
+#endif
+
+  // Destroy the managed InspectableWebContents object.
+  void ResetManagedWebContents(bool async);
+
+  // DevTools index event callbacks.
+  void OnDevToolsIndexingWorkCalculated(int request_id,
+                                        const std::string& file_system_path,
+                                        int total_work);
+  void OnDevToolsIndexingWorked(int request_id,
+                                const std::string& file_system_path,
+                                int worked);
+  void OnDevToolsIndexingDone(int request_id,
+                              const std::string& file_system_path);
+  void OnDevToolsSearchCompleted(int request_id,
+                                 const std::string& file_system_path,
+                                 const std::vector<std::string>& file_paths);
+
+  // Set fullscreen mode triggered by html api.
+  void SetHtmlApiFullscreen(bool enter_fullscreen);
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -678,7 +793,48 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
 
+  v8::Global<v8::Value> pending_child_web_preferences_;
+
   bool initially_shown_ = true;
+
+  // The window that this WebContents belongs to.
+  base::WeakPtr<NativeWindow> owner_window_;
+
+  bool offscreen_ = false;
+
+  // Whether window is fullscreened by HTML5 api.
+  bool html_fullscreen_ = false;
+
+  // Whether window is fullscreened by window api.
+  bool native_fullscreen_ = false;
+
+  // UI related helper classes.
+  std::unique_ptr<WebDialogHelper> web_dialog_helper_;
+
+  scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+
+  ElectronBrowserContext* browser_context_;
+
+  // The stored InspectableWebContents object.
+  // Notice that web_contents_ must be placed after dialog_manager_, so we can
+  // make sure web_contents_ is destroyed before dialog_manager_, otherwise a
+  // crash would happen.
+  std::unique_ptr<InspectableWebContents> web_contents_;
+
+  // Maps url to file path, used by the file requests sent from devtools.
+  typedef std::map<std::string, base::FilePath> PathsMap;
+  PathsMap saved_files_;
+
+  // Map id to index job, used for file system indexing requests from devtools.
+  typedef std::
+      map<int, scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>>
+          DevToolsIndexingJobsMap;
+  DevToolsIndexingJobsMap devtools_indexing_jobs_;
+
+  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  // Stores the frame thats currently in fullscreen, nullptr if there is none.
+  content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
   mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>

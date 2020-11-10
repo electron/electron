@@ -8,6 +8,7 @@ detection can be implemented in the Renderer process using the
 attribute, part of standard HTML5 API.
 
 The `navigator.onLine` attribute returns:
+
 * `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
 * `true` in all other cases.
 
