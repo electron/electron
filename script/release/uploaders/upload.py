@@ -153,7 +153,9 @@ def parse_args():
                       action='store_true',
                       default=False,
                       required=False)
-  parser.add_argument('--verbose', help='Mooooorreee logs')
+  parser.add_argument('--verbose',
+                      action='store_true',
+                      help='Mooooorreee logs')
   return parser.parse_args()
 
 
