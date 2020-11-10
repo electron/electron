@@ -1,0 +1,299 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
+Date: Tue, 3 Nov 2020 12:42:43 +0100
+Subject: Merged: Squashed multiple commits.
+
+Merged: [map] Try to in-place transition during map update
+Revision: 8e3ae62d294818733a0322d8e8abd53d4e410f19
+
+Merged: [map] Skip loading the field owner before GeneralizeField
+Revision: a928f5fcc2a67c2c8d621ece48f76deb0d36637b
+
+BUG=chromium:1143772
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=verwaest@chromium.org
+
+Change-Id: I78628cb697b21caa2098cc5948e226af5fcd020c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2516474
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.7@{#31}
+Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
+Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index e51bcfc76010a8c616dccc0af5daff5d498b7e81..b4b158749381efcf780d5c8ba07c286be6ba6b30 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -232,10 +232,7 @@ MapUpdater::State MapUpdater::TryReconfigureToDataFieldInplace() {
+         handle(old_descriptors_->GetFieldType(modified_descriptor_), isolate_),
+         MaybeHandle<Object>(), new_field_type_, MaybeHandle<Object>());
+   }
+-  Handle<Map> field_owner(
+-      old_map_->FindFieldOwner(isolate_, modified_descriptor_), isolate_);
+-
+-  GeneralizeField(field_owner, modified_descriptor_, new_constness_,
++  GeneralizeField(old_map_, modified_descriptor_, new_constness_,
+                   new_representation_, new_field_type_);
+   // Check that the descriptor array was updated.
+   DCHECK(old_descriptors_->GetDetails(modified_descriptor_)
+@@ -401,7 +398,13 @@ MapUpdater::State MapUpdater::FindTargetMap() {
+     }
+     Representation tmp_representation = tmp_details.representation();
+     if (!old_details.representation().fits_into(tmp_representation)) {
+-      break;
++      // Try updating the field in-place to a generalized type.
++      Representation generalized =
++          tmp_representation.generalize(old_details.representation());
++      if (!tmp_representation.CanBeInPlaceChangedTo(generalized)) {
++        break;
++      }
++      tmp_representation = generalized;
+     }
+ 
+     if (tmp_details.location() == kField) {
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index d85d5893c43798a6ee643da46267c77eacd49c0e..cc98acd0e2840da52cc84b076fdea987bf96a047 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -611,6 +611,7 @@ void Map::DeprecateTransitionTree(Isolate* isolate) {
+     transitions.GetTarget(i).DeprecateTransitionTree(isolate);
+   }
+   DCHECK(!constructor_or_backpointer().IsFunctionTemplateInfo());
++  DCHECK(CanBeDeprecated());
+   set_is_deprecated(true);
+   if (FLAG_trace_maps) {
+     LOG(isolate, MapEvent("Deprecate", handle(*this, isolate), Handle<Map>()));
+diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
+index a8ef298fb0d2a7da15a4b58e5088dcec7e88b426..740ae05c1eaf8104ad5c3c443b2e39429fc7fca5 100644
+--- a/test/cctest/test-field-type-tracking.cc
++++ b/test/cctest/test-field-type-tracking.cc
+@@ -1038,7 +1038,8 @@ namespace {
+ // where "p2A" and "p2B" differ only in the attributes.
+ //
+ void TestReconfigureDataFieldAttribute_GeneralizeField(
+-    const CRFTData& from, const CRFTData& to, const CRFTData& expected) {
++    const CRFTData& from, const CRFTData& to, const CRFTData& expected,
++    bool expected_deprecation) {
+   Isolate* isolate = CcTest::i_isolate();
+ 
+   Expectations expectations(isolate);
+@@ -1107,24 +1108,29 @@ void TestReconfigureDataFieldAttribute_GeneralizeField(
+   CHECK_NE(*map2, *new_map);
+   CHECK(expectations2.Check(*map2));
+ 
+-  // |map| should be deprecated and |new_map| should match new expectations.
+   for (int i = kSplitProp; i < kPropCount; i++) {
+     expectations.SetDataField(i, expected.constness, expected.representation,
+                               expected.type);
+   }
+-  CHECK(map->is_deprecated());
+-  CHECK(!code_field_type->marked_for_deoptimization());
+-  CHECK(!code_field_repr->marked_for_deoptimization());
+-  CHECK(!code_field_const->marked_for_deoptimization());
+-  CHECK_NE(*map, *new_map);
++  if (expected_deprecation) {
++    // |map| should be deprecated and |new_map| should match new expectations.
++    CHECK(map->is_deprecated());
++    CHECK(!code_field_type->marked_for_deoptimization());
++    CHECK(!code_field_repr->marked_for_deoptimization());
++    CHECK(!code_field_const->marked_for_deoptimization());
++    CHECK_NE(*map, *new_map);
+ 
+-  CHECK(!new_map->is_deprecated());
+-  CHECK(expectations.Check(*new_map));
++    CHECK(!new_map->is_deprecated());
++    CHECK(expectations.Check(*new_map));
+ 
+-  // Update deprecated |map|, it should become |new_map|.
+-  Handle<Map> updated_map = Map::Update(isolate, map);
+-  CHECK_EQ(*new_map, *updated_map);
+-  CheckMigrationTarget(isolate, *map, *updated_map);
++    // Update deprecated |map|, it should become |new_map|.
++    Handle<Map> updated_map = Map::Update(isolate, map);
++    CHECK_EQ(*new_map, *updated_map);
++    CheckMigrationTarget(isolate, *map, *updated_map);
++  } else {
++    CHECK(!map->is_deprecated());
++    CHECK(expectations.Check(*map));
++  }
+ }
+ 
+ // This test ensures that trivial field generalization (from HeapObject to
+@@ -1240,22 +1246,22 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToDouble) {
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Smi(), any_type},
+       {PropertyConstness::kConst, Representation::Double(), any_type},
+-      {PropertyConstness::kConst, Representation::Double(), any_type});
++      {PropertyConstness::kConst, Representation::Double(), any_type}, true);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Smi(), any_type},
+       {PropertyConstness::kMutable, Representation::Double(), any_type},
+-      {PropertyConstness::kMutable, Representation::Double(), any_type});
++      {PropertyConstness::kMutable, Representation::Double(), any_type}, true);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Smi(), any_type},
+       {PropertyConstness::kConst, Representation::Double(), any_type},
+-      {PropertyConstness::kMutable, Representation::Double(), any_type});
++      {PropertyConstness::kMutable, Representation::Double(), any_type}, true);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Smi(), any_type},
+       {PropertyConstness::kMutable, Representation::Double(), any_type},
+-      {PropertyConstness::kMutable, Representation::Double(), any_type});
++      {PropertyConstness::kMutable, Representation::Double(), any_type}, true);
+ }
+ 
+ TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToTagged) {
+@@ -1270,22 +1276,26 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeSmiFieldToTagged) {
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Smi(), any_type},
+       {PropertyConstness::kConst, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kConst, Representation::Tagged(), any_type});
++      {PropertyConstness::kConst, Representation::Tagged(), any_type},
++      !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Smi(), any_type},
+       {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Smi(), any_type},
+       {PropertyConstness::kConst, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Smi(), any_type},
+       {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      !FLAG_modify_field_representation_inplace);
+ }
+ 
+ TEST(ReconfigureDataFieldAttribute_GeneralizeDoubleFieldToTagged) {
+@@ -1300,22 +1310,26 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeDoubleFieldToTagged) {
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Double(), any_type},
+       {PropertyConstness::kConst, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kConst, Representation::Tagged(), any_type});
++      {PropertyConstness::kConst, Representation::Tagged(), any_type},
++      FLAG_unbox_double_fields || !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kConst, Representation::Double(), any_type},
+       {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      FLAG_unbox_double_fields || !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Double(), any_type},
+       {PropertyConstness::kConst, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      FLAG_unbox_double_fields || !FLAG_modify_field_representation_inplace);
+ 
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::Double(), any_type},
+       {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      FLAG_unbox_double_fields || !FLAG_modify_field_representation_inplace);
+ }
+ 
+ TEST(ReconfigureDataFieldAttribute_GeneralizeHeapObjFieldToHeapObj) {
+@@ -1401,7 +1415,8 @@ TEST(ReconfigureDataFieldAttribute_GeneralizeHeapObjectFieldToTagged) {
+   TestReconfigureDataFieldAttribute_GeneralizeField(
+       {PropertyConstness::kMutable, Representation::HeapObject(), value_type},
+       {PropertyConstness::kMutable, Representation::Smi(), any_type},
+-      {PropertyConstness::kMutable, Representation::Tagged(), any_type});
++      {PropertyConstness::kMutable, Representation::Tagged(), any_type},
++      !FLAG_modify_field_representation_inplace);
+ }
+ 
+ // Checks that given |map| is deprecated and that it updates to given |new_map|
+diff --git a/test/mjsunit/regress/regress-1143772.js b/test/mjsunit/regress/regress-1143772.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..40bc494d458afec816fd72e3fbb36b20a7942649
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1143772.js
+@@ -0,0 +1,71 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax
++
++(function() {
++    // Only run this test if doubles are transitioned in-place to tagged.
++    let x = {};
++    x.a = 0.1;
++    let y = {};
++    y.a = {};
++    if (!%HaveSameMap(x, y)) return;
++
++    // m1: {}
++    let m1 = {};
++
++    // m2: {a:d}
++    let m2 = {};
++    assertTrue(%HaveSameMap(m2, m1));
++    m2.a = 13.37;
++
++    // m3: {a:d, b:s}
++    let m3 = {};
++    m3.a = 13.37;
++    assertTrue(%HaveSameMap(m3, m2));
++    m3.b = 1;
++
++    // m4: {a:d, b:s, c:h}
++    let m4 = {};
++    m4.a = 13.37;
++    m4.b = 1;
++    assertTrue(%HaveSameMap(m4, m3));
++    m4.c = {};
++
++    // m4_2 == m4
++    let m4_2 = {};
++    m4_2.a = 13.37;
++    m4_2.b = 1;
++    m4_2.c = {};
++    assertTrue(%HaveSameMap(m4_2, m4));
++
++    // m5: {a:d, b:d}
++    let m5 = {};
++    m5.a = 13.37;
++    assertTrue(%HaveSameMap(m5, m2));
++    m5.b = 13.37;
++    assertFalse(%HaveSameMap(m5, m3));
++
++    // At this point, Map3 and Map4 are both deprecated. Map2 transitions to
++    // Map5. Map5 is the migration target for Map3.
++    assertFalse(%HaveSameMap(m5, m3));
++
++    // m6: {a:d, b:d, c:d}
++    let m6 = {};
++    m6.a = 13.37;
++    assertTrue(%HaveSameMap(m6, m2));
++    m6.b = 13.37;
++    assertTrue(%HaveSameMap(m6, m5));
++    m6.c = 13.37
++
++    // Make m7: {a:d, b:d, c:t}
++    let m7 = m4_2;
++    assertTrue(%HaveSameMap(m7, m4));
++    // Map4 is deprecated, so this property access triggers a Map migration.
++    // With in-place map updates and no double unboxing, this should end up
++    // migrating to Map6, and updating it in-place.
++    m7.c;
++    assertFalse(%HaveSameMap(m7, m4));
++    assertTrue(%HaveSameMap(m6, m7));
++})();
