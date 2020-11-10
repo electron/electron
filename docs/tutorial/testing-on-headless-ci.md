@@ -1,27 +1,28 @@
 # Testing on Headless CI Systems (Travis CI, Jenkins)
 
+## Overview
+
 Being based on Chromium, Electron requires a display driver to function.
-If Chromium can't find a display driver, Electron will fail to launch -
-and therefore not executing any of your tests, regardless of how you are running
-them. Testing Electron-based apps on Travis, Circle, Jenkins or similar Systems
-requires therefore a little bit of configuration. In essence, we need to use
-a virtual display driver.
+If Electron can't find a display driver, it will fail to launch and
+will not execute any of your tests. Therefore, testing Electron-based apps
+on headless continuous integration servers such as Travis CI, CircleCI,
+or Jenkins requires a little bit of configuration.
 
-## Configuring the Virtual Display Server
+## Configuring a Virtual Display Server
 
-First, install [Xvfb](https://en.wikipedia.org/wiki/Xvfb).
-It's a virtual framebuffer, implementing the X11 display server protocol -
-it performs all graphical operations in memory without showing any screen output,
+On your Linux machine, install [Xvfb](https://linux.die.net/man/1/xvfb),
+a virtual framebuffer implementing the X11 display server protocol.
+It performs all graphical operations in memory without showing any screen output,
 which is exactly what we need.
 
 Then, create a virtual Xvfb screen and export an environment variable
-called DISPLAY that points to it. Chromium in Electron will automatically look
+called `$DISPLAY` that points to it. Electron will automatically look
 for `$DISPLAY`, so no further configuration of your app is required.
-This step can be automated with Anaïs Betts'
-[xvfb-maybe](https://github.com/anaisbetts/xvfb-maybe): Prepend your test
-commands with `xvfb-maybe` and the little tool will automatically configure
-Xvfb, if required by the current system. On Windows or macOS, it will
-do nothing.
+
+We recommend using the [xvfb-maybe](https://github.com/anaisbetts/xvfb-maybe)
+package to automate the above step. Prepend your test commands with `xvfb-maybe`
+and this test command will automatically configure Xvfb if required by the current system.
+On Windows or macOS, it will do nothing.
 
 ```sh
 ## On Windows or macOS, this invokes electron-mocha
@@ -30,9 +31,9 @@ do nothing.
 xvfb-maybe electron-mocha ./test/*.js
 ```
 
-### Travis CI
+### TravisCI
 
-On Travis, your `.travis.yml` should look roughly like this:
+On TravisCI, your `.travis.yml` should look roughly like this:
 
 ```yml
 addons:
@@ -47,14 +48,15 @@ install:
 
 ### Jenkins
 
-For Jenkins, a [Xvfb plugin is available](https://wiki.jenkins-ci.org/display/JENKINS/Xvfb+Plugin).
+For Jenkins, an [Xvfb plugin is available](https://plugins.jenkins.io/xvfb/).
 
 ### Circle CI
 
-Circle CI is awesome and has Xvfb and `$DISPLAY`
-[already set up, so no further configuration is required](https://circleci.com/docs/environment#browsers).
+Circle CI has Xvfb and the `$DISPLAY` variable
+[already set up](https://circleci.com/docs/2.0/browser-testing/), so no
+further configuration is required.
 
 ### AppVeyor
 
-AppVeyor runs on Windows, supporting Selenium, Chromium, Electron and similar
-tools out of the box - no configuration is required.
+AppVeyor runs on Windows, which supports Selenium, Chromium, and Electron
+tools out of the box. No configuration is required.
