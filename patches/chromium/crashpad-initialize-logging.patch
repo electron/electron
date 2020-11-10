@@ -16,11 +16,11 @@ Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/2425
 Reviewed-by: Mark Mentovai <mark@chromium.org>
 
 diff --git a/base/logging.cc b/base/logging.cc
-index b5cf2c4933d0cbb89f2f1b410c5c249a0b8647f0..698dca03914934b294457d05d89722a27cdebb56 100644
+index 2da71c73819b34a45911131e2cc8bff861178789..6b701b7a8dee0d015758e11771c5c1f3a6b8d13b 100644
 --- a/base/logging.cc
 +++ b/base/logging.cc
-@@ -369,21 +369,23 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
-   g_log_format = settings.log_format;
+@@ -421,21 +421,23 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
+            0u);
  #endif
  
 -  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -58,7 +58,7 @@ index b5cf2c4933d0cbb89f2f1b410c5c249a0b8647f0..698dca03914934b294457d05d89722a2
    }
  
    g_logging_destination = settings.logging_dest;
-@@ -394,7 +396,10 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
+@@ -446,7 +448,10 @@ bool BaseInitLoggingImpl(const LoggingSettings& settings) {
      config.min_severity = FX_LOG_INFO;
      config.console_fd = -1;
      config.log_service_channel = ZX_HANDLE_INVALID;
@@ -71,23 +71,23 @@ index b5cf2c4933d0cbb89f2f1b410c5c249a0b8647f0..698dca03914934b294457d05d89722a2
      config.tags = &log_tag_data;
      config.num_tags = 1;
 diff --git a/third_party/crashpad/crashpad/DEPS b/third_party/crashpad/crashpad/DEPS
-index 83995e0cdea91522c272415330c57af764d23163..7e83327aac2582e81a38720086a52832de58a37a 100644
+index ccb447cde9a9ee3c1fe29419abfa8aa63d777455..6ee9db5400cf12ae4812a261e78234581b036c25 100644
 --- a/third_party/crashpad/crashpad/DEPS
 +++ b/third_party/crashpad/crashpad/DEPS
 @@ -42,7 +42,7 @@ deps = {
        '7bde79cc274d06451bf65ae82c012a5d3e476b5a',
    'crashpad/third_party/mini_chromium/mini_chromium':
        Var('chromium_git') + '/chromium/mini_chromium@' +
--      '76a9bb7475f6217eaf108789246379d3972b4e6a',
+-      'ae14a14ab4cea36db9c446741581d427a7fc7f89',
 +      '5fc64bfbf1c000161445c586de45e40464ff2314',
    'crashpad/third_party/libfuzzer/src':
        Var('chromium_git') + '/chromium/llvm-project/compiler-rt/lib/fuzzer.git@' +
        'fda403cf93ecb8792cb1d061564d89a6553ca020',
 diff --git a/third_party/crashpad/crashpad/handler/handler_main.cc b/third_party/crashpad/crashpad/handler/handler_main.cc
-index 33649291e253a7a9bd281b892bab415ff1950b6a..a3ba9bb17e221e8330b09eae572d116bd29e4ba4 100644
+index d56857ff9042a0e4ed55bb101e419948f4028305..579a7c364077d2b6a78803fa75f7180109b37c89 100644
 --- a/third_party/crashpad/crashpad/handler/handler_main.cc
 +++ b/third_party/crashpad/crashpad/handler/handler_main.cc
-@@ -504,16 +504,26 @@ class ScopedStoppable {
+@@ -494,16 +494,26 @@ class ScopedStoppable {
    DISALLOW_COPY_AND_ASSIGN(ScopedStoppable);
  };
  
