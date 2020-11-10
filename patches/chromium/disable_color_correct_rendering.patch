@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 1c59f8b0e4f7b8edd67fe33049f6d5ce7d5a149f..0eb7ca0c3fb8f27880aa3fed4c2e199231aaf62d 100644
+index f6dedf50a76ba24c0796b47cd7d75b2c1801cbdd..5d12c259324db65999b27375394a48e9a7e4fae4 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1765,6 +1765,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,7 +81,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 36b710fccd22cae8b7a464c5536ae8f370205f1d..21d0357cdd7ef271456339879b99254470d4d0e9 100644
+index 1af8eaab30e5ff0740df3dd4d5554b18acc8df80..42d2b13393d727f2ec5150a4df2c0038670c614e 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -187,7 +187,7 @@ index 36b710fccd22cae8b7a464c5536ae8f370205f1d..21d0357cdd7ef271456339879b992544
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame);
  
    if (current_program_->rounded_corner_rect_location() != -1) {
-@@ -3650,7 +3660,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3654,7 +3664,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& src_color_space,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level) {
@@ -198,7 +198,7 @@ index 36b710fccd22cae8b7a464c5536ae8f370205f1d..21d0357cdd7ef271456339879b992544
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level) {
      // If the input color space is HDR, and it did not specify a white level,
-@@ -4030,9 +4042,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4034,9 +4046,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 36b710fccd22cae8b7a464c5536ae8f370205f1d..21d0357cdd7ef271456339879b992544
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4252,8 +4264,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4256,8 +4268,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,14 +222,14 @@ index 36b710fccd22cae8b7a464c5536ae8f370205f1d..21d0357cdd7ef271456339879b992544
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4443,3 +4455,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4447,3 +4459,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 895dd7b9a2417ff63e869bb55359188a05e0fd22..f159297017d966353f0dc93dece38c0f326fd4b8 100644
+index 2a35ee3aa3d0e4984ec9e2dfa239444e5789dd19..9ca23d882f08a477e555db13600cf37be7915580 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index 895dd7b9a2417ff63e869bb55359188a05e0fd22..f159297017d966353f0dc93dece38c0f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 603e443f6023dbaf7073c86b5a210005fff5dfee..8fa5c7bfafca35e826f2235ff2fc7793cf0b711f 100644
+index 51f966ff69571e31d7f082a6c157e4c3559f615f..a948fdcd8a83668794d364a3b1518637e5181ee9 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -223,6 +223,7 @@
@@ -252,7 +252,7 @@ index 603e443f6023dbaf7073c86b5a210005fff5dfee..8fa5c7bfafca35e826f2235ff2fc7793
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3266,6 +3267,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3273,6 +3274,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -305,7 +305,7 @@ index 0501709a855b9fae82ab06c4e143b42058ddc12e..e0a457aab29acda134d1da9c798b5472
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2829f2de6e2cb07ed99c5ff70bda36e5f429ea68..cf33a569ceaea6020ab8398bbf2970247eea6592 100644
+index 151ecd87db422422355bcf316ec3d7e0391d7a2b..29e6f43b088141a9084e0005896083c2312ebd4a 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -327,7 +327,7 @@ index 2829f2de6e2cb07ed99c5ff70bda36e5f429ea68..cf33a569ceaea6020ab8398bbf297024
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 3e80dc40c83bd4eb96f9029643c4a0856253494e..8e19a78f106daf4185ee69970832ea1237d3d03b 100644
+index ec83bd814a0d5d6802b349d08b22013a0d99e015..043e769e7db9773de2054dcc66f13f062823f58f 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
@@ -353,7 +353,7 @@ index 3e80dc40c83bd4eb96f9029643c4a0856253494e..8e19a78f106daf4185ee69970832ea12
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -265,6 +274,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -286,6 +295,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

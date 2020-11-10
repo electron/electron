@@ -6,7 +6,7 @@ Subject: feat: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index fe839c7bfc5b429b975f6ddd463cf0ce264a1691..5fdf144361f4188899c6333ff0ac4741780f0224 100644
+index e74ad6694c23ccf7440de4fa158b002e510fab5b..08cc326ca4a06575902359d16b60b9a897b2c581 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -586,6 +586,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -22,7 +22,7 @@ index fe839c7bfc5b429b975f6ddd463cf0ce264a1691..5fdf144361f4188899c6333ff0ac4741
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index d7456cfab182827136334a6d634c8849e640ef88..6e62b27bb99a8fa992625375bed01816f954c81f 100644
+index 1b27f1ed91696dd0f644a9cea3fb058645245e79..7b7e4e0bdcc6a39be398a495f63d5e325abe1982 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -132,6 +132,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -85,10 +85,10 @@ index 500f7da6e87a1ce7a822b88d56cef8c09c7fccc3..19f4e08ffe5b95e33d4d17b36ef89c96
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 3ce1a71100fc1f39f76ac88eb69ad7548aaa6c82..de38c708af5fbdba24c58a9abc347ca50e711af7 100644
+index fa7875fceb4ffe9284c25faffbfec8bdf5bdcf96..8cdd28e221c88c079e592770b11173225c43d173 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -4266,6 +4266,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3680,6 +3680,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index 3ce1a71100fc1f39f76ac88eb69ad7548aaa6c82..de38c708af5fbdba24c58a9abc347ca5
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -4276,7 +4283,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3690,7 +3697,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -113,10 +113,10 @@ index 3ce1a71100fc1f39f76ac88eb69ad7548aaa6c82..de38c708af5fbdba24c58a9abc347ca5
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index c7c36c1b243b9062ef50700f1b155723d5476856..0bb6aa401594ec0fed09a01cf63fc28f2f5a3bcf 100644
+index 57cd9e5b23caa0db5aa1920444a9b417caf212a7..3942104d0972b6454b209d43ec6b0b43ae8c5377 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -360,6 +360,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -354,6 +354,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -124,12 +124,22 @@ index c7c36c1b243b9062ef50700f1b155723d5476856..0bb6aa401594ec0fed09a01cf63fc28f
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -804,6 +805,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
-   // WebViewImpl::Close while handling an input event.
-   bool debug_inside_input_handling_ = false;
+@@ -766,11 +767,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+   bool should_dispatch_first_layout_after_finished_parsing_ = false;
+   bool should_dispatch_first_layout_after_finished_loading_ = false;
  
-+  bool scheduler_throttling_allowed_ = true;
++  // TODO(bokan): Temporary debugging added to diagnose
++  // https://crbug.com/992315. Somehow we're synchronously calling
++  // WebViewImpl::Close while handling an input event.
++  bool debug_inside_input_handling_ = false;
 +
    FloatSize elastic_overscroll_;
  
    // If true, we send IPC messages when |preferred_size_| changes.
+   bool send_preferred_size_changes_ = false;
+ 
++  bool scheduler_throttling_allowed_ = true;
++
+   // Whether the preferred size may have changed and |UpdatePreferredSize| needs
+   // to be called.
+   bool needs_preferred_size_update_ = true;

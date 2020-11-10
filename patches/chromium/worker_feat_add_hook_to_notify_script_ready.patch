@@ -19,7 +19,7 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 4e50d9370479f221f471150a7243c3f46b427e83..71436edb8ac2803f0ea491b99bc859f7e3a69b2e 100644
+index 1337b1acd88a6e7fbffb23a0ca1f03c53b3a9718..d4d9aa6e82793eba3d0a7978d7976e8f868f6661 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -388,6 +388,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -35,10 +35,10 @@ index 4e50d9370479f221f471150a7243c3f46b427e83..71436edb8ac2803f0ea491b99bc859f7
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 4f772d7dcd415338395bae5258bce9cdfc9ec115..3730cfbcc81a180edfb8ef48f7438d63575633d6 100644
+index f9af3ea4394e705c9c0e2d7ce0ca43e871994bdc..c1be98c7b9fbe9c72ec85583368ff20891282d23 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -906,6 +906,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -903,6 +903,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
@@ -65,10 +65,10 @@ index a4466bb052d440c5d1df1b5e65f034593c5b224e..94f436911a7bf6450490df25404721a4
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index d9602c79b91f18707a2ac214c507e37f18514ec2..b4a59c489d3701ad7c559690be5add77683f2c5f 100644
+index 51335508b51ebfdd9c483ec35276584dfcb55517..674ecc6681e8090b8f40cc30b7a3fd24fc7b2779 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -675,6 +675,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -673,6 +673,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
