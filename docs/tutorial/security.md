@@ -819,7 +819,7 @@ which potential security issues are not as widely known.
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
 [window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandler-handler
-[will-navigate]: ../api/web-contents.md#event-will-navigate
+[will-navigate]: ../api/web-contents.md#event-will-navigateexperimental
 [open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md
 [responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
