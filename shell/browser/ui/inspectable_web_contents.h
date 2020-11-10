@@ -150,7 +150,6 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
-  void GetSurveyAPIKey(const DispatchCallback& callback) override {}
   void ShowSurvey(const DispatchCallback& callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(const DispatchCallback& callback,
