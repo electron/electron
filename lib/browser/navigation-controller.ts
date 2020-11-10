@@ -123,11 +123,13 @@ export class NavigationController extends EventEmitter {
         this.webContents.removeListener('did-fail-load', failListener);
         this.webContents.removeListener('did-start-navigation', navigationListener);
         this.webContents.removeListener('did-stop-loading', stopLoadingListener);
+        this.webContents.removeListener('destroyed', stopLoadingListener);
       };
       this.webContents.on('did-finish-load', finishListener);
       this.webContents.on('did-fail-load', failListener);
       this.webContents.on('did-start-navigation', navigationListener);
       this.webContents.on('did-stop-loading', stopLoadingListener);
+      this.webContents.on('destroyed', stopLoadingListener);
     });
     // Add a no-op rejection handler to silence the unhandled rejection error.
     p.catch(() => {});

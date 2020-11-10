@@ -225,12 +225,6 @@ void BindNetworkHintsHandler(
   NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
 }
 
-#if defined(OS_WIN)
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(";");
-#else
-const base::FilePath::StringPieceType kPathDelimiter = FILE_PATH_LITERAL(":");
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
 // below.  Extension, and isolated apps require different privileges to be
@@ -610,13 +604,21 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
 
+  auto* web_contents = content::WebContents::FromRenderViewHost(host);
+  auto preloads =
+      SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
+  if (!preloads.empty())
+    prefs->preloads = preloads;
+  if (CanUseCustomSiteInstance())
+    prefs->disable_electron_site_instance_overrides = true;
+
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
-  auto* web_contents = content::WebContents::FromRenderViewHost(host);
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  if (web_preferences)
+  if (web_preferences) {
     web_preferences->OverrideWebkitPrefs(prefs);
+  }
 }
 
 void ElectronBrowserClient::SetCanUseCustomSiteInstance(bool should_disable) {
@@ -803,16 +805,6 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       if (web_preferences)
         web_preferences->AppendCommandLineSwitches(
             command_line, IsRendererSubFrame(process_id));
-      auto preloads = SessionPreferences::GetValidPreloads(
-          web_contents->GetBrowserContext());
-      if (!preloads.empty())
-        command_line->AppendSwitchNative(
-            switches::kPreloadScripts,
-            base::JoinString(preloads, kPathDelimiter));
-      if (CanUseCustomSiteInstance()) {
-        command_line->AppendSwitch(
-            switches::kDisableElectronSiteInstanceOverrides);
-      }
     }
   }
 }

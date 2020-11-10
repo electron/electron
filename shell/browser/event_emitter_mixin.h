@@ -21,6 +21,7 @@ template <typename T>
 class EventEmitterMixin {
  public:
   // this.emit(name, new Event(), args...);
+  // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();

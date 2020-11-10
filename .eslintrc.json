@@ -14,7 +14,7 @@
     "@typescript-eslint/no-unused-vars": ["error", {
       "vars": "all",
       "args": "after-used",
-      "ignoreRestSiblings": false
+      "ignoreRestSiblings": true
     }],
     "prefer-const": ["error", {
       "destructuring": "all"

@@ -252,6 +252,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
 
+  void SetNextChildWebPreferences(const gin_helper::Dictionary);
+
   // DevTools workspace api.
   void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
   void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
@@ -354,7 +356,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the preload script path of current WebContents.
-  std::vector<base::FilePath::StringType> GetPreloadPaths() const;
+  std::vector<base::FilePath> GetPreloadPaths() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
@@ -456,8 +458,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,
       const GURL& opener_url,
-      const std::string& frame_name,
-      const GURL& target_url) override;
+      const content::mojom::CreateNewWindowParams& params) override;
   content::WebContents* CreateCustomWebContents(
       content::RenderFrameHost* opener,
       content::SiteInstance* source_site_instance,
@@ -678,6 +679,8 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
+
+  v8::Global<v8::Value> pending_child_web_preferences_;
 
   bool initially_shown_ = true;
 

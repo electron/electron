@@ -639,7 +639,11 @@ void WebContents::InitWithSessionAndOptions(
     prefs->caret_blink_interval = *interval;
 
   // Save the preferences in C++.
-  new WebContentsPreferences(web_contents(), options);
+  // If there's already a WebContentsPreferences object, we created it as part
+  // of the webContents.setWindowOpenHandler path, so don't overwrite it.
+  if (!WebContentsPreferences::From(web_contents())) {
+    new WebContentsPreferences(web_contents(), options);
+  }
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
@@ -778,18 +782,44 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->referrer = params.referrer.To<content::Referrer>();
   tracker->raw_features = params.raw_features;
   tracker->body = params.body;
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  gin_helper::Dictionary dict;
+  gin::ConvertFromV8(isolate, pending_child_web_preferences_.Get(isolate),
+                     &dict);
+  pending_child_web_preferences_.Reset();
+
+  // Associate the preferences passed in via `setWindowOpenHandler` with the
+  // content::WebContents that was just created for the child window. These
+  // preferences will be picked up by the RenderWidgetHost via its call to the
+  // delegate's OverrideWebkitPrefs.
+  new WebContentsPreferences(new_contents, dict);
 }
 
 bool WebContents::IsWebContentsCreationOverridden(
     content::SiteInstance* source_site_instance,
     content::mojom::WindowContainerType window_container_type,
     const GURL& opener_url,
-    const std::string& frame_name,
-    const GURL& target_url) {
-  if (Emit("-will-add-new-contents", target_url, frame_name)) {
-    return true;
-  }
-  return false;
+    const content::mojom::CreateNewWindowParams& params) {
+  bool default_prevented = Emit("-will-add-new-contents", params.target_url,
+                                params.frame_name, params.raw_features);
+  // If the app prevented the default, redirect to CreateCustomWebContents,
+  // which always returns nullptr, which will result in the window open being
+  // prevented (window.open() will return null in the renderer).
+  return default_prevented;
+}
+
+void WebContents::SetNextChildWebPreferences(
+    const gin_helper::Dictionary preferences) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  // Store these prefs for when Chrome calls WebContentsCreatedWithFullParams
+  // with the new child contents.
+  pending_child_web_preferences_.Reset(isolate, preferences.GetHandle());
 }
 
 content::WebContents* WebContents::CreateCustomWebContents(
@@ -1076,7 +1106,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   if (web_contents()->GetRenderViewHost() == render_view_host) {
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
-    // Currently tracked by guest-window-manager.js to destroy the
+    // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
     Emit("current-render-view-deleted",
          render_view_host->GetProcess()->GetID());
@@ -2738,11 +2768,11 @@ void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
-std::vector<base::FilePath::StringType> WebContents::GetPreloadPaths() const {
+std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
 
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
-    base::FilePath::StringType preload;
+    base::FilePath preload;
     if (web_preferences->GetPreloadPath(&preload)) {
       result.emplace_back(preload);
     }
@@ -3017,6 +3047,8 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("_getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
 #endif
+      .SetMethod("_setNextChildWebPreferences",
+                 &WebContents::SetNextChildWebPreferences)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",

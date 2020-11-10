@@ -21,22 +21,37 @@ index 365d0d8cf45c664160048a7a9606907cb5414292..dd52048e922904826c5b31d13f17dfc9
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 962cd0fb5a428530cd9e2f8e689f2d09bc95ce1b..e099a6cc44e73da8b24603fd86b72139f0735fb2 100644
+index 962cd0fb5a428530cd9e2f8e689f2d09bc95ce1b..ea458219bd182bd9ff21b203c282e7d0738049dd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3624,9 +3624,9 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3582,6 +3582,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
+   auto* new_contents_impl = new_contents.get();
  
-   if (delegate_) {
--    delegate_->WebContentsCreated(this, render_process_id,
--                                  opener->GetRoutingID(), params.frame_name,
--                                  params.target_url, new_contents_impl);
++  // Call this earlier than Chrome to associate the web preferences with the
++  // WebContents before the view gets created.
++  if (delegate_) {
 +    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
 +                                                opener->GetRoutingID(),
 +                                                params, new_contents_impl);
++  }
++
+   new_contents_impl->GetController().SetSessionStorageNamespace(
+       partition_id, session_storage_namespace);
+ 
+@@ -3623,12 +3631,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+     AddDestructionObserver(new_contents_impl);
    }
  
+-  if (delegate_) {
+-    delegate_->WebContentsCreated(this, render_process_id,
+-                                  opener->GetRoutingID(), params.frame_name,
+-                                  params.target_url, new_contents_impl);
+-  }
+-
    observers_.ForEachObserver([&](WebContentsObserver* observer) {
+     observer->DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
+                                   params.referrer.To<Referrer>(),
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index 703c4611691b72380423576eebdadcd23e6ae913..2be0f93b7ea3791bb776158795a44aa7422e19ac 100644
 --- a/content/common/frame.mojom
