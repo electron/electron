@@ -77,8 +77,8 @@ def main():
     symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
-  if get_platform_key() == 'darwin':
-    if get_target_arch() == 'x64':
+  if PLATFORM == 'darwin':
+    if get_platform_key() == 'darwin' and get_target_arch() == 'x64':
       api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
       upload_electron(release, api_path, args)
 
