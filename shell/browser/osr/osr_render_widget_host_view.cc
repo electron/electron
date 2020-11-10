@@ -500,6 +500,14 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
 
+base::Optional<content::DisplayFeature>
+OffScreenRenderWidgetHostView::GetDisplayFeature() {
+  return base::nullopt;
+}
+
+void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
+    const content::DisplayFeature* display_feature) {}
+
 viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
   return GetDelegatedFrameHost()
              ? GetDelegatedFrameHost()->GetCurrentSurfaceId()

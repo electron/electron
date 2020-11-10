@@ -128,6 +128,9 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void GetScreenInfo(blink::ScreenInfo* results) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
+  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  void SetDisplayFeatureForTesting(
+      const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
