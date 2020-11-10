@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Thu, 15 Oct 2020 12:45:34 +0200
+Subject: Merged: [codegen] Skip invalid optimization in tail calls
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Preparing for tail call is usually done by emitting the gap moves and
+then moving the stack pointer to its new position. An optimization
+consists in moving the stack pointer first and transforming some of the
+moves into pushes. In the attached case it looks like this (arm):
+
+138  add sp, sp, #40
+13c  str r6, [sp, #-4]!
+140  str r6, [sp, #-4]!
+144  str r6, [sp, #-4]!
+148  str r6, [sp, #-4]!
+14c  str r6, [sp, #-4]!
+...
+160  vldr d1, [sp - 4*3]
+
+The last line is a gap reload, but because the stack pointer was already
+moved, the slot is now below the stack pointer. This is invalid and
+triggers this DCHECK:
+
+Fatal error in ../../v8/src/codegen/arm/assembler-arm.cc, line 402
+Debug check failed: 0 <= offset (0 vs. -12).
+
+A comment already explains that we skip the optimization if the gap
+contains stack moves to prevent this, but the code only checks for
+non-FP slots. This is fixed by replacing "source.IsStackSlot()" with
+"source.IsAnyStackSlot()":
+
+108  vldr d1, [sp + 4*2]
+...
+118  str r0, [sp, #+36]
+11c  str r0, [sp, #+32]
+120  str r0, [sp, #+28]
+124  str r0, [sp, #+24]
+128  str r0, [sp, #+20]
+...
+134  add sp, sp, #20
+
+TBR=​jgruber@chromium.org
+
+(cherry picked from commit 7506e063d0d7fb00e4b9c06735c91e1953296867)
+
+Change-Id: I66ed6187755af956e245207e940c83ea0697a5e6
+Bug: chromium:1137608
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2505976
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.6@{#42}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index 36231c61e09839b3394b78b4f4715daa3023caf4..c0162012eb2747fb6b64c35f336198d0bf75a4ab 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -564,8 +564,8 @@ void CodeGenerator::GetPushCompatibleMoves(Instruction* instr,
+         // then the full gap resolver must be used since optimization with
+         // pushes don't participate in the parallel move and might clobber
+         // values needed for the gap resolve.
+-        if (source.IsStackSlot() && LocationOperand::cast(source).index() >=
+-                                        first_push_compatible_index) {
++        if (source.IsAnyStackSlot() && LocationOperand::cast(source).index() >=
++                                           first_push_compatible_index) {
+           pushes->clear();
+           return;
+         }
+diff --git a/test/mjsunit/regress/wasm/regress-1137608.js b/test/mjsunit/regress/wasm/regress-1137608.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5011dced2f70ffbe2b6096a4e1863f434c8898a8
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1137608.js
+@@ -0,0 +1,46 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --no-liftoff --experimental-wasm-return-call --experimental-wasm-threads
++
++load("test/mjsunit/wasm/wasm-module-builder.js");
++
++(function Regress1137608() {
++  print(arguments.callee.name);
++  let builder = new WasmModuleBuilder();
++  let sig0 = builder.addType(kSig_i_iii);
++  let sig1 = builder.addType(makeSig([kWasmF64, kWasmF64, kWasmI32,
++        kWasmI32, kWasmI32, kWasmF32, kWasmI32, kWasmF64, kWasmI32, kWasmF32,
++        kWasmI32, kWasmF32, kWasmI32, kWasmF64, kWasmI32], [kWasmI32]));
++  let main = builder.addFunction("main", sig0)
++      .addBody([
++        kExprI64Const, 0,
++        kExprF64UConvertI64,
++        kExprF64Const, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x00, 0x00,
++        kExprF64Const, 0x30, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00,
++        kExprF64Mul,
++        kExprI32Const, 0,
++        kExprF64Const, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++        kExprF64StoreMem, 0x00, 0xb0, 0xe0, 0xc0, 0x81, 0x03,
++        kExprI32Const, 0,
++        kExprI32Const, 0,
++        kExprI32Const, 0,
++        kExprF32Const, 0x00, 0x00, 0x00, 0x00,
++        kExprI32Const, 0,
++        kExprF64Const, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++        kExprI32Const, 0,
++        kExprF32Const, 0x00, 0x00, 0x00, 0x00,
++        kExprI32Const, 0,
++        kExprF32Const, 0x00, 0x00, 0x00, 0x00,
++        kExprI32Const, 0,
++        kExprF64Const, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++        kExprI32Const, 0,
++        kExprI32Const, 2,
++        kExprReturnCallIndirect, sig1, kTableZero]).exportFunc();
++  builder.addFunction("f", sig1).addBody([kExprI32Const, 0]);
++  builder.addTable(kWasmAnyFunc, 4, 4);
++  builder.addMemory(16, 32, false, true);
++  let module = new WebAssembly.Module(builder.toBuffer());
++  let instance = new WebAssembly.Instance(module);
++})();
