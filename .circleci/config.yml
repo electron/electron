@@ -158,10 +158,6 @@ env-mas-apple-silicon: &env-mas-apple-silicon
   TARGET_ARCH: arm64
   USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
 
-# Misc build configuration options.
-env-enable-sccache: &env-enable-sccache
-  USE_SCCACHE: true
-
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
   
@@ -295,22 +291,10 @@ step-setup-env-for-build: &step-setup-env-for-build
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
 
-      if [ "$USE_SCCACHE" == "true" ]; then
-        # https://github.com/mozilla/sccache
-        SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
-        echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
-        if [ "$CIRCLE_PR_NUMBER" != "" ]; then
-          #if building a fork set readonly access to sccache
-          echo 'export SCCACHE_BUCKET="electronjs-sccache-ci"' >> $BASH_ENV
-          echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
-        fi
-      fi
-
 step-setup-goma-for-build: &step-setup-goma-for-build
   run:
     name: Setup Goma
     command: |
-      echo 'export USE_GOMA=true' >> $BASH_ENV
       if [ "`uname`" == "Linux" ]; then
         echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
       else
@@ -490,11 +474,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      if [ "$USE_GOMA" == "true" ]; then
-        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      else
-        gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      fi
+      gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
 
 step-gn-check: &step-gn-check
   run:
@@ -534,12 +514,8 @@ step-electron-build: &step-electron-build
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         rm -rf out/Default/clang_x64_v8_arm64/obj
 
-        # Regenerate because we just deleted some ninja files
-        if [ "$USE_GOMA" == "true" ]; then
-          gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-        else
-          gn gen out/Default --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-        fi
+        # Regenerate because we just deleted some ninja files 
+        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       fi
       ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       node electron/script/check-symlinks.js
@@ -615,11 +591,7 @@ step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-ge
     command: |
       cd src
       if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-        if [ "$USE_GOMA" == "true" ]; then
-          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-        else
-          gn gen out/chromedriver --args="import(\"$GN_CONFIG\") cc_wrapper=\"$SCCACHE_PATH\" is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-        fi
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       fi
 
 step-electron-chromedriver-build: &step-electron-chromedriver-build
@@ -730,11 +702,7 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      if [ "$USE_GOMA" == "true" ]; then
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS"
-      else
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") cc_wrapper=\"$SCCACHE_PATH\" $GN_EXTRA_ARGS"
-      fi
+      gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS"
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
@@ -777,21 +745,16 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
         sh -e /etc/init.d/xvfb start
       fi
 
-step-show-sccache-stats: &step-show-sccache-stats
+step-show-goma-stats: &step-show-goma-stats
   run:
     shell: /bin/bash
-    name: Check sccache/goma stats after build
-    command: |
-      if [ "$SCCACHE_PATH" != "" ]; then
-        $SCCACHE_PATH -s
-      fi
-      if [ "$USE_GOMA" == "true" ]; then
-        set +e
-        set +o pipefail
-        $LOCAL_GOMA_DIR/goma_ctl.py stat
-        $LOCAL_GOMA_DIR/diagnose_goma_log.py
-        true
-      fi
+    name: Check goma stats after build
+    command: |      
+      set +e
+      set +o pipefail
+      $LOCAL_GOMA_DIR/goma_ctl.py stat
+      $LOCAL_GOMA_DIR/diagnose_goma_log.py
+      true
     when: always
 
 step-mksnapshot-build: &step-mksnapshot-build
@@ -1267,7 +1230,7 @@ steps-native-tests: &steps-native-tests
         command: |
           cd src
           ninja -C out/Default $BUILD_TARGET
-    - *step-show-sccache-stats
+    - *step-show-goma-stats
 
     - *step-setup-linux-for-headless-testing
     - run:
@@ -1572,7 +1535,7 @@ commands:
             - *step-nodejs-headers-build
             - *step-nodejs-headers-store
 
-            - *step-show-sccache-stats
+            - *step-show-goma-stats
 
             # mksnapshot
             - *step-mksnapshot-build
@@ -1660,13 +1623,14 @@ commands:
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
-      - *step-fix-sync-on-mac            
+      - *step-fix-sync-on-mac
       - *step-setup-env-for-build
+      - *step-setup-goma-for-build
       - *step-gn-gen-default
 
       # Electron app
       - *step-electron-build
-      - *step-show-sccache-stats
+      - *step-show-goma-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - *step-electron-dist-build
@@ -1877,7 +1841,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -1889,7 +1852,6 @@ jobs:
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -1940,7 +1902,6 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -1954,7 +1915,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-ia32
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2006,7 +1966,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
@@ -2021,7 +1980,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2081,7 +2039,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
-      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2095,7 +2052,6 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2143,7 +2099,6 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2156,7 +2111,6 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
@@ -2170,7 +2124,6 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2182,7 +2135,6 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      <<: *env-enable-sccache
       <<: *env-apple-silicon
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2251,7 +2203,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
-      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2265,7 +2216,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
       <<: *env-release-build
-      <<: *env-enable-sccache
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
@@ -2279,7 +2229,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2292,7 +2241,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
       <<: *env-release-build
-      <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
