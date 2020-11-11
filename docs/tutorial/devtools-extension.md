@@ -53,7 +53,8 @@ extension to be loaded.
 ### Removing a DevTools extension
 
 You can pass the extension's ID to the [`ses.removeExtension`][remove-extension] API to
-remove it from your Session.
+remove it from your Session. Loaded extensions are not persisted between
+app launches.
 
 ## Using tooling
 
