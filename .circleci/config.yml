@@ -1161,6 +1161,7 @@ steps-electron-gn-check: &steps-electron-gn-check
     - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-setup-goma-for-build
     - *step-gn-gen-default
     - *step-gn-check
 
@@ -1194,6 +1195,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-setup-goma-for-build
     - *step-restore-brew-cache
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
@@ -1203,26 +1205,13 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
 
-steps-chromedriver-build: &steps-chromedriver-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-fix-sync-on-mac
-
-    - *step-electron-maybe-chromedriver-gn-gen
-    - *step-electron-chromedriver-build
-    - *step-electron-chromedriver-store
-
-    - *step-maybe-notify-slack-failure
-
 steps-native-tests: &steps-native-tests
   steps:
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-setup-goma-for-build
     - *step-gn-gen-default
 
     - run:
@@ -1814,14 +1803,6 @@ jobs:
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
-  linux-x64-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
-
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
@@ -1871,15 +1852,6 @@ jobs:
           persist: true
           checkout: true
           use-out-cache: false
-
-  linux-ia32-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
 
   linux-ia32-release:
     <<: *machine-linux-2xlarge
@@ -1936,15 +1908,6 @@ jobs:
           persist: false
           checkout: true
           use-out-cache: false
-
-  linux-arm-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
 
   linux-arm-release:
     <<: *machine-linux-2xlarge
@@ -2009,15 +1972,6 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
     <<: *steps-electron-gn-check
-
-  linux-arm64-chromedriver:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-arm64
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-    <<: *steps-chromedriver-build
 
   linux-arm64-release:
     <<: *machine-linux-2xlarge
