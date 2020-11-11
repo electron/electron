@@ -10,7 +10,7 @@
   "dependencies": {
     "@electron/get": "^1.0.1",
     "@types/node": "^14.6.2",
-    "extract-zip": "^1.0.3"
+    "extract-zip": "^1.4.1"
   },
   "engines": {
     "node": ">= 8.6"
