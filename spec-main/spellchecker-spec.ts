@@ -101,6 +101,29 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
     expect(await callWebFrameFn('getWordSuggestions("testt")')).to.not.be.empty();
   });
 
+  describe('spellCheckerEnabled', () => {
+    it('is enabled by default', async () => {
+      expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+    });
+
+    ifit(shouldRun)('can be dynamically changed', async () => {
+      await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+      await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
+      // Wait for spellchecker to load
+      await delay(500);
+
+      const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript('require("electron").webFrame.' + expr);
+
+      w.webContents.session.spellCheckerEnabled = false;
+      expect(w.webContents.session.spellCheckerEnabled).to.be.false();
+      expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(false);
+
+      w.webContents.session.spellCheckerEnabled = true;
+      expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+      expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(true);
+    });
+  });
+
   describe('custom dictionary word list API', () => {
     let ses: Session;
 

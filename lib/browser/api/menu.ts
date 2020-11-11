@@ -17,7 +17,9 @@ Menu.prototype._init = function () {
 };
 
 Menu.prototype._isCommandIdChecked = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].checked : false;
+  const item = this.commandsMap[id];
+  if (!item) return false;
+  return item.getCheckStatus();
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {

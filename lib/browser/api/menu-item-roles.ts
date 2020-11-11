@@ -1,4 +1,4 @@
-import { app, BrowserWindow, WebContents, MenuItemConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, session, webContents, WebContents, MenuItemConstructorOptions } from 'electron/main';
 
 const isMac = process.platform === 'darwin';
 const isWindows = process.platform === 'win32';
@@ -6,10 +6,12 @@ const isLinux = process.platform === 'linux';
 
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' | 'startspeaking' | 'stopspeaking' |
-  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
+  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
+  'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
   label: string;
   accelerator?: string;
+  checked?: boolean;
   windowMethod?: ((window: BrowserWindow) => void);
   webContentsMethod?: ((webContents: WebContents) => void);
   appMethod?: () => void;
@@ -180,6 +182,19 @@ export const roleList: Record<RoleId, Role> = {
       webContents.zoomLevel -= 0.5;
     }
   },
+  togglespellchecker: {
+    label: 'Check Spelling While Typing',
+    get checked () {
+      const wc = webContents.getFocusedWebContents();
+      const ses = wc ? wc.session : session.defaultSession;
+      return ses.spellCheckerEnabled;
+    },
+    nonNativeMacOSRole: true,
+    webContentsMethod: (wc: WebContents) => {
+      const ses = wc ? wc.session : session.defaultSession;
+      ses.spellCheckerEnabled = !ses.spellCheckerEnabled;
+    }
+  },
   // App submenu should be used for Mac only
   appmenu: {
     get label () {
@@ -281,8 +296,21 @@ const canExecuteRole = (role: keyof typeof roleList) => {
   return roleList[role].nonNativeMacOSRole;
 };
 
+export function getDefaultType (role: RoleId) {
+  if (shouldOverrideCheckStatus(role)) return 'checkbox';
+  return 'normal';
+}
+
 export function getDefaultLabel (role: RoleId) {
   return hasRole(role) ? roleList[role].label : '';
+}
+
+export function getCheckStatus (role: RoleId) {
+  if (hasRole(role)) return roleList[role].checked;
+}
+
+export function shouldOverrideCheckStatus (role: RoleId) {
+  return hasRole(role) && Object.prototype.hasOwnProperty.call(roleList[role], 'checked');
 }
 
 export function getDefaultAccelerator (role: RoleId) {

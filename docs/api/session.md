@@ -673,6 +673,16 @@ this session just before normal `preload` scripts run.
 Returns `String[]` an array of paths to preload scripts that have been
 registered.
 
+#### `ses.setSpellCheckerEnabled(enable)`
+
+* `enable` Boolean
+
+Sets whether to enable the builtin spell checker.
+
+#### `ses.isSpellCheckerEnabled()`
+
+Returns `Boolean` - Whether the builtin spell checker is enabled.
+
 #### `ses.setSpellCheckerLanguages(languages)`
 
 * `languages` String[] - An array of language codes to enable the spellchecker for.
@@ -802,6 +812,10 @@ The following properties are available on instances of `Session`:
 
 A `String[]` array which consists of all the known available spell checker languages.  Providing a language
 code to the `setSpellCheckerLanguages` API that isn't in this array will result in an error.
+
+#### `ses.spellCheckerEnabled`
+
+A `Boolean` indicating whether builtin spell checker is enabled.
 
 #### `ses.cookies` _Readonly_
 
