@@ -58,6 +58,15 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
   [NSApp setActivationPolicy:activation_policy];
 }
 
+bool App::IsRunningUnderRosettaTranslation() {
+  int ret = 0;
+  size_t size = sizeof(ret);
+  if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1) {
+    return false;
+  }
+  return ret == = 1;
+}
+
 }  // namespace api
 
 }  // namespace electron
