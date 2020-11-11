@@ -792,8 +792,7 @@ void WebContents::AddNewContents(
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name)) {
-    // TODO(zcbenz): Can we make this sync?
-    api_web_contents->DestroyWebContents(true /* async */);
+    api_web_contents->DestroyWebContents(false /* async */);
   }
 }
 
