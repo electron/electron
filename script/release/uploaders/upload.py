@@ -20,7 +20,7 @@ sys.path.append(
 from io import StringIO
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
-                       get_zip_name
+                       get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      scoped_cwd, s3put, get_electron_exec, \
                      get_out_dir, SRC_DIR, ELECTRON_DIR
@@ -44,7 +44,9 @@ TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'toolchain
 
 def main():
   args = parse_args()
-  if  args.upload_to_s3:
+  if args.verbose:
+    enable_verbose_mode()
+  if args.upload_to_s3:
     utcnow = datetime.datetime.utcnow()
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
@@ -76,11 +78,13 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
-    api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
-    upload_electron(release, api_path, args)
+    if get_platform_key() == 'darwin' and get_target_arch() == 'x64':
+      api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
+      upload_electron(release, api_path, args)
 
-    ts_defs_path = os.path.join(ELECTRON_DIR, 'electron.d.ts')
-    upload_electron(release, ts_defs_path, args)
+      ts_defs_path = os.path.join(ELECTRON_DIR, 'electron.d.ts')
+      upload_electron(release, ts_defs_path, args)
+
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
@@ -149,6 +153,9 @@ def parse_args():
                       action='store_true',
                       default=False,
                       required=False)
+  parser.add_argument('--verbose',
+                      action='store_true',
+                      help='Mooooorreee logs')
   return parser.parse_args()
 
 
