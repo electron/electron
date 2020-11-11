@@ -305,7 +305,7 @@ index e42332ab13fb01000c73cf0b3b757d1f7141da6f..f8754dbd6a1490d2b50f1014e2daa5c1
  
  NSString * const SQRLCodeSignatureErrorDomain = @"SQRLCodeSignatureErrorDomain";
 diff --git a/Squirrel/SQRLDirectoryManager.m b/Squirrel/SQRLDirectoryManager.m
-index 34f321077f0bf59de98a41dea2cea95eff72486d..200891ca73ac67754219204340881ef85aff4845 100644
+index fb130fa5dca4570e0822c8cfdab6831bb57ab5ad..d439906827e0f9fb5550bb6c9840a4e75352f3d7 100644
 --- a/Squirrel/SQRLDirectoryManager.m
 +++ b/Squirrel/SQRLDirectoryManager.m
 @@ -8,7 +8,7 @@
