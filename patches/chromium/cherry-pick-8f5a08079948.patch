@@ -1,7 +1,7 @@
-From 8f5a08079948aa8b411cd30844bdd61638944142 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Martin Robinson <mrobinson@igalia.com>
 Date: Mon, 26 Oct 2020 23:12:55 +0000
-Subject: [PATCH] Expose a11y popup menu type via the name "AXPopupValue" on Mac
+Subject: Expose a11y popup menu type via the name "AXPopupValue" on Mac
 
 This value was exposed via the name "AXHasPopupValue", while WebKit
 exposes this value via "AXPopupValue." Fix the attribute name, which in
@@ -14,10 +14,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2489985
 Commit-Queue: Aaron Leventhal <aleventhal@chromium.org>
 Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#820964}
----
 
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 17455bea..fc8e75c2 100644
+index 3abd9933ab325bda6cb486a41fd6c8b246aa8e71..17aa494d6473866721a8cc5f4c5c646af9307d93 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -92,7 +92,7 @@
@@ -29,7 +28,7 @@ index 17455bea..fc8e75c2 100644
  NSString* const NSAccessibilityHighestEditableAncestorAttribute =
      @"AXHighestEditableAncestor";
  NSString* const NSAccessibilityInvalidAttribute = @"AXInvalid";
-@@ -828,7 +828,7 @@
+@@ -836,7 +836,7 @@ + (void)initialize {
        {NSAccessibilityGrabbedAttribute, @"grabbed"},
        {NSAccessibilityHeaderAttribute, @"header"},
        {NSAccessibilityHasPopupAttribute, @"hasPopup"},
@@ -38,7 +37,7 @@ index 17455bea..fc8e75c2 100644
        {NSAccessibilityHelpAttribute, @"help"},
        {NSAccessibilityHighestEditableAncestorAttribute,
         @"highestEditableAncestor"},
-@@ -1388,7 +1388,7 @@
+@@ -1411,7 +1411,7 @@ - (NSNumber*)hasPopup {
    return @(_owner->HasIntAttribute(ax::mojom::IntAttribute::kHasPopup));
  }
  
@@ -47,7 +46,7 @@ index 17455bea..fc8e75c2 100644
    if (![self instanceActive])
      return nil;
    int hasPopup = _owner->GetIntAttribute(ax::mojom::IntAttribute::kHasPopup);
-@@ -3551,7 +3551,7 @@
+@@ -3586,7 +3586,7 @@ - (NSArray*)accessibilityAttributeNames {
  
    if (_owner->HasIntAttribute(ax::mojom::IntAttribute::kHasPopup)) {
      [ret addObjectsFromArray:@[
@@ -57,7 +56,7 @@ index 17455bea..fc8e75c2 100644
    }
  
 diff --git a/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt b/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
-index e988b9f..de0f31f 100644
+index e988b9fe7d061fa3aa6930ababa4f32c095bd8a3..de0f31f2065490d6085027e2800706a3926bcf5b 100644
 --- a/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
 +++ b/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
 @@ -1,10 +1,10 @@
@@ -80,12 +79,12 @@ index e988b9f..de0f31f 100644
 +++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
 +++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
 diff --git a/content/test/data/accessibility/aria/aria-haspopup.html b/content/test/data/accessibility/aria/aria-haspopup.html
-index 59dcb3c..6cf7301d 100644
+index 026397c4e9ad805f5facfc499cc986cd0763aef3..7d982745e89b8346bf71eee90110fe6a96648629 100644
 --- a/content/test/data/accessibility/aria/aria-haspopup.html
 +++ b/content/test/data/accessibility/aria/aria-haspopup.html
 @@ -3,7 +3,7 @@
- @MAC-ALLOW:AXShowMenu
- @MAC-ALLOW:AXPress
+ @MAC-ALLOW:AXShowMenu*
+ @MAC-ALLOW:AXPress*
  @MAC-ALLOW:AXHasPopup
 -@MAC-ALLOW:AXHasPopupValue
 +@MAC-ALLOW:AXPopupValue
@@ -93,7 +92,7 @@ index 59dcb3c..6cf7301d 100644
  @WIN-ALLOW:HASPOPUP*
  @WIN-ALLOW:haspopup*
 diff --git a/content/test/data/accessibility/html/input-suggestions-source-element-expected-mac.txt b/content/test/data/accessibility/html/input-suggestions-source-element-expected-mac.txt
-index 4b0bde65..38ca751 100644
+index 4b0bde650deed34edead37ffabd3eda2d7a82b49..38ca751991f564f9a24ba131652014f161d4b996 100644
 --- a/content/test/data/accessibility/html/input-suggestions-source-element-expected-mac.txt
 +++ b/content/test/data/accessibility/html/input-suggestions-source-element-expected-mac.txt
 @@ -1,3 +1,3 @@
@@ -102,7 +101,7 @@ index 4b0bde65..38ca751 100644
 -++++AXComboBox AXAutocompleteValue='list' AXHasPopup=1 AXHasPopupValue='listbox' AXRoleDescription='combo box'
 +++++AXComboBox AXAutocompleteValue='list' AXHasPopup=1 AXPopupValue='listbox' AXRoleDescription='combo box'
 diff --git a/content/test/data/accessibility/html/input-suggestions-source-element.html b/content/test/data/accessibility/html/input-suggestions-source-element.html
-index 039ac585..d024f17 100644
+index 039ac5855e1122b34dad0c1fae42f798791b7890..d024f17de3d3b04029c532e616140e20afa87549 100644
 --- a/content/test/data/accessibility/html/input-suggestions-source-element.html
 +++ b/content/test/data/accessibility/html/input-suggestions-source-element.html
 @@ -1,7 +1,7 @@
