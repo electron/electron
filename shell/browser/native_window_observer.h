@@ -74,6 +74,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
+  virtual void OnWindowResized() {}
   virtual void OnWindowWillMove(const gfx::Rect& new_bounds,
                                 bool* prevent_default) {}
   virtual void OnWindowMove() {}
