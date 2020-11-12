@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Wed, 28 Oct 2020 07:55:24 +0100
+Subject: Add missing HasValue check in BitfieldCheck::Detect
+
+The value of a node was accessed without prior HasValue check. With
+WebAssembly this node is not guaranteed to be a value.
+
+R=mslekova@chromium.org
+
+Change-Id: I62170183f3940a04b0550dfbb78cb49d2f5d7f72
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2504250
+Reviewed-by: Maya Lekova <mslekova@chromium.org>
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#70833}
+
+diff --git a/src/compiler/machine-operator-reducer.cc b/src/compiler/machine-operator-reducer.cc
+index 127c7681099537c453a9ec08bc0af1d896e9717c..dbe4eae299468a33768656ef17836c04bbcfae7e 100644
+--- a/src/compiler/machine-operator-reducer.cc
++++ b/src/compiler/machine-operator-reducer.cc
+@@ -1616,7 +1616,7 @@ struct BitfieldCheck {
+       Uint32BinopMatcher eq(node);
+       if (eq.left().IsWord32And()) {
+         Uint32BinopMatcher mand(eq.left().node());
+-        if (mand.right().HasValue()) {
++        if (mand.right().HasValue() && eq.right().HasValue()) {
+           BitfieldCheck result{mand.left().node(), mand.right().Value(),
+                                eq.right().Value(), false};
+           if (mand.left().IsTruncateInt64ToInt32()) {
+diff --git a/test/unittests/compiler/machine-operator-reducer-unittest.cc b/test/unittests/compiler/machine-operator-reducer-unittest.cc
+index 53342cbd212e561bc98cd559b139696fac291143..d789c5646bde8be423dabed3a64417019067ab60 100644
+--- a/test/unittests/compiler/machine-operator-reducer-unittest.cc
++++ b/test/unittests/compiler/machine-operator-reducer-unittest.cc
+@@ -837,6 +837,16 @@ TEST_F(MachineOperatorReducerTest, Word32AndWithBitFields) {
+   }
+ }
+ 
++TEST_F(MachineOperatorReducerTest, Word32AndWithIncorrectBitField) {
++  Reduction const r = Reduce(graph()->NewNode(
++      machine()->Word32And(), Parameter(0),
++      graph()->NewNode(machine()->Word32Equal(),
++                       graph()->NewNode(machine()->Word32And(), Parameter(0),
++                                        Int32Constant(4)),
++                       Parameter(0))));
++  ASSERT_FALSE(r.Changed());
++}
++
+ // -----------------------------------------------------------------------------
+ // Word32Or
+ 
