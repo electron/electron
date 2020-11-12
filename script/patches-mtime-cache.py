@@ -105,10 +105,7 @@ def main():
         "generate", help="generate the mtime cache"
     )
     generate_subparser.add_argument(
-        "--cache-file",
-        type=argparse.FileType("w"),
-        required=True,
-        help="mtime cache file",
+        "--cache-file", required=True, help="mtime cache file"
     )
 
     set_subparser = subparsers.add_parser(
@@ -133,8 +130,18 @@ def main():
 
     if args.operation == "generate":
         try:
-            mtime_cache = generate_cache(json.load(args.patches_config))
-            json.dump(mtime_cache, args.cache_file, indent=2)
+            # Cache file may exist from a previously aborted sync. Reuse it.
+            with open(args.cache_file, mode="r") as f:
+                json.load(f)  # Make sure it's not an empty file
+                print("Using existing mtime cache for patches")
+                return 0
+        except:
+            pass
+
+        try:
+            with open(args.cache_file, mode="w") as f:
+                mtime_cache = generate_cache(json.load(args.patches_config))
+                json.dump(mtime_cache, f, indent=2)
         except Exception:
             print(
                 "ERROR: failed to generate mtime cache for patches",
