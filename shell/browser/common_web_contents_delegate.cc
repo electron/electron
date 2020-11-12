@@ -101,6 +101,7 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
   content::ChildProcessSecurityPolicy* policy =
       content::ChildProcessSecurityPolicy::GetInstance();
   content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
+  // matan: hmmmm
   int renderer_id = render_view_host->GetProcess()->GetID();
   policy->GrantReadFileSystem(renderer_id, file_system.id());
   policy->GrantWriteFileSystem(renderer_id, file_system.id());

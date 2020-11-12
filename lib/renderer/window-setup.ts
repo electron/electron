@@ -1,7 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
-
+// matan: above...
 const { contextIsolationEnabled } = internalContextBridge;
 
 // This file implements the following APIs over the ctx bridge:

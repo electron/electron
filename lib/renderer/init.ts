@@ -51,6 +51,7 @@ v8Util.setHiddenValue(global, 'ipcNative', {
   }
 });
 
+// matan: 
 // Use electron module after everything is ready.
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
@@ -105,6 +106,7 @@ switch (window.location.protocol) {
     break;
   default: {
     // Override default web functions.
+    // matan: hmmm??
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
     windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
   }
@@ -112,6 +114,7 @@ switch (window.location.protocol) {
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
+  // matan:
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
@@ -124,7 +127,7 @@ if (contextIsolation) {
 if (nodeIntegration) {
   // Export node bindings to global.
   const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
-  global.module = new Module('electron/js2c/renderer_init');
+  global.module = new Module('electron/js2c/renderer_init'); // matan:
   global.require = makeRequireFunction(global.module);
 
   // Set the __filename to the path of html file if it is file: protocol.
@@ -151,11 +154,13 @@ if (nodeIntegration) {
     global.module.paths = Module._nodeModulePaths(global.__dirname);
   } else {
     // For backwards compatibility we fake these two paths here
+    // matan: ...
     global.__filename = path.join(process.resourcesPath, 'electron.asar', 'renderer', 'init.js');
     global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'renderer');
 
     if (appPath) {
       // Search for module under the app directory
+      // matan: ..
       global.module.paths = Module._nodeModulePaths(appPath);
     }
   }

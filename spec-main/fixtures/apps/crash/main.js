@@ -6,6 +6,7 @@ app.setVersion('0.1.0');
 
 const url = app.commandLine.getSwitchValue('crash-reporter-url');
 const uploadToServer = !app.commandLine.hasSwitch('no-upload');
+// matan: ?
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
 const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
 

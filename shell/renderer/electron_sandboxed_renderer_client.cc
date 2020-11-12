@@ -136,6 +136,8 @@ void ElectronSandboxedRendererClient::InitializeBindings(
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
 
+  // matan: IM SURE THIS IS THE PROCESS DEFINITION!!! 
+  // also, this is the sandboxed code, need to check whether there is a non-sandboxed code
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);

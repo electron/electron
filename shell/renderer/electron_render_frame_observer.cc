@@ -44,6 +44,7 @@ scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
 
 }  // namespace
 
+// matan:
 ElectronRenderFrameObserver::ElectronRenderFrameObserver(
     content::RenderFrame* frame,
     RendererClientBase* renderer_client)

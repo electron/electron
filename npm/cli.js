@@ -4,6 +4,7 @@ var electron = require('./')
 
 var proc = require('child_process')
 
+console.log('will start from cli.js using', electron, 'argv = ', rprocess.argv)
 var child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false })
 child.on('close', function (code, signal) {
   if (code === null) {

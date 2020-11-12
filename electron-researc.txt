@@ -1,0 +1,91 @@
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		20996	Running	matanp	5	828	00 	53,084 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=gpu-process --enable-features=FixAltGraph --no-sandbox --gpu-preferences=KAAAAAAAAACAAwCAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --service-request-channel-token=BBFACD9DD1DBF9BFD1005EEBCD6C1FD0 --mojo-platform-channel-handle=1492 /prefetch:2		No	Disabled
+
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		21360	Running	matanp	5	828	00 	42,332 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=5EFBB3303C9E89BBCC6B6048242DAAA9 --lang=en-US --app-path="D:\Projects\electron-updater-example" 																				  --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=5EFBB3303C9E89BBCC6B6048242DAAA9 --renderer-client-id=5 --mojo-platform-channel-handle=1936 /prefetch:1		No	Disabled
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		4456	Running	matanp	5	828	00 	20,160 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=4AB3DA6A862EA89E9C0EF698E6FCE9E4 --lang=en-US --app-path="D:\Projects\electron-updater-example" --node-integration=true --webview-tag=true --no-sandbox --background-color=#fff --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=4AB3DA6A862EA89E9C0EF698E6FCE9E4 --renderer-client-id=6 --mojo-platform-channel-handle=1956 /prefetch:1		No	Disabled
+
+
+
+
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		13604	Running	matanp	5	828	00 	38,176 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=gpu-process --enable-features=FixAltGraph --no-sandbox --gpu-preferences=KAAAAAAAAACAAwCAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --service-request-channel-token=957C974CB5A67B698267C938A763E265 --mojo-platform-channel-handle=1496 /prefetch:2		No	Disabled
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		24344	Running	matanp	5	828	00 	20,060 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=A9F618A00E9018DD6106A66F85EB99D4 --lang=en-US --app-path="D:\Projects\electron-updater-example" --node-integration=true --webview-tag=true --no-sandbox --background-color=#fff --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=A9F618A00E9018DD6106A66F85EB99D4 --renderer-client-id=6 --mojo-platform-channel-handle=1996 /prefetch:1		No	Disabled
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		18784	Running	matanp	5	828	00 	41,684 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=87BBDC87CE050A24025B0066E5F9B1C6 --lang=en-US --app-path="D:\Projects\electron-updater-example" --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=87BBDC87CE050A24025B0066E5F9B1C6 --renderer-client-id=5 --mojo-platform-channel-handle=1940 /prefetch:1		No	Disabled
+
+
+
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe .		No	Disabled
+
+
+
+Name	Package name	PID	Status	User name	Session ID	Job object ID	CPU	Memory (active private working set)	Command line	Operating system context	Elevated	UAC virtualization
+electron.exe		13604	Running	matanp	5	828	00 	38,176 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=gpu-process --enable-features=FixAltGraph --no-sandbox --gpu-preferences=KAAAAAAAAACAAwCAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --service-request-channel-token=957C974CB5A67B698267C938A763E265 --mojo-platform-channel-handle=1496 /prefetch:2		No	Disabled
+electron.exe		10056	Running	matanp	5	996	00 	11,200 K	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=gpu-process --enable-features=FixAltGraph --no-sandbox --gpu-preferences=KAAAAAAAAACAAwCAAQAAAAAAAAAAAGAAEAAAAAAAAAAAAAAAAAAAACgAAAAEAAAAIAAAAAAAAAAoAAAAAAAAADAAAAAAAAAAOAAAAAAAAAAQAAAAAAAAAAAAAAAKAAAAEAAAAAAAAAAAAAAACwAAABAAAAAAAAAAAQAAAAoAAAAQAAAAAAAAAAEAAAALAAAA --service-request-channel-token=5B540910E19CE34EEF12FA15F71164D8 --mojo-platform-channel-handle=1512 /prefetch:2		No	Disabled
+
+
+
+
+
+
+
+Name	Package name	PID	Status	User name	Memory (active private working set)	Image path name	Command line	Operating system context	Platform	Elevated	UAC virtualization	Description	Data execution prevention	Enterprise context
+electron.exe		26300	Running	matanp	40,816 K	D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=2225D7C83DB7FD69A8C0B521F669F65C --lang=en-US --app-path="D:\Projects\electron-updater-example" --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=2225D7C83DB7FD69A8C0B521F669F65C --renderer-client-id=5 --mojo-platform-channel-handle=2076 /prefetch:1		64 bit	No	Disabled	Electron	Enabled	N/A
+
+Name	Package name	PID	Status	User name	Memory (active private working set)	Image path name	Command line	Operating system context	Platform	Elevated	UAC virtualization	Description	Data execution prevention	Enterprise context
+electron.exe		26720	Running	matanp	18,268 K	D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe	"D:\Projects\electron-updater-example\node_modules\electron\dist\electron.exe" --type=renderer --no-sandbox --enable-features=FixAltGraph --service-pipe-token=AD59521CAAEB53367D44A21EA838AA62 --lang=en-US --app-path="D:\Projects\electron-updater-example" --node-integration=true --webview-tag=true --no-sandbox --background-color=#80FFFFFF --device-scale-factor=1 --num-raster-threads=4 --enable-main-frame-before-activation --enable-compositor-image-animations --service-request-channel-token=AD59521CAAEB53367D44A21EA838AA62 --renderer-client-id=6 --mojo-platform-channel-handle=2092 /prefetch:1 --preload="D:\Projects\electron-updater-example\preload.js" --login-user="ad\matanp"		64 bit	No	Disabled	Electron	Enabled	N/A
+
+
+
+
+
+
+
+
+
+
+
+************************ start.js ************************ 
+const child = cp.spawn(electronPath, process.argv.slice(2), { stdio: 'inherit' });
+**********************************************************
+
+************************ cli.js ************************ 
+const child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false }); // electron = electron path, with dist!!!!!!!!
+// 95% this is the code that launches the sub-processes
+**********************************************************
+************************ cpp code ************************ 
+
+**********************************************************
+
+* maybe we can use the preload script and impersonate the process
+* Chromium might be the one who is launching the sub processes
+
+
+    * `additionalArguments` String[] (optional) - A list of strings that will be appended
+      to `process.argv` in the renderer process of this app.  Useful for passing small
+      bits of data down to renderer process preload scripts.
+
+****maybe we can use impersonation and send it to as additional arguments
+
+
+
+try:
+1. create impersonated sub-process for the windows service
+	a. then create it on the renderer sub-process
+2. find a command optio nfor chromium which will impersonate
+
+
+****
+need to check if BrowserWindow can return/run process code
+ctrl+shift+f for electron/renderer
+

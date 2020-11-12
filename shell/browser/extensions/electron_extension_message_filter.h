@@ -59,6 +59,7 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
   // be accessed on the UI thread! Furthermore since this class is refcounted it
   // may outlive |browser_context_|, so make sure to NULL check if in doubt;
   // async calls and the like.
+  // matan: need to use this BrowserContext and see if we can find the code that creates the UI thread
   content::BrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionMessageFilter);

@@ -24,6 +24,7 @@ const argv = require('yargs')
 
 let window = null;
 
+// matan: maybe we can add here flags? idk...
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 app.commandLine.appendSwitch('ignore-certificate-errors');

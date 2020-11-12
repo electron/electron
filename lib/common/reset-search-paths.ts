@@ -38,6 +38,7 @@ makeElectronModule('electron/common');
 if (process.type === 'browser') {
   makeElectronModule('electron/main');
 }
+// matan: does it make sense?
 if (process.type === 'renderer') {
   makeElectronModule('electron/renderer');
 }

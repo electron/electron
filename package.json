@@ -87,7 +87,7 @@
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "repl": "node ./script/start.js --interactive",
-    "start": "node ./script/start.js",
+    "start": "set ELECTRON_OUT_DIR=D:\\Projects\\electron-updater-example && node ./script/start.js",
     "test": "node ./script/spec-runner.js",
     "tsc": "tsc",
     "webpack": "node build/webpack/run-compiler"

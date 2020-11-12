@@ -82,7 +82,7 @@
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
-
+// matan: this file is suspicious!
 namespace {
 
 std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
@@ -94,6 +94,8 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
 
 }  // namespace
 
+
+// matan: ??
 RendererClientBase::RendererClientBase() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   // Parse --standard-schemes=scheme1,scheme2
@@ -269,6 +271,7 @@ void RendererClientBase::RenderFrameCreated(
     blink::WebView* webview = render_view->GetWebView();
     if (webview) {
       base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      // matan: cmd, seems suspicious?
       if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
         webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
       } else {  // normal window.
@@ -324,6 +327,7 @@ bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
+      // matan: process?
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -444,6 +448,8 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     return frame->MainWorldScriptContext();
 }
 
+
+// matan: ??
 v8::Local<v8::Value> RendererClientBase::RunScript(
     v8::Local<v8::Context> context,
     v8::Local<v8::String> source) {

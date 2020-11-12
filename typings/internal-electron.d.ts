@@ -6,6 +6,7 @@
  */
 
 declare namespace Electron {
+  // matan: ...
   enum ProcessType {
     browser = 'browser',
     renderer = 'renderer',

@@ -376,6 +376,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Feed node the path to initialization script.
   std::string process_type;
+  // matan: this is this the fucking process type?!?!?!?
   switch (browser_env_) {
     case BrowserEnvironment::BROWSER:
       process_type = "browser";
