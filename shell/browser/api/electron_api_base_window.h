@@ -63,6 +63,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowWillResize(const gfx::Rect& new_bounds,
                           bool* prevent_default) override;
   void OnWindowResize() override;
+  void OnWindowResized() override;
   void OnWindowWillMove(const gfx::Rect& new_bounds,
                         bool* prevent_default) override;
   void OnWindowMove() override;

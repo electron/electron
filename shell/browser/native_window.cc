@@ -493,6 +493,11 @@ void NativeWindow::NotifyWindowResize() {
     observer.OnWindowResize();
 }
 
+void NativeWindow::NotifyWindowResized() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowResized();
+}
+
 void NativeWindow::NotifyWindowMove() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowMove();
