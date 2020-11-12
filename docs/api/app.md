@@ -1490,7 +1490,7 @@ on the direction Electron is going with renderer process restarts and usage of
 native modules in the renderer process please check out this
 [Tracking Issue](https://github.com/electron/electron/issues/18397).
 
-### `app.isRunningUnderRosettaTranslation` _macOS_ _Readonly_
+### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_
 
 A `Boolean` which when `true` indicates that the app is currently running
 under the [Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software)).

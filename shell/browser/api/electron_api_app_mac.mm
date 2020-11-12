@@ -64,7 +64,7 @@ bool App::IsRunningUnderRosettaTranslation() {
   if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1) {
     return false;
   }
-  return ret == = 1;
+  return ret == 1;
 }
 
 }  // namespace api

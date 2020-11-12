@@ -1666,7 +1666,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if defined(OS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
-      .SetProperty("isRunningUnderRosettaTranslation",
+      .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
@@ -1674,7 +1674,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetProperty("allowRendererProcessReuse",
                    &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance)
+                   &App::SetBrowserClientCanUseCustomSiteInstance);
 }
 
 const char* App::GetTypeName() {
