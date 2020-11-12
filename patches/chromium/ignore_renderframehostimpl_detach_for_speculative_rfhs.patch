@@ -1,0 +1,163 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Wed, 11 Nov 2020 00:54:41 +0000
+Subject: Ignore RenderFrameHostImpl::Detach() for speculative RFHs.
+
+Currently, this all happens to work by chance, because the speculative
+RFH or the entire FTN happens to be torn down before the browser process
+ever processes a Detach() IPC for a speculative RFH.
+
+However, there are a number of followup CLs that restructure how
+provisional RenderFrames are managed and owned in the renderer process.
+To simplify those CLs, explicitly branch in Detach() based on whether or
+not the RFH is speculative. In the future, additional logic may be added
+to the speculative branch (e.g. cancelling the navigation, if
+appropriate).
+
+(cherry picked from commit cf054220a2e1570a9149220494de8826c2e9d4db)
+
+Bug: 1146709
+Change-Id: I6490a90f7b447422d698676665b52f6f3a6f8ffd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2524280
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#825903}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2530189
+Reviewed-by: Adrian Taylor <adetaylor@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1430}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
+index c1d7a3052516c6c8ac5a8e65c9688d04b8edec70..ab54a32a17f29e9b5ea9365e92de563737a1e513 100644
+--- a/content/browser/frame_host/render_frame_host_impl.cc
++++ b/content/browser/frame_host/render_frame_host_impl.cc
+@@ -2625,6 +2625,9 @@ void RenderFrameHostImpl::UpdateRenderProcessHostFramePriorities() {
+ }
+ 
+ void RenderFrameHostImpl::OnDetach() {
++  if (lifecycle_state() == LifecycleState::kSpeculative)
++    return;
++
+   if (!parent_) {
+     bad_message::ReceivedBadMessage(GetProcess(),
+                                     bad_message::RFH_DETACH_MAIN_FRAME);
+diff --git a/content/browser/site_per_process_browsertest.cc b/content/browser/site_per_process_browsertest.cc
+index 7c9902648ab0465f4e0a7b4778b328ad8c1f2fcd..d81076da5ef7701475ef1158b528d02d3992ff0d 100644
+--- a/content/browser/site_per_process_browsertest.cc
++++ b/content/browser/site_per_process_browsertest.cc
+@@ -10333,6 +10333,37 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessBrowserTest,
+   EXPECT_EQ("opener-ping-reply", response);
+ }
+ 
++IN_PROC_BROWSER_TEST_P(SitePerProcessBrowserTest,
++                       DetachSpeculativeRenderFrameHost) {
++  // Commit a page with one iframe.
++  GURL main_url(embedded_test_server()->GetURL(
++      "a.com", "/cross_site_iframe_factory.html?a(a)"));
++  EXPECT_TRUE(NavigateToURL(shell(), main_url));
++
++  // Start a cross-site navigation.
++  GURL cross_site_url(embedded_test_server()->GetURL("b.com", "/title2.html"));
++  TestNavigationManager nav_manager(shell()->web_contents(), cross_site_url);
++  BeginNavigateIframeToURL(web_contents(), "child-0", cross_site_url);
++
++  // Wait for the request, but don't commit it yet. This should create a
++  // speculative RenderFrameHost.
++  ASSERT_TRUE(nav_manager.WaitForRequestStart());
++  FrameTreeNode* root = web_contents()->GetFrameTree()->root();
++  RenderFrameHostImpl* speculative_rfh = root->current_frame_host()
++                                             ->child_at(0)
++                                             ->render_manager()
++                                             ->speculative_frame_host();
++  EXPECT_TRUE(speculative_rfh);
++
++  // Currently, the browser process never handles an explicit Detach() for a
++  // speculative RFH, since the speculative RFH or the entire FTN is always
++  // destroyed before the renderer sends this IPC.
++  speculative_rfh->Detach();
++
++  // Passes if there is no crash.
++}
++
++
+ #if defined(OS_ANDROID)
+ 
+ namespace {
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index cbc62fef825815309f417baee931a6c450500f32..d3fa4eb639f58c6eafe01651e643545897dcabcc 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -603,15 +603,21 @@ bool NavigateToURL(WebContents* web_contents,
+ bool NavigateIframeToURL(WebContents* web_contents,
+                          const std::string& iframe_id,
+                          const GURL& url) {
++  TestNavigationObserver load_observer(web_contents);
++  bool result = BeginNavigateIframeToURL(web_contents, iframe_id, url);
++  load_observer.Wait();
++  return result;
++}
++
++bool BeginNavigateIframeToURL(WebContents* web_contents,
++                              const std::string& iframe_id,
++                              const GURL& url) {
+   std::string script = base::StringPrintf(
+       "setTimeout(\""
+       "var iframes = document.getElementById('%s');iframes.src='%s';"
+       "\",0)",
+       iframe_id.c_str(), url.spec().c_str());
+-  TestNavigationObserver load_observer(web_contents);
+-  bool result = ExecuteScript(web_contents, script);
+-  load_observer.Wait();
+-  return result;
++  return ExecuteScript(web_contents, script);
+ }
+ 
+ void NavigateToURLBlockUntilNavigationsComplete(WebContents* web_contents,
+diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
+index 275684ba6cf6b6a9f8e5f5b24951d8fb07969767..bc23592ce9b7eab268465fb0e171e8351aa25549 100644
+--- a/content/public/test/browser_test_utils.h
++++ b/content/public/test/browser_test_utils.h
+@@ -138,6 +138,12 @@ bool NavigateIframeToURL(WebContents* web_contents,
+                          const std::string& iframe_id,
+                          const GURL& url);
+ 
++// Similar to |NavigateIframeToURL()| but returns as soon as the navigation is
++// initiated.
++bool BeginNavigateIframeToURL(WebContents* web_contents,
++                              const std::string& iframe_id,
++                              const GURL& url);
++
+ // Generate a URL for a file path including a query string.
+ GURL GetFileUrlWithQuery(const base::FilePath& path,
+                          const std::string& query_string);
+diff --git a/content/test/data/cross_site_iframe_factory.html b/content/test/data/cross_site_iframe_factory.html
+index 0893a2063585a04520d9bc8f87ee0c1cb726c0d7..78f8126c9cf7f8ae9f2b0d34e17d76ad51784811 100644
+--- a/content/test/data/cross_site_iframe_factory.html
++++ b/content/test/data/cross_site_iframe_factory.html
+@@ -10,12 +10,12 @@ Example usage in a browsertest, explained:
+ When you navigate to the above URL, the outer document (on a.com) will create a
+ single iframe:
+ 
+-  <iframe src="http://b.com:1234/cross_site_iframe_factory.html?b(c(),d())">
++  <iframe id="child-0" src="http://b.com:1234/cross_site_iframe_factory.html?b(c(),d())">
+ 
+ Inside of which, then, are created the two leaf iframes:
+ 
+-  <iframe src="http://c.com:1234/cross_site_iframe_factory.html?c()">
+-  <iframe src="http://d.com:1234/cross_site_iframe_factory.html?d()">
++  <iframe id="child-0" src="http://c.com:1234/cross_site_iframe_factory.html?c()">
++  <iframe id="child-1" src="http://d.com:1234/cross_site_iframe_factory.html?d()">
+ 
+ Add iframe options by enclosing them in '{' and '}' characters after the
+ hostname (multiple options can be separated with commas):
+@@ -24,8 +24,8 @@ hostname (multiple options can be separated with commas):
+ 
+ Will create two iframes:
+ 
+-  <iframe src="http://a.com:1234/cross_site_iframe_factory.html?b()" allowfullscreen>
+-  <iframe src="http://c.com:1234/cross_site_iframe_factory.html?c{sandbox-allow-scripts}(d())" sandbox="allow-scripts">
++  <iframe id="child-0" src="http://a.com:1234/cross_site_iframe_factory.html?b()" allowfullscreen>
++  <iframe id="child-1" src="http://c.com:1234/cross_site_iframe_factory.html?c{sandbox-allow-scripts}(d())" sandbox="allow-scripts">
+ 
+ To specify the site for each iframe, you can use a simple identifier like "a"
+ or "b", and ".com" will be automatically appended. You can also specify a port
