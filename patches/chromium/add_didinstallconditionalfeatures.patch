@@ -23,10 +23,10 @@ index 615b7359548d93fa408688e1d90d2bc8082c0c9c..5c4ba7f603f2780d07794473624e7525
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e5d4db6c1b48c487b2d804eb2be728c3550cbde9..d132b50486d82ec273632f751af7dd11b6134b68 100644
+index 340642fd854c915e55f6668426f218eafa6c0de9..4f0e7563d263569f34eb336426a9bd4e28800032 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4818,6 +4818,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4792,6 +4792,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index e5d4db6c1b48c487b2d804eb2be728c3550cbde9..d132b50486d82ec273632f751af7dd11
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 662c847b0ff8d23c3510c7452ee1c163b0931697..1e15bac0c5147361c417d54b46f23733ae54cc6c 100644
+index 22851071fcb54803f107f4d657373b2318420e63..39d229571a58c7d3ddca1f88d2a57c9b1d4ad185 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -670,6 +670,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -669,6 +669,8 @@ class CONTENT_EXPORT RenderFrameImpl
        blink::WebLocalFrameClient::LazyLoadBehavior lazy_load_behavior) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;

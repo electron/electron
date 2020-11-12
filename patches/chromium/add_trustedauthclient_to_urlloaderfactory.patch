@@ -49,7 +49,7 @@ index ec89eeb056d686f8cab6003e456973ff8649df23..108b3a8082d10fd655b965bd6a703a75
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 3c2ffc1bc8bdd49535b8adc2952254052e007bac..69a148eae2cab089e77c5c6a1f5085ad2ffd1f5b 100644
+index aa893590a39753f1ad200c95c508315b9158695b..e8f01b2d1333f4a0c60212310d7df77f8e32356e 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -459,6 +459,7 @@ URLLoader::URLLoader(

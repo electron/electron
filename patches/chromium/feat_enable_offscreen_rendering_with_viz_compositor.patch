@@ -107,7 +107,7 @@ index 92acbc3a25c6174cdb92b9c4d4003b6a51ca2110..1f5191a2a171f664b0d01b8dc5eda2d8
      "display_embedder/software_output_surface.h",
      "display_embedder/viz_process_context_provider.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index cd43e14ab05c6f8a8fc7e0b91f7880ede5fab949..f2e20df13ab2880cbf575377a0492fa3aa0aa461 100644
+index 54686950a28c935d0067da1b62a7dbe0df04fabc..7c535c22cb56232efd78139c9c1748dd491d2a85 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -24,6 +24,7 @@
