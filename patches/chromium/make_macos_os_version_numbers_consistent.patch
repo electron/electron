@@ -21,7 +21,7 @@ diff --git a/base/system/sys_info_mac.mm b/base/system/sys_info_mac.mm
 index 265d7678060fd003b4f28b2b50f8a80be5253c88..3becbd628e19084de6fd87de4adcdec2c5af67b4 100644
 --- a/base/system/sys_info_mac.mm
 +++ b/base/system/sys_info_mac.mm
-@@ -62,6 +62,19 @@ void SysInfo::OperatingSystemVersionNumbers(int32_t* major_version,
+@@ -62,6 +62,19 @@
    *major_version = version.majorVersion;
    *minor_version = version.minorVersion;
    *bugfix_version = version.patchVersion;

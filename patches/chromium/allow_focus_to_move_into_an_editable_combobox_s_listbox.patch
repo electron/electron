@@ -23,7 +23,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm 
 index 33324bbca5953f6f2f9d829e4c7b5d7daa3f49ea..a27cacfd303706ef3ee637107d2de0c8839bfa20 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -143,11 +143,6 @@ BrowserAccessibility* BrowserAccessibilityManagerMac::GetFocus() const {
+@@ -143,11 +143,6 @@
    if (!focus)
      return nullptr;
  

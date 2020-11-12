@@ -139,7 +139,7 @@ diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/a
 index b579521d55860823722df2ee849f6b1628b3c950..f4f71e5174cf8fb706a2f8385252ba877d1a03a7 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -67,6 +67,8 @@ std::map<std::string, std::string> GetProcessSimpleAnnotations() {
+@@ -67,6 +67,8 @@
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -148,7 +148,7 @@ index b579521d55860823722df2ee849f6b1628b3c950..f4f71e5174cf8fb706a2f8385252ba87
    return annotations;
  }
  
-@@ -140,9 +142,17 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -140,9 +142,17 @@ void DumpProcessWithoutCrashing(task_t task_port) {
  #else
        std::string url;
  #endif

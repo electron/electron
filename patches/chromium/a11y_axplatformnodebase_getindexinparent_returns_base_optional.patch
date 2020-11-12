@@ -211,7 +211,7 @@ diff --git a/ui/accessibility/platform/ax_platform_node_mac.mm b/ui/accessibilit
 index 0454164364c6a4a1b1c11011603af5978d2b8ef5..bd9e17f1e21bd17a68988ee3c9ab08f2a1d99b2e 100644
 --- a/ui/accessibility/platform/ax_platform_node_mac.mm
 +++ b/ui/accessibility/platform/ax_platform_node_mac.mm
-@@ -1257,11 +1257,6 @@ void AXPlatformNodeMac::AnnounceText(const base::string16& text) {
+@@ -1257,11 +1257,6 @@ - (NSRange)accessibilityRangeForPosition:(NSPoint)point {
                                 [native_node_ AXWindow], false);
  }
  
