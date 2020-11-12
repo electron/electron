@@ -106,6 +106,8 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+
 bool SpellCheckWord(v8::Isolate* isolate,
                     v8::Local<v8::Value> window,
                     const std::string& word,
@@ -123,6 +125,8 @@ bool SpellCheckWord(v8::Isolate* isolate,
   return client->GetSpellCheck()->SpellCheckWord(
       w.c_str(), 0, word.size(), id, &start, &length, optional_suggestions);
 }
+
+#endif
 
 class RenderFrameStatus final : public content::RenderFrameObserver {
  public:
@@ -753,6 +757,8 @@ blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
   return stats;
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+
 bool IsWordMisspelled(v8::Isolate* isolate,
                       v8::Local<v8::Value> window,
                       const std::string& word) {
@@ -766,6 +772,8 @@ std::vector<base::string16> GetWordSuggestions(v8::Isolate* isolate,
   SpellCheckWord(isolate, window, word, &suggestions);
   return suggestions;
 }
+
+#endif
 
 void ClearCache(v8::Isolate* isolate) {
   isolate->IdleNotificationDeadline(0.5);
