@@ -1823,6 +1823,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -1834,6 +1835,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -1876,6 +1878,7 @@ jobs:
       <<: *env-release-build
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -1889,6 +1892,7 @@ jobs:
       <<: *env-release-build
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -1932,6 +1936,7 @@ jobs:
       <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -1945,6 +1950,7 @@ jobs:
       <<: *env-release-build
       <<: *env-32bit-release
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -1995,6 +2001,7 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -2007,6 +2014,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -2055,6 +2063,7 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -2068,6 +2077,7 @@ jobs:
       <<: *env-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -2079,6 +2089,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -2091,6 +2102,7 @@ jobs:
       <<: *env-release-build
       <<: *env-apple-silicon
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
@@ -2159,6 +2171,7 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -2172,6 +2185,7 @@ jobs:
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: false
@@ -2196,6 +2210,7 @@ jobs:
       <<: *env-mas-apple-silicon
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
     steps:
       - electron-publish:
           attach: true
