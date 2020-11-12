@@ -108,8 +108,6 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()),
       weak_factory_(this) {
-  // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
-  base::ScopedAllowBlockingForTesting allow_blocking;
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
