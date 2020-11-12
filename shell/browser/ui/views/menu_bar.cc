@@ -305,8 +305,11 @@ void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button =
-        new SubmenuButton(this, menu_model_->GetLabelAt(i), background_color_);
+        new SubmenuButton(menu_model_->GetLabelAt(i), background_color_);
     button->set_tag(i);
+    button->SetCallback(base::BindRepeating(&MenuBar::ButtonPressed,
+                                            base::Unretained(this),
+                                            base::Unretained(button)));
     AddChildView(button);
   }
   UpdateViewColors();
