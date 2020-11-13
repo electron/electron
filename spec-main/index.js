@@ -4,6 +4,13 @@ const v8 = require('v8');
 
 Module.globalPaths.push(path.resolve(__dirname, '../spec/node_modules'));
 
+// Extra module paths which can be used to load Mocha reporters
+if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
+  for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
+    Module.globalPaths.push(modulePath);
+  }
+}
+
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
   console.error('Unhandled exception in main spec runner:', err);
