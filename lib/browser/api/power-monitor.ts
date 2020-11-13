@@ -4,7 +4,8 @@ import { app } from 'electron/main';
 const {
   createPowerMonitor,
   getSystemIdleState,
-  getSystemIdleTime
+  getSystemIdleTime,
+  isOnBatteryPower
 } = process._linkedBinding('electron_browser_power_monitor');
 
 class PowerMonitor extends EventEmitter {
@@ -44,6 +45,14 @@ class PowerMonitor extends EventEmitter {
 
   getSystemIdleTime () {
     return getSystemIdleTime();
+  }
+
+  isOnBatteryPower () {
+    return isOnBatteryPower();
+  }
+
+  get onBatteryPower () {
+    return this.isOnBatteryPower();
   }
 }
 
