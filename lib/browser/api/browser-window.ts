@@ -96,11 +96,7 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.getBrowserView() === browserView) return window;
-  }
-
-  return null;
+  return BrowserWindow.fromWebContents(browserView.webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {
