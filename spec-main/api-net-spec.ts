@@ -475,6 +475,26 @@ describe('net module', () => {
       await collectStreamBody(response);
     });
 
+    it('should not change the case of header name', async () => {
+      const customHeaderName = 'X-Header-Name';
+      const customHeaderValue = 'value';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString());
+        expect(request.rawHeaders.includes(customHeaderName)).to.equal(true);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+
+      const urlRequest = net.request(serverUrl);
+      urlRequest.setHeader(customHeaderName, customHeaderValue);
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+      urlRequest.write('');
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+    });
+
     it('should not be able to set a custom HTTP request header after first write', async () => {
       const customHeaderName = 'Some-Custom-Header-Name';
       const customHeaderValue = 'Some-Customer-Header-Value';
