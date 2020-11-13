@@ -9,6 +9,7 @@
 #include "shell/common/electron_paths.h"
 
 #import <Cocoa/Cocoa.h>
+#import <sys/sysctl.h>
 
 namespace electron {
 
