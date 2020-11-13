@@ -1,7 +1,8 @@
-From 275865e8c2376333cda6bc8c518b7f2a1c6a7a49 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Martin Robinson <mrobinson@igalia.com>
 Date: Tue, 20 Oct 2020 09:00:52 +0000
-Subject: [PATCH] Mac: Target a11y actions on certain containers to focused or activedescendant children
+Subject: Mac: Target a11y actions on certain containers to focused or
+ activedescendant children
 
 When an action is triggered on a container with selectable children and
 that container has a focused or activedescendant child, retarget the
@@ -20,13 +21,12 @@ Reviewed-by: Scott Violet <sky@chromium.org>
 Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
 Reviewed-by: Nektarios Paisios <nektar@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#818831}
----
 
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
-index 95bff04..a5324df 100644
+index 770c0cb6a4dad8cbf35900311a23a8296407d81d..0ffc8d768299cc5e7f37878fb656c12b028fead9 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.h
-@@ -118,6 +118,14 @@
+@@ -117,6 +117,14 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
  - (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
      withCurrentIndex:(int*)currentIndex;
  
@@ -42,10 +42,10 @@ index 95bff04..a5324df 100644
  @property(nonatomic, readonly) NSPoint origin;
  
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index b4486c1..c37646e 100644
+index 3abd9933ab325bda6cb486a41fd6c8b246aa8e71..022bd15f52c0a7148d3528a45eb10c77f3a89838 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -1726,14 +1726,7 @@
+@@ -1744,14 +1744,7 @@ - (id)owns {
    // supported with VoiceOver.
    //
  
@@ -61,7 +61,7 @@ index b4486c1..c37646e 100644
    if (!activeDescendant)
      return nil;
  
-@@ -3708,16 +3701,18 @@
+@@ -3729,16 +3722,18 @@ - (void)accessibilityPerformAction:(NSString*)action {
      return;
  
    // TODO(dmazzoni): Support more actions.
@@ -84,7 +84,7 @@ index b4486c1..c37646e 100644
      if (!node)
        return;
      AXNodeData data(node->TakeData());  // Temporarily take data.
-@@ -3735,13 +3730,13 @@
+@@ -3756,13 +3751,13 @@ - (void)accessibilityPerformAction:(NSString*)action {
      }
      node->SetData(data);  // Set the data back in the node.
    } else if ([action isEqualToString:NSAccessibilityShowMenuAction]) {
@@ -102,7 +102,7 @@ index b4486c1..c37646e 100644
    }
  }
  
-@@ -3850,4 +3845,32 @@
+@@ -3871,4 +3866,32 @@ - (BOOL)accessibilityNotifiesWhenDestroyed {
    return YES;
  }
  
@@ -136,7 +136,7 @@ index b4486c1..c37646e 100644
 +}
  @end
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
-index a0d073ec..5cd9170 100644
+index 17801b9774813df79e4b944cb0a73535eb4c07c2..6eb2c484ddc479d9cfa566df0b103782264d3af8 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
 @@ -44,6 +44,35 @@
@@ -175,10 +175,11 @@ index a0d073ec..5cd9170 100644
   private:
    BrowserAccessibility* FindNodeInSubtree(BrowserAccessibility& node,
                                            ax::mojom::Role role) {
-@@ -552,4 +581,164 @@
+@@ -466,4 +495,165 @@ GURL url(R"HTML(data:text/html,
+   EXPECT_NSEQ(@"AXRow", [row_nodes[1] role]);
    EXPECT_NSEQ(@"row2", [row_nodes[1] descriptionForAccessibility]);
  }
- 
++
 +IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
 +                       TestTreeContextMenuEvent) {
 +  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
@@ -341,10 +342,10 @@ index a0d073ec..5cd9170 100644
 +
  }  // namespace content
 diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
-index f4ac21f..3ec5e6a 100644
+index 11bec0ad214b11bef86d44b31c2c31bb2bc5e8f2..50fcd7e96617304739194a1f485c7835e9fc874c 100644
 --- a/content/public/test/browser_test_utils.cc
 +++ b/content/public/test/browser_test_utils.cc
-@@ -3213,10 +3213,11 @@
+@@ -3214,10 +3214,11 @@ void VerifyStaleContentOnFrameEviction(
  
  #endif  // defined(USE_AURA)
  
@@ -358,7 +359,7 @@ index f4ac21f..3ec5e6a 100644
  
  bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
-@@ -3227,6 +3228,9 @@
+@@ -3228,6 +3229,9 @@ bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
      GetUIThreadTaskRunner({})->PostTask(
          FROM_HERE,
          base::BindOnce(&ContextMenuFilter::OnContextMenu, this, menu_params));
@@ -368,7 +369,7 @@ index f4ac21f..3ec5e6a 100644
    }
    return false;
  }
-@@ -3237,6 +3241,12 @@
+@@ -3238,6 +3242,12 @@ void ContextMenuFilter::Wait() {
    run_loop_ = nullptr;
  }
  
@@ -382,10 +383,10 @@ index f4ac21f..3ec5e6a 100644
  
  void ContextMenuFilter::OnContextMenu(
 diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
-index 16d4bd4..f9c616a 100644
+index c8973360e2c0f45c038f67485be8e3f360b11f77..c63f2af0c9cc7adbc260a9dfb9ef4df5b3947d3e 100644
 --- a/content/public/test/browser_test_utils.h
 +++ b/content/public/test/browser_test_utils.h
-@@ -1679,10 +1679,15 @@
+@@ -1682,10 +1682,15 @@ void VerifyStaleContentOnFrameEviction(
  // sent by the renderer.
  class ContextMenuFilter : public content::BrowserMessageFilter {
   public:
@@ -402,7 +403,7 @@ index 16d4bd4..f9c616a 100644
  
    content::UntrustworthyContextMenuParams get_params() { return last_params_; }
  
-@@ -1694,6 +1699,7 @@
+@@ -1697,6 +1702,7 @@ class ContextMenuFilter : public content::BrowserMessageFilter {
    std::unique_ptr<base::RunLoop> run_loop_;
    base::OnceClosure quit_closure_;
    content::UntrustworthyContextMenuParams last_params_;
