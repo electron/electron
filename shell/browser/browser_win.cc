@@ -171,13 +171,12 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
 }
 
 bool FormatCommandLineString(base::string16* exe,
-                             const std::vector<base::string16>& launch_args,
-                             bool formatArgs) {
+                             const std::vector<base::string16>& launch_args {
   if (exe->empty() && !GetProcessExecPath(exe)) {
     return false;
   }
 
-  if (formatArgs && !launch_args.empty()) {
+  if (!launch_args.empty()) {
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   }
@@ -623,7 +622,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;
-    if (FormatCommandLineString(&exe, settings.args, true)) {
+    if (FormatCommandLineString(&exe, settings.args)) {
       key.WriteValue(key_name, exe.c_str());
 
       if (settings.enabled) {
@@ -662,7 +661,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
     base::string16 exe = options.path;
-    if (FormatCommandLineString(&exe, options.args, true)) {
+    if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
     }
   }
