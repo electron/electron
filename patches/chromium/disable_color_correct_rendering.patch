@@ -35,10 +35,10 @@ index bb7ff971823db702991a3167b5b0ac1b3dd4a6c9..e5afad68300bdd6ac109b3c9b94d3c20
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 64fe3c1c3f60758c25f9bc88daedf35633508aa7..a2e9ebb3dc31b4e8665376ffb1f805c6093bce5c 100644
+index e5a58655788be3bd1c86e238e34bbadf8012bc48..2a2de85e89a8a0f803b7c987620a259b26281d8d 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -98,6 +98,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -99,6 +99,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -229,7 +229,7 @@ index e5179c0e4971bc593860b1e5b606fec651e6756b..fc7c09d19c60d498885d3e4f1a4a4ac9
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index de4eadaf7be8be95fc0ad454d66c8ec397cfc20a..d4c451ea992490befb34b3690a98d968bb50b899 100644
+index d7439d851d6c027a20bf09a258603939b5c19f1e..72162a468f63543c508a3d34e357be1dfcdeba51 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -221,6 +221,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
