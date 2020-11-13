@@ -21,7 +21,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/hang_monitor/hang_crash_dump.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
@@ -139,6 +138,10 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "printing/mojom/print.mojom.h"
+#endif
+
+#ifndef MAS_BUILD
+#include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
 namespace gin {
@@ -1777,7 +1780,9 @@ void WebContents::ForcefullyCrashRenderer() {
     rph->ForceCrash();
 #else
     // Try to generate a crash report for the hung process.
+#ifndef MAS_BUILD
     CrashDumpHungChildProcess(rph->GetProcess().Handle());
+#endif
     rph->Shutdown(content::RESULT_CODE_HUNG);
 #endif
   }
