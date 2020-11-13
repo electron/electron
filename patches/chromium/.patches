@@ -140,3 +140,4 @@ cherry-pick-229fdaf8fc05.patch
 cherry-pick-88f263f401b4.patch
 worker_feat_add_hook_to_notify_script_ready.patch
 cherry-pick-8f24f935c903.patch
+ignore_renderframehostimpl_detach_for_speculative_rfhs.patch

@@ -25,7 +25,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/cont
 index 917660269257bb51716e902d5ad70578793a4bb1..225d333884302310c8c4c0289043d8caad406c84 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -2090,7 +2090,9 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2090,7 +2090,9 @@ - (NSArray*)rows {
      return nil;
    NSMutableArray* ret = [[[NSMutableArray alloc] init] autorelease];
  
@@ -36,7 +36,7 @@ index 917660269257bb51716e902d5ad70578793a4bb1..225d333884302310c8c4c0289043d8ca
      for (BrowserAccessibilityCocoa* child in [self children]) {
        if ([[child role] isEqualToString:NSAccessibilityRowRole])
          [ret addObject:child];
-@@ -2509,6 +2511,19 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+@@ -2509,6 +2511,19 @@ - (id)window {
    return manager->GetWindow();
  }
  
