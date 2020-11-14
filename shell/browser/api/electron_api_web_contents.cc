@@ -38,8 +38,6 @@
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
-#include "content/common/widget_messages.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
@@ -62,6 +60,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer_type_converters.h"
+#include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/arguments.h"
@@ -1313,12 +1312,6 @@ void WebContents::RequestToLockMouse(content::WebContents* web_contents,
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(user_gesture);
-}
-
-std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
-    content::RenderFrameHost* frame,
-    const content::BluetoothChooser::EventHandler& event_handler) {
-  return std::make_unique<BluetoothChooser>(this, event_handler);
 }
 
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(

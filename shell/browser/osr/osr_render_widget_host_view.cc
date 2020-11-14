@@ -25,7 +25,6 @@
 #include "content/browser/renderer_host/input/synthetic_gesture_target.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
-#include "content/common/view_messages.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
@@ -500,6 +499,14 @@ void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
+
+base::Optional<content::DisplayFeature>
+OffScreenRenderWidgetHostView::GetDisplayFeature() {
+  return base::nullopt;
+}
+
+void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
+    const content::DisplayFeature* display_feature) {}
 
 viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
   return GetDelegatedFrameHost()

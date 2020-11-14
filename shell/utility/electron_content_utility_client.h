@@ -18,6 +18,10 @@ namespace printing {
 class PrintingHandler;
 }
 
+namespace mojo {
+class ServiceFactory;
+}  // namespace mojo
+
 namespace electron {
 
 class ElectronContentUtilityClient : public content::ContentUtilityClient {
@@ -27,8 +31,8 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
 
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-  mojo::ServiceFactory* GetMainThreadServiceFactory() override;
-  mojo::ServiceFactory* GetIOThreadServiceFactory() override;
+  void RegisterMainThreadServices(mojo::ServiceFactory& services) override;
+  void RegisterIOThreadServices(mojo::ServiceFactory& services) override;
 
  private:
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)

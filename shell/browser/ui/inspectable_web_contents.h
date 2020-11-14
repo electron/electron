@@ -150,7 +150,10 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
-  void GetSurveyAPIKey(const DispatchCallback& callback) override {}
+  void ShowSurvey(const DispatchCallback& callback,
+                  const std::string& trigger) override {}
+  void CanShowSurvey(const DispatchCallback& callback,
+                     const std::string& trigger) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
@@ -223,7 +226,6 @@ class InspectableWebContents
   content::WebContents* external_devtools_web_contents_ = nullptr;
 
   bool is_guest_;
-  bool is_docked_;
   std::unique_ptr<InspectableWebContentsView> view_;
 
   class NetworkResourceLoader;

@@ -8,7 +8,7 @@ run before shutdown. This is required to cleanup WebContents asynchronously
 in electron::api::WebContents::ResetManagedWebContents.
 
 diff --git a/content/browser/browser_main_loop.cc b/content/browser/browser_main_loop.cc
-index d35d26b1f572f084d5ffd25d191c62fdf5064ed4..c274bd867d5ca66f49d72eeffee5702825b4c067 100644
+index 339b5f24416acbab0a3f184b91781df620991cf4..aac9db90a59b6f442abab6286b59dffd39c55cab 100644
 --- a/content/browser/browser_main_loop.cc
 +++ b/content/browser/browser_main_loop.cc
 @@ -1457,7 +1457,7 @@ void BrowserMainLoop::MainMessageLoopRun() {
