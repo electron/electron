@@ -34,11 +34,11 @@ let onlineStatusWindow
 
 app.whenReady().then(() => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
 })
 ```
 
-create the `online-status.html` file and add the following line before the
+In the `index.html` file, add the following line before the
 closing `</body>` tag:
 
 ```html
@@ -78,7 +78,7 @@ let onlineStatusWindow
 
 app.whenReady().then(() => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false, webPreferences: { nodeIntegration: true } })
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
 })
 
 ipcMain.on('online-status-changed', (event, status) => {
@@ -86,7 +86,7 @@ ipcMain.on('online-status-changed', (event, status) => {
 })
 ```
 
-create the `online-status.html` file and add the following line before the
+In the `index.html` file, add the following line before the
 closing `</body>` tag:
 
 ```html
