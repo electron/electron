@@ -21,7 +21,7 @@ index 382127e4aa4bf85f8fe5342db987c81973618395..45a9a5211906040fd70477ca04b8fb35
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 165f6000cd9b572ddf0341b614a9e8fcf72cae14..3fe2ea96cfa0c920d4d0a3542f1b8457d5375f4e 100644
+index cef3171a99877d5feb8157c2be1952b5df112b86..757059c24b9f899452d41a873c31204bf9ce08db 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3586,6 +3586,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -68,7 +68,7 @@ index 599059dd6d9098cd2deec39a5601ebe2bae6e8c7..c01a459f48960d1f9060ba2ce6e1cc2c
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3a29578361516484febe20950c7321d661cda7e7..1c10e687a745b261cd57c045c2d7abfc5d1ae6e8 100644
+index 418501ecb95d6d30e812ed94ae42df7c70ad1c42..86690d067b3bf20aea497b28d522751f35341e31 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -543,6 +543,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,10 +81,10 @@ index 3a29578361516484febe20950c7321d661cda7e7..1c10e687a745b261cd57c045c2d7abfc
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ce69e43769b267ba0e96a7006fa4352639b49a1e..e90958ad2c59e0ce54713af341ed7f69f8915564 100644
+index 482b60a82121e2ee3085ee7360eb858aee32f117..58e49fc7fb88a75c3216928b1969ad023a592cbf 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -153,6 +153,7 @@ class NetworkService;
+@@ -156,6 +156,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index ce69e43769b267ba0e96a7006fa4352639b49a1e..e90958ad2c59e0ce54713af341ed7f69
  }  // namespace network
  
  namespace sandbox {
-@@ -875,6 +876,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -878,6 +879,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
