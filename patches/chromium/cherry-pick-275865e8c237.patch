@@ -42,7 +42,7 @@ index 770c0cb6a4dad8cbf35900311a23a8296407d81d..0ffc8d768299cc5e7f37878fb656c12b
  @property(nonatomic, readonly) NSPoint origin;
  
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 3abd9933ab325bda6cb486a41fd6c8b246aa8e71..022bd15f52c0a7148d3528a45eb10c77f3a89838 100644
+index 17aa494d6473866721a8cc5f4c5c646af9307d93..71f927cd35a27dd5f656907dc177fbfe7577d3f0 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -1744,14 +1744,7 @@ - (id)owns {
@@ -342,10 +342,10 @@ index 17801b9774813df79e4b944cb0a73535eb4c07c2..6eb2c484ddc479d9cfa566df0b103782
 +
  }  // namespace content
 diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
-index 11bec0ad214b11bef86d44b31c2c31bb2bc5e8f2..50fcd7e96617304739194a1f485c7835e9fc874c 100644
+index 47161f98b2fcdacece578cde50141860d2ab0a40..a8f988b8465c420224979d805baf454483e49134 100644
 --- a/content/public/test/browser_test_utils.cc
 +++ b/content/public/test/browser_test_utils.cc
-@@ -3214,10 +3214,11 @@ void VerifyStaleContentOnFrameEviction(
+@@ -3220,10 +3220,11 @@ void VerifyStaleContentOnFrameEviction(
  
  #endif  // defined(USE_AURA)
  
@@ -359,7 +359,7 @@ index 11bec0ad214b11bef86d44b31c2c31bb2bc5e8f2..50fcd7e96617304739194a1f485c7835
  
  bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
-@@ -3228,6 +3229,9 @@ bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
+@@ -3234,6 +3235,9 @@ bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
      GetUIThreadTaskRunner({})->PostTask(
          FROM_HERE,
          base::BindOnce(&ContextMenuFilter::OnContextMenu, this, menu_params));
@@ -369,7 +369,7 @@ index 11bec0ad214b11bef86d44b31c2c31bb2bc5e8f2..50fcd7e96617304739194a1f485c7835
    }
    return false;
  }
-@@ -3238,6 +3242,12 @@ void ContextMenuFilter::Wait() {
+@@ -3244,6 +3248,12 @@ void ContextMenuFilter::Wait() {
    run_loop_ = nullptr;
  }
  
@@ -383,10 +383,10 @@ index 11bec0ad214b11bef86d44b31c2c31bb2bc5e8f2..50fcd7e96617304739194a1f485c7835
  
  void ContextMenuFilter::OnContextMenu(
 diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
-index c8973360e2c0f45c038f67485be8e3f360b11f77..c63f2af0c9cc7adbc260a9dfb9ef4df5b3947d3e 100644
+index f68d423999ff711b46b7fe9d718163158e1d5223..3568bcceee9867db634306d36e3281d32450ea0a 100644
 --- a/content/public/test/browser_test_utils.h
 +++ b/content/public/test/browser_test_utils.h
-@@ -1682,10 +1682,15 @@ void VerifyStaleContentOnFrameEviction(
+@@ -1688,10 +1688,15 @@ void VerifyStaleContentOnFrameEviction(
  // sent by the renderer.
  class ContextMenuFilter : public content::BrowserMessageFilter {
   public:
@@ -403,7 +403,7 @@ index c8973360e2c0f45c038f67485be8e3f360b11f77..c63f2af0c9cc7adbc260a9dfb9ef4df5
  
    content::UntrustworthyContextMenuParams get_params() { return last_params_; }
  
-@@ -1697,6 +1702,7 @@ class ContextMenuFilter : public content::BrowserMessageFilter {
+@@ -1703,6 +1708,7 @@ class ContextMenuFilter : public content::BrowserMessageFilter {
    std::unique_ptr<base::RunLoop> run_loop_;
    base::OnceClosure quit_closure_;
    content::UntrustworthyContextMenuParams last_params_;
