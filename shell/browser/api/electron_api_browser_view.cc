@@ -87,7 +87,7 @@ BrowserView::BrowserView(gin::Arguments* args,
   Observe(web_contents->web_contents());
 
   view_.reset(
-      NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
+      NativeBrowserView::Create(api_web_contents_->inspectable_web_contents()));
 }
 
 BrowserView::~BrowserView() {
