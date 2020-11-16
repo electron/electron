@@ -19,11 +19,12 @@ namespace electron {
 
 namespace api {
 
-void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
+void BrowserWindow::OverrideNSWindowContentView(
+    InspectableWebContentsView* view) {
   // Make NativeWindow use a NSView as content view.
   static_cast<NativeWindowMac*>(window())->OverrideNSWindowContentView();
   // Add webview to contentView.
-  NSView* webView = iwc->GetView()->GetNativeView().GetNativeNSView();
+  NSView* webView = view->GetNativeView().GetNativeNSView();
   NSView* contentView =
       [window()->GetNativeWindow().GetNativeNSWindow() contentView];
   [webView setFrame:[contentView bounds]];
