@@ -20,6 +20,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   virtual void OnRendererResponsive() {}
   virtual void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) {}
+  virtual void OnDevToolsResized() {}
 
  protected:
   ~ExtendedWebContentsObserver() override {}

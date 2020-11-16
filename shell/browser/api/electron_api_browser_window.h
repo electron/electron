@@ -60,6 +60,9 @@ class BrowserWindow : public TopLevelWindow,
   void OnRendererResponsive() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
+#if defined(OS_MACOSX)
+  void OnDevToolsResized() override;
+#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
