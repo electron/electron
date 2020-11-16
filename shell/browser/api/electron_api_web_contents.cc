@@ -163,6 +163,10 @@
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+
+#if defined(OS_WIN)
+#include "printing/backend/win_helper.h"
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_COLOR_CHOOSER)
