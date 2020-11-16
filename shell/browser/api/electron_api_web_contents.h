@@ -642,8 +642,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::RenderFrameHost* render_frame_host);
   void OnElectronBrowserConnectionError();
 
-  uint32_t GetNextRequestId() { return ++request_id_; }
-
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
@@ -779,7 +777,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   int32_t id_;
 
   // Request id used for findInPage request.
-  uint32_t request_id_ = 0;
+  uint32_t find_in_page_request_id_ = 0;
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
