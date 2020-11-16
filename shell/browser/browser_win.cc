@@ -171,7 +171,7 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
 }
 
 bool FormatCommandLineString(base::string16* exe,
-                             const std::vector<base::string16>& launch_args {
+                             const std::vector<base::string16>& launch_args) {
   if (exe->empty() && !GetProcessExecPath(exe)) {
     return false;
   }
