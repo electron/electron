@@ -160,6 +160,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
+#include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
@@ -184,21 +185,6 @@
 namespace gin {
 
 #if BUILDFLAG(ENABLE_PRINTING)
-template <>
-struct Converter<printing::PrinterBasicInfo> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const printing::PrinterBasicInfo& val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    dict.Set("name", val.printer_name);
-    dict.Set("displayName", val.display_name);
-    dict.Set("description", val.printer_description);
-    dict.Set("status", val.printer_status);
-    dict.Set("isDefault", val.is_default ? true : false);
-    dict.Set("options", val.options);
-    return dict.GetHandle();
-  }
-};
-
 template <>
 struct Converter<printing::mojom::MarginType> {
   static bool FromV8(v8::Isolate* isolate,
@@ -2554,19 +2540,6 @@ void WebContents::Print(gin::Arguments* args) {
                      std::move(callback), device_name, silent));
 }
 
-printing::PrinterList WebContents::GetPrinterList() {
-  printing::PrinterList printers;
-  auto print_backend = printing::PrintBackend::CreateInstance(
-      g_browser_process->GetApplicationLocale());
-  {
-    // TODO(deepak1556): Deprecate this api in favor of an
-    // async version and post a non blocing task call.
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    print_backend->EnumeratePrinters(&printers);
-  }
-  return printers;
-}
-
 v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
@@ -3707,7 +3680,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("getAllSharedWorkers", &WebContents::GetAllSharedWorkers)
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)
-      .SetMethod("_getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
 #endif
       .SetMethod("_setNextChildWebPreferences",

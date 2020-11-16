@@ -283,6 +283,7 @@ filenames = {
     "shell/browser/api/electron_api_power_monitor.h",
     "shell/browser/api/electron_api_power_save_blocker.cc",
     "shell/browser/api/electron_api_power_save_blocker.h",
+    "shell/browser/api/electron_api_printing.cc",
     "shell/browser/api/electron_api_protocol.cc",
     "shell/browser/api/electron_api_protocol.h",
     "shell/browser/api/electron_api_screen.cc",
