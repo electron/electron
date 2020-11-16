@@ -150,8 +150,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static gin::Handle<WebContents> Create(v8::Isolate* isolate,
-                                         const gin_helper::Dictionary& options);
   static gin::Handle<WebContents> New(v8::Isolate* isolate,
                                       const gin_helper::Dictionary& options);
 
