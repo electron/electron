@@ -27,7 +27,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/hang_monitor/hang_crash_dump.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
@@ -176,6 +175,10 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
+
+#ifndef MAS_BUILD
+#include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
 namespace gin {
@@ -2106,7 +2109,9 @@ void WebContents::ForcefullyCrashRenderer() {
     rph->ForceCrash();
 #else
     // Try to generate a crash report for the hung process.
+#ifndef MAS_BUILD
     CrashDumpHungChildProcess(rph->GetProcess().Handle());
+#endif
     rph->Shutdown(content::RESULT_CODE_HUNG);
 #endif
   }
