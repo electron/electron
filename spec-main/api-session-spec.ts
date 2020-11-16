@@ -539,7 +539,6 @@ describe('session module', () => {
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
           fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
         ],
-        requestCert: true,
         rejectUnauthorized: false
       };
 
@@ -606,6 +605,27 @@ describe('session module', () => {
       await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url + '/test');
       expect(numVerificationRequests).to.equal(1);
+    });
+
+    it('does not cancel requests in other sessions', async () => {
+      const ses1 = session.fromPartition(`${Math.random()}`);
+      ses1.setCertificateVerifyProc((opts, cb) => cb(0));
+      const ses2 = session.fromPartition(`${Math.random()}`);
+
+      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const req = net.request({ url, session: ses1, credentials: 'include' });
+      req.end();
+      setTimeout(() => {
+        ses2.setCertificateVerifyProc((opts, callback) => callback(0));
+      });
+      await expect(new Promise((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      })).to.eventually.be.fulfilled();
     });
   });
 
