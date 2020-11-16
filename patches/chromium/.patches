@@ -100,7 +100,7 @@ worker_feat_add_hook_to_notify_script_ready.patch
 cherry-pick-2f5b8357dca2.patch
 fix_use_electron_generated_resources.patch
 chore_expose_v8_initialization_isolate_callbacks.patch
-rename_the_v8_context_snapshot_on_arm64_macos_builds.patch
 crashpad-initialize-logging.patch
 fix_properly_honor_printing_page_ranges.patch
+cherry-pick-8f5a08079948.patch
 cherry-pick-275865e8c237.patch

@@ -105,6 +105,8 @@ declare namespace Electron {
   interface IpcRendererInternal extends Electron.IpcRenderer {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
     sendToAll(webContentsId: number, channel: string, ...args: any[]): void
+    onMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
+    onceMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
   }
 
   interface WebContentsInternal extends Electron.WebContents {
