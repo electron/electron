@@ -1,0 +1,413 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Tue, 20 Oct 2020 09:00:52 +0000
+Subject: Mac: Target a11y actions on certain containers to focused or
+ activedescendant children
+
+When an action is triggered on a container with selectable children and
+that container has a focused or activedescendant child, retarget the
+action to that child. This fixes an issue where when the VoiceOver
+cursor is on a tree with a focused child, triggered context menus would
+use the tree as the target element.
+
+menu on a tree instead of a focused child.
+
+Bug: 1114892
+Change-Id: Ibe580beed93aeaac54d1dabaee28443b290fd0e2
+AX-Relnotes: Fix an issue where VoiceOver would trigger a context
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2466281
+Commit-Queue: Martin Robinson <mrobinson@igalia.com>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#818831}
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
+index 770c0cb6a4dad8cbf35900311a23a8296407d81d..0ffc8d768299cc5e7f37878fb656c12b028fead9 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.h
++++ b/content/browser/accessibility/browser_accessibility_cocoa.h
+@@ -117,6 +117,14 @@ id AXTextMarkerRangeFrom(id anchor_textmarker, id focus_textmarker);
+ - (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
+     withCurrentIndex:(int*)currentIndex;
+ 
++// Choose the appropriate accessibility object to receive an action depending
++// on the characteristics of this accessibility node.
++- (content::BrowserAccessibility*)actionTarget;
++
++// Return the active descendant for this accessibility object or null if there
++// is no active descendant defined or in the case of an error.
++- (content::BrowserAccessibility*)activeDescendant;
++
+ // Internally-used property.
+ @property(nonatomic, readonly) NSPoint origin;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 17aa494d6473866721a8cc5f4c5c646af9307d93..71f927cd35a27dd5f656907dc177fbfe7577d3f0 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -1744,14 +1744,7 @@ - (id)owns {
+   // supported with VoiceOver.
+   //
+ 
+-  int activeDescendantId;
+-  if (!_owner->GetIntAttribute(ax::mojom::IntAttribute::kActivedescendantId,
+-                               &activeDescendantId))
+-    return nil;
+-
+-  BrowserAccessibilityManager* manager = _owner->manager();
+-  BrowserAccessibility* activeDescendant =
+-      manager->GetFromID(activeDescendantId);
++  BrowserAccessibility* activeDescendant = [self activeDescendant];
+   if (!activeDescendant)
+     return nil;
+ 
+@@ -3729,16 +3722,18 @@ - (void)accessibilityPerformAction:(NSString*)action {
+     return;
+ 
+   // TODO(dmazzoni): Support more actions.
+-  BrowserAccessibilityManager* manager = _owner->manager();
++  BrowserAccessibility* actionTarget = [self actionTarget];
++  BrowserAccessibilityManager* manager = actionTarget->manager();
+   if ([action isEqualToString:NSAccessibilityPressAction]) {
+-    manager->DoDefaultAction(*_owner);
+-    if (_owner->GetData().GetRestriction() != ax::mojom::Restriction::kNone ||
++    manager->DoDefaultAction(*actionTarget);
++    if (actionTarget->GetData().GetRestriction() !=
++            ax::mojom::Restriction::kNone ||
+         ![self isCheckable])
+       return;
+     // Hack: preemptively set the checked state to what it should become,
+     // otherwise VoiceOver will very likely report the old, incorrect state to
+     // the user as it requests the value too quickly.
+-    ui::AXNode* node = _owner->node();
++    ui::AXNode* node = actionTarget->node();
+     if (!node)
+       return;
+     AXNodeData data(node->TakeData());  // Temporarily take data.
+@@ -3756,13 +3751,13 @@ - (void)accessibilityPerformAction:(NSString*)action {
+     }
+     node->SetData(data);  // Set the data back in the node.
+   } else if ([action isEqualToString:NSAccessibilityShowMenuAction]) {
+-    manager->ShowContextMenu(*_owner);
++    manager->ShowContextMenu(*actionTarget);
+   } else if ([action isEqualToString:NSAccessibilityScrollToVisibleAction]) {
+-    manager->ScrollToMakeVisible(*_owner, gfx::Rect());
++    manager->ScrollToMakeVisible(*actionTarget, gfx::Rect());
+   } else if ([action isEqualToString:NSAccessibilityIncrementAction]) {
+-    manager->Increment(*_owner);
++    manager->Increment(*actionTarget);
+   } else if ([action isEqualToString:NSAccessibilityDecrementAction]) {
+-    manager->Decrement(*_owner);
++    manager->Decrement(*actionTarget);
+   }
+ }
+ 
+@@ -3871,4 +3866,32 @@ - (BOOL)accessibilityNotifiesWhenDestroyed {
+   return YES;
+ }
+ 
++// Choose the appropriate accessibility object to receive an action depending
++// on the characteristics of this accessibility node.
++- (BrowserAccessibility*)actionTarget {
++  // When an action is triggered on a container with selectable children and
++  // one of those children is an active descendant or focused, retarget the
++  // action to that child. See https://crbug.com/1114892.
++  if (!ui::IsContainerWithSelectableChildren(_owner->node()->data().role))
++    return _owner;
++
++  if (BrowserAccessibility* activeDescendant = [self activeDescendant])
++    return activeDescendant;
++
++  BrowserAccessibility* focused = _owner->manager()->GetFocus();
++  if (focused && focused->IsDescendantOf(_owner))
++    return focused;
++
++  return _owner;
++}
++
++// Return the active descendant for this accessibility object or null if there
++// is no active descendant defined or in the case of an error.
++- (BrowserAccessibility*)activeDescendant {
++  int activeDescendantId;
++  if (!_owner->GetIntAttribute(ax::mojom::IntAttribute::kActivedescendantId,
++                               &activeDescendantId))
++    return nullptr;
++  return _owner->manager()->GetFromID(activeDescendantId);
++}
+ @end
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+index 17801b9774813df79e4b944cb0a73535eb4c07c2..6eb2c484ddc479d9cfa566df0b103782264d3af8 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+@@ -44,6 +44,35 @@
+     return web_contents->GetRootBrowserAccessibilityManager();
+   }
+ 
++  // Trigger a context menu for the provided element without showing it. Returns
++  // the coordinates where the  context menu was invoked (calculated based on
++  // the provided element). These coordinates are relative to the RenderView
++  // origin.
++  gfx::Point TriggerContextMenuAndGetMenuLocation(
++      NSAccessibilityElement* element,
++      ContextMenuFilter* filter) {
++    // accessibilityPerformAction is deprecated, but it's still used internally
++    // by AppKit.
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++    [element accessibilityPerformAction:NSAccessibilityShowMenuAction];
++    filter->Wait();
++
++    UntrustworthyContextMenuParams context_menu_params = filter->get_params();
++    return gfx::Point(context_menu_params.x, context_menu_params.y);
++#pragma clang diagnostic pop
++  }
++
++  void FocusAccessibilityElementAndWaitForFocusChange(
++      NSAccessibilityElement* element) {
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++    [element accessibilitySetValue:@(1)
++                      forAttribute:NSAccessibilityFocusedAttribute];
++#pragma clang diagnostic pop
++    WaitForAccessibilityFocusChange();
++  }
++
+  private:
+   BrowserAccessibility* FindNodeInSubtree(BrowserAccessibility& node,
+                                           ax::mojom::Role role) {
+@@ -466,4 +495,165 @@ GURL url(R"HTML(data:text/html,
+   EXPECT_NSEQ(@"AXRow", [row_nodes[1] role]);
+   EXPECT_NSEQ(@"row2", [row_nodes[1] descriptionForAccessibility]);
+ }
++
++IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
++                       TestTreeContextMenuEvent) {
++  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
++                                         ui::kAXModeComplete,
++                                         ax::mojom::Event::kLoadComplete);
++
++  GURL url(R"HTML(data:text/html,
++             <div alt="tree" role="tree">
++               <div tabindex="1" role="treeitem">1</div>
++               <div tabindex="2" role="treeitem">2</div>
++             </div>)HTML");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  waiter.WaitForNotification();
++
++  BrowserAccessibility* tree = FindNode(ax::mojom::Role::kTree);
++  base::scoped_nsobject<BrowserAccessibilityCocoa> cocoa_tree(
++      [ToBrowserAccessibilityCocoa(tree) retain]);
++
++  NSArray* tree_children = [cocoa_tree children];
++  EXPECT_NSEQ(@"AXRow", [tree_children[0] role]);
++  EXPECT_NSEQ(@"AXRow", [tree_children[1] role]);
++
++  content::RenderProcessHost* render_process_host =
++      shell()->web_contents()->GetMainFrame()->GetProcess();
++  auto menu_filter = base::MakeRefCounted<ContextMenuFilter>(
++      ContextMenuFilter::ShowBehavior::kPreventShow);
++  render_process_host->AddFilter(menu_filter.get());
++
++  gfx::Point tree_point =
++      TriggerContextMenuAndGetMenuLocation(cocoa_tree, menu_filter.get());
++
++  menu_filter->Reset();
++  gfx::Point item_1_point =
++      TriggerContextMenuAndGetMenuLocation(tree_children[1], menu_filter.get());
++  ASSERT_NE(tree_point, item_1_point);
++
++  // Now focus the second child and trigger a context menu on the tree.
++  EXPECT_TRUE(
++      content::ExecuteScript(shell()->web_contents(),
++                             "document.body.children[0].children[1].focus();"));
++  WaitForAccessibilityFocusChange();
++
++  // Triggering a context menu on the tree should now trigger the menu
++  // on the focused child.
++  menu_filter->Reset();
++  gfx::Point new_point =
++      TriggerContextMenuAndGetMenuLocation(cocoa_tree, menu_filter.get());
++  ASSERT_EQ(new_point, item_1_point);
++}
++
++IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
++                       TestEventRetargetingFocus) {
++  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
++                                         ui::kAXModeComplete,
++                                         ax::mojom::Event::kLoadComplete);
++
++  GURL url(R"HTML(data:text/html,
++             <div role="tree">
++               <div tabindex="1" role="treeitem">1</div>
++               <div tabindex="2" role="treeitem">2</div>
++             </div>
++             <div role="treegrid">
++               <div tabindex="1" role="treeitem">1</div>
++               <div tabindex="2" role="treeitem">2</div>
++             </div>
++             <div role="tablist">
++               <div tabindex="1" role="tab">1</div>
++               <div tabindex="2" role="tab">2</div>
++             </div>
++             <div role="table">
++               <div tabindex="1" role="row">1</div>
++               <div tabindex="2" role="row">2</div>
++             </div>
++             <div role="banner">
++               <div tabindex="1" role="link">1</div>
++               <div tabindex="2" role="link">2</div>
++             </div>)HTML");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  waiter.WaitForNotification();
++
++  std::pair<ax::mojom::Role, bool> tests[] = {
++      std::make_pair(ax::mojom::Role::kTree, true),
++      std::make_pair(ax::mojom::Role::kTreeGrid, true),
++      std::make_pair(ax::mojom::Role::kTabList, true),
++      std::make_pair(ax::mojom::Role::kTable, false),
++      std::make_pair(ax::mojom::Role::kBanner, false),
++  };
++
++  for (auto& test : tests) {
++    base::scoped_nsobject<BrowserAccessibilityCocoa> parent(
++        [ToBrowserAccessibilityCocoa(FindNode(test.first)) retain]);
++    BrowserAccessibilityCocoa* child = [parent children][1];
++
++    EXPECT_NE(nullptr, parent.get());
++    EXPECT_EQ([child owner], [child actionTarget]);
++    EXPECT_EQ([parent owner], [parent actionTarget]);
++
++    FocusAccessibilityElementAndWaitForFocusChange(child);
++    ASSERT_EQ(test.second, [parent actionTarget] == [child owner]);
++  }
++}
++
++IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
++                       TestEventRetargetingActiveDescendant) {
++  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
++                                         ui::kAXModeComplete,
++                                         ax::mojom::Event::kLoadComplete);
++
++  GURL url(R"HTML(data:text/html,
++             <div role="tree" aria-activedescendant="tree-child">
++               <div tabindex="1" role="treeitem">1</div>
++               <div id="tree-child" tabindex="2" role="treeitem">2</div>
++             </div>
++             <div role="treegrid" aria-activedescendant="treegrid-child">
++               <div tabindex="1" role="treeitem">1</div>
++               <div id="treegrid-child" tabindex="2" role="treeitem">2</div>
++             </div>
++             <div role="tablist" aria-activedescendant="tablist-child">
++               <div tabindex="1" role="tab">1</div>
++               <div id="tablist-child" tabindex="2" role="tab">2</div>
++             </div>
++             <div role="table" aria-activedescendant="table-child">
++               <div tabindex="1" role="row">1</div>
++               <div id="table-child" tabindex="2" role="row">2</div>
++             </div>
++             <div role="banner" aria-activedescendant="banner-child">
++               <div tabindex="1" role="link">1</div>
++               <div id="banner-child" tabindex="2" role="link">2</div>
++             </div>)HTML");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  waiter.WaitForNotification();
++
++  std::pair<ax::mojom::Role, bool> tests[] = {
++      std::make_pair(ax::mojom::Role::kTree, true),
++      std::make_pair(ax::mojom::Role::kTreeGrid, true),
++      std::make_pair(ax::mojom::Role::kTabList, true),
++      std::make_pair(ax::mojom::Role::kTable, false),
++      std::make_pair(ax::mojom::Role::kBanner, false),
++  };
++
++  for (auto& test : tests) {
++    base::scoped_nsobject<BrowserAccessibilityCocoa> parent(
++        [ToBrowserAccessibilityCocoa(FindNode(test.first)) retain]);
++    BrowserAccessibilityCocoa* first_child = [parent children][0];
++    BrowserAccessibilityCocoa* second_child = [parent children][1];
++
++    EXPECT_NE(nullptr, parent.get());
++    EXPECT_EQ([second_child owner], [second_child actionTarget]);
++    EXPECT_EQ(test.second, [second_child owner] == [parent actionTarget]);
++
++    // aria-activedescendant should take priority of focus for determining
++    // if an object is the action target.
++    FocusAccessibilityElementAndWaitForFocusChange(first_child);
++    EXPECT_EQ(test.second, [second_child owner] == [parent actionTarget]);
++  }
++}
++
+ }  // namespace content
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index 47161f98b2fcdacece578cde50141860d2ab0a40..a8f988b8465c420224979d805baf454483e49134 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -3220,10 +3220,11 @@ void VerifyStaleContentOnFrameEviction(
+ 
+ #endif  // defined(USE_AURA)
+ 
+-ContextMenuFilter::ContextMenuFilter()
++ContextMenuFilter::ContextMenuFilter(ShowBehavior behavior)
+     : BrowserMessageFilter(FrameMsgStart),
+       run_loop_(std::make_unique<base::RunLoop>()),
+-      quit_closure_(run_loop_->QuitClosure()) {}
++      quit_closure_(run_loop_->QuitClosure()),
++      show_behavior_(behavior) {}
+ 
+ bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+@@ -3234,6 +3235,9 @@ bool ContextMenuFilter::OnMessageReceived(const IPC::Message& message) {
+     GetUIThreadTaskRunner({})->PostTask(
+         FROM_HERE,
+         base::BindOnce(&ContextMenuFilter::OnContextMenu, this, menu_params));
++    // Returning true here blocks the default action for this message, which
++    // means that the menu will not be shown.
++    return show_behavior_ == ShowBehavior::kPreventShow;
+   }
+   return false;
+ }
+@@ -3244,6 +3248,12 @@ void ContextMenuFilter::Wait() {
+   run_loop_ = nullptr;
+ }
+ 
++void ContextMenuFilter::Reset() {
++  ASSERT_EQ(run_loop_, nullptr);
++  run_loop_ = std::make_unique<base::RunLoop>();
++  quit_closure_ = run_loop_->QuitClosure();
++}
++
+ ContextMenuFilter::~ContextMenuFilter() = default;
+ 
+ void ContextMenuFilter::OnContextMenu(
+diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
+index f68d423999ff711b46b7fe9d718163158e1d5223..3568bcceee9867db634306d36e3281d32450ea0a 100644
+--- a/content/public/test/browser_test_utils.h
++++ b/content/public/test/browser_test_utils.h
+@@ -1688,10 +1688,15 @@ void VerifyStaleContentOnFrameEviction(
+ // sent by the renderer.
+ class ContextMenuFilter : public content::BrowserMessageFilter {
+  public:
+-  ContextMenuFilter();
++  // Whether or not the ContextMenu should be prevented from performing
++  // its default action, preventing the context menu from showing.
++  enum ShowBehavior { kShow, kPreventShow };
++
++  explicit ContextMenuFilter(ShowBehavior behavior = ShowBehavior::kShow);
+ 
+   bool OnMessageReceived(const IPC::Message& message) override;
+   void Wait();
++  void Reset();
+ 
+   content::UntrustworthyContextMenuParams get_params() { return last_params_; }
+ 
+@@ -1703,6 +1708,7 @@ class ContextMenuFilter : public content::BrowserMessageFilter {
+   std::unique_ptr<base::RunLoop> run_loop_;
+   base::OnceClosure quit_closure_;
+   content::UntrustworthyContextMenuParams last_params_;
++  const ShowBehavior show_behavior_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(ContextMenuFilter);
+ };
