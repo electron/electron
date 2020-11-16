@@ -9,6 +9,7 @@
 #include "shell/common/electron_paths.h"
 
 #import <Cocoa/Cocoa.h>
+#import <sys/sysctl.h>
 
 namespace electron {
 
@@ -56,6 +57,16 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
   }
 
   [NSApp setActivationPolicy:activation_policy];
+}
+
+bool App::IsRunningUnderRosettaTranslation() const {
+  int proc_translated = 0;
+  size_t size = sizeof(proc_translated);
+  if (sysctlbyname("sysctl.proc_translated", &proc_translated, &size, NULL,
+                   0) == -1) {
+    return false;
+  }
+  return proc_translated == 1;
 }
 
 }  // namespace api

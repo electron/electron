@@ -8,45 +8,45 @@
   "rules": {
     "semi": ["error", "always"],
     "no-var": "error",
-    "no-unused-vars": 0,
-    "no-global-assign": 0,
-    "guard-for-in": 2,
+    "no-unused-vars": "off",
+    "no-global-assign": "off",
+    "guard-for-in": "error",
     "@typescript-eslint/no-unused-vars": ["error", {
       "vars": "all",
       "args": "after-used",
-      "ignoreRestSiblings": false
+      "ignoreRestSiblings": true
     }],
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
     "standard/no-callback-literal": "off",
-    "node/no-deprecated-api": 0
+    "node/no-deprecated-api": "off"
   },
   "parserOptions": {
     "ecmaVersion": 6,
     "sourceType": "module"
   },
-  "globals": {
-    "standardScheme": "readonly",
-    "globalThis": "readonly",
-    "BUILDFLAG": "readonly",
-    "ENABLE_DESKTOP_CAPTURER": "readonly",
-    "ENABLE_REMOTE_MODULE": "readonly",
-    "ENABLE_VIEWS_API": "readonly",
-    "BigInt": "readonly"
-  },
   "overrides": [
     {
       "files": "*.js",
       "rules": {
-          "@typescript-eslint/no-unused-vars": "off"
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    },
+    {
+      "files": "*.ts",
+      "rules": {
+        "no-undef": "off",
+        "no-redeclare": "off",
+        "@typescript-eslint/no-redeclare": ["error"],
+        "no-use-before-define": "off"
       }
     },
     {
       "files": "*.d.ts",
       "rules": {
-          "no-useless-constructor": "off",
-          "@typescript-eslint/no-unused-vars": "off"
+        "no-useless-constructor": "off",
+        "@typescript-eslint/no-unused-vars": "off"
       }
     }
   ]

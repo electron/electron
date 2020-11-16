@@ -7,15 +7,15 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module');
 
-const Promise: PromiseConstructor = global.Promise as any;
+const Promise: PromiseConstructor = global.Promise;
 
 const envNoAsar = process.env.ELECTRON_NO_ASAR &&
     process.type !== 'browser' &&
     process.type !== 'renderer';
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
-const internalBinding = (process as any).internalBinding;
-delete (process as any).internalBinding;
+const internalBinding = process.internalBinding!;
+delete process.internalBinding;
 
 const nextTick = (functionToCall: Function, args: any[] = []) => {
   process.nextTick(() => functionToCall(...args));
@@ -37,6 +37,8 @@ const getOrCreateArchive = (archivePath: string) => {
   return newArchive;
 };
 
+const asarRe = /\.asar/i;
+
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer) => {
   // Shortcut for disabled asar.
@@ -48,6 +50,7 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
     archivePath = archivePathOrBuffer.toString();
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
+  if (!asarRe.test(archivePath)) return { isAsar: <const>false };
 
   return asar.splitPath(path.normalize(archivePath));
 };
@@ -216,16 +219,16 @@ const makePromiseFunction = function (orig: Function, pathArgumentIndex: number)
 
 // Override fs APIs.
 export const wrapFsWithAsar = (fs: Record<string, any>) => {
-  const logFDs: Record<string, number> = {};
+  const logFDs = new Map<string, number>();
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
     if (!process.env.ELECTRON_LOG_ASAR_READS) return;
-    if (!logFDs[asarPath]) {
+    if (!logFDs.has(asarPath)) {
       const path = require('path');
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join(require('os').tmpdir(), logFilename);
-      logFDs[asarPath] = fs.openSync(logPath, 'a');
+      logFDs.set(asarPath, fs.openSync(logPath, 'a'));
     }
-    fs.writeSync(logFDs[asarPath], `${offset}: ${filePath}\n`);
+    fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
   };
 
   const { lstatSync } = fs;

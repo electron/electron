@@ -37,7 +37,6 @@ class MenuBarColorUpdater : public views::FocusChangeListener {
 };
 
 class MenuBar : public views::AccessiblePaneView,
-                public views::ButtonListener,
                 public electron::MenuDelegate::Observer {
  public:
   static const char kViewClassName[];
@@ -75,22 +74,20 @@ class MenuBar : public views::AccessiblePaneView,
   void RemovePaneFocus() override;
   void OnThemeChanged() override;
 
- protected:
+ private:
+  friend class MenuBarColorUpdater;
+
   // views::View:
   const char* GetClassName() const override;
 
-  // views::ButtonListener:
-  void ButtonPressed(views::Button* source, const ui::Event& event) override;
-
- private:
-  friend class MenuBarColorUpdater;
+  void ButtonPressed(views::Button* source, const ui::Event& event);
 
   void RebuildChildren();
   void UpdateViewColors();
 
   void RefreshColorCache();
   SkColor background_color_;
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   SkColor enabled_color_;
   SkColor disabled_color_;
 #endif

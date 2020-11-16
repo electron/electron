@@ -69,7 +69,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronjs/build:d09fd95029bd8c1c73069888231b29688ef385ed
+    - image: electron.azurecr.io/build:4cec2c5ab66765caa724e37bae2bffb9b29722a5
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -85,17 +85,17 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "11.5.0"
+    xcode: "12.2.0"
 
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.0.0-large"
+    xcode: "12.2.0"
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -107,6 +107,7 @@ env-release-build: &env-release-build
   STRIP_BINARIES: true
   GENERATE_SYMBOLS: true
   CHECK_DIST_MANIFEST: '1'
+  IS_RELEASE: true
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
@@ -256,23 +257,34 @@ step-gclient-sync: &step-gclient-sync
           "$CIRCLE_REPOSITORY_URL"
 
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
-        # Re-export all the patches to check if there were changes.
-        python src/electron/script/export_all_patches.py src/electron/patches/config.json
-        cd src/electron
-        git update-index --refresh || true
-        if ! git diff-index --quiet HEAD --; then
-          # There are changes to the patches. Make a git commit with the updated patches
-          git add patches
-          GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="anonymous@electronjs.org" git commit -m "update patches" --author="Electron Bot <anonymous@electronjs.org>"
-          # Export it
-          mkdir -p ../../patches
-          git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-          echo
-          echo "======================================================================"
-          echo "There were changes to the patches when applying."
-          echo "Check the CI artifacts for a patch you can apply to fix it."
-          echo "======================================================================"
-          exit 1
+        if [ "$IS_RELEASE" != "true" ]; then
+          # Re-export all the patches to check if there were changes.
+          python src/electron/script/export_all_patches.py src/electron/patches/config.json
+          cd src/electron
+          git update-index --refresh || true
+          if ! git diff-index --quiet HEAD --; then
+            # There are changes to the patches. Make a git commit with the updated patches
+            git add patches
+            GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="electron@github.com" git commit -m "update patches" --author="Electron Bot <electron@github.com>"
+            # Export it
+            mkdir -p ../../patches
+            git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+            if (node ./script/push-patch.js 2> /dev/null > /dev/null); then
+              echo
+              echo "======================================================================"
+              echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
+              echo "A new CI job will kick off shortly"
+              echo "======================================================================"
+              exit 1
+            else
+              echo
+              echo "======================================================================"
+              echo "There were changes to the patches when applying."
+              echo "Check the CI artifacts for a patch you can apply to fix it."
+              echo "======================================================================"
+              exit 1
+            fi
+          fi
         fi
       fi
 
@@ -322,13 +334,13 @@ step-restore-brew-cache: &step-restore-brew-cache
     paths:
       - /usr/local/Homebrew
     keys:
-      - v1-brew-cache-{{ arch }}
+      - v2-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Homebrew
-    key: v1-brew-cache-{{ arch }}
+    key: v2-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -572,6 +584,9 @@ step-electron-dist-build: &step-electron-dist-build
             if [ x"$MAS_BUILD" == x"true" ]; then
               target_os=mac_mas
             fi
+            if [ "$TARGET_ARCH" == "arm64" ]; then
+              target_cpu=arm64
+            fi
           elif [ "`uname`" == "Linux" ]; then
             target_os=linux
             if [ x"$TARGET_ARCH" == x ]; then
@@ -659,10 +674,10 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_S3" == "1" ]; then
         echo 'Uploading Electron release distribution to S3'
-        script/release/uploaders/upload.py --upload_to_s3
+        script/release/uploaders/upload.py --verbose --upload_to_s3
       else
         echo 'Uploading Electron release distribution to Github releases'
-        script/release/uploaders/upload.py
+        script/release/uploaders/upload.py --verbose
       fi
 
 step-persist-data-for-tests: &step-persist-data-for-tests
@@ -774,14 +789,20 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
 
 step-show-sccache-stats: &step-show-sccache-stats
   run:
+    shell: /bin/bash
     name: Check sccache/goma stats after build
     command: |
       if [ "$SCCACHE_PATH" != "" ]; then
         $SCCACHE_PATH -s
       fi
       if [ "$USE_GOMA" == "true" ]; then
+        set +e
+        set +o pipefail
         $LOCAL_GOMA_DIR/goma_ctl.py stat
+        $LOCAL_GOMA_DIR/diagnose_goma_log.py
+        true
       fi
+    when: always
 
 step-mksnapshot-build: &step-mksnapshot-build
   run:
@@ -1507,7 +1528,6 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        mv src/electron/vendor/boto .
                         mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
@@ -1520,9 +1540,7 @@ commands:
                   - run:
                       name: Preserve vendor dirs for release
                       command: |
-                        rm -rf src/electron/vendor/boto
                         rm -rf src/electron/vendor/requests
-                        mv boto src/electron/vendor
                         mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
@@ -1721,7 +1739,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1780,7 +1798,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_requests=True'
     steps:
       - electron-build:
           persist: false
@@ -1815,7 +1833,7 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1889,7 +1907,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
       <<: *env-enable-sccache
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
@@ -1911,7 +1929,7 @@ jobs:
           checkout: false
 
   linux-ia32-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-ia32
@@ -1951,7 +1969,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -1977,7 +1995,7 @@ jobs:
           checkout: false
 
   linux-arm-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm
@@ -2022,7 +2040,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-32bit-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2044,7 +2062,7 @@ jobs:
           checkout: false
 
   linux-arm64-testing:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -2096,7 +2114,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2158,7 +2176,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2172,7 +2190,7 @@ jobs:
       <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2266,7 +2284,7 @@ jobs:
       <<: *env-mas
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:
@@ -2280,7 +2298,7 @@ jobs:
       <<: *env-mas-apple-silicon
       <<: *env-release-build
       <<: *env-enable-sccache
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
       - electron-publish:

@@ -35,6 +35,7 @@ win.loadURL('https://github.com')
 you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture).
 
 **Note:** The remote module can be disabled for security reasons in the following contexts:
+
 - [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
 - [`<webview>`](webview-tag.md) - by setting the `enableremotemodule` attribute to `false`.
 
@@ -150,11 +151,32 @@ console.log(app)
 
 The `remote` module has the following methods:
 
-### `remote.require(module)`
+### `remote.getCurrentWindow()`
 
-* `module` String
+Returns [`BrowserWindow`](browser-window.md) - The window to which this web page
+belongs.
 
-Returns `any` - The object returned by `require(module)` in the main process.
+**Note:** Do not use `removeAllListeners` on [`BrowserWindow`](browser-window.md).
+Use of this can remove all [`blur`](https://developer.mozilla.org/en-US/docs/Web/Events/blur)
+listeners, disable click events on touch bar buttons, and other unintended
+consequences.
+
+### `remote.getCurrentWebContents()`
+
+Returns [`WebContents`](web-contents.md) - The web contents of this web page.
+
+### `remote.getGlobal(name)`
+
+* `name` String
+
+Returns `any` - The global variable of `name` (e.g. `global[name]`) in the main
+process.
+
+## Properties
+
+### `remote.require`
+
+A `NodeJS.Require` function equivalent to `require(module)` in the main process.
 Modules specified by their relative path will resolve relative to the entrypoint
 of the main process.
 
@@ -185,29 +207,6 @@ module.exports = 'bar'
 // renderer process: renderer/index.js
 const foo = require('electron').remote.require('./foo') // bar
 ```
-
-### `remote.getCurrentWindow()`
-
-Returns [`BrowserWindow`](browser-window.md) - The window to which this web page
-belongs.
-
-**Note:** Do not use `removeAllListeners` on [`BrowserWindow`](browser-window.md).
-Use of this can remove all [`blur`](https://developer.mozilla.org/en-US/docs/Web/Events/blur)
-listeners, disable click events on touch bar buttons, and other unintended
-consequences.
-
-### `remote.getCurrentWebContents()`
-
-Returns [`WebContents`](web-contents.md) - The web contents of this web page.
-
-### `remote.getGlobal(name)`
-
-* `name` String
-
-Returns `any` - The global variable of `name` (e.g. `global[name]`) in the main
-process.
-
-## Properties
 
 ### `remote.process` _Readonly_
 

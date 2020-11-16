@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -35,8 +36,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 - (NSView*)hitTest:(NSPoint)aPoint {
   // Pass-through events that don't hit one of the exclusion zones
-  for (NSView* exlusion_zones in [self subviews]) {
-    if ([exlusion_zones hitTest:aPoint])
+  for (NSView* exclusion_zones in [self subviews]) {
+    if ([exclusion_zones hitTest:aPoint])
       return nil;
   }
 
@@ -162,8 +163,10 @@ namespace electron {
 NativeBrowserViewMac::NativeBrowserViewMac(
     InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.autoresizingMask = kDefaultAutoResizingMask;
 }
 
@@ -186,24 +189,33 @@ void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
         NSViewMaxYMargin | NSViewMinYMargin | NSViewHeightSizable;
   }
 
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.autoresizingMask = autoresizing_mask;
 }
 
 void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   auto* superview = view.superview;
   const auto superview_height = superview ? superview.frame.size.height : 0;
   view.frame =
       NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
                  bounds.width(), bounds.height());
+
+  // Ensure draggable regions are properly updated to reflect new bounds.
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
-  NSView* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return gfx::Rect();
+  NSView* view = iwc_view->GetNativeView().GetNativeNSView();
   const int superview_height =
       (view.superview) ? view.superview.frame.size.height : 0;
   return gfx::Rect(
@@ -213,19 +225,43 @@ gfx::Rect NativeBrowserViewMac::GetBounds() {
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
-  auto* view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+  auto* iwc_view = GetInspectableWebContentsView();
+  if (!iwc_view)
+    return;
+  auto* view = iwc_view->GetNativeView().GetNativeNSView();
   view.wantsLayer = YES;
   view.layer.backgroundColor = skia::CGColorCreateFromSkColor(color);
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    const std::vector<gfx::Rect>& drag_exclude_rects) {
-  NSView* web_view = GetWebContents()->GetNativeView().GetNativeNSView();
-  NSView* inspectable_view =
-      GetInspectableWebContentsView()->GetNativeView().GetNativeNSView();
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  if (!inspectable_web_contents_)
+    return;
+  auto* web_contents = inspectable_web_contents_->GetWebContents();
+  auto* iwc_view = GetInspectableWebContentsView();
+  NSView* web_view = web_contents->GetNativeView().GetNativeNSView();
+  NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
+
+  NSInteger webViewWidth = NSWidth([web_view bounds]);
+  NSInteger webViewHeight = NSHeight([web_view bounds]);
+
+  std::vector<gfx::Rect> drag_exclude_rects;
+  if (regions.empty()) {
+    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+  } else {
+    drag_exclude_rects = CalculateNonDraggableRegions(
+        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  }
+
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.

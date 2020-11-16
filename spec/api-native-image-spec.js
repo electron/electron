@@ -173,13 +173,7 @@ describe('nativeImage module', () => {
       const imageB = nativeImage.createFromBitmap(imageA.toBitmap(), imageA.getSize());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      let imageC;
-      // TODO fix nativeImage.createFromBuffer from bitmaps on WOA.  See https://github.com/electron/electron/issues/25069
-      if (process.platform === 'win32' && process.arch === 'arm64') {
-        imageC = nativeImage.createFromBuffer(imageA.toPNG(), { ...imageA.getSize(), scaleFactor: 2.0 });
-      } else {
-        imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
-      }
+      const imageC = nativeImage.createFromBuffer(imageA.toBitmap(), { ...imageA.getSize(), scaleFactor: 2.0 });
       expect(imageC.getSize()).to.deep.equal({ width: 269, height: 95 });
     });
 
@@ -192,8 +186,7 @@ describe('nativeImage module', () => {
     });
   });
 
-  // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
-  ifdescribe(!(process.platform === 'win32' && process.arch === 'arm64'))('createFromBuffer(buffer, options)', () => {
+  describe('createFromBuffer(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
       expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true();
     });
@@ -347,8 +340,7 @@ describe('nativeImage module', () => {
   });
 
   describe('createFromPath(path)', () => {
-    // TODO fix nativeImage.createFromPath on WOA.  See https://github.com/electron/electron/issues/25069
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns an empty image for invalid paths', () => {
+    it('returns an empty image for invalid paths', () => {
       expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
@@ -476,6 +468,12 @@ describe('nativeImage module', () => {
       expect(cropB.getSize()).to.deep.equal({ width: 25, height: 64 });
       expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false();
     });
+
+    it('toBitmap() returns a buffer of the right size', () => {
+      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
+      expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
+    });
   });
 
   describe('getAspectRatio()', () => {
@@ -520,8 +518,7 @@ describe('nativeImage module', () => {
   });
 
   describe('addRepresentation()', () => {
-    // TODO fix nativeImage.createFromBuffer on WOA.  See https://github.com/electron/electron/issues/25069
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('does not add representation when the buffer is too small', () => {
+    it('does not add representation when the buffer is too small', () => {
       const image = nativeImage.createEmpty();
 
       image.addRepresentation({
@@ -542,11 +539,15 @@ describe('nativeImage module', () => {
         buffer: nativeImage.createFromPath(imageDataOne.path).toPNG()
       });
 
+      expect(image.getScaleFactors()).to.deep.equal([1]);
+
       const imageDataTwo = getImage({ width: 2, height: 2 });
       image.addRepresentation({
         scaleFactor: 2.0,
         buffer: nativeImage.createFromPath(imageDataTwo.path).toPNG()
       });
+
+      expect(image.getScaleFactors()).to.deep.equal([1, 2]);
 
       const imageDataThree = getImage({ width: 3, height: 3 });
       image.addRepresentation({
@@ -554,10 +555,15 @@ describe('nativeImage module', () => {
         buffer: nativeImage.createFromPath(imageDataThree.path).toPNG()
       });
 
+      expect(image.getScaleFactors()).to.deep.equal([1, 2, 3]);
+
       image.addRepresentation({
         scaleFactor: 4.0,
         buffer: 'invalid'
       });
+
+      // this one failed, so it shouldn't show up in the scale factors
+      expect(image.getScaleFactors()).to.deep.equal([1, 2, 3]);
 
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });

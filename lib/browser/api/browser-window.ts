@@ -4,9 +4,9 @@ const { BrowserWindow } = process._linkedBinding('electron_browser_window') as {
 
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
-(BrowserWindow.prototype as any)._init = function (this: BWT) {
+BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
-  (BaseWindow.prototype as any)._init.call(this);
+  BaseWindow.prototype._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -28,9 +28,11 @@ Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
   // Though this hack is only needed on macOS when the app is launched from
   // Finder, we still do it on all platforms in case of other bugs we don't
   // know.
-  this.webContents.once('load-url' as any, function (this: WebContents) {
-    this.focus();
-  });
+  if (this.webContents._initiallyShown) {
+    this.webContents.once('load-url' as any, function (this: WebContents) {
+      this.focus();
+    });
+  }
 
   // Redirect focus/blur event to app instance too.
   this.on('blur', (event: Event) => {
@@ -90,11 +92,7 @@ BrowserWindow.getFocusedWindow = () => {
 };
 
 BrowserWindow.fromWebContents = (webContents: WebContents) => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.webContents && window.webContents.equal(webContents)) return window;
-  }
-
-  return null;
+  return webContents.getOwnerBrowserWindow();
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {

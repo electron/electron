@@ -88,26 +88,17 @@ and preload.js:
 
 ```js
 // This file is loaded whenever a javascript context is created. It runs in a
-// private scope that can access a subset of Electron renderer APIs. We must be
-// careful to not leak any objects into the global scope!
-const { ipcRenderer, remote } = require('electron')
-const fs = remote.require('fs')
-
-// read a configuration file using the `fs` module
-const buf = fs.readFileSync('allowed-popup-urls.json')
-const allowedUrls = JSON.parse(buf.toString('utf8'))
+// private scope that can access a subset of Electron renderer APIs. Without
+// contextIsolation enabled, it's possible to accidentally leak privileged
+// globals like ipcRenderer to web content.
+const { ipcRenderer } = require('electron')
 
 const defaultWindowOpen = window.open
 
-function customWindowOpen (url, ...args) {
-  if (allowedUrls.indexOf(url) === -1) {
-    ipcRenderer.sendSync('blocked-popup-notification', location.origin, url)
-    return null
-  }
-  return defaultWindowOpen(url, ...args)
+window.open = function customWindowOpen (url, ...args) {
+  ipcRenderer.send('report-window-open', location.origin, url, args)
+  return defaultWindowOpen(url + '?from_electron=1', ...args)
 }
-
-window.open = customWindowOpen
 ```
 
 Important things to notice in the preload script:
@@ -115,8 +106,6 @@ Important things to notice in the preload script:
 - Even though the sandboxed renderer doesn't have Node.js running, it still has
   access to a limited node-like environment: `Buffer`, `process`, `setImmediate`,
   `clearImmediate` and `require` are available.
-- The preload script can indirectly access all APIs from the main process through the
-  `remote` and `ipcRenderer` modules.
 - The preload script must be contained in a single script, but it is possible to have
   complex preload code composed with multiple modules by using a tool like
   webpack or browserify. An example of using browserify is below.
@@ -144,15 +133,12 @@ following modules:
   - `desktopCapturer`
   - `ipcRenderer`
   - `nativeImage`
-  - `remote`
   - `webFrame`
 - `events`
 - `timers`
 - `url`
 
-More may be added as needed to expose more Electron APIs in the sandbox, but any
-module in the main process can already be used through
-`electron.remote.require`.
+More may be added as needed to expose more Electron APIs in the sandbox.
 
 ## Rendering untrusted content
 

@@ -12,7 +12,27 @@ This document uses the following convention to categorize breaking changes:
 - **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 - **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (13.0)
+
+### Removed: `shell.moveItemToTrash()`
+
+The deprecated synchronous `shell.moveItemToTrash()` API has been removed. Use
+the asynchronous `shell.trashItem()` instead.
+
+```js
+// Removed in Electron 13
+shell.moveItemToTrash(path)
+// Replace with
+shell.trashItem(path).then(/* ... */)
+```
+
 ## Planned Breaking API Changes (12.0)
+
+### Removed: Pepper Flash support
+
+Chromium has removed support for Flash, and so we must follow suit. See
+Chromium's [Flash Roadmap](https://www.chromium.org/flash-roadmap) for more
+details.
 
 ### Default Changed: `contextIsolation` defaults to `true`
 
@@ -49,6 +69,37 @@ will be compressed.
 If your crash ingestion server does not support compressed payloads, you can
 turn off compression by specifying `{ compress: false }` in the crash reporter
 options.
+
+### Deprecated: `remote` module
+
+The `remote` module is deprecated in Electron 12, and will be removed in
+Electron 14. It is replaced by the
+[`@electron/remote`](https://github.com/electron/remote) module.
+
+```js
+// Deprecated in Electron 12:
+const { BrowserWindow } = require('electron').remote
+```
+
+```js
+// Replace with:
+const { BrowserWindow } = require('@electron/remote')
+
+// In the main process:
+require('@electron/remote/main').initialize()
+```
+
+### Deprecated: `shell.moveItemToTrash()`
+
+The synchronous `shell.moveItemToTrash()` has been replaced by the new,
+asynchronous `shell.trashItem()`.
+
+```js
+// Deprecated in Electron 12
+shell.moveItemToTrash(path)
+// Replace with
+shell.trashItem(path).then(/* ... */)
+```
 
 ## Planned Breaking API Changes (11.0)
 
@@ -133,6 +184,54 @@ const w = new BrowserWindow({
 We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
+### `protocol.unregisterProtocol`
+### `protocol.uninterceptProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.unregisterProtocol(scheme, () => { /* ... */ })
+// Replace with
+protocol.unregisterProtocol(scheme)
+```
+
+### `protocol.registerFileProtocol`
+### `protocol.registerBufferProtocol`
+### `protocol.registerStringProtocol`
+### `protocol.registerHttpProtocol`
+### `protocol.registerStreamProtocol`
+### `protocol.interceptFileProtocol`
+### `protocol.interceptStringProtocol`
+### `protocol.interceptBufferProtocol`
+### `protocol.interceptHttpProtocol`
+### `protocol.interceptStreamProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.registerFileProtocol(scheme, handler, () => { /* ... */ })
+// Replace with
+protocol.registerFileProtocol(scheme, handler)
+```
+
+The registered or intercepted protocol does not have effect on current page
+until navigation happens.
+
+### `protocol.isProtocolHandled`
+
+This API is deprecated and users should use `protocol.isProtocolRegistered`
+and `protocol.isProtocolIntercepted` instead.
+
+```javascript
+// Deprecated
+protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
+// Replace with
+const isRegistered = protocol.isProtocolRegistered(scheme)
+const isIntercepted = protocol.isProtocolIntercepted(scheme)
+```
+
 ## Planned Breaking API Changes (9.0)
 
 ### Default Changed: Loading non-context-aware native modules in the renderer process is disabled by default
@@ -202,6 +301,7 @@ messages, but also brings some breaking changes in behavior.
 - Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
   converting the functions to `undefined`.
+
 ```js
 // Previously:
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
@@ -211,6 +311,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 // => throws Error("() => {} could not be cloned.")
 ```
+
 - `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
 - Objects containing cyclic references will now be correctly serialized,
@@ -228,6 +329,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 - Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
+
 ```js
 Buffer.from(value.buffer, value.byteOffset, value.byteLength)
 ```
@@ -363,6 +465,7 @@ the folder, similarly to Chrome, Firefox, and Edge
 ([link to MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/webkitdirectory)).
 
 As an illustration, take a folder with this structure:
+
 ```console
 folder
 ├── file1
@@ -371,11 +474,13 @@ folder
 ```
 
 In Electron <=6, this would return a `FileList` with a `File` object for:
+
 ```console
 path/to/folder
 ```
 
 In Electron 7, this now returns a `FileList` with a `File` object for:
+
 ```console
 /path/to/folder/file3
 /path/to/folder/file2
@@ -530,7 +635,9 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ### API Changed: `webFrame.setSpellCheckProvider` now takes an asynchronous callback
+
 The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+
 ```js
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {

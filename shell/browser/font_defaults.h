@@ -5,13 +5,15 @@
 #ifndef SHELL_BROWSER_FONT_DEFAULTS_H_
 #define SHELL_BROWSER_FONT_DEFAULTS_H_
 
-namespace content {
+namespace blink {
+namespace web_pref {
 struct WebPreferences;
-}  // namespace content
+}  // namespace web_pref
+}  // namespace blink
 
 namespace electron {
 
-void SetFontDefaults(content::WebPreferences* prefs);
+void SetFontDefaults(blink::web_pref::WebPreferences* prefs);
 
 }  // namespace electron
 

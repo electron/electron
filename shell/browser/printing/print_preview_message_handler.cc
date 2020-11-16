@@ -78,7 +78,7 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     content::RenderFrameHost* render_frame_host,
     const printing::mojom::DidPreviewDocumentParams& params,
-    const PrintHostMsg_PreviewIds& ids) {
+    const printing::mojom::PreviewIds& ids) {
   // Always try to stop the worker.
   StopWorker(params.document_cookie);
 
@@ -113,7 +113,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
 }
 
 void PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone(
-    const PrintHostMsg_PreviewIds& ids,
+    const printing::mojom::PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
@@ -124,7 +124,7 @@ void PrintPreviewMessageHandler::OnPrepareForDocumentToPdfDone(
 void PrintPreviewMessageHandler::OnDidPrepareForDocumentToPdf(
     content::RenderFrameHost* render_frame_host,
     int document_cookie,
-    const PrintHostMsg_PreviewIds& ids) {
+    const printing::mojom::PreviewIds& ids) {
   if (printing::IsOopifEnabled()) {
     auto* client =
         printing::PrintCompositeClient::FromWebContents(web_contents());
@@ -144,7 +144,7 @@ void PrintPreviewMessageHandler::OnDidPrepareForDocumentToPdf(
 }
 
 void PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone(
-    const PrintHostMsg_PreviewIds& ids,
+    const printing::mojom::PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -163,7 +163,7 @@ void PrintPreviewMessageHandler::OnCompositeDocumentToPdfDone(
 void PrintPreviewMessageHandler::OnCompositePdfPageDone(
     int page_number,
     int document_cookie,
-    const PrintHostMsg_PreviewIds& ids,
+    const printing::mojom::PreviewIds& ids,
     printing::mojom::PrintCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -176,7 +176,7 @@ void PrintPreviewMessageHandler::OnCompositePdfPageDone(
 void PrintPreviewMessageHandler::OnDidPreviewPage(
     content::RenderFrameHost* render_frame_host,
     const printing::mojom::DidPreviewPageParams& params,
-    const PrintHostMsg_PreviewIds& ids) {
+    const printing::mojom::PreviewIds& ids) {
   int page_number = params.page_number;
   const printing::mojom::DidPrintContentParams& content = *params.content;
 

@@ -151,7 +151,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (void)windowDidResize:(NSNotification*)notification {
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHidden) {
     shell_->RedrawTrafficLights();
   }
 }
@@ -201,6 +201,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidEndLiveResize:(NSNotification*)notification {
+  shell_->NotifyWindowResized();
   if (is_zooming_) {
     if (shell_->IsMaximized())
       shell_->NotifyWindowMaximize();
@@ -216,7 +217,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHiddenInset) {
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     [window setToolbar:nil];
   }
@@ -233,14 +234,14 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
       // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
       // fullscreen mode.
       // Show title if fullscreen_window_title flag is set
-      (shell_->title_bar_style() != TitleBarStyle::HIDDEN_INSET ||
+      (shell_->title_bar_style() != TitleBarStyle::kHiddenInset ||
        shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleVisible];
   }
 
   // Restore the native toolbar immediately after entering fullscreen, if we
   // do this before leaving fullscreen, traffic light buttons will be jumping.
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHiddenInset) {
     base::scoped_nsobject<NSToolbar> toolbar(
         [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
     [toolbar setShowsBaselineSeparator:NO];
@@ -257,18 +258,18 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
-      (shell_->title_bar_style() != TitleBarStyle::HIDDEN_INSET ||
+      (shell_->title_bar_style() != TitleBarStyle::kHiddenInset ||
        shell_->fullscreen_window_title())) {
     [window setTitleVisibility:NSWindowTitleHidden];
   }
 
   // Turn off the style for toolbar.
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN_INSET) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHiddenInset) {
     shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
     [window setTitlebarAppearsTransparent:YES];
   }
   shell_->SetExitingFullScreen(true);
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHidden) {
     shell_->RedrawTrafficLights();
   }
 }
@@ -277,12 +278,13 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
   shell_->SetExitingFullScreen(false);
-  if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
+  if (shell_->title_bar_style() == TitleBarStyle::kHidden) {
     shell_->RedrawTrafficLights();
   }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
+  shell_->Cleanup();
   shell_->NotifyWindowClosed();
 
   // Something called -[NSWindow close] on a sheet rather than calling

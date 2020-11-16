@@ -89,7 +89,7 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
       title_(base::ASCIIToUTF16("Developer Tools")) {
   if (!inspectable_web_contents_->IsGuest() &&
       inspectable_web_contents_->GetWebContents()->GetNativeView()) {
-    views::WebView* contents_web_view = new views::WebView(nullptr);
+    auto* contents_web_view = new views::WebView(nullptr);
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
@@ -186,7 +186,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
     params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
     params.wm_role_name = "devtools";
     if (GetDelegate())
       GetDelegate()->GetDevToolsWindowWMClass(&params.wm_class_name,

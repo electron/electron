@@ -1,5 +1,6 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { deserialize } from '@electron/internal/common/type-utils';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
 
@@ -14,9 +15,5 @@ function getCurrentStack () {
 }
 
 export async function getSources (options: Electron.SourcesOptions) {
-  return deserialize(await ipcRendererInternal.invoke('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', options, getCurrentStack()));
-}
-
-export function getMediaSourceIdForWebContents (webContentsId: number) {
-  return ipcRendererInternal.invoke<string>('ELECTRON_BROWSER_DESKTOP_CAPTURER_GET_MEDIA_SOURCE_ID_FOR_WEB_CONTENTS', webContentsId, getCurrentStack());
+  return deserialize(await ipcRendererInternal.invoke(IPC_MESSAGES.DESKTOP_CAPTURER_GET_SOURCES, options, getCurrentStack()));
 }

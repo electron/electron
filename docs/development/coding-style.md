@@ -47,7 +47,7 @@ formatted correctly.
 
 ## JavaScript
 
-* Write [standard](https://npm.im/standard) JavaScript style.
+* Write [standard](https://www.npmjs.com/package/standard) JavaScript style.
 * File names should be concatenated with `-` instead of `_`, e.g.
   `file-name.js` rather than `file_name.js`, because in
   [github/atom](https://github.com/github/atom) module names are usually in

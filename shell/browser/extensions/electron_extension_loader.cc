@@ -52,9 +52,9 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
   // Log warnings.
   if (extension->install_warnings().size()) {
     warnings += "Warnings loading extension at " +
-                base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ": ";
+                base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ":\n";
     for (const auto& warning : extension->install_warnings()) {
-      warnings += warning.message + " ";
+      warnings += "  " + warning.message + "\n";
     }
   }
 

@@ -41,7 +41,7 @@ class ElectronDownloadManagerDelegate
   // Get the save path set on the associated api::DownloadItem object
   void GetItemSavePath(download::DownloadItem* item, base::FilePath* path);
   void GetItemSaveDialogOptions(download::DownloadItem* item,
-                                file_dialog::DialogSettings* settings);
+                                file_dialog::DialogSettings* options);
 
   void OnDownloadPathGenerated(uint32_t download_id,
                                content::DownloadTargetCallback callback,

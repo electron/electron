@@ -57,7 +57,8 @@ class WindowsToastNotification : public Notification {
  private:
   friend class ToastEventHandler;
 
-  bool GetToastXml(
+  HRESULT ShowInternal(const NotificationOptions& options);
+  HRESULT GetToastXml(
       ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
           toastManager,
       const std::wstring& title,
@@ -65,24 +66,29 @@ class WindowsToastNotification : public Notification {
       const std::wstring& icon_path,
       const std::wstring& timeout_type,
       const bool silent,
-      ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
-  bool SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
-  bool SetXmlScenarioReminder(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
-  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                  const std::wstring& text);
-  bool SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                  const std::wstring& title,
-                  const std::wstring& body);
-  bool SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                   const std::wstring& icon_path);
-  bool GetTextNodeList(ScopedHString* tag,
-                       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                       ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
-                       uint32_t reqLength);
-  bool AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                       ABI::Windows::Data::Xml::Dom::IXmlNode* node,
-                       const std::wstring& text);
-  bool SetupCallbacks(
+      ABI::Windows::Data::Xml::Dom::IXmlDocument** toast_xml);
+  HRESULT SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
+  HRESULT SetXmlScenarioReminder(
+      ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
+  HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                     const std::wstring& text);
+  HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                     const std::wstring& title,
+                     const std::wstring& body);
+  HRESULT SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                      const std::wstring& icon_path);
+  HRESULT GetTextNodeList(
+      ScopedHString* tag,
+      ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+      ABI::Windows::Data::Xml::Dom::IXmlNodeList** node_list,
+      uint32_t req_length);
+  HRESULT AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                          ABI::Windows::Data::Xml::Dom::IXmlNode* node,
+                          const std::wstring& text);
+  HRESULT XmlDocumentFromString(
+      const wchar_t* xmlString,
+      ABI::Windows::Data::Xml::Dom::IXmlDocument** doc);
+  HRESULT SetupCallbacks(
       ABI::Windows::UI::Notifications::IToastNotification* toast);
   bool RemoveCallbacks(
       ABI::Windows::UI::Notifications::IToastNotification* toast);

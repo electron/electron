@@ -7,6 +7,9 @@
 
 #if defined(OS_WIN)
 #include <rpc.h>
+
+#include "base/strings/sys_string_conversions.h"
+#include "base/win/win_util.h"
 #endif
 #include <string>
 
@@ -14,6 +17,7 @@
 
 #if defined(OS_WIN)
 typedef GUID UUID;
+const GUID GUID_NULL = {};
 #else
 typedef struct {
 } UUID;
@@ -33,7 +37,10 @@ struct Converter<UUID> {
 
     UUID uid;
 
-    if (guid.length() > 0) {
+    if (!guid.empty()) {
+      if (guid[0] == '{' && guid[guid.length() - 1] == '}') {
+        guid = guid.substr(1, guid.length() - 2);
+      }
       unsigned char* uid_cstr = (unsigned char*)guid.c_str();
       RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
       if (result == RPC_S_INVALID_STRING_UUID) {
@@ -46,6 +53,18 @@ struct Converter<UUID> {
     return false;
 #else
     return false;
+#endif
+  }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, UUID val) {
+#if defined(OS_WIN)
+    if (val == GUID_NULL) {
+      return StringToV8(isolate, "");
+    } else {
+      std::wstring uid = base::win::WStringFromGUID(val);
+      return StringToV8(isolate, base::SysWideToUTF8(uid));
+    }
+#else
+    return v8::Undefined(isolate);
 #endif
   }
 };

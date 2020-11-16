@@ -17,7 +17,9 @@ Menu.prototype._init = function () {
 };
 
 Menu.prototype._isCommandIdChecked = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].checked : false;
+  const item = this.commandsMap[id];
+  if (!item) return false;
+  return item.getCheckStatus();
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {
@@ -40,6 +42,12 @@ Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator
 Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
   return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
 };
+
+if (process.platform === 'darwin') {
+  Menu.prototype._getSharingItemForCommandId = function (id) {
+    return this.commandsMap[id] ? this.commandsMap[id].sharingItem : null;
+  };
+}
 
 Menu.prototype._executeCommand = function (event, id) {
   const command = this.commandsMap[id];
@@ -182,11 +190,11 @@ Menu.buildFromTemplate = function (template) {
     throw new TypeError('Invalid template for MenuItem: must have at least one of label, role or type');
   }
 
-  const filtered = removeExtraSeparators(template);
-  const sorted = sortTemplate(filtered);
+  const sorted = sortTemplate(template);
+  const filtered = removeExtraSeparators(sorted);
 
   const menu = new Menu();
-  sorted.forEach(item => {
+  filtered.forEach(item => {
     if (item instanceof MenuItem) {
       menu.append(item);
     } else {

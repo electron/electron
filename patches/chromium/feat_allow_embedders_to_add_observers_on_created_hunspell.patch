@@ -5,10 +5,10 @@ Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 91f757ace16fd2b65080cd02a77f2267bc62ecaf..74387d4394e017e812821774475ee5703d134bf4 100644
+index 09256573b848bbb248530f77619df47ddbeb8a0e..75b70e375ed1d680cbd2fba1ca73a4e2e5403fb6 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -455,6 +455,9 @@ void SpellcheckService::LoadDictionaries() {
+@@ -459,6 +459,9 @@ void SpellcheckService::LoadDictionaries() {
          std::make_unique<SpellcheckHunspellDictionary>(
              dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
@@ -18,7 +18,7 @@ index 91f757ace16fd2b65080cd02a77f2267bc62ecaf..74387d4394e017e812821774475ee570
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -507,6 +510,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -511,6 +514,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
           (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
  }
  

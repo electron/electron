@@ -1176,6 +1176,10 @@ describe('app module', () => {
         expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0);
         expect(entry.memory).to.have.property('peakWorkingSetSize').that.is.greaterThan(0);
 
+        if (entry.type === 'Utility' || entry.type === 'GPU') {
+          expect(entry.serviceName).to.be.a('string').that.does.not.equal('');
+        }
+
         if (entry.type === 'Utility') {
           expect(entry).to.have.property('name').that.is.a('string');
         }

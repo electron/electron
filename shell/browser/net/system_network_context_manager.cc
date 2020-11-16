@@ -229,6 +229,10 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
 
   network_context_params->http_cache_enabled = false;
 
+  auto ssl_config = network::mojom::SSLConfig::New();
+  ssl_config->version_min = network::mojom::SSLVersion::kTLS12;
+  network_context_params->initial_ssl_config = std::move(ssl_config);
+
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params.get());
 
   return network_context_params;

@@ -20,11 +20,10 @@
 
 namespace electron {
 
-SubmenuButton::SubmenuButton(views::ButtonListener* button_listener,
-                             const base::string16& title,
+SubmenuButton::SubmenuButton(const base::string16& title,
                              const SkColor& background_color)
     : views::MenuButton(
-          button_listener,
+          PressedCallback(),
           gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr)),
       background_color_(background_color) {
 #if defined(OS_LINUX)
@@ -38,7 +37,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* button_listener,
                                &text_height_, 0, 0);
 
   SetInkDropMode(InkDropMode::ON);
-  set_ink_drop_base_color(
+  SetInkDropBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
 }
 
@@ -49,7 +48,7 @@ std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
   std::unique_ptr<views::InkDropRipple> ripple(
       new views::FloodFillInkDropRipple(
           size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          ink_drop_visible_opacity()));
+          GetInkDropVisibleOpacity()));
   return ripple;
 }
 

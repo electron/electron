@@ -84,15 +84,19 @@ describe('window.postMessage', () => {
     await closeAllWindows();
   });
 
-  it('sets the source and origin correctly', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-    w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
-    const [, message] = await emittedOnce(ipcMain, 'complete');
-    expect(message.data).to.equal('testing');
-    expect(message.origin).to.equal('file://');
-    expect(message.sourceEqualsOpener).to.equal(true);
-    expect(message.eventOrigin).to.equal('file://');
-  });
+  for (const nativeWindowOpen of [true, false]) {
+    describe(`when nativeWindowOpen: ${nativeWindowOpen}`, () => {
+      it('sets the source and origin correctly', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+        w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
+        const [, message] = await emittedOnce(ipcMain, 'complete');
+        expect(message.data).to.equal('testing');
+        expect(message.origin).to.equal('file://');
+        expect(message.sourceEqualsOpener).to.equal(true);
+        expect(message.eventOrigin).to.equal('file://');
+      });
+    });
+  }
 });
 
 describe('focus handling', () => {
@@ -224,7 +228,7 @@ describe('web security', () => {
   });
 
   it('engages CORB when web security is not disabled', async () => {
-    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,<script>
         const s = document.createElement('script')
@@ -238,7 +242,7 @@ describe('web security', () => {
   });
 
   it('bypasses CORB when web security is disabled', async () => {
-    const w = new BrowserWindow({ show: true, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,
       <script>
@@ -248,8 +252,42 @@ describe('web security', () => {
     await p;
   });
 
+  it('engages CORS when web security is not disabled', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const p = emittedOnce(ipcMain, 'response');
+    await w.loadURL(`data:text/html,<script>
+        (async function() {
+          try {
+            await fetch('${serverUrl}');
+            require('electron').ipcRenderer.send('response', 'passed');
+          } catch {
+            require('electron').ipcRenderer.send('response', 'failed');
+          }
+        })();
+      </script>`);
+    const [, response] = await p;
+    expect(response).to.equal('failed');
+  });
+
+  it('bypasses CORS when web security is disabled', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const p = emittedOnce(ipcMain, 'response');
+    await w.loadURL(`data:text/html,<script>
+        (async function() {
+          try {
+            await fetch('${serverUrl}');
+            require('electron').ipcRenderer.send('response', 'passed');
+          } catch {
+            require('electron').ipcRenderer.send('response', 'failed');
+          }
+        })();
+      </script>`);
+    const [, response] = await p;
+    expect(response).to.equal('passed');
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
-    const options = { webPreferences: { webSecurity: false } };
+    const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);
     w1.loadURL(serverUrl);
     const w2 = new BrowserWindow(options);
@@ -270,7 +308,7 @@ describe('command line switches', () => {
     const testLocale = async (locale: string, result: string) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`]);
+      appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
 
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
@@ -594,7 +632,7 @@ describe('chromium features', () => {
 
   describe('window.open', () => {
     for (const show of [true, false]) {
-      it(`inherits parent visibility over parent {show=${show}} option`, async () => {
+      it(`shows the child regardless of parent visibility when parent {show=${show}}`, async () => {
         const w = new BrowserWindow({ show });
 
         // toggle visibility
@@ -609,7 +647,7 @@ describe('chromium features', () => {
         const newWindow = emittedOnce(w.webContents, 'new-window');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
         const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(w.isVisible());
+        expect(options.show).to.equal(true);
       });
     }
 
@@ -643,35 +681,6 @@ describe('chromium features', () => {
       const [, window] = await emittedOnce(app, 'browser-window-created');
       const preferences = window.webContents.getLastWebPreferences();
       expect(preferences.javascript).to.be.false();
-    });
-
-    it('handles cycles when merging the parent options into the child options', async () => {
-      const foo = {} as any;
-      foo.bar = foo;
-      foo.baz = {
-        hello: {
-          world: true
-        }
-      };
-      foo.baz2 = foo.baz;
-      const w = new BrowserWindow({ show: false, foo: foo } as any);
-
-      w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-      const [,,,, options] = await emittedOnce(w.webContents, 'new-window');
-      expect(options.show).to.be.false();
-      expect((options as any).foo).to.deep.equal({
-        bar: undefined,
-        baz: {
-          hello: {
-            world: true
-          }
-        },
-        baz2: {
-          hello: {
-            world: true
-          }
-        }
-      });
     });
 
     it('defines a window.location getter', async () => {
@@ -764,7 +773,7 @@ describe('chromium features', () => {
         });
         expect(await w.webContents.executeJavaScript(`(${function () {
           const { ipc } = process._linkedBinding('electron_renderer_ipc');
-          return ipc.sendSync(true, 'ELECTRON_GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', ''])[0];
+          return ipc.sendSync(true, 'GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', '']);
         }})()`)).to.be.null();
         const exception = await uncaughtException;
         expect(exception.message).to.match(/denied: expected native window\.open/);
@@ -899,10 +908,15 @@ describe('chromium features', () => {
         for (const sandboxPopup of [false, true]) {
           const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
-            const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
-            w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-              options!.webPreferences!.sandbox = sandboxPopup;
-            });
+            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+            w.webContents.setWindowOpenHandler(() => ({
+              action: 'allow',
+              overrideBrowserWindowOptions: {
+                webPreferences: {
+                  sandbox: sandboxPopup
+                }
+              }
+            }));
             await w.loadURL(parent);
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {
@@ -1265,10 +1279,6 @@ describe('chromium features', () => {
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await new Promise((resolve) => {
-        contents.on('did-finish-load', resolve);
-        contents.on('did-frame-finish-load', resolve);
-      });
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1276,10 +1286,6 @@ describe('chromium features', () => {
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-      await new Promise((resolve) => {
-        contents.on('did-finish-load', resolve);
-        contents.on('did-frame-finish-load', resolve);
-      });
     });
   });
 
@@ -1435,5 +1441,106 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       "document.querySelector('iframe').offsetWidth"
     );
     expect(width).to.equal(0);
+  });
+});
+
+describe('navigator.serial', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const getPorts: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.serial.requestPort().then(port => port.toString()).catch(err => err.toString());
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.removeAllListeners('select-serial-port');
+  });
+
+  it('does not return a port if select-serial-port event is not defined', async () => {
+    w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('does not return a port when permission denied', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    session.defaultSession.setPermissionCheckHandler(() => false);
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('returns a port when select-serial-port event is defined', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback(portList[0].portId);
+    });
+    const port = await getPorts();
+    expect(port).to.equal('[object SerialPort]');
+  });
+});
+
+describe('navigator.clipboard', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const readClipboard: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
+    const clipboard = await readClipboard();
+    expect(clipboard).to.not.equal('Read permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-read') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const clipboard = await readClipboard();
+    expect(clipboard).to.equal('Read permission denied.');
+  });
+
+  it('returns clipboard contents when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-read') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const clipboard = await readClipboard();
+    expect(clipboard).to.not.equal('Read permission denied.');
   });
 });

@@ -63,8 +63,9 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> loader,
-                         network::mojom::URLLoaderFactory* url_loader_factory);
+  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> request,
+                         network::mojom::URLLoaderFactory* url_loader_factory,
+                         int options);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
