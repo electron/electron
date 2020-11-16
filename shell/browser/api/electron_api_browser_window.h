@@ -63,6 +63,9 @@ class BrowserWindow : public TopLevelWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const base::string16& title,
                           bool explicit_set) override;
+#if defined(OS_MACOSX)
+  void OnDevToolsResized() override;
+#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;

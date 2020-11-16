@@ -1461,6 +1461,11 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
+void WebContents::DevToolsResized() {
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnDevToolsResized();
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
