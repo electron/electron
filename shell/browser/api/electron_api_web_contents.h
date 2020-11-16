@@ -632,7 +632,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DevToolsClosed() override;
   void DevToolsResized() override;
 
- private:
   ElectronBrowserContext* GetBrowserContext() const;
 
   // Binds the given request for the ElectronBrowser API. When the
