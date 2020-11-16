@@ -291,22 +291,32 @@ describe('web security', () => {
 describe('command line switches', () => {
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
-    const testLocale = (locale: string, result: string, done: () => void) => {
+    const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
-      const electronPath = process.execPath;
-      let output = '';
-      const appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
+      const args = [appPath, `--set-lang=${locale}`];
+      if (printEnv) {
+        args.push('--print-env');
+      }
+      const appProcess = ChildProcess.spawn(process.execPath, args);
 
+      let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
-      appProcess.stdout.on('end', () => {
-        output = output.replace(/(\r\n|\n|\r)/gm, '');
-        expect(output).to.equal(result);
-        done();
-      });
+      await emittedOnce(appProcess.stdout, 'end');
+      output = output.replace(/(\r\n|\n|\r)/gm, '');
+      expect(output).to.equal(result);
     };
 
-    it('should set the locale', (done) => testLocale('fr', 'fr', done));
-    it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done));
+    it('should set the locale', async () => testLocale('fr', 'fr'));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+
+    const lcAll = String(process.env.LC_ALL);
+    ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
+      // The LC_ALL env should not be set to DOM locale string.
+      expect(lcAll).to.not.equal(app.getLocale());
+    });
+    ifit(process.platform === 'linux')('should not change LC_ALL', async () => testLocale('fr', lcAll, true));
+    ifit(process.platform === 'linux')('should not change LC_ALL when setting invalid locale', async () => testLocale('asdfkl', lcAll, true));
+    ifit(process.platform === 'linux')('should not change LC_ALL when --lang is not set', async () => testLocale('', lcAll, true));
   });
 
   describe('--remote-debugging-port switch', () => {

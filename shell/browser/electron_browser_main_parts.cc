@@ -375,22 +375,33 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // which keys off of getenv("LC_ALL").
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
-  g_setenv("LC_ALL", locale.c_str(), TRUE);
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::Optional<std::string> lc_all;
+  if (!locale.empty()) {
+    std::string str;
+    if (env->GetVar("LC_ALL", &str))
+      lc_all.emplace(std::move(str));
+    env->SetVar("LC_ALL", locale.c_str());
+  }
 #endif
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
 
-#if defined(OS_LINUX)
-  // Reset to the loaded locale if the custom locale is invalid.
-  if (loaded_locale != locale)
-    g_setenv("LC_ALL", loaded_locale.c_str(), TRUE);
-#endif
-
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
   ElectronBrowserClient::SetApplicationLocale(app_locale);
   fake_browser_process_->SetApplicationLocale(app_locale);
+
+#if defined(OS_LINUX)
+  // Reset to the original LC_ALL since we should not be changing it.
+  if (!locale.empty()) {
+    if (lc_all)
+      env->SetVar("LC_ALL", *lc_all);
+    else
+      env->UnSetVar("LC_ALL");
+  }
+#endif
 
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
