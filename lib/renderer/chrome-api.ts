@@ -73,7 +73,7 @@ export function injectTo (extensionId: string, context: any) {
 
   const chrome = context.chrome = context.chrome || {};
 
-  ipcRendererInternal.on(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
+  ipcRendererInternal.onMessageFromMain(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
     _event: Electron.Event, tabId: number, portId: number, connectInfo: { name: string }
   ) => {
     chrome.runtime.onConnect.emit(new Port(tabId, portId, extensionId, connectInfo.name));
@@ -87,11 +87,11 @@ export function injectTo (extensionId: string, context: any) {
     });
   });
 
-  ipcRendererInternal.on('CHROME_TABS_ONCREATED', (_event: Electron.Event, tabId: number) => {
+  ipcRendererInternal.onMessageFromMain('CHROME_TABS_ONCREATED', (_event: Electron.Event, tabId: number) => {
     chrome.tabs.onCreated.emit(new Tab(tabId));
   });
 
-  ipcRendererInternal.on('CHROME_TABS_ONREMOVED', (_event: Electron.Event, tabId: number) => {
+  ipcRendererInternal.onMessageFromMain('CHROME_TABS_ONREMOVED', (_event: Electron.Event, tabId: number) => {
     chrome.tabs.onRemoved.emit(tabId);
   });
 
