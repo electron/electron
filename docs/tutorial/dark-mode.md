@@ -58,7 +58,7 @@ will hardcode the theme source as "System".
 
 Add the following lines to the `index.html` file:
 
-```html fiddle='docs/fiddles/features/macos-dark-mode'
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -96,7 +96,7 @@ color scheme, and update the "Current Theme Source" label to `System`.
 
 To add listeners and handlers, add the following lines to the `renderer.js` file:
 
-```javascript fiddle='docs/fiddles/features/macos-dark-mode'
+```javascript
 const { ipcRenderer } = require('electron')
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
@@ -130,7 +130,7 @@ active using the `nativeTheme.shouldUseDarkColors` property, and set the
 `themeSource` to the opposite theme.
 * Upon receiving `dark-mode:system`, we reset the `themeSource` to `system`.
 
-```javascript fiddle='docs/fiddles/features/macos-dark-mode'
+```javascript
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
 
 function createWindow () {

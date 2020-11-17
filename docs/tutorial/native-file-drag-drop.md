@@ -18,14 +18,14 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `index.html` file:
 
-```html fiddle='docs/fiddles/features/drag-and-drop'
+```html
 <a href="#" id="drag">Drag me</a>
 <script src="renderer.js"></script>
 ```
 
 and add the following lines to the `renderer.js` file:
 
-```javascript fiddle='docs/fiddles/features/drag-and-drop'
+```javascript
 const { ipcRenderer } = require('electron')
 
 document.getElementById('drag').ondragstart = (event) => {

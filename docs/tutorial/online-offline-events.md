@@ -27,7 +27,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file
 with the following lines:
 
-```javascript fiddle='docs/fiddles/features/online-detection/renderer'
+```javascript
 const { app, BrowserWindow } = require('electron')
 
 let onlineStatusWindow
@@ -41,7 +41,7 @@ app.whenReady().then(() => {
 in the `index.html` file, add the following line before the
 closing `</body>` tag:
 
-```html fiddle='docs/fiddles/features/online-detection/renderer'
+```html
 <script src="renderer.js"></script>
 ```
 
@@ -72,7 +72,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file
 with the following lines:
 
-```javascript fiddle='docs/fiddles/features/online-detection/main'
+```javascript
 const { app, BrowserWindow, ipcMain } = require('electron')
 let onlineStatusWindow
 
@@ -89,7 +89,7 @@ ipcMain.on('online-status-changed', (event, status) => {
 in the `index.html` file, add the following line before the
 closing `</body>` tag:
 
-```html fiddle='docs/fiddles/features/online-detection/main'
+```html
 <script src="renderer.js"></script>
 ```
 

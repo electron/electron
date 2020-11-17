@@ -22,7 +22,7 @@ Assuming you have a working Electron application from the
 [Quick Start Guide](quick-start.md), add the following line to the
 `index.html` file before the closing `</body>` tag:
 
-```html fiddle='docs/fiddles/features/notifications/renderer'
+```html
 <script src="renderer.js"></script>
 ```
 
