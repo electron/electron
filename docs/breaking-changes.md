@@ -103,7 +103,22 @@ shell.trashItem(path).then(/* ... */)
 
 ## Planned Breaking API Changes (11.0)
 
-There are no breaking changes planned for 11.0.
+### Removed: `BrowserView.{fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+The experimental APIs `BrowserView.{fromId, fromWebContents, getAllViews}`
+have now been removed. Additionally, the `id` property of `BrowserView`
+has also been removed.
+
+For more detailed information, see [#23578](https://github.com/electron/electron/pull/23578).
+
+### Removed: `desktopCapturer.getMediaSourceIdForWebContents()`
+
+The `desktopCapturer` API method `getMediaSourceIdForWebContents` has been
+removed. The method required a WebContents id, but required fetching the id
+through the main process. Any renderer process that could send an IPC message
+could get a token for a video stream in any other renderer, opening up
+a potential security vulnerability.
+
+For more detailed information, see [#25414](https://github.com/electron/electron/pull/25414).
 
 ## Planned Breaking API Changes (10.0)
 
