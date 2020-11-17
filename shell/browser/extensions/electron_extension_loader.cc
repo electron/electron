@@ -156,7 +156,10 @@ void ElectronExtensionLoader::LoadExtensionForReload(
     LoadErrorBehavior load_error_behavior) {
   CHECK(!path.empty());
 
-  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;  // FIXME
+  // TODO(nornagon): we should save whether file access was granted
+  // when loading this extension and retain it here. As is, reloading an extension
+  // will cause the file access permission to be dropped.
+  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
       base::BindOnce(&LoadUnpacked, path, load_flags),
