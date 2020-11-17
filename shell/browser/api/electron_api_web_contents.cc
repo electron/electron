@@ -2853,6 +2853,7 @@ void WebContents::EndFrameSubscription() {
 
 void WebContents::StartDrag(const gin_helper::Dictionary& item,
                             gin::Arguments* args) {
+  gin_helper::ErrorThrower thrower(args->isolate());
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -2860,10 +2861,19 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
   }
 
   gin::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify non-empty 'icon' option");
-    return;
+  base::FilePath icon_path;
+  if (item.Get("icon", &icon_path)) {
+    icon = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
+                                                      icon_path);
+    if (icon->image().IsEmpty()) {
+      thrower.ThrowError("Must specify non-empty 'icon' option");
+      return;
+    }
+  } else {
+    if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
+      thrower.ThrowError("Must specify non-empty 'icon' option");
+      return;
+    }
   }
 
   // Start dragging.
@@ -2871,8 +2881,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     base::CurrentThread::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify either 'file' or 'files' option");
+    thrower.ThrowError("Must specify either 'file' or 'files' option");
   }
 }
 

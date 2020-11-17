@@ -587,24 +587,6 @@ bool Converter<electron::api::NativeImage*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     electron::api::NativeImage** out) {
-  // Try converting from file path.
-  base::FilePath path;
-  if (ConvertFromV8(isolate, val, &path)) {
-    *out = electron::api::NativeImage::CreateFromPath(isolate, path).get();
-    if ((*out)->image().IsEmpty()) {
-#if defined(OS_WIN)
-      const auto img_path = base::UTF16ToUTF8(path.value());
-#else
-      const auto img_path = path.value();
-#endif
-      isolate->ThrowException(v8::Exception::Error(
-          StringToV8(isolate, "Image could not be created from " + img_path)));
-      return false;
-    }
-
-    return true;
-  }
-
   // reinterpret_cast is safe here because NativeImage is the only subclass of
   // gin::Wrappable<NativeImage>.
   *out = static_cast<electron::api::NativeImage*>(
