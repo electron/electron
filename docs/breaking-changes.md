@@ -103,7 +103,12 @@ shell.trashItem(path).then(/* ... */)
 
 ## Planned Breaking API Changes (11.0)
 
-There are no breaking changes planned for 11.0.
+### Removed: `BrowserView.{destroy, fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+The experimental APIs `BrowserView.{destroy, fromId, fromWebContents, getAllViews}`
+have now been removed. Additionally, the `id` property of `BrowserView`
+has also been removed.
+
+For more detailed information, see [#23578](https://github.com/electron/electron/pull/23578).
 
 ## Planned Breaking API Changes (10.0)
 
