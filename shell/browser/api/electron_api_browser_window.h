@@ -97,7 +97,7 @@ class BrowserWindow : public BaseWindow,
 
  private:
 #if defined(OS_MAC)
-  void OverrideNSWindowContentView(InspectableWebContents* iwc);
+  void OverrideNSWindowContentView(InspectableWebContentsView* webView);
 #endif
 
   // Helpers.

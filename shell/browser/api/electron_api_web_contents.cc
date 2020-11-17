@@ -750,7 +750,7 @@ void WebContents::InitWithSessionAndOptions(
   InitWithWebContents(owned_web_contents.release(), session->browser_context(),
                       IsGuest());
 
-  managed_web_contents()->GetView()->SetDelegate(this);
+  inspectable_web_contents_->GetView()->SetDelegate(this);
 
   auto* prefs = web_contents()->GetMutableRendererPrefs();
 
@@ -843,7 +843,7 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
   // Allow toggling DevTools for background pages
   Observe(web_contents);
   InitWithWebContents(web_contents, GetBrowserContext(), IsGuest());
-  managed_web_contents()->GetView()->SetDelegate(this);
+  inspectable_web_contents_->GetView()->SetDelegate(this);
   SecurityStateTabHelper::CreateForWebContents(web_contents);
 }
 #endif
@@ -872,23 +872,23 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(new InspectableWebContents(
+  inspectable_web_contents_.reset(new InspectableWebContents(
       web_contents, browser_context->prefs(), is_guest));
-  web_contents_->SetDelegate(this);
+  inspectable_web_contents_->SetDelegate(this);
 }
 
 WebContents::~WebContents() {
   MarkDestroyed();
   // The destroy() is called.
-  if (managed_web_contents()) {
+  if (inspectable_web_contents_) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
     if (type_ == Type::kBackgroundPage) {
       // Background pages are owned by extensions::ExtensionHost
-      managed_web_contents()->ReleaseWebContents();
+      inspectable_web_contents_->ReleaseWebContents();
     }
 #endif
 
-    managed_web_contents()->GetView()->SetDelegate(nullptr);
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
     if (web_contents()) {
       RenderViewDeleted(web_contents()->GetRenderViewHost());
@@ -1102,8 +1102,8 @@ void WebContents::CloseContents(content::WebContents* source) {
     autofill_driver_factory->CloseAllPopups();
   }
 
-  if (managed_web_contents())
-    managed_web_contents()->GetView()->SetDelegate(nullptr);
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 }
@@ -1729,18 +1729,18 @@ void WebContents::DevToolsOpened() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  DCHECK(managed_web_contents());
-  auto handle =
-      FromOrCreate(isolate, managed_web_contents()->GetDevToolsWebContents());
+  DCHECK(inspectable_web_contents_);
+  auto handle = FromOrCreate(
+      isolate, inspectable_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate, handle.ToV8());
 
   // Set inspected tabID.
   base::Value tab_id(ID());
-  managed_web_contents()->CallClientFunction("DevToolsAPI.setInspectedTabId",
-                                             &tab_id, nullptr, nullptr);
+  inspectable_web_contents_->CallClientFunction("DevToolsAPI.setInspectedTabId",
+                                                &tab_id, nullptr, nullptr);
 
   // Inherit owner window in devtools when it doesn't have one.
-  auto* devtools = managed_web_contents()->GetDevToolsWebContents();
+  auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
   bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
@@ -1800,23 +1800,23 @@ void WebContents::ResetManagedWebContents(bool async) {
     // is destroyed.
     // //electron/patches/chromium/content_browser_main_loop.patch
     // is required to get the right quit closure for the main message loop.
-    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
-                                                    web_contents_.release());
+    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(
+        FROM_HERE, inspectable_web_contents_.release());
   } else {
-    web_contents_.reset();
+    inspectable_web_contents_.reset();
   }
 }
 
 content::WebContents* WebContents::GetWebContents() const {
-  if (!web_contents_)
+  if (!inspectable_web_contents_)
     return nullptr;
-  return web_contents_->GetWebContents();
+  return inspectable_web_contents_->GetWebContents();
 }
 
 content::WebContents* WebContents::GetDevToolsWebContents() const {
-  if (!web_contents_)
+  if (!inspectable_web_contents_)
     return nullptr;
-  return web_contents_->GetDevToolsWebContents();
+  return inspectable_web_contents_->GetDevToolsWebContents();
 }
 
 void WebContents::MarkDestroyed() {
@@ -1860,8 +1860,8 @@ void WebContents::WebContentsDestroyed() {
 
   // For guest view based on OOPIF, the WebContents is released by the embedder
   // frame, and we need to clear the reference to the memory.
-  if (IsGuest() && managed_web_contents()) {
-    managed_web_contents()->ReleaseWebContents();
+  if (IsGuest() && inspectable_web_contents_) {
+    inspectable_web_contents_->ReleaseWebContents();
     ResetManagedWebContents(false);
   }
 
@@ -2151,33 +2151,33 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     }
   }
 
-  DCHECK(managed_web_contents());
-  managed_web_contents()->SetDockState(state);
-  managed_web_contents()->ShowDevTools(activate);
+  DCHECK(inspectable_web_contents_);
+  inspectable_web_contents_->SetDockState(state);
+  inspectable_web_contents_->ShowDevTools(activate);
 }
 
 void WebContents::CloseDevTools() {
   if (type_ == Type::kRemote)
     return;
 
-  DCHECK(managed_web_contents());
-  managed_web_contents()->CloseDevTools();
+  DCHECK(inspectable_web_contents_);
+  inspectable_web_contents_->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
   if (type_ == Type::kRemote)
     return false;
 
-  DCHECK(managed_web_contents());
-  return managed_web_contents()->IsDevToolsViewShowing();
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->IsDevToolsViewShowing();
 }
 
 bool WebContents::IsDevToolsFocused() {
   if (type_ == Type::kRemote)
     return false;
 
-  DCHECK(managed_web_contents());
-  return managed_web_contents()->GetView()->IsDevToolsViewFocused();
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->GetView()->IsDevToolsViewFocused();
 }
 
 void WebContents::EnableDeviceEmulation(
@@ -2231,10 +2231,10 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_)
     return;
 
-  DCHECK(managed_web_contents());
-  if (!managed_web_contents()->GetDevToolsWebContents())
+  DCHECK(inspectable_web_contents_);
+  if (!inspectable_web_contents_->GetDevToolsWebContents())
     OpenDevTools(nullptr);
-  managed_web_contents()->InspectElement(x, y);
+  inspectable_web_contents_->InspectElement(x, y);
 }
 
 void WebContents::InspectSharedWorkerById(const std::string& workerId) {
@@ -2249,7 +2249,7 @@ void WebContents::InspectSharedWorkerById(const std::string& workerId) {
         content::DevToolsAgentHost::kTypeSharedWorker) {
       if (agent_host->GetId() == workerId) {
         OpenDevTools(nullptr);
-        managed_web_contents()->AttachTo(agent_host);
+        inspectable_web_contents_->AttachTo(agent_host);
         break;
       }
     }
@@ -2286,7 +2286,7 @@ void WebContents::InspectSharedWorker() {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
       OpenDevTools(nullptr);
-      managed_web_contents()->AttachTo(agent_host);
+      inspectable_web_contents_->AttachTo(agent_host);
       break;
     }
   }
@@ -2303,7 +2303,7 @@ void WebContents::InspectServiceWorker() {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeServiceWorker) {
       OpenDevTools(nullptr);
-      managed_web_contents()->AttachTo(agent_host);
+      inspectable_web_contents_->AttachTo(agent_host);
       break;
     }
   }
@@ -3114,8 +3114,8 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
 }
 
 void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
-  if (managed_web_contents())
-    managed_web_contents()->SetDevToolsWebContents(devtools->web_contents());
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->SetDevToolsWebContents(devtools->web_contents());
 }
 
 v8::Local<v8::Value> WebContents::GetNativeView(v8::Isolate* isolate) const {
@@ -3311,8 +3311,8 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
     if (!file_dialog::ShowSaveDialogSync(settings, &path)) {
       base::Value url_value(url);
-      web_contents_->CallClientFunction("DevToolsAPI.canceledSaveURL",
-                                        &url_value, nullptr, nullptr);
+      inspectable_web_contents_->CallClientFunction(
+          "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
       return;
     }
   }
@@ -3321,8 +3321,8 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   // Notify DevTools.
   base::Value url_value(url);
   base::Value file_system_path_value(path.AsUTF8Unsafe());
-  web_contents_->CallClientFunction("DevToolsAPI.savedURL", &url_value,
-                                    &file_system_path_value, nullptr);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.savedURL", &url_value, &file_system_path_value, nullptr);
   file_task_runner_->PostTask(FROM_HERE,
                               base::BindOnce(&WriteToFile, path, content));
 }
@@ -3335,8 +3335,8 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 
   // Notify DevTools.
   base::Value url_value(url);
-  web_contents_->CallClientFunction("DevToolsAPI.appendedToURL", &url_value,
-                                    nullptr, nullptr);
+  inspectable_web_contents_->CallClientFunction("DevToolsAPI.appendedToURL",
+                                                &url_value, nullptr, nullptr);
   file_task_runner_->PostTask(
       FROM_HERE, base::BindOnce(&AppendToFile, it->second, content));
 }
@@ -3345,9 +3345,9 @@ void WebContents::DevToolsRequestFileSystems() {
   auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
   if (file_system_paths.empty()) {
     base::ListValue empty_file_system_value;
-    web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
-                                      &empty_file_system_value, nullptr,
-                                      nullptr);
+    inspectable_web_contents_->CallClientFunction(
+        "DevToolsAPI.fileSystemsLoaded", &empty_file_system_value, nullptr,
+        nullptr);
     return;
   }
 
@@ -3366,8 +3366,8 @@ void WebContents::DevToolsRequestFileSystems() {
   base::ListValue file_system_value;
   for (const auto& file_system : file_systems)
     file_system_value.Append(CreateFileSystemValue(file_system));
-  web_contents_->CallClientFunction("DevToolsAPI.fileSystemsLoaded",
-                                    &file_system_value, nullptr, nullptr);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.fileSystemsLoaded", &file_system_value, nullptr, nullptr);
 }
 
 void WebContents::DevToolsAddFileSystem(
@@ -3400,13 +3400,13 @@ void WebContents::DevToolsAddFileSystem(
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(path.AsUTF8Unsafe(),
                                         std::make_unique<base::Value>(type));
-  web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded", nullptr,
-                                    file_system_value.get(), nullptr);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.fileSystemAdded", nullptr, file_system_value.get(), nullptr);
 }
 
 void WebContents::DevToolsRemoveFileSystem(
     const base::FilePath& file_system_path) {
-  if (!web_contents_)
+  if (!inspectable_web_contents_)
     return;
 
   std::string path = file_system_path.AsUTF8Unsafe();
@@ -3418,8 +3418,9 @@ void WebContents::DevToolsRemoveFileSystem(
   update.Get()->RemoveWithoutPathExpansion(path, nullptr);
 
   base::Value file_system_path_value(path);
-  web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
-                                    &file_system_path_value, nullptr, nullptr);
+  inspectable_web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
+                                                &file_system_path_value,
+                                                nullptr, nullptr);
 }
 
 void WebContents::DevToolsIndexPath(
@@ -3502,9 +3503,9 @@ void WebContents::OnDevToolsIndexingWorkCalculated(
   base::Value request_id_value(request_id);
   base::Value file_system_path_value(file_system_path);
   base::Value total_work_value(total_work);
-  web_contents_->CallClientFunction("DevToolsAPI.indexingTotalWorkCalculated",
-                                    &request_id_value, &file_system_path_value,
-                                    &total_work_value);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.indexingTotalWorkCalculated", &request_id_value,
+      &file_system_path_value, &total_work_value);
 }
 
 void WebContents::OnDevToolsIndexingWorked(int request_id,
@@ -3513,9 +3514,9 @@ void WebContents::OnDevToolsIndexingWorked(int request_id,
   base::Value request_id_value(request_id);
   base::Value file_system_path_value(file_system_path);
   base::Value worked_value(worked);
-  web_contents_->CallClientFunction("DevToolsAPI.indexingWorked",
-                                    &request_id_value, &file_system_path_value,
-                                    &worked_value);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.indexingWorked", &request_id_value, &file_system_path_value,
+      &worked_value);
 }
 
 void WebContents::OnDevToolsIndexingDone(int request_id,
@@ -3523,9 +3524,9 @@ void WebContents::OnDevToolsIndexingDone(int request_id,
   devtools_indexing_jobs_.erase(request_id);
   base::Value request_id_value(request_id);
   base::Value file_system_path_value(file_system_path);
-  web_contents_->CallClientFunction("DevToolsAPI.indexingDone",
-                                    &request_id_value, &file_system_path_value,
-                                    nullptr);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.indexingDone", &request_id_value, &file_system_path_value,
+      nullptr);
 }
 
 void WebContents::OnDevToolsSearchCompleted(
@@ -3538,9 +3539,9 @@ void WebContents::OnDevToolsSearchCompleted(
   }
   base::Value request_id_value(request_id);
   base::Value file_system_path_value(file_system_path);
-  web_contents_->CallClientFunction("DevToolsAPI.searchCompleted",
-                                    &request_id_value, &file_system_path_value,
-                                    &file_paths_value);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.searchCompleted", &request_id_value, &file_system_path_value,
+      &file_paths_value);
 }
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {

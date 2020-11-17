@@ -403,8 +403,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
 
-  InspectableWebContents* managed_web_contents() const {
-    return web_contents_.get();
+  InspectableWebContents* inspectable_web_contents() const {
+    return inspectable_web_contents_.get();
   }
 
   NativeWindow* owner_window() const { return owner_window_.get(); }
@@ -767,10 +767,10 @@ class WebContents : public gin::Wrappable<WebContents>,
   ElectronBrowserContext* browser_context_;
 
   // The stored InspectableWebContents object.
-  // Notice that web_contents_ must be placed after dialog_manager_, so we can
-  // make sure web_contents_ is destroyed before dialog_manager_, otherwise a
-  // crash would happen.
-  std::unique_ptr<InspectableWebContents> web_contents_;
+  // Notice that inspectable_web_contents_ must be placed after
+  // dialog_manager_, so we can make sure inspectable_web_contents_ is
+  // destroyed before dialog_manager_, otherwise a crash would happen.
+  std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
