@@ -246,7 +246,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Focus.
   void Focus();
   bool IsFocused() const;
-  void TabTraverse(bool reverse);
 
   // Send messages to browser.
   bool SendIPCMessage(bool internal,

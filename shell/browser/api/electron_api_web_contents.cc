@@ -2684,10 +2684,6 @@ bool WebContents::IsFocused() const {
 }
 #endif
 
-void WebContents::TabTraverse(bool reverse) {
-  web_contents()->FocusThroughTabTraversal(reverse);
-}
-
 bool WebContents::SendIPCMessage(bool internal,
                                  bool send_to_all,
                                  const std::string& channel,
@@ -3650,7 +3646,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("tabTraverse", &WebContents::TabTraverse)
       .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("_postMessage", &WebContents::PostMessage)
       .SetMethod("_sendToFrame", &WebContents::SendIPCMessageToFrame)
