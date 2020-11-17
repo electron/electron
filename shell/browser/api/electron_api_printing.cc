@@ -59,7 +59,7 @@ printing::PrinterList GetPrinterList() {
 
 namespace {
 
-using namespace electron::api;
+using electron::api::GetPrinterList;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
