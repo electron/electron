@@ -6,10 +6,10 @@ Subject: dcheck.patch
 https://github.com/auchenberg/volkswagen
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 65bd2586d5b3b59a977aadc5985fffc16cd0b251..4767cfcbfac97a899bdd22784753e51464ae23db 100644
+index 1c953e4d426acaf07dc0273eef2837fac843ec69..bbd14c645120f108fa0e6ae594f6af8a84eeadea 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -8812,7 +8812,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+@@ -8786,7 +8786,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
  }
  
  void Isolate::PerformMicrotaskCheckpoint() {
@@ -19,10 +19,10 @@ index 65bd2586d5b3b59a977aadc5985fffc16cd0b251..4767cfcbfac97a899bdd22784753e514
    isolate->default_microtask_queue()->PerformCheckpoint(this);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index e818600d5b3326bf3c87cb73d43f2db10a94c73b..276d8d5ebe01e1e544e422d34e15e54e72fd3c3c 100644
+index 01b7d177224fa33dca6a2a2061de4b1aea6263c1..aaa038144e605ec748b35ed1d272f1a0306cbbc8 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -5457,9 +5457,9 @@ void Heap::TearDown() {
+@@ -5469,9 +5469,9 @@ void Heap::TearDown() {
  void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
                                   GCType gc_type, void* data) {
    DCHECK_NOT_NULL(callback);
