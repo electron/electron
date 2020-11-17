@@ -23,16 +23,7 @@ Object.setPrototypeOf(process, EventEmitter.prototype);
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
 
-const {
-  preloadScripts,
-  isRemoteModuleEnabled,
-  isWebViewTagEnabled,
-  guestInstanceId,
-  openerId,
-  process: processProps
-} = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
-
-process.isRemoteModuleEnabled = isRemoteModuleEnabled;
+const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
 
 const electron = require('electron');
 
@@ -123,9 +114,12 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
 }
 
 const contextIsolation = getWebPreference(window, 'contextIsolation');
+const webviewTag = getWebPreference(window, 'webviewTag');
 const isHiddenPage = getWebPreference(window, 'hiddenPage');
 const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
 const usesNativeWindowOpen = true;
+const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
+const openerId = getWebPreference(window, 'openerId') || null;
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -136,7 +130,7 @@ switch (window.location.protocol) {
   case 'chrome-extension:': {
     break;
   }
-  case 'chrome': {
+  case 'chrome:': {
     break;
   }
   default: {
@@ -149,7 +143,7 @@ switch (window.location.protocol) {
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
-  webViewInit(contextIsolation, isWebViewTagEnabled, guestInstanceId);
+  webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
 
 // Wrap the script into a function executed in global scope. It won't have
