@@ -167,9 +167,16 @@ describe('powerMonitor', () => {
     });
 
     describe('powerMonitor.getSystemIdleTime', () => {
-      it('notify current system idle time', () => {
+      it('returns current system idle time', () => {
         const idleTime = powerMonitor.getSystemIdleTime();
         expect(idleTime).to.be.at.least(0);
+      });
+    });
+
+    describe('powerMonitor.onBatteryPower', () => {
+      it('returns a boolean', () => {
+        expect(powerMonitor.onBatteryPower).to.be.a('boolean');
+        expect(powerMonitor.isOnBatteryPower()).to.be.a('boolean');
       });
     });
   });
