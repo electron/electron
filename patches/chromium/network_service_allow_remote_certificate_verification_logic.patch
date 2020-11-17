@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 3773583bedd00e94e86c172c4a110db3e4e038d5..daec1d32ea084aadc86a455daaf5466a5a274554 100644
+index db0ecdf918407a9b5b4d73f07edcfe069394c50f..fdd3ad94524e78678a9947b91a7fe09a5bf32442 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -115,6 +115,11 @@
@@ -116,7 +116,7 @@ index 3773583bedd00e94e86c172c4a110db3e4e038d5..daec1d32ea084aadc86a455daaf5466a
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1851,8 +1936,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1854,8 +1939,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
           "NetworkContext should pass CertVerifierServiceRemoteParams.";
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -127,7 +127,7 @@ index 3773583bedd00e94e86c172c4a110db3e4e038d5..daec1d32ea084aadc86a455daaf5466a
    } else {
      if (params_->cert_verifier_params &&
          params_->cert_verifier_params->is_remote_params()) {
-@@ -1880,14 +1966,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1883,14 +1969,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          cert_net_fetcher_ =
              base::MakeRefCounted<net::CertNetFetcherURLRequest>();
  
@@ -145,7 +145,7 @@ index 3773583bedd00e94e86c172c4a110db3e4e038d5..daec1d32ea084aadc86a455daaf5466a
  
  #if BUILDFLAG(IS_ASH)
      cert_verifier_with_trust_anchors_ =
-@@ -1896,13 +1982,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1899,13 +1985,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      UpdateAdditionalCertificates(
          std::move(params_->initial_additional_certificates));
      cert_verifier_with_trust_anchors_->InitializeOnIOThread(

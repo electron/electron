@@ -451,7 +451,8 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
-    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
+        base::OnceClosure());
   } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
