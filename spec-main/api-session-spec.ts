@@ -539,7 +539,6 @@ describe('session module', () => {
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
           fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
         ],
-        requestCert: true,
         rejectUnauthorized: false
       };
 
@@ -551,25 +550,26 @@ describe('session module', () => {
     });
 
     afterEach((done) => {
-      session.defaultSession.setCertificateVerifyProc(null);
       server.close(done);
     });
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
         expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true();
         expect([-202, -200].includes(errorCode)).to.be.true();
         callback(0);
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(`https://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(w.webContents.getTitle()).to.equal('hello');
     });
 
     it('rejects the request when the callback is called with -2', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
         expect(hostname).to.equal('127.0.0.1');
         expect(certificate.issuerName).to.equal('Intermediate CA');
         expect(certificate.subjectName).to.equal('localhost');
@@ -585,25 +585,47 @@ describe('session module', () => {
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url);
     });
 
     it('saves cached results', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
-      session.defaultSession.setCertificateVerifyProc((e, callback) => {
+      ses.setCertificateVerifyProc((e, callback) => {
         numVerificationRequests++;
         callback(-2);
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       await emittedOnce(w.webContents, 'did-stop-loading');
       await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url + '/test');
       expect(numVerificationRequests).to.equal(1);
+    });
+
+    it('does not cancel requests in other sessions', async () => {
+      const ses1 = session.fromPartition(`${Math.random()}`);
+      ses1.setCertificateVerifyProc((opts, cb) => cb(0));
+      const ses2 = session.fromPartition(`${Math.random()}`);
+
+      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const req = net.request({ url, session: ses1, credentials: 'include' });
+      req.end();
+      setTimeout(() => {
+        ses2.setCertificateVerifyProc((opts, callback) => callback(0));
+      });
+      await expect(new Promise((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      })).to.eventually.be.fulfilled();
     });
   });
 

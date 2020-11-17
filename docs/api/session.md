@@ -483,6 +483,8 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 })
 ```
 
+> **NOTE:** The result of this procedure is cached by the network service.
+
 #### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function | null
