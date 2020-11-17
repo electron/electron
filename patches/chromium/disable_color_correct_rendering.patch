@@ -81,7 +81,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index be7906b3e02af81aac501bd8861d8d55aa9c19e4..5b958e84c089122f1b7242fb48d7048cf0333c69 100644
+index d59f15d33be9c7d7ef56965967295969c635eb54..dc09df35ad4cc0f9eb7256b13eb543ce23159cd7 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -327,7 +327,7 @@ index 151ecd87db422422355bcf316ec3d7e0391d7a2b..29e6f43b088141a9084e0005896083c2
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index ec83bd814a0d5d6802b349d08b22013a0d99e015..043e769e7db9773de2054dcc66f13f062823f58f 100644
+index f56f9149b62cde816ac6204d6870b8d31776e5a5..8c55bbfc4675914afeb0f50b6704e1dcd5e07a18 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -18,6 +18,7 @@
@@ -353,7 +353,7 @@ index ec83bd814a0d5d6802b349d08b22013a0d99e015..043e769e7db9773de2054dcc66f13f06
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -286,6 +295,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -294,6 +303,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
