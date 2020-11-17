@@ -45,12 +45,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
-#include "printing/backend/print_backend.h"  // nogncheck
 #include "shell/browser/printing/print_preview_message_handler.h"
-
-#if defined(OS_WIN)
-#include "printing/backend/win_helper.h"
-#endif
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -223,7 +218,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                            bool silent,
                            base::string16 default_printer);
   void Print(gin::Arguments* args);
-  printing::PrinterList GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
