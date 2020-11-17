@@ -17,6 +17,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -221,7 +222,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(gin::Handle<NativeImage> icon);
+  void SetIcon(gin_helper::ErrorThrower thrower, v8::Local<v8::Value> icon);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,

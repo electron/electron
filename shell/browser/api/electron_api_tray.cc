@@ -14,6 +14,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -61,11 +62,11 @@ namespace api {
 
 gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Tray::Tray(gin::Handle<NativeImage> image,
+Tray::Tray(v8::Local<v8::Value> image,
            base::Optional<UUID> guid,
            gin::Arguments* args)
     : tray_icon_(TrayIcon::Create(guid)) {
-  SetImage(image);
+  SetImage(args->isolate(), image);
   tray_icon_->AddObserver(this);
 }
 
@@ -73,7 +74,7 @@ Tray::~Tray() = default;
 
 // static
 gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
-                            gin::Handle<NativeImage> image,
+                            v8::Local<v8::Value> image,
                             base::Optional<UUID> guid,
                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
@@ -186,23 +187,62 @@ bool Tray::IsDestroyed() {
   return !tray_icon_;
 }
 
-void Tray::SetImage(gin::Handle<NativeImage> image) {
+void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
+
+  gin::Handle<NativeImage> native_image;
+  base::FilePath icon_path;
+  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
+    native_image =
+        electron::api::NativeImage::CreateFromPath(isolate, icon_path);
+    if (native_image->image().IsEmpty()) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Failed to convert path to nativeImage")));
+      return;
+    }
+  } else {
+    if (!gin::ConvertFromV8(isolate, image, &native_image)) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Failed to convert nativeImage")));
+      return;
+    }
+  }
+
 #if defined(OS_WIN)
-  tray_icon_->SetImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
+  tray_icon_->SetImage(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
-  tray_icon_->SetImage(image->image());
+  tray_icon_->SetImage(native_image->image());
 #endif
 }
 
-void Tray::SetPressedImage(gin::Handle<NativeImage> image) {
+void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
+
+  gin::Handle<NativeImage> native_image;
+  base::FilePath icon_path;
+  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
+    native_image =
+        electron::api::NativeImage::CreateFromPath(isolate, icon_path);
+    if (native_image->image().IsEmpty()) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Failed to convert path to nativeImage")));
+      return;
+    }
+  } else {
+    if (!gin::ConvertFromV8(isolate, image, &native_image)) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Failed to convert nativeImage")));
+      return;
+    }
+  }
+
 #if defined(OS_WIN)
-  tray_icon_->SetPressedImage(image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
+  tray_icon_->SetPressedImage(
+      native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
-  tray_icon_->SetPressedImage(image->image());
+  tray_icon_->SetPressedImage(native_image->image());
 #endif
 }
 
@@ -283,7 +323,19 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
   }
 
   gin::Handle<NativeImage> icon;
-  options.Get("icon", &icon);
+  base::FilePath icon_path;
+  if (options.Get("icon", &icon_path)) {
+    icon = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
+                                                      icon_path);
+    if (icon->image().IsEmpty()) {
+      thrower.ThrowError("Failed to convert path to nativeImage");
+      return;
+    }
+  } else if (options.Has("icon") && !options.Get("icon", &icon)) {
+    thrower.ThrowError("Failed to convert nativeImage");
+    return;
+  }
+
   options.Get("iconType", &balloon_options.icon_type);
   options.Get("largeIcon", &balloon_options.large_icon);
   options.Get("noSound", &balloon_options.no_sound);
