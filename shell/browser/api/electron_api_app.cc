@@ -45,6 +45,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"

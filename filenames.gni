@@ -522,6 +522,7 @@ filenames = {
     "shell/common/electron_paths.h",
     "shell/common/gin_converters/accelerator_converter.cc",
     "shell/common/gin_converters/accelerator_converter.h",
+    "shell/common/gin_converters/base_converter.h",
     "shell/common/gin_converters/blink_converter.cc",
     "shell/common/gin_converters/blink_converter.h",
     "shell/common/gin_converters/callback_converter.h",
