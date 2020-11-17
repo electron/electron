@@ -113,7 +113,7 @@ gin_helper::WrappableBase* WebContentsView::New(
     }
   } else {
     // Create one if not.
-    web_contents = WebContents::Create(args->isolate(), web_preferences);
+    web_contents = WebContents::New(args->isolate(), web_preferences);
   }
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents);

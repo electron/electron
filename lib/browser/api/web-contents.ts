@@ -729,8 +729,8 @@ WebContents.prototype._init = function () {
 };
 
 // Public APIs.
-export function create (options = {}) {
-  return binding.create(options);
+export function create (options = {}): Electron.WebContents {
+  return new (WebContents as any)(options);
 }
 
 export function fromId (id: string) {

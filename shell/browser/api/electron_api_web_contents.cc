@@ -3727,20 +3727,13 @@ ElectronBrowserContext* WebContents::GetBrowserContext() const {
 }
 
 // static
-gin::Handle<WebContents> WebContents::Create(
+gin::Handle<WebContents> WebContents::New(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& options) {
   gin::Handle<WebContents> handle =
       gin::CreateHandle(isolate, new WebContents(isolate, options));
   gin_helper::CallMethod(isolate, handle.get(), "_init");
   return handle;
-}
-
-// static
-gin::Handle<WebContents> WebContents::New(
-    v8::Isolate* isolate,
-    const gin_helper::Dictionary& options) {
-  return Create(isolate, options);
 }
 
 // static
@@ -3809,7 +3802,6 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
-  dict.SetMethod("create", &WebContents::Create);
   dict.SetMethod("fromId", &WebContents::FromID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
