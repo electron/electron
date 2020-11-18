@@ -4,9 +4,16 @@ Electron supports [Chrome DevTools extensions][devtools-extension], which can
 be used to extend the ability of Chrome's developer tools for debugging
 popular web frameworks.
 
+## Loading a DevTools extension with tooling
+
+The easiest way to load a DevTools extension is to use third-party tooling to automate the
+process for you. [electron-devtools-installer][electron-devtools-installer] is a popular
+NPM package that does just that.
+
 ## Manually loading a DevTools extension
 
-To load an extension in Electron, you need to download it via Chrome,
+If you don't want to use the tooling approach, you can also do all of the necessary
+operations by hand. To load an extension in Electron, you need to download it via Chrome,
 locate its filesystem path, and then load it into your [Session][session] by calling the
 [`ses.loadExtension`] API.
 
@@ -44,7 +51,9 @@ Using the [React Developer Tools][react-devtools] as an example:
 **Notes:**
 
 * `loadExtension` returns a Promise with an [Extension object][extension-structure],
-which contains metadata about the extension that was loaded.
+which contains metadata about the extension that was loaded. This promise needs to
+resolve (e.g. with an `await` expression) before loading a page. Otherwise, the
+extension won't be guaranteed to load.
 * `loadExtension` cannot be called before the `ready` event of the `app` module
 is emitted, nor can it be called on in-memory (non-persistent) sessions.
 * `loadExtension` must be called on every boot of your app if you want the
@@ -55,12 +64,6 @@ extension to be loaded.
 You can pass the extension's ID to the [`ses.removeExtension`][remove-extension] API to
 remove it from your Session. Loaded extensions are not persisted between
 app launches.
-
-## Using tooling
-
-Alternatively, you can use third-party tooling to automate these steps for you.
-[electron-devtools-installer][electron-devtools-installer] is a popular NPM package
-that does just that.
 
 ## DevTools extension support
 
