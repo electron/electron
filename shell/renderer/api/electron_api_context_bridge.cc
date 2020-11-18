@@ -546,7 +546,7 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
-    if (proxy->IsObject() &&
+    if (proxy->IsObject() && !proxy->IsTypedArray() &&
         !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
       return;
 
