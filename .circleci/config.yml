@@ -1846,7 +1846,7 @@ jobs:
           use-out-cache: false
 
   linux-x64-testing-asan:
-    <<: *machine-linux-xlarge
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
