@@ -7,7 +7,6 @@
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "extensions/browser/extension_prefs_factory.h"
 #include "extensions/browser/extension_registry_factory.h"
-#include "extensions/browser/process_manager_factory.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 
 using content::BrowserContext;
@@ -30,7 +29,6 @@ ElectronExtensionSystemFactory::ElectronExtensionSystemFactory()
                               BrowserContextDependencyManager::GetInstance()) {
   DependsOn(ExtensionPrefsFactory::GetInstance());
   DependsOn(ExtensionRegistryFactory::GetInstance());
-  DependsOn(ProcessManagerFactory::GetInstance());
 }
 
 ElectronExtensionSystemFactory::~ElectronExtensionSystemFactory() {}
