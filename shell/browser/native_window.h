@@ -271,6 +271,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
                               bool* prevent_default);
   void NotifyWindowResize();
+  void NotifyWindowResized();
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
@@ -288,6 +289,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
+  void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

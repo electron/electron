@@ -33,6 +33,7 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
+  void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;
 
  private:
   bool ShouldNotifyClient(int world_id);

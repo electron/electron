@@ -126,15 +126,13 @@ OffScreenWebContentsView::CreateViewForWidget(
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForChildWidget(
     content::RenderWidgetHost* render_widget_host) {
-  content::WebContentsImpl* web_contents_impl =
+  auto* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
-  OffScreenRenderWidgetHostView* view =
-      static_cast<OffScreenRenderWidgetHostView*>(
-          web_contents_impl->GetOuterWebContents()
-              ? web_contents_impl->GetOuterWebContents()
-                    ->GetRenderWidgetHostView()
-              : web_contents_impl->GetRenderWidgetHostView());
+  auto* view = static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents_impl->GetOuterWebContents()
+          ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
+          : web_contents_impl->GetRenderWidgetHostView());
 
   return new OffScreenRenderWidgetHostView(transparent_, painting_,
                                            view->GetFrameRate(), callback_,
@@ -162,7 +160,7 @@ bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
 
 void OffScreenWebContentsView::StartDragging(
     const content::DropData& drop_data,
-    blink::WebDragOperationsMask allowed_ops,
+    blink::DragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& image_offset,
     const blink::mojom::DragEventSourceInfo& event_info,
@@ -173,7 +171,7 @@ void OffScreenWebContentsView::StartDragging(
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(
-    blink::WebDragOperation operation) {}
+    blink::DragOperation operation) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();

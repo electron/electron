@@ -13,9 +13,9 @@ export class IpcMainImpl extends EventEmitter {
     }
     this._invokeHandlers.set(method, async (e, ...args) => {
       try {
-        (e as any)._reply(await Promise.resolve(fn(e, ...args)));
+        e._reply(await Promise.resolve(fn(e, ...args)));
       } catch (err) {
-        (e as any)._throw(err);
+        e._throw(err);
       }
     });
   }

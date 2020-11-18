@@ -1,6 +1,7 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 // Helper function to resolve url set in attribute.
 const a = document.createElement('a');
@@ -17,7 +18,7 @@ interface MutationHandler {
 
 // Attribute objects.
 // Default implementation of a WebView attribute.
-class WebViewAttribute implements MutationHandler {
+export class WebViewAttribute implements MutationHandler {
   public value: any;
   public ignoreMutation = false;
 
@@ -78,7 +79,7 @@ class BooleanAttribute extends WebViewAttribute {
 }
 
 // Attribute representing the state of the storage partition.
-class PartitionAttribute extends WebViewAttribute {
+export class PartitionAttribute extends WebViewAttribute {
   public validPartitionId = true
 
   constructor (public webViewImpl: WebViewImpl) {
@@ -102,7 +103,7 @@ class PartitionAttribute extends WebViewAttribute {
 }
 
 // Attribute that handles the location and navigation of the webview.
-class SrcAttribute extends WebViewAttribute {
+export class SrcAttribute extends WebViewAttribute {
   public observer!: MutationObserver;
 
   constructor (public webViewImpl: WebViewImpl) {
@@ -122,7 +123,7 @@ class SrcAttribute extends WebViewAttribute {
     super.setValueIgnoreMutation(value);
 
     // takeRecords() is needed to clear queued up src mutations. Without it, it
-    // is possible for this change to get picked up asyncronously by src's
+    // is possible for this change to get picked up asynchronously by src's
     // mutation observer |observer|, and then get handled even though we do not
     // want to handle this mutation.
     this.observer.takeRecords();
@@ -168,7 +169,7 @@ class SrcAttribute extends WebViewAttribute {
   }
 
   public parse () {
-    if (!this.webViewImpl.elementAttached || !this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION].validPartitionId || !this.getValue()) {
+    if (!this.webViewImpl.elementAttached || !(this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION) as PartitionAttribute).validPartitionId || !this.getValue()) {
       return;
     }
     if (this.webViewImpl.guestInstanceId == null) {
@@ -182,12 +183,12 @@ class SrcAttribute extends WebViewAttribute {
     // Navigate to |this.src|.
     const opts: Record<string, string> = {};
 
-    const httpreferrer = this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER].getValue();
+    const httpreferrer = this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER)!.getValue();
     if (httpreferrer) {
       opts.httpReferrer = httpreferrer;
     }
 
-    const useragent = this.webViewImpl.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT].getValue();
+    const useragent = this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT)!.getValue();
     if (useragent) {
       opts.userAgent = useragent;
     }
@@ -196,7 +197,7 @@ class SrcAttribute extends WebViewAttribute {
     const method = 'loadURL';
     const args = [this.getValue(), opts];
 
-    ipcRendererInternal.invoke('ELECTRON_GUEST_VIEW_MANAGER_CALL', guestInstanceId, method, args);
+    ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
   }
 }
 
@@ -274,19 +275,18 @@ class EnableRemoteModuleAttribute extends WebViewAttribute {
 
 // Sets up all of the webview attributes.
 WebViewImpl.prototype.setupWebViewAttributes = function () {
-  this.attributes = {};
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION] = new PartitionAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC] = new SrcAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT] = new UserAgentAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS] = new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE] = new EnableRemoteModuleAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES] = new BlinkFeaturesAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES] = new DisableBlinkFeaturesAttribute(this);
-  this.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES] = new WebPreferencesAttribute(this);
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, new PartitionAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, new SrcAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, new HttpReferrerAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, new UserAgentAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE, new EnableRemoteModuleAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, new PreloadAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, new BlinkFeaturesAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(this));
+  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, new WebPreferencesAttribute(this));
 };

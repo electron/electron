@@ -4,9 +4,9 @@ const { BrowserWindow } = process._linkedBinding('electron_browser_window') as {
 
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
-(BrowserWindow.prototype as any)._init = function (this: BWT) {
+BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
-  (BaseWindow.prototype as any)._init.call(this);
+  BaseWindow.prototype._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -96,11 +96,7 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.getBrowserView() === browserView) return window;
-  }
-
-  return null;
+  return BrowserWindow.fromWebContents(browserView.webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {

@@ -16,7 +16,7 @@ npm install --save-dev electron@latest
 
 ## Version 1.x
 
-Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+Electron versions *< 2.0* did not conform to the [semver](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
 
 Here is an example of the 1.x strategy:
 
@@ -47,7 +47,6 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
 | Node.js major version updates   | Node.js minor version updates      | Node.js patch version updates |
 | Chromium version updates        |                                    | fix-related chromium patches  |
-
 
 Note that most Chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
@@ -118,6 +117,7 @@ A few examples of how various semver ranges will pick up new releases:
 ![](../images/versioning-sketch-7.png)
 
 # Missing Features: Alphas
+
 Our strategy has a few tradeoffs, which for now we feel are appropriate. Most importantly that new features in master may take a while before reaching a stable release line. If you want to try a new feature immediately, you will have to build Electron yourself.
 
 As a future consideration, we may introduce one or both of the following:
@@ -125,6 +125,7 @@ As a future consideration, we may introduce one or both of the following:
 * alpha releases that have looser stability constraints to betas; for example it would be allowable to admit new features while a stability channel is in _alpha_
 
 # Feature Flags
+
 Feature flags are a common practice in Chromium, and are well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft branch** must have the following properties:
 
 * it is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag

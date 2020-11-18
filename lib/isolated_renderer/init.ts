@@ -1,5 +1,3 @@
-'use strict';
-
 /* global nodeProcess, isolatedWorld */
 
 process._linkedBinding = nodeProcess._linkedBinding;

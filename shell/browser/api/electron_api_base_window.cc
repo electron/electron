@@ -222,6 +222,10 @@ void BaseWindow::OnWindowResize() {
   Emit("resize");
 }
 
+void BaseWindow::OnWindowResized() {
+  Emit("resized");
+}
+
 void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {
   if (Emit("will-move", new_bounds)) {
@@ -292,6 +296,12 @@ void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
 
 void BaseWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
+}
+
+void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
+  if (Emit("system-context-menu", gfx::Point(x, y))) {
+    *prevent_default = true;
+  }
 }
 
 #if defined(OS_WIN)
@@ -945,7 +955,7 @@ std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
 
 v8::Local<v8::Value> BaseWindow::GetBrowserView(
     gin_helper::Arguments* args) const {
-  if (browser_views_.size() == 0) {
+  if (browser_views_.empty()) {
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
     auto first_view = browser_views_.begin();
@@ -993,7 +1003,7 @@ void BaseWindow::SetIcon(gin::Handle<NativeImage> icon) {
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
                 icon->GetHICON(GetSystemMetrics(SM_CXICON)));
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(icon->image().AsImageSkia());
 #endif

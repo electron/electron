@@ -195,14 +195,14 @@ class Browser : public WindowListObserver {
   void UserActivityWasContinued(const std::string& type,
                                 base::DictionaryValue user_info);
 
-  // Gives an oportunity to update the Handoff payload.
+  // Gives an opportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
                                base::DictionaryValue user_info);
 
   // Bounce the dock icon.
   enum class BounceType{
-      CRITICAL = 0,        // NSCriticalRequest
-      INFORMATIONAL = 10,  // NSInformationalRequest
+      kCritical = 0,        // NSCriticalRequest
+      kInformational = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);

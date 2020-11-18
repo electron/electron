@@ -11,7 +11,7 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 4fa2d4175fb318f560b7b9a8ed8baa091d3ed6a2..cf6115d04ba3c184937c5db85c9d7ebc78ed3db7 100644
+index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -358,12 +358,14 @@ Environment* CreateEnvironment(
@@ -63,10 +63,10 @@ index 38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51..4fe2eb3b7699efcab87c377743a955ef
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index 80acb3f9f04ef8e6c363cf31384af4037abeeb87..22f037b0b26f39f9ce94c4a364b27cf204366cb9 100644
+index a649f52403659fd18898e1e813f97e32f33784e7..b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -424,7 +424,11 @@ enum Flags : uint64_t {
+@@ -426,7 +426,11 @@ enum Flags : uint64_t {
    kNoRegisterESMLoader = 1 << 3,
    // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
    // by fs.open() and fs.close(), and close them during FreeEnvironment().

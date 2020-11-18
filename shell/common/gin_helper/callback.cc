@@ -55,7 +55,7 @@ void CallTranslater(v8::Local<v8::External> external,
     }
   }
 
-  TranslaterHolder* holder = static_cast<TranslaterHolder*>(external->Value());
+  auto* holder = static_cast<TranslaterHolder*>(external->Value());
   holder->translater.Run(args);
 
   // Free immediately for one-time callback.

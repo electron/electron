@@ -17,12 +17,20 @@ class InspectableWebContentsViewMac;
 
 using electron::InspectableWebContentsViewMac;
 
+@interface NSView (WebContentsView)
+- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
+@end
+
+@interface ControlRegionView : NSView
+@end
+
 @interface ElectronInspectableWebContentsView : BaseView <NSWindowDelegate> {
  @private
   electron::InspectableWebContentsViewMac* inspectableWebContentsView_;
 
   base::scoped_nsobject<NSView> fake_view_;
   base::scoped_nsobject<NSWindow> devtools_window_;
+  base::scoped_nsobject<ControlRegionView> devtools_mask_;
   BOOL devtools_visible_;
   BOOL devtools_docked_;
   BOOL devtools_is_first_responder_;

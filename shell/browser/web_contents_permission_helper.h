@@ -22,6 +22,7 @@ class WebContentsPermissionHelper
     POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
     FULLSCREEN,
     OPEN_EXTERNAL,
+    SERIAL
   };
 
   // Asynchronous Requests
@@ -38,6 +39,7 @@ class WebContentsPermissionHelper
   // Synchronous Checks
   bool CheckMediaAccessPermission(const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) const;
+  bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);

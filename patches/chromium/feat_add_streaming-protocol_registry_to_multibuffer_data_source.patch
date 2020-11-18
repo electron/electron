@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
-index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859a38ad737 100644
+index 1e5c85595c77f4fde9fa30b99de197441295ffe7..a530c6c942cfb119c3089d3b857a205a11f9eb27 100644
 --- a/media/blink/multibuffer_data_source.cc
 +++ b/media/blink/multibuffer_data_source.cc
 @@ -10,9 +10,11 @@
@@ -68,7 +68,7 @@ index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859
  
  void MultibufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
-index 013ce7404ddba2a02bea78a72b535377e8d4e17c..9a283e238f8b1f0cca7f1ca2d3d68847529e0f7c 100644
+index 8441d15ece8e4a1e14f8df489cc94953605e3992..e6c893b34b9594e0df1de8aaf507740e732ecc21 100644
 --- a/media/blink/multibuffer_data_source.h
 +++ b/media/blink/multibuffer_data_source.h
 @@ -31,6 +31,8 @@ class BufferedDataSourceHost;

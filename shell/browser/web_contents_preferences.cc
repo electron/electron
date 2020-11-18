@@ -76,17 +76,17 @@ bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
 
 bool GetAsAutoplayPolicy(const base::Value* val,
                          base::StringPiece path,
-                         blink::web_pref::AutoplayPolicy* out) {
+                         blink::mojom::AutoplayPolicy* out) {
   std::string policy_str;
   if (GetAsString(val, path, &policy_str)) {
     if (policy_str == "no-user-gesture-required") {
-      *out = blink::web_pref::AutoplayPolicy::kNoUserGestureRequired;
+      *out = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
       return true;
     } else if (policy_str == "user-gesture-required") {
-      *out = blink::web_pref::AutoplayPolicy::kUserGestureRequired;
+      *out = blink::mojom::AutoplayPolicy::kUserGestureRequired;
       return true;
     } else if (policy_str == "document-user-activation-required") {
-      *out = blink::web_pref::AutoplayPolicy::kDocumentUserActivationRequired;
+      *out = blink::mojom::AutoplayPolicy::kDocumentUserActivationRequired;
       return true;
     }
     return false;
@@ -143,9 +143,10 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
   SetDefaultBoolIfUndefined(options::kWebGL, true);
   SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
+  SetDefaultBoolIfUndefined(options::kEnablePreferredSizeMode, false);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
-  // If webSecurity was explicity set to false, let's inherit that into
+  // If webSecurity was explicitly set to false, let's inherit that into
   // insecureContent
   if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
       !webSecurity) {
@@ -240,22 +241,22 @@ bool WebContentsPreferences::GetPreference(base::StringPiece name,
   return GetAsString(&preference_, name, value);
 }
 
-bool WebContentsPreferences::GetPreloadPath(
-    base::FilePath::StringType* path) const {
+bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   DCHECK(path);
-  base::FilePath::StringType preload;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute()) {
+  base::FilePath::StringType preload_path;
+  if (GetAsString(&preference_, options::kPreloadScript, &preload_path)) {
+    base::FilePath preload(preload_path);
+    if (preload.IsAbsolute()) {
       *path = std::move(preload);
       return true;
     } else {
       LOG(ERROR) << "preload script must have absolute path.";
     }
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
+  } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
     // Translate to file path if there is "preload-url" option.
-    base::FilePath preload_path;
-    if (net::FileURLToFilePath(GURL(preload), &preload_path)) {
-      *path = std::move(preload_path.value());
+    base::FilePath preload;
+    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+      *path = std::move(preload);
       return true;
     } else {
       LOG(ERROR) << "preload url must be file:// protocol.";
@@ -286,51 +287,22 @@ WebContentsPreferences* WebContentsPreferences::From(
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {
-  // Check if plugins are enabled.
-  if (IsEnabled(options::kPlugins))
-    command_line->AppendSwitch(switches::kEnablePlugins);
-
   // Experimental flags.
   if (IsEnabled(options::kExperimentalFeatures))
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
-
-  // Check if we have node integration specified.
-  if (IsEnabled(options::kNodeIntegration))
-    command_line->AppendSwitch(switches::kNodeIntegration);
-
-  // Whether to enable node integration in Worker.
-  if (IsEnabled(options::kNodeIntegrationInWorker))
-    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
-
-  // Check if webview tag creation is enabled, default to nodeIntegration value.
-  if (IsEnabled(options::kWebviewTag))
-    command_line->AppendSwitch(switches::kWebviewTag);
 
   // Sandbox can be enabled for renderer processes hosting cross-origin frames
   // unless nodeIntegrationInSubFrames is enabled
   bool can_sandbox_frame =
       is_subframe && !IsEnabled(options::kNodeIntegrationInSubFrames);
 
-  // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
-  // pass `--enable-sandbox` to the renderer so it won't have any node.js
-  // integration. Otherwise disable Chromium sandbox, unless app.enableSandbox()
-  // was called.
   if (IsEnabled(options::kSandbox) || can_sandbox_frame) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
     command_line->AppendSwitch(::switches::kNoZygote);
   }
-
-  // Check if nativeWindowOpen is enabled.
-  if (IsEnabled(options::kNativeWindowOpen))
-    command_line->AppendSwitch(switches::kNativeWindowOpen);
-
-  // The preload script.
-  base::FilePath::StringType preload;
-  if (GetPreloadPath(&preload))
-    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
 
   // Custom args for renderer process
   auto* customArgs =
@@ -342,45 +314,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  // Whether to enable the remote module
-  if (IsEnabled(options::kEnableRemoteModule, false))
-    command_line->AppendSwitch(switches::kEnableRemoteModule);
-#endif
-
-  // Run Electron APIs and preload script in isolated world
-  if (IsEnabled(options::kContextIsolation))
-    command_line->AppendSwitch(switches::kContextIsolation);
-
-  if (IsEnabled(options::kWorldSafeExecuteJavaScript))
-    command_line->AppendSwitch(switches::kWorldSafeExecuteJavaScript);
-
-  // --background-color.
-  std::string s;
-  if (GetAsString(&preference_, options::kBackgroundColor, &s)) {
-    command_line->AppendSwitchASCII(switches::kBackgroundColor, s);
-  } else if (!IsEnabled(options::kOffscreen)) {
-    // For non-OSR WebContents, we expect to have white background, see
-    // https://github.com/electron/electron/issues/13764 for more.
-    command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
-  }
-
   // --offscreen
+  // TODO(loc): Offscreen is duplicated in WebPreferences because it's needed
+  // earlier than we can get WebPreferences at the moment.
   if (IsEnabled(options::kOffscreen)) {
     command_line->AppendSwitch(options::kOffscreen);
   }
-
-  // --guest-instance-id, which is used to identify guest WebContents.
-  int guest_instance_id = 0;
-  if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
-    command_line->AppendSwitchASCII(switches::kGuestInstanceID,
-                                    base::NumberToString(guest_instance_id));
-
-  // Pass the opener's window id.
-  int opener_id;
-  if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
-    command_line->AppendSwitchASCII(switches::kOpenerID,
-                                    base::NumberToString(opener_id));
 
 #if defined(OS_MAC)
   // Enable scroll bounce.
@@ -401,6 +340,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
+  std::string s;
   // Enable blink features.
   if (GetAsString(&preference_, options::kEnableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
@@ -409,39 +349,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (GetAsString(&preference_, options::kDisableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures, s);
 
-  if (guest_instance_id) {
-    // Webview `document.visibilityState` tracks window visibility so we need
-    // to let it know if the window happens to be hidden right now.
-    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(embedder);
-        if (relay) {
-          auto* window = relay->GetNativeWindow();
-          if (window) {
-            const bool visible = window->IsVisible() && !window->IsMinimized();
-            if (!visible) {
-              command_line->AppendSwitch(switches::kHiddenPage);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (IsEnabled(options::kNodeIntegrationInSubFrames))
-    command_line->AppendSwitch(switches::kNodeIntegrationInSubFrames);
-
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (IsEnabled(options::kSpellcheck)) {
-    command_line->AppendSwitch(switches::kEnableSpellcheck);
-  }
-#endif
-
-  // Whether to allow the WebSQL api
-  if (IsEnabled(options::kEnableWebSQL))
-    command_line->AppendSwitch(switches::kEnableWebSQL);
+  if (IsEnabled(options::kNodeIntegrationInWorker))
+    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
@@ -461,7 +370,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
                            &prefs->autoplay_policy)) {
     prefs->autoplay_policy =
-        blink::web_pref::AutoplayPolicy::kNoUserGestureRequired;
+        blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
   }
 
   // Check if webgl should be enabled.
@@ -505,6 +414,87 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+
+  // --background-color.
+  std::string color;
+  if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
+    prefs->background_color = color;
+  } else if (!IsEnabled(options::kOffscreen)) {
+    prefs->background_color = "#fff";
+  }
+
+  // Pass the opener's window id.
+  int opener_id;
+  if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
+    prefs->opener_id = opener_id;
+
+  // Run Electron APIs and preload script in isolated world
+  prefs->context_isolation = IsEnabled(options::kContextIsolation);
+
+#if BUILDFLAG(ENABLE_REMOTE_MODULE)
+  // Whether to enable the remote module
+  prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule, false);
+#endif
+
+  prefs->world_safe_execute_javascript =
+      IsEnabled(options::kWorldSafeExecuteJavaScript);
+
+  int guest_instance_id = 0;
+  if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
+    prefs->guest_instance_id = guest_instance_id;
+
+  prefs->hidden_page = false;
+  if (guest_instance_id) {
+    // Webview `document.visibilityState` tracks window visibility so we need
+    // to let it know if the window happens to be hidden right now.
+    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
+    if (manager) {
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
+      if (embedder) {
+        auto* relay = NativeWindowRelay::FromWebContents(embedder);
+        if (relay) {
+          auto* window = relay->GetNativeWindow();
+          if (window) {
+            const bool visible = window->IsVisible() && !window->IsMinimized();
+            if (!visible) {
+              prefs->hidden_page = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  prefs->offscreen = IsEnabled(options::kOffscreen);
+
+  // The preload script.
+  GetPreloadPath(&prefs->preload);
+
+  // Check if nativeWindowOpen is enabled.
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
+
+  // Check if we have node integration specified.
+  prefs->node_integration = IsEnabled(options::kNodeIntegration);
+
+  // Whether to enable node integration in Worker.
+  prefs->node_integration_in_worker =
+      IsEnabled(options::kNodeIntegrationInWorker);
+
+  prefs->node_integration_in_sub_frames =
+      IsEnabled(options::kNodeIntegrationInSubFrames);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  prefs->enable_spellcheck = IsEnabled(options::kSpellcheck);
+#endif
+
+  // Check if plugins are enabled.
+  prefs->enable_plugins = IsEnabled(options::kPlugins);
+
+  // Check if webview tag creation is enabled, default to nodeIntegration value.
+  prefs->webview_tag = IsEnabled(options::kWebviewTag);
+
+  // Whether to allow the WebSQL api
+  prefs->enable_websql = IsEnabled(options::kEnableWebSQL);
 
   std::string v8_cache_options;
   if (GetAsString(&preference_, "v8CacheOptions", &v8_cache_options)) {

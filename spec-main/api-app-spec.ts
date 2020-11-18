@@ -604,6 +604,16 @@ describe('app module', () => {
       '--processStart', `"${path.basename(process.execPath)}"`,
       '--process-start-args', '"--hidden"'
     ];
+    const regAddArgs = [
+      'ADD',
+      'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run',
+      '/v',
+      'additionalEntry',
+      '/t',
+      'REG_BINARY',
+      '/f',
+      '/d'
+    ];
 
     before(function () {
       if (process.platform === 'linux' || process.mas) this.skip();
@@ -612,11 +622,13 @@ describe('app module', () => {
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
     });
 
     afterEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
     });
 
     ifit(process.platform !== 'win32')('sets and returns the app as a login item', function () {
@@ -631,7 +643,7 @@ describe('app module', () => {
     });
 
     ifit(process.platform === 'win32')('sets and returns the app as a login item (windows)', function () {
-      app.setLoginItemSettings({ openAtLogin: true });
+      app.setLoginItemSettings({ openAtLogin: true, enabled: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: false,
@@ -645,6 +657,24 @@ describe('app module', () => {
           args: [],
           scope: 'user',
           enabled: true
+        }]
+      });
+
+      app.setLoginItemSettings({ openAtLogin: false });
+      app.setLoginItemSettings({ openAtLogin: true, enabled: false });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: false,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: false
         }]
       });
     });
@@ -775,6 +805,117 @@ describe('app module', () => {
           enabled: true
         }]
       });
+    });
+
+    ifit(process.platform === 'win32')('finds launch items independent of args', function () {
+      app.setLoginItemSettings({ openAtLogin: true, args: ['arg1'] });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg2'] });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg2'],
+          scope: 'user',
+          enabled: false
+        }, {
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+    });
+
+    ifit(process.platform === 'win32')('finds launch items independent of path quotation or casing', function () {
+      const expectation = {
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: 'C:\\electron\\myapp.exe',
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      };
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: 'C:\\electron\\myapp.exe', args: ['arg1'] });
+      expect(app.getLoginItemSettings({ path: '"C:\\electron\\MYAPP.exe"' })).to.deep.equal(expectation);
+
+      app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: '"C:\\electron\\MYAPP.exe"', args: ['arg1'] });
+      expect(app.getLoginItemSettings({ path: 'C:\\electron\\myapp.exe' })).to.deep.equal({
+        ...expectation,
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: 'C:\\electron\\MYAPP.exe',
+            args: ['arg1'],
+            scope: 'user',
+            enabled: true
+          }
+        ]
+      });
+    });
+
+    ifit(process.platform === 'win32')('detects disabled by TaskManager', async function () {
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, args: ['arg1'] });
+      const appProcess = cp.spawn('reg', [...regAddArgs, '030000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: false,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: false
+        }]
+      });
+    });
+
+    ifit(process.platform === 'win32')('detects enabled by TaskManager', async function () {
+      const expectation = {
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      };
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
+      let appProcess = cp.spawn('reg', [...regAddArgs, '020000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal(expectation);
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
+      appProcess = cp.spawn('reg', [...regAddArgs, '000000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal(expectation);
     });
   });
 
@@ -1175,6 +1316,10 @@ describe('app module', () => {
 
         expect(entry.memory).to.have.property('workingSetSize').that.is.greaterThan(0);
         expect(entry.memory).to.have.property('peakWorkingSetSize').that.is.greaterThan(0);
+
+        if (entry.type === 'Utility' || entry.type === 'GPU') {
+          expect(entry.serviceName).to.be.a('string').that.does.not.equal('');
+        }
 
         if (entry.type === 'Utility') {
           expect(entry).to.have.property('name').that.is.a('string');

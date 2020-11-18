@@ -57,8 +57,4 @@ void GuestViewContainer::DidResizeElement(const gfx::Size& new_size) {
       FROM_HERE, base::BindOnce(element_resize_callback_, new_size));
 }
 
-base::WeakPtr<content::BrowserPluginDelegate> GuestViewContainer::GetWeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
-
 }  // namespace electron

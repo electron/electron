@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -33,10 +34,16 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
-- (NSView*)hitTest:(NSPoint)aPoint {
-  // Pass-through events that don't hit one of the exclusion zones
-  for (NSView* exlusion_zones in [self subviews]) {
-    if ([exlusion_zones hitTest:aPoint])
+- (BOOL)shouldIgnoreMouseEvent {
+  NSEventType type = [[NSApp currentEvent] type];
+  return type != NSEventTypeLeftMouseDragged &&
+         type != NSEventTypeLeftMouseDown;
+}
+
+- (NSView*)hitTest:(NSPoint)point {
+  // Pass-through events that hit one of the exclusion zones
+  for (NSView* exclusion_zones in [self subviews]) {
+    if ([exclusion_zones hitTest:point])
       return nil;
   }
 
@@ -44,6 +51,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  [super mouseDown:event];
+
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     // According to Google, using performWindowDragWithEvent:
     // does not generate a NSWindowWillMoveNotification. Hence post one.
@@ -64,7 +73,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   self.initialLocation = [event locationInWindow];
 }
 
-- (void)mouseDragged:(NSEvent*)theEvent {
+- (void)mouseDragged:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     return;
   }
@@ -124,15 +133,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   [self.window setFrameOrigin:newOrigin];
 }
 
-// Debugging tips:
-// Uncomment the following four lines to color DragRegionView bright red
-// #ifdef DEBUG_DRAG_REGIONS
-// - (void)drawRect:(NSRect)aRect
-// {
-//     [[NSColor redColor] set];
-//     NSRectFill([self bounds]);
-// }
-// #endif
+// For debugging purposes only.
+- (void)drawRect:(NSRect)aRect {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    [[[NSColor greenColor] colorWithAlphaComponent:0.5] set];
+    NSRectFill([self bounds]);
+  }
+}
 
 @end
 
@@ -145,15 +152,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
-// Debugging tips:
-// Uncomment the following four lines to color ExcludeDragRegionView bright red
-// #ifdef DEBUG_DRAG_REGIONS
-// - (void)drawRect:(NSRect)aRect
-// {
-//     [[NSColor greenColor] set];
-//     NSRectFill([self bounds]);
-// }
-// #endif
+// For debugging purposes only.
+- (void)drawRect:(NSRect)aRect {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    [[[NSColor redColor] colorWithAlphaComponent:0.5] set];
+    NSRectFill([self bounds]);
+  }
+}
 
 @end
 
@@ -205,6 +210,9 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   view.frame =
       NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
                  bounds.width(), bounds.height());
+
+  // Ensure draggable regions are properly updated to reflect new bounds.
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
@@ -230,7 +238,7 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    const std::vector<gfx::Rect>& drag_exclude_rects) {
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
   if (!inspectable_web_contents_)
     return;
   auto* web_contents = inspectable_web_contents_->GetWebContents();
@@ -239,6 +247,25 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
   NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
+
+  NSInteger webViewWidth = NSWidth([web_view bounds]);
+  NSInteger webViewHeight = NSHeight([web_view bounds]);
+
+  std::vector<gfx::Rect> drag_exclude_rects;
+  if (regions.empty()) {
+    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+  } else {
+    drag_exclude_rects = CalculateNonDraggableRegions(
+        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  }
+
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.

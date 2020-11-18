@@ -11,6 +11,7 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
+#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
@@ -18,6 +19,10 @@
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
 #endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -30,7 +35,14 @@ class SpellCheck;
 namespace extensions {
 class ExtensionsClient;
 }
+namespace content {
+struct WebPluginInfo;
+}
 #endif
+
+namespace guest_view {
+class GuestViewContainer;
+}
 
 namespace electron {
 
@@ -67,7 +79,6 @@ class RendererClientBase : public content::ContentRendererClient
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
-  bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
@@ -100,11 +111,11 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
-  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+  guest_view::GuestViewContainer* CreateBrowserPluginDelegate(
       content::RenderFrame* render_frame,
       const content::WebPluginInfo& info,
       const std::string& mime_type,
-      const GURL& original_url) override;
+      const GURL& original_url);
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
@@ -131,13 +142,15 @@ class RendererClientBase : public content::ContentRendererClient
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
 #endif
-  bool isolated_world_;
   std::string renderer_client_id_;
-  // An increasing ID used for indentifying an V8 context in this process.
+  // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
 #endif
 };
 

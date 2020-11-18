@@ -29,12 +29,14 @@ export const browserModuleNames = [
   'protocol',
   'screen',
   'session',
+  'ShareMenu',
   'systemPreferences',
   'TouchBar',
   'Tray',
   'View',
   'webContents',
-  'WebContentsView'
+  'WebContentsView',
+  'webFrameMain'
 ];
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {

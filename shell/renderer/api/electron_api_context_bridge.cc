@@ -128,7 +128,7 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
 }
 
 // Where the context bridge should create the exception it is about to throw
-enum BridgeErrorTarget {
+enum class BridgeErrorTarget {
   // The source / calling context.  This is default and correct 99% of the time,
   // the caller / context asking for the conversion will receive the error and
   // therefore the error should be made in that context
@@ -564,7 +564,7 @@ void OverrideGlobalValueFromIsolatedWorld(
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return;
 
   auto* render_frame = GetRenderFrame(value);
@@ -596,7 +596,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
     gin_helper::Arguments* args) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return false;
 
   auto* render_frame = GetRenderFrame(getter);

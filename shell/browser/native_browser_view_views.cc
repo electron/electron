@@ -27,7 +27,7 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeHorizontal) &&
       !auto_horizontal_proportion_set_) {
     auto* iwc_view = GetInspectableWebContentsView();
-    if (iwc_view)
+    if (!iwc_view)
       return;
     auto* view = iwc_view->GetView();
     auto view_bounds = view->bounds();
@@ -41,7 +41,7 @@ void NativeBrowserViewViews::SetAutoResizeProportions(
   if ((auto_resize_flags_ & AutoResizeFlags::kAutoResizeVertical) &&
       !auto_vertical_proportion_set_) {
     auto* iwc_view = GetInspectableWebContentsView();
-    if (iwc_view)
+    if (!iwc_view)
       return;
     auto* view = iwc_view->GetView();
     auto view_bounds = view->bounds();
@@ -58,7 +58,7 @@ void NativeBrowserViewViews::AutoResize(const gfx::Rect& new_window,
                                         int width_delta,
                                         int height_delta) {
   auto* iwc_view = GetInspectableWebContentsView();
-  if (iwc_view)
+  if (!iwc_view)
     return;
   auto* view = iwc_view->GetView();
   const auto flags = GetAutoResizeFlags();

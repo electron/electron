@@ -95,6 +95,7 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearStorageData(gin::Arguments* args);
   void FlushStorageData();
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
+  v8::Local<v8::Promise> ForceReloadProxyConfig();
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const gin_helper::Dictionary& options);
   void DisableNetworkEmulation();
@@ -114,14 +115,15 @@ class Session : public gin::Wrappable<Session>,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
-  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
-  std::vector<base::FilePath::StringType> GetPreloads() const;
+  void SetPreloads(const std::vector<base::FilePath>& preloads);
+  std::vector<base::FilePath> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
+  v8::Local<v8::Promise> CloseAllConnections();
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
@@ -129,6 +131,8 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
   bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
+  void SetSpellCheckerEnabled(bool b);
+  bool IsSpellCheckerEnabled() const;
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

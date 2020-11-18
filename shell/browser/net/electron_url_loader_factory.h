@@ -66,7 +66,7 @@ class ElectronURLLoaderFactory
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-      network::mojom::URLLoaderFactory* proxy_factory,
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
       ProtocolType type,
       gin::Arguments* args);
 
@@ -77,6 +77,10 @@ class ElectronURLLoaderFactory
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
   ~ElectronURLLoaderFactory() override;
 
+  static void OnComplete(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      int32_t request_id,
+      const network::URLLoaderCompletionStatus& status);
   static void StartLoadingBuffer(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,

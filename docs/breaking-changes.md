@@ -28,6 +28,12 @@ shell.trashItem(path).then(/* ... */)
 
 ## Planned Breaking API Changes (12.0)
 
+### Removed: Pepper Flash support
+
+Chromium has removed support for Flash, and so we must follow suit. See
+Chromium's [Flash Roadmap](https://www.chromium.org/flash-roadmap) for more
+details.
+
 ### Default Changed: `contextIsolation` defaults to `true`
 
 In Electron 12, `contextIsolation` will be enabled by default.  To restore
@@ -97,7 +103,12 @@ shell.trashItem(path).then(/* ... */)
 
 ## Planned Breaking API Changes (11.0)
 
-There are no breaking changes planned for 11.0.
+### Removed: `BrowserView.{destroy, fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+The experimental APIs `BrowserView.{destroy, fromId, fromWebContents, getAllViews}`
+have now been removed. Additionally, the `id` property of `BrowserView`
+has also been removed.
+
+For more detailed information, see [#23578](https://github.com/electron/electron/pull/23578).
 
 ## Planned Breaking API Changes (10.0)
 
@@ -178,6 +189,54 @@ const w = new BrowserWindow({
 We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
+### `protocol.unregisterProtocol`
+### `protocol.uninterceptProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.unregisterProtocol(scheme, () => { /* ... */ })
+// Replace with
+protocol.unregisterProtocol(scheme)
+```
+
+### `protocol.registerFileProtocol`
+### `protocol.registerBufferProtocol`
+### `protocol.registerStringProtocol`
+### `protocol.registerHttpProtocol`
+### `protocol.registerStreamProtocol`
+### `protocol.interceptFileProtocol`
+### `protocol.interceptStringProtocol`
+### `protocol.interceptBufferProtocol`
+### `protocol.interceptHttpProtocol`
+### `protocol.interceptStreamProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.registerFileProtocol(scheme, handler, () => { /* ... */ })
+// Replace with
+protocol.registerFileProtocol(scheme, handler)
+```
+
+The registered or intercepted protocol does not have effect on current page
+until navigation happens.
+
+### `protocol.isProtocolHandled`
+
+This API is deprecated and users should use `protocol.isProtocolRegistered`
+and `protocol.isProtocolIntercepted` instead.
+
+```javascript
+// Deprecated
+protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
+// Replace with
+const isRegistered = protocol.isProtocolRegistered(scheme)
+const isIntercepted = protocol.isProtocolIntercepted(scheme)
+```
+
 ## Planned Breaking API Changes (9.0)
 
 ### Default Changed: Loading non-context-aware native modules in the renderer process is disabled by default
@@ -247,6 +306,7 @@ messages, but also brings some breaking changes in behavior.
 - Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
   converting the functions to `undefined`.
+
 ```js
 // Previously:
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
@@ -256,6 +316,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 // => throws Error("() => {} could not be cloned.")
 ```
+
 - `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
 - Objects containing cyclic references will now be correctly serialized,
@@ -273,6 +334,7 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 - Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
+
 ```js
 Buffer.from(value.buffer, value.byteOffset, value.byteLength)
 ```
@@ -408,6 +470,7 @@ the folder, similarly to Chrome, Firefox, and Edge
 ([link to MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/webkitdirectory)).
 
 As an illustration, take a folder with this structure:
+
 ```console
 folder
 ├── file1
@@ -416,11 +479,13 @@ folder
 ```
 
 In Electron <=6, this would return a `FileList` with a `File` object for:
+
 ```console
 path/to/folder
 ```
 
 In Electron 7, this now returns a `FileList` with a `File` object for:
+
 ```console
 /path/to/folder/file3
 /path/to/folder/file2
@@ -575,7 +640,9 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ### API Changed: `webFrame.setSpellCheckProvider` now takes an asynchronous callback
+
 The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+
 ```js
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {

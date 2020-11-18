@@ -108,8 +108,6 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()),
       weak_factory_(this) {
-  // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
-  base::ScopedAllowBlockingForTesting allow_blocking;
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
@@ -228,7 +226,7 @@ void ElectronBrowserContext::InitPrefs() {
   auto* current_dictionaries =
       prefs()->Get(spellcheck::prefs::kSpellCheckDictionaries);
   // No configured dictionaries, the default will be en-US
-  if (current_dictionaries->GetList().size() == 0) {
+  if (current_dictionaries->GetList().empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
@@ -337,8 +335,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, &factory_receiver, &header_client,
-          nullptr, nullptr, nullptr);
+          url::Origin(), base::nullopt, ukm::kInvalidSourceIdObj,
+          &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();

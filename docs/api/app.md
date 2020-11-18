@@ -32,10 +32,12 @@ In most cases, you should do everything in the `ready` event handler.
 
 Returns:
 
-* `launchInfo` unknown _macOS_
+* `event` Event
+* `launchInfo` Record<string, any> | [NotificationResponse](structures/notification-response.md) _macOS_
 
 Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
-holds the `userInfo` of the `NSUserNotification` that was used to open the
+holds the `userInfo` of the `NSUserNotification` or information from
+[`UNNotificationResponse`](structures/notification-response.md) that was used to open the
 application, if it was launched from Notification Center. You can also call
 `app.isReady()` to check if this event has already fired and `app.whenReady()`
 to get a Promise that is fulfilled when Electron is initialized.
@@ -402,7 +404,7 @@ Returns:
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
     * `crashed` - Process crashed
     * `oom` - Process ran out of memory
-    * `launch-failure` - Process never successfully launched
+    * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
@@ -428,11 +430,12 @@ Returns:
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
     * `crashed` - Process crashed
     * `oom` - Process ran out of memory
-    * `launch-failure` - Process never successfully launched
+    * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
   * `exitCode` Number - The exit code for the process
       (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
-  * `name` String (optional) - The name of the process. i.e. for plugins it might be Flash.
+  * `serviceName` String (optional) - The non-localized name of the process.
+  * `name` String (optional) - The name of the process.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 
 Emitted when the child process unexpectedly disappears. This is normally
@@ -679,7 +682,6 @@ Returns `String` - The current application directory.
   * `videos` Directory for a user's videos.
   * `recent` Directory for the user's recent files (Windows only).
   * `logs` Directory for your app's log folder.
-  * `pepperFlashSystemPlugin` Full path to the system version of the Pepper Flash plugin.
   * `crashDumps` Directory where crash dumps are stored.
 
 Returns `String` - A path to a special directory or file associated with `name`. On
@@ -857,9 +859,10 @@ This method returns the application name of the default handler for the protocol
   minimum (e.g. `https://`).
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `icon` NativeImage - the display icon of the app handling the protocol.
-  * `path` String  - installation path of the app handling the protocol.
-  * `name` String - display name of the app handling the protocol.
+
+* `icon` NativeImage - the display icon of the app handling the protocol.
+* `path` String  - installation path of the app handling the protocol.
+* `name` String - display name of the app handling the protocol.
 
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
@@ -1089,6 +1092,7 @@ Changes the [Application User Model ID][app-user-model-id] to `id`.
 Sets the activation policy for a given app.
 
 Activation policy types:
+
 * 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
@@ -1103,7 +1107,7 @@ Activation policy types:
 
 Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
-indicates success while any other value indicates failure according to Chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+indicates success while any other value indicates failure according to Chromium [net_error_list](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 ### `app.disableHardwareAcceleration()`
 
@@ -1140,6 +1144,7 @@ For `infoType` equal to `complete`:
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
+
 ```js
 {
   auxAttributes:
@@ -1340,7 +1345,7 @@ systems Application folder. Use in combination with `app.moveToApplicationsFolde
 ### `app.moveToApplicationsFolder([options])` _macOS_
 
 * `options` Object (optional)
-  * `conflictHandler` Function<Boolean> (optional) - A handler for potential conflict in move failure.
+  * `conflictHandler` Function\<Boolean> (optional) - A handler for potential conflict in move failure.
     * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
 Returns `Boolean` - Whether the move was successful. Please note that if
@@ -1484,3 +1489,12 @@ which native modules you can use in the renderer process.  For more information
 on the direction Electron is going with renderer process restarts and usage of
 native modules in the renderer process please check out this
 [Tracking Issue](https://github.com/electron/electron/issues/18397).
+
+### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_
+
+A `Boolean` which when `true` indicates that the app is currently running
+under the [Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software)).
+
+You can use this property to prompt users to download the arm64 version of
+your application when they are running the x64 version under Rosetta
+incorrectly.

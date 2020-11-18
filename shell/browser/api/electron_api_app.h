@@ -168,6 +168,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
                             base::ProcessHandle handle,
+                            const std::string& service_name = std::string(),
                             const std::string& name = std::string());
   void ChildProcessDisconnected(base::ProcessId pid);
 
@@ -220,6 +221,7 @@ class App : public ElectronBrowserClient::Delegate,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  bool IsRunningUnderRosettaTranslation() const;
   v8::Global<v8::Value> dock_;
 #endif
 
