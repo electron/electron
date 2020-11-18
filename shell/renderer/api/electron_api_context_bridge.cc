@@ -513,11 +513,13 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
   }
 }
 
-void ExposeAPIInMainWorld(const std::string& key,
-                          v8::Local<v8::Object> api_object,
+void ExposeAPIInMainWorld(v8::Isolate* isolate,
+                          const std::string& key,
+                          v8::Local<v8::Value> api,
                           gin_helper::Arguments* args) {
   TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
-  auto* render_frame = GetRenderFrame(api_object);
+
+  auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -539,12 +541,13 @@ void ExposeAPIInMainWorld(const std::string& key,
     context_bridge::ObjectCache object_cache;
     v8::Context::Scope main_context_scope(main_context);
 
-    v8::MaybeLocal<v8::Object> maybe_proxy = CreateProxyForAPI(
-        api_object, isolated_context, main_context, &object_cache, false, 0);
+    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
+        isolated_context, main_context, api, &object_cache, false, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
-    if (!DeepFreeze(proxy, main_context))
+    if (proxy->IsObject() &&
+        !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
       return;
 
     global.SetReadOnlyNonConfigurable(key, proxy);
