@@ -112,7 +112,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #if defined(OS_POSIX)
   // Set signal handlers.
   void HandleSIGCHLD();
-  void HandleShutdownSignals();
+  void InstallShutdownSignalHandlers(
+      base::OnceCallback<void()> shutdown_callback,
+      const scoped_refptr<base::SingleThreadTaskRunner>& task_runner);
 #endif
 
 #if defined(OS_MAC)
