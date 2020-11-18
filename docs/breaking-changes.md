@@ -104,6 +104,7 @@ shell.trashItem(path).then(/* ... */)
 ## Planned Breaking API Changes (11.0)
 
 ### Removed: `BrowserView.{destroy, fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+
 The experimental APIs `BrowserView.{destroy, fromId, fromWebContents, getAllViews}`
 have now been removed. Additionally, the `id` property of `BrowserView`
 has also been removed.
@@ -190,6 +191,7 @@ We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
 ### `protocol.unregisterProtocol`
+
 ### `protocol.uninterceptProtocol`
 
 The APIs are now synchronous and the optional callback is no longer needed.
@@ -202,14 +204,23 @@ protocol.unregisterProtocol(scheme)
 ```
 
 ### `protocol.registerFileProtocol`
+
 ### `protocol.registerBufferProtocol`
+
 ### `protocol.registerStringProtocol`
+
 ### `protocol.registerHttpProtocol`
+
 ### `protocol.registerStreamProtocol`
+
 ### `protocol.interceptFileProtocol`
+
 ### `protocol.interceptStringProtocol`
+
 ### `protocol.interceptBufferProtocol`
+
 ### `protocol.interceptHttpProtocol`
+
 ### `protocol.interceptStreamProtocol`
 
 The APIs are now synchronous and the optional callback is no longer needed.
