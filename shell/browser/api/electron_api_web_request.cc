@@ -89,16 +89,20 @@ struct UserData : public base::SupportsUserData::Data {
 };
 
 // Test whether the URL of |request| matches |patterns|.
-bool MatchesFilterCondition(extensions::WebRequestInfo* info,
-                            const std::set<URLPattern>& patterns) {
+bool MatchesFilterCondition(GURL url, const std::set<URLPattern>& patterns) {
   if (patterns.empty())
     return true;
 
   for (const auto& pattern : patterns) {
-    if (pattern.MatchesURL(info->url))
+    if (pattern.MatchesURL(url))
       return true;
   }
   return false;
+}
+
+bool MatchesFilterCondition(extensions::WebRequestInfo* info,
+                            const std::set<URLPattern>& patterns) {
+  return MatchesFilterCondition(info, patterns);
 }
 
 // Convert HttpResponseHeaders to V8.
