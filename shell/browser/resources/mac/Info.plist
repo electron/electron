@@ -40,7 +40,5 @@
     <string>This app needs access to the microphone</string>
     <key>NSCameraUsageDescription</key>
     <string>This app needs access to the camera</string>
-    <key>LSRequiresNativeExecution</key>
-    <true/>
   </dict>
 </plist>
