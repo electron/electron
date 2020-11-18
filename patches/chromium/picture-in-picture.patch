@@ -35,7 +35,7 @@ index 7bc1f27c0d2c181aa365e8b7b71877969567a8b0..6a43456834fa62df17419153d2547489
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index f07d400f5830ca01a0a0cbc897de1be693e646ba..4b74e2301ab6627f954d661f4b327ab730a80cb1 100644
+index 6bbefe360b303c4ae1b20ab452622784fd26e96e..ea3dca742df4005da9c37e70887fcda3e5c69742 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -13,16 +13,18 @@
@@ -67,7 +67,7 @@ index f07d400f5830ca01a0a0cbc897de1be693e646ba..4b74e2301ab6627f954d661f4b327ab7
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -218,7 +220,7 @@ std::unique_ptr<content::OverlayWindow> OverlayWindowViews::Create(
+@@ -218,7 +220,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

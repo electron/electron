@@ -92,7 +92,7 @@ index c311fd6e4094c56698575c492042644fc5bccf28..1337b1acd88a6e7fbffb23a0ca1f03c5
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it. The |force_ignore_site_for_cookies| output parameter
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d4210bec6eb6efb401b64dbd9d196891c7b4e551..1ffa87121d5f368dd1cad844406f8d16e8d9fc43 100644
+index 90183042eeeead21a679288326bd66ebe0711adb..27edfaafac86b4fb371c93ee7a63c0255d9a87a8 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -5567,6 +5567,23 @@ void RenderFrameImpl::BeginNavigation(
