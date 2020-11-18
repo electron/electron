@@ -299,10 +299,13 @@ describe('command line switches', () => {
   });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
-    const testLocale = async (locale: string, result: string) => {
+    const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
-      const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, [appPath, `--set-lang=${locale}`]);
+      const args = [appPath, `--set-lang=${locale}`];
+      if (printEnv) {
+        args.push('--print-env');
+      }
+      appProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
@@ -314,6 +317,15 @@ describe('command line switches', () => {
 
     it('should set the locale', async () => testLocale('fr', 'fr'));
     it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+
+    const lcAll = String(process.env.LC_ALL);
+    ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
+      // The LC_ALL env should not be set to DOM locale string.
+      expect(lcAll).to.not.equal(app.getLocale());
+    });
+    ifit(process.platform === 'linux')('should not change LC_ALL', async () => testLocale('fr', lcAll, true));
+    ifit(process.platform === 'linux')('should not change LC_ALL when setting invalid locale', async () => testLocale('asdfkl', lcAll, true));
+    ifit(process.platform === 'linux')('should not change LC_ALL when --lang is not set', async () => testLocale('', lcAll, true));
   });
 
   describe('--remote-debugging-pipe switch', () => {
