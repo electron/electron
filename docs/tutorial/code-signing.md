@@ -196,11 +196,11 @@ it may be worth your time to shop around. Popular resellers include:
 
 There are a number of tools for signing your packaged app:
 
-- [`electron-winstaller`] will generate an installer for windows and sign it for
+* [`electron-winstaller`] will generate an installer for windows and sign it for
   you
-- [`electron-forge`] can sign installers it generates through the
+* [`electron-forge`] can sign installers it generates through the
   Squirrel.Windows or MSI targets.
-- [`electron-builder`] can sign some of its windows targets
+* [`electron-builder`] can sign some of its windows targets
 
 ## Windows Store
 
