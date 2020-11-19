@@ -62,11 +62,11 @@ namespace api {
 
 gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Tray::Tray(v8::Local<v8::Value> image,
-           base::Optional<UUID> guid,
-           gin::Arguments* args)
+Tray::Tray(v8::Isolate* isolate,
+           v8::Local<v8::Value> image,
+           base::Optional<UUID> guid)
     : tray_icon_(TrayIcon::Create(guid)) {
-  SetImage(args->isolate(), image);
+  SetImage(isolate, image);
   tray_icon_->AddObserver(this);
 }
 
