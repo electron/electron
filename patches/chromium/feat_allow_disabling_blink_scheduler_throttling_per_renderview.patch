@@ -85,10 +85,10 @@ index 500f7da6e87a1ce7a822b88d56cef8c09c7fccc3..19f4e08ffe5b95e33d4d17b36ef89c96
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index fcb4e834adfdd8f18304ca0c42df0d00aaca895a..4c3459fcbccf17f39e8219c670d0b4743604a03e 100644
+index ce88fac5824629eda9d1f4615f70f0d05999c4c6..08ea946ef080032ba8a336f9061a0ff4f1d1be98 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3536,6 +3536,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3528,6 +3528,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index fcb4e834adfdd8f18304ca0c42df0d00aaca895a..4c3459fcbccf17f39e8219c670d0b474
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3546,7 +3553,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3538,7 +3545,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -113,7 +113,7 @@ index fcb4e834adfdd8f18304ca0c42df0d00aaca895a..4c3459fcbccf17f39e8219c670d0b474
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 419bdc7eef97f71c7ac9d32acfbadf93453c2cd1..b05e2246a94de8b284d719360e7765463b757920 100644
+index 00b634a8b50e2f5877bfdfbf0c228531baa73319..e0b78935d80ccbc3cacfca470b916d4a757f2a66 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -355,6 +355,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -124,7 +124,7 @@ index 419bdc7eef97f71c7ac9d32acfbadf93453c2cd1..b05e2246a94de8b284d719360e776546
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -750,11 +751,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -749,11 +750,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    SkColor background_color_override_ = Color::kTransparent;
    float zoom_factor_override_ = 0.f;
  

@@ -229,7 +229,7 @@ index d59f15d33be9c7d7ef56965967295969c635eb54..dc09df35ad4cc0f9eb7256b13eb543ce
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index b875d6eb58f64cf071dc8609cab529a32ed909dc..8817caab8cce6f7b0d96ca04ca43e9eaf4644e7b 100644
+index e19c2e676334c03db517fb73f7dbada74bf3d5bf..d02e245c1a452f87c6cc95e42ef33a4f682373ea 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index b875d6eb58f64cf071dc8609cab529a32ed909dc..8817caab8cce6f7b0d96ca04ca43e9ea
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ba198fb6dee3650289d514ca4463fd0ee41754b9..df242a82c37e277af0ba2d6fb459acd7f831395b 100644
+index 6c23f80a3b8efd4f7eb48441e4982cb7bab741e4..41d1f382eb905094c2acb682078a3aa09969d0cd 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -222,6 +222,7 @@
