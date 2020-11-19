@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 19 Nov 2020 13:12:56 -0600
+Subject: chore: disallow copying CppHeapCreateParams
+
+Experimental commit to resolve FTBS https://ci.appveyor.com/project/electron-bot/electron-ljo26/builds/36405680#L25345
+which introduces a new struct CppHeapCreateParams that aggregates a
+vector of unique_ptrs. Our Windows CI is unhappy that this struct
+implicitly deletes its copy ctor, so this commit makes it explicit.
+
+Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
+
+diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
+index 177549536c374179a1aefbeef1456312152795e8..2961ff70f8b993c8e17274f88ac9dc6ba5839b47 100644
+--- a/include/v8-cppgc.h
++++ b/include/v8-cppgc.h
+@@ -23,8 +23,13 @@ namespace internal {
+ class CppHeap;
+ }  // namespace internal
+ 
+-struct V8_EXPORT CppHeapCreateParams {
++class V8_EXPORT CppHeapCreateParams {
++ public:
+   std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
++
++ private:
++  CppHeapCreateParams (const CppHeapCreateParams&) =delete;
++  CppHeapCreateParams& operator=(const CppHeapCreateParams&) =delete;
+ };
+ 
+ /**
+diff --git a/include/v8.h b/include/v8.h
+index 0a37139e09d9def601a76ffdce06d990b34b1b4f..b4d802dbef8a9904353bd23f5eb468599834e461 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -49,7 +49,7 @@ class BooleanObject;
+ class CFunction;
+ class Context;
+ class CppHeap;
+-struct CppHeapCreateParams;
++class CppHeapCreateParams;
+ class Data;
+ class Date;
+ class External;
