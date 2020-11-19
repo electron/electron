@@ -286,44 +286,31 @@ describe('chrome extensions', () => {
       });
     });
 
-    it('takes precedence over Electron webRequest - http', async () => {
-      await w.loadURL(url);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-      customSession.webRequest.onBeforeRequest(() => {
-        throw new Error('Electron onBeforeRequest callback has been called');
-      });
-      await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith(TypeError);
-    });
+    it('does not take precedence over Electron webRequest - http', async () => {
+      return new Promise((resolve) => {
+        (async () => {
+          customSession.webRequest.onBeforeRequest((details, callback) => {
+            resolve();
+            callback({ cancel: true });
+          });
+          await w.loadURL(url);
 
-    it('does not take precedence over Electron webRequest with different filter - http', async () => {
-      await w.loadURL(url);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*://*.does.not.exist.com/*'] }, async (details, callback) => {
-        callback({ cancel: true });
-      });
-      await expect(fetch(w.webContents, 'http://does.not.exist.com')).to.eventually.be.rejectedWith(TypeError);
-    });
-
-    it('takes precedence over Electron webRequest - WebSocket', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-      customSession.webRequest.onBeforeSendHeaders(() => {
-        throw new Error('Electron onBeforeSendHeaders callback has been called');
-      });
-      customSession.webRequest.onSendHeaders((details) => {
-        if (details.url.startsWith('ws://')) {
-          expect(details.requestHeaders.foo).be.equal('bar');
-        }
+          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
+          fetch(w.webContents, url);
+        })();
       });
     });
 
-    it('does not take precedence over Electron webRequest with different filter - WebSocket', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-      customSession.webRequest.onBeforeRequest({ urls: ['*://*.google.com/*'] }, (details, callback) => {
-        callback({ cancel: true });
+    it('does not take precedence over Electron webRequest - WebSocket', () => {
+      return new Promise((resolve) => {
+        (async () => {
+          customSession.webRequest.onBeforeSendHeaders(() => {
+            resolve();
+          });
+          await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+          await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
+        })();
       });
-      await expect(fetch(w.webContents, 'https://google.com')).to.eventually.be.rejectedWith(TypeError);
     });
 
     describe('WebSocket', () => {

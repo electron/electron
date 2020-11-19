@@ -1479,7 +1479,7 @@ void ElectronBrowserClient::CreateWebSocket(
   DCHECK(web_request.get());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (!web_request.HasListener()) {
+  if (!web_request->HasListener()) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
 
@@ -1520,7 +1520,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   DCHECK(web_request.get());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (!web_request.HasListener()) {
+  if (!web_request->HasListener()) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
 
@@ -1528,7 +1528,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool use_proxy_for_web_request =
         web_request_api->MaybeProxyURLLoaderFactory(
             browser_context, frame_host, render_process_id, type, navigation_id,
-            factory_receiver, header_client);
+            ukm_source_id, factory_receiver, header_client);
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = use_proxy_for_web_request;
