@@ -26,7 +26,7 @@ BrowserWindow constructor options are set by, in increasing precedence
 order: options inherited from the parent, parsed options
 from the `features` string from `window.open()`, security-related webPreferences
 inherited from the parent, and options given by
-[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 Note that `webContents.setWindowOpenHandler` has final say and full privilege
 because it is invoked in the main process.
 
