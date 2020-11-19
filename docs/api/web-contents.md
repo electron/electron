@@ -155,7 +155,7 @@ Returns:
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
 
-Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -203,7 +203,7 @@ Returns:
       BrowserWindow. They are merged in increasing precedence: options inherited
       from the parent, parsed options from the `features` string from
       `window.open()`, and options given by
-      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
       Unrecognized options are not filtered out.
     * `additionalFeatures` String[] - The non-standard features (features not
       handled Chromium or Electron) _Deprecated_
@@ -220,7 +220,7 @@ Returns:
 
 Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
-[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 
 See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
 
