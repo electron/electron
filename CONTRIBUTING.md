@@ -29,7 +29,7 @@ _If an issue has been closed and you still feel it's relevant, feel free to ping
 ### Languages
 
 We accept issues in *any* language.
-When an issue is posted in a language besides English, it is acceptable and encouraged to post an English-translated copy as a reply. 
+When an issue is posted in a language besides English, it is acceptable and encouraged to post an English-translated copy as a reply.
 Anyone may post the translated reply.
 In most cases, a quick pass through translation software is sufficient.
 Having the original text _as well as_ the translation can help mitigate translation errors.
@@ -66,5 +66,5 @@ See [Coding Style](https://electronjs.org/docs/development/coding-style) for inf
 
 ## Further Reading
 
-For more in-depth guides on developing Electron, see 
+For more in-depth guides on developing Electron, see
 [/docs/development](/docs/development/README.md)

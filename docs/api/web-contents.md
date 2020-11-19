@@ -1463,7 +1463,7 @@ By default, an empty `options` will be regarded as:
 }
 ```
 
-Use `page-break-before: always; ` CSS style to force to print to a new page.
+Use `page-break-before: always;` CSS style to force to print to a new page.
 
 An example of `webContents.printToPDF`:
 
