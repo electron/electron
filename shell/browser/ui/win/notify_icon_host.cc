@@ -13,6 +13,7 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "shell/browser/ui/win/notify_icon.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/win/system_event_state_lookup.h"
@@ -162,7 +163,16 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
 
     switch (lparam) {
       case NIN_BALLOONSHOW:
-        win_icon->NotifyBalloonShow();
+        // delay to next event loop to avoid entering v8
+        // during the WndProc callback
+
+        // TODO: instead of unretained, use WeakPtrFactory
+        // to count refs for the NotifyIcon objects
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(
+                [](NotifyIcon* wicon) { wicon->NotifyBalloonShow(); },
+                base::Unretained(win_icon)));
         return TRUE;
 
       case NIN_BALLOONUSERCLICK:
