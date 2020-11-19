@@ -59,7 +59,9 @@ printing::PrinterList GetPrinterList() {
 
 namespace {
 
+#if BUILDFLAG(ENABLE_PRINTING)
 using electron::api::GetPrinterList;
+#endif
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
