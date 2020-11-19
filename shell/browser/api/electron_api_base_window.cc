@@ -101,8 +101,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #if defined(TOOLKIT_VIEWS)
   v8::Local<v8::Value> icon;
   if (options.Get(options::kIcon, &icon)) {
-    gin_helper::ErrorThrower thrower(isolate);
-    SetIcon(thrower, icon);
+    SetIcon(gin_helper::ErrorThrower(isolate), icon);
   }
 #endif
 }
@@ -1003,12 +1002,13 @@ void BaseWindow::SetIcon(gin_helper::ErrorThrower thrower,
     native_image = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
                                                               icon_path);
     if (native_image->image().IsEmpty()) {
-      thrower.ThrowError("Failed to convert path to nativeImage");
+      thrower.ThrowError("Failed to load image from path '" +
+                         icon_path.value() + "'");
       return;
     }
   } else {
     if (!gin::ConvertFromV8(thrower.isolate(), icon, &native_image)) {
-      thrower.ThrowError("Failed to convert nativeImage");
+      thrower.ThrowTypeError("Argument must be a file path or a NativeImage");
       return;
     }
   }

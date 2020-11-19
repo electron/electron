@@ -54,9 +54,9 @@ class Tray : public gin::Wrappable<Tray>,
   static gin::WrapperInfo kWrapperInfo;
 
  private:
-  Tray(v8::Local<v8::Value> image,
-       base::Optional<UUID> guid,
-       gin::Arguments* args);
+  Tray(v8::Isolate* isolate,
+       v8::Local<v8::Value> image,
+       base::Optional<UUID> guid);
   ~Tray() override;
 
   // TrayIconObserver:
