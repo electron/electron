@@ -133,11 +133,10 @@ void ShutdownDetector::ThreadMain() {
 
   int signal;
   size_t bytes_read = 0;
-  ssize_t ret;
   do {
-    ret = HANDLE_EINTR(read(shutdown_fd_,
-                            reinterpret_cast<char*>(&signal) + bytes_read,
-                            sizeof(signal) - bytes_read));
+    const ssize_t ret = HANDLE_EINTR(
+        read(shutdown_fd_, reinterpret_cast<char*>(&signal) + bytes_read,
+             sizeof(signal) - bytes_read));
     if (ret < 0) {
       NOTREACHED() << "Unexpected error: " << strerror(errno);
       ShutdownFDReadError();
@@ -226,17 +225,17 @@ void ElectronBrowserMainParts::InstallShutdownSignalHandlers(
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIGTERMHandler;
-  CHECK_EQ(0, sigaction(SIGTERM, &action, nullptr));
+  CHECK_EQ(sigaction(SIGTERM, &action, nullptr), 0);
 
   // Also handle SIGINT - when the user terminates the browser via Ctrl+C. If
   // the browser process is being debugged, GDB will catch the SIGINT first.
   action.sa_handler = SIGINTHandler;
-  CHECK_EQ(0, sigaction(SIGINT, &action, nullptr));
+  CHECK_EQ(sigaction(SIGINT, &action, nullptr), 0);
 
   // And SIGHUP, for when the terminal disappears. On shutdown, many Linux
   // distros send SIGHUP, SIGTERM, and then SIGKILL.
   action.sa_handler = SIGHUPHandler;
-  CHECK_EQ(0, sigaction(SIGHUP, &action, nullptr));
+  CHECK_EQ(sigaction(SIGHUP, &action, nullptr), 0);
 }
 
 }  // namespace electron
