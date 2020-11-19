@@ -71,7 +71,10 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
         *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
                         &gin_helper::Promise<base::FilePath>::ResolvePromise,
                         std::move(promise), *file_path)));
-    TracingController::GetInstance()->StopTracing(endpoint);
+    if (!TracingController::GetInstance()->StopTracing(endpoint)) {
+      promise.RejectWithErrorMessage(
+          "Failed to stop tracing (was a trace in progress?)");
+    }
   } else {
     promise.RejectWithErrorMessage(
         "Failed to create temporary file for trace data");
