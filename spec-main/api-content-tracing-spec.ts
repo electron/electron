@@ -119,6 +119,10 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
       expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
     });
+
+    it('rejects if no trace is happening', async () => {
+      await expect(contentTracing.stopRecording()).to.be.rejected();
+    });
   });
 
   describe('captured events', () => {
