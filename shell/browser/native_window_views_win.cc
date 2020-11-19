@@ -159,8 +159,6 @@ void NativeWindowViews::Maximize() {
     return;
   } else {
     restore_bounds_ = GetBounds();
-    LOG(INFO) << "NativeWindowViews::Maximize - restore_bounds_: "
-              << restore_bounds_.ToString() << " " << __LINE__;
     auto display =
         display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     SetBounds(display.work_area(), false);

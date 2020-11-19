@@ -632,8 +632,6 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
   }
 #endif
 
-  LOG(INFO) << " NativeWindowViews::SetBounds - bounds: " << bounds.ToString()
-            << " " << __LINE__;
   widget()->SetBounds(bounds);
 }
 
