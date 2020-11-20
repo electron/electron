@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f3b6d8f16de62685388207938379a7bd4beec404..92b2a5b390bef34cb38bde8f4386368e4837ea0d 100644
+index 2b1b21b80c297acf28c5504655bf0c4a65524f43..8efe8f8fbf854f80c2e650be89357e9aea9fe697 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5142,6 +5142,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5126,6 +5126,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index f3b6d8f16de62685388207938379a7bd4beec404..92b2a5b390bef34cb38bde8f4386368e
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 53161372c1a58a5efe674be64769216cdbbc7f37..68902694fdbd0799079eeef0785e3d568dca31a2 100644
+index 971295597620fe1e611e31e0207975a8f8c26d09..443939919a554c250473e895f33e43cfad5b0151 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3586,6 +3586,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -53,7 +53,7 @@ index 53161372c1a58a5efe674be64769216cdbbc7f37..68902694fdbd0799079eeef0785e3d56
      observer->DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
                                    params.referrer.To<Referrer>(),
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 239d572e58897dbcd00b201dcb8bbc73c93bc8a1..f76123851baf157e7c78bb8f1d0001ee58f4a293 100644
+index 5bca0426023abe09370df81cb7514d3ced4ced4b..32a18bbbe6e52cc4f5200333e53bbe9af5e428a0 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -292,6 +292,10 @@ struct CreateNewWindowParams {
@@ -150,7 +150,7 @@ index 775591c60fc916bf4193d009b4e1dfe684f764ae..f03649cb9c4ffb83d87031bdad6eb55c
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index c1c157be3bc03191238e277c37bcbaa538044ac6..56078bfb65032a6556516c2c69d891beb28e048f 100644
+index 51366db58471ab38b4e637e2dcdce1b861b187de..ee47c68e403ba2ed09b01e626e50b67f2785378e 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -25,6 +25,7 @@

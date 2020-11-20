@@ -48,10 +48,10 @@ index 4c082605daf6841205f51789c1df329cc10ce57e..f450523c978c7603af4358fb928c6be7
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 85e7f06c1fe140c02f05e464bb561e076e86a2ee..1f632b29baf6090236406cb4b664e0c34c427f37 100644
+index 15c592d28299c0acc1198558c9aa6df70a711f42..8a180523b02c6c70fe03a4ccbb4c4e5858aa36e7 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -323,6 +323,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -322,6 +322,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  
@@ -73,10 +73,10 @@ index 962bbb5074871ee5bb55fb8d0551ef799bc1f615..6513b67b6d2126f99f0f57731c7835e2
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 500f7da6e87a1ce7a822b88d56cef8c09c7fccc3..19f4e08ffe5b95e33d4d17b36ef89c963f62fa18 100644
+index ffe969fc0f0c1db58d3ea6672efb2a55c2056dc9..ed5b29f0e4901a1ce05aa83a31899480e6301a91 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -369,6 +369,7 @@ class WebView {
+@@ -344,6 +344,7 @@ class WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -85,10 +85,10 @@ index 500f7da6e87a1ce7a822b88d56cef8c09c7fccc3..19f4e08ffe5b95e33d4d17b36ef89c96
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ce88fac5824629eda9d1f4615f70f0d05999c4c6..08ea946ef080032ba8a336f9061a0ff4f1d1be98 100644
+index 1e1b45b6341fc7e600094806d088527f1767077a..65aeb76ae95d85fa1aba7ac1d7b7ff893906305a 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3528,6 +3528,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3459,6 +3459,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index ce88fac5824629eda9d1f4615f70f0d05999c4c6..08ea946ef080032ba8a336f9061a0ff4
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3538,7 +3545,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3469,7 +3476,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -113,10 +113,10 @@ index ce88fac5824629eda9d1f4615f70f0d05999c4c6..08ea946ef080032ba8a336f9061a0ff4
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 00b634a8b50e2f5877bfdfbf0c228531baa73319..e0b78935d80ccbc3cacfca470b916d4a757f2a66 100644
+index 7b946f0089199db9dd3f5ad4b45093196da67937..2d02ee591b94a29873b7550e02c34cf2bf3421d3 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -355,6 +355,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -365,6 +365,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -124,7 +124,7 @@ index 00b634a8b50e2f5877bfdfbf0c228531baa73319..e0b78935d80ccbc3cacfca470b916d4a
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -749,11 +750,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -760,11 +761,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    SkColor background_color_override_ = Color::kTransparent;
    float zoom_factor_override_ = 0.f;
  

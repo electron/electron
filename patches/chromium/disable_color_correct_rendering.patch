@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index cdddc4c2c5c170402e538b942d6ba2f592aec663..624f2ff434490363f1f0e4235141883396b6585d 100644
+index b589893c1ea3e6ef2aab0016e513fd5a629d5aa3..4090ef3276f52d0cc737204025bd16996cc6122a 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1773,6 +1773,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -60,10 +60,10 @@ index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c156220662c0f 100644
+index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f1035f27bef6 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
-@@ -16,6 +16,7 @@
+@@ -17,6 +17,7 @@
  #include "components/viz/common/features.h"
  #include "components/viz/common/switches.h"
  #include "ui/base/ui_base_switches.h"
@@ -71,7 +71,7 @@ index 5575c90cf05ec43bc787711f1d44b8dd58ead99c..a544d836159522751c1262370d8c1562
  
  #if defined(OS_APPLE)
  #include "ui/base/cocoa/remote_layer_api.h"
-@@ -53,6 +54,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
+@@ -54,6 +55,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
  RendererSettings CreateRendererSettings() {
    RendererSettings renderer_settings;
    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -241,7 +241,7 @@ index e19c2e676334c03db517fb73f7dbada74bf3d5bf..d02e245c1a452f87c6cc95e42ef33a4f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6c23f80a3b8efd4f7eb48441e4982cb7bab741e4..41d1f382eb905094c2acb682078a3aa09969d0cd 100644
+index bc09de74244357c8c46517ab757f9a685d611d40..691823835c4906f654f897d06705f44fb3a49415 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -222,6 +222,7 @@
@@ -261,7 +261,7 @@ index 6c23f80a3b8efd4f7eb48441e4982cb7bab741e4..41d1f382eb905094c2acb682078a3aa0
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 7dd54738714927a8d13ca29b758929a013843804..72b9ba4c827e8e778d1ed5d9e9b3ac76542db9e3 100644
+index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9b14d797a 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -272,7 +272,7 @@ index 7dd54738714927a8d13ca29b758929a013843804..72b9ba4c827e8e778d1ed5d9e9b3ac76
  #include "cc/paint/skia_paint_canvas.h"
  #include "components/viz/common/resources/resource_format_utils.h"
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -12,6 +13,7 @@
+@@ -13,6 +14,7 @@
  #include "third_party/khronos/GLES3/gl3.h"
  #include "third_party/skia/include/core/SkSurfaceProps.h"
  #include "ui/gfx/color_space.h"
@@ -280,7 +280,7 @@ index 7dd54738714927a8d13ca29b758929a013843804..72b9ba4c827e8e778d1ed5d9e9b3ac76
  
  namespace blink {
  
-@@ -83,6 +85,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -92,6 +94,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
@@ -292,7 +292,7 @@ index 7dd54738714927a8d13ca29b758929a013843804..72b9ba4c827e8e778d1ed5d9e9b3ac76
    // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
    // will need to take into account whether or not this texture will be sampled
    // in linear or nonlinear space.
-@@ -90,6 +97,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -99,6 +106,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {

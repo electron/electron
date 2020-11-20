@@ -42,10 +42,10 @@ index 65e627f2fa89352b0be27b5813d71a622bf1d326..113f4fd00f1cf994b39f64c9da387855
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e75ea9268dc1f3fe4eca69728a46bcbfb5c3d652..d482c6e2c1363dd6764cd504aa14cd0f208bc56e 100644
+index 69f10d7e59afe9261a4cc9f79ec42633b3c7df59..68cacd4d3f3912b74ec8f3fc9409bb27c17ff2fb 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -1428,6 +1428,21 @@ void NavigationRequest::BeginNavigation() {
+@@ -1418,6 +1418,21 @@ void NavigationRequest::BeginNavigation() {
      is_loaded_from_mhtml_archive_ = IsForMhtmlSubframe();
      ComputeSandboxFlagsToCommit();
  
@@ -67,7 +67,7 @@ index e75ea9268dc1f3fe4eca69728a46bcbfb5c3d652..d482c6e2c1363dd6764cd504aa14cd0f
      // Select an appropriate RenderFrameHost.
      std::string frame_host_choice_reason;
      render_frame_host_ =
-@@ -5245,6 +5260,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5234,6 +5249,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index e75ea9268dc1f3fe4eca69728a46bcbfb5c3d652..d482c6e2c1363dd6764cd504aa14cd0f
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -5258,10 +5274,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -5247,10 +5263,14 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -91,7 +91,7 @@ index e75ea9268dc1f3fe4eca69728a46bcbfb5c3d652..d482c6e2c1363dd6764cd504aa14cd0f
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
-index bb6a2790db7d71b94647a73a1f007c18e131a2a4..4a52308193c3fbb042df8559573bb15b6d4984b3 100644
+index df6862e7f734b838475483804726de1aa6bcb820..ae66b7e042e24456d275a725134e467c4c0174bf 100644
 --- a/content/browser/renderer_host/navigation_request.h
 +++ b/content/browser/renderer_host/navigation_request.h
 @@ -130,6 +130,10 @@ class CONTENT_EXPORT NavigationRequest
