@@ -504,7 +504,10 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
-  HandleShutdownSignals();
+  // Exit in response to SIGINT, SIGTERM, etc.
+  InstallShutdownSignalHandlers(
+      base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())),
+      content::GetUIThreadTaskRunner({}));
 #endif
 }
 
