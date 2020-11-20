@@ -171,13 +171,22 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                            win_icon));
         return TRUE;
 
-      // TODO: other cases
       case NIN_BALLOONUSERCLICK:
-        win_icon->NotifyBalloonClicked();
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(
+                           [](base::WeakPtr<NotifyIcon> wicon) {
+                             wicon->NotifyBalloonClicked();
+                           },
+                           win_icon));
         return TRUE;
 
       case NIN_BALLOONTIMEOUT:
-        win_icon->NotifyBalloonClosed();
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(
+                           [](base::WeakPtr<NotifyIcon> wicon) {
+                             wicon->NotifyBalloonClosed();
+                           },
+                           win_icon));
         return TRUE;
 
       case WM_LBUTTONDOWN:
