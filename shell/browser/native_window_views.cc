@@ -540,7 +540,7 @@ bool NativeWindowViews::IsMaximized() {
     auto display =
         display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
     return ((display.work_area().width() == current_bounds.width()) &&
-            (display.work_area().height() == current_bounds.height()))
+            (display.work_area().height() == current_bounds.height()));
   }
 #endif
 

@@ -159,8 +159,8 @@ void NativeWindowViews::Maximize() {
     return;
   } else {
     restore_bounds_ = GetBounds();
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
+        GetNativeWindow());
     SetBounds(display.work_area(), false);
   }
 }
