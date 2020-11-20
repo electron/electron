@@ -22,9 +22,7 @@ namespace electron {
 
 SubmenuButton::SubmenuButton(const base::string16& title,
                              const SkColor& background_color)
-    : views::MenuButton(
-          PressedCallback(),
-          gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr)),
+    : views::MenuButton(PressedCallback(), gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
@@ -95,7 +93,8 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
                                          int* start,
                                          int* end) const {
   int pos, span;
-  base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
+  base::string16 trimmed =
+      gfx::LocateAndRemoveAcceleratorChar(text, &pos, &span);
   if (pos > -1 && span != 0) {
     *accelerator = base::ToUpperASCII(trimmed[pos]);
     GetCharacterPosition(trimmed, pos, start);
