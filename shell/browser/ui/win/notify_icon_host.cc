@@ -143,14 +143,14 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     }
     return TRUE;
   } else if (message == kNotifyIconMessage) {
-    NotifyIcon* win_icon = NULL;
+    base::WeakPtr<NotifyIcon> win_icon = NULL;
 
     // Find the selected status icon.
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {
       auto* current_win_icon = static_cast<NotifyIcon*>(*i);
       if (current_win_icon->icon_id() == wparam) {
-        win_icon = current_win_icon;
+        win_icon = current_win_icon->GetWeakPtr();
         break;
       }
     }
@@ -163,18 +163,15 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
 
     switch (lparam) {
       case NIN_BALLOONSHOW:
-        // delay to next event loop to avoid entering v8
-        // during the WndProc callback
-
-        // TODO: instead of unretained, use WeakPtrFactory
-        // to count refs for the NotifyIcon objects
         content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE,
-            base::BindOnce(
-                [](NotifyIcon* wicon) { wicon->NotifyBalloonShow(); },
-                base::Unretained(win_icon)));
+            FROM_HERE, base::BindOnce(
+                           [](base::WeakPtr<NotifyIcon> wicon) {
+                             wicon->NotifyBalloonShow();
+                           },
+                           win_icon));
         return TRUE;
 
+      // TODO: other cases
       case NIN_BALLOONUSERCLICK:
         win_icon->NotifyBalloonClicked();
         return TRUE;
