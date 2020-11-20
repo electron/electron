@@ -30,10 +30,10 @@ index a8cc695c4c1c1d2d7e3274a2b628894997de5fe8..a7ba417835f217391fa300f41c7fbdc0
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 4e7d99a78112f4d19928c02c71fa93ecb6a1f83d..aff0b9f3387a1d4e3fe1d3eb36d46f406e5aee62 100644
+index b40e7abbd8a542640a1ae1ad54f35218693964f8..8a343410444b60921e423fbeabb6efddaf4b5e41 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1840,6 +1840,8 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& unsafe_cursor) {
+@@ -1849,6 +1849,8 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& unsafe_cursor) {
  
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,7 +43,7 @@ index 4e7d99a78112f4d19928c02c71fa93ecb6a1f83d..aff0b9f3387a1d4e3fe1d3eb36d46f40
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2ae270da197b2c5f9217f7f5d356c08f3ab09e83..157d13be1440008e2c31f0895892817264058162 100644
+index 756aa00c2ce20996c7038972b901e4e9f12f888a..1f03a7ca021c6178335837909aa75e7331d6619c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4129,6 +4129,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
@@ -60,10 +60,10 @@ index 2ae270da197b2c5f9217f7f5d356c08f3ab09e83..157d13be1440008e2c31f08958928172
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 42d55946ccb9a57f32976f412846b836b40a7630..a16962024d278e6485a8fd545a49f6e38d7cbd23 100644
+index 657521fc8e08361a2cebcc7253dcec37cd7a2e2b..2b67275754c2710b64614c503396e509e9f7124e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -937,6 +937,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -939,6 +939,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
    bool OnUpdateDragCursor() override;
@@ -72,7 +72,7 @@ index 42d55946ccb9a57f32976f412846b836b40a7630..a16962024d278e6485a8fd545a49f6e3
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 9eecc62a289e2b44044dc065f67e02abbd0ac866..29760d84a3ef2b397586a17853f3664c61ea9cc0 100644
+index 9ab0a264e9ec660950e17cc608c375bf6366ac4a..45f56a4ea05e40b0b8287cea77810b7c9bdd1020 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
