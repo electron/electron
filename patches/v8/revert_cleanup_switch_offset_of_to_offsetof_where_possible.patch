@@ -6,7 +6,7 @@ Subject: Revert "[cleanup] Switch {OFFSET_OF} to {offsetof} where possible."
 This reverts commit d287e4bc46243841c77cf9798516ee4dcc54bf43.
 
 diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
-index 7c52aa80332ade4dfd7f8033395989fdb250d592..b7acaa54243249e752e1184fed4d233e0da2719a 100644
+index a1c49e7cf8740f3fafe6cabe6b38137c831d6a5f..5ab882a8c45be82ed20400b0d74b3d7d94fd294e 100644
 --- a/src/deoptimizer/deoptimizer.h
 +++ b/src/deoptimizer/deoptimizer.h
 @@ -510,14 +510,14 @@ class Deoptimizer : public Malloced {

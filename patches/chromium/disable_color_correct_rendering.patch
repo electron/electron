@@ -229,7 +229,7 @@ index d59f15d33be9c7d7ef56965967295969c635eb54..dc09df35ad4cc0f9eb7256b13eb543ce
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e19c2e676334c03db517fb73f7dbada74bf3d5bf..d02e245c1a452f87c6cc95e42ef33a4f682373ea 100644
+index bcef78dc1015200b52bc8fee012bd9c3d36ef0b8..a84b2363b4fd53d3271cb218e3cb345dae22afef 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -327,18 +327,18 @@ index 25f4095c539373aa37ea00b53b374ef7fa3758d5..28d6255329607c4122908b264946dc6d
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index f56f9149b62cde816ac6204d6870b8d31776e5a5..8c55bbfc4675914afeb0f50b6704e1dcd5e07a18 100644
+index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67d24d7bac 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -18,6 +18,7 @@
- #include "base/trace_event/trace_event.h"
+@@ -19,6 +19,7 @@
  #include "ui/gfx/buffer_format_util.h"
+ #include "ui/gfx/color_space.h"
  #include "ui/gfx/icc_profile.h"
 +#include "ui/gfx/switches.h"
  
  namespace gfx {
  
-@@ -126,6 +127,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -127,6 +128,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -353,7 +353,7 @@ index f56f9149b62cde816ac6204d6870b8d31776e5a5..8c55bbfc4675914afeb0f50b6704e1dc
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -294,6 +303,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
