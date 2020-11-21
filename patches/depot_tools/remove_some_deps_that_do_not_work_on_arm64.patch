@@ -6,7 +6,7 @@ Subject: remove some deps that do not work on arm64
 Once these deps have newly built arm64 versions we can remove this patch.
 
 diff --git a/gsutil.vpython b/gsutil.vpython
-index 8a2a38aac8e154199a1431a95b1d620052c8d770..0d9d92cd5f93c1f771253a4542c0548e7f002c10 100644
+index b0a646271eae7426988bbef47a4162f47872c1d1..d9465adeb29f1c696d8ef442a753e6737627bd6f 100644
 --- a/gsutil.vpython
 +++ b/gsutil.vpython
 @@ -25,19 +25,19 @@ wheel <
