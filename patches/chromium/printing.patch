@@ -372,7 +372,7 @@ index e22cff218a565637d0e0cd4f1290fda7f47fd25d..6c03577126ce0b313c3777f1f1aebebb
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index 8d7f4a90ae9f23fc94ebc425c17df8d03a8df36e..ee8152a2f9bfeaad733d1db8ecfa7b3170da101f 100644
+index ca5858bffffa5fabd77de502f6453ccd8b315653..943d753ed78276acc094d92b171b7220f1caa49f 100644
 --- a/chrome/browser/printing/printing_message_filter.cc
 +++ b/chrome/browser/printing/printing_message_filter.cc
 @@ -22,6 +22,7 @@
@@ -396,7 +396,7 @@ index 8d7f4a90ae9f23fc94ebc425c17df8d03a8df36e..ee8152a2f9bfeaad733d1db8ecfa7b31
        render_process_id_(render_process_id),
        queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_.get());
-   printing_shutdown_notifier_ =
+   printing_shutdown_subscription_ =
        PrintingMessageFilterShutdownNotifierFactory::GetInstance()
 -          ->Get(profile)
 +          ->Get(browser_context)
@@ -419,7 +419,7 @@ index 8d7f4a90ae9f23fc94ebc425c17df8d03a8df36e..ee8152a2f9bfeaad733d1db8ecfa7b31
  #endif
  
 diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index 9d6a8900d2b0ec02c421e6f32644cfd3e1cdf1ce..b9018490784d83b98625a40d1e9de55385448a13 100644
+index ec7bda04cfac09eba3d5285770d1054c2997c170..c36d6eca8c6aa1a23d39d742c04496b4fcc56e4e 100644
 --- a/chrome/browser/printing/printing_message_filter.h
 +++ b/chrome/browser/printing/printing_message_filter.h
 @@ -22,6 +22,10 @@
