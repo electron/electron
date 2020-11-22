@@ -26,10 +26,10 @@ The `Notification` class has the following static methods:
 
 Returns `Boolean` - Whether or not desktop notifications are supported on the current system
 
-### `new Notification([options])`
+### `new Notification(title, [options])`
 
+* `title` String (optional) - A title for the notification, which will be shown at the top of the notification window when it is shown.
 * `options` Object (optional)
-  * `title` String (optional) - A title for the notification, which will be shown at the top of the notification window when it is shown.
   * `subtitle` String (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` String (optional) - The body text of the notification, which will be displayed below the title or subtitle.
   * `silent` Boolean (optional) - Whether or not to emit an OS notification noise when showing the notification.
