@@ -7,12 +7,12 @@ let win
 
 app.whenReady().then(() => {
   win = new BrowserWindow({ webPreferences: { offscreen: true } })
-
   win.loadURL('http://github.com')
   win.webContents.on('paint', (event, dirty, image) => {
     fs.writeFileSync('ex.png', image.toPNG())
   })
   win.webContents.setFrameRate(60)
+  console.log(`The screenshot has been successfully saved to ${process.cwd()}/ex.png`)
 })
 
 app.on('window-all-closed', () => {

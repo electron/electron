@@ -1,4 +1,5 @@
 const { app, BrowserWindow } = require('electron')
+const fs = require('fs');
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -10,10 +11,10 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
 }
 
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
+let recentlyUsedDocument = fs.writeFileSync('drag-and-drop.md', 'Lorem Ipsum');
+app.addRecentDocument(`${process.cwd()}/${recentlyUsedDocument}`)
 
 app.whenReady().then(createWindow)
 

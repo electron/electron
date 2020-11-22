@@ -1,4 +1,5 @@
 const { app, BrowserWindow } = require('electron')
+const os = require('os');
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -10,13 +11,12 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
 }
 
 app.whenReady().then(() => {
   const win = new BrowserWindow()
 
-  win.setRepresentedFilename('/etc/passwd')
+  win.setRepresentedFilename(os.homedir())
   win.setDocumentEdited(true)
 })
 

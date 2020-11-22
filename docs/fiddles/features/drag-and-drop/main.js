@@ -1,4 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, nativeImage, NativeImage } = require('electron')
+const fs = require('fs');
+const http = require('http');
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -10,15 +12,20 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
 }
+const iconName = 'iconForDragAndDrop.png';
+const icon = fs.createWriteStream(`${process.cwd()}/${iconName}`);
+http.get('http://img.icons8.com/ios/452/drag-and-drop.png', (response) => {
+  response.pipe(icon);
+});
 
 app.whenReady().then(createWindow)
 
 ipcMain.on('ondragstart', (event, filePath) => {
+  console.log('test', filePath)
   event.sender.startDrag({
     file: filePath,
-    icon: '/path/to/icon.png'
+    icon: `${process.cwd()}/${iconName}`
   })
 })
 

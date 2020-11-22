@@ -10,7 +10,6 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
   win.setProgressBar(0.5)
 }
 
