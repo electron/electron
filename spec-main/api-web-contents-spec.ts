@@ -42,6 +42,12 @@ describe('webContents module', () => {
     });
   });
 
+  describe('fromId()', () => {
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromId(12345)).to.be.undefined();
+    });
+  });
+
   describe('will-prevent-unload event', function () {
     afterEach(closeAllWindows);
     it('does not emit if beforeunload returns undefined', async () => {

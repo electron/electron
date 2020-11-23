@@ -3118,6 +3118,12 @@ namespace {
 using electron::api::GetAllWebContents;
 using electron::api::WebContents;
 
+gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
+  WebContents* contents = WebContents::FromID(id);
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
 std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
     v8::Isolate* isolate) {
   std::vector<gin::Handle<WebContents>> list;
@@ -3136,7 +3142,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("create", &WebContents::Create);
-  dict.SetMethod("fromId", &WebContents::FromID);
+  dict.SetMethod("fromId", &WebContentsFromID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
 
