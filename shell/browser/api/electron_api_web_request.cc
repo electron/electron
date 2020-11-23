@@ -19,6 +19,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/url_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -89,19 +90,6 @@ struct UserData : public base::SupportsUserData::Data {
   explicit UserData(WebRequest* data) : data(data) {}
   WebRequest* data;
 };
-
-// Test whether the URL of |request| matches |patterns|.
-bool MatchesFilterCondition(extensions::WebRequestInfo* info,
-                            const std::set<URLPattern>& patterns) {
-  if (patterns.empty())
-    return true;
-
-  for (const auto& pattern : patterns) {
-    if (pattern.MatchesURL(info->url))
-      return true;
-  }
-  return false;
-}
 
 // Convert HttpResponseHeaders to V8.
 //
@@ -391,18 +379,12 @@ void WebRequest::SetListener(Event event,
     }
   }
 
-  std::set<URLPattern> patterns;
-  for (const std::string& filter_pattern : filter_patterns) {
-    URLPattern pattern(URLPattern::SCHEME_ALL);
-    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
-    if (result == URLPattern::ParseResult::kSuccess) {
-      patterns.insert(pattern);
-    } else {
-      const char* error_type = URLPattern::GetParseResultString(result);
-      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
-                           error_type);
-      return;
-    }
+  std::string parse_error;
+  std::set<URLPattern> patterns =
+      ParseURLPatterns(filter_patterns, &parse_error);
+  if (!parse_error.empty()) {
+    args->ThrowTypeError(parse_error);
+    return;
   }
 
   // Function or null.
@@ -428,7 +410,7 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
     return;
 
   const auto& info = iter->second;
-  if (!MatchesFilterCondition(request_info, info.url_patterns))
+  if (!MatchesFilterCondition(request_info->url, info.url_patterns))
     return;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -449,7 +431,7 @@ int WebRequest::HandleResponseEvent(ResponseEvent event,
     return net::OK;
 
   const auto& info = iter->second;
-  if (!MatchesFilterCondition(request_info, info.url_patterns))
+  if (!MatchesFilterCondition(request_info->url, info.url_patterns))
     return net::OK;
 
   callbacks_[request_info->id] = std::move(callback);
