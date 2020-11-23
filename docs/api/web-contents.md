@@ -42,7 +42,8 @@ returns `null`.
 
 * `id` Integer
 
-Returns `WebContents` - A WebContents instance with the given ID.
+Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+`undefined` if there is no WebContents associated with the given ID.
 
 ## Class: WebContents
 
