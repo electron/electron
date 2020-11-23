@@ -132,12 +132,6 @@ void RendererClientBase::DidCreateScriptContext(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   gin_helper::Dictionary global(context->GetIsolate(), context->Global());
   global.SetHidden("contextId", context_id);
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  bool enableRemoteModule =
-      render_frame->GetBlinkPreferences().enable_remote_module;
-  global.SetHidden("enableRemoteModule", enableRemoteModule);
-#endif
 }
 
 void RendererClientBase::AddRenderBindings(
