@@ -537,8 +537,8 @@ bool NativeWindowViews::IsMaximized() {
   gfx::Rect current_bounds = GetBounds();
   if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     // Compare the size of the window with the size of the display
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
+        GetNativeWindow());
     return ((display.work_area().width() == current_bounds.width()) &&
             (display.work_area().height() == current_bounds.height()));
   }
