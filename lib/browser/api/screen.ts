@@ -16,5 +16,23 @@ export default new Proxy({}, {
       return v.bind(_screen);
     }
     return v;
+  },
+  ownKeys: () => {
+    if (_screen === undefined) {
+      _screen = createScreen();
+    }
+    return Reflect.ownKeys(_screen);
+  },
+  has: (target, prop: string) => {
+    if (_screen === undefined) {
+      _screen = createScreen();
+    }
+    return prop in _screen;
+  },
+  getOwnPropertyDescriptor: (target, prop: string) => {
+    if (_screen === undefined) {
+      _screen = createScreen();
+    }
+    return Reflect.getOwnPropertyDescriptor(_screen, prop);
   }
 });
