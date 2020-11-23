@@ -1,0 +1,723 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Thu, 19 Nov 2020 21:28:45 +0000
+Subject: Improve AXTextStateChangeType in
+ NSAccessibilitySelectedTextChangedNotification
+
+When setting the AXTextStateChangeType key in the user info data
+structure for the notification, use AXTextStateChangeTypeSelectionMove
+when we detect a focus change. This causes VoiceOver to properly
+announce the label and type of form entries when their contents are
+selected due to focus changes.
+
+type are now announced.
+
+Bug: 1127421
+Change-Id: I42d66ad60fbcba7c8c34396fdbc3f6e0c739d1a2
+AX-Relnotes: When focus changes moves to form inputs, the input label and
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2512913
+Commit-Queue: Martin Robinson <mrobinson@igalia.com>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#829380}
+
+diff --git a/content/browser/accessibility/accessibility_event_recorder_mac.mm b/content/browser/accessibility/accessibility_event_recorder_mac.mm
+index fcb93bab1c94f792dc9868e895a0e562d1fd8449..1e415ee8f849b67c098e49572c9d4e890ed44d04 100644
+--- a/content/browser/accessibility/accessibility_event_recorder_mac.mm
++++ b/content/browser/accessibility/accessibility_event_recorder_mac.mm
+@@ -6,6 +6,7 @@
+ 
+ #import <Cocoa/Cocoa.h>
+ 
++#include <algorithm>
+ #include <string>
+ 
+ #include "base/logging.h"
+@@ -15,6 +16,7 @@
+ #include "base/strings/sys_string_conversions.h"
+ #include "content/browser/accessibility/accessibility_tools_utils_mac.h"
+ #include "content/browser/accessibility/browser_accessibility_manager.h"
++#include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
+ 
+ namespace content {
+ 
+@@ -28,7 +30,11 @@
+   ~AccessibilityEventRecorderMac() override;
+ 
+   // Callback executed every time we receive an event notification.
+-  void EventReceived(AXUIElementRef element, CFStringRef notification);
++  void EventReceived(AXUIElementRef element,
++                     CFStringRef notification,
++                     CFDictionaryRef user_info);
++  static std::string SerializeTextSelectionChangedProperties(
++      CFDictionaryRef user_info);
+ 
+  private:
+   // Add one notification to the list of notifications monitored by our
+@@ -54,10 +60,11 @@
+ static void EventReceivedThunk(AXObserverRef observer_ref,
+                                AXUIElementRef element,
+                                CFStringRef notification,
++                               CFDictionaryRef user_info,
+                                void* refcon) {
+   AccessibilityEventRecorderMac* this_ptr =
+       static_cast<AccessibilityEventRecorderMac*>(refcon);
+-  this_ptr->EventReceived(element, notification);
++  this_ptr->EventReceived(element, notification, user_info);
+ }
+ 
+ // static
+@@ -95,8 +102,9 @@ static void EventReceivedThunk(AXObserverRef observer_ref,
+     base::ProcessId pid,
+     AXUIElementRef node)
+     : AccessibilityEventRecorder(manager), observer_run_loop_source_(NULL) {
+-  if (kAXErrorSuccess != AXObserverCreate(pid, EventReceivedThunk,
+-                                          observer_ref_.InitializeInto())) {
++  if (kAXErrorSuccess !=
++      AXObserverCreateWithInfoCallback(pid, EventReceivedThunk,
++                                       observer_ref_.InitializeInto())) {
+     LOG(FATAL) << "Failed to create AXObserverRef";
+   }
+ 
+@@ -157,7 +165,8 @@ static void EventReceivedThunk(AXObserverRef observer_ref,
+ }
+ 
+ void AccessibilityEventRecorderMac::EventReceived(AXUIElementRef element,
+-                                                  CFStringRef notification) {
++                                                  CFStringRef notification,
++                                                  CFDictionaryRef user_info) {
+   std::string notification_str = base::SysCFStringRefToUTF8(notification);
+   std::string role = GetAXAttributeValue(element, NSAccessibilityRoleAttribute);
+   if (role.empty())
+@@ -180,7 +189,49 @@ static void EventReceivedThunk(AXObserverRef observer_ref,
+   if (!value.empty())
+     log += base::StringPrintf(" AXValue=\"%s\"", value.c_str());
+ 
++  if (notification_str ==
++      base::SysNSStringToUTF8(NSAccessibilitySelectedTextChangedNotification))
++    log += " " + SerializeTextSelectionChangedProperties(user_info);
++
+   OnEvent(log);
+ }
+ 
++std::string
++AccessibilityEventRecorderMac::SerializeTextSelectionChangedProperties(
++    CFDictionaryRef user_info) {
++  std::vector<std::string> serialized_info;
++  CFDictionaryApplyFunction(
++      user_info,
++      [](const void* raw_key, const void* raw_value, void* context) {
++        auto* key = static_cast<NSString*>(raw_key);
++        auto* value = static_cast<NSObject*>(raw_value);
++        auto* serialized_info = static_cast<std::vector<std::string>*>(context);
++        std::string value_string;
++        if ([key isEqual:ui::NSAccessibilityTextStateChangeTypeKey]) {
++          value_string = ToString(static_cast<ui::AXTextStateChangeType>(
++              [static_cast<NSNumber*>(value) intValue]));
++        } else if ([key isEqual:ui::NSAccessibilityTextSelectionDirection]) {
++          value_string = ToString(static_cast<ui::AXTextSelectionDirection>(
++              [static_cast<NSNumber*>(value) intValue]));
++        } else if ([key isEqual:ui::NSAccessibilityTextSelectionGranularity]) {
++          value_string = ToString(static_cast<ui::AXTextSelectionGranularity>(
++              [static_cast<NSNumber*>(value) intValue]));
++        } else if ([key isEqual:ui::NSAccessibilityTextEditType]) {
++          value_string = ToString(static_cast<ui::AXTextEditType>(
++              [static_cast<NSNumber*>(value) intValue]));
++        } else {
++          return;
++        }
++        serialized_info->push_back(base::SysNSStringToUTF8(key) + "=" +
++                                   value_string);
++      },
++      &serialized_info);
++
++  // Always sort the info so that we don't depend on CFDictionary for
++  // consistent output ordering.
++  std::sort(serialized_info.begin(), serialized_info.end());
++
++  return base::JoinString(serialized_info, " ");
++}
++
+ }  // namespace content
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b/content/browser/accessibility/browser_accessibility_manager_mac.h
+index b4043f56341e72bcf75ef71c56cb8cf9fc442579..925bfe1ea191ab846805fdbff1b0314e779b1c9e 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.h
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
+@@ -54,7 +54,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+                               const std::vector<Change>& changes) override;
+ 
+   // Returns an autoreleased object.
+-  NSDictionary* GetUserInfoForSelectedTextChangedNotification();
++  NSDictionary* GetUserInfoForSelectedTextChangedNotification(
++      bool focus_changed);
+ 
+   // Returns an autoreleased object.
+   NSDictionary* GetUserInfoForValueChangedNotification(
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 68b8ccd88fb4ad6e4793a54869d5424f2a860d8a..4232959e30ab758bff58aa8e4457b6cdd3c7745b 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -19,91 +19,13 @@
+ #include "content/public/browser/web_contents.h"
+ #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+ #include "ui/accessibility/ax_role_properties.h"
++#include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
+ 
+ namespace {
+ 
+ // Use same value as in Safari's WebKit.
+ const int kLiveRegionChangeIntervalMS = 20;
+ 
+-// Declare undocumented accessibility constants and enums only present in
+-// WebKit.
+-
+-enum AXTextStateChangeType {
+-  AXTextStateChangeTypeUnknown,
+-  AXTextStateChangeTypeEdit,
+-  AXTextStateChangeTypeSelectionMove,
+-  AXTextStateChangeTypeSelectionExtend
+-};
+-
+-enum AXTextSelectionDirection {
+-  AXTextSelectionDirectionUnknown,
+-  AXTextSelectionDirectionBeginning,
+-  AXTextSelectionDirectionEnd,
+-  AXTextSelectionDirectionPrevious,
+-  AXTextSelectionDirectionNext,
+-  AXTextSelectionDirectionDiscontiguous
+-};
+-
+-enum AXTextSelectionGranularity {
+-  AXTextSelectionGranularityUnknown,
+-  AXTextSelectionGranularityCharacter,
+-  AXTextSelectionGranularityWord,
+-  AXTextSelectionGranularityLine,
+-  AXTextSelectionGranularitySentence,
+-  AXTextSelectionGranularityParagraph,
+-  AXTextSelectionGranularityPage,
+-  AXTextSelectionGranularityDocument,
+-  AXTextSelectionGranularityAll
+-};
+-
+-enum AXTextEditType {
+-  AXTextEditTypeUnknown,
+-  AXTextEditTypeDelete,
+-  AXTextEditTypeInsert,
+-  AXTextEditTypeTyping,
+-  AXTextEditTypeDictation,
+-  AXTextEditTypeCut,
+-  AXTextEditTypePaste,
+-  AXTextEditTypeAttributesChange
+-};
+-
+-// Native mac notifications fired.
+-NSString* const NSAccessibilityAutocorrectionOccurredNotification =
+-    @"AXAutocorrectionOccurred";
+-NSString* const NSAccessibilityLoadCompleteNotification = @"AXLoadComplete";
+-NSString* const NSAccessibilityInvalidStatusChangedNotification =
+-    @"AXInvalidStatusChanged";
+-NSString* const NSAccessibilityLiveRegionCreatedNotification =
+-    @"AXLiveRegionCreated";
+-NSString* const NSAccessibilityLiveRegionChangedNotification =
+-    @"AXLiveRegionChanged";
+-NSString* const NSAccessibilityExpandedChanged = @"AXExpandedChanged";
+-NSString* const NSAccessibilityMenuItemSelectedNotification =
+-    @"AXMenuItemSelected";
+-
+-// The following native mac notifications are not fired:
+-// AXLayoutComplete: Voiceover does not use this, it is considered too spammy.
+-
+-// Attributes used for NSAccessibilitySelectedTextChangedNotification and
+-// NSAccessibilityValueChangedNotification.
+-NSString* const NSAccessibilityTextStateChangeTypeKey =
+-    @"AXTextStateChangeType";
+-NSString* const NSAccessibilityTextStateSyncKey = @"AXTextStateSync";
+-NSString* const NSAccessibilityTextSelectionDirection =
+-    @"AXTextSelectionDirection";
+-NSString* const NSAccessibilityTextSelectionGranularity =
+-    @"AXTextSelectionGranularity";
+-NSString* const NSAccessibilityTextSelectionChangedFocus =
+-    @"AXTextSelectionChangedFocus";
+-NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
+-NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
+-NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
+-NSString* const NSAccessibilityChangeValueStartMarker =
+-    @"AXTextChangeValueStartMarker";
+-NSString* const NSAccessibilityTextChangeValueLength =
+-    @"AXTextChangeValueLength";
+-NSString* const NSAccessibilityTextChangeValues = @"AXTextChangeValues";
+-
+ }  // namespace
+ 
+ namespace content {
+@@ -164,7 +86,7 @@
+   NSString* mac_notification = nullptr;
+   switch (event_type) {
+     case ax::mojom::Event::kAutocorrectionOccured:
+-      mac_notification = NSAccessibilityAutocorrectionOccurredNotification;
++      mac_notification = ui::NSAccessibilityAutocorrectionOccurredNotification;
+       break;
+     default:
+       return;
+@@ -203,6 +125,8 @@ void PostAnnouncementNotification(NSString* announcement) {
+   auto native_node = ToBrowserAccessibilityCocoa(node);
+   DCHECK(native_node);
+ 
++  bool focus_changed = GetFocus() != GetLastFocusedNode();
++
+   // Refer to |AXObjectCache::postPlatformNotification| in WebKit source code.
+   NSString* mac_notification = nullptr;
+   switch (event_type) {
+@@ -232,7 +156,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+       // |NSAccessibilityLoadCompleteNotification| should only be fired on the
+       // top document and when the document is not Chrome's new tab page.
+       if (IsRootTree() && !IsChromeNewTabPage()) {
+-        mac_notification = NSAccessibilityLoadCompleteNotification;
++        mac_notification = ui::NSAccessibilityLoadCompleteNotification;
+       } else {
+         // Voiceover moves focus to the web content when it receives an
+         // AXLoadComplete event. On Chrome's new tab page, focus should stay
+@@ -242,7 +166,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+       }
+       break;
+     case ui::AXEventGenerator::Event::INVALID_STATUS_CHANGED:
+-      mac_notification = NSAccessibilityInvalidStatusChangedNotification;
++      mac_notification = ui::NSAccessibilityInvalidStatusChangedNotification;
+       break;
+     case ui::AXEventGenerator::Event::SELECTED_CHILDREN_CHANGED:
+       if (ui::IsTableLike(node->GetRole())) {
+@@ -289,7 +213,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+         // API has been present on versions of OS X since 10.7 but doesn't
+         // appear to be needed by Voiceover before version 10.11.
+         NSDictionary* user_info =
+-            GetUserInfoForSelectedTextChangedNotification();
++            GetUserInfoForSelectedTextChangedNotification(focus_changed);
+ 
+         BrowserAccessibilityManager* root_manager = GetRootManager();
+         if (!root_manager)
+@@ -342,11 +266,11 @@ void PostAnnouncementNotification(NSString* announcement) {
+       }
+       break;
+     case ui::AXEventGenerator::Event::LIVE_REGION_CREATED:
+-      mac_notification = NSAccessibilityLiveRegionCreatedNotification;
++      mac_notification = ui::NSAccessibilityLiveRegionCreatedNotification;
+       break;
+     case ui::AXEventGenerator::Event::ALERT:
+       NSAccessibilityPostNotification(
+-          native_node, NSAccessibilityLiveRegionCreatedNotification);
++          native_node, ui::NSAccessibilityLiveRegionCreatedNotification);
+       // Voiceover requires a live region changed notification to actually
+       // announce the live region.
+       FireGeneratedEvent(ui::AXEventGenerator::Event::LIVE_REGION_CHANGED,
+@@ -359,7 +283,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+ 
+       if (never_suppress_or_delay_events_for_testing_) {
+         NSAccessibilityPostNotification(
+-            native_node, NSAccessibilityLiveRegionChangedNotification);
++            native_node, ui::NSAccessibilityLiveRegionChangedNotification);
+         return;
+       }
+ 
+@@ -383,7 +307,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+               [](base::scoped_nsobject<BrowserAccessibilityCocoa> node) {
+                 if (node && [node instanceActive]) {
+                   NSAccessibilityPostNotification(
+-                      node, NSAccessibilityLiveRegionChangedNotification);
++                      node, ui::NSAccessibilityLiveRegionChangedNotification);
+                 }
+               },
+               std::move(retained_node)),
+@@ -398,7 +322,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+           node->GetRole() == ax::mojom::Role::kTreeItem) {
+         mac_notification = NSAccessibilityRowExpandedNotification;
+       } else {
+-        mac_notification = NSAccessibilityExpandedChanged;
++        mac_notification = ui::NSAccessibilityExpandedChanged;
+       }
+       break;
+     case ui::AXEventGenerator::Event::COLLAPSED:
+@@ -406,11 +330,11 @@ void PostAnnouncementNotification(NSString* announcement) {
+           node->GetRole() == ax::mojom::Role::kTreeItem) {
+         mac_notification = NSAccessibilityRowCollapsedNotification;
+       } else {
+-        mac_notification = NSAccessibilityExpandedChanged;
++        mac_notification = ui::NSAccessibilityExpandedChanged;
+       }
+       break;
+     case ui::AXEventGenerator::Event::MENU_ITEM_SELECTED:
+-      mac_notification = NSAccessibilityMenuItemSelectedNotification;
++      mac_notification = ui::NSAccessibilityMenuItemSelectedNotification;
+       break;
+     case ui::AXEventGenerator::Event::ACCESS_KEY_CHANGED:
+     case ui::AXEventGenerator::Event::ATK_TEXT_OBJECT_ATTRIBUTE_CHANGED:
+@@ -514,18 +438,32 @@ void PostAnnouncementNotification(NSString* announcement) {
+   }
+ }
+ 
+-NSDictionary* BrowserAccessibilityManagerMac::
+-    GetUserInfoForSelectedTextChangedNotification() {
++NSDictionary*
++BrowserAccessibilityManagerMac::GetUserInfoForSelectedTextChangedNotification(
++    bool focus_changed) {
+   NSMutableDictionary* user_info =
+       [[[NSMutableDictionary alloc] init] autorelease];
+-  [user_info setObject:@YES forKey:NSAccessibilityTextStateSyncKey];
+-  [user_info setObject:@(AXTextStateChangeTypeUnknown)
+-                forKey:NSAccessibilityTextStateChangeTypeKey];
+-  [user_info setObject:@(AXTextSelectionDirectionUnknown)
+-                forKey:NSAccessibilityTextSelectionDirection];
+-  [user_info setObject:@(AXTextSelectionGranularityUnknown)
+-                forKey:NSAccessibilityTextSelectionGranularity];
+-  [user_info setObject:@YES forKey:NSAccessibilityTextSelectionChangedFocus];
++  [user_info setObject:@YES forKey:ui::NSAccessibilityTextStateSyncKey];
++  [user_info setObject:@(ui::AXTextSelectionDirectionUnknown)
++                forKey:ui::NSAccessibilityTextSelectionDirection];
++  [user_info setObject:@(ui::AXTextSelectionGranularityUnknown)
++                forKey:ui::NSAccessibilityTextSelectionGranularity];
++  [user_info setObject:@YES
++                forKey:ui::NSAccessibilityTextSelectionChangedFocus];
++
++  // Try to detect when the text selection changes due to a focus change.
++  // This is necessary so that VoiceOver also anounces information about the
++  // element that contains this selection.
++  // TODO(mrobinson): Determine definitively what the type of this text
++  // selection change is. This requires passing this information here from
++  // blink.
++  if (focus_changed) {
++    [user_info setObject:@(ui::AXTextStateChangeTypeSelectionMove)
++                  forKey:ui::NSAccessibilityTextStateChangeTypeKey];
++  } else {
++    [user_info setObject:@(ui::AXTextStateChangeTypeUnknown)
++                  forKey:ui::NSAccessibilityTextStateChangeTypeKey];
++  }
+ 
+   int32_t focus_id = ax_tree()->GetUnignoredSelection().focus_object_id;
+   BrowserAccessibility* focus_object = GetFromID(focus_id);
+@@ -534,7 +472,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+     auto native_focus_object = ToBrowserAccessibilityCocoa(focus_object);
+     if (native_focus_object && [native_focus_object instanceActive]) {
+       [user_info setObject:native_focus_object
+-                    forKey:NSAccessibilityTextChangeElement];
++                    forKey:ui::NSAccessibilityTextChangeElement];
+ 
+ #ifndef MAS_BUILD
+       id selected_text = [native_focus_object selectedTextMarkerRange];
+@@ -565,38 +503,39 @@ void PostAnnouncementNotification(NSString* announcement) {
+   if (!deleted_text.empty()) {
+     NSMutableDictionary* change =
+         [NSMutableDictionary dictionaryWithDictionary:@{
+-          NSAccessibilityTextEditType : @(AXTextEditTypeDelete),
+-          NSAccessibilityTextChangeValueLength : @(deleted_text.length()),
+-          NSAccessibilityTextChangeValue :
++          ui::NSAccessibilityTextEditType : @(ui::AXTextEditTypeDelete),
++          ui::NSAccessibilityTextChangeValueLength : @(deleted_text.length()),
++          ui::NSAccessibilityTextChangeValue :
+               base::SysUTF16ToNSString(deleted_text)
+         }];
+     if (edit_text_marker) {
+-      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++      change[ui::NSAccessibilityChangeValueStartMarker] = edit_text_marker;
+     }
+     [changes addObject:change];
+   }
+   if (!inserted_text.empty()) {
+     // TODO(nektar): Figure out if this is a paste, insertion or typing.
+     // Changes to Blink would be required. A heuristic is currently used.
+-    auto edit_type = inserted_text.length() > 1 ? @(AXTextEditTypeInsert)
+-                                                : @(AXTextEditTypeTyping);
++    auto edit_type = inserted_text.length() > 1 ? @(ui::AXTextEditTypeInsert)
++                                                : @(ui::AXTextEditTypeTyping);
+     NSMutableDictionary* change =
+         [NSMutableDictionary dictionaryWithDictionary:@{
+-          NSAccessibilityTextEditType : edit_type,
+-          NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
+-          NSAccessibilityTextChangeValue :
++          ui::NSAccessibilityTextEditType : edit_type,
++          ui::NSAccessibilityTextChangeValueLength : @(inserted_text.length()),
++          ui::NSAccessibilityTextChangeValue :
+               base::SysUTF16ToNSString(inserted_text)
+         }];
+     if (edit_text_marker) {
+-      change[NSAccessibilityChangeValueStartMarker] = edit_text_marker;
++      change[ui::NSAccessibilityChangeValueStartMarker] = edit_text_marker;
+     }
+     [changes addObject:change];
+   }
+ 
+   return @{
+-    NSAccessibilityTextStateChangeTypeKey : @(AXTextStateChangeTypeEdit),
+-    NSAccessibilityTextChangeValues : changes,
+-    NSAccessibilityTextChangeElement : native_node
++    ui::
++    NSAccessibilityTextStateChangeTypeKey : @(ui::AXTextStateChangeTypeEdit),
++    ui::NSAccessibilityTextChangeValues : changes,
++    ui::NSAccessibilityTextChangeElement : native_node
+   };
+ }
+ 
+diff --git a/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt b/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
+index ad5e2bf2c8029185c51eecc94cac1dbe7608c99e..67e07a89f77f7c61a57eb51cecea211df5227341 100644
+--- a/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
++++ b/content/test/data/accessibility/event/aria-combo-box-focus-expected-mac.txt
+@@ -1,3 +1,3 @@
+ AXFocusedUIElementChanged on AXStaticText AXValue="Apple not selected"
+-AXSelectedTextChanged on AXStaticText AXValue="Apple not selected"
+-AXSelectedTextChanged on AXWebArea
+\ No newline at end of file
++AXSelectedTextChanged on AXStaticText AXValue="Apple not selected" AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
+diff --git a/content/test/data/accessibility/event/caret-browsing-disabled-expected-mac.txt b/content/test/data/accessibility/event/caret-browsing-disabled-expected-mac.txt
+index ec0b74d984ade9928705242f9b0682a743e20fb2..87447c5a4b14efde5b64b1d340a3fa2fb6574b80 100644
+--- a/content/test/data/accessibility/event/caret-browsing-disabled-expected-mac.txt
++++ b/content/test/data/accessibility/event/caret-browsing-disabled-expected-mac.txt
+@@ -1,5 +1,5 @@
+-AXSelectedTextChanged on AXWebArea
+-AXSelectedTextChanged on AXWebArea
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
+ === Start Continuation ===
+-AXSelectedTextChanged on AXWebArea
+-AXSelectedTextChanged on AXWebArea
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
+diff --git a/content/test/data/accessibility/event/caret-browsing-enabled-expected-mac.txt b/content/test/data/accessibility/event/caret-browsing-enabled-expected-mac.txt
+index ec0b74d984ade9928705242f9b0682a743e20fb2..87447c5a4b14efde5b64b1d340a3fa2fb6574b80 100644
+--- a/content/test/data/accessibility/event/caret-browsing-enabled-expected-mac.txt
++++ b/content/test/data/accessibility/event/caret-browsing-enabled-expected-mac.txt
+@@ -1,5 +1,5 @@
+-AXSelectedTextChanged on AXWebArea
+-AXSelectedTextChanged on AXWebArea
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
+ === Start Continuation ===
+-AXSelectedTextChanged on AXWebArea
+-AXSelectedTextChanged on AXWebArea
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
+diff --git a/content/test/data/accessibility/event/text-selection-changed-expected-mac.txt b/content/test/data/accessibility/event/text-selection-changed-expected-mac.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9213c873393d595bba8796cdb0e2325d3ee37ee9
+--- /dev/null
++++ b/content/test/data/accessibility/event/text-selection-changed-expected-mac.txt
+@@ -0,0 +1,10 @@
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++=== Start Continuation ===
++AXFocusedUIElementChanged on AXTextField AXDescription="input" AXValue="input"
++AXSelectedTextChanged on AXTextField AXDescription="input" AXValue="input" AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
++=== Start Continuation ===
++AXFocusedUIElementChanged on AXTextArea AXDescription="textarea"
++AXSelectedTextChanged on AXTextArea AXDescription="textarea" AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
++AXSelectedTextChanged on AXWebArea AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
+diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
+index 2f015b939bb6835f2ff817ce6c960157eaf32342..eafddade0f7fa8ab8d008bf4888fc9ecef85463d 100644
+--- a/ui/accessibility/platform/BUILD.gn
++++ b/ui/accessibility/platform/BUILD.gn
+@@ -110,6 +110,8 @@ source_set("platform") {
+         "ax_event_intent_mac.mm",
+         "ax_platform_node_mac.h",
+         "ax_platform_node_mac.mm",
++        "ax_private_webkit_constants_mac.h",
++        "ax_private_webkit_constants_mac.mm",
+       ]
+ 
+       frameworks = [
+diff --git a/ui/accessibility/platform/ax_private_webkit_constants_mac.h b/ui/accessibility/platform/ax_private_webkit_constants_mac.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f1776a3aeac89b70d6d852b8e5209a1208271ae
+--- /dev/null
++++ b/ui/accessibility/platform/ax_private_webkit_constants_mac.h
+@@ -0,0 +1,96 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_ACCESSIBILITY_PLATFORM_AX_PRIVATE_WEBKIT_CONSTANTS_MAC_H_
++#define UI_ACCESSIBILITY_PLATFORM_AX_PRIVATE_WEBKIT_CONSTANTS_MAC_H_
++
++#import <Cocoa/Cocoa.h>
++#include "ui/accessibility/ax_export.h"
++
++namespace ui {
++
++enum AXTextStateChangeType {
++  AXTextStateChangeTypeUnknown,
++  AXTextStateChangeTypeEdit,
++  AXTextStateChangeTypeSelectionMove,
++  AXTextStateChangeTypeSelectionExtend
++};
++
++enum AXTextSelectionDirection {
++  AXTextSelectionDirectionUnknown,
++  AXTextSelectionDirectionBeginning,
++  AXTextSelectionDirectionEnd,
++  AXTextSelectionDirectionPrevious,
++  AXTextSelectionDirectionNext,
++  AXTextSelectionDirectionDiscontiguous
++};
++
++enum AXTextSelectionGranularity {
++  AXTextSelectionGranularityUnknown,
++  AXTextSelectionGranularityCharacter,
++  AXTextSelectionGranularityWord,
++  AXTextSelectionGranularityLine,
++  AXTextSelectionGranularitySentence,
++  AXTextSelectionGranularityParagraph,
++  AXTextSelectionGranularityPage,
++  AXTextSelectionGranularityDocument,
++  AXTextSelectionGranularityAll
++};
++
++enum AXTextEditType {
++  AXTextEditTypeUnknown,
++  AXTextEditTypeDelete,
++  AXTextEditTypeInsert,
++  AXTextEditTypeTyping,
++  AXTextEditTypeDictation,
++  AXTextEditTypeCut,
++  AXTextEditTypePaste,
++  AXTextEditTypeAttributesChange
++};
++
++// Native mac notifications fired.
++NSString* const NSAccessibilityAutocorrectionOccurredNotification =
++    @"AXAutocorrectionOccurred";
++NSString* const NSAccessibilityLoadCompleteNotification = @"AXLoadComplete";
++NSString* const NSAccessibilityInvalidStatusChangedNotification =
++    @"AXInvalidStatusChanged";
++NSString* const NSAccessibilityLiveRegionCreatedNotification =
++    @"AXLiveRegionCreated";
++NSString* const NSAccessibilityLiveRegionChangedNotification =
++    @"AXLiveRegionChanged";
++NSString* const NSAccessibilityExpandedChanged = @"AXExpandedChanged";
++NSString* const NSAccessibilityMenuItemSelectedNotification =
++    @"AXMenuItemSelected";
++
++// The following native mac notifications are not fired:
++// AXLayoutComplete: Voiceover does not use this, it is considered too spammy.
++
++// Attributes used for NSAccessibilitySelectedTextChangedNotification and
++// NSAccessibilityValueChangedNotification.
++NSString* const NSAccessibilityTextStateChangeTypeKey =
++    @"AXTextStateChangeType";
++NSString* const NSAccessibilityTextStateSyncKey = @"AXTextStateSync";
++NSString* const NSAccessibilityTextSelectionDirection =
++    @"AXTextSelectionDirection";
++NSString* const NSAccessibilityTextSelectionGranularity =
++    @"AXTextSelectionGranularity";
++NSString* const NSAccessibilityTextSelectionChangedFocus =
++    @"AXTextSelectionChangedFocus";
++NSString* const NSAccessibilityTextChangeElement = @"AXTextChangeElement";
++NSString* const NSAccessibilityTextEditType = @"AXTextEditType";
++NSString* const NSAccessibilityTextChangeValue = @"AXTextChangeValue";
++NSString* const NSAccessibilityChangeValueStartMarker =
++    @"AXTextChangeValueStartMarker";
++NSString* const NSAccessibilityTextChangeValueLength =
++    @"AXTextChangeValueLength";
++NSString* const NSAccessibilityTextChangeValues = @"AXTextChangeValues";
++
++AX_EXPORT const char* ToString(AXTextStateChangeType);
++AX_EXPORT const char* ToString(AXTextSelectionDirection);
++AX_EXPORT const char* ToString(AXTextSelectionGranularity);
++AX_EXPORT const char* ToString(AXTextEditType);
++
++}  // namespace ui
++
++#endif  // UI_ACCESSIBILITY_PLATFORM_AX_PRIVATE_WEBKIT_CONSTANTS_MAC_H_
+diff --git a/ui/accessibility/platform/ax_private_webkit_constants_mac.mm b/ui/accessibility/platform/ax_private_webkit_constants_mac.mm
+new file mode 100644
+index 0000000000000000000000000000000000000000..7de31a487dd6e0e6a4af2f4fa62e463f41a0d96a
+--- /dev/null
++++ b/ui/accessibility/platform/ax_private_webkit_constants_mac.mm
+@@ -0,0 +1,91 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
++
++namespace ui {
++
++const char* ToString(AXTextStateChangeType type) {
++  switch (type) {
++    case AXTextStateChangeTypeUnknown:
++      return "AXTextStateChangeTypeUnknown";
++    case AXTextStateChangeTypeEdit:
++      return "AXTextStateChangeTypeEdit";
++    case AXTextStateChangeTypeSelectionMove:
++      return "AXTextStateChangeTypeSelectionMove";
++    case AXTextStateChangeTypeSelectionExtend:
++      return "AXTextStateChangeTypeSelectionExtend";
++  }
++
++  return "";
++}
++
++const char* ToString(AXTextSelectionDirection direction) {
++  switch (direction) {
++    case AXTextSelectionDirectionUnknown:
++      return "AXTextSelectionDirectionUnknown";
++    case AXTextSelectionDirectionBeginning:
++      return "AXTextSelectionDirectionBeginning";
++    case AXTextSelectionDirectionEnd:
++      return "AXTextSelectionDirectionEnd";
++    case AXTextSelectionDirectionPrevious:
++      return "AXTextSelectionDirectionPrevious";
++    case AXTextSelectionDirectionNext:
++      return "AXTextSelectionDirectionNext";
++    case AXTextSelectionDirectionDiscontiguous:
++      return "AXTextSelectionDirectionDiscontiguous";
++  }
++
++  return "";
++}
++
++const char* ToString(AXTextSelectionGranularity granularity) {
++  switch (granularity) {
++    case AXTextSelectionGranularityUnknown:
++      return "AXTextSelectionGranularityUnknown";
++    case AXTextSelectionGranularityCharacter:
++      return "AXTextSelectionGranularityCharacter";
++    case AXTextSelectionGranularityWord:
++      return "AXTextSelectionGranularityWord";
++    case AXTextSelectionGranularityLine:
++      return "AXTextSelectionGranularityLine";
++    case AXTextSelectionGranularitySentence:
++      return "AXTextSelectionGranularitySentence";
++    case AXTextSelectionGranularityParagraph:
++      return "AXTextSelectionGranularityParagraph";
++    case AXTextSelectionGranularityPage:
++      return "AXTextSelectionGranularityPage";
++    case AXTextSelectionGranularityDocument:
++      return "AXTextSelectionGranularityDocument";
++    case AXTextSelectionGranularityAll:
++      return "AXTextSelectionGranularityAll";
++  }
++
++  return "";
++}
++
++const char* ToString(AXTextEditType type) {
++  switch (type) {
++    case AXTextEditTypeUnknown:
++      return "AXTextEditTypeUnknown";
++    case AXTextEditTypeDelete:
++      return "AXTextEditTypeDelete";
++    case AXTextEditTypeInsert:
++      return "AXTextEditTypeInsert";
++    case AXTextEditTypeTyping:
++      return "AXTextEditTypeTyping";
++    case AXTextEditTypeDictation:
++      return "AXTextEditTypeDictation";
++    case AXTextEditTypeCut:
++      return "AXTextEditTypeCut";
++    case AXTextEditTypePaste:
++      return "AXTextEditTypePaste";
++    case AXTextEditTypeAttributesChange:
++      return "AXTextEditTypeAttributesChange";
++  }
++
++  return "";
++}
++
++}  // namespace ui
