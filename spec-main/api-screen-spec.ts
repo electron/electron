@@ -30,6 +30,7 @@ describe('screen module', () => {
       expect(display).to.have.property('depthPerComponent').that.is.a('number');
       expect(display).to.have.property('colorDepth').that.is.a('number');
       expect(display).to.have.property('colorSpace').that.is.a('string');
+      expect(display).to.have.property('displayFrequency').that.is.a('number');
     });
 
     it('has a size object property', function () {

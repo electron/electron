@@ -11,6 +11,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -316,22 +317,33 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // which keys off of getenv("LC_ALL").
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
-  g_setenv("LC_ALL", locale.c_str(), TRUE);
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::Optional<std::string> lc_all;
+  if (!locale.empty()) {
+    std::string str;
+    if (env->GetVar("LC_ALL", &str))
+      lc_all.emplace(std::move(str));
+    env->SetVar("LC_ALL", locale.c_str());
+  }
 #endif
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
 
-#if defined(OS_LINUX)
-  // Reset to the loaded locale if the custom locale is invalid.
-  if (loaded_locale != locale)
-    g_setenv("LC_ALL", loaded_locale.c_str(), TRUE);
-#endif
-
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
   ElectronBrowserClient::SetApplicationLocale(app_locale);
   fake_browser_process_->SetApplicationLocale(app_locale);
+
+#if defined(OS_LINUX)
+  // Reset to the original LC_ALL since we should not be changing it.
+  if (!locale.empty()) {
+    if (lc_all)
+      env->SetVar("LC_ALL", *lc_all);
+    else
+      env->UnSetVar("LC_ALL");
+  }
+#endif
 
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
@@ -451,7 +463,8 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
-    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
+        base::OnceClosure());
   } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
@@ -491,7 +504,10 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
-  HandleShutdownSignals();
+  // Exit in response to SIGINT, SIGTERM, etc.
+  InstallShutdownSignalHandlers(
+      base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())),
+      content::GetUIThreadTaskRunner({}));
 #endif
 }
 

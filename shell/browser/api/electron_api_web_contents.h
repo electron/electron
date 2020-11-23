@@ -45,12 +45,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/common/print_messages.h"
-#include "printing/backend/print_backend.h"  // nogncheck
 #include "shell/browser/printing/print_preview_message_handler.h"
-
-#if defined(OS_WIN)
-#include "printing/backend/win_helper.h"
-#endif
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -74,42 +69,8 @@ class ResourceRequestBody;
 }
 
 namespace gin {
-
 class Arguments;
-
-template <>
-struct Converter<base::TerminationStatus> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::TerminationStatus& status) {
-    switch (status) {
-      case base::TERMINATION_STATUS_NORMAL_TERMINATION:
-        return gin::ConvertToV8(isolate, "clean-exit");
-      case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
-        return gin::ConvertToV8(isolate, "abnormal-exit");
-      case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
-        return gin::ConvertToV8(isolate, "killed");
-      case base::TERMINATION_STATUS_PROCESS_CRASHED:
-        return gin::ConvertToV8(isolate, "crashed");
-      case base::TERMINATION_STATUS_STILL_RUNNING:
-        return gin::ConvertToV8(isolate, "still-running");
-      case base::TERMINATION_STATUS_LAUNCH_FAILED:
-        return gin::ConvertToV8(isolate, "launch-failed");
-      case base::TERMINATION_STATUS_OOM:
-        return gin::ConvertToV8(isolate, "oom");
-#if defined(OS_WIN)
-      case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
-        return gin::ConvertToV8(isolate, "integrity-failure");
-#endif
-      case base::TERMINATION_STATUS_MAX_ENUM:
-        NOTREACHED();
-        return gin::ConvertToV8(isolate, "");
-    }
-    NOTREACHED();
-    return gin::ConvertToV8(isolate, "");
-  }
-};
-
-}  // namespace gin
+}
 
 namespace electron {
 
@@ -150,8 +111,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static gin::Handle<WebContents> Create(v8::Isolate* isolate,
-                                         const gin_helper::Dictionary& options);
   static gin::Handle<WebContents> New(v8::Isolate* isolate,
                                       const gin_helper::Dictionary& options);
 
@@ -257,7 +216,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                            bool silent,
                            base::string16 default_printer);
   void Print(gin::Arguments* args);
-  printing::PrinterList GetPrinterList();
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
 #endif
@@ -288,7 +246,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Focus.
   void Focus();
   bool IsFocused() const;
-  void TabTraverse(bool reverse);
 
   // Send messages to browser.
   bool SendIPCMessage(bool internal,
@@ -446,8 +403,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
 
-  InspectableWebContents* managed_web_contents() const {
-    return web_contents_.get();
+  InspectableWebContents* inspectable_web_contents() const {
+    return inspectable_web_contents_.get();
   }
 
   NativeWindow* owner_window() const { return owner_window_.get(); }
@@ -632,7 +589,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DevToolsClosed() override;
   void DevToolsResized() override;
 
- private:
   ElectronBrowserContext* GetBrowserContext() const;
 
   // Binds the given request for the ElectronBrowser API. When the
@@ -641,8 +597,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
       content::RenderFrameHost* render_frame_host);
   void OnElectronBrowserConnectionError();
-
-  uint32_t GetNextRequestId() { return ++request_id_; }
 
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
@@ -779,7 +733,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   int32_t id_;
 
   // Request id used for findInPage request.
-  uint32_t request_id_ = 0;
+  uint32_t find_in_page_request_id_ = 0;
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
@@ -813,10 +767,10 @@ class WebContents : public gin::Wrappable<WebContents>,
   ElectronBrowserContext* browser_context_;
 
   // The stored InspectableWebContents object.
-  // Notice that web_contents_ must be placed after dialog_manager_, so we can
-  // make sure web_contents_ is destroyed before dialog_manager_, otherwise a
-  // crash would happen.
-  std::unique_ptr<InspectableWebContents> web_contents_;
+  // Notice that inspectable_web_contents_ must be placed after
+  // dialog_manager_, so we can make sure inspectable_web_contents_ is
+  // destroyed before dialog_manager_, otherwise a crash would happen.
+  std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;

@@ -47,6 +47,7 @@ following properties:
     be aborted. When mode is `manual` the redirection will be cancelled unless
     [`request.followRedirect`](#requestfollowredirect) is invoked synchronously
     during the [`redirect`](#event-redirect) event.  Defaults to `follow`.
+  * `origin` String (optional) - The origin URL of the request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the

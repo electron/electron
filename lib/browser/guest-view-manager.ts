@@ -276,7 +276,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
 
 const isWebViewTagEnabledCache = new WeakMap();
 
-export const isWebViewTagEnabled = function (contents: Electron.WebContents) {
+const isWebViewTagEnabled = function (contents: Electron.WebContents) {
   if (!isWebViewTagEnabledCache.has(contents)) {
     const webPreferences = contents.getLastWebPreferences() || {};
     isWebViewTagEnabledCache.set(contents, !!webPreferences.webviewTag);

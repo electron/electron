@@ -233,8 +233,8 @@ practice, that means that global objects like `Array.prototype.push` or
 Electron uses the same technology as Chromium's [Content Scripts](https://developer.chrome.com/extensions/content_scripts#execution-environment)
 to enable this behavior.
 
-Even when you use `nodeIntegration: false` to enforce strong isolation and
-prevent the use of Node primitives, `contextIsolation` must also be used.
+Even when `nodeIntegration: false` is used, to truly enforce strong isolation
+and prevent the use of Node primitives `contextIsolation` **must** also be used.
 
 ### Why & How?
 
@@ -818,7 +818,7 @@ which potential security issues are not as widely known.
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
-[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandler-handler
+[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md

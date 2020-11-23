@@ -79,7 +79,7 @@ BrowserView::BrowserView(gin::Arguments* args,
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
   gin::Handle<class WebContents> web_contents =
-      WebContents::Create(isolate, web_preferences);
+      WebContents::New(isolate, web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
@@ -87,7 +87,7 @@ BrowserView::BrowserView(gin::Arguments* args,
   Observe(web_contents->web_contents());
 
   view_.reset(
-      NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
+      NativeBrowserView::Create(api_web_contents_->inspectable_web_contents()));
 }
 
 BrowserView::~BrowserView() {

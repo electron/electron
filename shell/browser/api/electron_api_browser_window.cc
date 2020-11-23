@@ -95,7 +95,8 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
 #if defined(OS_MAC)
-  OverrideNSWindowContentView(web_contents->managed_web_contents());
+  OverrideNSWindowContentView(
+      web_contents->inspectable_web_contents()->GetView());
 #endif
 
   // Init window after everything has been setup.

@@ -123,6 +123,7 @@ const defaultPrintingSetting = {
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
+const printing = process._linkedBinding('electron_browser_printing');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
 WebContents.prototype.send = function (channel, ...args) {
@@ -416,8 +417,10 @@ WebContents.prototype.print = function (options = {}, callback) {
 };
 
 WebContents.prototype.getPrinters = function () {
-  if (this._getPrinters) {
-    return this._getPrinters();
+  // TODO(nornagon): this API has nothing to do with WebContents and should be
+  // moved.
+  if (printing.getPrinterList) {
+    return printing.getPrinterList();
   } else {
     console.error('Error: Printing feature is disabled.');
     return [];
@@ -726,8 +729,8 @@ WebContents.prototype._init = function () {
 };
 
 // Public APIs.
-export function create (options = {}) {
-  return binding.create(options);
+export function create (options = {}): Electron.WebContents {
+  return new (WebContents as any)(options);
 }
 
 export function fromId (id: string) {

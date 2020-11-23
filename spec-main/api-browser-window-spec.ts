@@ -1634,7 +1634,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.fromBrowserView(browserView)', () => {
     afterEach(closeAllWindows);
 
-    it('returns the window with the browserView', () => {
+    it('returns the window with the BrowserView', () => {
       const w = new BrowserWindow({ show: false });
       const bv = new BrowserView();
       w.setBrowserView(bv);
@@ -1643,6 +1643,22 @@ describe('BrowserWindow module', () => {
         (bv.webContents as any).destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id);
+    });
+
+    it('returns the window when there are multiple BrowserViews', () => {
+      const w = new BrowserWindow({ show: false });
+      const bv1 = new BrowserView();
+      w.addBrowserView(bv1);
+      const bv2 = new BrowserView();
+      w.addBrowserView(bv2);
+      defer(() => {
+        w.removeBrowserView(bv1);
+        w.removeBrowserView(bv2);
+        (bv1.webContents as any).destroy();
+        (bv2.webContents as any).destroy();
+      });
+      expect(BrowserWindow.fromBrowserView(bv1)!.id).to.equal(w.id);
+      expect(BrowserWindow.fromBrowserView(bv2)!.id).to.equal(w.id);
     });
 
     it('returns undefined if not attached', () => {

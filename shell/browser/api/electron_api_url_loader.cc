@@ -376,6 +376,75 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   opts.Get("referrer", &request->referrer);
+  std::string origin;
+  opts.Get("origin", &origin);
+  if (!origin.empty()) {
+    request->request_initiator = url::Origin::Create(GURL(origin));
+  }
+  bool has_user_activation;
+  if (opts.Get("hasUserActivation", &has_user_activation)) {
+    request->trusted_params = network::ResourceRequest::TrustedParams();
+    request->trusted_params->has_user_activation = has_user_activation;
+  }
+
+  std::string mode;
+  if (opts.Get("mode", &mode) && !mode.empty()) {
+    if (mode == "navigate") {
+      request->mode = network::mojom::RequestMode::kNavigate;
+    } else if (mode == "cors") {
+      request->mode = network::mojom::RequestMode::kCors;
+    } else if (mode == "no-cors") {
+      request->mode = network::mojom::RequestMode::kNoCors;
+    } else if (mode == "same-origin") {
+      request->mode = network::mojom::RequestMode::kSameOrigin;
+    }
+  }
+
+  std::string destination;
+  if (opts.Get("destination", &destination) && !destination.empty()) {
+    if (destination == "empty") {
+      request->destination = network::mojom::RequestDestination::kEmpty;
+    } else if (destination == "audio") {
+      request->destination = network::mojom::RequestDestination::kAudio;
+    } else if (destination == "audioworklet") {
+      request->destination = network::mojom::RequestDestination::kAudioWorklet;
+    } else if (destination == "document") {
+      request->destination = network::mojom::RequestDestination::kDocument;
+    } else if (destination == "embed") {
+      request->destination = network::mojom::RequestDestination::kEmbed;
+    } else if (destination == "font") {
+      request->destination = network::mojom::RequestDestination::kFont;
+    } else if (destination == "frame") {
+      request->destination = network::mojom::RequestDestination::kFrame;
+    } else if (destination == "iframe") {
+      request->destination = network::mojom::RequestDestination::kIframe;
+    } else if (destination == "image") {
+      request->destination = network::mojom::RequestDestination::kImage;
+    } else if (destination == "manifest") {
+      request->destination = network::mojom::RequestDestination::kManifest;
+    } else if (destination == "object") {
+      request->destination = network::mojom::RequestDestination::kObject;
+    } else if (destination == "paintworklet") {
+      request->destination = network::mojom::RequestDestination::kPaintWorklet;
+    } else if (destination == "report") {
+      request->destination = network::mojom::RequestDestination::kReport;
+    } else if (destination == "script") {
+      request->destination = network::mojom::RequestDestination::kScript;
+    } else if (destination == "serviceworker") {
+      request->destination = network::mojom::RequestDestination::kServiceWorker;
+    } else if (destination == "style") {
+      request->destination = network::mojom::RequestDestination::kStyle;
+    } else if (destination == "track") {
+      request->destination = network::mojom::RequestDestination::kTrack;
+    } else if (destination == "video") {
+      request->destination = network::mojom::RequestDestination::kVideo;
+    } else if (destination == "worker") {
+      request->destination = network::mojom::RequestDestination::kWorker;
+    } else if (destination == "xslt") {
+      request->destination = network::mojom::RequestDestination::kXslt;
+    }
+  }
+
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
   std::vector<std::pair<std::string, std::string>> extra_headers;

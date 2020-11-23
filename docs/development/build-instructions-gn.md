@@ -189,7 +189,6 @@ Not all combinations of source and target CPU/OS are supported by Chromium.
 | Windows x64 | Windows x86   | Automatically tested |
 | Linux x64   | Linux x86     | Automatically tested |
 
-
 If you test other combinations and find them to work, please update this document :)
 
 See the GN reference for allowable values of [`target_os`][target_os values]

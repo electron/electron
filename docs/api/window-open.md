@@ -3,8 +3,8 @@
 There are several ways to control how windows are created from trusted or
 untrusted content within a renderer. Windows can be created from the renderer in two ways:
 
-- clicking on links or submitting forms adorned with `target=_blank`
-- JavaScript calling `window.open()`
+* clicking on links or submitting forms adorned with `target=_blank`
+* JavaScript calling `window.open()`
 
 In non-sandboxed renderers, or when `nativeWindowOpen` is false (the default), this results in the creation of a
 [`BrowserWindowProxy`](browser-window-proxy.md), a light wrapper around
@@ -26,7 +26,7 @@ BrowserWindow constructor options are set by, in increasing precedence
 order: options inherited from the parent, parsed options
 from the `features` string from `window.open()`, security-related webPreferences
 inherited from the parent, and options given by
-[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandler-handler).
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 Note that `webContents.setWindowOpenHandler` has final say and full privilege
 because it is invoked in the main process.
 

@@ -619,9 +619,6 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
-
-  // This causes the cert verifier cache to be cleared.
-  content::GetNetworkService()->OnCertDBChanged();
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,

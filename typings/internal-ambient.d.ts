@@ -119,6 +119,10 @@ declare namespace NodeJS {
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
+    origin?: string;
+    hasUserActivation?: boolean;
+    mode?: string;
+    destination?: string;
   };
   type ResponseHead = {
     statusCode: number;
