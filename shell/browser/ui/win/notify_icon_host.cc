@@ -143,6 +143,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     }
     return TRUE;
   } else if (message == kNotifyIconMessage) {
+    // We use a WeakPtr factory for NotifyIcons here so
     base::WeakPtr<NotifyIcon> win_icon = NULL;
 
     // Find the selected status icon.
