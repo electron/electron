@@ -2860,20 +2860,11 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     files.push_back(file);
   }
 
+  v8::Local<v8::Value> icon_value;
   gin::Handle<NativeImage> icon;
-  base::FilePath icon_path;
-  if (item.Get("icon", &icon_path)) {
-    icon = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
-                                                      icon_path);
-    if (icon->image().IsEmpty()) {
-      thrower.ThrowError("Must specify non-empty 'icon' option");
-      return;
-    }
-  } else {
-    if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
-      thrower.ThrowError("Must specify non-empty 'icon' option");
-      return;
-    }
+  if (item.Get("icon", &icon_value) &&
+      !NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon)) {
+    return;
   }
 
   // Start dragging.

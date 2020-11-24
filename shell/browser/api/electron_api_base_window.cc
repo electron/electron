@@ -101,7 +101,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #if defined(TOOLKIT_VIEWS)
   v8::Local<v8::Value> icon;
   if (options.Get(options::kIcon, &icon)) {
-    SetIcon(gin_helper::ErrorThrower(isolate), icon);
+    SetIcon(isolate, icon);
   }
 #endif
 }
@@ -994,24 +994,10 @@ bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void BaseWindow::SetIcon(gin_helper::ErrorThrower thrower,
-                         v8::Local<v8::Value> icon) {
+void BaseWindow::SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
   gin::Handle<NativeImage> native_image;
-  base::FilePath icon_path;
-  if (gin::ConvertFromV8(thrower.isolate(), icon, &icon_path)) {
-    native_image = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
-                                                              icon_path);
-    if (native_image->image().IsEmpty()) {
-      thrower.ThrowError("Failed to load image from path '" +
-                         icon_path.value() + "'");
-      return;
-    }
-  } else {
-    if (!gin::ConvertFromV8(thrower.isolate(), icon, &native_image)) {
-      thrower.ThrowTypeError("Argument must be a file path or a NativeImage");
-      return;
-    }
-  }
+  if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+    return;
 
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())

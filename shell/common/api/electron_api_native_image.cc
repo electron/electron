@@ -134,6 +134,35 @@ NativeImage::~NativeImage() {
   }
 }
 
+// static
+bool NativeImage::TryConvertNativeImage(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> image,
+    gin::Handle<NativeImage>* native_image) {
+  base::FilePath icon_path;
+  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
+    *native_image =
+        electron::api::NativeImage::CreateFromPath(isolate, icon_path);
+    if ((*native_image)->image().IsEmpty()) {
+#if defined(OS_WIN)
+      const auto img_path = base::UTF16ToUTF8(icon_path.value());
+#else
+      const auto img_path = icon_path.value();
+#endif
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, "Failed to load image from path '" + img_path + "'")));
+      return false;
+    }
+  } else {
+    if (!gin::ConvertFromV8(isolate, image, native_image)) {
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, "Argument must be a file path or a NativeImage")));
+      return false;
+    }
+  }
+  return true;
+}
+
 #if defined(OS_WIN)
 HICON NativeImage::GetHICON(int size) {
   auto iter = hicons_.find(size);

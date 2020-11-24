@@ -77,6 +77,10 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
 
+  static bool TryConvertNativeImage(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> image,
+                                    gin::Handle<NativeImage>* native_image);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
