@@ -15,7 +15,7 @@ You can use the following tools to distribute your application:
 
 These tools will take care of all the steps you need to take to end up with a
 distributable Electron application, such as packaging your application,
-rebranding the executable, setting the right icons and optionally creating installers.
+rebranding the executable, setting the right icons.
 
 You can check the example of how to package your app with `electron-forge` in
 our [Quick Start Guide](quick-start.md#package-and-distribute-the-application).
@@ -50,9 +50,9 @@ electron/resources/app
 └── index.html
 ```
 
-Then execute `Electron.app` (`electron` on Linux, `electron.exe` on Windows),
-and Electron will start as your app. The `electron` directory will then be
-your distribution to deliver to users.
+Then execute `Electron.app` on macOS, `electron` on Linux, or `electron.exe`
+on Windows, and Electron will start as your app. The `electron` directory
+will then be your distribution to deliver to users.
 
 ### With an app source code archive
 
