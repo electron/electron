@@ -22,7 +22,6 @@ http.get('http://img.icons8.com/ios/452/drag-and-drop.png', (response) => {
 app.whenReady().then(createWindow)
 
 ipcMain.on('ondragstart', (event, filePath) => {
-  console.log('test', filePath)
   event.sender.startDrag({
     file: filePath,
     icon: `${process.cwd()}/${iconName}`

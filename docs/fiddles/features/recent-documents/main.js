@@ -13,7 +13,7 @@ function createWindow () {
   win.loadFile('index.html')
 }
 
-let recentlyUsedDocument = fs.writeFileSync('drag-and-drop.md', 'Lorem Ipsum');
+let recentlyUsedDocument = fs.writeFileSync('recently-used.md', 'Lorem Ipsum');
 app.addRecentDocument(`${process.cwd()}/${recentlyUsedDocument}`)
 
 app.whenReady().then(createWindow)
