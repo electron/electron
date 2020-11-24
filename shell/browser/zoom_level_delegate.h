@@ -53,7 +53,7 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
 
   PrefService* pref_service_;
   content::HostZoomMap* host_zoom_map_;
-  std::unique_ptr<content::HostZoomMap::Subscription> zoom_subscription_;
+  base::CallbackListSubscription zoom_subscription_;
   std::string partition_key_;
 
   DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);

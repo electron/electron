@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/optional.h"
-#include "components/keyed_service/core/keyed_service_shutdown_notifier.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -170,10 +169,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   mojo::ScopedDataPipeProducerHandle writable_;
 
   extensions::WebRequestInfo info_;
-
-  // Notifies the proxy that the browser context has been shutdown.
-  std::unique_ptr<KeyedServiceShutdownNotifier::Subscription>
-      shutdown_notifier_;
 
   base::WeakPtrFactory<ProxyingWebSocket> weak_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(ProxyingWebSocket);
