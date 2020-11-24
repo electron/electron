@@ -9,6 +9,7 @@
 
 #include "base/bind.h"
 #include "base/logging.h"
+#include "base/memory/weak_ptr.h"
 #include "base/stl_util.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_types.h"
@@ -144,6 +145,9 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     return TRUE;
   } else if (message == kNotifyIconMessage) {
     // We use a WeakPtr factory for NotifyIcons here so
+    // that the callback is aware if the NotifyIcon gets
+    // garbage-collected. This occurs when the tray gets
+    // GC'd, and the BALLOON events below will not emit.
     base::WeakPtr<NotifyIcon> win_icon = NULL;
 
     // Find the selected status icon.

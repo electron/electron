@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/memory/weak_ptr.h"
 #include "base/optional.h"
 #include "shell/common/gin_converters/guid_converter.h"
 
