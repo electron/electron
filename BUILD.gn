@@ -265,21 +265,6 @@ if (is_linux) {
   }
 }
 
-source_set("manifests") {
-  sources = [
-    "//electron/shell/app/manifests.cc",
-    "//electron/shell/app/manifests.h",
-  ]
-
-  include_dirs = [ "//electron" ]
-
-  deps = [
-    "//electron/shell/common/api:mojo",
-    "//printing/buildflags",
-    "//services/service_manager/public/cpp",
-  ]
-}
-
 npm_action("electron_version_args") {
   script = "generate-version-json"
 
@@ -328,7 +313,6 @@ source_set("electron_lib") {
     ":electron_fuses",
     ":electron_js2c",
     ":electron_version_header",
-    ":manifests",
     ":resources",
     "buildflags",
     "chromium_src:chrome",

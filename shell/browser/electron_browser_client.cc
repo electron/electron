@@ -59,7 +59,6 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "shell/app/electron_crash_reporter_client.h"
-#include "shell/app/manifests.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -1081,13 +1080,6 @@ ElectronBrowserClient::GetSystemNetworkContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(g_browser_process->system_network_context_manager());
   return g_browser_process->system_network_context_manager()->GetContext();
-}
-
-base::Optional<service_manager::Manifest>
-ElectronBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
-  if (name == content::mojom::kBrowserServiceName)
-    return GetElectronContentBrowserOverlayManifest();
-  return base::nullopt;
 }
 
 std::unique_ptr<content::BrowserMainParts>

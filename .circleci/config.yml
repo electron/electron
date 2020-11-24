@@ -480,7 +480,6 @@ step-gn-check: &step-gn-check
       cd src
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
-      gn check out/Default //electron:manifests
       gn check out/Default //electron/shell/common/api:mojo
       # Check the hunspell filenames
       node electron/script/gen-hunspell-filenames.js --check
