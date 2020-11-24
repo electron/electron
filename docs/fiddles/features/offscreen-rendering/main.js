@@ -7,7 +7,7 @@ let win
 
 app.whenReady().then(() => {
   win = new BrowserWindow({ webPreferences: { offscreen: true } })
-  win.loadURL('http://github.com')
+  win.loadURL('https://github.com')
   win.webContents.on('paint', (event, dirty, image) => {
     fs.writeFileSync('ex.png', image.toPNG())
   })
