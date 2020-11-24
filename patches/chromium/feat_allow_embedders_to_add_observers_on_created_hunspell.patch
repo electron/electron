@@ -4,6 +4,8 @@ Date: Sun, 1 Mar 2020 16:33:55 -0800
 Subject: feat: allow embedders to add observers on created hunspell
  dictionaries
 
+This patch is used by Electron to implement spellchecker events.
+
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
 index 09256573b848bbb248530f77619df47ddbeb8a0e..75b70e375ed1d680cbd2fba1ca73a4e2e5403fb6 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
