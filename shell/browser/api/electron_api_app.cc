@@ -473,8 +473,6 @@ int GetPathConstant(const std::string& name) {
   else if (name == "recent")
     return electron::DIR_RECENT;
 #endif
-  else if (name == "pepperFlashSystemPlugin")
-    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
     return -1;
 }
@@ -1666,6 +1664,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if defined(OS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
+      .SetProperty("runningUnderRosettaTranslation",
+                   &App::IsRunningUnderRosettaTranslation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)

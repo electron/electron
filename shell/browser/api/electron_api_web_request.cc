@@ -10,6 +10,7 @@
 
 #include "base/stl_util.h"
 #include "base/values.h"
+#include "extensions/browser/api/web_request/web_request_resource_type.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -40,30 +41,30 @@ struct Converter<URLPattern> {
 };
 
 template <>
-struct Converter<blink::mojom::ResourceType> {
+struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   blink::mojom::ResourceType type) {
+                                   extensions::WebRequestResourceType type) {
     const char* result;
     switch (type) {
-      case blink::mojom::ResourceType::kMainFrame:
+      case extensions::WebRequestResourceType::MAIN_FRAME:
         result = "mainFrame";
         break;
-      case blink::mojom::ResourceType::kSubFrame:
+      case extensions::WebRequestResourceType::SUB_FRAME:
         result = "subFrame";
         break;
-      case blink::mojom::ResourceType::kStylesheet:
+      case extensions::WebRequestResourceType::STYLESHEET:
         result = "stylesheet";
         break;
-      case blink::mojom::ResourceType::kScript:
+      case extensions::WebRequestResourceType::SCRIPT:
         result = "script";
         break;
-      case blink::mojom::ResourceType::kImage:
+      case extensions::WebRequestResourceType::IMAGE:
         result = "image";
         break;
-      case blink::mojom::ResourceType::kObject:
+      case extensions::WebRequestResourceType::OBJECT:
         result = "object";
         break;
-      case blink::mojom::ResourceType::kXhr:
+      case extensions::WebRequestResourceType::XHR:
         result = "xhr";
         break;
       default:
@@ -144,7 +145,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("url", info->url);
   details->Set("method", info->method);
   details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  details->Set("resourceType", info->type);
+  details->Set("resourceType", info->web_request_type);
   if (!info->response_ip.empty())
     details->Set("ip", info->response_ip);
   if (info->response_headers) {

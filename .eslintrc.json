@@ -8,19 +8,19 @@
   "rules": {
     "semi": ["error", "always"],
     "no-var": "error",
-    "no-unused-vars": 0,
-    "no-global-assign": 0,
-    "guard-for-in": 2,
+    "no-unused-vars": "off",
+    "no-global-assign": "off",
+    "guard-for-in": "error",
     "@typescript-eslint/no-unused-vars": ["error", {
       "vars": "all",
       "args": "after-used",
-      "ignoreRestSiblings": false
+      "ignoreRestSiblings": true
     }],
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
     "standard/no-callback-literal": "off",
-    "node/no-deprecated-api": 0
+    "node/no-deprecated-api": "off"
   },
   "parserOptions": {
     "ecmaVersion": 6,
@@ -30,7 +30,7 @@
     {
       "files": "*.js",
       "rules": {
-          "@typescript-eslint/no-unused-vars": "off"
+        "@typescript-eslint/no-unused-vars": "off"
       }
     },
     {
@@ -45,8 +45,8 @@
     {
       "files": "*.d.ts",
       "rules": {
-          "no-useless-constructor": "off",
-          "@typescript-eslint/no-unused-vars": "off"
+        "no-useless-constructor": "off",
+        "@typescript-eslint/no-unused-vars": "off"
       }
     }
   ]

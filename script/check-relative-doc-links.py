@@ -49,7 +49,9 @@ def getBrokenLinks(filepath):
     f.close()
 
   linkRegexLink = re.compile('\[(.*?)\]\((?P<link>(.*?))\)')
-  referenceLinkRegex = re.compile('^\s{0,3}\[.*?\]:\s*(?P<link>[^<\s]+|<[^<>\r\n]+>)')
+  referenceLinkRegex = re.compile(
+      '^\s{0,3}\[.*?\]:\s*(?P<link>[^<\s]+|<[^<>\r\n]+>)'
+  )
   links = []
   for line in lines:
     matchLinks = linkRegexLink.search(line)

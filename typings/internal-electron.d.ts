@@ -64,6 +64,9 @@ declare namespace Electron {
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
+    _windowOpenHandler: ((opts: {url: string, frameName: string, features: string}) => any) | null;
+    _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
+    _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;
@@ -136,6 +139,7 @@ declare namespace Electron {
     overrideReadOnlyProperty(property: string, value: any): void;
     groupId: number;
     getDefaultRoleAccelerator(): Accelerator | undefined;
+    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
   }
 
@@ -228,7 +232,9 @@ declare namespace ElectronInternal {
 
   interface IpcRendererInternal extends Electron.IpcRenderer {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
-    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
+    sendToAll(webContentsId: number, channel: string, ...args: any[]): void;
+    onMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
+    onceMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
   }
 
   // Internal IPC has _replyInternal and NO reply method
@@ -254,7 +260,7 @@ declare namespace ElectronInternal {
     loader: ModuleLoader;
   }
 
-  interface WebFrameResizeEvent extends Electron.Event {
+  interface WebFrameResizeEvent extends WebViewEvent {
     newWidth: number;
     newHeight: number;
   }

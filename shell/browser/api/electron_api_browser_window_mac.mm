@@ -12,26 +12,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-
-@interface NSView (WebContentsView)
-- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
-@end
-
-@interface ControlRegionView : NSView
-@end
-
-@implementation ControlRegionView
-
-- (BOOL)mouseDownCanMoveWindow {
-  return NO;
-}
-
-- (NSView*)hitTest:(NSPoint)aPoint {
-  return nil;
-}
-
-@end
 
 namespace electron {
 
@@ -52,6 +34,10 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   [contentView addSubview:webView positioned:NSWindowBelow relativeTo:last];
 
   [contentView viewDidMoveToWindow];
+}
+
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::UpdateDraggableRegions(
@@ -82,8 +68,8 @@ void BrowserWindow::UpdateDraggableRegions(
     if ([subview isKindOfClass:[ControlRegionView class]])
       [subview removeFromSuperview];
 
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
   if (&draggable_regions_ != &regions) {
     draggable_regions_.clear();
     for (const auto& r : regions)

@@ -784,14 +784,13 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
 
-void Session::SetPreloads(
-    const std::vector<base::FilePath::StringType>& preloads) {
+void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   prefs->set_preloads(preloads);
 }
 
-std::vector<base::FilePath::StringType> Session::GetPreloads() const {
+std::vector<base::FilePath> Session::GetPreloads() const {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   return prefs->preloads();
@@ -1078,6 +1077,17 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 #endif
   return service->GetCustomDictionary()->RemoveWord(word);
 }
+
+void Session::SetSpellCheckerEnabled(bool b) {
+  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                        b);
+}
+
+bool Session::IsSpellCheckerEnabled() const {
+  return browser_context_->prefs()->GetBoolean(
+      spellcheck::prefs::kSpellCheckEnable);
+}
+
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
@@ -1180,6 +1190,10 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::AddWordToSpellCheckerDictionary)
       .SetMethod("removeWordFromSpellCheckerDictionary",
                  &Session::RemoveWordFromSpellCheckerDictionary)
+      .SetMethod("setSpellCheckerEnabled", &Session::SetSpellCheckerEnabled)
+      .SetMethod("isSpellCheckerEnabled", &Session::IsSpellCheckerEnabled)
+      .SetProperty("spellCheckerEnabled", &Session::IsSpellCheckerEnabled,
+                   &Session::SetSpellCheckerEnabled)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)

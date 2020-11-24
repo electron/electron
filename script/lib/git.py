@@ -6,7 +6,11 @@ Everything here should be project agnostic: it shouldn't rely on project's
 structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
+from __future__ import unicode_literals
+
+import io
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -106,13 +110,13 @@ def get_patch(repo, commit_hash):
           '--'  # Explicitly tell Git `commit_hash` is a revision, not a path.
           ]
 
-  return subprocess.check_output(args)
+  return subprocess.check_output(args).decode('utf-8')
 
 
 def get_head_commit(repo):
   args = ['git', '-C', repo, 'rev-parse', 'HEAD']
 
-  return subprocess.check_output(args).strip()
+  return subprocess.check_output(args).decode('utf-8').strip()
 
 
 def update_ref(repo, ref, newvalue):
@@ -154,7 +158,7 @@ def get_upstream_head(repo):
     '--verify',
     'refs/patches/upstream-head',
   ]
-  return subprocess.check_output(args).strip()
+  return subprocess.check_output(args).decode('utf-8').strip()
 
 def get_commit_count(repo, commit_range):
   args = [
@@ -165,7 +169,7 @@ def get_commit_count(repo, commit_range):
     '--count',
     commit_range
   ]
-  return int(subprocess.check_output(args).strip())
+  return int(subprocess.check_output(args).decode('utf-8').strip())
 
 def guess_base_commit(repo):
   """Guess which commit the patches might be based on"""
@@ -181,7 +185,7 @@ def guess_base_commit(repo):
       'describe',
       '--tags',
     ]
-    return subprocess.check_output(args).rsplit('-', 2)[0:2]
+    return subprocess.check_output(args).decode('utf-8').rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):
@@ -190,7 +194,11 @@ def format_patch(repo, since):
     '-C',
     repo,
     '-c',
-    'core.attributesfile=' + os.path.join(os.path.dirname(os.path.realpath(__file__)), 'electron.gitattributes'),
+    'core.attributesfile='
+    + os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'electron.gitattributes',
+    ),
     # Ensure it is not possible to match anything
     # Disabled for now as we have consistent chunk headers
     # '-c',
@@ -215,7 +223,7 @@ def format_patch(repo, since):
     '--full-index',
     since
   ]
-  return subprocess.check_output(args)
+  return subprocess.check_output(args).decode('utf-8')
 
 
 def split_patches(patch_data):
@@ -252,9 +260,13 @@ def remove_patch_filename(patch):
   force_keep_next_line = False
   for i, l in enumerate(patch):
     is_patchfilename = l.startswith('Patch-Filename: ')
-    next_is_patchfilename = i < len(patch) - 1 and patch[i+1].startswith('Patch-Filename: ')
-    if not force_keep_next_line and (is_patchfilename or (next_is_patchfilename and len(l.rstrip()) == 0)):
-      pass # drop this line
+    next_is_patchfilename = i < len(patch) - 1 and patch[i + 1].startswith(
+      'Patch-Filename: '
+    )
+    if not force_keep_next_line and (
+      is_patchfilename or (next_is_patchfilename and len(l.rstrip()) == 0)
+    ):
+      pass  # drop this line
     else:
       yield l
     force_keep_next_line = l.startswith('Subject: ')
@@ -263,7 +275,9 @@ def remove_patch_filename(patch):
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
   if patch_range is None:
     patch_range, num_patches = guess_base_commit(repo)
-    sys.stderr.write("Exporting {} patches since {}\n".format(num_patches, patch_range))
+    sys.stderr.write(
+        "Exporting {} patches since {}\n".format(num_patches, patch_range)
+    )
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
 
@@ -274,31 +288,46 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
 
   if dry_run:
     # If we're doing a dry run, iterate through each patch and see if the newly
-    # exported patch differs from what exists. Report number of mismatched patches
-    # and fail if there's more than one.
+    # exported patch differs from what exists. Report number of mismatched
+    # patches and fail if there's more than one.
     patch_count = 0
     for patch in patches:
       filename = get_file_name(patch)
-      filepath = os.path.join(out_dir, filename)
-      existing_patch = open(filepath, 'r').read()
-      formatted_patch = '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+      filepath = posixpath.join(out_dir, filename)
+      existing_patch = io.open(filepath, 'r', encoding='utf-8').read()
+      formatted_patch = (
+        '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+      )
       if formatted_patch != existing_patch:
         patch_count += 1
     if patch_count > 0:
-      sys.stderr.write("Patches in {} not up to date: {} patches need update\n".format(out_dir, patch_count))
+      sys.stderr.write(
+        "Patches in {} not up to date: {} patches need update\n".format(
+          out_dir, patch_count
+        )
+      )
       exit(1)
   else:
     # Remove old patches so that deleted commits are correctly reflected in the
     # patch files (as a removed file)
     for p in os.listdir(out_dir):
       if p.endswith('.patch'):
-        os.remove(os.path.join(out_dir, p))
-    with open(os.path.join(out_dir, '.patches'), 'w') as pl:
+        os.remove(posixpath.join(out_dir, p))
+    with io.open(
+      posixpath.join(out_dir, '.patches'),
+      'w',
+      newline='\n',
+      encoding='utf-8',
+    ) as pl:
       for patch in patches:
         filename = get_file_name(patch)
-        file_path = os.path.join(out_dir, filename)
-        formatted_patch = '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
-        with open(file_path, 'w') as f:
+        file_path = posixpath.join(out_dir, filename)
+        formatted_patch = (
+          '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+        )
+        with io.open(
+          file_path, 'w', newline='\n', encoding='utf-8'
+        ) as f:
           f.write(formatted_patch)
         pl.write(filename + '\n')
 

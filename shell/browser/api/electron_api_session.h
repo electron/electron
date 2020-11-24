@@ -115,8 +115,8 @@ class Session : public gin::Wrappable<Session>,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
-  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
-  std::vector<base::FilePath::StringType> GetPreloads() const;
+  void SetPreloads(const std::vector<base::FilePath>& preloads);
+  std::vector<base::FilePath> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
@@ -131,6 +131,8 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
   bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
+  void SetSpellCheckerEnabled(bool b);
+  bool IsSpellCheckerEnabled() const;
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

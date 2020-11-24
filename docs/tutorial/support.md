@@ -9,6 +9,7 @@ If you're looking for programming help,
 for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
+
 - [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
   - Getting help
   - Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
@@ -62,6 +63,7 @@ threshold, we will attempt to support backwards compatibility beyond two version
 until the maintainers feel the maintenance burden is too high to continue doing so.
 
 ### Currently supported versions
+
 - 10.x.y
 - 9.x.y
 - 8.x.y
@@ -105,21 +107,13 @@ Running apps packaged with previous versions is possible using the ia32 binary.
 
 ### Linux
 
-The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
-Ubuntu 12.04, the `armv7l` binary is built against ARM v7 with hard-float ABI and
-NEON for Debian Wheezy.
-
-[Until the release of Electron 2.0][arm-breaking-change], Electron will also
-continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries
-are identical.
+The prebuilt binaries of Electron are built on Ubuntu 18.04.
 
 Whether the prebuilt binary can run on a distribution depends on whether the
 distribution includes the libraries that Electron is linked to on the building
-platform, so only Ubuntu 12.04 is guaranteed to work, but following platforms
+platform, so only Ubuntu 18.04 is guaranteed to work, but following platforms
 are also verified to be able to run the prebuilt binaries of Electron:
 
-* Ubuntu 12.04 and newer
-* Fedora 21
-* Debian 8
-
-[arm-breaking-change]: ../breaking-changes.md#duplicate-arm-assets
+* Ubuntu 14.04 and newer
+* Fedora 24 and newer
+* Debian 8 and newer

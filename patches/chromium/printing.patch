@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 4f3b68135f9bb29f2c36055f50e1725a9b36a856..c788d412544fdcc8992512784449752631aaf595 100644
+index a5b0e4ff00b7c3886c484e5a6a307816bc3f5de4..eb2e22fb2f9ac39f2fb33393e72d9248b8c30736 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -349,18 +349,25 @@ void PrintJob::StartPdfToEmfConversion(
@@ -43,7 +43,7 @@ index 4f3b68135f9bb29f2c36055f50e1725a9b36a856..c788d412544fdcc89925127844497526
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 89c7798d8ddf21eb74e726c142377afa05b59c26..dd75b8e82552a54868ce86caf90ba175af64e937 100644
+index 8e648fa8d563ab4ce98ffcca6825e4ddde1f60ce..47ba61f7b8d37b51587f75ae027c409603e03c63 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,7 +21,6 @@
@@ -102,7 +102,7 @@ index 89c7798d8ddf21eb74e726c142377afa05b59c26..dd75b8e82552a54868ce86caf90ba175
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788abdf33772 100644
+index 277f2ca033d1be253da6c489897bb9cbedceb9e9..82d920addbb1bb8a07986d75004a0e73c1078650 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,10 +29,7 @@
@@ -274,7 +274,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
        NOTREACHED();
        break;
      }
-@@ -752,8 +778,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -754,8 +780,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -286,8 +286,8 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
 +  }
  
    // We can't print if there is no renderer.
-   if (!web_contents()->GetRenderViewHost() ||
-@@ -774,8 +802,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+   if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
+@@ -779,8 +807,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
  
@@ -296,7 +296,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
    printing_succeeded_ = false;
    return true;
  }
-@@ -824,14 +850,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -829,14 +855,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -321,7 +321,7 @@ index b0d667b078abe32a1e4e465abe2b07a63c562073..500dca35b35c6633074353c74d5b788a
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -867,7 +901,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -872,7 +906,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -457,7 +457,7 @@ index bcd40171250b5d642ac14fb802f22a17fc1f61ec..5877f7d3c2eb27acf61d9bc03b0a8b98
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 2f1fb861cb516996ef9db7184d9351cc5b31c34a..675fa907da7e3ba784f9bacbadaec762ac5255ac 100644
+index cc147dbfedbb5f16a8527d3720a0d55c73d019ab..ccbbfd297158ce5e696af36eb53fd8ad21ce491f 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@

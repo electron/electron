@@ -14,9 +14,9 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '2a55c4f55b99b2191ea59cba1e2f6da4dbb7dee0',
+    '2935b18f375adc5df74b86afdff676989ced8cd3',
   'node_version':
-    'v14.14.0',
+    'v14.15.0',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
@@ -78,6 +78,8 @@ vars = {
     False,
   'checkout_google_benchmark':
     False,
+  'checkout_clang_tidy':
+    True,
 }
 
 deps = {

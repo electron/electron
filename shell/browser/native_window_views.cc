@@ -61,7 +61,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
-#include "ui/gfx/x/x11_types.h"
+#include "ui/gfx/x/xproto.h"
 #endif
 
 #if defined(USE_OZONE) || defined(USE_X11)

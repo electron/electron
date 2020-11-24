@@ -1,3 +1,4 @@
+/* eslint-disable no-var */
 declare var internalBinding: any;
 declare var nodeProcess: any;
 declare var isolatedWorld: any;
@@ -24,6 +25,7 @@ declare namespace NodeJS {
     isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isWinDarkModeWindowUiEnabled(): boolean;
   }
 
   interface IpcRendererBinding {
@@ -44,8 +46,8 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+    isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
-    isSameOrigin(left: string, right: string): boolean;
   }
 
   interface EnvironmentBinding {
@@ -117,7 +119,7 @@ declare namespace NodeJS {
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
-  }
+  };
   type ResponseHead = {
     statusCode: number;
     statusMessage: string;
@@ -226,7 +228,7 @@ declare namespace NodeJS {
   }
 }
 
-declare module NodeJS  {
+declare module NodeJS {
   interface Global {
     require: NodeRequire;
     module: NodeModule;
@@ -318,7 +320,7 @@ interface ResizeObserverEntry {
 // https://github.com/microsoft/TypeScript/pull/38232
 
 interface WeakRef<T extends object> {
-  readonly [Symbol.toStringTag]: "WeakRef";
+  readonly [Symbol.toStringTag]: 'WeakRef';
 
   /**
    * Returns the WeakRef instance's target object, or undefined if the target object has been
@@ -340,7 +342,7 @@ interface WeakRefConstructor {
 declare var WeakRef: WeakRefConstructor;
 
 interface FinalizationRegistry {
-  readonly [Symbol.toStringTag]: "FinalizationRegistry";
+  readonly [Symbol.toStringTag]: 'FinalizationRegistry';
 
   /**
    * Registers an object with the registry.
