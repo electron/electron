@@ -19,7 +19,7 @@ the system's dark mode setting. You can do this by using the
 
 If you want to manually switch between light/dark modes, you can do this by
 setting the desired mode in the
-[themeSource](https://www.electronjs.org/docs/api/native-theme#nativethemethemesource)
+[themeSource](../api/native-theme.md#nativethemethemesource)
 property of the `nativeTheme` module. This property's value will be propagated
 to your Renderer process. Any CSS rules related to `prefers-color-scheme` will
 be updated accordingly.
