@@ -247,9 +247,12 @@ Unregisters the custom protocol of `scheme`.
 
 Returns `Boolean` - Whether `scheme` is already registered.
 
-### `protocol.interceptFileProtocol(scheme, handler)`
+### `protocol.interceptFileProtocol(scheme[, filter], handler)`
 
 * `scheme` String
+* `filter` Object (optional)
+  * `urls` String[] - Array of URL patterns that will be used to filter out the
+        requests that do not match the URL patterns.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
@@ -260,9 +263,12 @@ Returns `Boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
 
-### `protocol.interceptStringProtocol(scheme, handler)`
+### `protocol.interceptStringProtocol(scheme[, filter], handler)`
 
 * `scheme` String
+* `filter` Object (optional)
+  * `urls` String[] - Array of URL patterns that will be used to filter out the
+        requests that do not match the URL patterns.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
@@ -273,9 +279,12 @@ Returns `Boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
 
-### `protocol.interceptBufferProtocol(scheme, handler)`
+### `protocol.interceptBufferProtocol(scheme[, filter], handler)`
 
 * `scheme` String
+* `filter` Object (optional)
+  * `urls` String[] - Array of URL patterns that will be used to filter out the
+        requests that do not match the URL patterns.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
@@ -286,9 +295,12 @@ Returns `Boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
 
-### `protocol.interceptHttpProtocol(scheme, handler)`
+### `protocol.interceptHttpProtocol(scheme[, filter], handler)`
 
 * `scheme` String
+* `filter` Object (optional)
+  * `urls` String[] - Array of URL patterns that will be used to filter out the
+        requests that do not match the URL patterns.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
@@ -299,9 +311,12 @@ Returns `Boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
 
-### `protocol.interceptStreamProtocol(scheme, handler)`
+### `protocol.interceptStreamProtocol(scheme[, filter], handler)`
 
 * `scheme` String
+* `filter` Object (optional)
+  * `urls` String[] - Array of URL patterns that will be used to filter out the
+        requests that do not match the URL patterns.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
