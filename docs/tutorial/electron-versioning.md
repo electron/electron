@@ -114,7 +114,7 @@ An example lifecycle in pictures:
 
 A few examples of how various semver ranges will pick up new releases:
 
-![Semvars and Releases](../images/versioning-sketch-7.png)
+![Semvers and Releases](../images/versioning-sketch-7.png)
 
 # Missing Features: Alphas
 
