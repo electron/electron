@@ -99,7 +99,6 @@ This is the web page you want to display once the application is initialized. Th
 The `index.html` page looks as follows:
 
 ```html
-<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
