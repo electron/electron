@@ -22,7 +22,8 @@ async function main () {
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
-    npm_config_arch: process.env.NPM_CONFIG_ARCH
+    npm_config_arch: process.env.NPM_CONFIG_ARCH,
+    npm_config_yes: 'true'
   });
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test', '-j', 'max'], {
     env,

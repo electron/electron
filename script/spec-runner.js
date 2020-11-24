@@ -222,7 +222,8 @@ async function installSpecModules (dir) {
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2019'
+    npm_config_msvs_version: '2019',
+    npm_config_yes: 'true'
   });
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.remove(path.resolve(dir, 'node_modules'));

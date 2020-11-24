@@ -46,9 +46,11 @@ def main():
 
   for symbol_file in files:
     print("Generating Sentry src bundle for: " + symbol_file)
+    npx_env = os.environ.copy()
+    npx_env['npm_config_yes'] = 'true'
     subprocess.check_output([
       NPX_CMD, '@sentry/cli@1.51.1', 'difutil', 'bundle-sources',
-      symbol_file])
+      symbol_file], env=npx_env)
 
   files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 

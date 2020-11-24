@@ -11,7 +11,11 @@ if (process.mainModule === module) {
   const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
   const child = cp.spawn(NPX_CMD, [`yarn@${YARN_VERSION}`, ...process.argv.slice(2)], {
-    stdio: 'inherit'
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      npm_config_yes: 'true'
+    }
   });
 
   child.on('exit', code => process.exit(code));
