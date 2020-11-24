@@ -244,13 +244,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   root_layer_.reset();
 }
 
-content::BrowserAccessibilityManager*
-OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
-    content::BrowserAccessibilityDelegate*,
-    bool) {
-  return nullptr;
-}
-
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   DCHECK(parent_host_view_);
 

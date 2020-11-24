@@ -68,10 +68,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
-  content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
-      content::BrowserAccessibilityDelegate*,
-      bool) override;
-
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
