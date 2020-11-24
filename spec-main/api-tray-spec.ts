@@ -19,7 +19,7 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray = new Tray(badPath);
-      }).to.throw(/Failed to convert path to nativeImage/);
+      }).to.throw(/Failed to load image from path (.+)/);
     });
 
     ifit(process.platform === 'win32')('throws a descriptive error if an invalid guid is given', () => {
@@ -136,7 +136,7 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray.setImage(badPath);
-      }).to.throw(/Failed to convert path to nativeImage/);
+      }).to.throw(/Failed to load image from path (.+)/);
     });
 
     it('accepts empty image', () => {
@@ -149,7 +149,7 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray.setPressedImage(badPath);
-      }).to.throw(/Failed to convert path to nativeImage/);
+      }).to.throw(/Failed to load image from path (.+)/);
     });
 
     it('accepts empty image', () => {
@@ -166,7 +166,7 @@ describe('tray module', () => {
           content: 'wow content',
           icon: badPath
         });
-      }).to.throw(/Failed to convert path to nativeImage/);
+      }).to.throw(/Failed to load image from path (.+)/);
     });
 
     it('accepts an empty image', () => {

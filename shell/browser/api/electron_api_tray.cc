@@ -89,7 +89,8 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   }
 #endif
 
-  return gin::CreateHandle(thrower.isolate(), new Tray(image, guid, args));
+  return gin::CreateHandle(thrower.isolate(),
+                           new Tray(args->isolate(), image, guid));
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
@@ -192,22 +193,8 @@ void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
     return;
 
   gin::Handle<NativeImage> native_image;
-  base::FilePath icon_path;
-  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
-    native_image =
-        electron::api::NativeImage::CreateFromPath(isolate, icon_path);
-    if (native_image->image().IsEmpty()) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Failed to convert path to nativeImage")));
-      return;
-    }
-  } else {
-    if (!gin::ConvertFromV8(isolate, image, &native_image)) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Failed to convert nativeImage")));
-      return;
-    }
-  }
+  if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
+    return;
 
 #if defined(OS_WIN)
   tray_icon_->SetImage(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
@@ -221,22 +208,8 @@ void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
     return;
 
   gin::Handle<NativeImage> native_image;
-  base::FilePath icon_path;
-  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
-    native_image =
-        electron::api::NativeImage::CreateFromPath(isolate, icon_path);
-    if (native_image->image().IsEmpty()) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Failed to convert path to nativeImage")));
-      return;
-    }
-  } else {
-    if (!gin::ConvertFromV8(isolate, image, &native_image)) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Failed to convert nativeImage")));
-      return;
-    }
-  }
+  if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
+    return;
 
 #if defined(OS_WIN)
   tray_icon_->SetPressedImage(
@@ -322,17 +295,11 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
     return;
   }
 
+  v8::Local<v8::Value> icon_value;
   gin::Handle<NativeImage> icon;
-  base::FilePath icon_path;
-  if (options.Get("icon", &icon_path)) {
-    icon = electron::api::NativeImage::CreateFromPath(thrower.isolate(),
-                                                      icon_path);
-    if (icon->image().IsEmpty()) {
-      thrower.ThrowError("Failed to convert path to nativeImage");
-      return;
-    }
-  } else if (options.Has("icon") && !options.Get("icon", &icon)) {
-    thrower.ThrowError("Failed to convert nativeImage");
+  if (options.Get("icon", &icon_value) &&
+      !NativeImage::TryConvertNativeImage(thrower.isolate(), icon_value,
+                                          &icon)) {
     return;
   }
 

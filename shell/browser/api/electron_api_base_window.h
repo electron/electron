@@ -222,7 +222,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(gin_helper::ErrorThrower thrower, v8::Local<v8::Value> icon);
+  void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
