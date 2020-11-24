@@ -2,19 +2,22 @@
 
 ## Overview
 
-Offscreen rendering lets you obtain the content of a browser window in a
+Offscreen rendering lets you obtain the content of a `BrowserWindow` in a
 bitmap, so it can be rendered anywhere, for example, on texture in a 3D scene.
-The offscreen rendering in Electron uses a similar approach than the [Chromium
-Embedded Framework](https://bitbucket.org/chromiumembedded/cef) project.
+The offscreen rendering in Electron uses a similar approach to that of the
+[Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef)
+project.
 
-There are two rendering modes that can be used (see the section below) and only
+*Notes*:
+
+* There are two rendering modes that can be used (see the section below) and only
 the dirty area is passed to the `paint` event to be more efficient. You can
-stop/continue the rendering as well as set the frame rate. The specified frame
-rate is a top limit value, when nothing happening on a webpage, no frames are
-generated. The maximum frame rate is 60 because greater values bring only
-performance losses with no benefits.
+stop/continue the rendering as well as set the frame rate.
 
-An offscreen window is always created as a
+  The specified frame rate is a top limit value, when nothing happening on a
+webpage, no frames are generated. The maximum frame rate is 60 because greater
+values bring only performance losses with no benefits.
+* An offscreen window is always created as a
 [Frameless Window](../api/frameless-window.md).
 
 ### Rendering Modes
@@ -22,10 +25,9 @@ An offscreen window is always created as a
 #### GPU accelerated
 
 GPU accelerated rendering means that the GPU is used for composition. Because of
-that, the frame has to be copied from the GPU which requires more performance,
-thus this mode is slower than the Software output device.
-
-Benefits: support of WebGL and 3D CSS animations.
+that, the frame has to be copied from the GPU which requires more resources,
+thus this mode is slower than the Software output device. The benefit of this
+mode is that WebGL and 3D CSS animations are supported.
 
 #### Software output device
 
@@ -53,7 +55,7 @@ let win
 app.whenReady().then(() => {
   win = new BrowserWindow({ webPreferences: { offscreen: true } })
 
-  win.loadURL('http://github.com')
+  win.loadURL('https://github.com')
   win.webContents.on('paint', (event, dirty, image) => {
     fs.writeFileSync('ex.png', image.toPNG())
   })
