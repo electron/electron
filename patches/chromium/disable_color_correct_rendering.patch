@@ -241,10 +241,10 @@ index bcef78dc1015200b52bc8fee012bd9c3d36ef0b8..a84b2363b4fd53d3271cb218e3cb345d
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6de25fdcc5134400c20d19ca8687982f082fffb2..9d1637d7f2b179ff8174e2f2a9e8f0468bc7c742 100644
+index 34f530ae8b857a76038964256916cd7c67252cea..c9656d934aee94334d4eb352d32539e5134cb5ac 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -222,6 +222,7 @@
+@@ -221,6 +221,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 6de25fdcc5134400c20d19ca8687982f082fffb2..9d1637d7f2b179ff8174e2f2a9e8f046
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3242,6 +3243,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3236,6 +3237,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -305,7 +305,7 @@ index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 25f4095c539373aa37ea00b53b374ef7fa3758d5..28d6255329607c4122908b264946dc6d0c4fc32a 100644
+index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e5ce4688b 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

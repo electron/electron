@@ -49,7 +49,7 @@ index ec89eeb056d686f8cab6003e456973ff8649df23..108b3a8082d10fd655b965bd6a703a75
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 21e97737c101a5afec32f838537465e9a4c02bb4..f361938b368d64b266af8845fe3244a69da38bf0 100644
+index 4675dfdc079fb5004075204dbcfa8360cfe79e87..992d9ff12d384bad4c57698a1421d0c64907c0f4 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -460,6 +460,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index 21e97737c101a5afec32f838537465e9a4c02bb4..f361938b368d64b266af8845fe3244a6
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1135,7 +1141,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1153,7 +1159,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index 21e97737c101a5afec32f838537465e9a4c02bb4..f361938b368d64b266af8845fe3244a6
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1151,11 +1157,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1169,11 +1175,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
@@ -108,7 +108,7 @@ index 21e97737c101a5afec32f838537465e9a4c02bb4..f361938b368d64b266af8845fe3244a6
    auth_challenge_responder_receiver_.set_disconnect_handler(
        base::BindOnce(&URLLoader::DeleteSelf, base::Unretained(this)));
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 22515b2c0518d5807c3ad001c2b7b7db7bed55d1..3691d8ef63d022fbe9293a5cadaeae438d8b3f8b 100644
+index e9728be28ef6735e3e8aa912624cc30ce40c75eb..da21ce9df01112cb2ec2e0b8abea358e32e6cdfd 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -120,6 +120,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
@@ -119,7 +119,7 @@ index 22515b2c0518d5807c3ad001c2b7b7db7bed55d1..3691d8ef63d022fbe9293a5cadaeae43
        mojom::OriginPolicyManager* origin_policy_manager,
        std::unique_ptr<TrustTokenRequestHelperFactory>
            trust_token_helper_factory,
-@@ -485,6 +486,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -486,6 +487,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    base::Optional<base::UnguessableToken> fetch_window_id_;
  
    mojo::Remote<mojom::TrustedHeaderClient> header_client_;
