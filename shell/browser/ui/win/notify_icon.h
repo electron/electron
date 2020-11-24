@@ -103,7 +103,7 @@ class NotifyIcon : public TrayIcon {
   // Context menu associated with this icon (if any).
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
-  base::WeakPtrFactory<NotifyIcon> weak_factory_;
+  base::WeakPtrFactory<NotifyIcon> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };

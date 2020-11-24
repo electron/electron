@@ -49,11 +49,7 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
                        HWND window,
                        UINT message,
                        GUID guid)
-    : host_(host),
-      icon_id_(id),
-      window_(window),
-      message_id_(message),
-      weak_factory_(this) {
+    : host_(host), icon_id_(id), window_(window), message_id_(message) {
   guid_ = guid;
   is_using_guid_ = guid != GUID_DEFAULT;
   NOTIFYICONDATA icon_data;
