@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <memory>
+#include <set>
 #include <utility>
 
 #include "content/public/browser/non_network_url_loader_factory_base.h"
@@ -81,14 +82,16 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
 
   for (const auto& it : handlers_) {
     factories->emplace(it.first, ElectronURLLoaderFactory::Create(
-                                     it.second.first, it.second.second));
+                                     it.second.first, it.second.second.first));
   }
 }
 
 bool ProtocolRegistry::RegisterProtocol(ProtocolType type,
                                         const std::string& scheme,
                                         const ProtocolHandler& handler) {
-  return base::TryEmplace(handlers_, scheme, type, handler).second;
+  return base::TryEmplace(handlers_, scheme, type,
+                          std::make_pair(handler, std::set<URLPattern>()))
+      .second;
 }
 
 bool ProtocolRegistry::UnregisterProtocol(const std::string& scheme) {
@@ -101,8 +104,11 @@ bool ProtocolRegistry::IsProtocolRegistered(const std::string& scheme) {
 
 bool ProtocolRegistry::InterceptProtocol(ProtocolType type,
                                          const std::string& scheme,
-                                         const ProtocolHandler& handler) {
-  return base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+                                         const ProtocolHandler& handler,
+                                         std::set<URLPattern> url_patterns) {
+  return base::TryEmplace(intercept_handlers_, scheme, type,
+                          std::make_pair(handler, std::move(url_patterns)))
+      .second;
 }
 
 bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {

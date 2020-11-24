@@ -6,10 +6,12 @@
 #define SHELL_BROWSER_NET_ELECTRON_URL_LOADER_FACTORY_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 
 #include "content/public/browser/non_network_url_loader_factory_base.h"
+#include "extensions/common/url_pattern.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -36,8 +38,9 @@ using ProtocolHandler =
     base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
 
 // scheme => (type, handler).
-using HandlersMap =
-    std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
+using HandlersMap = std::map<
+    std::string,
+    std::pair<ProtocolType, std::pair<ProtocolHandler, std::set<URLPattern>>>>;
 
 // Implementation of URLLoaderFactory.
 class ElectronURLLoaderFactory

@@ -5,13 +5,16 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
 #define SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
 
+#include <set>
 #include <string>
 #include <vector>
 
 #include "content/public/browser/content_browser_client.h"
+#include "extensions/common/url_pattern.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
+#include "shell/browser/url_util.h"
 
 namespace electron {
 
@@ -63,7 +66,8 @@ class Protocol : public gin::Wrappable<Protocol> {
 
   ProtocolError InterceptProtocol(ProtocolType type,
                                   const std::string& scheme,
-                                  const ProtocolHandler& handler);
+                                  const ProtocolHandler& handler,
+                                  std::set<URLPattern> url_patterns);
   bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
 
@@ -81,10 +85,39 @@ class Protocol : public gin::Wrappable<Protocol> {
     return result == ProtocolError::kOK;
   }
   template <ProtocolType type>
-  bool InterceptProtocolFor(const std::string& scheme,
-                            const ProtocolHandler& handler,
-                            gin::Arguments* args) {
-    auto result = InterceptProtocol(type, scheme, handler);
+  bool InterceptProtocolFor(gin::Arguments* args) {
+    std::string scheme;
+    if (!args->GetNext(&scheme)) {
+      args->ThrowTypeError("First argument must be the scheme");
+      return false;
+    }
+    gin::Dictionary dict(args->isolate());
+    auto has_filter = args->Length() == 3;
+    if (has_filter) {
+      v8::Local<v8::Value> arg;
+      // next argument should be an options object object
+      if (!args->GetNext(&arg) || arg->IsFunction() ||
+          !gin::ConvertFromV8(args->isolate(), arg, &dict)) {
+        args->ThrowTypeError("Second argument must be option object");
+        return false;
+      }
+    }
+    ProtocolHandler handler;
+    if (!args->GetNext(&handler)) {
+      args->ThrowTypeError("Must pass a handler Function");
+      return false;
+    }
+    std::set<std::string> filter_patterns;
+    std::set<URLPattern> url_patterns;
+    if (has_filter && dict.Get("urls", &filter_patterns)) {
+      std::string parse_error;
+      url_patterns = ParseURLPatterns(filter_patterns, &parse_error);
+      if (!parse_error.empty()) {
+        args->ThrowTypeError(parse_error);
+        return false;
+      }
+    }
+    auto result = InterceptProtocol(type, scheme, handler, url_patterns);
     HandleOptionalCallback(args, result);
     return result == ProtocolError::kOK;
   }

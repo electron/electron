@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_protocol.h"
 
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -201,8 +202,10 @@ bool Protocol::IsProtocolRegistered(const std::string& scheme) {
 
 ProtocolError Protocol::InterceptProtocol(ProtocolType type,
                                           const std::string& scheme,
-                                          const ProtocolHandler& handler) {
-  bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
+                                          const ProtocolHandler& handler,
+                                          std::set<URLPattern> url_patterns) {
+  bool added = protocol_registry_->InterceptProtocol(type, scheme, handler,
+                                                     url_patterns);
   return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
 }
 

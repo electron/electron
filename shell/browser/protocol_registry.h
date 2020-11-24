@@ -5,9 +5,11 @@
 #ifndef SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 #define SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 
+#include <set>
 #include <string>
 
 #include "content/public/browser/content_browser_client.h"
+#include "extensions/common/url_pattern.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 
 namespace content {
@@ -39,7 +41,8 @@ class ProtocolRegistry {
 
   bool InterceptProtocol(ProtocolType type,
                          const std::string& scheme,
-                         const ProtocolHandler& handler);
+                         const ProtocolHandler& handler,
+                         std::set<URLPattern> url_patterns);
   bool UninterceptProtocol(const std::string& scheme);
   bool IsProtocolIntercepted(const std::string& scheme);
 

@@ -11,6 +11,7 @@
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/common/url_pattern.h"
 #include "mojo/public/cpp/bindings/binding.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
@@ -18,6 +19,7 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/url_util.h"
 #include "shell/common/options_switches.h"
 
 namespace electron {
@@ -803,17 +805,19 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Check if user has intercepted this scheme.
   auto it = intercepted_handlers_.find(request.url.scheme());
   if (it != intercepted_handlers_.end()) {
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
-    this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
-
-    // <scheme, <type, handler>>
-    it->second.second.Run(
-        request,
-        base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                       std::move(loader), routing_id, request_id, options,
-                       request, std::move(client), traffic_annotation,
-                       std::move(loader_remote), it->second.first));
-    return;
+    auto url_patterns = it->second.second.second;
+    if (MatchesFilterCondition(original_request.url, url_patterns)) {
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
+      this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
+      // <scheme, <type, handler>>
+      it->second.second.first.Run(
+          request,
+          base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                         std::move(loader), routing_id, request_id, options,
+                         request, std::move(client), traffic_annotation,
+                         std::move(loader_remote), it->second.first));
+      return;
+    }
   }
 
   // The loader of ServiceWorker forbids loading scripts from file:// URLs, and
