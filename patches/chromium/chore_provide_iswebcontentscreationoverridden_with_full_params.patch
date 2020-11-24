@@ -201,7 +201,7 @@ index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe
    // The profile used for the presentation.
    Profile* otr_profile_;
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 420803e98b1dde758dc72ba5a481f0b7cbde836b..633353c180aa748c2d80eb07412bfd0ffcf07ae3 100644
+index c0e854da86648032ff143f564da461715764f804..7e01c413e749fe752210e7d9816e5716d6c48c64 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -167,14 +167,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -222,7 +222,7 @@ index 420803e98b1dde758dc72ba5a481f0b7cbde836b..633353c180aa748c2d80eb07412bfd0f
                                                                    java_url);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index fdd6866f595974f5a38e288a48b1e386a33c54d1..653981ffa4f58e727b2d7a2631f6213e3790c39f 100644
+index 7f8f856d77e0a4c291137b616b81cbf63a89b50d..4f3814eec0f22f7dcf10e47d72fd413d176695cb 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -78,8 +78,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
