@@ -14,8 +14,8 @@ You can use the following tools to distribute your application:
 * [electron-packager](https://github.com/electron/electron-packager)
 
 These tools will take care of all the steps you need to take to end up with a
-distributable Electron application, such as packaging your application,
-rebranding the executable, setting the right icons.
+distributable Electron application, such as bundling your application,
+rebranding the executable, and setting the right icons.
 
 You can check the example of how to package your app with `electron-forge` in
 our [Quick Start Guide](quick-start.md#package-and-distribute-the-application).
@@ -80,7 +80,7 @@ electron/resources/
 ```
 
 You can find more details on how to use `asar` in the
-[electron/asar repository][asar].
+[`electron/asar` repository][asar].
 
 ### Rebranding with downloaded binaries
 
