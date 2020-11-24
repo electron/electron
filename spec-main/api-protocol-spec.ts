@@ -487,6 +487,56 @@ describe('protocol module', () => {
     });
   });
 
+  describe('protocol.intercept(Any)Protocol with filter', () => {
+    afterEach(() => {
+      protocol.uninterceptProtocol('https');
+    });
+
+    it('intercepts if URL matches any of the URL patterns', async () => {
+      interceptStringProtocol('https', { urls: ['https://fake-host/*'] }, (request, callback) => {
+        try {
+          callback(text);
+          callback('');
+        } catch (error) {
+          // Ignore error
+        }
+      });
+      const r = await ajax('https://fake-host/some-path');
+      expect(r.data).to.be.equal(text);
+    });
+
+    it('intercepts any URL if empty filter is passed', async () => {
+      interceptStringProtocol('https', { urls: [] }, (request, callback) => {
+        try {
+          callback(text);
+          callback('');
+        } catch (error) {
+          // Ignore error
+        }
+      });
+      const r = await ajax('https://fake-host/some-path');
+      expect(r.data).to.be.equal(text);
+    });
+
+    it('does not intercept if URL does not matches any of the URL patterns', async () => {
+      interceptStringProtocol('https', { urls: ['https://another-fake-host/*'] }, (request, callback) => {
+        try {
+          callback(text);
+          callback('');
+        } catch (error) {
+          // Ignore error
+        }
+      });
+
+      await expect(ajax('https://fake-host/some-path')).to.be.eventually.rejectedWith(Error, '404');
+    });
+
+    it('throws error if an invalid pattern is passed', () => {
+      expect(() => interceptStringProtocol('https', { urls: ['https://invalid-pattern'] }, () => {
+      })).to.throw(TypeError, 'Invalid url pattern https://invalid-pattern: Empty path.');
+    });
+  });
+
   describe('protocol.intercept(Any)Protocol', () => {
     it('returns false when scheme is already intercepted', () => {
       expect(protocol.interceptStringProtocol('http', (request, callback) => callback(''))).to.equal(true);
