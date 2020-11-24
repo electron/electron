@@ -43,6 +43,14 @@ const MenuItem = function (this: any, options: any) {
 
   this.overrideReadOnlyProperty('commandId', ++nextCommandId);
 
+  Object.defineProperty(this, 'userAccelerator', {
+    get: () => {
+      if (!this.menu) return null;
+      return this.menu._getUserAcceleratorAt(this.commandId);
+    },
+    enumerable: true
+  });
+
   const click = options.click;
   this.click = (event: Event, focusedWindow: BrowserWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.

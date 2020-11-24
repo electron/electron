@@ -315,11 +315,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   return item.autorelease();
 }
 
-// Adds an item or a hierarchical menu to the item at the |index|,
-// associated with the entry in the model identified by |modelIndex|.
-- (void)addItemToMenu:(NSMenu*)menu
-              atIndex:(NSInteger)index
-            fromModel:(electron::ElectronMenuModel*)model {
+- (base::scoped_nsobject<NSMenuItem>)
+    makeMenuItemForIndex:(NSInteger)index
+               fromModel:(electron::ElectronMenuModel*)model {
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
@@ -419,7 +417,17 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       }
     }
   }
-  [menu insertItem:item atIndex:index];
+
+  return item;
+}
+
+// Adds an item or a hierarchical menu to the item at the |index|,
+// associated with the entry in the model identified by |modelIndex|.
+- (void)addItemToMenu:(NSMenu*)menu
+              atIndex:(NSInteger)index
+            fromModel:(electron::ElectronMenuModel*)model {
+  [menu insertItem:[self makeMenuItemForIndex:index fromModel:model]
+           atIndex:index];
 }
 
 // Called before the menu is to be displayed to update the state (enabled,

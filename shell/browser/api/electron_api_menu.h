@@ -68,6 +68,7 @@ class Menu : public gin::Wrappable<Menu>,
   bool GetSharingItemForCommandId(
       int command_id,
       ElectronMenuModel::SharingItem* item) const override;
+  v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
 #endif
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
@@ -105,7 +106,7 @@ class Menu : public gin::Wrappable<Menu>,
   void SetToolTip(int index, const base::string16& toolTip);
   void SetRole(int index, const base::string16& role);
   void Clear();
-  int GetIndexOfCommandId(int command_id);
+  int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
   int GetCommandIdAt(int index) const;
   base::string16 GetLabelAt(int index) const;
