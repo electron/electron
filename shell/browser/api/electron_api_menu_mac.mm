@@ -16,6 +16,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/unresponsive_suppressor.h"
+#include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
 
 using content::BrowserThread;
@@ -23,6 +24,24 @@ using content::BrowserThread;
 namespace {
 
 static scoped_nsobject<NSMenu> applicationMenu_;
+
+ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
+    NSString* key_equivalent,
+    NSUInteger modifier_mask) {
+  bool shifted;
+  ui::KeyboardCode code = electron::KeyboardCodeFromStr(
+      base::SysNSStringToUTF8(key_equivalent), &shifted);
+  int modifiers = 0;
+  if (modifier_mask & NSEventModifierFlagShift)
+    modifiers |= ui::EF_SHIFT_DOWN;
+  if (modifier_mask & NSEventModifierFlagControl)
+    modifiers |= ui::EF_CONTROL_DOWN;
+  if (modifier_mask & NSEventModifierFlagOption)
+    modifiers |= ui::EF_ALT_DOWN;
+  if (modifier_mask & NSEventModifierFlagCommand)
+    modifiers |= ui::EF_COMMAND_DOWN;
+  return ui::Accelerator(code, modifiers);
+}
 
 }  // namespace
 
@@ -52,6 +71,29 @@ void MenuMac::PopupAt(BaseWindow* window,
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
                      positioning_item, std::move(callback_with_ref));
   base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
+}
+
+v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  if (![NSMenuItem usesUserKeyEquivalents])
+    return v8::Null(isolate);
+
+  auto controller = base::scoped_nsobject<ElectronMenuController>(
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO]);
+
+  base::scoped_nsobject<NSMenuItem> item =
+      [controller makeMenuItemForIndex:GetIndexOfCommandId(command_id)
+                             fromModel:model()];
+  if ([[item userKeyEquivalent] length] == 0)
+    return v8::Null(isolate);
+
+  NSString* user_key_equivalent = [item keyEquivalent];
+  NSUInteger user_modifier_mask = [item keyEquivalentModifierMask];
+  ui::Accelerator accelerator = GetAcceleratorFromKeyEquivalentAndModifierMask(
+      user_key_equivalent, user_modifier_mask);
+
+  return gin::ConvertToV8(isolate, accelerator.GetShortcutText());
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
