@@ -49,6 +49,8 @@
     "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
+    "markdownlint": "^0.21.1",
+    "markdownlint-cli": "^0.25.0",
     "minimist": "^1.2.5",
     "nugget": "^2.0.1",
     "null-loader": "^4.0.0",
@@ -83,9 +85,9 @@
     "lint:objc": "node ./script/lint.js --objc",
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
-    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:check-trailing-whitespace",
+    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:markdownlint",
     "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
-    "lint:check-trailing-whitespace": "python ./script/check-trailing-whitespace.py",
+    "lint:markdownlint": "markdownlint \"*.md\" \"docs/**/*.md\"",
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-parser --dir=./",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
@@ -133,7 +135,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "python script/check-trailing-whitespace.py --fix",
+      "markdownlint --config .markdownlint.auotfix.json --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
