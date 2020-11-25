@@ -81,7 +81,7 @@ index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f103
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index d59f15d33be9c7d7ef56965967295969c635eb54..dc09df35ad4cc0f9eb7256b13eb543ce23159cd7 100644
+index 9f60a5f7b0062775b8451a82658b1c719775b332..7053104b6575991f2edbeff89028bd1b6c788a02 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -327,10 +327,10 @@ index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67d24d7bac 100644
+index ba38d82e00c85ccedb380bc32d55084579941437..5b25a57e7c0b423737b147fabd5f9b28e4b77f33 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -19,6 +19,7 @@
+@@ -20,6 +20,7 @@
  #include "ui/gfx/buffer_format_util.h"
  #include "ui/gfx/color_space.h"
  #include "ui/gfx/icc_profile.h"
@@ -338,7 +338,7 @@ index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67
  
  namespace gfx {
  
-@@ -127,6 +128,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -131,6 +132,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -353,7 +353,7 @@ index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -302,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

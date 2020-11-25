@@ -85,7 +85,7 @@ index ffe969fc0f0c1db58d3ea6672efb2a55c2056dc9..ed5b29f0e4901a1ce05aa83a31899480
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 620c124617ac5b6b78abdb1c8c28621784036c3e..fd37f86f6577df0f812a0270b44488e5ffb9289a 100644
+index 391667f6b9078f733337db5ab60e4d3dac029afa..65e96c11123df9c58ed82d001414788a8606d7bd 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3461,6 +3461,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
@@ -113,7 +113,7 @@ index 620c124617ac5b6b78abdb1c8c28621784036c3e..fd37f86f6577df0f812a0270b44488e5
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 7b946f0089199db9dd3f5ad4b45093196da67937..2d02ee591b94a29873b7550e02c34cf2bf3421d3 100644
+index 7c9e811b6a9befc0932a03233b47610dd9ab99ce..2068ceed6a54b90884341eaf12adecf3e04643ab 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -365,6 +365,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -124,7 +124,7 @@ index 7b946f0089199db9dd3f5ad4b45093196da67937..2d02ee591b94a29873b7550e02c34cf2
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -760,11 +761,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -757,11 +758,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    SkColor background_color_override_ = Color::kTransparent;
    float zoom_factor_override_ = 0.f;
  
