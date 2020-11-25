@@ -169,10 +169,6 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     base::WeakPtr<NotifyIcon> win_icon_weak = win_icon->GetWeakPtr();
 
     int modifiers = GetKeyboardModifers();
-    bool left_button_click =
-        (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK);
-    bool double_button_click =
-        (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK);
 
     switch (lparam) {
       case NIN_BALLOONSHOW:
@@ -202,8 +198,10 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
         // HandleClickEvent() method.
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
-            base::BindOnce(&NotifyIcon::HandleClickEvent, win_icon_weak,
-                           modifiers, left_button_click, double_button_click));
+            base::BindOnce(
+                &NotifyIcon::HandleClickEvent, win_icon_weak, modifiers,
+                (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
+                (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK)));
 
         return TRUE;
 
