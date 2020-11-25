@@ -77,17 +77,17 @@ void BrowserWindow::UpdateDraggableRegions(
       draggable_regions_.push_back(r.Clone());
   }
 
-  auto browser_views = window_->browser_views();
-  for (NativeBrowserView* view : browser_views) {
-    view->UpdateDraggableRegions(draggable_regions_);
-  }
-
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
     drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  }
+
+  auto browser_views = window_->browser_views();
+  for (NativeBrowserView* view : browser_views) {
+    view->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be

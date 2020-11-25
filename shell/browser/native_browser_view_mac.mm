@@ -238,7 +238,7 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
+    const std::vector<gfx::Rect>& drag_exclude_rects) {
   if (!inspectable_web_contents_)
     return;
   auto* web_contents = inspectable_web_contents_->GetWebContents();
@@ -247,25 +247,6 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
   NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
-
-  NSInteger webViewWidth = NSWidth([web_view bounds]);
-  NSInteger webViewHeight = NSHeight([web_view bounds]);
-
-  std::vector<gfx::Rect> drag_exclude_rects;
-  if (regions.empty()) {
-    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
-  } else {
-    drag_exclude_rects = CalculateNonDraggableRegions(
-        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
-  }
-
-  // Draggable regions are implemented by having the whole web view draggable
-  // and overlaying regions that are not draggable.
-  if (&draggable_regions_ != &regions) {
-    draggable_regions_.clear();
-    for (const auto& r : regions)
-      draggable_regions_.push_back(r.Clone());
-  }
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.
@@ -295,6 +276,35 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
             initWithFrame:drag_region_view_exclude_rect]);
     [drag_region_view addSubview:exclude_drag_region_view];
   }
+}
+
+void NativeBrowserViewMac::UpdateDraggableRegions(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  if (!inspectable_web_contents_)
+    return;
+  auto* web_contents = inspectable_web_contents_->GetWebContents();
+  NSView* web_view = web_contents->GetNativeView().GetNativeNSView();
+
+  NSInteger webViewWidth = NSWidth([web_view bounds]);
+  NSInteger webViewHeight = NSHeight([web_view bounds]);
+
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
+  if (&draggable_regions_ != &regions) {
+    draggable_regions_.clear();
+    for (const auto& r : regions)
+      draggable_regions_.push_back(r.Clone());
+  }
+
+  std::vector<gfx::Rect> drag_exclude_rects;
+  if (regions.empty()) {
+    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+  } else {
+    drag_exclude_rects = CalculateNonDraggableRegions(
+        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  }
+
+  UpdateDraggableRegions(drag_exclude_rects);
 }
 
 // static
