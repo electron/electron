@@ -1202,24 +1202,25 @@ describe('webContents module', () => {
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
 
-    // TODO (jkleinsc) - this test is very flaky on WOA due to its dependence on a setTimeout; disabling until it can be rewritten
-    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
       const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
       let currentRenderViewDeletedEmitted = false;
-      let childWindow:BrowserWindow;
+      let childWindow: BrowserWindow | null = null;
       const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
       const renderViewDeletedHandler = () => {
         currentRenderViewDeletedEmitted = true;
       };
-      app.once('browser-window-created', (event, window) => {
-        childWindow = window;
-        window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+      const childWindowCreated = new Promise((resolve) => {
+        app.once('browser-window-created', (event, window) => {
+          childWindow = window;
+          window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+          resolve();
+        });
       });
       parentWindow.loadURL(`${serverUrl}/first-window-open`);
-      setTimeout(() => {
-        childWindow.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
-        parentWindow.close();
-      }, 500);
+      await childWindowCreated;
+      childWindow!.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
+      parentWindow.close();
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
     });
