@@ -764,11 +764,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any);
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw(/Failed to load image from path (.+)/);
     });
   });
 

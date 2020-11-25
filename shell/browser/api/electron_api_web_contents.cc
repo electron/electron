@@ -2860,9 +2860,15 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
   }
 
   v8::Local<v8::Value> icon_value;
+  if (!item.Get("icon", &icon_value)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("'icon' parameter is required");
+    return;
+  }
+
   gin::Handle<NativeImage> icon;
-  if (item.Get("icon", &icon_value) &&
-      !NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon)) {
+  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
+      icon->image().IsEmpty()) {
     return;
   }
 
