@@ -144,18 +144,14 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     }
     return TRUE;
   } else if (message == kNotifyIconMessage) {
-    // We use a WeakPtr factory for NotifyIcons here so
-    // that the callback is aware if the NotifyIcon gets
-    // garbage-collected. This occurs when the tray gets
-    // GC'd, and the BALLOON events below will not emit.
-    base::WeakPtr<NotifyIcon> win_icon = NULL;
+    NotifyIcon* win_icon = NULL;
 
     // Find the selected status icon.
     for (NotifyIcons::const_iterator i(notify_icons_.begin());
          i != notify_icons_.end(); ++i) {
       auto* current_win_icon = static_cast<NotifyIcon*>(*i);
       if (current_win_icon->icon_id() == wparam) {
-        win_icon = current_win_icon->GetWeakPtr();
+        win_icon = current_win_icon;
         break;
       }
     }
@@ -166,6 +162,12 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     if (!win_icon)
       return TRUE;
 
+    // We use a WeakPtr factory for NotifyIcons here so
+    // that the callback is aware if the NotifyIcon gets
+    // garbage-collected. This occurs when the tray gets
+    // GC'd, and the BALLOON events below will not emit.
+    base::WeakPtr<NotifyIcon> win_icon_weak = win_icon->GetWeakPtr();
+
     switch (lparam) {
       case NIN_BALLOONSHOW:
         content::GetUIThreadTaskRunner({})->PostTask(
@@ -173,7 +175,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                            [](base::WeakPtr<NotifyIcon> wicon) {
                              wicon->NotifyBalloonShow();
                            },
-                           win_icon));
+                           win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONUSERCLICK:
@@ -182,7 +184,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                            [](base::WeakPtr<NotifyIcon> wicon) {
                              wicon->NotifyBalloonClicked();
                            },
-                           win_icon));
+                           win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONTIMEOUT:
@@ -191,7 +193,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                            [](base::WeakPtr<NotifyIcon> wicon) {
                              wicon->NotifyBalloonClosed();
                            },
-                           win_icon));
+                           win_icon_weak));
         return TRUE;
 
       case WM_LBUTTONDOWN:
