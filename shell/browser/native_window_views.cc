@@ -534,16 +534,13 @@ bool NativeWindowViews::IsMaximized() {
   // This path will be used for transparent windows as well.
 
 #if defined(OS_WIN)
-  gfx::Rect current_bounds = GetBounds();
   if (!(::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME)) {
     // Compare the size of the window with the size of the display
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
-    // Maximized if the window is the size of the display and in the top left
-    // corner
-    return ((display.work_area().width() == current_bounds.width()) &&
-            (display.work_area().height() == current_bounds.height()) &&
-            (GetPosition() == gfx::Point(0, 0)));
+    // Maximized if the window is the same dimensions and placement as the
+    // display
+    return GetBounds() == display.work_area();
   }
 #endif
 
