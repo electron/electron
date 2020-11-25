@@ -198,10 +198,13 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
             FROM_HERE,
             base::BindOnce(
                 [](base::WeakPtr<NotifyIcon> wicon, LPARAM param) {
-                  wicon->HandleClickEvent(
-                      GetKeyboardModifers(),
-                      (param == WM_LBUTTONDOWN || param == WM_LBUTTONDBLCLK),
-                      (param == WM_LBUTTONDBLCLK || param == WM_RBUTTONDBLCLK));
+                  if (wicon) {
+                    wicon->HandleClickEvent(
+                        GetKeyboardModifers(),
+                        (param == WM_LBUTTONDOWN || param == WM_LBUTTONDBLCLK),
+                        (param == WM_LBUTTONDBLCLK ||
+                         param == WM_RBUTTONDBLCLK));
+                  }
                 },
                 win_icon_weak, lparam));
 
@@ -209,11 +212,14 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
 
       case WM_MOUSEMOVE:
         content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE, base::BindOnce(
-                           [](base::WeakPtr<NotifyIcon> wicon) {
-                             wicon->HandleMouseMoveEvent(GetKeyboardModifers());
-                           },
-                           win_icon_weak));
+            FROM_HERE,
+            base::BindOnce(
+                [](base::WeakPtr<NotifyIcon> wicon) {
+                  if (wicon) {
+                    wicon->HandleMouseMoveEvent(GetKeyboardModifers());
+                  }
+                },
+                win_icon_weak));
         return TRUE;
     }
   }
