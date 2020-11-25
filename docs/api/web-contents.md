@@ -195,29 +195,30 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
 #### Event: 'did-create-window'
 
 Returns:
+
 * `window` BrowserWindow
 * `details` Object
-    * `url` String - URL for the created window.
-    * `frameName` String - Name given to the created window in the
-      `window.open()` call.
-    * `options` BrowserWindowConstructorOptions - The options used to create the
-      BrowserWindow. They are merged in increasing precedence: options inherited
-      from the parent, parsed options from the `features` string from
-      `window.open()`, and options given by
-      [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
-      Unrecognized options are not filtered out.
-    * `additionalFeatures` String[] - The non-standard features (features not
-      handled Chromium or Electron) _Deprecated_
-    * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
-      passed to the new window. May or may not result in the `Referer` header
-      being sent, depending on the referrer policy.
-    * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
-      that will be sent to the new window, along with the appropriate headers
-      that will be set. If no post data is to be sent, the value will be `null`.
-      Only defined when the window is being created by a form that set
-      `target=_blank`.
-    * `disposition` String - Can be `default`, `foreground-tab`,
-      `background-tab`, `new-window`, `save-to-disk` and `other`.
+  * `url` String - URL for the created window.
+  * `frameName` String - Name given to the created window in the
+     `window.open()` call.
+  * `options` BrowserWindowConstructorOptions - The options used to create the
+    BrowserWindow. They are merged in increasing precedence: options inherited
+    from the parent, parsed options from the `features` string from
+    `window.open()`, and options given by
+    [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+    Unrecognized options are not filtered out.
+  * `additionalFeatures` String[] - The non-standard features (features not
+    handled Chromium or Electron) _Deprecated_
+  * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+    passed to the new window. May or may not result in the `Referer` header
+    being sent, depending on the referrer policy.
+  * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+    that will be sent to the new window, along with the appropriate headers
+    that will be set. If no post data is to be sent, the value will be `null`.
+    Only defined when the window is being created by a form that set
+    `target=_blank`.
+  * `disposition` String - Can be `default`, `foreground-tab`,
+    `background-tab`, `new-window`, `save-to-disk` and `other`.
 
 Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
