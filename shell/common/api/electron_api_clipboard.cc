@@ -5,6 +5,7 @@
 #include "shell/common/api/electron_api_clipboard.h"
 
 #include "base/strings/utf_string_conversions.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -245,6 +246,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("writeImage", &electron::api::Clipboard::WriteImage);
   dict.SetMethod("readFindText", &electron::api::Clipboard::ReadFindText);
   dict.SetMethod("writeFindText", &electron::api::Clipboard::WriteFindText);
+  dict.SetMethod("readFilePaths", &electron::api::Clipboard::ReadFilePaths);
+  dict.SetMethod("writeFilePaths", &electron::api::Clipboard::WriteFilePaths);
   dict.SetMethod("readBuffer", &electron::api::Clipboard::ReadBuffer);
   dict.SetMethod("writeBuffer", &electron::api::Clipboard::WriteBuffer);
   dict.SetMethod("clear", &electron::api::Clipboard::Clear);

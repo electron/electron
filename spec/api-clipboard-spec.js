@@ -71,6 +71,19 @@ describe('clipboard module', () => {
     });
   });
 
+  describe('clipboard.readFilePaths', () => {
+    it('returns file paths correctly', () => {
+      const paths = [process.execPath, __dirname, __filename];
+      clipboard.writeFilePaths(paths);
+      expect(clipboard.readFilePaths()).to.deep.equal(paths);
+    });
+
+    it('returns empty array when there is no file paths', () => {
+      clipboard.writeText(__filename);
+      expect(clipboard.readFilePaths()).to.deep.equal([]);
+    });
+  });
+
   describe('clipboard.write()', () => {
     it('returns data correctly', () => {
       const text = 'test';

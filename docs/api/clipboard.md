@@ -167,6 +167,16 @@ The cached value is reread from the find pasteboard whenever the application is 
 
 Writes the `text` into the find pasteboard (the pasteboard that holds information about the current state of the active application’s find panel) as plain text. This method uses synchronous IPC when called from the renderer process.
 
+### `clipboard.readFilePaths()`
+
+Returns `String[]` - An Array of file paths in clipboard.
+
+### `clipboard.writeFilePaths(paths)`
+
+* `paths` String[] - An Array of file paths.
+
+Writes file paths into clipboard.
+
 ### `clipboard.clear([type])`
 
 * `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.

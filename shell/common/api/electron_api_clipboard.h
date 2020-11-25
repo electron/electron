@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/gfx/image/image.h"
 #include "v8/include/v8.h"
@@ -55,6 +56,9 @@ class Clipboard {
 
   static base::string16 ReadFindText();
   static void WriteFindText(const base::string16& text);
+
+  static std::vector<base::FilePath> ReadFilePaths();
+  static void WriteFilePaths(const std::vector<base::FilePath>& paths);
 
   static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
                                          gin_helper::Arguments* args);
