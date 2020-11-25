@@ -203,14 +203,26 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
-        win_icon->HandleClickEvent(
-            GetKeyboardModifers(),
-            (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
-            (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(
+                [](base::WeakPtr<NotifyIcon> wicon, LPARAM param) {
+                  wicon->HandleClickEvent(
+                      GetKeyboardModifers(),
+                      (param == WM_LBUTTONDOWN || param == WM_LBUTTONDBLCLK),
+                      (param == WM_LBUTTONDBLCLK || param == WM_RBUTTONDBLCLK));
+                },
+                win_icon_weak, lparam));
+
         return TRUE;
 
       case WM_MOUSEMOVE:
-        win_icon->HandleMouseMoveEvent(GetKeyboardModifers());
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(
+                           [](base::WeakPtr<NotifyIcon> wicon) {
+                             wicon->HandleMouseMoveEvent(GetKeyboardModifers());
+                           },
+                           win_icon_weak));
         return TRUE;
     }
   }
