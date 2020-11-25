@@ -171,29 +171,20 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     switch (lparam) {
       case NIN_BALLOONSHOW:
         content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE, base::BindOnce(
-                           [](base::WeakPtr<NotifyIcon> wicon) {
-                             wicon->NotifyBalloonShow();
-                           },
-                           win_icon_weak));
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonShow, win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONUSERCLICK:
         content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE, base::BindOnce(
-                           [](base::WeakPtr<NotifyIcon> wicon) {
-                             wicon->NotifyBalloonClicked();
-                           },
-                           win_icon_weak));
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonClicked, win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONTIMEOUT:
         content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE, base::BindOnce(
-                           [](base::WeakPtr<NotifyIcon> wicon) {
-                             wicon->NotifyBalloonClosed();
-                           },
-                           win_icon_weak));
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonClosed, win_icon_weak));
         return TRUE;
 
       case WM_LBUTTONDOWN:
