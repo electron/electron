@@ -98,8 +98,6 @@ build_script:
               $env:SAVE_GCLIENT_SRC="true"
             }
           } else {
-            # update external binaries
-            python src/electron/script/update-external-binaries.py
             # update angle
             cd src\third_party\angle
             git remote set-url origin  https://chromium.googlesource.com/angle/angle.git

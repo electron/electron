@@ -58,10 +58,6 @@ vars = {
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,
 
-  # It is always needed for normal Electron builds,
-  # but might be impossible for custom in-house builds.
-  'download_external_binaries': True,
-
   'checkout_nacl':
     False,
   'checkout_libaom':
@@ -155,15 +151,6 @@ hooks = [
       'apply',
       '--cache-file',
       'src/electron/patches/mtime-cache.json',
-    ],
-  },
-  {
-    'name': 'electron_external_binaries',
-    'pattern': 'src/electron/script/update-external-binaries.py',
-    'condition': 'download_external_binaries',
-    'action': [
-      'python3',
-      'src/electron/script/update-external-binaries.py',
     ],
   },
   {
