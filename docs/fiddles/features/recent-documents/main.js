@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron')
-const fs = require('fs');
+const fs = require('fs')
+const path = require('path')
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -12,13 +13,15 @@ function createWindow () {
 
   win.loadFile('index.html')
 }
-
-let recentlyUsedDocument = fs.writeFileSync('recently-used.md', 'Lorem Ipsum');
-app.addRecentDocument(`${process.cwd()}/${recentlyUsedDocument}`)
+const fileName = 'recently-used.md'
+fs.writeFile(fileName, 'Lorem Ipsum', () => {
+  app.addRecentDocument(path.join(process.cwd(), `${fileName}`))
+})
 
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
+  app.clearRecentDocuments()
   if (process.platform !== 'darwin') {
     app.quit()
   }
