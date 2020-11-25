@@ -1,6 +1,6 @@
 import { app } from 'electron/main';
 import type { WebContents } from 'electron/main';
-import { clipboard, crashReporter, nativeImage } from 'electron/common';
+import { clipboard, nativeImage } from 'electron/common';
 import * as fs from 'fs';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
@@ -112,26 +112,6 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event
 
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
   event.sender.emit('preload-error', event, preloadPath, error);
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.CRASH_REPORTER_GET_LAST_CRASH_REPORT, () => {
-  return crashReporter.getLastCrashReport();
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.CRASH_REPORTER_GET_UPLOADED_REPORTS, () => {
-  return crashReporter.getUploadedReports();
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.CRASH_REPORTER_GET_UPLOAD_TO_SERVER, () => {
-  return crashReporter.getUploadToServer();
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.CRASH_REPORTER_SET_UPLOAD_TO_SERVER, (event, uploadToServer: boolean) => {
-  return crashReporter.setUploadToServer(uploadToServer);
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.CRASH_REPORTER_GET_CRASHES_DIRECTORY, () => {
-  return crashReporter.getCrashesDirectory();
 });
 
 ipcMainInternal.handle(IPC_MESSAGES.NATIVE_IMAGE_CREATE_THUMBNAIL_FROM_PATH, async (_, path: string, size: Electron.Size) => {
