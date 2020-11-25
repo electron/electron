@@ -36,7 +36,7 @@ bool IsWinPressed() {
          ((::GetKeyState(VK_RWIN) & 0x8000) == 0x8000);
 }
 
-int GetKeyboardModifers() {
+int GetKeyboardModifiers() {
   int modifiers = ui::EF_NONE;
   if (ui::win::IsShiftPressed())
     modifiers |= ui::EF_SHIFT_DOWN;
@@ -198,7 +198,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
             FROM_HERE,
             base::BindOnce(
                 &NotifyIcon::HandleClickEvent, win_icon_weak,
-                GetKeyboardModifers(),
+                GetKeyboardModifiers(),
                 (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
                 (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK)));
 
@@ -207,7 +207,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_MOUSEMOVE:
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE, base::BindOnce(&NotifyIcon::HandleMouseMoveEvent,
-                                      win_icon_weak, GetKeyboardModifers()));
+                                      win_icon_weak, GetKeyboardModifiers()));
         return TRUE;
     }
   }
