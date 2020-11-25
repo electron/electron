@@ -11,10 +11,10 @@ implicitly deletes its copy ctor, so this commit makes it explicit.
 Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 177549536c374179a1aefbeef1456312152795e8..2961ff70f8b993c8e17274f88ac9dc6ba5839b47 100644
+index 01ded7f6221fafd6c6f9d51fe65b9463827e2970..938ec721fe2423e0b5e2ccec23d73606aa365a0d 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
-@@ -23,8 +23,13 @@ namespace internal {
+@@ -24,8 +24,13 @@ namespace internal {
  class CppHeap;
  }  // namespace internal
  
@@ -30,7 +30,7 @@ index 177549536c374179a1aefbeef1456312152795e8..2961ff70f8b993c8e17274f88ac9dc6b
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index 4b60bf541c2abd4d3f3603feb5531bcf7e57f89b..a988e7ffb17d793b3d4fd79ca9dd78dfbfb6f427 100644
+index d1a54049719c54b6a1b95874f037419e5f448bd0..1646ca7e646fd83153af1d9099e0f1267c977734 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -49,7 +49,7 @@ class BooleanObject;
