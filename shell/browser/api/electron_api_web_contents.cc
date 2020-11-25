@@ -2853,7 +2853,6 @@ void WebContents::EndFrameSubscription() {
 
 void WebContents::StartDrag(const gin_helper::Dictionary& item,
                             gin::Arguments* args) {
-  gin_helper::ErrorThrower thrower(args->isolate());
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -2872,7 +2871,8 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     base::CurrentThread::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    thrower.ThrowError("Must specify either 'file' or 'files' option");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must specify either 'file' or 'files' option");
   }
 }
 
