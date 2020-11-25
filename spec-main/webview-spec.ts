@@ -181,10 +181,10 @@ describe('<webview> tag', function () {
         nodeIntegration: true
       }
     });
-    BrowserWindow.removeDevToolsExtension('foo');
+    w.webContents.session.removeExtension('foo');
 
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-    await BrowserWindow.addDevToolsExtension(extensionPath);
+    await w.webContents.session.loadExtension(extensionPath);
 
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
     loadWebView(w.webContents, {

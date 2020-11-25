@@ -132,9 +132,6 @@ app._setDefaultAppPaths(packagePath);
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
 
-// Load the chrome extension support.
-require('@electron/internal/browser/chrome-extension-shim');
-
 if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
   require('@electron/internal/browser/remote/server');
 }
