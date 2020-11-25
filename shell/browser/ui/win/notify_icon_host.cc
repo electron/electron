@@ -168,8 +168,6 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     // GC'd, and the BALLOON events below will not emit.
     base::WeakPtr<NotifyIcon> win_icon_weak = win_icon->GetWeakPtr();
 
-    int modifiers = GetKeyboardModifers();
-
     switch (lparam) {
       case NIN_BALLOONSHOW:
         content::GetUIThreadTaskRunner({})->PostTask(
@@ -199,7 +197,8 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
             base::BindOnce(
-                &NotifyIcon::HandleClickEvent, win_icon_weak, modifiers,
+                &NotifyIcon::HandleClickEvent, win_icon_weak,
+                GetKeyboardModifers(),
                 (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
                 (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK)));
 
@@ -208,7 +207,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_MOUSEMOVE:
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE, base::BindOnce(&NotifyIcon::HandleMouseMoveEvent,
-                                      win_icon_weak, modifiers));
+                                      win_icon_weak, GetKeyboardModifers()));
         return TRUE;
     }
   }
