@@ -36,6 +36,7 @@ filenames = {
     "shell/browser/ui/message_box_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.h",
+    "shell/common/api/electron_api_clipboard_gtk.cc",
     "shell/common/application_info_linux.cc",
     "shell/common/language_util_linux.cc",
     "shell/common/node_bindings_linux.cc",
