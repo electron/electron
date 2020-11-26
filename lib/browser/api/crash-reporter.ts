@@ -51,10 +51,6 @@ class CrashReporter {
     return binding.getUploadedReports();
   }
 
-  getCrashesDirectory () {
-    return app.getPath('crashDumps');
-  }
-
   getUploadToServer () {
     if (process.type === 'browser') {
       return binding.getUploadToServer();
