@@ -96,39 +96,24 @@ const LINTERS = [{
   roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec', 'spec-main'],
   ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
-  run: (opts, filenames) => {
-    const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint');
-    const args = ['--cache', '--ext', '.js,.ts'];
-    if (opts.fix) args.unshift('--fix');
-    // Windows has a max command line length of 2047 characters, so we can't provide
-    // all of the filenames without going over that. To work around it, run eslint
-    // multiple times and chunk the filenames so that each run is under that limit.
-    // Use a much higher limit on other platforms which will effectively be a no-op.
-    const MAX_FILENAME_ARGS_LENGTH = IS_WINDOWS ? 1900 : 100 * 1024;
-    const cmdOpts = { stdio: 'inherit', shell: IS_WINDOWS, cwd: SOURCE_ROOT };
-    if (IS_WINDOWS) {
-      // When running with shell spaces in filenames are problematic
-      filenames = filenames.map(filename => `"${filename}"`);
+  run: async (opts, filenames) => {
+    const eslint = new ESLint({
+      cache: true,
+      extensions: ['.js', '.ts'],
+      fix: opts.fix
+    });
+    const formatter = await eslint.loadFormatter();
+    let successCount = 0;
+    for (const result of await eslint.lintFiles(filenames)) {
+      successCount += result.errorCount === 0 ? 1 : 0;
+      if (result.errorCount !== 0 || result.warningCount !== 0) {
+        console.log(formatter.format([result]));
+      } else if (opts.verbose) {
+        console.log(`${result.filePath}: no errors or warnings`);
+      }
     }
-    const chunkedFilenames = filenames.reduce((chunkedFilenames, filename) => {
-      const currentChunk = chunkedFilenames[chunkedFilenames.length - 1];
-      const currentChunkLength = currentChunk.reduce((totalLength, _filename) => totalLength + _filename.length, 0);
-      if (currentChunkLength + filename.length > MAX_FILENAME_ARGS_LENGTH) {
-        chunkedFilenames.push([filename]);
-      } else {
-        currentChunk.push(filename);
-      }
-      return chunkedFilenames;
-    }, [[]]);
-    const allOk = chunkedFilenames.map(filenames => {
-      const result = childProcess.spawnSync(cmd, [...args, ...filenames], cmdOpts);
-      if (result.error) {
-        console.error(result.error);
-        process.exit(result.status || 1);
-      }
-      return result.status === 0;
-    }).every(x => x);
-    if (!allOk) {
+    if (successCount !== filenames.length) {
+      console.error('Linting had errors');
       process.exit(1);
     }
   }
@@ -324,7 +309,7 @@ async function main () {
     const filenames = await findFiles(opts, linter);
     if (filenames.length) {
       if (opts.verbose) { console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`); }
-      linter.run(opts, filenames);
+      await inter.run(opts, filenames);
     }
   }
 }
