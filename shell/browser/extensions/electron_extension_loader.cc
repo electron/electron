@@ -126,11 +126,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
         extensions::pref_names::kPrefPreferences);
     auto preference = update.Create();
     const base::Time install_time = base::Time().Now();
-    std::unique_ptr<base::Value> install_time_str =
-        base::Value(base::NumberToString(install_time.ToInternalValue()))
-            .CreateDeepCopy();
-    preference->SetWithoutPathExpansion("install_time",
-                                        std::move(install_time_str));
+    preference->SetStringKey("install_time", base::NumberToString(install_time.ToInternalValue()));
   }
 
   std::move(cb).Run(extension.get(), result.second);

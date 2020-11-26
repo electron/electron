@@ -120,4 +120,4 @@ The following methods of `chrome.management` are supported:
 
 All features of this API are supported.
 
-> **NOTE:** `chrome.webRequest` takes precedence over Electron's [`webRequest`](web-request.md) module.
+> **NOTE:** Electron's [`webRequest`](web-request.md) module takes precedence over `chrome.webRequest` if there are conflicting handlers.
