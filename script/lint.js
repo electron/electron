@@ -309,7 +309,7 @@ async function main () {
     const filenames = await findFiles(opts, linter);
     if (filenames.length) {
       if (opts.verbose) { console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`); }
-      await inter.run(opts, filenames);
+      await linter.run(opts, filenames);
     }
   }
 }
