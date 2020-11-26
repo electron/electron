@@ -2,6 +2,7 @@
 
 const { GitProcess } = require('dugite');
 const childProcess = require('child_process');
+const { ESLint } = require('eslint');
 const fs = require('fs');
 const klaw = require('klaw');
 const minimist = require('minimist');
