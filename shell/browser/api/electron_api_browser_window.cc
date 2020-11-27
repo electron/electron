@@ -378,6 +378,13 @@ void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
 #endif
 }
 
+void BrowserWindow::SetTopBrowserView(v8::Local<v8::Value> value) {
+  BaseWindow::SetTopBrowserView(value);
+#if defined(OS_MACOSX)
+  UpdateDraggableRegions(draggable_regions_);
+#endif
+}
+
 void BrowserWindow::ResetBrowserViews() {
   BaseWindow::ResetBrowserViews();
 #if defined(OS_MAC)
