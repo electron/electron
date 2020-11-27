@@ -1051,7 +1051,7 @@ app.whenReady().then(() => {
 // https://github.com/electron/electron/blob/master/docs/api/shell.md
 
 shell.showItemInFolder('/home/user/Desktop/test.txt')
-shell.moveItemToTrash('/home/user/Desktop/test.txt')
+shell.trashItem('/home/user/Desktop/test.txt').then(() => {})
 
 shell.openPath('/home/user/Desktop/test.txt').then(err => {
   if (err) console.log(err)
