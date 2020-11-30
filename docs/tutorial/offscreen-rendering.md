@@ -43,7 +43,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `main.js` file:
 
-```javascript
+```javascript fiddle='docs/fiddles/features/offscreen-rendering'
 const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
 
