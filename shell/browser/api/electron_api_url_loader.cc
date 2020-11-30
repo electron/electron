@@ -372,7 +372,6 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
-  request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   opts.Get("referrer", &request->referrer);
