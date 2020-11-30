@@ -2533,6 +2533,7 @@ describe('BrowserWindow module', () => {
         expect(test.systemVersion).to.be.a('string');
         expect(test.cpuUsage).to.be.an('object');
         expect(test.ioCounters).to.be.an('object');
+        expect(test.uptime).to.be.a('number');
         expect(test.arch).to.equal(process.arch);
         expect(test.platform).to.equal(process.platform);
         expect(test.env).to.deep.equal(process.env);
