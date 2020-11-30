@@ -34,10 +34,16 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
-- (NSView*)hitTest:(NSPoint)aPoint {
-  // Pass-through events that don't hit one of the exclusion zones
+- (BOOL)shouldIgnoreMouseEvent {
+  NSEventType type = [[NSApp currentEvent] type];
+  return type != NSEventTypeLeftMouseDragged &&
+         type != NSEventTypeLeftMouseDown;
+}
+
+- (NSView*)hitTest:(NSPoint)point {
+  // Pass-through events that hit one of the exclusion zones
   for (NSView* exclusion_zones in [self subviews]) {
-    if ([exclusion_zones hitTest:aPoint])
+    if ([exclusion_zones hitTest:point])
       return nil;
   }
 
@@ -45,6 +51,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  [super mouseDown:event];
+
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     // According to Google, using performWindowDragWithEvent:
     // does not generate a NSWindowWillMoveNotification. Hence post one.
@@ -65,7 +73,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   self.initialLocation = [event locationInWindow];
 }
 
-- (void)mouseDragged:(NSEvent*)theEvent {
+- (void)mouseDragged:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     return;
   }
@@ -125,15 +133,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   [self.window setFrameOrigin:newOrigin];
 }
 
-// Debugging tips:
-// Uncomment the following four lines to color DragRegionView bright red
-// #ifdef DEBUG_DRAG_REGIONS
-// - (void)drawRect:(NSRect)aRect
-// {
-//     [[NSColor redColor] set];
-//     NSRectFill([self bounds]);
-// }
-// #endif
+// For debugging purposes only.
+- (void)drawRect:(NSRect)aRect {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    [[[NSColor greenColor] colorWithAlphaComponent:0.5] set];
+    NSRectFill([self bounds]);
+  }
+}
 
 @end
 
@@ -146,15 +152,13 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
-// Debugging tips:
-// Uncomment the following four lines to color ExcludeDragRegionView bright red
-// #ifdef DEBUG_DRAG_REGIONS
-// - (void)drawRect:(NSRect)aRect
-// {
-//     [[NSColor greenColor] set];
-//     NSRectFill([self bounds]);
-// }
-// #endif
+// For debugging purposes only.
+- (void)drawRect:(NSRect)aRect {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    [[[NSColor redColor] colorWithAlphaComponent:0.5] set];
+    NSRectFill([self bounds]);
+  }
+}
 
 @end
 
