@@ -401,33 +401,6 @@ describe('chrome extensions', () => {
     });
   });
 
-  describe('deprecation shims', () => {
-    it('loads an extension through BrowserWindow.addExtension', async () => {
-      BrowserWindow.addExtension(path.join(fixtures, 'extensions', 'red-bg'));
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL(url);
-      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-      expect(bg).to.equal('red');
-    });
-
-    it('loads an extension through BrowserWindow.addDevToolsExtension', async () => {
-      BrowserWindow.addDevToolsExtension(path.join(fixtures, 'extensions', 'red-bg'));
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL(url);
-      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-      expect(bg).to.equal('red');
-    });
-
-    it('removes an extension through BrowserWindow.removeExtension', async () => {
-      await (BrowserWindow.addExtension(path.join(fixtures, 'extensions', 'red-bg')) as any);
-      BrowserWindow.removeExtension('red-bg');
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL(url);
-      const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-      expect(bg).to.equal('');
-    });
-  });
-
   describe('chrome extension content scripts', () => {
     const fixtures = path.resolve(__dirname, 'fixtures');
     const extensionPath = path.resolve(fixtures, 'extensions');
@@ -510,11 +483,11 @@ describe('chrome extensions', () => {
           const COLOR_TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
           before(() => {
-            BrowserWindow.addExtension(contentScript);
+            session.defaultSession.loadExtension(contentScript);
           });
 
           after(() => {
-            BrowserWindow.removeExtension('content-script-test');
+            session.defaultSession.removeExtension('content-script-test');
           });
 
           beforeEach(() => {

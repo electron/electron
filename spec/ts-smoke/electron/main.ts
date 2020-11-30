@@ -462,8 +462,6 @@ window.setVibrancy('selection')
 window.setVibrancy('popover')
 window.setIcon('/path/to/icon')
 
-const installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
-
 // content-tracing
 // https://github.com/electron/electron/blob/master/docs/api/content-tracing.md
 

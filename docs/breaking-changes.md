@@ -26,6 +26,45 @@ shell.moveItemToTrash(path)
 shell.trashItem(path).then(/* ... */)
 ```
 
+### Removed: `BrowserWindow` extension APIs
+
+The deprecated extension APIs have been removed:
+* `BrowserWindow.addExtension(path)`
+* `BrowserWindow.addDevToolsExtension(path)`
+* `BrowserWindow.removeExtension(name)`
+* `BrowserWindow.removeDevToolsExtension(name)`
+* `BrowserWindow.getExtensions()`
+* `BrowserWindow.getDevToolsExtensions()`
+
+Use the session APIs instead:
+* `ses.loadExtension(path)`
+* `ses.removeExtension(extension_id)`
+* `ses.getAllExtensions()`
+
+```js
+// Removed in Electron 13
+BrowserWindow.addExtension(path)
+BrowserWindow.addDevToolsExtension(path)
+// Replace with
+session.defaultSession.loadExtension(path)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.removeExtension(name)
+BrowserWindow.removeDevToolsExtension(name)
+// Replace with
+session.defaultSession.removeExtension(extension_id)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.getExtensions()
+BrowserWindow.getDevToolsExtensions()
+// Replace with
+session.defaultSession.getAllExtensions()
+```
+
 ## Planned Breaking API Changes (12.0)
 
 ### Removed: Pepper Flash support
