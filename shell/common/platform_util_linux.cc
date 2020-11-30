@@ -13,11 +13,13 @@
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "base/threading/thread_restrictions.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "content/public/browser/browser_thread.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "shell/common/platform_util_internal.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
 
@@ -125,6 +127,8 @@ bool XDGUtil(const std::vector<std::string>& argv,
     return false;
 
   if (wait_for_exit) {
+    base::ScopedAllowBaseSyncPrimitivesForTesting
+        allow_sync;  // required by WaitForExit
     int exit_code = -1;
     bool success = process.WaitForExit(&exit_code);
     if (!callback.is_null())
@@ -216,6 +220,19 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
 
   return XDGUtil(argv, base::FilePath(), true, platform_util::OpenCallback());
 }
+
+namespace internal {
+
+bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
+  if (!MoveItemToTrash(full_path, false)) {
+    // TODO(nornagon): at least include the exit code?
+    *error = "Failed to move item to trash";
+    return false;
+  }
+  return true;
+}
+
+}  // namespace internal
 
 void Beep() {
   // echo '\a' > /dev/console

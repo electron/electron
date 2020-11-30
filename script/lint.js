@@ -23,6 +23,8 @@ const IGNORELIST = new Set([
   ['spec', 'ts-smoke', 'runner.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)));
 
+const IS_WINDOWS = process.platform === 'win32';
+
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = Object.assign({ stdio: 'inherit' }, opts);
   const status = childProcess.spawnSync(cmd, args, opts).status;
@@ -30,7 +32,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 }
 
 function cpplint (args) {
-  const result = childProcess.spawnSync('cpplint.py', args, { encoding: 'utf8' });
+  const result = childProcess.spawnSync(IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py', args, { encoding: 'utf8', shell: true });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
     for (const line of result.stderr.split(/[\r\n]+/)) {
@@ -39,8 +41,9 @@ function cpplint (args) {
       }
     }
   }
-  if (result.status) {
-    process.exit(result.status);
+  if (result.status !== 0) {
+    if (result.error) console.error(result.error);
+    process.exit(result.status || 1);
   }
 }
 
@@ -90,14 +93,44 @@ const LINTERS = [{
   }
 }, {
   key: 'javascript',
-  roots: ['lib', 'spec', 'spec-main', 'script', 'default_app', 'build'],
+  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec', 'spec-main'],
   ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint');
-    const args = ['--cache', '--ext', '.js,.ts', ...filenames];
+    const args = ['--cache', '--ext', '.js,.ts'];
     if (opts.fix) args.unshift('--fix');
-    spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT });
+    // Windows has a max command line length of 2047 characters, so we can't provide
+    // all of the filenames without going over that. To work around it, run eslint
+    // multiple times and chunk the filenames so that each run is under that limit.
+    // Use a much higher limit on other platforms which will effectively be a no-op.
+    const MAX_FILENAME_ARGS_LENGTH = IS_WINDOWS ? 1900 : 100 * 1024;
+    const cmdOpts = { stdio: 'inherit', shell: IS_WINDOWS, cwd: SOURCE_ROOT };
+    if (IS_WINDOWS) {
+      // When running with shell spaces in filenames are problematic
+      filenames = filenames.map(filename => `"${filename}"`);
+    }
+    const chunkedFilenames = filenames.reduce((chunkedFilenames, filename) => {
+      const currentChunk = chunkedFilenames[chunkedFilenames.length - 1];
+      const currentChunkLength = currentChunk.reduce((totalLength, _filename) => totalLength + _filename.length, 0);
+      if (currentChunkLength + filename.length > MAX_FILENAME_ARGS_LENGTH) {
+        chunkedFilenames.push([filename]);
+      } else {
+        currentChunk.push(filename);
+      }
+      return chunkedFilenames;
+    }, [[]]);
+    const allOk = chunkedFilenames.map(filenames => {
+      const result = childProcess.spawnSync(cmd, [...args, ...filenames], cmdOpts);
+      if (result.error) {
+        console.error(result.error);
+        process.exit(result.status || 1);
+      }
+      return result.status === 0;
+    }).every(x => x);
+    if (!allOk) {
+      process.exit(1);
+    }
   }
 }, {
   key: 'gn',
@@ -131,60 +164,65 @@ const LINTERS = [{
 }, {
   key: 'patches',
   roots: ['patches'],
-  test: () => true,
+  test: filename => filename.endsWith('.patch'),
   run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches');
-    for (const patchTarget of fs.readdirSync(patchesDir)) {
-      const targetDir = path.resolve(patchesDir, patchTarget);
-      // If the config does not exist that is OK, we just skip this dir
-      const targetConfig = path.resolve(targetDir, 'config.json');
-      if (!fs.existsSync(targetConfig)) continue;
+    const patchesConfig = path.resolve(patchesDir, 'config.json');
+    // If the config does not exist, that's a proiblem
+    if (!fs.existsSync(patchesConfig)) {
+      process.exit(1);
+    }
 
-      const config = JSON.parse(fs.readFileSync(targetConfig, 'utf8'));
-      for (const key of Object.keys(config)) {
-        // The directory the config points to should exist
-        const targetPatchesDir = path.resolve(__dirname, '../../..', key);
-        if (!fs.existsSync(targetPatchesDir)) throw new Error(`target patch directory: "${targetPatchesDir}" does not exist`);
-        // We need a .patches file
-        const dotPatchesPath = path.resolve(targetPatchesDir, '.patches');
-        if (!fs.existsSync(dotPatchesPath)) throw new Error(`.patches file: "${dotPatchesPath}" does not exist`);
+    const config = JSON.parse(fs.readFileSync(patchesConfig, 'utf8'));
+    for (const key of Object.keys(config)) {
+      // The directory the config points to should exist
+      const targetPatchesDir = path.resolve(__dirname, '../../..', key);
+      if (!fs.existsSync(targetPatchesDir)) throw new Error(`target patch directory: "${targetPatchesDir}" does not exist`);
+      // We need a .patches file
+      const dotPatchesPath = path.resolve(targetPatchesDir, '.patches');
+      if (!fs.existsSync(dotPatchesPath)) throw new Error(`.patches file: "${dotPatchesPath}" does not exist`);
 
-        // Read the patch list
-        const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
-        const patchFileSet = new Set(patchFileList);
-        patchFileList.reduce((seen, file) => {
-          if (seen.has(file)) {
-            throw new Error(`'${file}' is listed in ${dotPatchesPath} more than once`);
-          }
-          return seen.add(file);
-        }, new Set());
-        if (patchFileList.length !== patchFileSet.size) throw new Error('each patch file should only be in the .patches file once');
-        for (const file of fs.readdirSync(targetPatchesDir)) {
-          // Ignore the .patches file and READMEs
-          if (file === '.patches' || file === 'README.md') continue;
-
-          if (!patchFileSet.has(file)) {
-            throw new Error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
-          }
-          patchFileSet.delete(file);
+      // Read the patch list
+      const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
+      const patchFileSet = new Set(patchFileList);
+      patchFileList.reduce((seen, file) => {
+        if (seen.has(file)) {
+          throw new Error(`'${file}' is listed in ${dotPatchesPath} more than once`);
         }
+        return seen.add(file);
+      }, new Set());
+      if (patchFileList.length !== patchFileSet.size) throw new Error('each patch file should only be in the .patches file once');
+      for (const file of fs.readdirSync(targetPatchesDir)) {
+        // Ignore the .patches file and READMEs
+        if (file === '.patches' || file === 'README.md') continue;
 
-        // If anything is left in this set, it means it did not exist on disk
-        if (patchFileSet.size > 0) {
-          throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
+        if (!patchFileSet.has(file)) {
+          throw new Error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
         }
+        patchFileSet.delete(file);
+      }
+
+      // If anything is left in this set, it means it did not exist on disk
+      if (patchFileSet.size > 0) {
+        throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
       }
     }
 
-    let ok = true;
-    filenames.filter(f => f.endsWith('.patch')).forEach(f => {
+    const allOk = filenames.length > 0 && filenames.map(f => {
       const patchText = fs.readFileSync(f, 'utf8');
-      if (/^Subject: .*$\s+^diff/m.test(patchText)) {
+      const subjectAndDescription = /Subject: (.*?)\n\n([\s\S]*?)\s*(?=diff)/ms.exec(patchText);
+      if (!subjectAndDescription[2]) {
         console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`);
-        ok = false;
+        return false;
       }
-    });
-    if (!ok) {
+      const trailingWhitespace = patchText.split('\n').filter(line => line.startsWith('+')).some(line => /\s+$/.test(line));
+      if (trailingWhitespace) {
+        console.warn(`Patch file '${f}' has trailing whitespace on some lines.`);
+        return false;
+      }
+      return true;
+    }).every(x => x);
+    if (!allOk) {
       process.exit(1);
     }
   }

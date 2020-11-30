@@ -36,19 +36,19 @@ class WebContentsZoomController
     // Results in default zoom behavior, i.e. zoom changes are handled
     // automatically and on a per-origin basis, meaning that other tabs
     // navigated to the same origin will also zoom.
-    DEFAULT,
+    kDefault,
     // Results in zoom changes being handled automatically, but on a per-tab
     // basis. Tabs in this zoom mode will not be affected by zoom changes in
     // other tabs, and vice versa.
-    ISOLATED,
+    kIsolated,
     // Overrides the automatic handling of zoom changes. The |onZoomChange|
     // event will still be dispatched, but the page will not actually be zoomed.
     // These zoom changes can be handled manually by listening for the
     // |onZoomChange| event. Zooming in this mode is also on a per-tab basis.
-    MANUAL,
+    kManual,
     // Disables all zooming in this tab. The tab will revert to the default
     // zoom level, and all attempted zoom changes will be ignored.
-    DISABLED,
+    kDisabled,
   };
 
   explicit WebContentsZoomController(content::WebContents* web_contents);
@@ -95,7 +95,7 @@ class WebContentsZoomController
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
 
   // The current zoom mode.
-  ZoomMode zoom_mode_ = ZoomMode::DEFAULT;
+  ZoomMode zoom_mode_ = ZoomMode::kDefault;
 
   // Current zoom level.
   double zoom_level_ = 1.0;

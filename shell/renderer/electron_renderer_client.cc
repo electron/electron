@@ -20,6 +20,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -34,13 +35,25 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 }  // namespace
 
+// static
+ElectronRendererClient* ElectronRendererClient::self_ = nullptr;
+
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::RENDERER)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
+  DCHECK(!self_) << "Cannot have two ElectronRendererClient";
+  self_ = this;
+}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
+}
+
+// static
+ElectronRendererClient* ElectronRendererClient::Get() {
+  DCHECK(self_);
+  return self_;
 }
 
 void ElectronRendererClient::RenderFrameCreated(
@@ -79,17 +92,15 @@ void ElectronRendererClient::DidCreateScriptContext(
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
   // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
+  auto prefs = render_frame->GetBlinkPreferences();
   bool reuse_renderer_processes_enabled =
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
+      prefs.disable_electron_site_instance_overrides;
   // Consider the window not "opened" if it does not have an Opener, or if a
   // user has manually opted in to leaking node in the renderer
   bool is_not_opened =
-      !render_frame->GetWebFrame()->Opener() ||
-      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
+      !render_frame->GetWebFrame()->Opener() || prefs.node_leakage_in_renderers;
   // Consider this the main frame if it is both a Main Frame and it wasn't
   // opened.  We allow an opened main frame to have node if renderer process
   // reuse is enabled as that will correctly free node environments prevent a
@@ -97,8 +108,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   bool is_main_frame = render_frame->IsMainFrame() &&
                        (is_not_opened || reuse_renderer_processes_enabled);
   bool is_devtools = IsDevToolsExtension(render_frame);
-  bool allow_node_in_subframes =
-      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
+  bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
@@ -108,11 +118,11 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   injected_frames_.insert(render_frame);
 
-  // If this is the first environment we are creating, prepare the node
-  // bindings.
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
+    node_bindings_->PrepareMessageLoop();
+  } else if (reuse_renderer_processes_enabled) {
     node_bindings_->PrepareMessageLoop();
   }
 
@@ -129,9 +139,9 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
-  if (command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides))
-    env->ForceOnlyContextAwareNativeModules();
-  env->WarnNonContextAwareNativeModules();
+  if (reuse_renderer_processes_enabled)
+    env->set_force_context_aware(true);
+  env->set_warn_context_aware(true);
 
   environments_.insert(env);
 
@@ -174,11 +184,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // for existing users.
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
-      command_line->HasSwitch(
-          switches::kDisableElectronSiteInstanceOverrides)) {
-    node::RunAtExit(env);
+  auto prefs = render_frame->GetBlinkPreferences();
+  if (prefs.node_integration_in_sub_frames ||
+      prefs.disable_electron_site_instance_overrides) {
     node::FreeEnvironment(env);
     if (env == node_bindings_->uv_env())
       node::FreeIsolateData(node_bindings_->isolate_data());
@@ -202,6 +210,8 @@ bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  // TODO(loc): Note that this will not be correct for in-process child windows
+  // with webPreferences that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
@@ -210,6 +220,8 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
+  // TODO(loc): Note that this will not be correct for in-process child windows
+  // with webPreferences that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
@@ -219,8 +231,9 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 void ElectronRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kWebviewTag))
+  if (!prefs.webview_tag)
     return;
   // Setup window overrides in the main world context
   // Wrap the bundle into a function that receives the isolatedWorld as

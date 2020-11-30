@@ -305,7 +305,7 @@ index e42332ab13fb01000c73cf0b3b757d1f7141da6f..f8754dbd6a1490d2b50f1014e2daa5c1
  
  NSString * const SQRLCodeSignatureErrorDomain = @"SQRLCodeSignatureErrorDomain";
 diff --git a/Squirrel/SQRLDirectoryManager.m b/Squirrel/SQRLDirectoryManager.m
-index 34f321077f0bf59de98a41dea2cea95eff72486d..200891ca73ac67754219204340881ef85aff4845 100644
+index fb130fa5dca4570e0822c8cfdab6831bb57ab5ad..d439906827e0f9fb5550bb6c9840a4e75352f3d7 100644
 --- a/Squirrel/SQRLDirectoryManager.m
 +++ b/Squirrel/SQRLDirectoryManager.m
 @@ -8,7 +8,7 @@
@@ -464,7 +464,7 @@ index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a
  NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
  NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index 9db530f3642585154057143d590bb393b86dc063..b6047ea61a71b7f8c7b4d33e47adc23e2baadcee 100644
+index 433ad21eb28bb74389ae4900eec2b9d0e03fdd8e..db246534e176f9c3ea2dd8b1c8659378fdc2435d 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -8,10 +8,10 @@

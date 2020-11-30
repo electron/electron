@@ -26,10 +26,11 @@ namespace api {
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
 #if defined(OS_MAC)
-    : View(new DelayedNativeViewHost(
-          web_contents->managed_web_contents()->GetView()->GetNativeView())),
+    : View(new DelayedNativeViewHost(web_contents->inspectable_web_contents()
+                                         ->GetView()
+                                         ->GetNativeView())),
 #else
-    : View(web_contents->managed_web_contents()->GetView()->GetView()),
+    : View(web_contents->inspectable_web_contents()->GetView()->GetView()),
 #endif
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
@@ -113,7 +114,7 @@ gin_helper::WrappableBase* WebContentsView::New(
     }
   } else {
     // Create one if not.
-    web_contents = WebContents::Create(args->isolate(), web_preferences);
+    web_contents = WebContents::New(args->isolate(), web_preferences);
   }
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents);

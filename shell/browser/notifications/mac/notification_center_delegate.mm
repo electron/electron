@@ -43,10 +43,7 @@
     // https://developer.apple.com/documentation/foundation/nsusernotificationactivationtype?language=objc
     if (notif.activationType ==
         NSUserNotificationActivationTypeContentsClicked) {
-      // If a notification with a reply button is clicked and the user has not
-      // yet replied, we do not want to destroy the notification.
-      bool should_destroy = ![notif hasReplyButton];
-      notification->NotificationClicked(should_destroy);
+      notification->NotificationClicked();
     } else if (notif.activationType ==
                NSUserNotificationActivationTypeActionButtonClicked) {
       notification->NotificationActivated();

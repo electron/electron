@@ -21,7 +21,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
     const v8::Local<v8::Context>& source_context,
-    const v8::Local<v8::Context>& target_context,
+    const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth);

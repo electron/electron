@@ -14,6 +14,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_browser_view.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -94,7 +95,8 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
 #if defined(OS_MAC)
-  OverrideNSWindowContentView(web_contents->managed_web_contents());
+  OverrideNSWindowContentView(
+      web_contents->inspectable_web_contents()->GetView());
 #endif
 
   // Init window after everything has been setup.
@@ -152,15 +154,6 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
   auto* const view = web_contents()->GetRenderWidgetHostView();
   view->Show();
   view->SetSize(window()->GetContentSize());
-
-  // Emit the ReadyToShow event in next tick in case of pending drawing work.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](base::WeakPtr<BrowserWindow> self) {
-                       if (self)
-                         self->Emit("ready-to-show");
-                     },
-                     GetWeakPtr()));
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -257,7 +250,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
   // Assume the window is not responding if it doesn't cancel the close and is
   // not closed in 5s, in this way we can quickly show the unresponsive
-  // dialog when the window is busy executing some script withouth waiting for
+  // dialog when the window is busy executing some script without waiting for
   // the unresponsive timeout.
   if (window_unresponsive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
@@ -313,18 +306,25 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 
 void BrowserWindow::OnWindowResize() {
 #if defined(OS_MAC)
-  if (!draggable_regions_.empty())
+  if (!draggable_regions_.empty()) {
     UpdateDraggableRegions(draggable_regions_);
+  } else {
+    // Ensure draggable bounds are recalculated for BrowserViews if any exist.
+    auto browser_views = window_->browser_views();
+    for (NativeBrowserView* view : browser_views) {
+      view->UpdateDraggableRegions(draggable_regions_);
+    }
+  }
 #endif
   BaseWindow::OnWindowResize();
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
-  BaseWindow::OnWindowLeaveFullScreen();
 #if defined(OS_MAC)
   if (web_contents()->IsFullscreen())
     web_contents()->ExitFullscreen(true);
 #endif
+  BaseWindow::OnWindowLeaveFullScreen();
 }
 
 void BrowserWindow::Focus() {
@@ -421,19 +421,6 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   if (web_contents_.IsEmpty())
     return v8::Null(isolate);
   return v8::Local<v8::Value>::New(isolate, web_contents_);
-}
-
-// Convert draggable regions in raw format to SkRegion format.
-std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  auto sk_region = std::make_unique<SkRegion>();
-  for (const auto& region : regions) {
-    sk_region->op(
-        {region->bounds.x(), region->bounds.y(), region->bounds.right(),
-         region->bounds.bottom()},
-        region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
 }
 
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {

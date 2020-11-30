@@ -74,6 +74,7 @@ The following methods of `chrome.runtime` are supported:
 
 - `chrome.runtime.getBackgroundPage`
 - `chrome.runtime.getManifest`
+- `chrome.runtime.getPlatformInfo`
 - `chrome.runtime.getURL`
 - `chrome.runtime.connect`
 - `chrome.runtime.sendMessage`
@@ -102,3 +103,15 @@ The following methods of `chrome.tabs` are supported:
 > **Note:** In Chrome, passing `-1` as a tab ID signifies the "currently active
 > tab". Since Electron has no such concept, passing `-1` as a tab ID is not
 > supported and will raise an error.
+
+### `chrome.management`
+
+The following methods of `chrome.management` are supported:
+
+- `chrome.management.getAll`
+- `chrome.management.get`
+- `chrome.management.getSelf`
+- `chrome.management.getPermissionWarningsById`
+- `chrome.management.getPermissionWarningsByManifest`
+- `chrome.management.onEnabled`
+- `chrome.management.onDisabled`

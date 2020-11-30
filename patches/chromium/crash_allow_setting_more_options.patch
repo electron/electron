@@ -9,10 +9,10 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 9b07ab4667e691c0c8db4c71251b04d0cdf71ff3..72ee7e8df3d62eca301b08586f06d51711e941b5 100644
+index 9d8370ef035f2ca285c8aa35e98761bff7200d26..1c076672c77d90eb3814b5b269340d2800217868 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -111,6 +111,7 @@ void SetUploadURL(const std::string& url) {
+@@ -110,6 +110,7 @@ void SetUploadURL(const std::string& url) {
  }
  #endif
  
@@ -21,7 +21,7 @@ index 9b07ab4667e691c0c8db4c71251b04d0cdf71ff3..72ee7e8df3d62eca301b08586f06d517
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index d18efa945502bfbb7f2d6fe659472f8e495600da..0acaaaeb6aa80747c9230ec81419cae884444c5e 100644
+index 1d0fb4f2a633fa5ddbe232ce19d716c22be78a37..5b81608d6e90f62f435302a53976fb18bbbf9e98 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -140,6 +140,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -43,7 +43,7 @@ index d18efa945502bfbb7f2d6fe659472f8e495600da..0acaaaeb6aa80747c9230ec81419cae8
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 1f33fd0baf1e8bed001260184e9d34cb77313b03..63c09694bedf3995235a1755d35d4d78ed32619a 100644
+index aaa9ad1d58d7f584cbf391e0cb0a61a0d25d5c69..5b02834b5ecaf4bcb7e051d9ee98cd5eb087b4fc 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -75,10 +75,10 @@ index 1f33fd0baf1e8bed001260184e9d34cb77313b03..63c09694bedf3995235a1755d35d4d78
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index aa7c3302f2e3fc7129381b355ed4fa1bc386f8cb..d7dd05118f3c90f5ab570f59685c43bd180885e5 100644
+index eb675321436a53e82432144d43f258bed6e938e2..ae2032a12eac7c789d790e53857d11ba3e03d510 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -71,6 +71,8 @@
+@@ -77,6 +77,8 @@
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -87,7 +87,7 @@ index aa7c3302f2e3fc7129381b355ed4fa1bc386f8cb..d7dd05118f3c90f5ab570f59685c43bd
    return annotations;
  }
  
-@@ -141,6 +143,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
+@@ -147,6 +149,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
  
        std::vector<std::string> arguments;
  

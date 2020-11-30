@@ -12,7 +12,6 @@ options on the [`BrowserWindow`](browser-window.md) class.
 To create a frameless window, you need to set `frame` to `false` in
 [BrowserWindow](browser-window.md)'s `options`:
 
-
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600, frame: false })
@@ -88,7 +87,7 @@ win.show()
 * On Linux, users have to put `--enable-transparent-visuals --disable-gpu` in
   the command line to disable GPU and allow ARGB to make transparent window,
   this is caused by an upstream bug that [alpha channel doesn't work on some
-  NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on
+  NVidia drivers](https://bugs.chromium.org/p/chromium/issues/detail?id=369209) on
   Linux.
 * On Mac, the native window shadow will not be shown on a transparent window.
 
@@ -112,13 +111,19 @@ optional parameter can be used to forward mouse move messages to the web page,
 allowing events such as `mouseleave` to be emitted:
 
 ```javascript
-const win = require('electron').remote.getCurrentWindow()
+const { ipcRenderer } = require('electron')
 const el = document.getElementById('clickThroughElement')
 el.addEventListener('mouseenter', () => {
-  win.setIgnoreMouseEvents(true, { forward: true })
+  ipcRenderer.send('set-ignore-mouse-events', true, { forward: true })
 })
 el.addEventListener('mouseleave', () => {
-  win.setIgnoreMouseEvents(false)
+  ipcRenderer.send('set-ignore-mouse-events', false)
+})
+
+// Main process
+const { ipcMain } = require('electron')
+ipcMain.on('set-ignore-mouse-events', (event, ...args) => {
+  BrowserWindow.fromWebContents(event.sender).setIgnoreMouseEvents(...args)
 })
 ```
 

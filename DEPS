@@ -14,19 +14,17 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    'b04584161e07d4ac110045b7647fa8a81f5f0709',
+    '3a75ada69d1ac06d6903a2c981ab90a8162f1ba0',
   'node_version':
-    'v12.18.3',
+    'v14.15.1',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
-    '44468f858ce0d25c27bd5e674abfa104e0119738',
+    'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
 
-  'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
   'requests_version': 'e4d59bedfd3c7f4f254f4f5d036587bcd8152458',
 
-  'boto_git': 'https://github.com/boto',
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
   'nodejs_git': 'https://github.com/nodejs',
@@ -40,8 +38,8 @@ vars = {
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
 
-  # Python interface to Amazon Web Services. Is used for releases only.
-  'checkout_boto': False,
+  # To use an mtime cache for patched files to speed up builds.
+  'use_mtime_cache': True,
 
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
@@ -60,10 +58,6 @@ vars = {
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,
 
-  # It is always needed for normal Electron builds,
-  # but might be impossible for custom in-house builds.
-  'download_external_binaries': True,
-
   'checkout_nacl':
     False,
   'checkout_libaom':
@@ -80,6 +74,8 @@ vars = {
     False,
   'checkout_google_benchmark':
     False,
+  'checkout_clang_tidy':
+    True,
 }
 
 deps = {
@@ -99,10 +95,6 @@ deps = {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
     'condition': 'checkout_pyyaml and process_deps',
   },
-  'src/electron/vendor/boto': {
-    'url': Var('boto_git') + '/boto.git' + '@' +  Var('boto_version'),
-    'condition': 'checkout_boto and process_deps',
-  },
   'src/electron/vendor/requests': {
     'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
     'condition': 'checkout_requests and process_deps',
@@ -121,6 +113,23 @@ deps = {
   }
 }
 
+pre_deps_hooks = [
+  {
+    'name': 'generate_mtime_cache',
+    'condition': '(checkout_chromium and apply_patches and use_mtime_cache) and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'python3',
+      'src/electron/script/patches-mtime-cache.py',
+      'generate',
+      '--cache-file',
+      'src/electron/patches/mtime-cache.json',
+      '--patches-config',
+      'src/electron/patches/config.json',
+    ],
+  },
+]
+
 hooks = [
   {
     'name': 'patch_chromium',
@@ -133,12 +142,15 @@ hooks = [
     ],
   },
   {
-    'name': 'electron_external_binaries',
-    'pattern': 'src/electron/script/update-external-binaries.py',
-    'condition': 'download_external_binaries',
+    'name': 'apply_mtime_cache',
+    'condition': '(checkout_chromium and apply_patches and use_mtime_cache) and process_deps',
+    'pattern': 'src/electron',
     'action': [
       'python3',
-      'src/electron/script/update-external-binaries.py',
+      'src/electron/script/patches-mtime-cache.py',
+      'apply',
+      '--cache-file',
+      'src/electron/patches/mtime-cache.json',
     ],
   },
   {
@@ -148,16 +160,6 @@ hooks = [
       'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
-    ],
-  },
-  {
-    'name': 'setup_boto',
-    'pattern': 'src/electron',
-    'condition': 'checkout_boto and process_deps',
-    'action': [
-      'python3',
-      '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "boto")); subprocess.check_call(["python", "setup.py", "build"]);',
     ],
   },
   {

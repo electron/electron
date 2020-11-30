@@ -11,7 +11,9 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <vector>
 
+#include "shell/common/api/api.mojom.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -101,6 +103,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
+  bool IsTabletMode() const override;
   void SetBackgroundColor(SkColor color) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
@@ -137,7 +140,8 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
-  void UpdateDraggableRegions(std::unique_ptr<SkRegion> region);
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   void IncrementChildModals();
   void DecrementChildModals();
@@ -154,7 +158,7 @@ class NativeWindowViews : public NativeWindow,
                     LPARAM l_param,
                     LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
-#elif defined(USE_X11)
+#elif defined(OS_LINUX)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
@@ -279,6 +283,12 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether we want to set window placement without side effect.
   bool is_setting_window_placement_ = false;
+
+  // Whether the window is currently being resized.
+  bool is_resizing_ = false;
+
+  // Whether the window is currently being moved.
+  bool is_moving_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

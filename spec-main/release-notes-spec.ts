@@ -106,6 +106,9 @@ describe('release notes', () => {
   const newTropFix = new Commit('a6ff42c190cb5caf8f3e217748e49183a951491b', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22750)');
   const oldTropFix = new Commit('8751f485c5a6c8c78990bfd55a4350700f81f8cd', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22749)');
 
+  // a PR that has unusual note formatting
+  const sublist = new Commit('61dc1c88fd34a3e8fff80c80ed79d0455970e610', 'fix: client area inset calculation when maximized for framless windows (#25052) (#25216)');
+
   before(() => {
     // location of relase-notes' octokit reply cache
     const fixtureDir = path.resolve(__dirname, 'fixtures', 'release-notes');
@@ -151,6 +154,34 @@ describe('release notes', () => {
     expect(results.feat[0].note).to.equal(realText);
   });
 
+  describe('rendering', () => {
+    it('removes redundant bullet points', async function () {
+      const testCommit = sublist;
+      const version = 'v10.1.1';
+
+      gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
+      const results: any = await notes.get(oldBranch, newBranch, version);
+      const rendered: any = await notes.render(results);
+
+      expect(rendered).to.not.include('* *');
+    });
+
+    it('indents sublists', async function () {
+      const testCommit = sublist;
+      const version = 'v10.1.1';
+
+      gitFake.setBranch(newBranch, [...sharedHistory, testCommit]);
+      const results: any = await notes.get(oldBranch, newBranch, version);
+      const rendered: any = await notes.render(results);
+
+      expect(rendered).to.include([
+        '* Fixed the following issues for frameless when maximized on Windows:',
+        '  * fix unreachable task bar when auto hidden with position top',
+        '  * fix 1px extending to secondary monitor',
+        '  * fix 1px overflowing into taskbar at certain resolutions',
+        '  * fix white line on top of window under 4k resolutions. [#25216]'].join('\n'));
+    });
+  });
   // test that when you feed in different semantic commit types,
   // the parser returns them in the results' correct category
   describe('semantic commit', () => {

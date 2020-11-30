@@ -42,7 +42,8 @@ returns `null`.
 
 * `id` Integer
 
-Returns `WebContents` - A WebContents instance with the given ID.
+Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+`undefined` if there is no WebContents associated with the given ID.
 
 ## Class: WebContents
 
@@ -70,7 +71,7 @@ Returns:
 * `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed.
-The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
@@ -134,7 +135,7 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window'
+#### Event: 'new-window' _Deprecated_
 
 Returns:
 
@@ -154,6 +155,8 @@ Returns:
   will be sent to the new window, along with the appropriate headers that will
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
+
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -189,6 +192,40 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
 })
 ```
 
+#### Event: 'did-create-window'
+
+Returns:
+
+* `window` BrowserWindow
+* `details` Object
+  * `url` String - URL for the created window.
+  * `frameName` String - Name given to the created window in the
+     `window.open()` call.
+  * `options` BrowserWindowConstructorOptions - The options used to create the
+    BrowserWindow. They are merged in increasing precedence: options inherited
+    from the parent, parsed options from the `features` string from
+    `window.open()`, and options given by
+    [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+    Unrecognized options are not filtered out.
+  * `additionalFeatures` String[] - The non-standard features (features not
+    handled Chromium or Electron) _Deprecated_
+  * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+    passed to the new window. May or may not result in the `Referer` header
+    being sent, depending on the referrer policy.
+  * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+    that will be sent to the new window, along with the appropriate headers
+    that will be set. If no post data is to be sent, the value will be `null`.
+    Only defined when the window is being created by a form that set
+    `target=_blank`.
+  * `disposition` String - Can be `default`, `foreground-tab`,
+    `background-tab`, `new-window`, `save-to-disk` and `other`.
+
+Emitted _after_ successful creation of a window via `window.open` in the renderer.
+Not emitted if the creation of the window is canceled from
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+
+See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
+
 #### Event: 'will-navigate'
 
 Returns:
@@ -219,7 +256,7 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-Emitted when any frame (including main) starts navigating. `isInplace` will be
+Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
 
 #### Event: 'will-redirect'
@@ -364,7 +401,7 @@ Returns:
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
     * `crashed` - Process crashed
     * `oom` - Process ran out of memory
-    * `launch-failure` - Process never successfully launched
+    * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
@@ -438,6 +475,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 #### Event: 'zoom-changed'
 
 Returns:
+
 * `event` Event
 * `zoomDirection` String - Can be `in` or `out`.
 
@@ -784,7 +822,7 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process.
 Calling `event.preventDefault()` will make it return empty sources.
 
-#### Event: 'remote-require'
+#### Event: 'remote-require' _Deprecated_
 
 Returns:
 
@@ -795,7 +833,7 @@ Emitted when `remote.require()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-global'
+#### Event: 'remote-get-global' _Deprecated_
 
 Returns:
 
@@ -806,7 +844,7 @@ Emitted when `remote.getGlobal()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the global from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-builtin'
+#### Event: 'remote-get-builtin' _Deprecated_
 
 Returns:
 
@@ -817,7 +855,7 @@ Emitted when `remote.getBuiltin()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the module from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-current-window'
+#### Event: 'remote-get-current-window' _Deprecated_
 
 Returns:
 
@@ -827,7 +865,7 @@ Emitted when `remote.getCurrentWindow()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
-#### Event: 'remote-get-current-web-contents'
+#### Event: 'remote-get-current-web-contents' _Deprecated_
 
 Returns:
 
@@ -836,6 +874,19 @@ Returns:
 Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
+
+#### Event: 'preferred-size-changed'
+
+Returns:
+
+* `event` Event
+* `preferredSize` [Size](structures/size.md) - The minimum size needed to
+  contain the layout of the document—without requiring scrolling.
+
+Emitted when the `WebContents` preferred size has changed.
+
+This event will only be emitted when `enablePreferredSizeMode` is set to `true`
+in `webPreferences`.
 
 ### Instance Methods
 
@@ -846,7 +897,7 @@ Custom value can be returned by setting `event.returnValue`.
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
@@ -998,6 +1049,34 @@ Navigates to the specified offset from the "current entry".
 
 Returns `Boolean` - Whether the renderer process has crashed.
 
+#### `contents.forcefullyCrashRenderer()`
+
+Forcefully terminates the renderer process that is currently hosting this
+`webContents`. This will cause the `render-process-gone` event to be emitted
+with the `reason=killed || reason=crashed`. Please note that some webContents share renderer
+processes and therefore calling this method may also crash the host process
+for other webContents as well.
+
+Calling `reload()` immediately after calling this
+method will force the reload to occur in a new process. This should be used
+when this process is unstable or unusable, for instance in order to recover
+from the `unresponsive` event.
+
+```js
+contents.on('unresponsive', async () => {
+  const { response } = await dialog.showMessageBox({
+    message: 'App X has become unresponsive',
+    title: 'Do you want to try forcefully reloading the app?',
+    buttons: ['OK', 'Cancel'],
+    cancelId: 1
+  })
+  if (response === 0) {
+    contents.forcefullyCrashRenderer()
+    contents.reload()
+  }
+})
+```
+
 #### `contents.setUserAgent(userAgent)`
 
 * `userAgent` String
@@ -1081,6 +1160,22 @@ Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 
 Ignore application menu shortcuts while this web contents is focused.
 
+#### `contents.setWindowOpenHandler(handler)`
+
+* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+  * `details` Object
+    * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
+    * `frameName` String - Name of the window provided in `window.open()`
+    * `features` String - Comma separated list of window features provided to `window.open()`.
+  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  Returning an unrecognized value such as a null, undefined, or an object
+  without a recognized 'action' value will result in a console error and have
+  the same effect as returning `{action: 'deny'}`.
+
+Called before creating a window when `window.open()` is called from the
+renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
+
 #### `contents.setAudioMuted(muted)`
 
 * `muted` Boolean
@@ -1116,6 +1211,10 @@ Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
+
+> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> zoom level for a specific domain propagates across all instances of windows with
+> the same domain. Differentiating the window URLs will make zoom work per-window.
 
 #### `contents.getZoomLevel()`
 
@@ -1208,12 +1307,6 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `wordStart` Boolean (optional) - Whether to look only at the start of words.
-    defaults to `false`.
-  * `medialCapitalAsWordStart` Boolean (optional) - When combined with `wordStart`,
-    accepts a match in the middle of a word if the match begins with an
-    uppercase letter followed by a lowercase or non-letter.
-    Accepts several other intra-word matches, defaults to `false`.
 
 Returns `Integer` - The request id used for the request.
 
@@ -1296,9 +1389,9 @@ Returns [`PrinterInfo[]`](structures/printer-info.md)
   * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
   * `collate` Boolean (optional) - Whether the web page should be collated.
   * `copies` Number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - the start page.
-    * `to` Number - the end page.
+  * `pageRanges` Object[]  (optional) - The page range to print. On macOS, only one range is honored.
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
     * `horizontal` Number (optional) - The horizontal dpi.
@@ -1324,10 +1417,10 @@ Example usage:
 const options = {
   silent: true,
   deviceName: 'My-Printer',
-  pageRanges: {
+  pageRanges: [{
     from: 0,
     to: 1
-  }
+  }]
 }
 win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
@@ -1345,8 +1438,8 @@ win.webContents.print(options, (success, errorType) => {
     default margin, 1 for no margin, and 2 for minimum margin.
   * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
   * `pageRanges` Record<string, number> (optional) - The page range to print.
-    * `from` Number - zero-based index of the first page to print.
-    * `to` Number - zero-based index of the last page to print (inclusive).
+    * `from` Number - Index of the first page to print (0-based).
+    * `to` Number - Index of the last page to print (inclusive) (0-based).
   * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width` in microns.
   * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
@@ -1372,7 +1465,7 @@ By default, an empty `options` will be regarded as:
 }
 ```
 
-Use `page-break-before: always; ` CSS style to force to print to a new page.
+Use `page-break-before: always;` CSS style to force to print to a new page.
 
 An example of `webContents.printToPDF`:
 
@@ -1453,7 +1546,7 @@ An example of showing devtools in a `<webview>` tag:
   <webview id="browser" src="https://github.com"></webview>
   <webview id="devtools" src="about:blank"></webview>
   <script>
-    const { webContents } = require('electron').remote
+    const { ipcRenderer } = require('electron')
     const emittedOnce = (element, eventName) => new Promise(resolve => {
       element.addEventListener(eventName, event => resolve(event), { once: true })
     })
@@ -1462,14 +1555,24 @@ An example of showing devtools in a `<webview>` tag:
     const browserReady = emittedOnce(browserView, 'dom-ready')
     const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
     Promise.all([browserReady, devtoolsReady]).then(() => {
-      const browser = webContents.fromId(browserView.getWebContentsId())
-      const devtools = webContents.fromId(devtoolsView.getWebContentsId())
-      browser.setDevToolsWebContents(devtools)
-      browser.openDevTools()
+      const targetId = browserView.getWebContentsId()
+      const devtoolsId = devtoolsView.getWebContentsId()
+      ipcRenderer.send('open-devtools', targetId, devtoolsId)
     })
   </script>
 </body>
 </html>
+```
+
+```js
+// Main process
+const { ipcMain, webContents } = require('electron')
+ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
+  const target = webContents.fromId(targetContentsId)
+  const devtools = webContents.fromId(devtoolsContentsId)
+  target.setDevToolsWebContents(devtools)
+  target.openDevTools()
+})
 ```
 
 An example of showing devtools in a `BrowserWindow`:
@@ -1641,6 +1744,7 @@ process by accessing the `ports` property of the emitted event. When they
 arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()
@@ -1901,3 +2005,7 @@ A [`Debugger`](debugger.md) instance for this webContents.
 
 A `Boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.mainFrame` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.

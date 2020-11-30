@@ -159,6 +159,12 @@ describe('node feature', () => {
     });
   });
 
+  describe('process.stdout', () => {
+    it('is a real Node stream', () => {
+      expect((process.stdout as any)._type).to.not.be.undefined();
+    });
+  });
+
   ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;

@@ -11,7 +11,6 @@ import find_depot_tools
 from vs_toolchain import \
     SetEnvironmentAndGetRuntimeDllDirs, \
     SetEnvironmentAndGetSDKDir, \
-    GetVisualStudioVersion, \
     NormalizePath
 
 sys.path.append("%s/win_toolchain" % find_depot_tools.add_depot_tools_to_path())
@@ -20,10 +19,10 @@ from get_toolchain_if_necessary import CalculateHash
 
 
 @contextlib.contextmanager
-def cwd(dir):
+def cwd(directory):
     curdir = os.getcwd()
     try:
-        os.chdir(dir)
+        os.chdir(directory)
         yield
     finally:
         os.chdir(curdir)
@@ -71,12 +70,18 @@ def windows_profile():
     win_sdk_dir = SetEnvironmentAndGetSDKDir()
     path = NormalizePath(os.environ['GYP_MSVS_OVERRIDE_PATH'])
 
+    # since current windows executable are symbols path dependant,
+    # profile the current directory too
     return {
-        'pwd': os.getcwd(), # since current windows executable are symbols path dependant, profile the current directory too
+        'pwd': os.getcwd(),
         'installed_software': windows_installed_software(),
         'sdks': [
             {'name': 'vs', 'path': path, 'hash': calculate_hash(path)},
-            {'name': 'wsdk', 'path': win_sdk_dir, 'hash': calculate_hash(win_sdk_dir)}
+            {
+                'name': 'wsdk',
+                'path': win_sdk_dir,
+                'hash': calculate_hash(win_sdk_dir),
+            },
         ],
         'runtime_lib_dirs': runtime_dll_dirs,
     }
@@ -94,5 +99,5 @@ if __name__ == '__main__':
   parser = optparse.OptionParser()
   parser.add_option('--output-json', metavar='FILE', default='profile.json',
                     help='write information about toolchain to FILE')
-  options, args = parser.parse_args()
-  sys.exit(main(options))
+  opts, args = parser.parse_args()
+  sys.exit(main(opts))

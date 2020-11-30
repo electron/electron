@@ -72,6 +72,7 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
     opts.Get("closeButtonText", &close_button_text_);
+    opts.Get("toastXml", &toast_xml_);
   }
 }
 
@@ -135,6 +136,10 @@ base::string16 Notification::GetCloseButtonText() const {
   return close_button_text_;
 }
 
+base::string16 Notification::GetToastXml() const {
+  return toast_xml_;
+}
+
 // Setters
 void Notification::SetTitle(const base::string16& new_title) {
   title_ = new_title;
@@ -181,6 +186,10 @@ void Notification::SetCloseButtonText(const base::string16& text) {
   close_button_text_ = text;
 }
 
+void Notification::SetToastXml(const base::string16& new_toast_xml) {
+  toast_xml_ = new_toast_xml;
+}
+
 void Notification::NotificationAction(int index) {
   Emit("action", index);
 }
@@ -195,6 +204,10 @@ void Notification::NotificationReplied(const std::string& reply) {
 
 void Notification::NotificationDisplayed() {
   Emit("show");
+}
+
+void Notification::NotificationFailed(const std::string& error) {
+  Emit("failed", error);
 }
 
 void Notification::NotificationDestroyed() {}
@@ -231,6 +244,7 @@ void Notification::Show() {
       options.sound = sound_;
       options.close_button_text = close_button_text_;
       options.urgency = urgency_;
+      options.toast_xml = toast_xml_;
       notification_->Show(options);
     }
   }
@@ -265,6 +279,8 @@ v8::Local<v8::ObjectTemplate> Notification::FillObjectTemplate(
                    &Notification::SetActions)
       .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
                    &Notification::SetCloseButtonText)
+      .SetProperty("toastXml", &Notification::GetToastXml,
+                   &Notification::SetToastXml)
       .Build();
 }
 

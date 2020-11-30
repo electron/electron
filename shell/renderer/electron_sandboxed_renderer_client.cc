@@ -19,6 +19,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
@@ -89,6 +90,11 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                        preloadSrc);
 }
 
+double Uptime() {
+  return (base::Time::Now() - base::Process::Current().CreationTime())
+      .InSecondsF();
+}
+
 void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           const std::string& hidden_key,
                           const std::string& callback_name) {
@@ -136,6 +142,7 @@ void ElectronSandboxedRendererClient::InitializeBindings(
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
 
+  process.SetMethod("uptime", Uptime);
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
@@ -198,8 +205,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
   bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
   bool should_load_preload =
       (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
       !IsWebViewFrame(context, render_frame);
@@ -232,8 +238,9 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kWebviewTag))
+  if (!prefs.webview_tag)
     return;
 
   // Setup window overrides in the main world context

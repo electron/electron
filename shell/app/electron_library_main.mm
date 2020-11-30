@@ -9,6 +9,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "content/public/app/content_main.h"
+#include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
@@ -25,6 +26,11 @@ int ElectronMain(int argc, char* argv[]) {
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
+  if (!electron::fuses::IsRunAsNodeEnabled()) {
+    CHECK(false) << "run_as_node fuse is disabled";
+    return 1;
+  }
+
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
   base::mac::SetOverrideFrameworkBundlePath(

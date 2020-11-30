@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/win_frame_view.h"
 
+#include "base/win/windows_version.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"

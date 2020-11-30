@@ -6,13 +6,72 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 This document uses the following convention to categorize breaking changes:
 
-- **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
-- **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
-- **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
-- **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
-- **Removed:** An API or feature was removed, and is no longer supported by Electron.
+* **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
+* **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
+* **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
+* **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
+* **Removed:** An API or feature was removed, and is no longer supported by Electron.
+
+## Planned Breaking API Changes (13.0)
+
+### Removed: `shell.moveItemToTrash()`
+
+The deprecated synchronous `shell.moveItemToTrash()` API has been removed. Use
+the asynchronous `shell.trashItem()` instead.
+
+```js
+// Removed in Electron 13
+shell.moveItemToTrash(path)
+// Replace with
+shell.trashItem(path).then(/* ... */)
+```
+
+### Removed: `BrowserWindow` extension APIs
+
+The deprecated extension APIs have been removed:
+* `BrowserWindow.addExtension(path)`
+* `BrowserWindow.addDevToolsExtension(path)`
+* `BrowserWindow.removeExtension(name)`
+* `BrowserWindow.removeDevToolsExtension(name)`
+* `BrowserWindow.getExtensions()`
+* `BrowserWindow.getDevToolsExtensions()`
+
+Use the session APIs instead:
+* `ses.loadExtension(path)`
+* `ses.removeExtension(extension_id)`
+* `ses.getAllExtensions()`
+
+```js
+// Removed in Electron 13
+BrowserWindow.addExtension(path)
+BrowserWindow.addDevToolsExtension(path)
+// Replace with
+session.defaultSession.loadExtension(path)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.removeExtension(name)
+BrowserWindow.removeDevToolsExtension(name)
+// Replace with
+session.defaultSession.removeExtension(extension_id)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.getExtensions()
+BrowserWindow.getDevToolsExtensions()
+// Replace with
+session.defaultSession.getAllExtensions()
+```
 
 ## Planned Breaking API Changes (12.0)
+
+### Removed: Pepper Flash support
+
+Chromium has removed support for Flash, and so we must follow suit. See
+Chromium's [Flash Roadmap](https://www.chromium.org/flash-roadmap) for more
+details.
 
 ### Default Changed: `contextIsolation` defaults to `true`
 
@@ -23,17 +82,29 @@ We [recommend having contextIsolation enabled](https://github.com/electron/elect
 
 For more details see: https://github.com/electron/electron/issues/23506
 
+### Removed: `crashReporter.getCrashesDirectory()`
+
+The `crashReporter.getCrashesDirectory` method has been removed. Usage
+should be replaced by `app.getPath('crashDumps')`.
+
+```js
+// Removed in Electron 12
+crashReporter.getCrashesDirectory()
+// Replace with
+app.getPath('crashDumps')
+```
+
 ### Removed: `crashReporter` methods in the renderer process
 
 The following `crashReporter` methods are no longer available in the renderer
 process:
 
-- `crashReporter.start`
-- `crashReporter.getLastCrashReport`
-- `crashReporter.getUploadedReports`
-- `crashReporter.getUploadToServer`
-- `crashReporter.setUploadToServer`
-- `crashReporter.getCrashesDirectory`
+* `crashReporter.start`
+* `crashReporter.getLastCrashReport`
+* `crashReporter.getUploadedReports`
+* `crashReporter.getUploadToServer`
+* `crashReporter.setUploadToServer`
+* `crashReporter.getCrashesDirectory`
 
 They should be called only from the main process.
 
@@ -50,9 +121,46 @@ If your crash ingestion server does not support compressed payloads, you can
 turn off compression by specifying `{ compress: false }` in the crash reporter
 options.
 
+### Deprecated: `remote` module
+
+The `remote` module is deprecated in Electron 12, and will be removed in
+Electron 14. It is replaced by the
+[`@electron/remote`](https://github.com/electron/remote) module.
+
+```js
+// Deprecated in Electron 12:
+const { BrowserWindow } = require('electron').remote
+```
+
+```js
+// Replace with:
+const { BrowserWindow } = require('@electron/remote')
+
+// In the main process:
+require('@electron/remote/main').initialize()
+```
+
+### Deprecated: `shell.moveItemToTrash()`
+
+The synchronous `shell.moveItemToTrash()` has been replaced by the new,
+asynchronous `shell.trashItem()`.
+
+```js
+// Deprecated in Electron 12
+shell.moveItemToTrash(path)
+// Replace with
+shell.trashItem(path).then(/* ... */)
+```
+
 ## Planned Breaking API Changes (11.0)
 
-There are no breaking changes planned for 11.0.
+### Removed: `BrowserView.{destroy, fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+
+The experimental APIs `BrowserView.{destroy, fromId, fromWebContents, getAllViews}`
+have now been removed. Additionally, the `id` property of `BrowserView`
+has also been removed.
+
+For more detailed information, see [#23578](https://github.com/electron/electron/pull/23578).
 
 ## Planned Breaking API Changes (10.0)
 
@@ -87,12 +195,12 @@ app.getPath('crashDumps')
 Calling the following `crashReporter` methods from the renderer process is
 deprecated:
 
-- `crashReporter.start`
-- `crashReporter.getLastCrashReport`
-- `crashReporter.getUploadedReports`
-- `crashReporter.getUploadToServer`
-- `crashReporter.setUploadToServer`
-- `crashReporter.getCrashesDirectory`
+* `crashReporter.start`
+* `crashReporter.getLastCrashReport`
+* `crashReporter.getUploadedReports`
+* `crashReporter.getUploadToServer`
+* `crashReporter.setUploadToServer`
+* `crashReporter.getCrashesDirectory`
 
 The only non-deprecated methods remaining in the `crashReporter` module in the
 renderer are `addExtraParameter`, `removeExtraParameter` and `getParameters`.
@@ -132,6 +240,64 @@ const w = new BrowserWindow({
 
 We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
+
+### `protocol.unregisterProtocol`
+
+### `protocol.uninterceptProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.unregisterProtocol(scheme, () => { /* ... */ })
+// Replace with
+protocol.unregisterProtocol(scheme)
+```
+
+### `protocol.registerFileProtocol`
+
+### `protocol.registerBufferProtocol`
+
+### `protocol.registerStringProtocol`
+
+### `protocol.registerHttpProtocol`
+
+### `protocol.registerStreamProtocol`
+
+### `protocol.interceptFileProtocol`
+
+### `protocol.interceptStringProtocol`
+
+### `protocol.interceptBufferProtocol`
+
+### `protocol.interceptHttpProtocol`
+
+### `protocol.interceptStreamProtocol`
+
+The APIs are now synchronous and the optional callback is no longer needed.
+
+```javascript
+// Deprecated
+protocol.registerFileProtocol(scheme, handler, () => { /* ... */ })
+// Replace with
+protocol.registerFileProtocol(scheme, handler)
+```
+
+The registered or intercepted protocol does not have effect on current page
+until navigation happens.
+
+### `protocol.isProtocolHandled`
+
+This API is deprecated and users should use `protocol.isProtocolRegistered`
+and `protocol.isProtocolIntercepted` instead.
+
+```javascript
+// Deprecated
+protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
+// Replace with
+const isRegistered = protocol.isProtocolRegistered(scheme)
+const isIntercepted = protocol.isProtocolIntercepted(scheme)
+```
 
 ## Planned Breaking API Changes (9.0)
 
@@ -199,9 +365,10 @@ Clone Algorithm][SCA], the same algorithm used to serialize messages for
 `postMessage`. This brings about a 2x performance improvement for large
 messages, but also brings some breaking changes in behavior.
 
-- Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
+* Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
   converting the functions to `undefined`.
+
 ```js
 // Previously:
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
@@ -211,23 +378,25 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 // => throws Error("() => {} could not be cloned.")
 ```
-- `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
+
+* `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
-- Objects containing cyclic references will now be correctly serialized,
+* Objects containing cyclic references will now be correctly serialized,
   instead of being converted to `null`.
-- `Set`, `Map`, `Error` and `RegExp` values will be correctly serialized,
+* `Set`, `Map`, `Error` and `RegExp` values will be correctly serialized,
   instead of being converted to `{}`.
-- `BigInt` values will be correctly serialized, instead of being converted to
+* `BigInt` values will be correctly serialized, instead of being converted to
   `null`.
-- Sparse arrays will be serialized as such, instead of being converted to dense
+* Sparse arrays will be serialized as such, instead of being converted to dense
   arrays with `null`s.
-- `Date` objects will be transferred as `Date` objects, instead of being
+* `Date` objects will be transferred as `Date` objects, instead of being
   converted to their ISO string representation.
-- Typed Arrays (such as `Uint8Array`, `Uint16Array`, `Uint32Array` and so on)
+* Typed Arrays (such as `Uint8Array`, `Uint16Array`, `Uint32Array` and so on)
   will be transferred as such, instead of being converted to Node.js `Buffer`.
-- Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
+* Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
+
 ```js
 Buffer.from(value.buffer, value.byteOffset, value.byteLength)
 ```
@@ -363,6 +532,7 @@ the folder, similarly to Chrome, Firefox, and Edge
 ([link to MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/webkitdirectory)).
 
 As an illustration, take a folder with this structure:
+
 ```console
 folder
 ├── file1
@@ -371,11 +541,13 @@ folder
 ```
 
 In Electron <=6, this would return a `FileList` with a `File` object for:
+
 ```console
 path/to/folder
 ```
 
 In Electron 7, this now returns a `FileList` with a `File` object for:
+
 ```console
 /path/to/folder/file3
 /path/to/folder/file2
@@ -530,7 +702,9 @@ webFrame.setIsolatedWorldInfo(
 ```
 
 ### API Changed: `webFrame.setSpellCheckProvider` now takes an asynchronous callback
+
 The `spellCheck` callback is now asynchronous, and `autoCorrectWord` parameter has been removed.
+
 ```js
 // Deprecated
 webFrame.setSpellCheckProvider('en-US', true, {

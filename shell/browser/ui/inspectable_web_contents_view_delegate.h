@@ -19,11 +19,12 @@ class InspectableWebContentsViewDelegate {
   virtual void DevToolsFocused() {}
   virtual void DevToolsOpened() {}
   virtual void DevToolsClosed() {}
+  virtual void DevToolsResized() {}
 
   // Returns the icon of devtools window.
   virtual gfx::ImageSkia GetDevToolsWindowIcon();
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   // Called when creating devtools window.
   virtual void GetDevToolsWindowWMClass(std::string* name,
                                         std::string* class_name) {}

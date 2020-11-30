@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import errno
 import os
-import platform
 import sys
 
 # URL to the mips64el sysroot image.
@@ -41,7 +39,7 @@ verbose_mode = False
 
 
 def get_platform_key():
-  if os.environ.has_key('MAS_BUILD'):
+  if 'MAS_BUILD' in os.environ:
     return 'mas'
   else:
     return PLATFORM

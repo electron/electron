@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/bind_helpers.h"
+#include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/json/json_writer.h"
 #include "base/optional.h"
@@ -147,34 +147,29 @@ bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
 // Add property filters to the property_filters vector for the given property
 // filter type. The attributes are passed in as a string with each attribute
 // separated by a space.
-void AddPropertyFilters(
-    std::vector<content::AccessibilityTreeFormatter::PropertyFilter>&
-        property_filters,
-    const std::string& attributes,
-    content::AccessibilityTreeFormatter::PropertyFilter::Type type) {
+void AddPropertyFilters(std::vector<ui::AXPropertyFilter>* property_filters,
+                        const std::string& attributes,
+                        ui::AXPropertyFilter::Type type) {
   for (const std::string& attribute : base::SplitString(
            attributes, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
-    property_filters.push_back(
-        content::AccessibilityTreeFormatter::PropertyFilter(
-            base::ASCIIToUTF16(attribute), type));
+    property_filters->push_back(ui::AXPropertyFilter(attribute, type));
   }
 }
 
 bool MatchesPropertyFilters(
-    const std::vector<content::AccessibilityTreeFormatter::PropertyFilter>&
-        property_filters,
-    const base::string16& text) {
+    const std::vector<ui::AXPropertyFilter>& property_filters,
+    const std::string& text) {
   bool allow = false;
   for (const auto& filter : property_filters) {
     if (base::MatchPattern(text, filter.match_str)) {
       switch (filter.type) {
-        case content::AccessibilityTreeFormatter::PropertyFilter::ALLOW_EMPTY:
+        case ui::AXPropertyFilter::ALLOW_EMPTY:
           allow = true;
           break;
-        case content::AccessibilityTreeFormatter::PropertyFilter::ALLOW:
-          allow = (!base::MatchPattern(text, base::UTF8ToUTF16("*=''")));
+        case ui::AXPropertyFilter::ALLOW:
+          allow = (!base::MatchPattern(text, "*=''"));
           break;
-        case content::AccessibilityTreeFormatter::PropertyFilter::DENY:
+        case ui::AXPropertyFilter::DENY:
           allow = false;
           break;
       }
@@ -184,26 +179,24 @@ bool MatchesPropertyFilters(
 }
 
 std::string RecursiveDumpAXPlatformNodeAsString(
-    ui::AXPlatformNode* node,
+    const ui::AXPlatformNode* node,
     int indent,
-    const std::vector<content::AccessibilityTreeFormatter::PropertyFilter>&
-        property_filters) {
+    const std::vector<ui::AXPropertyFilter>& property_filters) {
   if (!node)
     return "";
   std::string str(2 * indent, '+');
-  std::string line = node->GetDelegate()->GetData().ToString();
-  std::vector<std::string> attributes = base::SplitString(
+  const std::string line = node->GetDelegate()->GetData().ToString();
+  const std::vector<std::string> attributes = base::SplitString(
       line, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  for (std::string attribute : attributes) {
-    if (MatchesPropertyFilters(property_filters,
-                               base::UTF8ToUTF16(attribute))) {
+  for (const std::string& attribute : attributes) {
+    if (MatchesPropertyFilters(property_filters, attribute)) {
       str += attribute + " ";
     }
   }
   str += "\n";
   for (int i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
     gfx::NativeViewAccessible child = node->GetDelegate()->ChildAtIndex(i);
-    ui::AXPlatformNode* child_node =
+    const ui::AXPlatformNode* child_node =
         ui::AXPlatformNode::FromNativeViewAccessible(child);
     str += RecursiveDumpAXPlatformNodeAsString(child_node, indent + 1,
                                                property_filters);
@@ -364,16 +357,11 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 
   AllowJavascript();
 
-  std::vector<content::AccessibilityTreeFormatter::PropertyFilter>
-      property_filters;
-  AddPropertyFilters(
-      property_filters, allow,
-      content::AccessibilityTreeFormatter::PropertyFilter::ALLOW);
-  AddPropertyFilters(
-      property_filters, allow_empty,
-      content::AccessibilityTreeFormatter::PropertyFilter::ALLOW_EMPTY);
-  AddPropertyFilters(property_filters, deny,
-                     content::AccessibilityTreeFormatter::PropertyFilter::DENY);
+  std::vector<ui::AXPropertyFilter> property_filters;
+  AddPropertyFilters(&property_filters, allow, ui::AXPropertyFilter::ALLOW);
+  AddPropertyFilters(&property_filters, allow_empty,
+                     ui::AXPropertyFilter::ALLOW_EMPTY);
+  AddPropertyFilters(&property_filters, deny, ui::AXPropertyFilter::DENY);
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {

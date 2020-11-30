@@ -38,6 +38,7 @@ struct NotificationOptions {
   base::string16 urgency;  // Linux
   std::vector<NotificationAction> actions;
   base::string16 close_button_text;
+  base::string16 toast_xml;
 
   NotificationOptions();
   ~NotificationOptions();
@@ -54,9 +55,9 @@ class Notification {
   virtual void Dismiss() = 0;
 
   // Should be called by derived classes.
-  void NotificationClicked(bool should_destroy = true);
+  void NotificationClicked();
   void NotificationDismissed();
-  void NotificationFailed();
+  void NotificationFailed(const std::string& error = "");
 
   // delete this.
   void Destroy();

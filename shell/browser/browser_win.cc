@@ -196,19 +196,30 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
     const Browser::LoginItemSettings& options) {
   std::vector<Browser::LaunchItem> launch_items;
 
-  while (it->Valid()) {
-    base::string16 exe = options.path;
-    if (FormatCommandLineString(&exe, options.args)) {
+  base::FilePath lookup_exe_path;
+  if (options.path.empty()) {
+    base::string16 process_exe_path;
+    GetProcessExecPath(&process_exe_path);
+    lookup_exe_path =
+        base::CommandLine::FromString(process_exe_path).GetProgram();
+  } else {
+    lookup_exe_path = base::CommandLine::FromString(options.path).GetProgram();
+  }
+
+  if (!lookup_exe_path.empty()) {
+    while (it->Valid()) {
+      base::CommandLine registry_launch_cmd =
+          base::CommandLine::FromString(it->Value());
+      base::FilePath registry_launch_path = registry_launch_cmd.GetProgram();
+      bool exe_match = base::FilePath::CompareEqualIgnoreCase(
+          lookup_exe_path.value(), registry_launch_path.value());
+
       // add launch item to vector if it has a matching path (case-insensitive)
-      if ((base::CompareCaseInsensitiveASCII(it->Value(), exe.c_str())) == 0) {
+      if (exe_match) {
         Browser::LaunchItem launch_item;
-        base::string16 launch_path = options.path;
-        if (!(launch_path.size() > 0)) {
-          GetProcessExecPath(&launch_path);
-        }
         launch_item.name = it->Name();
-        launch_item.path = launch_path;
-        launch_item.args = options.args;
+        launch_item.path = registry_launch_path.value();
+        launch_item.args = registry_launch_cmd.GetArgs();
         launch_item.scope = scope;
         launch_item.enabled = true;
 
@@ -249,8 +260,8 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
                   reinterpret_cast<char*>(binary_accepted_alt));
               std::string reg_startup_binary(
                   reinterpret_cast<char*>(startup_binary));
-              launch_item.enabled = (reg_binary == reg_startup_binary) ||
-                                    (reg_binary == reg_binary_alt);
+              launch_item.enabled = (reg_startup_binary == reg_binary) ||
+                                    (reg_startup_binary == reg_binary_alt);
             }
           }
         }
@@ -259,8 +270,8 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
             *executable_will_launch_at_login || launch_item.enabled;
         launch_items.push_back(launch_item);
       }
+      it->operator++();
     }
-    it->operator++();
   }
   return launch_items;
 }
@@ -339,7 +350,7 @@ void GetApplicationInfoForProtocolUsingRegistry(
   }
   const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
 
-  if (app_display_name.length() == 0) {
+  if (app_display_name.empty()) {
     promise.RejectWithErrorMessage(
         "Unable to retrieve application display name");
     return;
@@ -403,10 +414,10 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
     return false;
 
   JumpListCategory category;
-  category.type = JumpListCategory::Type::TASKS;
+  category.type = JumpListCategory::Type::kTasks;
   category.items.reserve(tasks.size());
   JumpListItem item;
-  item.type = JumpListItem::Type::TASK;
+  item.type = JumpListItem::Type::kTask;
   for (const auto& task : tasks) {
     item.title = task.title;
     item.path = task.program;
@@ -607,7 +618,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   base::win::RegKey startup_approved_key(
       HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
   PCWSTR key_name =
-      settings.name.size() > 0 ? settings.name.c_str() : GetAppUserModelID();
+      !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
     base::string16 exe = settings.path;

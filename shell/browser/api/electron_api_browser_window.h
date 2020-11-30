@@ -12,6 +12,7 @@
 #include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
 namespace electron {
@@ -62,6 +63,9 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const base::string16& title,
                           bool explicit_set) override;
+#if defined(OS_MAC)
+  void OnDevToolsResized() override;
+#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -93,17 +97,13 @@ class BrowserWindow : public BaseWindow,
 
  private:
 #if defined(OS_MAC)
-  void OverrideNSWindowContentView(InspectableWebContents* iwc);
+  void OverrideNSWindowContentView(InspectableWebContentsView* webView);
 #endif
 
   // Helpers.
 
   // Called when the window needs to update its draggable region.
   void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
-  // Convert draggable regions in raw format to SkRegion format.
-  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Schedule a notification unresponsive event.

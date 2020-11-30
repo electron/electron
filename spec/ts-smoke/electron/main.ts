@@ -62,7 +62,7 @@ app.whenReady().then(() => {
   mainWindow.loadURL(`file://${__dirname}/index.html`)
   mainWindow.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer' })
   mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer' })
-  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer', postData: [{ type: 'blob', blobUUID: 'hogefuga' }] })
+  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer', postData: [{ type: 'rawData', bytes: Buffer.from([123]) }] })
 
   mainWindow.webContents.openDevTools()
   mainWindow.webContents.toggleDevTools()
@@ -461,8 +461,6 @@ window.setVibrancy('titlebar')
 window.setVibrancy('selection')
 window.setVibrancy('popover')
 window.setIcon('/path/to/icon')
-
-const installed = BrowserWindow.getDevToolsExtensions().hasOwnProperty('devtron')
 
 // content-tracing
 // https://github.com/electron/electron/blob/master/docs/api/content-tracing.md
@@ -1051,7 +1049,7 @@ app.whenReady().then(() => {
 // https://github.com/electron/electron/blob/master/docs/api/shell.md
 
 shell.showItemInFolder('/home/user/Desktop/test.txt')
-shell.moveItemToTrash('/home/user/Desktop/test.txt')
+shell.trashItem('/home/user/Desktop/test.txt').then(() => {})
 
 shell.openPath('/home/user/Desktop/test.txt').then(err => {
   if (err) console.log(err)
@@ -1068,21 +1066,19 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 // cookies
 // https://github.com/electron/electron/blob/master/docs/api/cookies.md
 {
-  const { session } = require('electron')
-
   // Query all cookies.
   session.defaultSession.cookies.get({})
-    .then((cookies) => {
+    .then(cookies => {
       console.log(cookies)
-    }).catch((error) => {
+    }).catch((error: Error) => {
       console.log(error)
     })
 
   // Query all cookies associated with a specific url.
   session.defaultSession.cookies.get({ url: 'http://www.github.com' })
-    .then((cookies) => {
+    .then(cookies => {
       console.log(cookies)
-    }).catch((error) => {
+    }).catch((error: Error) => {
       console.log(error)
     })
 
@@ -1092,7 +1088,7 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
   session.defaultSession.cookies.set(cookie)
     .then(() => {
       // success
-    }, (error) => {
+    }, (error: Error) => {
       console.error(error)
     })
 }

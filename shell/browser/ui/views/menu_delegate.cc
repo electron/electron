@@ -39,7 +39,7 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
   id_ = button->tag();
   adapter_ = std::make_unique<MenuModelAdapter>(model);
 
-  views::MenuItemView* item = new views::MenuItemView(this);
+  auto* item = new views::MenuItemView(this);
   static_cast<MenuModelAdapter*>(adapter_.get())->BuildMenu(item);
 
   menu_runner_ = std::make_unique<views::MenuRunner>(
@@ -129,7 +129,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     bool switch_in_progress = !!button_to_open_;
     // Always update target to open.
     button_to_open_ = button;
-    // Switching menu asyncnously to avoid crash.
+    // Switching menu asynchronously to avoid crash.
     if (!switch_in_progress) {
       base::PostTask(FROM_HERE, {content::BrowserThread::UI},
                      base::BindOnce(&views::MenuRunner::Cancel,

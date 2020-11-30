@@ -64,12 +64,13 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 ### --enable-api-filtering-logging
 
 Enables caller stack logging for the following APIs (filtering events):
-- `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
-- `remote.require()` / `remote-require`
-- `remote.getGlobal()` / `remote-get-builtin`
-- `remote.getBuiltin()` / `remote-get-global`
-- `remote.getCurrentWindow()` / `remote-get-current-window`
-- `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
+
+* `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
+* `remote.require()` / `remote-require`
+* `remote.getGlobal()` / `remote-get-builtin`
+* `remote.getBuiltin()` / `remote-get-global`
+* `remote.getCurrentWindow()` / `remote-get-current-window`
+* `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
 
 ### --enable-logging
 
@@ -171,14 +172,6 @@ authentication [per Chromium issue](https://bugs.chromium.org/p/chromium/issues/
 
 Enables remote debugging over HTTP on the specified `port`.
 
-### --ppapi-flash-path=`path`
-
-Sets the `path` of the pepper flash plugin.
-
-### --ppapi-flash-version=`version`
-
-Sets the `version` of the pepper flash plugin.
-
 ### --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
@@ -197,6 +190,14 @@ whole pathname and not only the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+### --force_high_performance_gpu
+
+Force using discrete GPU when there are multiple GPUs available.
+
+### --force_low_power_gpu
+
+Force using integrated GPU when there are multiple GPUs available.
 
 ## Node.js Flags
 
@@ -227,12 +228,13 @@ See the [Debugging the Main Process][debugging-main-process] guide for more deta
 Aliased to `--debug[=[host:]port`.
 
 ### --inspect-publish-uid=stderr,http
+
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.
 
 [app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[append-switch]: command-line.md#commandlineappendswitchswitch-value
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md

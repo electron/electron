@@ -232,6 +232,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         await remotely((port: number) => {
           require('electron').crashReporter.start({
             submitURL: `http://127.0.0.1:${port}`,
+            compress: false,
             ignoreSystemCrashHandler: true
           });
         }, [port]);
@@ -245,7 +246,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
         const crash = await waitForCrash();
         expect(crash.prod).to.equal('Electron');
-        expect(crash._productName).to.equal('remote-control');
+        expect(crash._productName).to.equal('electron-test-remote-control');
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
@@ -271,6 +272,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true,
           extra: { longParam: 'a'.repeat(100000) }
         });
@@ -287,6 +289,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       remotely((port: number, kKeyLengthMax: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true,
           extra: {
             ['a'.repeat(kKeyLengthMax + 10)]: 'value',
@@ -399,6 +402,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       await remotely((port: number) => {
         require('electron').crashReporter.start({
           submitURL: `http://127.0.0.1:${port}`,
+          compress: false,
           ignoreSystemCrashHandler: true
         });
       }, [port]);
@@ -519,10 +523,6 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
     });
 
-    it('matches getCrashesDirectory', async () => {
-      expect(app.getPath('crashDumps')).to.equal(require('electron').crashReporter.getCrashesDirectory());
-    });
-
     function crash (processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
@@ -561,9 +561,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
-            const { crashReporter } = require('electron');
+            const { crashReporter, app } = require('electron');
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           });
           let reportsDir = crashesDir;
           if (process.platform === 'darwin') {
@@ -595,7 +595,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             const { crashReporter, app } = require('electron');
             app.setPath('crashDumps', crashesDir);
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 

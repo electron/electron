@@ -5,10 +5,8 @@ from __future__ import print_function
 import argparse
 import os
 import re
-import shlex
 import subprocess
 import sys
-import time
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -35,9 +33,11 @@ def main():
 
   returncode = 0
   match = re.search(
-    '^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$', output)
+    '^Starting ChromeDriver [0-9]+.[0-9]+.[0-9]+.[0-9]+ .* on port [0-9]+$',
+    output
+  )
 
-  if match == None:
+  if match is None:
     returncode = 1
 
   if returncode == 0:

@@ -40,6 +40,10 @@ void WebViewGuestDelegate::AttachToIframe(
 
   content::WebContents* guest_web_contents = api_web_contents_->web_contents();
 
+  // Force a refresh of the webPreferences so that OverrideWebkitPrefs runs on
+  // the new web contents before the renderer process initializes.
+  // guest_web_contents->NotifyPreferencesChanged();
+
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
@@ -59,10 +63,6 @@ void WebViewGuestDelegate::AttachToIframe(
 }
 
 void WebViewGuestDelegate::WillDestroy() {
-  ResetZoomController();
-}
-
-void WebViewGuestDelegate::DidDetach() {
   ResetZoomController();
 }
 
@@ -95,14 +95,6 @@ void WebViewGuestDelegate::ResetZoomController() {
     embedder_zoom_controller_->RemoveObserver(this);
     embedder_zoom_controller_ = nullptr;
   }
-}
-
-content::RenderWidgetHost* WebViewGuestDelegate::GetOwnerRenderWidgetHost() {
-  return embedder_web_contents_->GetRenderViewHost()->GetWidget();
-}
-
-content::SiteInstance* WebViewGuestDelegate::GetOwnerSiteInstance() {
-  return embedder_web_contents_->GetSiteInstance();
 }
 
 content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(

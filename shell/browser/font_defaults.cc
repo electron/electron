@@ -12,7 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/platform_locale_settings.h"
-#include "content/public/common/web_preferences.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
@@ -148,7 +148,7 @@ base::string16 FetchFont(const char* script, const char* map_name) {
 }
 
 void FillFontFamilyMap(const char* map_name,
-                       content::ScriptFontFamilyMap* map) {
+                       blink::web_pref::ScriptFontFamilyMap* map) {
   for (size_t i = 0; i < prefs::kWebKitScriptsForFontFamilyMapsLength; ++i) {
     const char* script = prefs::kWebKitScriptsForFontFamilyMaps[i];
     base::string16 result = FetchFont(script, map_name);
@@ -162,7 +162,7 @@ void FillFontFamilyMap(const char* map_name,
 
 namespace electron {
 
-void SetFontDefaults(content::WebPreferences* prefs) {
+void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
   FillFontFamilyMap(prefs::kWebKitStandardFontFamilyMap,
                     &prefs->standard_font_family_map);
   FillFontFamilyMap(prefs::kWebKitFixedFontFamilyMap,

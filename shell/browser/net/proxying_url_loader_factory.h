@@ -175,7 +175,6 @@ class ProxyingURLLoaderFactory
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
-      content::BrowserContext* browser_context,
       int render_process_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
@@ -228,14 +227,13 @@ class ProxyingURLLoaderFactory
 
   // This is passed from api::Protocol.
   //
-  // The Protocol instance lives through the lifetime of BrowserContenxt,
-  // which is guarenteed to cover the lifetime of URLLoaderFactory, so the
-  // reference is guarenteed to be valid.
+  // The Protocol instance lives through the lifetime of BrowserContext,
+  // which is guaranteed to cover the lifetime of URLLoaderFactory, so the
+  // reference is guaranteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
   const HandlersMap& intercepted_handlers_;
 
-  content::BrowserContext* const browser_context_;
   const int render_process_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;

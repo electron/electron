@@ -11,14 +11,6 @@ const { dialog } = require('electron')
 console.log(dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }))
 ```
 
-The Dialog is opened from Electron's main thread. If you want to use the dialog
-object from a renderer process, remember to access it using the remote:
-
-```javascript
-const { dialog } = require('electron').remote
-console.log(dialog)
-```
-
 ## Methods
 
 The `dialog` module has the following methods:
@@ -213,9 +205,10 @@ The `filters` specifies an array of file types that can be displayed, see
   * `securityScopedBookmarks` Boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
-  * `canceled` Boolean - whether or not the dialog was canceled.
-  * `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
-  * `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
+
+* `canceled` Boolean - whether or not the dialog was canceled.
+* `filePath` String (optional) - If the dialog is canceled, this will be `undefined`.
+* `bookmark` String (optional) _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present. (For return values, see [table here](#bookmarks-array).)
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -229,6 +222,7 @@ expanding and collapsing the dialog.
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -238,7 +232,6 @@ expanding and collapsing the dialog.
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
@@ -275,6 +268,7 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `message` String - Content of the message box.
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -284,7 +278,6 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label.
@@ -310,11 +303,12 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     via `Alt-W` on Windows and Linux.
 
 Returns `Promise<Object>` - resolves with a promise containing the following properties:
-  * `response` Number - The index of the clicked button.
-  * `checkboxChecked` Boolean - The checked state of the checkbox if
+
+* `response` Number - The index of the clicked button.
+* `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
-Shows a message box, it will block the process until the message box is closed.
+Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 

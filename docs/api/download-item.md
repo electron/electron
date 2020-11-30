@@ -79,6 +79,7 @@ The `downloadItem` object has the following methods:
 * `path` String - Set the save file path of the download item.
 
 The API is only available in session's `will-download` callback function.
+If `path` doesn't exist, Electron will try to make the directory recursively.
 If user doesn't set the save path via the API, Electron will use the original
 routine to determine the save path; this usually prompts a save dialog.
 

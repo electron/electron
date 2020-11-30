@@ -21,12 +21,10 @@ Notification::~Notification() {
     delegate()->NotificationDestroyed();
 }
 
-void Notification::NotificationClicked(bool should_destroy) {
+void Notification::NotificationClicked() {
   if (delegate())
     delegate()->NotificationClick();
-
-  if (should_destroy)
-    Destroy();
+  Destroy();
 }
 
 void Notification::NotificationDismissed() {
@@ -35,9 +33,9 @@ void Notification::NotificationDismissed() {
   Destroy();
 }
 
-void Notification::NotificationFailed() {
+void Notification::NotificationFailed(const std::string& error) {
   if (delegate())
-    delegate()->NotificationFailed();
+    delegate()->NotificationFailed(error);
   Destroy();
 }
 

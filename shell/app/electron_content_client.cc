@@ -49,29 +49,34 @@ namespace electron {
 
 namespace {
 
+enum class WidevineCdmFileCheck {
+  kNotChecked,
+  kFound,
+  kNotFound,
+};
+
 #if defined(WIDEVINE_CDM_AVAILABLE)
 bool IsWidevineAvailable(
     base::FilePath* cdm_path,
     std::vector<media::VideoCodec>* codecs_supported,
     base::flat_set<media::CdmSessionType>* session_types_supported,
     base::flat_set<media::EncryptionMode>* modes_supported) {
-  static enum {
-    NOT_CHECKED,
-    FOUND,
-    NOT_FOUND,
-  } widevine_cdm_file_check = NOT_CHECKED;
+  static WidevineCdmFileCheck widevine_cdm_file_check =
+      WidevineCdmFileCheck::kNotChecked;
 
-  if (widevine_cdm_file_check == NOT_CHECKED) {
+  if (widevine_cdm_file_check == WidevineCdmFileCheck::kNotChecked) {
     base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
     *cdm_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
     if (!cdm_path->empty()) {
       *cdm_path = cdm_path->AppendASCII(
           base::GetNativeLibraryName(kWidevineCdmLibraryName));
-      widevine_cdm_file_check = base::PathExists(*cdm_path) ? FOUND : NOT_FOUND;
+      widevine_cdm_file_check = base::PathExists(*cdm_path)
+                                    ? WidevineCdmFileCheck::kFound
+                                    : WidevineCdmFileCheck::kNotFound;
     }
   }
 
-  if (widevine_cdm_file_check == FOUND) {
+  if (widevine_cdm_file_check == WidevineCdmFileCheck::kFound) {
     // Add the supported codecs as if they came from the component manifest.
     // This list must match the CDM that is being bundled with Chrome.
     codecs_supported->push_back(media::VideoCodec::kCodecVP8);
@@ -95,59 +100,6 @@ bool IsWidevineAvailable(
   return false;
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
-
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
-                                                const std::string& version) {
-  content::PepperPluginInfo plugin;
-
-  plugin.is_out_of_process = true;
-  plugin.name = content::kFlashPluginName;
-  plugin.path = path;
-  plugin.permissions = ppapi::PERMISSION_ALL_BITS;
-
-  std::vector<std::string> flash_version_numbers = base::SplitString(
-      version, ".", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  if (flash_version_numbers.empty())
-    flash_version_numbers.emplace_back("11");
-  // |SplitString()| puts in an empty string given an empty string. :(
-  else if (flash_version_numbers[0].empty())
-    flash_version_numbers[0] = "11";
-  if (flash_version_numbers.size() < 2)
-    flash_version_numbers.emplace_back("2");
-  if (flash_version_numbers.size() < 3)
-    flash_version_numbers.emplace_back("999");
-  if (flash_version_numbers.size() < 4)
-    flash_version_numbers.emplace_back("999");
-  // E.g., "Shockwave Flash 10.2 r154":
-  plugin.description = plugin.name + " " + flash_version_numbers[0] + "." +
-                       flash_version_numbers[1] + " r" +
-                       flash_version_numbers[2];
-  plugin.version = base::JoinString(flash_version_numbers, ".");
-  plugin.mime_types.emplace_back(content::kFlashPluginSwfMimeType,
-                                 content::kFlashPluginSwfExtension,
-                                 content::kFlashPluginSwfDescription);
-  plugin.mime_types.emplace_back(content::kFlashPluginSplMimeType,
-                                 content::kFlashPluginSplExtension,
-                                 content::kFlashPluginSplDescription);
-
-  return plugin;
-}
-
-void AddPepperFlashFromCommandLine(
-    base::CommandLine* command_line,
-    std::vector<content::PepperPluginInfo>* plugins) {
-  base::FilePath flash_path =
-      command_line->GetSwitchValuePath(switches::kPpapiFlashPath);
-  if (flash_path.empty())
-    return;
-
-  auto flash_version =
-      command_line->GetSwitchValueASCII(switches::kPpapiFlashVersion);
-
-  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
-}
-#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
@@ -260,10 +212,6 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
 
 void ElectronContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
-#if BUILDFLAG(ENABLE_PEPPER_FLASH)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  AddPepperFlashFromCommandLine(command_line, plugins);
-#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 #if BUILDFLAG(ENABLE_PLUGINS)
   ComputeBuiltInPlugins(plugins);
 #endif  // BUILDFLAG(ENABLE_PLUGINS)

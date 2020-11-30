@@ -121,29 +121,25 @@ bool ElectronContentUtilityClient::OnMessageReceived(
   return false;
 }
 
-mojo::ServiceFactory*
-ElectronContentUtilityClient::GetMainThreadServiceFactory() {
-  static base::NoDestructor<mojo::ServiceFactory> factory {
+void ElectronContentUtilityClient::RegisterMainThreadServices(
+    mojo::ServiceFactory& services) {
 #if defined(OS_WIN)
-    RunWindowsIconReader,
+  services.Add(RunWindowsIconReader);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-        RunPrintCompositor,
+  services.Add(RunPrintCompositor);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
     (BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN))
-        RunPrintingService,
+  services.Add(RunPrintingService);
 #endif
-  };
-  return factory.get();
 }
 
-mojo::ServiceFactory*
-ElectronContentUtilityClient::GetIOThreadServiceFactory() {
-  static base::NoDestructor<mojo::ServiceFactory> factory{RunProxyResolver};
-  return factory.get();
+void ElectronContentUtilityClient::RegisterIOThreadServices(
+    mojo::ServiceFactory& services) {
+  services.Add(RunProxyResolver);
 }
 
 }  // namespace electron

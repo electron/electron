@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 22 Sep 2020 19:44:30 -0700
+Subject: fix: allow preventing InitializeInspector in env
+
+https://github.com/nodejs/node/commit/8c5ad1392f30cfe6b107e9bd85f4cb918ba04aab
+made it such that env->InitializeInspector was called in CreateEnvironment
+no matter what, which creates an issue for Electron, as the V8 inspector
+already exists in the renderer process and therefore we only want to
+initialize it in the browser process. This adds a new
+EnvironmentFlags option which allows preventing that invocation.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -358,12 +358,14 @@ Environment* CreateEnvironment(
+       thread_id);
+ 
+ #if HAVE_INSPECTOR
+-  if (inspector_parent_handle) {
+-    env->InitializeInspector(
+-        std::move(static_cast<InspectorParentHandleImpl*>(
+-            inspector_parent_handle.get())->impl));
+-  } else {
+-    env->InitializeInspector({});
++  if (env->should_initialize_inspector()) {
++    if (inspector_parent_handle) {
++      env->InitializeInspector(
++          std::move(static_cast<InspectorParentHandleImpl*>(
++              inspector_parent_handle.get())->impl));
++    } else {
++      env->InitializeInspector({});
++    }
+   }
+ #endif
+ 
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 623e9d4e429c03bb267539a318166f3ef3b9c501..52a122a51049238547ff662bed1a10b346f3af00 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -837,6 +837,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
+   return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
+ }
+ 
++inline bool Environment::should_initialize_inspector() const {
++  return (flags_ & EnvironmentFlags::kNoInitializeInspector) == 0;
++}
++
+ bool Environment::filehandle_close_warning() const {
+   return emit_filehandle_warning_;
+ }
+diff --git a/src/env.h b/src/env.h
+index 38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51..4fe2eb3b7699efcab87c377743a955effbbfd9de 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1022,6 +1022,7 @@ class Environment : public MemoryRetainer {
+   inline bool owns_process_state() const;
+   inline bool owns_inspector() const;
+   inline bool tracks_unmanaged_fds() const;
++  inline bool should_initialize_inspector() const;
+   inline uint64_t thread_id() const;
+   inline worker::Worker* worker_context() const;
+   Environment* worker_parent_env() const;
+diff --git a/src/node.h b/src/node.h
+index a649f52403659fd18898e1e813f97e32f33784e7..b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -426,7 +426,11 @@ enum Flags : uint64_t {
+   kNoRegisterESMLoader = 1 << 3,
+   // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
+   // by fs.open() and fs.close(), and close them during FreeEnvironment().
+-  kTrackUnmanagedFds = 1 << 4
++  kTrackUnmanagedFds = 1 << 4,
++  // Controls whether or not the Environment should call InitializeInspector.
++  // This control is needed by embedders who may not want to initialize the V8
++  // inspector in situations where it already exists.
++  kNoInitializeInspector = 1 << 5
+ };
+ }  // namespace EnvironmentFlags
+ 

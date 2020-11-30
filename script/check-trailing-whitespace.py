@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import argparse
+import io
 import os
 import sys
 
@@ -38,12 +39,11 @@ def main():
 
 def hasTrailingWhiteSpace(filepath, fix):
   try:
-    f = open(filepath, 'r')
-    lines = f.read().splitlines()
+    with io.open(filepath, 'r', encoding='utf-8') as f:
+      lines = f.read().splitlines()
   except KeyboardInterrupt:
-    print('Keyboard interruption whle parsing. Please try again.')
-  finally:
-    f.close()
+    print('Keyboard interruption while parsing. Please try again.')
+    return
 
   fixed_lines = []
   for num, line in enumerate(lines):
@@ -53,7 +53,7 @@ def hasTrailingWhiteSpace(filepath, fix):
           num + 1, filepath))
       return True
   if fix:
-    with open(filepath, 'w') as f:
+    with io.open(filepath, 'w', newline='\n', encoding='utf-8') as f:
       print(fixed_lines)
       f.writelines(fixed_lines)
 

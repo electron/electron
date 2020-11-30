@@ -105,6 +105,7 @@ Don't use the global menu bar on Linux.
 Set the trash implementation on Linux. Default is `gio`.
 
 Options:
+
 * `gvfs-trash`
 * `trash-cli`
 * `kioclient5`
@@ -114,7 +115,6 @@ Options:
 
 The following environment variables are intended primarily for development and
 debugging purposes.
-
 
 ### `ELECTRON_ENABLE_LOGGING`
 

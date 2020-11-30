@@ -40,6 +40,7 @@
 #include "net/http/http_response_headers.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -574,7 +575,7 @@ void InspectableWebContents::LoadCompleted() {
       base::RemoveChars(current_dock_state, "\"", &dock_state_);
     }
     base::string16 javascript = base::UTF8ToUTF16(
-        "Components.dockController.setDockSide(\"" + dock_state_ + "\");");
+        "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
   }
@@ -682,9 +683,13 @@ void InspectableWebContents::LoadNetworkResource(
 
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
   if (gurl.SchemeIsFile()) {
-    url_loader_factory = content::CreateFileURLLoaderFactory(
-        base::FilePath() /* profile_path */,
-        nullptr /* shared_cors_origin_access_list */);
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        content::CreateFileURLLoaderFactory(
+            base::FilePath() /* profile_path */,
+            nullptr /* shared_cors_origin_access_list */);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
   } else {
     auto* partition = content::BrowserContext::GetDefaultStoragePartition(
         GetDevToolsWebContents()->GetBrowserContext());

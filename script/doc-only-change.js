@@ -1,9 +1,6 @@
 const args = require('minimist')(process.argv.slice(2));
 const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit();
-const path = require('path');
-
-const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 
 async function checkIfDocOnlyChange () {
   if (args.prNumber || args.prBranch || args.prURL) {
@@ -33,6 +30,8 @@ async function checkIfDocOnlyChange () {
       const filesChanged = await octokit.pulls.listFiles({
         owner: 'electron', repo: 'electron', pull_number: pullRequestNumber
       });
+
+      console.log('Changed Files:', filesChanged.data.map(fileInfo => fileInfo.filename));
 
       const nonDocChange = filesChanged.data.find((fileInfo) => {
         const fileDirs = fileInfo.filename.split('/');

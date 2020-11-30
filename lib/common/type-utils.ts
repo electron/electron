@@ -34,7 +34,7 @@ const objectMap = function (source: Object, mapper: (value: any) => any) {
   return Object.fromEntries(targetEntries);
 };
 
-function serializeNativeImage (image: any) {
+function serializeNativeImage (image: Electron.NativeImage) {
   const representations = [];
   const scaleFactors = image.getScaleFactors();
 

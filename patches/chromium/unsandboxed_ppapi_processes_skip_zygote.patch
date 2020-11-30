@@ -6,10 +6,10 @@ Subject: unsandboxed_ppapi_processes_skip_zygote.patch
 Unsandboxed ppapi processes should skip zygote.
 
 diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
-index 26450f2ab984b37a6eef3d2c604a447d3c64a625..7e3cf1333f4cebd485fc43b2077cbad1a1f25dbf 100644
+index 5353f3b10d3d3a59c716e82111cce22ec23e482c..f000b9e436f9ef200607460b6af0e7c7d5179987 100644
 --- a/content/browser/ppapi_plugin_process_host.cc
 +++ b/content/browser/ppapi_plugin_process_host.cc
-@@ -122,6 +122,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
+@@ -112,6 +112,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
    ZygoteHandle GetZygote() override {
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
@@ -18,4 +18,4 @@ index 26450f2ab984b37a6eef3d2c604a447d3c64a625..7e3cf1333f4cebd485fc43b2077cbad1
 +    }
      base::CommandLine::StringType plugin_launcher = browser_command_line
          .GetSwitchValueNative(switches::kPpapiPluginLauncher);
-     if (is_broker_ || !plugin_launcher.empty())
+     if (!plugin_launcher.empty())

@@ -119,10 +119,17 @@ ifdescribe(!(process.platform !== 'win32' && ['arm', 'arm64'].includes(process.a
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
       expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
     });
+
+    it('rejects if no trace is happening', async () => {
+      await expect(contentTracing.stopRecording()).to.be.rejected();
+    });
   });
 
   describe('captured events', () => {
-    it('include V8 samples from the main process', async () => {
+    it('include V8 samples from the main process', async function () {
+      // This test is flaky on macOS CI.
+      this.retries(3);
+
       await contentTracing.startRecording({
         categoryFilter: 'disabled-by-default-v8.cpu_profiler',
         traceOptions: 'record-until-full'

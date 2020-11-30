@@ -25,9 +25,11 @@ class NativeBrowserViewMac : public NativeBrowserView {
   void SetBackgroundColor(SkColor color) override;
 
   void UpdateDraggableRegions(
-      const std::vector<gfx::Rect>& system_drag_exclude_areas) override;
+      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
  private:
+  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
+
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewMac);
 };
 

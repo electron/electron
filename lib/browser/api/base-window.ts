@@ -4,7 +4,7 @@ const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as
 
 Object.setPrototypeOf(BaseWindow.prototype, EventEmitter.prototype);
 
-(BaseWindow.prototype as any)._init = function () {
+BaseWindow.prototype._init = function () {
   // Avoid recursive require.
   const { app } = require('electron');
 

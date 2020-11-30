@@ -181,10 +181,10 @@ describe('<webview> tag', function () {
         nodeIntegration: true
       }
     });
-    BrowserWindow.removeDevToolsExtension('foo');
+    w.webContents.session.removeExtension('foo');
 
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-    await BrowserWindow.addDevToolsExtension(extensionPath);
+    await w.webContents.session.loadExtension(extensionPath);
 
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
     loadWebView(w.webContents, {
@@ -625,7 +625,7 @@ describe('<webview> tag', function () {
             sandbox: sandbox.toString()
           });
           const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-          const [, , message] = await emittedOnce(webViewContents, 'console-message');
+          const [, , message] = await emittedUntil(webViewContents, 'console-message', (event: any, level: any, message: string) => !/deprecated/.test(message));
 
           const typeOfRemote = JSON.parse(message);
           expect(typeOfRemote).to.equal('object');
@@ -649,5 +649,28 @@ describe('<webview> tag', function () {
 
     generateSpecs('without sandbox', false);
     generateSpecs('with sandbox', true);
+  });
+
+  describe('DOM events', () => {
+    afterEach(closeAllWindows);
+    it('receives extra properties on DOM events when contextIsolation is enabled', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', 'data:text/html,<script>console.log("hi")</script>')
+        webview.addEventListener('console-message', (e) => {
+          resolve(e.message)
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('hi');
+    });
   });
 });

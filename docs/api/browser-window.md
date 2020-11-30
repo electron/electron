@@ -8,9 +8,6 @@ Process: [Main](../glossary.md#main-process)
 // In the main process.
 const { BrowserWindow } = require('electron')
 
-// Or use `remote` from the renderer process.
-// const { BrowserWindow } = require('electron').remote
-
 const win = new BrowserWindow({ width: 800, height: 600 })
 
 // Load a remote URL
@@ -340,18 +337,17 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       more details.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
-      to `false`. The context that the `preload` script runs in will still
-      have full access to the `document` and `window` globals but it will use
-      its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.)
-      and will be isolated from any changes made to the global environment
-      by the loaded page. The Electron API will only be available in the
-      `preload` script and not the loaded page. This option should be used when
-      loading potentially untrusted remote content to ensure the loaded content
-      cannot tamper with the `preload` script and any Electron APIs being used.
-      This option uses the same technique used by [Chrome Content Scripts][chrome-content-scripts].
-      You can access this context in the dev tools by selecting the
-      'Electron Isolated Context' entry in the combo box at the top of the
-      Console tab.
+      to `false`. The context that the `preload` script runs in will only have
+      access to its own dedicated `document` and `window` globals, as well as
+      its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.),
+      which are all invisible to the loaded content. The Electron API will only
+      be available in the `preload` script and not the loaded page. This option
+      should be used when loading potentially untrusted remote content to ensure
+      the loaded content cannot tamper with the `preload` script and any
+      Electron APIs being used.  This option uses the same technique used by
+      [Chrome Content Scripts][chrome-content-scripts].  You can access this
+      context in the dev tools by selecting the 'Electron Isolated Context'
+      entry in the combo box at the top of the Console tab.
     * `worldSafeExecuteJavaScript` Boolean (optional) - If true, values returned from `webFrame.executeJavaScript` will be sanitized to ensure JS values
       can't unsafely cross between worlds when using `contextIsolation`.  The default
       is `false`. In Electron 12, the default will be changed to `true`. _Deprecated_
@@ -401,6 +397,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       * `bypassHeatCheck` - Bypass code caching heuristics but with lazy compilation
       * `bypassHeatCheckAndEagerCompile` - Same as above except compilation is eager.
       Default policy is `code`.
+    * `enablePreferredSizeMode` Boolean (optional) - Whether to enable
+      preferred size mode. The preferred size is the minimum size needed to
+      contain the layout of the document—without requiring scrolling. Enabling
+      this will cause the `preferred-size-changed` event to be emitted on the
+      `WebContents` when the preferred size changes. Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -466,6 +467,7 @@ window.onbeforeunload = (e) => {
   e.returnValue = false // equivalent to `return false` but not recommended
 }
 ```
+
 _**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
 
 #### Event: 'closed'
@@ -541,6 +543,12 @@ Note that this is only emitted when the window is being resized manually. Resizi
 
 Emitted after the window has been resized.
 
+#### Event: 'resized' _macOS_ _Windows_
+
+Emitted once when the window has finished being resized.
+
+This is usually emitted when the window has been resized manually. On macOS, resizing the window with `setBounds`/`setSize` and setting the `animate` parameter to `true` will also emit this event once resizing has finished.
+
 #### Event: 'will-move' _macOS_ _Windows_
 
 Returns:
@@ -556,11 +564,11 @@ Note that this is only emitted when the window is being resized manually. Resizi
 
 Emitted when the window is being moved to a new position.
 
-__Note__: On macOS this event is an alias of `moved`.
-
-#### Event: 'moved' _macOS_
+#### Event: 'moved' _macOS_ _Windows_
 
 Emitted once when the window is moved to a new position.
+
+__Note__: On macOS this event is an alias of `move`.
 
 #### Event: 'enter-full-screen'
 
@@ -670,6 +678,20 @@ Emitted when the window has closed a sheet.
 
 Emitted when the native new tab button is clicked.
 
+#### Event: 'system-context-menu' _Windows_
+
+Returns:
+
+* `event` Event
+* `point` [Point](structures/point.md) - The screen coordinates the context menu was triggered at
+
+Emitted when the system context menu is triggered on the window, this is
+normally only triggered when the user right clicks on the non-client area
+of your window.  This is the window titlebar or any area you have declared
+as `-webkit-app-region: drag` in a frameless window.
+
+Calling `event.preventDefault()` will prevent the menu from being displayed.
+
 ### Static Methods
 
 The `BrowserWindow` class has the following static methods:
@@ -700,94 +722,6 @@ Returns `BrowserWindow | null` - The window that owns the given `browserView`. I
 * `id` Integer
 
 Returns `BrowserWindow | null` - The window with the given `id`.
-
-#### `BrowserWindow.addExtension(path)` _Deprecated_
-
-* `path` String
-
-Adds Chrome extension located at `path`, and returns extension's name.
-
-The method will also not return if the extension's manifest is missing or incomplete.
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.loadExtension(path)`](session.md#sesloadextensionpath-options).
-
-#### `BrowserWindow.removeExtension(name)` _Deprecated_
-
-* `name` String
-
-Remove a Chrome extension by name.
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
-
-#### `BrowserWindow.getExtensions()` _Deprecated_
-
-Returns `Record<String, ExtensionInfo>` - The keys are the extension names and each value is
-an Object containing `name` and `version` properties.
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.getAllExtensions()`](session.md#sesgetallextensions).
-
-#### `BrowserWindow.addDevToolsExtension(path)` _Deprecated_
-
-* `path` String
-
-Adds DevTools extension located at `path`, and returns extension's name.
-
-The extension will be remembered so you only need to call this API once, this
-API is not for programming use. If you try to add an extension that has already
-been loaded, this method will not return and instead log a warning to the
-console.
-
-The method will also not return if the extension's manifest is missing or incomplete.
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.loadExtension(path)`](session.md#sesloadextensionpath-options).
-
-#### `BrowserWindow.removeDevToolsExtension(name)` _Deprecated_
-
-* `name` String
-
-Remove a DevTools extension by name.
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.removeExtension(extension_id)`](session.md#sesremoveextensionextensionid).
-
-#### `BrowserWindow.getDevToolsExtensions()` _Deprecated_
-
-Returns `Record<string, ExtensionInfo>` - The keys are the extension names and each value is
-an Object containing `name` and `version` properties.
-
-To check if a DevTools extension is installed you can run the following:
-
-```javascript
-const { BrowserWindow } = require('electron')
-
-const installed = 'devtron' in BrowserWindow.getDevToolsExtensions()
-console.log(installed)
-```
-
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
-
-**Note:** This method is deprecated. Instead, use
-[`ses.getAllExtensions()`](session.md#sesgetallextensions).
 
 ### Instance Properties
 
@@ -843,7 +777,7 @@ A `Boolean` property that determines whether the menu bar should be visible.
 
 **Note:** If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
 
-####  `win.kiosk`
+#### `win.kiosk`
 
 A `Boolean` property that determines whether the window is in kiosk mode.
 
@@ -1033,7 +967,7 @@ Returns `Boolean` - Whether the window is in normal state (not maximized, not mi
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
- * `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
 maintaining the aspect ratio.
 
 This will make a window maintain an aspect ratio. The extra size allows a
@@ -1349,6 +1283,17 @@ Enters or leaves kiosk mode.
 
 Returns `Boolean` - Whether the window is in kiosk mode.
 
+#### `win.isTabletMode()` _Windows_
+
+Returns `Boolean` - Whether the window is in Windows 10 tablet mode.
+
+Since Windows 10 users can [use their PC as tablet](https://support.microsoft.com/en-us/help/17210/windows-10-use-your-pc-like-a-tablet),
+under this mode apps can choose to optimize their UI for tablets, such as
+enlarging the titlebar and hiding titlebar buttons.
+
+This API returns whether the window is in tablet mode, and the `resize` event
+can be be used to listen to changes to tablet mode.
+
 #### `win.getMediaSourceId()`
 
 Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
@@ -1430,7 +1375,7 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n"
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base URL (with trailing path separator) for files to be loaded by the data URL. This is needed only if the specified `url` is a data URL and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
@@ -1712,7 +1657,9 @@ events.
 Prevents the window contents from being captured by other apps.
 
 On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
-On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
+On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
+For Windows 10 version 2004 and up the window will be removed from capture entirely,
+older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
 
 #### `win.setFocusable(focusable)` _macOS_ _Windows_
 
