@@ -96,7 +96,7 @@ color scheme, and update the "Current Theme Source" label to `System`.
 
 To add listeners and handlers, add the following lines to the `renderer.js` file:
 
-```js
+```javascript
 const { ipcRenderer } = require('electron')
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
@@ -130,7 +130,7 @@ active using the `nativeTheme.shouldUseDarkColors` property, and set the
 `themeSource` to the opposite theme.
 * Upon receiving `dark-mode:system`, we reset the `themeSource` to `system`.
 
-```js
+```javascript
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
 
 function createWindow () {
@@ -180,7 +180,7 @@ attribute. The value of `prefers-color-scheme` will follow your
 
 Create a `styles.css` file and add the following lines:
 
-```css
+```css fiddle='docs/fiddles/features/macos-dark-mode'
 @media (prefers-color-scheme: dark) {
   body { background:  #333; color: white; }
 }

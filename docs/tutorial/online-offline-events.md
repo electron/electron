@@ -34,11 +34,11 @@ let onlineStatusWindow
 
 app.whenReady().then(() => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
 })
 ```
 
-create the `online-status.html` file and add the following line before the
+in the `index.html` file, add the following line before the
 closing `</body>` tag:
 
 ```html
@@ -47,7 +47,7 @@ closing `</body>` tag:
 
 and add the `renderer.js` file:
 
-```javascript
+```javascript fiddle='docs/fiddles/features/online-detection/renderer'
 const alertOnlineStatus = () => { window.alert(navigator.onLine ? 'online' : 'offline') }
 
 window.addEventListener('online', alertOnlineStatus)
@@ -78,7 +78,7 @@ let onlineStatusWindow
 
 app.whenReady().then(() => {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false, webPreferences: { nodeIntegration: true } })
-  onlineStatusWindow.loadURL(`file://${__dirname}/online-status.html`)
+  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
 })
 
 ipcMain.on('online-status-changed', (event, status) => {
@@ -86,7 +86,7 @@ ipcMain.on('online-status-changed', (event, status) => {
 })
 ```
 
-create the `online-status.html` file and add the following line before the
+in the `index.html` file, add the following line before the
 closing `</body>` tag:
 
 ```html
@@ -95,7 +95,7 @@ closing `</body>` tag:
 
 and add the `renderer.js` file:
 
-```javascript
+```javascript fiddle='docs/fiddles/features/online-detection/main'
 const { ipcRenderer } = require('electron')
 const updateOnlineStatus = () => { ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline') }
 
