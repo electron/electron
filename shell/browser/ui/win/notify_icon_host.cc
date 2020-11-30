@@ -9,10 +9,12 @@
 
 #include "base/bind.h"
 #include "base/logging.h"
+#include "base/memory/weak_ptr.h"
 #include "base/stl_util.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "shell/browser/ui/win/notify_icon.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/win/system_event_state_lookup.h"
@@ -34,7 +36,7 @@ bool IsWinPressed() {
          ((::GetKeyState(VK_RWIN) & 0x8000) == 0x8000);
 }
 
-int GetKeyboardModifers() {
+int GetKeyboardModifiers() {
   int modifiers = ui::EF_NONE;
   if (ui::win::IsShiftPressed())
     modifiers |= ui::EF_SHIFT_DOWN;
@@ -160,17 +162,29 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     if (!win_icon)
       return TRUE;
 
+    // We use a WeakPtr factory for NotifyIcons here so
+    // that the callback is aware if the NotifyIcon gets
+    // garbage-collected. This occurs when the tray gets
+    // GC'd, and the BALLOON events below will not emit.
+    base::WeakPtr<NotifyIcon> win_icon_weak = win_icon->GetWeakPtr();
+
     switch (lparam) {
       case NIN_BALLOONSHOW:
-        win_icon->NotifyBalloonShow();
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonShow, win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONUSERCLICK:
-        win_icon->NotifyBalloonClicked();
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonClicked, win_icon_weak));
         return TRUE;
 
       case NIN_BALLOONTIMEOUT:
-        win_icon->NotifyBalloonClosed();
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(&NotifyIcon::NotifyBalloonClosed, win_icon_weak));
         return TRUE;
 
       case WM_LBUTTONDOWN:
@@ -180,14 +194,20 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
-        win_icon->HandleClickEvent(
-            GetKeyboardModifers(),
-            (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
-            (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
+            base::BindOnce(
+                &NotifyIcon::HandleClickEvent, win_icon_weak,
+                GetKeyboardModifiers(),
+                (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
+                (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK)));
+
         return TRUE;
 
       case WM_MOUSEMOVE:
-        win_icon->HandleMouseMoveEvent(GetKeyboardModifers());
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(&NotifyIcon::HandleMouseMoveEvent,
+                                      win_icon_weak, GetKeyboardModifiers()));
         return TRUE;
     }
   }
