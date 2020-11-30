@@ -139,7 +139,8 @@ build_script:
   - cd build-tools
   - npm install
   - mkdir third_party
-  - node -e "require('./src/utils/goma.js').downloadAndPrepare()"
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
   - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
   - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
   - cd ..
