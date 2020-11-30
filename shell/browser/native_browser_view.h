@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 #define SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 
-#include <utility>
 #include <vector>
 
 #include "base/macros.h"
@@ -41,8 +40,8 @@ class NativeBrowserView : public content::WebContentsObserver {
     return inspectable_web_contents_;
   }
 
-  std::vector<mojom::DraggableRegionPtr> draggable_regions() {
-    return std::move(draggable_regions_);
+  const std::vector<mojom::DraggableRegionPtr>& GetDraggableRegions() const {
+    return draggable_regions_;
   }
 
   InspectableWebContentsView* GetInspectableWebContentsView();
