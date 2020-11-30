@@ -181,7 +181,7 @@ index 664407028b54b969372709fa89a80d5444110350..d8b35023554a3f7f1b6e96c899fa5220
  #if BUILDFLAG(IS_CT_SUPPORTED)
    if (params_->enforce_chrome_ct_policy) {
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index c324481d1556a684184da96a5f6f3afd38468bc9..748e6219ad44baa100ebb0f9620e5079caae75cc 100644
+index d6ec5511068bdc9aa34e76fdab46802d2536654e..b0b6f9bb175cd0e5dc7f69bd204886c463b63442 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -88,6 +88,7 @@ class DomainReliabilityMonitor;
@@ -201,7 +201,7 @@ index c324481d1556a684184da96a5f6f3afd38468bc9..748e6219ad44baa100ebb0f9620e5079
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -683,6 +686,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -690,6 +693,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  

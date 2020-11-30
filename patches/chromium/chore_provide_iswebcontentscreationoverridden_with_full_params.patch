@@ -140,10 +140,10 @@ index dc7f3bc886e7130c66d98ae6de73c17db746cbe5..6197db3570c860f39f381370e1af37f8
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ef1c039f948bcb8d30d3576ed10ae10b81697330..7a4d54620532e344c631467ddc5e0eae0e4b8a2a 100644
+index 3dd7a7f1963c5567c547d17a6f92065b969c36f4..841e6eecfe0e8aa5cc07c0f325fb7681fd68949d 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1793,12 +1793,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1794,12 +1794,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -159,10 +159,10 @@ index ef1c039f948bcb8d30d3576ed10ae10b81697330..7a4d54620532e344c631467ddc5e0eae
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index afd852999cd7716d246a31aa407fc262bb5dc128..eda30ed795d6599fa6ee25bfde155fc17148d761 100644
+index 9c880452916ae70cb3549e29b70079bfb3cad8e4..a1f21ec1a6a085fc331c41cf2a255f3e804f8645 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -776,8 +776,7 @@ class Browser : public TabStripModelObserver,
+@@ -777,8 +777,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -264,7 +264,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4713a51595545f54fd8bfaee1802ae6a931d572d..9f949c3a7f0bd142f8b1b53ddd95f0d1eb3cc8b6 100644
+index 5a1524a1f802a5bc6c2309f4a15340509fda8995..80039a7b038c290a163e7f92927252448ddda9e1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3548,8 +3548,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(

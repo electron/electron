@@ -30,7 +30,7 @@ index 01ded7f6221fafd6c6f9d51fe65b9463827e2970..938ec721fe2423e0b5e2ccec23d73606
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index d1a54049719c54b6a1b95874f037419e5f448bd0..1646ca7e646fd83153af1d9099e0f1267c977734 100644
+index bb4e63ee8b854f983c0ca23efc76ef1bbe525ddd..e15df67d3f3011745e18f4966b92972e0713b859 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -49,7 +49,7 @@ class BooleanObject;

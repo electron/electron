@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index ee70a953e7689e64125cba5657452ce02f627701..e1e184745d4e8a702553008315c5ea3548b89e9f 100644
+index d5742c5c56a2f6e7a564691c6835958c0ae8465b..17e64ed5bf0aff3b9f934096243eb8f60bd13647 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -301,7 +301,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -300,7 +300,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index ee70a953e7689e64125cba5657452ce02f627701..e1e184745d4e8a702553008315c5ea35
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -312,6 +312,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -311,6 +311,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index ee70a953e7689e64125cba5657452ce02f627701..e1e184745d4e8a702553008315c5ea35
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -422,7 +423,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -421,7 +422,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,7 +36,7 @@ index ee70a953e7689e64125cba5657452ce02f627701..e1e184745d4e8a702553008315c5ea35
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -436,7 +437,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -435,7 +436,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
@@ -547,10 +547,10 @@ index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 4d4df80fe6cb597a0f7ce76eca8f00fbd72aa813..bd8681474b7d0a92bc39852d4d92dff8a273b050 100644
+index a357d2ec531530cf95bf78aa7112535f8cf6318f..8fd81fbbada2ed0a0850b25b0b81265df796803c 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -247,6 +247,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -248,6 +248,7 @@ class DnsConfigServicePosix::Watcher {
  
    bool Watch() {
      bool success = true;
@@ -558,7 +558,7 @@ index 4d4df80fe6cb597a0f7ce76eca8f00fbd72aa813..bd8681474b7d0a92bc39852d4d92dff8
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -268,6 +269,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -269,6 +270,7 @@ class DnsConfigServicePosix::Watcher {
                                  DNS_CONFIG_WATCH_MAX);
      }
  #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
