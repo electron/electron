@@ -120,6 +120,15 @@ debugging purposes.
 
 Prints Chrome's internal logging to the console.
 
+### `ELECTRON_DEBUG_DRAG_REGIONS`
+
+Adds coloration to draggable regions on `BrowserViews` on macOS - draggable regions will be colored
+green and non-draggable regions will be colored green to aid debugging.
+
+### `ELECTRON_DEBUG_NOTIFICATIONS`
+
+Adds extra debugging logs to Notification lifecycles on macOS to aid in debugging.
+
 ### `ELECTRON_LOG_ASAR_READS`
 
 When Electron reads from an ASAR file, log the read offset and file path to
