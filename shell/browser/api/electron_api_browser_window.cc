@@ -304,9 +304,8 @@ void BrowserWindow::OnWindowResize() {
   if (!draggable_regions_.empty()) {
     UpdateDraggableRegions(draggable_regions_);
   } else {
-    auto browser_views = window_->browser_views();
-    for (NativeBrowserView* view : browser_views) {
-      view->UpdateDraggableRegions(view->draggable_regions());
+    for (NativeBrowserView* view : window_->browser_views()) {
+      view->UpdateDraggableRegions(view->GetDraggableRegions());
     }
   }
 #endif
