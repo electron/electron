@@ -71,22 +71,18 @@ void BrowserWindow::UpdateDraggableRegions(
 
   // Draggable regions are implemented by having the whole web view draggable
   // and overlaying regions that are not draggable.
-  if (&draggable_regions_ != &regions) {
-    draggable_regions_.clear();
-    for (const auto& r : regions)
-      draggable_regions_.push_back(r.Clone());
-  }
+  if (&draggable_regions_ != &regions)
+    draggable_regions_ = mojo::Clone(regions);
 
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
-    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+    drag_exclude_rects.emplace_back(0, 0, webViewWidth, webViewHeight);
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
-  auto browser_views = window_->browser_views();
-  for (NativeBrowserView* view : browser_views) {
+  for (NativeBrowserView* view : window_->browser_views()) {
     view->UpdateDraggableRegions(drag_exclude_rects);
   }
 
