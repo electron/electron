@@ -29,7 +29,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
       mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver);
 
   void Message(bool internal,
-               bool send_to_all,
                const std::string& channel,
                blink::CloneableMessage arguments,
                int32_t sender_id) override;

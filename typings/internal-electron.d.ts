@@ -67,12 +67,11 @@ declare namespace Electron {
     _windowOpenHandler: ((opts: {url: string, frameName: string, features: string}) => any) | null;
     _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
-    _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
-    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
+    _send(internal: boolean, channel: string, args: any): boolean;
+    _sendToFrame(internal: boolean, frameId: number, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
-    _sendInternalToAll(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
@@ -232,7 +231,6 @@ declare namespace ElectronInternal {
 
   interface IpcRendererInternal extends Electron.IpcRenderer {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
-    sendToAll(webContentsId: number, channel: string, ...args: any[]): void;
     onMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
     onceMessageFromMain(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void): this;
   }

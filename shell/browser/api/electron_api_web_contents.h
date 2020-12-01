@@ -249,18 +249,15 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Send messages to browser.
   bool SendIPCMessage(bool internal,
-                      bool send_to_all,
                       const std::string& channel,
                       v8::Local<v8::Value> args);
 
   bool SendIPCMessageWithSender(bool internal,
-                                bool send_to_all,
                                 const std::string& channel,
                                 blink::CloneableMessage args,
                                 int32_t sender_id = 0);
 
   bool SendIPCMessageToFrame(bool internal,
-                             bool send_to_all,
                              int32_t frame_id,
                              const std::string& channel,
                              v8::Local<v8::Value> args);
@@ -619,7 +616,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                    blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
-                 bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments) override;
