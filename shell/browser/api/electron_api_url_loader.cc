@@ -374,6 +374,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
   std::string origin;
   opts.Get("origin", &origin);
