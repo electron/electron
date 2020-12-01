@@ -457,7 +457,7 @@ index bcd40171250b5d642ac14fb802f22a17fc1f61ec..5877f7d3c2eb27acf61d9bc03b0a8b98
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 94be8ef66cc996364ea38f3ceeec74fcf173ff45..bd6374709567da7f5624a389b47cd52bc8234eb7 100644
+index a48331fc1ed76b79ff1f1c5574be765fd97f6b53..5d5dd651218f62e69fbfcca8bf7a8b97aa9a1636 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -621,10 +621,10 @@ index 94be8ef66cc996364ea38f3ceeec74fcf173ff45..bd6374709567da7f5624a389b47cd52b
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 78d76aadc206a0922163f87f0575ca0cfe344880..d51fff55ebd5c9d1a39637039b279b491d025b08 100644
+index a874a182e048adf4a6cfb0444b79420b8e0e31bf..8fc1db14a0d6d523a53ac6e47d5107fec5561aaf 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -230,7 +230,7 @@ class PrintRenderFrameHelper
+@@ -231,7 +231,7 @@ class PrintRenderFrameHelper
        mojo::PendingAssociatedReceiver<mojom::PrintRenderFrame> receiver);
  
    // printing::mojom::PrintRenderFrame:
@@ -633,7 +633,7 @@ index 78d76aadc206a0922163f87f0575ca0cfe344880..d51fff55ebd5c9d1a39637039b279b49
    void PrintForSystemDialog() override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void SetPrintPreviewUI(
-@@ -297,7 +297,9 @@ class PrintRenderFrameHelper
+@@ -298,7 +298,9 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
@@ -644,7 +644,7 @@ index 78d76aadc206a0922163f87f0575ca0cfe344880..d51fff55ebd5c9d1a39637039b279b49
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
-@@ -306,12 +308,14 @@ class PrintRenderFrameHelper
+@@ -307,12 +309,14 @@ class PrintRenderFrameHelper
  
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
