@@ -36,15 +36,11 @@ void NativeBrowserViewViews::UpdateDraggableRegions(
   // y-value of each of the passed regions or it will be incorrectly
   // assumed that the regions begin in the top left corner as they
   // would for the main client window.
-  std::vector<mojom::DraggableRegionPtr> snapped_regions;
-  auto bounds = GetBounds();
-  for (const auto& r : regions) {
-    auto region = mojom::DraggableRegion::New();
-    region->bounds =
-        gfx::Rect(r->bounds.x() + bounds.x(), r->bounds.y() + bounds.y(),
-                  r->bounds.width(), r->bounds.height());
-    region->draggable = true;
-    snapped_regions.push_back(std::move(region));
+  auto const offset = GetBounds().OffsetFromOrigin();
+  auto snapped_regions = mojo::Clone(regions);
+  for (auto& snapped_region : snapped_regions) {
+    snapped_region->bounds.Offset(offset);
+    snapped_region->draggable = true;
   }
 
   draggable_region_ = DraggableRegionsToSkRegion(snapped_regions);
