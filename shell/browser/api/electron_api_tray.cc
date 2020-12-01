@@ -192,7 +192,7 @@ void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
 
-  gin::Handle<NativeImage> native_image;
+  NativeImage* native_image = nullptr;
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
 
@@ -207,7 +207,7 @@ void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
 
-  gin::Handle<NativeImage> native_image;
+  NativeImage* native_image = nullptr;
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
 
@@ -296,7 +296,7 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
   }
 
   v8::Local<v8::Value> icon_value;
-  gin::Handle<NativeImage> icon;
+  NativeImage* icon = nullptr;
   if (options.Get("icon", &icon_value) &&
       !NativeImage::TryConvertNativeImage(thrower.isolate(), icon_value,
                                           &icon)) {
@@ -308,7 +308,7 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
   options.Get("noSound", &balloon_options.no_sound);
   options.Get("respectQuietTime", &balloon_options.respect_quiet_time);
 
-  if (!icon.IsEmpty()) {
+  if (icon) {
 #if defined(OS_WIN)
     balloon_options.icon = icon->GetHICON(
         GetSystemMetrics(balloon_options.large_icon ? SM_CXICON : SM_CXSMICON));

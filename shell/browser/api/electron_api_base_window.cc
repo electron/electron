@@ -995,7 +995,7 @@ bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 
 #if defined(TOOLKIT_VIEWS)
 void BaseWindow::SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
-  gin::Handle<NativeImage> native_image;
+  NativeImage* native_image = nullptr;
   if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
     return;
 

@@ -453,7 +453,7 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
 }
 
 void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
-  gin::Handle<api::NativeImage> native_image;
+  api::NativeImage* native_image = nullptr;
   if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
     return;
 

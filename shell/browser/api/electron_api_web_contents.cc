@@ -2866,7 +2866,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     return;
   }
 
-  gin::Handle<NativeImage> icon;
+  NativeImage* icon = nullptr;
   if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
       icon->image().IsEmpty()) {
     return;
