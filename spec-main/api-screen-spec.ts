@@ -1,7 +1,19 @@
 import { expect } from 'chai';
 import { screen } from 'electron/main';
+import * as sinon from 'sinon';
 
 describe('screen module', () => {
+  describe('methods reassignment', () => {
+    after(() => {
+      sinon.restore();
+    });
+
+    it('works for a selected method', () => {
+      sinon.stub((screen as any), 'getPrimaryDisplay').returns(null);
+      expect(screen.getPrimaryDisplay()).to.be.null();
+    });
+  });
+
   describe('screen.getCursorScreenPoint()', () => {
     it('returns a point object', () => {
       const point = screen.getCursorScreenPoint();
