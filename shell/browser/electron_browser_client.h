@@ -315,8 +315,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
 
-  std::map<int, base::ProcessId> render_process_host_pids_;
-
   std::set<int> renderer_is_subframe_;
 
   // list of site per affinity. weak_ptr to prevent instance locking
