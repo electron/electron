@@ -241,10 +241,10 @@ index bcef78dc1015200b52bc8fee012bd9c3d36ef0b8..a84b2363b4fd53d3271cb218e3cb345d
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 34f530ae8b857a76038964256916cd7c67252cea..c9656d934aee94334d4eb352d32539e5134cb5ac 100644
+index 4099cf1a288156968d7250dc91f9bfea4b3e216d..c1ad9da91d4d1807b91c06667f7abf39dd3cf0a3 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -221,6 +221,7 @@
+@@ -220,6 +220,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 34f530ae8b857a76038964256916cd7c67252cea..c9656d934aee94334d4eb352d32539e5
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3236,6 +3237,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3215,6 +3216,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -327,10 +327,10 @@ index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67d24d7bac 100644
+index ba38d82e00c85ccedb380bc32d55084579941437..5b25a57e7c0b423737b147fabd5f9b28e4b77f33 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -19,6 +19,7 @@
+@@ -20,6 +20,7 @@
  #include "ui/gfx/buffer_format_util.h"
  #include "ui/gfx/color_space.h"
  #include "ui/gfx/icc_profile.h"
@@ -338,7 +338,7 @@ index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67
  
  namespace gfx {
  
-@@ -127,6 +128,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -131,6 +132,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -353,7 +353,7 @@ index 588d4f5dfdabc9e0e8bc17f01ea9ac1fe253187d..f8f3568f265dd4bae94672a5d0229c67
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -302,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

@@ -20,7 +20,7 @@ index 7378a52d4613cae8c120b0be79c69c53f7188056..20c295a3cbb149dfaf6bc36058b0ca23
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 32191b435773e14a76c399053a0544a434a4595a..0b536fc6a88b6b67df67c049975b49f18802a8b5 100644
+index a023b9825cde6fd758da62f3d2ed261e53191361..496ac05fa3299237326f1399c52777637db2cd5e 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -172,6 +172,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
