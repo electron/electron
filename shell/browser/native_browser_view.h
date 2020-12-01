@@ -40,6 +40,10 @@ class NativeBrowserView : public content::WebContentsObserver {
     return inspectable_web_contents_;
   }
 
+  const std::vector<mojom::DraggableRegionPtr>& GetDraggableRegions() const {
+    return draggable_regions_;
+  }
+
   InspectableWebContentsView* GetInspectableWebContentsView();
   content::WebContents* GetWebContents();
 
@@ -47,6 +51,9 @@ class NativeBrowserView : public content::WebContentsObserver {
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
+
+  virtual void UpdateDraggableRegions(
+      const std::vector<gfx::Rect>& drag_exclude_rects) {}
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
@@ -58,6 +65,7 @@ class NativeBrowserView : public content::WebContentsObserver {
   void WebContentsDestroyed() override;
 
   InspectableWebContents* inspectable_web_contents_;
+  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);
