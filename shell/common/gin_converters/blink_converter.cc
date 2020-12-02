@@ -385,8 +385,6 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanSelectAll));
-  dict.Set("canTranslate",
-           !!(editFlags & blink::ContextMenuDataEditFlags::kCanTranslate));
   dict.Set("canEditRichly",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanEditRichly));
 
