@@ -78,8 +78,17 @@ BrowserView::BrowserView(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
-  gin::Handle<class WebContents> web_contents =
-      WebContents::New(isolate, web_preferences);
+
+  v8::Local<v8::Value> value;
+
+  // Copy the webContents option to webPreferences. This is only used internally
+  // to implement nativeWindowOpen option.
+  if (options.Get("webContents", &value)) {
+    web_preferences.SetHidden("webContents", value);
+  }
+
+  auto web_contents =
+      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();

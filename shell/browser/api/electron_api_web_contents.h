@@ -135,6 +135,10 @@ class WebContents : public gin::Wrappable<WebContents>,
       v8::Isolate* isolate,
       content::WebContents* web_contents);
 
+  static gin::Handle<WebContents> CreateFromWebPreferences(
+      v8::Isolate* isolate,
+      const gin_helper::Dictionary& web_preferences);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
