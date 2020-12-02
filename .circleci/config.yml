@@ -311,10 +311,10 @@ step-setup-goma-for-build: &step-setup-goma-for-build
     name: Setup Goma
     command: |
       echo 'export USE_GOMA=true' >> $BASH_ENV
-      if [ "`uname`" == "Linux" ]; then
-        echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
-      else
-        echo 'export NUMBER_OF_NINJA_PROCESSES=25' >> $BASH_ENV
+      echo 'export NUMBER_OF_NINJA_PROCESSES=300' >> $BASH_ENV
+      if [ "`uname`" == "Darwin" ]; then
+        echo 'ulimit -n 10000' >> $BASH_ENV
+        echo 'sudo launchctl limit maxfiles 65536 200000' >> $BASH_ENV
       fi
       if [ ! -z "$RAW_GOMA_AUTH" ]; then
         echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
@@ -323,7 +323,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       cd build-tools
       npm install
       mkdir third_party
-      node -e "require('./src/utils/goma.js').downloadAndPrepare()"
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
       node -e "require('./src/utils/goma.js').ensure()"
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
