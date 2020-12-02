@@ -686,7 +686,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (info.size === 0) return ['', false];
     if (info.unpacked) {
       const realPath = archive.copyFileOut(filePath);
-      return fs.readFileSync(realPath, { encoding: 'utf8' });
+      const str = fs.readFileSync(realPath, { encoding: 'utf8' });
+      return [str, str.length > 0];
     }
 
     logASARAccess(asarPath, filePath, info.offset);
