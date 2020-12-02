@@ -1321,12 +1321,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
     gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
 
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
-        .SetHidden("simple", true);
-    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
-        .SetHidden("simple", true);
-
+    pid_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1361,9 +1357,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
-        .SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
