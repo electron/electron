@@ -201,7 +201,7 @@ index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe
    // The profile used for the presentation.
    Profile* otr_profile_;
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index c0e854da86648032ff143f564da461715764f804..7e01c413e749fe752210e7d9816e5716d6c48c64 100644
+index 9573beffd60b8445be4e2b53f8a9ad041f7d35d2..716946bd6a054b42ff4e0a3b1bdbd2e291412e08 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -167,14 +167,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -222,7 +222,7 @@ index c0e854da86648032ff143f564da461715764f804..7e01c413e749fe752210e7d9816e5716
                                                                    java_url);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 7f8f856d77e0a4c291137b616b81cbf63a89b50d..4f3814eec0f22f7dcf10e47d72fd413d176695cb 100644
+index 348c65a323c6104030f50e1336ccbd9ada9e7628..c7d6a0041de46784bb28146d5ffd53ded3e5685d 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -78,8 +78,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 74d3391b83346ef37f4eb04852d82ce022f0b7fa..2b005925bc91b12ec426872de66b92a0395c2b0d 100644
+index 892057a7c347022aaef8a58c07e2371567195671..aebee85ecbc6ae089b9e7ff43a0b206f35958609 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3548,8 +3548,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3559,8 +3559,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -292,7 +292,7 @@ index 3abbd89cf26a5e9d53352ad8c9f70d9d0bc52399..c5b4c9ef5b508de0bc41e9c3ece15c52
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index f03649cb9c4ffb83d87031bdad6eb55cf9b9c9bf..042599ae463cf6b20ba59efefd22a049457a1e36 100644
+index 91fa6ef49923afdd39a5bb9848c88ee9979e2770..5f1cb33a890a9bdc09445dd180f06946999f6237 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -316,8 +316,7 @@ class CONTENT_EXPORT WebContentsDelegate {

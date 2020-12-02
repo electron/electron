@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 6ff525c011b78fb636f073f47ca819965bc5b8bb..1fcfd5254d8826c48ea6c5f78fe350ea839d8ec2 100644
+index bd73a072fa9499c6ce231e35c29a50ce870e1fd1..e444cf5b5a8324d2528aa8b325f9feb11d89590d 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -305,7 +305,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -310,7 +310,7 @@ OptionalNSObject InvokeAttributeFor(
        0 == strcmp([value objCType], @encode(NSRange))) {
      return PopulateRange([value rangeValue]);
    }
@@ -19,7 +19,7 @@ index 6ff525c011b78fb636f073f47ca819965bc5b8bb..1fcfd5254d8826c48ea6c5f78fe350ea
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -316,6 +316,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -321,6 +321,7 @@ OptionalNSObject InvokeAttributeFor(
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index 6ff525c011b78fb636f073f47ca819965bc5b8bb..1fcfd5254d8826c48ea6c5f78fe350ea
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -426,7 +427,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -431,7 +432,7 @@ OptionalNSObject InvokeAttributeFor(
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,7 +36,7 @@ index 6ff525c011b78fb636f073f47ca819965bc5b8bb..1fcfd5254d8826c48ea6c5f78fe350ea
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -440,7 +441,7 @@ OptionalNSObject InvokeAttributeFor(
+@@ -445,7 +446,7 @@ OptionalNSObject InvokeAttributeFor(
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
