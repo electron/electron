@@ -57,9 +57,6 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     weak_context_ =
         v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
     weak_context_.SetWeak();
-
-    render_frame->GetRemoteInterfaces()->GetInterface(
-        electron_browser_remote_.BindNewPipeAndPassReceiver());
   }
 
   void OnDestruct() override { electron_browser_remote_.reset(); }

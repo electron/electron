@@ -110,8 +110,6 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame_->GetRemoteInterfaces()->GetInterface(
-      browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->UpdateDraggableRegions(std::move(regions));
 }
 
@@ -130,8 +128,6 @@ void ElectronRenderFrameObserver::DidMeaningfulLayout(
     blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
     mojo::Remote<mojom::ElectronBrowser> browser_remote;
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        browser_remote.BindNewPipeAndPassReceiver());
     browser_remote->OnFirstNonEmptyLayout();
   }
 }
