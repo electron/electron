@@ -1444,7 +1444,8 @@ describe('asar package', function () {
 
       it('reads a normal file with unpacked files', function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        expect(internalModuleReadJSON(p).toString().trim()).to.equal('a');
+        const [s, c] = internalModuleReadJSON(p);
+        expect([s.toString().trim(), c]).to.eql(['a', true]);
       });
     });
 
