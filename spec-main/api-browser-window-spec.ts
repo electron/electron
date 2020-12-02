@@ -1059,6 +1059,25 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+        it('can check transparent window maximization', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            width: 300,
+            height: 300,
+            transparent: true
+          });
+
+          const maximize = emittedOnce(w, 'resize');
+          w.show();
+          w.maximize();
+          await maximize;
+          expect(w.isMaximized()).to.equal(true);
+          const unmaximize = emittedOnce(w, 'resize');
+          w.unmaximize();
+          await unmaximize;
+          expect(w.isMaximized()).to.equal(false);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
