@@ -11,5 +11,7 @@
 
   "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
 
-  "src/electron/patches/depot_tools": "src/third_party/depot_tools"
+  "src/electron/patches/depot_tools": "src/third_party/depot_tools",
+
+  "src/electron/patches/nan": "src/third_party/nan"
 }
