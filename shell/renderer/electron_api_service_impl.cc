@@ -132,7 +132,6 @@ void ElectronApiServiceImpl::OnConnectionError() {
 }
 
 void ElectronApiServiceImpl::Message(bool internal,
-                                     bool send_to_all,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
@@ -168,18 +167,6 @@ void ElectronApiServiceImpl::Message(bool internal,
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
   EmitIPCEvent(context, internal, channel, {}, args, sender_id);
-
-  // Also send the message to all sub-frames.
-  // TODO(MarshallOfSound): Completely move this logic to the main process
-  if (send_to_all) {
-    for (blink::WebFrame* child = frame->FirstChild(); child;
-         child = child->NextSibling())
-      if (child->IsWebLocalFrame()) {
-        v8::Local<v8::Context> child_context =
-            renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
-        EmitIPCEvent(child_context, internal, channel, {}, args, sender_id);
-      }
-  }
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(

@@ -18,7 +18,7 @@ ipcRenderer.sendToHost = function (channel, ...args) {
 };
 
 ipcRenderer.sendTo = function (webContentsId, channel, ...args) {
-  return ipc.sendTo(internal, false, webContentsId, channel, args);
+  return ipc.sendTo(internal, webContentsId, channel, args);
 };
 
 ipcRenderer.invoke = async function (channel, ...args) {
