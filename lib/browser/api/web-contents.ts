@@ -126,19 +126,16 @@ const binding = process._linkedBinding('electron_browser_web_contents');
 const printing = process._linkedBinding('electron_browser_printing');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
+WebContents.prototype.postMessage = function (...args) {
+  return this.mainFrame.postMessage(...args);
+};
+
 WebContents.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
   }
 
   return this._send(false /* internal */, channel, args);
-};
-
-WebContents.prototype.postMessage = function (...args) {
-  if (Array.isArray(args[2])) {
-    args[2] = args[2].map(o => o instanceof MessagePortMain ? o._internalPort : o);
-  }
-  this._postMessage(...args);
 };
 
 WebContents.prototype._sendInternal = function (channel, ...args) {
@@ -148,23 +145,29 @@ WebContents.prototype._sendInternal = function (channel, ...args) {
 
   return this._send(true /* internal */, channel, args);
 };
-WebContents.prototype.sendToFrame = function (frame, channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
-    throw new Error('Missing required frame argument (must be number or array)');
-  }
 
-  return this._sendToFrame(false /* internal */, frame, channel, args);
+function getWebFrame (contents: Electron.WebContents, frame: number | [number, number]) {
+  if (typeof frame === 'number') {
+    return webFrameMain.fromId(contents.mainFrame.processId, frame);
+  } else if (Array.isArray(frame) && frame.length === 2 && frame.every(value => typeof value === 'number')) {
+    return webFrameMain.fromId(frame[0], frame[1]);
+  } else {
+    throw new Error('Missing required frame argument (must be number or [processId, frameId])');
+  }
+}
+
+WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
+  const frame = getWebFrame(this, frameId);
+  if (!frame) return false;
+  frame.send(channel, ...args);
+  return true;
 };
-WebContents.prototype._sendToFrameInternal = function (frame, channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
-    throw new Error('Missing required frame argument (must be number or array)');
-  }
 
-  return this._sendToFrame(true /* internal */, frame, channel, args);
+WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
+  const frame = getWebFrame(this, frameId);
+  if (!frame) return false;
+  frame._sendInternal(channel, ...args);
+  return true;
 };
 
 // Following methods are mapped to webFrame.

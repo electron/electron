@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { expect } from 'chai';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain } from 'electron/main';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 
@@ -449,97 +449,102 @@ describe('ipc module', () => {
       });
     });
 
-    describe('WebContents.postMessage', () => {
-      it('sends a message', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-        w.loadURL('about:blank');
-        await w.webContents.executeJavaScript(`(${function () {
-          const { ipcRenderer } = require('electron');
-          ipcRenderer.on('foo', (_e, msg) => {
-            ipcRenderer.send('bar', msg);
+    const generateTests = (title: string, postMessage: (contents: WebContents) => typeof WebContents.prototype.postMessage) => {
+      describe(title, () => {
+        it('sends a message', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          w.loadURL('about:blank');
+          await w.webContents.executeJavaScript(`(${function () {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.on('foo', (_e, msg) => {
+              ipcRenderer.send('bar', msg);
+            });
+          }})()`);
+          postMessage(w.webContents)('foo', { some: 'message' });
+          const [, msg] = await emittedOnce(ipcMain, 'bar');
+          expect(msg).to.deep.equal({ some: 'message' });
+        });
+
+        describe('error handling', () => {
+          it('throws on missing channel', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              (postMessage(w.webContents) as any)();
+            }).to.throw(/Insufficient number of arguments/);
           });
-        }})()`);
-        w.webContents.postMessage('foo', { some: 'message' });
-        const [, msg] = await emittedOnce(ipcMain, 'bar');
-        expect(msg).to.deep.equal({ some: 'message' });
-      });
 
-      describe('error handling', () => {
-        it('throws on missing channel', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            (w.webContents.postMessage as any)();
-          }).to.throw(/Insufficient number of arguments/);
-        });
+          it('throws on invalid channel', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              postMessage(w.webContents)(null as any, '', []);
+            }).to.throw(/Error processing argument at index 0/);
+          });
 
-        it('throws on invalid channel', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            w.webContents.postMessage(null as any, '', []);
-          }).to.throw(/Error processing argument at index 0/);
-        });
+          it('throws on missing message', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              (postMessage(w.webContents) as any)('channel');
+            }).to.throw(/Insufficient number of arguments/);
+          });
 
-        it('throws on missing message', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            (w.webContents.postMessage as any)('channel');
-          }).to.throw(/Insufficient number of arguments/);
-        });
+          it('throws on non-serializable message', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              postMessage(w.webContents)('channel', w);
+            }).to.throw(/An object could not be cloned/);
+          });
 
-        it('throws on non-serializable message', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            w.webContents.postMessage('channel', w);
-          }).to.throw(/An object could not be cloned/);
-        });
+          it('throws on invalid transferable list', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              postMessage(w.webContents)('', '', null as any);
+            }).to.throw(/Invalid value for transfer/);
+          });
 
-        it('throws on invalid transferable list', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            w.webContents.postMessage('', '', null as any);
-          }).to.throw(/Invalid value for transfer/);
-        });
+          it('throws on transferring non-transferable', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              (postMessage(w.webContents) as any)('channel', '', [123]);
+            }).to.throw(/Invalid value for transfer/);
+          });
 
-        it('throws on transferring non-transferable', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            (w.webContents.postMessage as any)('channel', '', [123]);
-          }).to.throw(/Invalid value for transfer/);
-        });
+          it('throws when passing null ports', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            expect(() => {
+              postMessage(w.webContents)('foo', null, [null] as any);
+            }).to.throw(/Invalid value for transfer/);
+          });
 
-        it('throws when passing null ports', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          expect(() => {
-            w.webContents.postMessage('foo', null, [null] as any);
-          }).to.throw(/Invalid value for transfer/);
-        });
+          it('throws when passing duplicate ports', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            const { port1 } = new MessageChannelMain();
+            expect(() => {
+              postMessage(w.webContents)('foo', null, [port1, port1]);
+            }).to.throw(/duplicate/);
+          });
 
-        it('throws when passing duplicate ports', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          const { port1 } = new MessageChannelMain();
-          expect(() => {
-            w.webContents.postMessage('foo', null, [port1, port1]);
-          }).to.throw(/duplicate/);
-        });
-
-        it('throws when passing ports that have already been neutered', async () => {
-          const w = new BrowserWindow({ show: false });
-          await w.loadURL('about:blank');
-          const { port1 } = new MessageChannelMain();
-          w.webContents.postMessage('foo', null, [port1]);
-          expect(() => {
-            w.webContents.postMessage('foo', null, [port1]);
-          }).to.throw(/already neutered/);
+          it('throws when passing ports that have already been neutered', async () => {
+            const w = new BrowserWindow({ show: false });
+            await w.loadURL('about:blank');
+            const { port1 } = new MessageChannelMain();
+            postMessage(w.webContents)('foo', null, [port1]);
+            expect(() => {
+              postMessage(w.webContents)('foo', null, [port1]);
+            }).to.throw(/already neutered/);
+          });
         });
       });
-    });
+    };
+
+    generateTests('WebContents.postMessage', contents => contents.postMessage.bind(contents));
+    generateTests('WebFrameMain.postMessage', contents => contents.mainFrame.postMessage.bind(contents.mainFrame));
   });
 });

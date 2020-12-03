@@ -75,8 +75,6 @@ class NativeImage : public gin::Wrappable<NativeImage> {
       const gfx::Size& size);
 #endif
 
-  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
-
   static bool TryConvertNativeImage(v8::Isolate* isolate,
                                     v8::Local<v8::Value> image,
                                     NativeImage** native_image);
