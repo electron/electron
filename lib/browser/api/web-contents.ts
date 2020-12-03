@@ -171,10 +171,7 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
     throw new Error('Missing required frameId argument');
   }
 
-  const internal = false;
-  const sendToAll = false;
-
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(false /* internal */, frameId, channel, args);
 };
 WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
   if (typeof channel !== 'string') {
@@ -183,10 +180,7 @@ WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args
     throw new Error('Missing required frameId argument');
   }
 
-  const internal = true;
-  const sendToAll = false;
-
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(true /* internal */, frameId, channel, args);
 };
 
 // Following methods are mapped to webFrame.

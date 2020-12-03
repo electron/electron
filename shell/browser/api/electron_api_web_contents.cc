@@ -2718,14 +2718,13 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
     mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
     frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
         &electron_renderer);
-    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
+    electron_renderer->Message(internal, channel, args.ShallowClone(),
                                sender_id);
   }
   return true;
 }
 
 bool WebContents::SendIPCMessageToFrame(bool internal,
-                                        bool send_to_all,
                                         int32_t frame_id,
                                         const std::string& channel,
                                         v8::Local<v8::Value> args) {
@@ -2747,7 +2746,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
 
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
   (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->Message(internal, send_to_all, channel, std::move(message),
+  electron_renderer->Message(internal, channel, std::move(message),
                              0 /* sender_id */);
   return true;
 }
