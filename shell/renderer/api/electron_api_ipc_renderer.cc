@@ -172,7 +172,6 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   void SendTo(v8::Isolate* isolate,
               gin_helper::ErrorThrower thrower,
               bool internal,
-              bool send_to_all,
               int32_t web_contents_id,
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
@@ -184,8 +183,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_remote_->MessageTo(internal, send_to_all, web_contents_id,
-                                        channel, std::move(message));
+    electron_browser_remote_->MessageTo(internal, web_contents_id, channel,
+                                        std::move(message));
   }
 
   void SendToHost(v8::Isolate* isolate,

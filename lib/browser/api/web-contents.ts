@@ -131,10 +131,7 @@ WebContents.prototype.send = function (channel, ...args) {
     throw new Error('Missing required channel argument');
   }
 
-  const internal = false;
-  const sendToAll = false;
-
-  return this._send(internal, sendToAll, channel, args);
+  return this._send(false /* internal */, channel, args);
 };
 
 WebContents.prototype.postMessage = function (...args) {
@@ -149,20 +146,7 @@ WebContents.prototype._sendInternal = function (channel, ...args) {
     throw new Error('Missing required channel argument');
   }
 
-  const internal = true;
-  const sendToAll = false;
-
-  return this._send(internal, sendToAll, channel, args);
-};
-WebContents.prototype._sendInternalToAll = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  }
-
-  const internal = true;
-  const sendToAll = true;
-
-  return this._send(internal, sendToAll, channel, args);
+  return this._send(true /* internal */, channel, args);
 };
 WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   if (typeof channel !== 'string') {
@@ -171,10 +155,7 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
     throw new Error('Missing required frameId argument');
   }
 
-  const internal = false;
-  const sendToAll = false;
-
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(false /* internal */, frameId, channel, args);
 };
 WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
   if (typeof channel !== 'string') {
@@ -183,10 +164,7 @@ WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args
     throw new Error('Missing required frameId argument');
   }
 
-  const internal = true;
-  const sendToAll = false;
-
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(true /* internal */, frameId, channel, args);
 };
 
 // Following methods are mapped to webFrame.
@@ -199,7 +177,7 @@ const webFrameMethods = [
 
 for (const method of webFrameMethods) {
   WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
+    return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
   };
 }
 
@@ -217,11 +195,11 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScript', String(code), !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScript', String(code), !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, false, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
+  return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
 };
 
 // Translate the options of printToPDF.
