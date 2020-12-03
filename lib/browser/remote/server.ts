@@ -31,7 +31,7 @@ const finalizationRegistry = new FinalizationRegistry((fi: FinalizerInfo) => {
   const ref = rendererFunctionCache.get(mapKey);
   if (ref !== undefined && ref.deref() === undefined) {
     rendererFunctionCache.delete(mapKey);
-    if (!fi.webContents.isDestroyed()) { fi.webContents.sendToFrame(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]); }
+    if (!fi.webContents.isDestroyed()) { fi.webContents._sendToFrameInternal(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]); }
   }
 });
 
