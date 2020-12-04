@@ -92,10 +92,10 @@ index 16d0dd4456f214b14fbdf224ba938ebb1cb63106..4dc340938d54597a315ebb441d769dcc
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index cd8d68c7d3c896b1793bc26720828d7977d43879..6c622b0f1269398d3987711fdc1dbfe25fb13611 100644
+index 2a7cc8f8d0f1914f081c1aaeac39d504d6f13002..d83ed7de4a5f2d5270728cf4c51edaf7dbbcc347 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5524,6 +5524,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5520,6 +5520,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

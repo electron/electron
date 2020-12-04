@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index a8cc695c4c1c1d2d7e3274a2b628894997de5fe8..a7ba417835f217391fa300f41c7fbdc0d0c0a387 100644
+index f3875c216b5f4169a3beb9ae3aeb73c9f4df23f1..5e471024655e1b9ee224ed8ba7fc416e8be10aaa 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -19,9 +19,9 @@ index a8cc695c4c1c1d2d7e3274a2b628894997de5fe8..a7ba417835f217391fa300f41c7fbdc0
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
-@@ -269,6 +270,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
-   // Allow the delegate to handle the cursor update. Returns true if handled.
-   virtual bool OnUpdateDragCursor();
+@@ -266,6 +267,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+   // Returns the associated RenderViewHostDelegateView*, if possible.
+   virtual RenderViewHostDelegateView* GetDelegateView();
  
 +  // Notify the delegate of the RenderWidget's changing cursor.
 +  virtual void OnCursorChanged(const WebCursor& cursor) {}
@@ -30,7 +30,7 @@ index a8cc695c4c1c1d2d7e3274a2b628894997de5fe8..a7ba417835f217391fa300f41c7fbdc0
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 20c295a3cbb149dfaf6bc36058b0ca239309b6c3..04b7442d3bb66c32d51a5ef3c5b211ad28134241 100644
+index 8ec4bd2ff2cc3703b72586131bd7ebcf7833951e..35745503e2a4dd6174fe962347227d0b6dc0eed8 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1849,6 +1849,8 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& unsafe_cursor) {
@@ -43,11 +43,11 @@ index 20c295a3cbb149dfaf6bc36058b0ca239309b6c3..04b7442d3bb66c32d51a5ef3c5b211ad
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7c88d48493989275b30de6921c7b667b9893c9ee..892057a7c347022aaef8a58c07e2371567195671 100644
+index 001953d149bf74d36797b488befe261d13c28ae7..ae6ba78f929e0508c96eeda50527f2b20b700d76 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4146,6 +4146,12 @@ bool WebContentsImpl::OnUpdateDragCursor() {
-          browser_plugin_embedder_->OnUpdateDragCursor();
+@@ -4140,6 +4140,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+   return text_input_manager_.get();
  }
  
 +void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
@@ -60,13 +60,13 @@ index 7c88d48493989275b30de6921c7b667b9893c9ee..892057a7c347022aaef8a58c07e23715
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index f36e5b07cd37ba5d9bf80380b6e2ed94d5fb1cd5..115eaf41e26b17ad7b628145ea7b2d5bf283e238 100644
+index d0473ee191cdfb64b7e0696124db6550a362c4da..4ab9d20e13c58f379fd3a158fbb0f090acce686d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -940,6 +940,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -939,6 +939,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+       blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
-   bool OnUpdateDragCursor() override;
 +  void OnCursorChanged(const WebCursor& cursor) override;
    bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
    bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
