@@ -1,16 +1,16 @@
 import { expect } from 'chai';
 import { screen } from 'electron/main';
-import * as sinon from 'sinon';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {
-    after(() => {
-      sinon.restore();
-    });
-
     it('works for a selected method', () => {
-      sinon.stub((screen as any), 'getPrimaryDisplay').returns(null);
-      expect(screen.getPrimaryDisplay()).to.be.null();
+      const originalFunction = screen.getPrimaryDisplay;
+      try {
+        (screen as any).getPrimaryDisplay = () => null;
+        expect(screen.getPrimaryDisplay()).to.be.null();
+      } finally {
+        screen.getPrimaryDisplay = originalFunction;
+      }
     });
   });
 
