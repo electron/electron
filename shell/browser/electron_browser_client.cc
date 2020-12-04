@@ -49,6 +49,7 @@
 #include "content/public/common/url_constants.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -68,6 +69,7 @@
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/electron_browser_handler_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_quota_permission_context.h"
@@ -1591,6 +1593,12 @@ void BindBadgeManagerFrameReceiver(
   LOG(WARNING) << "The Chromium Badging API is not available in Electron";
 }
 
+void BindElectronBrowser(
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<electron::mojom::ElectronBrowser> receiver) {
+  ElectronBrowserHandlerImpl::Create(frame_host, std::move(receiver));
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void BindMimeHandlerService(
     content::RenderFrameHost* frame_host,
@@ -1629,6 +1637,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&BindNetworkHintsHandler));
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeManagerFrameReceiver));
+  map->Add<electron::mojom::ElectronBrowser>(
+      base::BindRepeating(&BindElectronBrowser));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));

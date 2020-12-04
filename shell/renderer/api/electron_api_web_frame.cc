@@ -28,6 +28,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_renderer_client.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -361,6 +362,8 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
+      browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->SetTemporaryZoomLevel(level);
 }
 
@@ -376,6 +379,8 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
+      browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->DoGetZoomLevel(&result);
   return result;
 }
