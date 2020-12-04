@@ -57,6 +57,7 @@ declare namespace Electron {
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
+    _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;
   }
 
   interface WebPreferences {
@@ -112,7 +113,6 @@ declare namespace Electron {
   interface WebContentsInternal extends Electron.WebContents {
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
     _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
-    _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
