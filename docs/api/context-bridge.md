@@ -44,19 +44,19 @@ The `contextBridge` module has the following methods:
 ### `contextBridge.exposeInMainWorld(apiKey, api)` _Experimental_
 
 * `apiKey` String - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
-* `api` Record<String, any> - Your API object, more information on what this API can be and how it works is available below.
+* `api` any - Your API, more information on what this API can be and how it works is available below.
 
 ## Usage
 
-### API Objects
+### API
 
-The `api` object provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api-experimental) must be an object
+The `api` provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api-experimental) must be a `Function`, `String`, `Number`, `Array`, `Boolean`, or an object
 whose keys are strings and values are a `Function`, `String`, `Number`, `Array`, `Boolean`, or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**. Any data / primitives sent in
-the API object become immutable and updates on either side of the bridge do not result in an update on the other side.
+the API become immutable and updates on either side of the bridge do not result in an update on the other side.
 
-An example of a complex API object is shown below:
+An example of a complex API is shown below:
 
 ```javascript
 const { contextBridge } = require('electron')
