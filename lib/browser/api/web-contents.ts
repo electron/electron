@@ -148,23 +148,23 @@ WebContents.prototype._sendInternal = function (channel, ...args) {
 
   return this._send(true /* internal */, channel, args);
 };
-WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
+WebContents.prototype.sendToFrame = function (frame, channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
-  } else if (typeof frameId !== 'number') {
-    throw new Error('Missing required frameId argument');
+  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
+    throw new Error('Missing required frame argument (must be number or array)');
   }
 
-  return this._sendToFrame(false /* internal */, frameId, channel, args);
+  return this._sendToFrame(false /* internal */, frame, channel, args);
 };
-WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
+WebContents.prototype._sendToFrameInternal = function (frame, channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
-  } else if (typeof frameId !== 'number') {
-    throw new Error('Missing required frameId argument');
+  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
+    throw new Error('Missing required frame argument (must be number or array)');
   }
 
-  return this._sendToFrame(true /* internal */, frameId, channel, args);
+  return this._sendToFrame(true /* internal */, frame, channel, args);
 };
 
 // Following methods are mapped to webFrame.
@@ -456,17 +456,19 @@ WebContents.prototype._callWindowOpenHandler = function (event: any, url: string
 };
 
 const addReplyToEvent = (event: any) => {
+  const { processId, frameId } = event
   event.reply = (...args: any[]) => {
-    event.sender.sendToFrame(event.frameId, ...args);
+    event.sender.sendToFrame([processId, frameId], ...args);
   };
 };
 
 const addReplyInternalToEvent = (event: any) => {
+  const { processId, frameId } = event
   Object.defineProperty(event, '_replyInternal', {
     configurable: false,
     enumerable: false,
     value: (...args: any[]) => {
-      event.sender._sendToFrameInternal(event.frameId, ...args);
+      event.sender._sendToFrameInternal([processId, frameId], ...args);
     }
   });
 };
