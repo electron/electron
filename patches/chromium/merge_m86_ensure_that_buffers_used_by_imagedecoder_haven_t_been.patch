@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Fri, 13 Nov 2020 21:06:58 +0000
+Subject: Merge M86: "Ensure that buffers used by ImageDecoder haven't been
+ neutered."
+
+Since JavaScript may detach the underlying buffers, we need to check
+to ensure they're still valid before using them for decoding.
+
+TBR=sandersd
+
+(cherry picked from commit fa93fba6a28d384b0a0cddd63e85eb10cb97bb53)
+
+Test: Updated unittests. Manual test case breaks.
+Change-Id: Iefe5f8adf619cd6afdfedcb08a13c2996bfe0d32
+Fixed: 1146761
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2527542
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Dan Sanders <sandersd@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#825615}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2537781
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1453}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc
+index e42ceaf37038b58e53d11bfb63b7a27aa414a87b..780fdbef3afb9cca322002f736fc3d9b87f834b3 100644
+--- a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc
++++ b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc
+@@ -99,9 +99,8 @@ ImageDecoderExternal::ImageDecoderExternal(ScriptState* script_state,
+     return;
+   }
+ 
+-  // TODO: Data is owned by the caller who may be free to manipulate it. We will
+-  // probably need to make a copy to our own internal data or neuter the buffers
+-  // as seen by JS.
++  // Since data is owned by the caller who may be free to manipulate it, we must
++  // check HasValidEncodedData() before attempting to access |decoder_|.
+   segment_reader_ = SegmentReader::CreateFromSkData(
+       SkData::MakeWithoutCopy(buffer.Data(), buffer.ByteLengthAsSizeT()));
+   if (!segment_reader_) {
+@@ -206,6 +205,7 @@ void ImageDecoderExternal::Trace(Visitor* visitor) const {
+ 
+ void ImageDecoderExternal::CreateImageDecoder() {
+   DCHECK(!decoder_);
++  DCHECK(HasValidEncodedData());
+ 
+   // TODO: We should probably call ImageDecoder::SetMemoryAllocator() so that
+   // we can recycle frame buffers for decoded images.
+@@ -260,6 +260,13 @@ void ImageDecoderExternal::MaybeSatisfyPendingDecodes() {
+       continue;
+     }
+ 
++    if (!HasValidEncodedData()) {
++      request->resolver->Reject(MakeGarbageCollected<DOMException>(
++          DOMExceptionCode::kInvalidStateError,
++          "Source data has been neutered"));
++      continue;
++    }
++
+     auto* image = decoder_->DecodeFrameBufferAtIndex(request->frame_index);
+     if (decoder_->Failed() || !image) {
+       request->complete = true;
+@@ -326,6 +333,7 @@ void ImageDecoderExternal::MaybeSatisfyPendingDecodes() {
+ }
+ 
+ void ImageDecoderExternal::MaybeSatisfyPendingMetadataDecodes() {
++  DCHECK(HasValidEncodedData());
+   DCHECK(decoder_);
+   DCHECK(decoder_->Failed() || decoder_->IsDecodedSizeAvailable());
+   for (auto& resolver : pending_metadata_decodes_)
+@@ -334,6 +342,9 @@ void ImageDecoderExternal::MaybeSatisfyPendingMetadataDecodes() {
+ }
+ 
+ void ImageDecoderExternal::MaybeUpdateMetadata() {
++  if (!HasValidEncodedData())
++    return;
++
+   const size_t decoded_frame_count = decoder_->FrameCount();
+   if (decoder_->Failed()) {
+     MaybeSatisfyPendingMetadataDecodes();
+@@ -358,4 +369,22 @@ void ImageDecoderExternal::MaybeUpdateMetadata() {
+   MaybeSatisfyPendingMetadataDecodes();
+ }
+ 
++bool ImageDecoderExternal::HasValidEncodedData() const {
++  // If we keep an internal copy of the data, it's always valid.
++  if (stream_buffer_)
++    return true;
++
++  if (init_data_->data().IsArrayBuffer() &&
++      init_data_->data().GetAsArrayBuffer()->IsDetached()) {
++    return false;
++  }
++
++  if (init_data_->data().IsArrayBufferView() &&
++      !init_data_->data().GetAsArrayBufferView()->BaseAddress()) {
++    return false;
++  }
++
++  return true;
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc.rej b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc.rej
+new file mode 100644
+index 0000000000000000000000000000000000000000..68d0eae0c7cd414f8cbe90aee79417d2a4ffe98b
+--- /dev/null
++++ b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc.rej
+@@ -0,0 +1,53 @@
++diff a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc	(rejected hunks)
++@@ -120,9 +120,8 @@
++     return;
++   }
++ 
++-  // TODO(crbug.com/1073995): Data is owned by the caller who may be free to
++-  // manipulate it. We will probably need to make a copy to our own internal
++-  // data or neuter the buffers as seen by JS.
+++  // Since data is owned by the caller who may be free to manipulate it, we must
+++  // check HasValidEncodedData() before attempting to access |decoder_|.
++   segment_reader_ = SegmentReader::CreateFromSkData(
++       SkData::MakeWithoutCopy(buffer.Data(), buffer.ByteLengthAsSizeT()));
++   if (!segment_reader_) {
++@@ -266,6 +265,7 @@
++ 
++ void ImageDecoderExternal::CreateImageDecoder() {
++   DCHECK(!decoder_);
+++  DCHECK(HasValidEncodedData());
++ 
++   // TODO(crbug.com/1073995): We should probably call
++   // ImageDecoder::SetMemoryAllocator() so that we can recycle frame buffers for
++@@ -320,6 +320,13 @@
++       continue;
++     }
++ 
+++    if (!HasValidEncodedData()) {
+++      request->exception = MakeGarbageCollected<DOMException>(
+++          DOMExceptionCode::kInvalidStateError,
+++          "Source data has been neutered");
+++      continue;
+++    }
+++
++     auto* image = decoder_->DecodeFrameBufferAtIndex(request->frame_index);
++     if (decoder_->Failed() || !image) {
++       // TODO(crbug.com/1073995): Include frameIndex in rejection?
++@@ -398,6 +405,7 @@
++ }
++ 
++ void ImageDecoderExternal::MaybeSatisfyPendingMetadataDecodes() {
+++  DCHECK(HasValidEncodedData());
++   DCHECK(decoder_);
++   if (!decoder_->IsSizeAvailable() && !decoder_->Failed())
++     return;
++@@ -409,6 +417,9 @@
++ }
++ 
++ void ImageDecoderExternal::MaybeUpdateMetadata() {
+++  if (!HasValidEncodedData())
+++    return;
+++
++   // Since we always create the decoder at construction, we need to wait until
++   // at least the size is available before signaling that metadata has been
++   // retrieved.
+diff --git a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.h b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.h
+index 1b4ac0ce7eade63c06c1030c29fc90a8551aa7c2..7d9d534ce14d07e49fca99f11297e74b1311363e 100644
+--- a/third_party/blink/renderer/modules/webcodecs/image_decoder_external.h
++++ b/third_party/blink/renderer/modules/webcodecs/image_decoder_external.h
+@@ -61,6 +61,10 @@ class MODULES_EXPORT ImageDecoderExternal final : public ScriptWrappable,
+   void MaybeSatisfyPendingMetadataDecodes();
+   void MaybeUpdateMetadata();
+ 
++  // Returns false if the decoder was constructed with an ArrayBuffer or
++  // ArrayBufferView that has since been neutered.
++  bool HasValidEncodedData() const;
++
+   Member<ScriptState> script_state_;
+ 
+   // Used when a ReadableStream is provided.
