@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Scott Violet <sky@chromium.org>
+Date: Fri, 13 Nov 2020 20:47:38 +0000
+Subject: ui: CHECK that UnPremultiply is passed a 32bpp image
+
+To do otherwise results in accessing random data.
+
+BUG=1147430
+TEST=none
+
+(cherry picked from commit 1f673896837ab8c687d93fec604c96c78c7f679b)
+
+Change-Id: Icedacbaac64cad3fc903e6423c6f9aad8c1e8cb5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2531118
+Commit-Queue: danakj <danakj@chromium.org>
+Reviewed-by: danakj <danakj@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#826300}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2538047
+Reviewed-by: Scott Violet <sky@chromium.org>
+Commit-Queue: Scott Violet <sky@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1452}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/ui/gfx/skbitmap_operations.cc b/ui/gfx/skbitmap_operations.cc
+index 5a370b684293df29a64361281c899f3fed608689..250132d08a4dcc6650cc001ac0906f046c237652 100644
+--- a/ui/gfx/skbitmap_operations.cc
++++ b/ui/gfx/skbitmap_operations.cc
+@@ -630,6 +630,8 @@ SkBitmap SkBitmapOperations::UnPreMultiply(const SkBitmap& bitmap) {
+     return bitmap;
+   if (bitmap.isOpaque())
+     return bitmap;
++  // It's expected this code is called with a 32bpp image.
++  CHECK_EQ(kN32_SkColorType, bitmap.colorType());
+ 
+   const SkImageInfo& opaque_info =
+       bitmap.info().makeAlphaType(kOpaque_SkAlphaType);
