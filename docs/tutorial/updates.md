@@ -59,6 +59,11 @@ handling releases and does not require releases to originate on GitHub.
 Atlassian. Supports multiple applications and channels; uses a static file store
 to minify server cost.
 
+## Using autoUpdater in Your App
+[autoUpdater](../api/auto-updater.md) is an eventEmitter that can be used to update your users' application every time a new update is released. It simplifies the updation process by allowing the users to update the application without having to manually download a new setup file.
+
+It currently only supports Windows and macOS.
+
 ## Implementing Updates in Your App
 
 Once you've deployed your update server, continue with importing the required
