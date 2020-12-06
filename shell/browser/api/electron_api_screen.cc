@@ -33,15 +33,6 @@ gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 namespace {
 
-// Find an item in container according to its ID.
-template <class T>
-typename T::iterator FindById(T* container, int id) {
-  auto predicate = [id](const typename T::value_type& item) -> bool {
-    return item.id() == id;
-  };
-  return std::find_if(container->begin(), container->end(), predicate);
-}
-
 // Convert the changed_metrics bitmask to string array.
 std::vector<std::string> MetricsToArray(uint32_t metrics) {
   std::vector<std::string> array;
