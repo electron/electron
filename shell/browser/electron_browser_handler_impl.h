@@ -40,7 +40,6 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser {
                    blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
   void MessageTo(bool internal,
-                 bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments) override;

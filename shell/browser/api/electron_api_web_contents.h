@@ -432,7 +432,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       electron::mojom::ElectronBrowser::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
   void MessageTo(bool internal,
-                 bool send_to_all,
                  int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments);
