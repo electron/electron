@@ -492,6 +492,7 @@ source_set("electron_lib") {
     }
   }
   if (is_linux) {
+    libs = [ "xshmfence" ]
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
