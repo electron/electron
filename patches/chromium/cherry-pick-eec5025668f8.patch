@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bill Budge <bbudge@chromium.org>
+Date: Fri, 13 Nov 2020 09:02:09 +0000
+Subject: Merged: [wasm][code cache] Match response to cached raw resource
+
+- Verifies that the retrieved resource has the same response time, and
+  that the source matches (i.e. both are from service worker, or both
+  are not).
+
+Bug: chromium:1146673
+
+(cherry picked from commit a8b46244ecaa1647ee2d70304878c0365ee04087)
+
+Change-Id: I6243ec9017b2405687056aa6ea199c67b1c16063
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2526802
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Commit-Queue: Bill Budge <bbudge@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#826277}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2537531
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Auto-Submit: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1447}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
+index 1010b8be1364fc500b1bb20338e8959d683df5e8..0fffec5084a09cb1af18e619cbad7cc1dd73c447 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
+@@ -210,7 +210,8 @@ class ExceptionToAbortStreamingScope {
+ };
+ 
+ RawResource* GetRawResource(ScriptState* script_state,
+-                            const String& url_string) {
++                            const String& url_string,
++                            Response* response) {
+   ExecutionContext* execution_context = ExecutionContext::From(script_state);
+   if (!execution_context)
+     return nullptr;
+@@ -224,6 +225,18 @@ RawResource* GetRawResource(ScriptState* script_state,
+   if (!resource)
+     return nullptr;
+ 
++  // Make sure the resource matches the |response|. To check that, we make sure
++  // the response times match, and the response sources match.
++  const ResourceResponse& resource_response = resource->GetResponse();
++  const FetchResponseData* fetch_response_data =
++      response->GetResponse()->InternalResponse();
++  if (resource_response.ResponseTime() != fetch_response_data->ResponseTime())
++    return nullptr;
++  bool from_service_worker = fetch_response_data->ResponseSource() ==
++                             network::mojom::FetchResponseSource::kUnspecified;
++  if (resource_response.WasFetchedViaServiceWorker() != from_service_worker)
++    return nullptr;
++
+   // Wasm modules should be fetched as raw resources.
+   DCHECK_EQ(ResourceType::kRaw, resource->GetType());
+   return ToRawResource(resource);
+@@ -347,13 +360,12 @@ void StreamFromResponseCallback(
+   String url = response->url();
+   const std::string& url_utf8 = url.Utf8();
+   streaming->SetUrl(url_utf8.c_str(), url_utf8.size());
+-  RawResource* raw_resource = GetRawResource(script_state, url);
+-  if (raw_resource) {
+-    SingleCachedMetadataHandler* cache_handler =
+-        raw_resource->ScriptCacheHandler();
++  RawResource* resource = GetRawResource(script_state, url, response);
++  if (resource) {
++    SingleCachedMetadataHandler* cache_handler = resource->ScriptCacheHandler();
+     if (cache_handler) {
+       auto client = std::make_shared<WasmStreamingClient>(
+-          url, raw_resource->GetResponse().ResponseTime());
++          url, resource->GetResponse().ResponseTime());
+       streaming->SetClient(client);
+       scoped_refptr<CachedMetadata> cached_module =
+           cache_handler->GetCachedMetadata(kWasmModuleTag);

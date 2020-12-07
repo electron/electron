@@ -114,4 +114,5 @@ cherry-pick-8f24f935c903.patch
 crashpad-initialize-logging.patch
 cherry-pick-bbb64b5c6916.patch
 ignore_renderframehostimpl_detach_for_speculative_rfhs.patch
+cherry-pick-eec5025668f8.patch
 cherry-pick-bbc6ab5bb49c.patch
