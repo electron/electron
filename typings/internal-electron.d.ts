@@ -237,7 +237,6 @@ declare namespace ElectronInternal {
 
   // Internal IPC has _replyInternal and NO reply method
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
-    _replyInternal(...args: any[]): void;
   }
 
   interface IpcMainInternal extends NodeJS.EventEmitter {

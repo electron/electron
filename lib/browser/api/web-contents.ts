@@ -462,17 +462,6 @@ const addReplyToEvent = (event: any) => {
   };
 };
 
-const addReplyInternalToEvent = (event: any) => {
-  const { processId, frameId } = event
-  Object.defineProperty(event, '_replyInternal', {
-    configurable: false,
-    enumerable: false,
-    value: (...args: any[]) => {
-      event.sender._sendToFrameInternal([processId, frameId], ...args);
-    }
-  });
-};
-
 const addReturnValueToEvent = (event: any) => {
   Object.defineProperty(event, 'returnValue', {
     set: (value) => event.sendReply(value),
@@ -517,7 +506,6 @@ WebContents.prototype._init = function () {
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     if (internal) {
-      addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
@@ -543,7 +531,6 @@ WebContents.prototype._init = function () {
   this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
     addReturnValueToEvent(event);
     if (internal) {
-      addReplyInternalToEvent(event);
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
