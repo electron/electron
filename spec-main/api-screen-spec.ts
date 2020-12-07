@@ -2,6 +2,18 @@ import { expect } from 'chai';
 import { screen } from 'electron/main';
 
 describe('screen module', () => {
+  describe('methods reassignment', () => {
+    it('works for a selected method', () => {
+      const originalFunction = screen.getPrimaryDisplay;
+      try {
+        (screen as any).getPrimaryDisplay = () => null;
+        expect(screen.getPrimaryDisplay()).to.be.null();
+      } finally {
+        screen.getPrimaryDisplay = originalFunction;
+      }
+    });
+  });
+
   describe('screen.getCursorScreenPoint()', () => {
     it('returns a point object', () => {
       const point = screen.getCursorScreenPoint();
