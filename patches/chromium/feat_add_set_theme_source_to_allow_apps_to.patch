@@ -62,7 +62,7 @@ index e2ca7dd198390ebc923facd690904faeb8300e62..f2f53775abb0ba2954cbb3ec431d84c3
  };
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index eaf817b4b5400fa4d2b6af7c86ac69aabf030a38..0f702be38f8e015c4e61677db5cf566259650dc6 100644
+index fd075a6f8a1357e7456a97d37af339848635a102..54fa642f614acd221ceaeee0938506e6fea41b1a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -737,6 +737,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

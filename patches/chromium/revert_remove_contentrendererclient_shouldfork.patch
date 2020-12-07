@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index c9852764a59cb37f312978d8aa14ec51c308502b..a20d30ae6dea56a4a55c9377a6957ce8247eeb89 100644
+index ce09634902a5937af110ab5453c9ae1f18b8d987..21877ff0e807799dbf9cf8d489123d35d2c741ce 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1269,6 +1269,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1282,6 +1282,25 @@ bool ChromeContentRendererClient::AllowPopup() {
  #endif
  }
  
