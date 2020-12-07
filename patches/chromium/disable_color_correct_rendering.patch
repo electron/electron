@@ -241,7 +241,7 @@ index 28799999f686d71c905efd9becc5b6fcb2a4fca2..87b2a9846a2f8192a8d5c27a644f98a6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 2613372e88ed80e170e47e913c13949ee568db4e..4479845bd7bcba4d59e94dd1f48b46637fe42af0 100644
+index 1b4d95b6dd43bcb030bba4aa1f2454c7466c82ba..3967ee4920aaeffa9aa52535eee275eb5ad7872f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -220,6 +220,7 @@
@@ -327,7 +327,7 @@ index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index ba38d82e00c85ccedb380bc32d55084579941437..5b25a57e7c0b423737b147fabd5f9b28e4b77f33 100644
+index e5fd0a36f83e14f13ad37525266076d791829900..f75d17d9506e7f9aad9f95a9a2026db4dda2706e 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -353,7 +353,7 @@ index ba38d82e00c85ccedb380bc32d55084579941437..5b25a57e7c0b423737b147fabd5f9b28
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -302,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

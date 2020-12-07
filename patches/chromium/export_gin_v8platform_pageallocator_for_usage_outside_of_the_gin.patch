@@ -21,10 +21,10 @@ index da2aeb2f2da84fe47d5cc7d721f8d3dade0c0972..4ddad9065782fad5927bc0481ad77201
  #endif
    std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 813e0a9da671cdc0be4852c9df74da02a3bd06e6..d010e9861dd15409704fff6fd42b8d4be918c614 100644
+index 27c300ff640faeef04e8228d292e81643b7ab6a9..022395e37d270e480e9a47b760e5e172c88b354f 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
-@@ -463,6 +463,10 @@ v8::PageAllocator* V8Platform::GetPageAllocator() {
+@@ -461,6 +461,10 @@ v8::PageAllocator* V8Platform::GetPageAllocator() {
    return g_page_allocator.Pointer();
  }
  

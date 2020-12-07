@@ -49,7 +49,7 @@ index ec89eeb056d686f8cab6003e456973ff8649df23..108b3a8082d10fd655b965bd6a703a75
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 9b2a1717c627de258a25cd4559e644f899c428ea..65ba4b077cb0795955cda70334072fc516f1bc50 100644
+index 65bb883657aab4b588d505d78ad9e84a8eb36d16..f4ffe42e45ff2e821ae175cf3eb2dd9da40f93ba 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -463,6 +463,7 @@ URLLoader::URLLoader(
@@ -72,7 +72,7 @@ index 9b2a1717c627de258a25cd4559e644f899c428ea..65ba4b077cb0795955cda70334072fc5
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1158,7 +1164,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1159,7 +1165,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index 9b2a1717c627de258a25cd4559e644f899c428ea..65ba4b077cb0795955cda70334072fc5
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1174,11 +1180,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1175,11 +1181,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
