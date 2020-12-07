@@ -1,4 +1,3 @@
-import { deprecate } from 'electron/main';
 const { systemPreferences } = process._linkedBinding('electron_browser_system_preferences');
 
 if ('getAppLevelAppearance' in systemPreferences) {
@@ -16,21 +15,5 @@ if ('getEffectiveAppearance' in systemPreferences) {
     get: () => nativeEAGetter.call(systemPreferences)
   });
 }
-
-systemPreferences.isDarkMode = deprecate.moveAPI(
-  systemPreferences.isDarkMode,
-  'systemPreferences.isDarkMode()',
-  'nativeTheme.shouldUseDarkColors'
-);
-systemPreferences.isInvertedColorScheme = deprecate.moveAPI(
-  systemPreferences.isInvertedColorScheme,
-  'systemPreferences.isInvertedColorScheme()',
-  'nativeTheme.shouldUseInvertedColorScheme'
-);
-systemPreferences.isHighContrastColorScheme = deprecate.moveAPI(
-  systemPreferences.isHighContrastColorScheme,
-  'systemPreferences.isHighContrastColorScheme()',
-  'nativeTheme.shouldUseHighContrastColors'
-);
 
 export default systemPreferences;
