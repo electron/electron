@@ -180,7 +180,7 @@ const warnAboutInsecureCSP = function () {
 
     console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
       'font-weight: bold;', warning);
-  });
+  }).catch(() => {});
 };
 
 /**
