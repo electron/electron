@@ -2008,23 +2008,14 @@ void WebContents::Stop() {
 }
 
 void WebContents::GoBack() {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
-  }
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
-  }
   web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToOffset(int offset) {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
-  }
   web_contents()->GetController().GoToOffset(offset);
 }
 
