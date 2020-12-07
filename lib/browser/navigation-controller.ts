@@ -1,24 +1,5 @@
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import type { WebContents, LoadURLOptions } from 'electron/main';
 import { EventEmitter } from 'events';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
-// The history operation in renderer is redirected to browser.
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_BACK, function (event) {
-  event.sender.goBack();
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_FORWARD, function (event) {
-  event.sender.goForward();
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_TO_OFFSET, function (event, offset) {
-  event.sender.goToOffset(offset);
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_LENGTH, function (event) {
-  event.returnValue = event.sender.length();
-});
 
 // JavaScript implementation of Chromium's NavigationController.
 // Instead of relying on Chromium for history control, we completely do history
