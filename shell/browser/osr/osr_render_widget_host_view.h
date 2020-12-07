@@ -108,7 +108,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
                    const gfx::Rect& rect) override;
-  void InitAsFullscreen(content::RenderWidgetHostView*) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;

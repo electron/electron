@@ -412,9 +412,6 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   Show();
 }
 
-void OffScreenRenderWidgetHostView::InitAsFullscreen(
-    content::RenderWidgetHostView*) {}
-
 void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
 
 content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
