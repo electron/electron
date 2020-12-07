@@ -1,7 +1,7 @@
-From eec5025668f83a82adf00e0128e369af18782461 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bill Budge <bbudge@chromium.org>
 Date: Fri, 13 Nov 2020 09:02:09 +0000
-Subject: [PATCH] Merged: [wasm][code cache] Match response to cached raw resource
+Subject: Merged: [wasm][code cache] Match response to cached raw resource
 
 - Verifies that the retrieved resource has the same response time, and
   that the source matches (i.e. both are from service worker, or both
@@ -23,13 +23,12 @@ Commit-Queue: Andreas Haas <ahaas@chromium.org>
 Auto-Submit: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1447}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
-index 7999dd4..0e75cbf 100644
+index 6023c25e49ae6459cae350a3aae9b03c43da738a..978fb874469ad6e2a0ce2f70737c4a5c5b16aee3 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
-@@ -208,7 +208,8 @@
+@@ -210,7 +210,8 @@ class ExceptionToAbortStreamingScope {
  };
  
  RawResource* GetRawResource(ScriptState* script_state,
@@ -39,7 +38,7 @@ index 7999dd4..0e75cbf 100644
    ExecutionContext* execution_context = ExecutionContext::From(script_state);
    if (!execution_context)
      return nullptr;
-@@ -222,6 +223,18 @@
+@@ -224,6 +225,18 @@ RawResource* GetRawResource(ScriptState* script_state,
    if (!resource)
      return nullptr;
  
@@ -58,7 +57,7 @@ index 7999dd4..0e75cbf 100644
    // Wasm modules should be fetched as raw resources.
    DCHECK_EQ(ResourceType::kRaw, resource->GetType());
    return ToRawResource(resource);
-@@ -345,13 +358,12 @@
+@@ -354,13 +367,12 @@ void StreamFromResponseCallback(
    String url = response->url();
    const std::string& url_utf8 = url.Utf8();
    streaming->SetUrl(url_utf8.c_str(), url_utf8.size());
