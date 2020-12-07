@@ -254,6 +254,7 @@ auto_filenames = {
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/parse-features-string.ts",
+    "lib/common/property-utils.ts",
     "lib/common/remote/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
     "lib/common/type-utils.ts",

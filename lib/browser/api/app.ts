@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { deprecate, Menu } from 'electron/main';
+import { defineProperty } from '@electron/internal/common/property-utils';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -14,26 +15,9 @@ let dockMenu: Electron.Menu | null = null;
 
 // Properties.
 
-const nativeASGetter = app.isAccessibilitySupportEnabled;
-const nativeASSetter = app.setAccessibilitySupportEnabled;
-Object.defineProperty(app, 'accessibilitySupportEnabled', {
-  get: () => nativeASGetter.call(app),
-  set: (enabled) => nativeASSetter.call(app, enabled)
-});
-
-const nativeBCGetter = app.getBadgeCount;
-const nativeBCSetter = app.setBadgeCount;
-Object.defineProperty(app, 'badgeCount', {
-  get: () => nativeBCGetter.call(app),
-  set: (count) => nativeBCSetter.call(app, count)
-});
-
-const nativeNGetter = app.getName;
-const nativeNSetter = app.setName;
-Object.defineProperty(app, 'name', {
-  get: () => nativeNGetter.call(app),
-  set: (name) => nativeNSetter.call(app, name)
-});
+defineProperty(app, 'accessibilitySupportEnabled', app.isAccessibilitySupportEnabled, app.setAccessibilitySupportEnabled);
+defineProperty(app, 'badgeCount', app.getBadgeCount, app.setBadgeCount);
+defineProperty(app, 'name', app.getName, app.setName);
 
 Object.assign(app, {
   commandLine: {
