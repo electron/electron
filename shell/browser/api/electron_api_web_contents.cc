@@ -2730,7 +2730,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
     } else {
       isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
           isolate,
-          "frameId must be a number or a pair of [processId, routingId]")));
+          "frameId must be a number or a pair of [processId, frameId]")));
       return false;
     }
   }
