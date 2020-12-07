@@ -1,7 +1,7 @@
-From bbc6ab5bb49c54c58591d052e5f6e383363bb143 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adam Rice <ricea@chromium.org>
-Date: Wed, 02 Dec 2020 20:26:52 +0000
-Subject: [PATCH] Add ports 5060 and 5061 to the restricted list
+Date: Wed, 2 Dec 2020 20:26:52 +0000
+Subject: Add ports 5060 and 5061 to the restricted list
 
 Some NAT devices examine traffic on port 5060 to look for a valid SIP
 message. If they find one, they will forward a port back to the origin
@@ -37,13 +37,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1474}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/net/base/port_util.cc b/net/base/port_util.cc
-index a10a4b4..72af86d 100644
+index 63a7c35c39eb965d8a752bd262c115a8263733f9..41deaaded2f251d6153c01203b68cc6bdc06554f 100644
 --- a/net/base/port_util.cc
 +++ b/net/base/port_util.cc
-@@ -20,73 +20,75 @@
+@@ -20,73 +20,75 @@ namespace {
  // The general list of blocked ports. Will be blocked unless a specific
  // protocol overrides it. (Ex: ftp can use ports 20 and 21)
  const int kRestrictedPorts[] = {
