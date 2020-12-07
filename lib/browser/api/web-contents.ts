@@ -672,39 +672,39 @@ WebContents.prototype._init = function () {
 
   const event = process._linkedBinding('electron_browser_event').createEmpty();
   app.emit('web-contents-created', event, this);
-
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
-  });
 };
+
+// Properties
+
+Object.defineProperty(WebContents.prototype, 'audioMuted', {
+  get() { return this.isAudioMuted() },
+  set(muted) { this.setAudioMuted(muted) }
+});
+
+Object.defineProperty(WebContents.prototype, 'userAgent', {
+  get() { return this.getUserAgent() },
+  set(agent) { this.setUserAgent(agent) }
+});
+
+Object.defineProperty(WebContents.prototype, 'zoomLevel', {
+  get() { return this.getZoomLevel() },
+  set(level) { this.setZoomLevel(level) }
+});
+
+Object.defineProperty(WebContents.prototype, 'zoomFactor', {
+  get() { return this.getZoomFactor() },
+  set(factor) { this.setZoomFactor(factor) }
+});
+
+Object.defineProperty(WebContents.prototype, 'frameRate', {
+  get() { return this.getFrameRate() },
+  set(rate) { this.setFrameRate(rate) }
+});
+
+Object.defineProperty(WebContents.prototype, 'backgroundThrottling', {
+  get() { return this.getBackgroundThrottling() },
+  set(allowed) { this.setBackgroundThrottling(allowed) }
+});
 
 // Public APIs.
 export function create (options = {}): Electron.WebContents {

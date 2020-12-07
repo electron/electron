@@ -18,83 +18,83 @@ BaseWindow.prototype._init = function () {
 // Properties
 
 Object.defineProperty(BaseWindow.prototype, 'autoHideMenuBar', {
-  get: function () { return this.isMenuBarAutoHide(); },
-  set: function (autoHide) { this.setAutoHideMenuBar(autoHide); }
+  get() { return this.isMenuBarAutoHide(); },
+  set(autoHide) { this.setAutoHideMenuBar(autoHide); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'visibleOnAllWorkspaces', {
-  get: function () { return this.isVisibleOnAllWorkspaces(); },
-  set: function (visible) { this.setVisibleOnAllWorkspaces(visible); }
+  get() { return this.isVisibleOnAllWorkspaces(); },
+  set(visible) { this.setVisibleOnAllWorkspaces(visible); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'fullScreen', {
-  get: function () { return this.isFullScreen(); },
-  set: function (full) { this.setFullScreen(full); }
+  get() { return this.isFullScreen(); },
+  set(full) { this.setFullScreen(full); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'simpleFullScreen', {
-  get: function () { return this.isSimpleFullScreen(); },
-  set: function (simple) { this.setSimpleFullScreen(simple); }
+  get() { return this.isSimpleFullScreen(); },
+  set(simple) { this.setSimpleFullScreen(simple); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'kiosk', {
-  get: function () { return this.isKiosk(); },
-  set: function (kiosk) { this.setKiosk(kiosk); }
+  get() { return this.isKiosk(); },
+  set(kiosk) { this.setKiosk(kiosk); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'documentEdited', {
-  get: function () { return this.isFullscreen(); },
-  set: function (edited) { this.setDocumentEdited(edited); }
+  get() { return this.isFullscreen(); },
+  set(edited) { this.setDocumentEdited(edited); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'shadow', {
-  get: function () { return this.hasShadow(); },
-  set: function (shadow) { this.setHasShadow(shadow); }
+  get() { return this.hasShadow(); },
+  set(shadow) { this.setHasShadow(shadow); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'representedFilename', {
-  get: function () { return this.getRepresentedFilename(); },
-  set: function (filename) { this.setRepresentedFilename(filename); }
+  get() { return this.getRepresentedFilename(); },
+  set(filename) { this.setRepresentedFilename(filename); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'minimizable', {
-  get: function () { return this.isMinimizable(); },
-  set: function (min) { this.setMinimizable(min); }
+  get() { return this.isMinimizable(); },
+  set(min) { this.setMinimizable(min); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'title', {
-  get: function () { return this.getTitle(); },
-  set: function (title) { this.setTitle(title); }
+  get() { return this.getTitle(); },
+  set(title) { this.setTitle(title); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'maximizable', {
-  get: function () { return this.isMaximizable(); },
-  set: function (max) { this.setMaximizable(max); }
+  get() { return this.isMaximizable(); },
+  set(max) { this.setMaximizable(max); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'resizable', {
-  get: function () { return this.isResizable(); },
-  set: function (res) { this.setResizable(res); }
+  get() { return this.isResizable(); },
+  set(res) { this.setResizable(res); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'menuBarVisible', {
-  get: function () { return this.isMenuBarVisible(); },
-  set: function (visible) { this.setMenuBarVisibility(visible); }
+  get() { return this.isMenuBarVisible(); },
+  set(visible) { this.setMenuBarVisibility(visible); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'fullScreenable', {
-  get: function () { return this.isFullScreenable(); },
-  set: function (full) { this.setFullScreenable(full); }
+  get() { return this.isFullScreenable(); },
+  set(full) { this.setFullScreenable(full); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'closable', {
-  get: function () { return this.isClosable(); },
-  set: function (close) { this.setClosable(close); }
+  get() { return this.isClosable(); },
+  set(close) { this.setClosable(close); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'movable', {
-  get: function () { return this.isMovable(); },
-  set: function (move) { this.setMovable(move); }
+  get() { return this.isMovable(); },
+  set(move) { this.setMovable(move); }
 });
 
 BaseWindow.getFocusedWindow = () => {
