@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@github.com>
 Date: Wed, 2 Dec 2020 11:19:26 -0500
-Subject: [api] Simplify ScriptOrigin
+Subject: Simplify ScriptOrigin
 
 Update nantest to handle changes in  https://chromium-review.googlesource.com/c/v8/v8/+/2555005
 
