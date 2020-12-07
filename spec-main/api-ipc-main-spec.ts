@@ -74,16 +74,16 @@ describe('ipc main module', () => {
         webPreferences: {
           nodeIntegration: true
         }
-      })
-      w.loadURL('about:blank')
+      });
+      w.loadURL('about:blank');
       const v = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('test-echo', 'hello')
         ipcRenderer.on('test-echo', (e, v) => {
           resolve(v)
         })
-      })`)
-      expect(v).to.equal('hello')
+      })`);
+      expect(v).to.equal('hello');
     });
   });
 });
