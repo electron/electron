@@ -1,7 +1,7 @@
-From ecdec1fb0f42b4d1db9cb3d2cd76466fc3958bde Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Etienne Bergeron <etienneb@chromium.org>
 Date: Fri, 13 Nov 2020 17:40:59 +0000
-Subject: [PATCH] [merge M86] Fix text eliding for single-codepoint text with BiDi
+Subject: Fix text eliding for single-codepoint text with BiDi
 
 This CL is fixing a corner case where RenderText::Elide(...) may
 produce a text with more codepoints than the original one. This is
@@ -38,13 +38,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2537931
 Reviewed-by: Etienne Bergeron <etienneb@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1450}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/ui/gfx/render_text.cc b/ui/gfx/render_text.cc
-index 3dc9e4d..50f2ef0 100644
+index 383943809398a59380518f00d84275f493f008c3..2887ea638e3843e61ca2a2935f52d08fe2bbe45e 100644
 --- a/ui/gfx/render_text.cc
 +++ b/ui/gfx/render_text.cc
-@@ -2059,8 +2059,10 @@
+@@ -2060,8 +2060,10 @@ base::string16 RenderText::Elide(const base::string16& text,
        }
  
        // Append the ellipsis and the optional directional marker characters.
@@ -57,10 +56,10 @@ index 3dc9e4d..50f2ef0 100644
            new_text += base::i18n::kLeftToRightMark;
          else
 diff --git a/ui/gfx/render_text_unittest.cc b/ui/gfx/render_text_unittest.cc
-index 0c92673..33d4f57 100644
+index 2fd63b1b75fc0fdec9772a9d6b74a13423bf7221..42827f318c8b1896c021f30895072e1add742d32 100644
 --- a/ui/gfx/render_text_unittest.cc
 +++ b/ui/gfx/render_text_unittest.cc
-@@ -1906,7 +1906,7 @@
+@@ -1901,7 +1901,7 @@ const ElideTextCase kElideTailTextCases[] = {
      {"ltr_0", L"abc", L""},
      {"rtl_3", L"\u05d0\u05d1\u05d2", L"\u05d0\u05d1\u05d2"},
      {"rtl_2", L"\u05d0\u05d1\u05d2", L"\u05d0\u2026"},
