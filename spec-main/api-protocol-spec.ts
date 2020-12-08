@@ -492,42 +492,37 @@ describe('protocol module', () => {
       protocol.uninterceptProtocol('https');
     });
 
+    type InterceptStringProtocolParams = Parameters<typeof protocol.interceptStringProtocol>;
+    type InterceptStringProtocolHandler = InterceptStringProtocolParams[1];
+    const handler: InterceptStringProtocolHandler  = (request, callback) => {
+      try {
+        callback(text);
+        callback('');
+      } catch (error) {
+        // Ignore error
+      }
+    };
+
     it('intercepts if URL matches any of the URL patterns', async () => {
-      interceptStringProtocol('https', { urls: ['https://fake-host/*'] }, (request, callback) => {
-        try {
-          callback(text);
-          callback('');
-        } catch (error) {
-          // Ignore error
-        }
-      });
+      interceptStringProtocol('https', { urls: ['https://fake-host/*'] }, handler);
       const r = await ajax('https://fake-host/some-path');
       expect(r.data).to.be.equal(text);
     });
 
-    it('intercepts any URL if empty filter is passed', async () => {
-      interceptStringProtocol('https', { urls: [] }, (request, callback) => {
-        try {
-          callback(text);
-          callback('');
-        } catch (error) {
-          // Ignore error
-        }
-      });
+    it('intercepts any URL if empty filter array is passed', async () => {
+      interceptStringProtocol('https', { urls: [] }, handler);
+      const r = await ajax('https://fake-host/some-path');
+      expect(r.data).to.be.equal(text);
+    });
+
+    it('intercepts any URL if empty options is passed', async () => {
+      interceptStringProtocol('https', { }, handler);
       const r = await ajax('https://fake-host/some-path');
       expect(r.data).to.be.equal(text);
     });
 
     it('does not intercept if URL does not matches any of the URL patterns', async () => {
-      interceptStringProtocol('https', { urls: ['https://another-fake-host/*'] }, (request, callback) => {
-        try {
-          callback(text);
-          callback('');
-        } catch (error) {
-          // Ignore error
-        }
-      });
-
+      interceptStringProtocol('https', { urls: ['https://another-fake-host/*'] }, handler);
       await expect(ajax('https://fake-host/some-path')).to.be.eventually.rejectedWith(Error, '404');
     });
 
