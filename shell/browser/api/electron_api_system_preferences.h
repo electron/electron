@@ -26,7 +26,7 @@ namespace electron {
 namespace api {
 
 #if defined(OS_MAC)
-enum NotificationCenterKind {
+enum class NotificationCenterKind {
   kNSDistributedNotificationCenter = 0,
   kNSNotificationCenter,
   kNSWorkspaceNotificationCenter,
