@@ -456,7 +456,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: any, url: string
 };
 
 const addReplyToEvent = (event: any) => {
-  const { processId, frameId } = event;
+  const { processId, frameId } = event
   event.reply = (...args: any[]) => {
     event.sender.sendToFrame([processId, frameId], ...args);
   };
