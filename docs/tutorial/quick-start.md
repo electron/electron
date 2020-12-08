@@ -124,6 +124,7 @@ Your Electron application uses the `package.json` file as the main entry point (
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "description": "My Electron app",
     "main": "main.js"
 }
 ```
