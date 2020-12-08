@@ -4,7 +4,7 @@
     {
       "sender": "[WebContents]",
       "frameId": 1,
-      "processId": 9
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame name",
@@ -39,7 +39,7 @@
     {
       "sender": "[WebContents]",
       "frameId": 1,
-      "processId": 11
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame name",
@@ -73,7 +73,7 @@
     {
       "sender": "[WebContents]",
       "frameId": 1,
-      "processId": 13
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame name",
@@ -107,7 +107,7 @@
     {
       "sender": "[WebContents]",
       "frameId": 1,
-      "processId": 15
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame name",
@@ -139,7 +139,7 @@
     {
       "sender": "[WebContents]",
       "frameId": 1,
-      "processId": 17
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame name",
