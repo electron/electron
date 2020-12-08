@@ -1,7 +1,7 @@
-From 3abc372c9c003e5bc7cbb74e0697e7ca1ae1d76b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
-Date: Tue, 03 Nov 2020 23:00:29 +0000
-Subject: [PATCH] Apply markup sanitizer in CompositeEditCommand::MoveParagraphs()
+Date: Tue, 3 Nov 2020 23:00:29 +0000
+Subject: Apply markup sanitizer in CompositeEditCommand::MoveParagraphs()
 
 CompositeEditCommand::MoveParagraphs() serailizes part of the DOM and
 then re-parse it and insert it at some other place of the document. This
@@ -22,13 +22,12 @@ Reviewed-by: Xiaocheng Hu <xiaochengh@chromium.org>
 Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4280@{#1099}
 Cr-Branched-From: ea420fb963f9658c9969b6513c56b8f47efa1a2a-refs/heads/master@{#812852}
----
 
 diff --git a/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc b/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
-index ff26408..9ba2bcc 100644
+index a665fe438041cce473b195a606378ee26500ebc4..2ba9c0cd368b3b907320ef2d6de550ae7598779e 100644
 --- a/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
 +++ b/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
-@@ -1515,19 +1515,18 @@
+@@ -1492,19 +1492,18 @@ void CompositeEditCommand::MoveParagraphs(
    // FIXME: This is an inefficient way to preserve style on nodes in the
    // paragraph to move. It shouldn't matter though, since moved paragraphs will
    // usually be quite small.
@@ -60,24 +59,3 @@ index ff26408..9ba2bcc 100644
  
    // A non-empty paragraph's style is moved when we copy and move it.  We don't
    // move anything if we're given an empty paragraph, but an empty paragraph can
-diff --git a/third_party/blink/web_tests/editing/pasteboard/mathml-sanitizer-bypass.html b/third_party/blink/web_tests/editing/pasteboard/mathml-sanitizer-bypass.html
-index f5bde8b..f260507 100644
---- a/third_party/blink/web_tests/editing/pasteboard/mathml-sanitizer-bypass.html
-+++ b/third_party/blink/web_tests/editing/pasteboard/mathml-sanitizer-bypass.html
-@@ -59,4 +59,16 @@
-     : '<div contenteditable>teA<math>B<br></math>C|<svg></svg>st</div>',
-   'Paste blocks SVG style injection');
- 
-+// crbug.com/1141350
-+selection_test(
-+  '<div contenteditable>|abc</div>',
-+  selection => {
-+    selection.setClipboardData(`<math><xss style=display:block>t<xmp>X<a title="</xmp><div style=position:fixed;left:0;top:0;width:100%;height:100%><svg><use href=data:application/xml;base64,PHN2ZyBpZD0neCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz4KPGEgaHJlZj0namF2YXNjcmlwdDphbGVydCgxMjMpJz4KICAgIDxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9J2xpZ2h0Ymx1ZScgLz4KICAgICA8dGV4dCB4PScwJyB5PScwJyBmaWxsPSdibGFjayc+CiAgICAgICA8dHNwYW4geD0nMCcgZHk9JzEuMmVtJz5Pb3BzLCB0aGVyZSdzIHNvbWV0aGluZyB3cm9uZyB3aXRoIHRoZSBwYWdlITwvdHNwYW4+CiAgICAgPHRzcGFuIHg9JzAnIGR5PScxLjJlbSc+UGxlYXNlIGNsaWNrIGhlcmUgdG8gcmVsb2FkLjwvdHNwYW4+Cjwvc3ZnPg==#x>">.<a>.`),
-+    selection.document.execCommand('paste');
-+    assert_equals(selection.document.querySelector('use'), null, 'SVG <use> with data URI should not leak into main document');
-+  },
-+  supportsEditableMathML
-+    ? '<div contenteditable><math><xss style="display:block"><xmp>X<a title="</xmp><div style=position:fixed;left:0;top:0;width:100%;height:100%><svg><use href=data:application/xml;base64,PHN2ZyBpZD0neCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz4KPGEgaHJlZj0namF2YXNjcmlwdDphbGVydCgxMjMpJz4KICAgIDxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9J2xpZ2h0Ymx1ZScgLz4KICAgICA8dGV4dCB4PScwJyB5PScwJyBmaWxsPSdibGFjayc+CiAgICAgICA8dHNwYW4geD0nMCcgZHk9JzEuMmVtJz5Pb3BzLCB0aGVyZSdzIHNvbWV0aGluZyB3cm9uZyB3aXRoIHRoZSBwYWdlITwvdHNwYW4+CiAgICAgPHRzcGFuIHg9JzAnIGR5PScxLjJlbSc+UGxlYXNlIGNsaWNrIGhlcmUgdG8gcmVsb2FkLjwvdHNwYW4+Cjwvc3ZnPg==#x>">.<a></a></a></xmp></xss></math>t|abc</div>'
-+    : '<div contenteditable>t<xmp>X&lt;a title="</xmp><div style="position: fixed; left: 0px; top: 0px; width: 800px; height: 600px;"><svg></svg></div>|abc</div>',
-+  'Paste blocks data URI in SVG use element injection via <math>');
- </script>
