@@ -91,14 +91,13 @@ class Protocol : public gin::Wrappable<Protocol> {
       args->ThrowTypeError("First argument must be the scheme");
       return false;
     }
-    gin::Dictionary dict(args->isolate());
-    auto has_filter = args->Length() == 3;
-    if (has_filter) {
+    gin::Dictionary options(args->isolate());
+    auto has_options = args->Length() == 3;
+    if (has_options) {
       v8::Local<v8::Value> arg;
-      // next argument should be an options object object
       if (!args->GetNext(&arg) || arg->IsFunction() ||
-          !gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-        args->ThrowTypeError("Second argument must be option object");
+          !gin::ConvertFromV8(args->isolate(), arg, &options)) {
+        args->ThrowTypeError("Second argument must be an options object");
         return false;
       }
     }
@@ -109,7 +108,7 @@ class Protocol : public gin::Wrappable<Protocol> {
     }
     std::set<std::string> filter_patterns;
     std::set<URLPattern> url_patterns;
-    if (has_filter && dict.Get("urls", &filter_patterns)) {
+    if (has_options && options.Get("urls", &filter_patterns)) {
       std::string parse_error;
       url_patterns = ParseURLPatterns(filter_patterns, &parse_error);
       if (!parse_error.empty()) {
