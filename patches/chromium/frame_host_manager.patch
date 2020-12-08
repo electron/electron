@@ -91,7 +91,7 @@ index e4942faa3fbf90c2819620d3f091aea59299522d..60b2b213d6429fa7cff783370cbbeff2
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
-index cc726282fd93048177174d91e01b7c4a3ad9fdcd..2685a56b7b1582e66d90fbc07e04462b68c59a0f 100644
+index c985c048fed8cda25be2802231f213f8d3dc9b79..5e0c08775d6e504327979218d46e999757ea508b 100644
 --- a/content/browser/renderer_host/navigation_request.h
 +++ b/content/browser/renderer_host/navigation_request.h
 @@ -129,6 +129,10 @@ class CONTENT_EXPORT NavigationRequest
