@@ -1,7 +1,7 @@
-From d8d64b7cd244368c4ccc9123f25d76bdd01784e4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xianzhu Wang <wangxianzhu@chromium.org>
 Date: Mon, 16 Nov 2020 17:26:33 +0000
-Subject: [PATCH] Ensure change type for OverflowControlsClip is returned
+Subject: Ensure change type for OverflowControlsClip is returned
 
 This at least ensures that we will update the paint properites for the
 composited overflow control layers in pre-CompositeAfterPaint to avoid
@@ -35,13 +35,12 @@ Commit-Queue: Jana Grill <janagrill@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240_112@{#26}
 Cr-Branched-From: 427c00d3874b6abcf4c4c2719768835fc3ef26d6-refs/branch-heads/4240@{#1291}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc b/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
-index efaa6ac3..5064014 100644
+index b7946eb567463938066b54ecd54ca710f649380e..f7ff1d68e36840c8647b863943f8c9134233c8ee 100644
 --- a/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
 +++ b/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
-@@ -234,4 +234,56 @@
+@@ -174,4 +174,56 @@ TEST_F(CompositingLayerPropertyUpdaterTest,
    }
  }
  
@@ -99,10 +98,10 @@ index efaa6ac3..5064014 100644
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
-index def8b02..882dac72 100644
+index 6810fb3e4f7ba1c994812c3fa983009792e00cc4..7d391839432a7d11102db78ef84b6369357eb77f 100644
 --- a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
 +++ b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
-@@ -1594,21 +1594,21 @@
+@@ -1525,21 +1525,21 @@ void FragmentPaintPropertyTreeBuilder::UpdateOverflowControlsClip() {
  
    if (NeedsOverflowControlsClip()) {
      // Clip overflow controls to the border box rect. Not wrapped with
