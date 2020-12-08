@@ -1,7 +1,7 @@
-From 290fe9c6e2452cb28f944b4285ad71be21c22f50 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Tue, 24 Nov 2020 14:43:35 +0100
-Subject: [PATCH] Merged: [compiler] Fix a bug in SimplifiedLowering
+Subject: Merged: [compiler] Fix a bug in SimplifiedLowering
 
 Revision: ba1b2cc09ab98b51ca3828d29d19ae3b0a7c3a92
 
@@ -18,13 +18,12 @@ Commit-Queue: Georg Neis <neis@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.7@{#55}
 Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
 Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
----
 
 diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
-index 2842259..93a0c71 100644
+index dd297d0b121e9997b6d4f76266c1f6e16e4ae72b..307ad5333869d4d80e59c115a486ed2f07f1798b 100644
 --- a/src/compiler/simplified-lowering.cc
 +++ b/src/compiler/simplified-lowering.cc
-@@ -1408,7 +1408,6 @@
+@@ -1411,7 +1411,6 @@ class RepresentationSelector {
                  IsSomePositiveOrderedNumber(input1_type)
              ? CheckForMinusZeroMode::kDontCheckForMinusZero
              : CheckForMinusZeroMode::kCheckForMinusZero;
@@ -32,7 +31,7 @@ index 2842259..93a0c71 100644
      NodeProperties::ChangeOp(node, simplified()->CheckedInt32Mul(mz_mode));
    }
  
-@@ -1452,6 +1451,13 @@
+@@ -1455,6 +1454,13 @@ class RepresentationSelector {
  
      Type left_feedback_type = TypeOf(node->InputAt(0));
      Type right_feedback_type = TypeOf(node->InputAt(1));
@@ -46,7 +45,7 @@ index 2842259..93a0c71 100644
      // Handle the case when no int32 checks on inputs are necessary (but
      // an overflow check is needed on the output). Note that we do not
      // have to do any check if at most one side can be minus zero. For
-@@ -1465,7 +1471,7 @@
+@@ -1468,7 +1474,7 @@ class RepresentationSelector {
          right_upper.Is(Type::Signed32OrMinusZero()) &&
          (left_upper.Is(Type::Signed32()) || right_upper.Is(Type::Signed32()))) {
        VisitBinop<T>(node, UseInfo::TruncatingWord32(),
@@ -55,7 +54,7 @@ index 2842259..93a0c71 100644
      } else {
        // If the output's truncation is identify-zeros, we can pass it
        // along. Moreover, if the operation is addition and we know the
-@@ -1485,8 +1491,9 @@
+@@ -1488,8 +1494,9 @@ class RepresentationSelector {
        UseInfo right_use = CheckedUseInfoAsWord32FromHint(hint, FeedbackSource(),
                                                           kIdentifyZeros);
        VisitBinop<T>(node, left_use, right_use, MachineRepresentation::kWord32,
@@ -68,7 +67,7 @@ index 2842259..93a0c71 100644
            !CanOverflowSigned32(node->op(), left_feedback_type,
 diff --git a/test/mjsunit/compiler/regress-1150649.js b/test/mjsunit/compiler/regress-1150649.js
 new file mode 100644
-index 0000000..a193481
+index 0000000000000000000000000000000000000000..a193481a3a20dc18dab7270a7686f6328bb79538
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-1150649.js
 @@ -0,0 +1,24 @@
