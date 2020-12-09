@@ -392,10 +392,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   }
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
-  bool customOnHover = title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover;
-  if (customOnHover && (!useStandardWindow || transparent() || !has_frame()))
-    styleMask = NSWindowStyleMaskFullSizeContentView;
-
   if (minimizable)
     styleMask |= NSMiniaturizableWindowMask;
   if (closable)
@@ -1697,12 +1693,10 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
+    // Create a custom window buttons view for kCustomButtonsOnHover.
     if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
       buttons_view_.reset(
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
-
-      // NSWindowStyleMaskFullSizeContentView does not work with zoom button
-      SetFullScreenable(false);
 
       if (!minimizable)
         [[buttons_view_ viewWithTag:2] removeFromSuperview];
@@ -1710,11 +1704,11 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
         [[buttons_view_ viewWithTag:1] removeFromSuperview];
 
       [[window_ contentView] addSubview:buttons_view_];
-    } else {
-      if (title_bar_style_ != TitleBarStyle::kNormal)
-        return;
+    }
 
-      // Hide the window buttons.
+    // Hide the window buttons except for kHidden and kHiddenInset.
+    if (title_bar_style_ == TitleBarStyle::kNormal ||
+        title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
       [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
       [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
       [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
