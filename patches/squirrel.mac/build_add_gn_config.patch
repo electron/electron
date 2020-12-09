@@ -528,10 +528,10 @@ index 0000000000000000000000000000000000000000..20d0cdb51cc933f56b7a7193c195457e
 +    sys.exit(e.returncode)
 diff --git a/filenames.gni b/filenames.gni
 new file mode 100644
-index 0000000000000000000000000000000000000000..3c224342a31f52fa2ba432983291340767d60ff7
+index 0000000000000000000000000000000000000000..3672153140b74fe948e7102b5e1ffad49341163d
 --- /dev/null
 +++ b/filenames.gni
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,243 @@
 +squirrel_filenames = {
 +  headers = [
 +    "Squirrel/NSBundle+SQRLVersionExtensions.h",
@@ -577,7 +577,6 @@ index 0000000000000000000000000000000000000000..3c224342a31f52fa2ba4329832913407
 +mantle_filenames = {
 +  headers = [
 +    "vendor/Mantle/Mantle/MTLJSONAdapter.h",
-+    "vendor/Mantle/Mantle/MTLManagedObjectAdapter.h",
 +    "vendor/Mantle/Mantle/MTLModel+NSCoding.h",
 +    "vendor/Mantle/Mantle/MTLModel.h",
 +    "vendor/Mantle/Mantle/MTLReflection.h",
@@ -597,7 +596,6 @@ index 0000000000000000000000000000000000000000..3c224342a31f52fa2ba4329832913407
 +
 +  sources = [
 +    "vendor/Mantle/Mantle/MTLJSONAdapter.m",
-+    "vendor/Mantle/Mantle/MTLManagedObjectAdapter.m",
 +    "vendor/Mantle/Mantle/MTLModel+NSCoding.m",
 +    "vendor/Mantle/Mantle/MTLModel.m",
 +    "vendor/Mantle/Mantle/MTLReflection.m",
