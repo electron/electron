@@ -68,8 +68,8 @@ declare namespace Electron {
     _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
-    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
-    _sendToFrameInternal(frameId: number, channel: string, ...args: any[]): boolean;
+    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number | [number, number], channel: string, args: any): boolean;
+    _sendToFrameInternal(frameId: number | [number, number], channel: string, ...args: any[]): boolean;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _sendInternalToAll(channel: string, ...args: any[]): void;
