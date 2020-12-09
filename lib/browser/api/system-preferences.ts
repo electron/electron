@@ -11,7 +11,7 @@ if ('getAppLevelAppearance' in systemPreferences) {
 }
 
 if ('getEffectiveAppearance' in systemPreferences) {
-  const nativeEAGetter = systemPreferences.getAppLevelAppearance;
+  const nativeEAGetter = systemPreferences.getEffectiveAppearance;
   Object.defineProperty(systemPreferences, 'effectiveAppearance', {
     get: () => nativeEAGetter.call(systemPreferences)
   });
