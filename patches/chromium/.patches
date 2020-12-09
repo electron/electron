@@ -116,4 +116,5 @@ cherry-pick-bbb64b5c6916.patch
 ignore_renderframehostimpl_detach_for_speculative_rfhs.patch
 cherry-pick-eec5025668f8.patch
 cherry-pick-bbc6ab5bb49c.patch
+cherry-pick-5ffbb7ed173a.patch
 ui_check_that_unpremultiply_is_passed_a_32bpp_image.patch
