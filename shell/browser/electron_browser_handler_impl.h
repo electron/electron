@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "base/memory/weak_ptr.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 
@@ -17,12 +19,16 @@ class RenderFrameHost;
 }  // namespace content
 
 namespace electron {
-class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser {
+class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
+                                   public content::WebContentsObserver {
  public:
-  ~ElectronBrowserHandlerImpl() override;
+  explicit ElectronBrowserHandlerImpl(
+      content::RenderFrameHost* render_frame_host);
 
   static void Create(content::RenderFrameHost* frame_host,
                      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+
+  void BindTo(mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
 
   // mojom::ElectronBrowser:
   void Message(bool internal,
@@ -50,13 +56,26 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser {
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
 
+  base::WeakPtr<ElectronBrowserHandlerImpl> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
-  explicit ElectronBrowserHandlerImpl(content::RenderFrameHost*);
+  ~ElectronBrowserHandlerImpl() override;
+
+  // content::WebContentsObserver:
+  void WebContentsDestroyed() override;
+
+  void OnConnectionError();
 
   api::WebContents* GetAPIWebContents();
 
   const int render_process_id_;
   const int render_frame_id_;
+
+  mojo::Receiver<mojom::ElectronBrowser> receiver_{this};
+
+  base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserHandlerImpl);
 };

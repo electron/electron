@@ -16,9 +16,34 @@ namespace electron {
 ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
     content::RenderFrameHost* frame_host)
     : render_process_id_(frame_host->GetProcess()->GetID()),
-      render_frame_id_(frame_host->GetRoutingID()) {}
+      render_frame_id_(frame_host->GetRoutingID()),
+      weak_factory_(this) {
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
+  content::WebContentsObserver::Observe(web_contents);
+}
 
 ElectronBrowserHandlerImpl::~ElectronBrowserHandlerImpl() = default;
+
+void ElectronBrowserHandlerImpl::BindTo(
+    mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
+  // Note: BindTo might be called for multiple times.
+  if (receiver_.is_bound())
+    receiver_.reset();
+
+  receiver_.Bind(std::move(receiver));
+  receiver_.set_disconnect_handler(base::BindOnce(
+      &ElectronBrowserHandlerImpl::OnConnectionError, GetWeakPtr()));
+}
+
+void ElectronBrowserHandlerImpl::WebContentsDestroyed() {
+  delete this;
+}
+
+void ElectronBrowserHandlerImpl::OnConnectionError() {
+  if (receiver_.is_bound())
+    receiver_.reset();
+}
 
 void ElectronBrowserHandlerImpl::Message(bool internal,
                                          const std::string& channel,
@@ -141,8 +166,7 @@ api::WebContents* ElectronBrowserHandlerImpl::GetAPIWebContents() {
 void ElectronBrowserHandlerImpl::Create(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
-  mojo::MakeSelfOwnedReceiver(
-      base::WrapUnique(new ElectronBrowserHandlerImpl(frame_host)),
-      std::move(receiver));
+  auto* browser_handler = new ElectronBrowserHandlerImpl(frame_host);
+  browser_handler->BindTo(std::move(receiver));
 }
 }  // namespace electron
