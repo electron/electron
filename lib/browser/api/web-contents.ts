@@ -1,5 +1,5 @@
-import { app, ipcMain, session, deprecate, BrowserWindowConstructorOptions } from 'electron/main';
-import type { MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'electron/main';
+import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
@@ -462,6 +462,13 @@ const addReplyToEvent = (event: any) => {
   };
 };
 
+const addSenderFrameToEvent = (event: any) => {
+  const { processId, frameId } = event;
+  Object.defineProperty(event, 'senderFrame', {
+    get: () => webFrameMain.fromId(processId, frameId)
+  });
+};
+
 const addReturnValueToEvent = (event: any) => {
   Object.defineProperty(event, 'returnValue', {
     set: (value) => event.sendReply(value),
@@ -505,6 +512,7 @@ WebContents.prototype._init = function () {
 
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
+    addSenderFrameToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
@@ -515,6 +523,7 @@ WebContents.prototype._init = function () {
   });
 
   this.on('-ipc-invoke' as any, function (event: any, internal: boolean, channel: string, args: any[]) {
+    addSenderFrameToEvent(event);
     event._reply = (result: any) => event.sendReply({ result });
     event._throw = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
@@ -529,6 +538,7 @@ WebContents.prototype._init = function () {
   });
 
   this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
+    addSenderFrameToEvent(event);
     addReturnValueToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);

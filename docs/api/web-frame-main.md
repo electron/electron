@@ -26,7 +26,7 @@ win.webContents.on(
 )
 ```
 
-You can also access frames of existing pages by using the `webFrame` property
+You can also access frames of existing pages by using the `mainFrame` property
 of [`WebContents`](web-contents.md).
 
 ```javascript
@@ -57,8 +57,8 @@ These methods can be accessed from the `webFrameMain` module:
 
 ### `webFrameMain.fromId(processId, routingId)`
 
-* `processId` Integer - An `Integer` representing the id of the process which owns the frame.
-* `routingId` Integer - An `Integer` representing the unique frame id in the
+* `processId` Integer - An `Integer` representing the internal ID of the process which owns the frame.
+* `routingId` Integer - An `Integer` representing the unique frame ID in the
   current renderer process. Routing IDs can be retrieved from `WebFrameMain`
   instances (`frame.routingId`) and are also passed by frame
   specific `WebContents` navigation events (e.g. `did-frame-navigate`).

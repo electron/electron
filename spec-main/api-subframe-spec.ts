@@ -35,6 +35,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         expect(event1[0].frameId).to.not.equal(event2[0].frameId);
         expect(event1[0].frameId).to.equal(event1[2]);
         expect(event2[0].frameId).to.equal(event2[2]);
+        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
+        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
       });
 
       it('should load preload scripts in nested iframes', async () => {
@@ -47,6 +49,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         expect(event1[0].frameId).to.equal(event1[2]);
         expect(event2[0].frameId).to.equal(event2[2]);
         expect(event3[0].frameId).to.equal(event3[2]);
+        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
+        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
+        expect(event3[0].senderFrame.routingId).to.equal(event3[2]);
       });
 
       it('should correctly reply to the main frame with using event.reply', async () => {
@@ -57,6 +62,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         event1[0].reply('preload-ping');
         const details = await pongPromise;
         expect(details[1]).to.equal(event1[0].frameId);
+        expect(details[1]).to.equal(event1[0].senderFrame.routingId);
       });
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
@@ -67,6 +73,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         event2[0].reply('preload-ping');
         const details = await pongPromise;
         expect(details[1]).to.equal(event2[0].frameId);
+        expect(details[1]).to.equal(event2[0].senderFrame.routingId);
       });
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
@@ -77,6 +84,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         event3[0].reply('preload-ping');
         const details = await pongPromise;
         expect(details[1]).to.equal(event3[0].frameId);
+        expect(details[1]).to.equal(event3[0].senderFrame.routingId);
       });
 
       it('should not expose globals in main world', async () => {
