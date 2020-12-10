@@ -40,7 +40,7 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(): void;
     createIDWeakMap<V>(): ElectronInternal.KeyWeakMap<number, V>;
     createDoubleIDWeakMap<V>(): ElectronInternal.KeyWeakMap<[string, number], V>;
-    setRemoteCallbackFreer(fn: Function, frameId: number, contextId: String, id: number, sender: any): void
+    setRemoteCallbackFreer(fn: Function, processId: number, frameId: number, contextId: String, id: number, sender: any): void
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
