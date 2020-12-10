@@ -20,6 +20,7 @@ ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
       weak_factory_(this) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
+  DCHECK(web_contents);
   content::WebContentsObserver::Observe(web_contents);
 }
 
@@ -41,56 +42,43 @@ void ElectronBrowserHandlerImpl::WebContentsDestroyed() {
 }
 
 void ElectronBrowserHandlerImpl::OnConnectionError() {
-  if (receiver_.is_bound())
-    receiver_.reset();
+  delete this;
 }
 
 void ElectronBrowserHandlerImpl::Message(bool internal,
                                          const std::string& channel,
                                          blink::CloneableMessage arguments) {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->Message(internal, channel, std::move(arguments),
-                              render_frame_host);
+                              GetRenderFrameHost());
   }
 }
 void ElectronBrowserHandlerImpl::Invoke(bool internal,
                                         const std::string& channel,
                                         blink::CloneableMessage arguments,
                                         InvokeCallback callback) {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->Invoke(internal, channel, std::move(arguments),
-                             std::move(callback), render_frame_host);
+                             std::move(callback), GetRenderFrameHost());
   }
 }
 
 void ElectronBrowserHandlerImpl::OnFirstNonEmptyLayout() {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
-    api_web_contents->OnFirstNonEmptyLayout(render_frame_host);
+    api_web_contents->OnFirstNonEmptyLayout(GetRenderFrameHost());
   }
 }
 
 void ElectronBrowserHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->ReceivePostMessage(channel, std::move(message),
-                                         render_frame_host);
+                                         GetRenderFrameHost());
   }
 }
 
@@ -98,13 +86,10 @@ void ElectronBrowserHandlerImpl::MessageSync(bool internal,
                                              const std::string& channel,
                                              blink::CloneableMessage arguments,
                                              MessageSyncCallback callback) {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->MessageSync(internal, channel, std::move(arguments),
-                                  std::move(callback), render_frame_host);
+                                  std::move(callback), GetRenderFrameHost());
   }
 }
 
@@ -113,7 +98,7 @@ void ElectronBrowserHandlerImpl::MessageTo(bool internal,
                                            int32_t web_contents_id,
                                            const std::string& channel,
                                            blink::CloneableMessage arguments) {
-  api::WebContents* api_web_contents = GetAPIWebContents();
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->MessageTo(internal, send_to_all, web_contents_id, channel,
                                 std::move(arguments));
@@ -123,26 +108,23 @@ void ElectronBrowserHandlerImpl::MessageTo(bool internal,
 void ElectronBrowserHandlerImpl::MessageHost(
     const std::string& channel,
     blink::CloneableMessage arguments) {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  api::WebContents* api_web_contents = api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->MessageHost(channel, std::move(arguments),
-                                  render_frame_host);
+                                  GetRenderFrameHost());
   }
 }
 
 void ElectronBrowserHandlerImpl::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
-  api::WebContents* api_web_contents = GetAPIWebContents();
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->UpdateDraggableRegions(std::move(regions));
   }
 }
 
 void ElectronBrowserHandlerImpl::SetTemporaryZoomLevel(double level) {
-  api::WebContents* api_web_contents = GetAPIWebContents();
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->SetTemporaryZoomLevel(level);
   }
@@ -150,17 +132,14 @@ void ElectronBrowserHandlerImpl::SetTemporaryZoomLevel(double level) {
 
 void ElectronBrowserHandlerImpl::DoGetZoomLevel(
     DoGetZoomLevelCallback callback) {
-  api::WebContents* api_web_contents = GetAPIWebContents();
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->DoGetZoomLevel(std::move(callback));
   }
 }
 
-api::WebContents* ElectronBrowserHandlerImpl::GetAPIWebContents() {
-  content::RenderFrameHost* render_frame_host =
-      content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-  return api::WebContents::From(
-      content::WebContents::FromRenderFrameHost(render_frame_host));
+content::RenderFrameHost* ElectronBrowserHandlerImpl::GetRenderFrameHost() {
+  return content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
 }
 
 // static
