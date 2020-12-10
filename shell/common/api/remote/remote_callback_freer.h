@@ -17,6 +17,7 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
  public:
   static void BindTo(v8::Isolate* isolate,
                      v8::Local<v8::Object> target,
+                     int process_id,
                      int frame_id,
                      const std::string& context_id,
                      int object_id,
@@ -25,6 +26,7 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
  protected:
   RemoteCallbackFreer(v8::Isolate* isolate,
                       v8::Local<v8::Object> target,
+                      int process_id,
                       int frame_id,
                       const std::string& context_id,
                       int object_id,
@@ -37,6 +39,7 @@ class RemoteCallbackFreer : public ObjectLifeMonitor,
   void RenderViewDeleted(content::RenderViewHost*) override;
 
  private:
+  int process_id_;
   int frame_id_;
   std::string context_id_;
   int object_id_;

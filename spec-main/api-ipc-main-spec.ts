@@ -46,6 +46,8 @@ describe('ipc main module', () => {
   });
 
   describe('ipcMain.on', () => {
+    afterEach(() => { ipcMain.removeAllListeners('test-echo'); });
+
     it('is not used for internals', async () => {
       const appPath = path.join(fixtures, 'api', 'ipc-main-listeners');
       const electronPath = process.execPath;
@@ -58,6 +60,28 @@ describe('ipc main module', () => {
 
       output = JSON.parse(output);
       expect(output).to.deep.equal(['error']);
+    });
+
+    it('can be replied to', async () => {
+      ipcMain.on('test-echo', (e, arg) => {
+        e.reply('test-echo', arg);
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      w.loadURL('about:blank');
+      const v = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const { ipcRenderer } = require('electron')
+        ipcRenderer.send('test-echo', 'hello')
+        ipcRenderer.on('test-echo', (e, v) => {
+          resolve(v)
+        })
+      })`);
+      expect(v).to.equal('hello');
     });
   });
 });
