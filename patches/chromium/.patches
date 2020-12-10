@@ -119,3 +119,5 @@ cherry-pick-bbc6ab5bb49c.patch
 cherry-pick-5ffbb7ed173a.patch
 ui_check_that_unpremultiply_is_passed_a_32bpp_image.patch
 cherry-pick-ecdec1fb0f42.patch
+backport_1142331.patch
+backport_1151865.patch
