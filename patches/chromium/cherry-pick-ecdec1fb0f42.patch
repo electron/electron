@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Etienne Bergeron <etienneb@chromium.org>
+Date: Fri, 13 Nov 2020 17:40:59 +0000
+Subject: Fix text eliding for single-codepoint text with BiDi
+
+This CL is fixing a corner case where RenderText::Elide(...) may
+produce a text with more codepoints than the original one. This is
+an issue since the breaklists are not resized and the overflow
+will lead the render_text code to perfoarm an out-of-bound memory
+access by deferencing breaks_.end() while rendering the text. This
+is causing chrome to crash.
+
+See crbug/1142020 for details.
+
+The bug was happening when:
+  1) The text to elide was a single codepoint
+  2) The width of the glyph of the codepoint is larger than the width
+     of the ellipsis glyph
+  3) Eliding is set to ELIDING_TAIL
+  4) The display_rect width will trigger eliding
+     (smaller than codepoint width, but larger than ellipsis width)
+  5) The render text is set to RTL
+
+A possible solution is to adjust the breaklist but this required
+larger refactoring and cannot be a minimal patch to be merge on
+other channels.
+
+TBR=msw@chromium.org
+(cherry picked from commit e54920751871321474e0b953329c8aedcc8702c3)
+
+Bug: 1142020
+Change-Id: I9854651175562ec5f0d0bf7083a8da99fede0e29
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2522892
+Commit-Queue: Etienne Bergeron <etienneb@chromium.org>
+Reviewed-by: Michael Wasserman <msw@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#824878}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2537931
+Reviewed-by: Etienne Bergeron <etienneb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1450}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/ui/gfx/render_text.cc b/ui/gfx/render_text.cc
+index 7d5fb0c4d6e609d99533a10f26cf5ef195b4c18a..5a32f3f0987f7c4f94ba471876e9a0ff4ff91751 100644
+--- a/ui/gfx/render_text.cc
++++ b/ui/gfx/render_text.cc
+@@ -2067,8 +2067,10 @@ base::string16 RenderText::Elide(const base::string16& text,
+       }
+ 
+       // Append the ellipsis and the optional directional marker characters.
++      // Do not append the BiDi marker if the only codepoint in the text is
++      // an ellipsis.
+       new_text.append(ellipsis);
+-      if (trailing_text_direction != text_direction) {
++      if (new_text.size() != 1 && trailing_text_direction != text_direction) {
+         if (trailing_text_direction == base::i18n::LEFT_TO_RIGHT)
+           new_text += base::i18n::kLeftToRightMark;
+         else
+diff --git a/ui/gfx/render_text_unittest.cc b/ui/gfx/render_text_unittest.cc
+index 6796016d97a6c167a31482e353e4faac652ce2a4..80b9d756a52f8df2a4420ffd3c275d529ef95bfb 100644
+--- a/ui/gfx/render_text_unittest.cc
++++ b/ui/gfx/render_text_unittest.cc
+@@ -1851,7 +1851,7 @@ const ElideTextCase kElideTailTextCases[] = {
+     {"ltr_0", L"abc", L""},
+     {"rtl_3", L"\u05d0\u05d1\u05d2", L"\u05d0\u05d1\u05d2"},
+     {"rtl_2", L"\u05d0\u05d1\u05d2", L"\u05d0\u2026"},
+-    {"rtl_1", L"\u05d0\u05d1\u05d2", L"\u2026\x200E"},
++    {"rtl_1", L"\u05d0\u05d1\u05d2", L"\u2026"},
+     {"rtl_0", L"\u05d0\u05d1\u05d2", L""},
+     {"ltr_rtl_5", L"abc\u05d0\u05d1\u05d2", L"abc\u05d0\u2026\x200F"},
+     {"ltr_rtl_4", L"abc\u05d0\u05d1\u05d2", L"abc\u2026"},
