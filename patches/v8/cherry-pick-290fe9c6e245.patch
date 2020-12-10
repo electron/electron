@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 24 Nov 2020 14:43:35 +0100
+Subject: Merged: [compiler] Fix a bug in SimplifiedLowering
+
+Revision: ba1b2cc09ab98b51ca3828d29d19ae3b0a7c3a92
+
+BUG=chromium:1150649
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+TBR=tebbi@chromium.org
+
+Change-Id: I3600d25ebc255b0e58a7db1ca8d025424f6ad3f5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2557983
+Reviewed-by: Georg Neis <neis@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.7@{#55}
+Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
+Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
+
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index dd297d0b121e9997b6d4f76266c1f6e16e4ae72b..307ad5333869d4d80e59c115a486ed2f07f1798b 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -1411,7 +1411,6 @@ class RepresentationSelector {
+                 IsSomePositiveOrderedNumber(input1_type)
+             ? CheckForMinusZeroMode::kDontCheckForMinusZero
+             : CheckForMinusZeroMode::kCheckForMinusZero;
+-
+     NodeProperties::ChangeOp(node, simplified()->CheckedInt32Mul(mz_mode));
+   }
+ 
+@@ -1455,6 +1454,13 @@ class RepresentationSelector {
+ 
+     Type left_feedback_type = TypeOf(node->InputAt(0));
+     Type right_feedback_type = TypeOf(node->InputAt(1));
++
++    // Using Signed32 as restriction type amounts to promising there won't be
++    // signed overflow. This is incompatible with relying on a Word32
++    // truncation in order to skip the overflow check.
++    Type const restriction =
++        truncation.IsUsedAsWord32() ? Type::Any() : Type::Signed32();
++
+     // Handle the case when no int32 checks on inputs are necessary (but
+     // an overflow check is needed on the output). Note that we do not
+     // have to do any check if at most one side can be minus zero. For
+@@ -1468,7 +1474,7 @@ class RepresentationSelector {
+         right_upper.Is(Type::Signed32OrMinusZero()) &&
+         (left_upper.Is(Type::Signed32()) || right_upper.Is(Type::Signed32()))) {
+       VisitBinop<T>(node, UseInfo::TruncatingWord32(),
+-                    MachineRepresentation::kWord32, Type::Signed32());
++                    MachineRepresentation::kWord32, restriction);
+     } else {
+       // If the output's truncation is identify-zeros, we can pass it
+       // along. Moreover, if the operation is addition and we know the
+@@ -1488,8 +1494,9 @@ class RepresentationSelector {
+       UseInfo right_use = CheckedUseInfoAsWord32FromHint(hint, FeedbackSource(),
+                                                          kIdentifyZeros);
+       VisitBinop<T>(node, left_use, right_use, MachineRepresentation::kWord32,
+-                    Type::Signed32());
++                    restriction);
+     }
++
+     if (lower<T>()) {
+       if (truncation.IsUsedAsWord32() ||
+           !CanOverflowSigned32(node->op(), left_feedback_type,
+diff --git a/test/mjsunit/compiler/regress-1150649.js b/test/mjsunit/compiler/regress-1150649.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a193481a3a20dc18dab7270a7686f6328bb79538
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1150649.js
+@@ -0,0 +1,24 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function foo(a) {
++  var y = 0x7fffffff;  // 2^31 - 1
++
++  // Widen the static type of y (this condition never holds).
++  if (a == NaN) y = NaN;
++
++  // The next condition holds only in the warmup run. It leads to Smi
++  // (SignedSmall) feedback being collected for the addition below.
++  if (a) y = -1;
++
++  const z = (y + 1)|0;
++  return z < 0;
++}
++
++%PrepareFunctionForOptimization(foo);
++assertFalse(foo(true));
++%OptimizeFunctionOnNextCall(foo);
++assertTrue(foo(false));
