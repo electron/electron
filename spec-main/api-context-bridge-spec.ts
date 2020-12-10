@@ -517,7 +517,7 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal([true, true]);
       });
 
-      it('it should handle recursive objects', async () => {
+      it('should handle recursive objects', async () => {
         await makeBindingWindow(() => {
           const o: any = { value: 135 };
           o.o = o;
@@ -529,6 +529,33 @@ describe('contextBridge', () => {
           return [root.example.o.value, root.example.o.o.value, root.example.o.o.o.value];
         });
         expect(result).to.deep.equal([135, 135, 135]);
+      });
+
+      it('should handle DOM elements', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getElem: () => document.body
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return [root.example.getElem().tagName, root.example.getElem().constructor.name, typeof root.example.getElem().querySelector];
+        });
+        expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
+      });
+
+      it('should handle DOM elements going backwards over the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getElemInfo: (fn: Function) => {
+              const elem = fn();
+              return [elem.tagName, elem.constructor.name, typeof elem.querySelector];
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getElemInfo(() => document.body);
+        });
+        expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
       });
 
       // Can only run tests which use the GCRunner in non-sandboxed environments
@@ -735,7 +762,8 @@ describe('contextBridge', () => {
             receiveArguments: (fn: any) => fn({ key: 'value' }),
             symbolKeyed: {
               [Symbol('foo')]: 123
-            }
+            },
+            getBody: () => document.body
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -807,7 +835,8 @@ describe('contextBridge', () => {
             [(await example.object.getPromise()).arr[3], Array],
             [(await example.object.getPromise()).arr[3][0], String],
             [arg, Object],
-            [arg.key, String]
+            [arg.key, String],
+            [example.getBody(), HTMLBodyElement]
           ];
           return {
             protoMatches: protoChecks.map(([a, Constructor]) => Object.getPrototypeOf(a) === Constructor.prototype)
