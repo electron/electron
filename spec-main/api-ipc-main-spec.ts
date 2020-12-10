@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as cp from 'child_process';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
 
 describe('ipc main module', () => {
@@ -47,6 +46,7 @@ describe('ipc main module', () => {
   });
 
   describe('ipcMain.on', () => {
+    afterEach(() => { ipcMain.removeAllListeners('test-echo'); });
     it('is not used for internals', async () => {
       const appPath = path.join(fixtures, 'api', 'ipc-main-listeners');
       const electronPath = process.execPath;
@@ -64,9 +64,6 @@ describe('ipc main module', () => {
     it('can be replied to', async () => {
       ipcMain.on('test-echo', (e, arg) => {
         e.reply('test-echo', arg);
-      });
-      defer(() => {
-        ipcMain.removeAllListeners('test-echo');
       });
 
       const w = new BrowserWindow({
