@@ -2365,16 +2365,16 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   }
   int32_t frame_id;
   int32_t process_id;
-  if (gin::ConvertFromV8(isolate, frame, &frame_id)) {
+  if (gin::ConvertFromV8(isolate(), frame, &frame_id)) {
     process_id = web_contents()->GetMainFrame()->GetProcess()->GetID();
   } else {
     std::vector<int32_t> id_pair;
-    if (gin::ConvertFromV8(isolate, frame, &id_pair) && id_pair.size() == 2) {
+    if (gin::ConvertFromV8(isolate(), frame, &id_pair) && id_pair.size() == 2) {
       process_id = id_pair[0];
       frame_id = id_pair[1];
     } else {
-      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate,
+      isolate()->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate(),
           "frameId must be a number or a pair of [processId, frameId]")));
       return false;
     }
