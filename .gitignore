@@ -55,7 +55,7 @@ electron.d.ts
 spec/.hash
 
 # Eslint Cache
-.eslintcache
+.eslintcache*
 
 # Generated native addon files
 /spec-main/fixtures/native-addon/echo/build/
