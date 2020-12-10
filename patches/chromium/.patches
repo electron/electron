@@ -157,3 +157,4 @@ ui_check_that_unpremultiply_is_passed_a_32bpp_image.patch
 cherry-pick-eec5025668f8.patch
 cherry-pick-5ffbb7ed173a.patch
 propagate_disable-dev-shm-usage_to_child_processes.patch
+cherry-pick-bbc6ab5bb49c.patch
