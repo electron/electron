@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darwin Huang <huangdarwin@chromium.org>
+Date: Fri, 13 Nov 2020 10:07:05 +0000
+Subject: Pepper: Ensure weak pointer is still valid before use (M86).
+
+TBR=bbudge@chromium.org
+(cherry picked from commit f24c213293752250db05e11c5e4b77adce002d38)
+
+Bug: 1146675
+Change-Id: I382dcb5c0b09a26e3c397ebef46947f626e2aef9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2527065
+Reviewed-by: Bill Budge <bbudge@chromium.org>
+Commit-Queue: Darwin Huang <huangdarwin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#825558}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2536757
+Reviewed-by: Darwin Huang <huangdarwin@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1448}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/content/browser/renderer_host/pepper/pepper_file_io_host.cc b/content/browser/renderer_host/pepper/pepper_file_io_host.cc
+index bd68358ddb41529bf946d10d7eb66ff4b6d20519..ae42a62622724d4aee85a066f1931deea7f00037 100644
+--- a/content/browser/renderer_host/pepper/pepper_file_io_host.cc
++++ b/content/browser/renderer_host/pepper/pepper_file_io_host.cc
+@@ -248,7 +248,12 @@ void PepperFileIOHost::GotUIThreadStuffForInternalFileSystems(
+     return;
+   }
+ 
+-  DCHECK(file_system_host_.get());
++  if (!file_system_host_.get()) {
++    reply_context.params.set_result(PP_ERROR_FAILED);
++    SendOpenErrorReply(reply_context);
++    return;
++  }
++
+   DCHECK(file_system_host_->GetFileSystemOperationRunner());
+ 
+   file_system_host_->GetFileSystemOperationRunner()->OpenFile(

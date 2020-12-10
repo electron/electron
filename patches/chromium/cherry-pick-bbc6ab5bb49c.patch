@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Wed, 2 Dec 2020 20:26:52 +0000
+Subject: Add ports 5060 and 5061 to the restricted list
+
+Some NAT devices examine traffic on port 5060 to look for a valid SIP
+message. If they find one, they will forward a port back to the origin
+host. A carefully crafted HTTP request can trick these NAT devices into
+forwarding an arbitrary port. See https://samy.pl/slipstream for more
+details on the attack and sample code.
+
+Block port 5060 for HTTP. Out of an abundance of caution, and to match
+the Fetch standard (https://github.com/whatwg/fetch/pull/1109), also
+block port 5061 (SIP over TLS).
+
+Also reduce the whitespace before protocol description comments. This
+was insisted on by clang-format and is not worth fighting.
+
+BUG=1145680
+
+(cherry picked from commit 90d1302aec437166b383eabc08af741bf24f7ea8)
+
+(cherry picked from commit dbb0452e69a49e803e0e4cbb6921d5ccad338716)
+
+Change-Id: I3a556fbbb4dc6099caa4418addaf1e89bf254ae3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2519174
+Reviewed-by: Matt Menke <mmenke@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#824254}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2525474
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4280@{#1247}
+Cr-Original-Branched-From: ea420fb963f9658c9969b6513c56b8f47efa1a2a-refs/heads/master@{#812852}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2560585
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1474}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/net/base/port_util.cc b/net/base/port_util.cc
+index 63a7c35c39eb965d8a752bd262c115a8263733f9..41deaaded2f251d6153c01203b68cc6bdc06554f 100644
+--- a/net/base/port_util.cc
++++ b/net/base/port_util.cc
+@@ -20,73 +20,75 @@ namespace {
+ // The general list of blocked ports. Will be blocked unless a specific
+ // protocol overrides it. (Ex: ftp can use ports 20 and 21)
+ const int kRestrictedPorts[] = {
+-    1,       // tcpmux
+-    7,       // echo
+-    9,       // discard
+-    11,      // systat
+-    13,      // daytime
+-    15,      // netstat
+-    17,      // qotd
+-    19,      // chargen
+-    20,      // ftp data
+-    21,      // ftp access
+-    22,      // ssh
+-    23,      // telnet
+-    25,      // smtp
+-    37,      // time
+-    42,      // name
+-    43,      // nicname
+-    53,      // domain
+-    77,      // priv-rjs
+-    79,      // finger
+-    87,      // ttylink
+-    95,      // supdup
+-    101,     // hostriame
+-    102,     // iso-tsap
+-    103,     // gppitnp
+-    104,     // acr-nema
+-    109,     // pop2
+-    110,     // pop3
+-    111,     // sunrpc
+-    113,     // auth
+-    115,     // sftp
+-    117,     // uucp-path
+-    119,     // nntp
+-    123,     // NTP
+-    135,     // loc-srv /epmap
+-    139,     // netbios
+-    143,     // imap2
+-    179,     // BGP
+-    389,     // ldap
+-    427,     // SLP (Also used by Apple Filing Protocol)
+-    465,     // smtp+ssl
+-    512,     // print / exec
+-    513,     // login
+-    514,     // shell
+-    515,     // printer
+-    526,     // tempo
+-    530,     // courier
+-    531,     // chat
+-    532,     // netnews
+-    540,     // uucp
+-    548,     // AFP (Apple Filing Protocol)
+-    556,     // remotefs
+-    563,     // nntp+ssl
+-    587,     // smtp (rfc6409)
+-    601,     // syslog-conn (rfc3195)
+-    636,     // ldap+ssl
+-    993,     // ldap+ssl
+-    995,     // pop3+ssl
+-    2049,    // nfs
+-    3659,    // apple-sasl / PasswordServer
+-    4045,    // lockd
+-    6000,    // X11
+-    6665,    // Alternate IRC [Apple addition]
+-    6666,    // Alternate IRC [Apple addition]
+-    6667,    // Standard IRC [Apple addition]
+-    6668,    // Alternate IRC [Apple addition]
+-    6669,    // Alternate IRC [Apple addition]
+-    6697,    // IRC + TLS
++    1,     // tcpmux
++    7,     // echo
++    9,     // discard
++    11,    // systat
++    13,    // daytime
++    15,    // netstat
++    17,    // qotd
++    19,    // chargen
++    20,    // ftp data
++    21,    // ftp access
++    22,    // ssh
++    23,    // telnet
++    25,    // smtp
++    37,    // time
++    42,    // name
++    43,    // nicname
++    53,    // domain
++    77,    // priv-rjs
++    79,    // finger
++    87,    // ttylink
++    95,    // supdup
++    101,   // hostriame
++    102,   // iso-tsap
++    103,   // gppitnp
++    104,   // acr-nema
++    109,   // pop2
++    110,   // pop3
++    111,   // sunrpc
++    113,   // auth
++    115,   // sftp
++    117,   // uucp-path
++    119,   // nntp
++    123,   // NTP
++    135,   // loc-srv /epmap
++    139,   // netbios
++    143,   // imap2
++    179,   // BGP
++    389,   // ldap
++    427,   // SLP (Also used by Apple Filing Protocol)
++    465,   // smtp+ssl
++    512,   // print / exec
++    513,   // login
++    514,   // shell
++    515,   // printer
++    526,   // tempo
++    530,   // courier
++    531,   // chat
++    532,   // netnews
++    540,   // uucp
++    548,   // AFP (Apple Filing Protocol)
++    556,   // remotefs
++    563,   // nntp+ssl
++    587,   // smtp (rfc6409)
++    601,   // syslog-conn (rfc3195)
++    636,   // ldap+ssl
++    993,   // ldap+ssl
++    995,   // pop3+ssl
++    2049,  // nfs
++    3659,  // apple-sasl / PasswordServer
++    4045,  // lockd
++    5060,  // sip
++    5061,  // sips
++    6000,  // X11
++    6665,  // Alternate IRC [Apple addition]
++    6666,  // Alternate IRC [Apple addition]
++    6667,  // Standard IRC [Apple addition]
++    6668,  // Alternate IRC [Apple addition]
++    6669,  // Alternate IRC [Apple addition]
++    6697,  // IRC + TLS
+ };
+ 
+ // FTP overrides the following restricted port.
