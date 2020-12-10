@@ -2423,7 +2423,7 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
 
 bool WebContents::SendIPCMessageToFrame(bool internal,
                                         bool send_to_all,
-                                        int32_t frame_id,
+                                        v8::Local<v8::Value> frame,
                                         const std::string& channel,
                                         v8::Local<v8::Value> args) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -2433,17 +2433,30 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
         gin::StringToV8(isolate, "Failed to serialize arguments")));
     return false;
   }
-  auto frames = web_contents()->GetAllFrames();
-  auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
-    return f->GetRoutingID() == frame_id;
-  });
-  if (iter == frames.end())
-    return false;
-  if (!(*iter)->IsRenderFrameLive())
+  int32_t frame_id;
+  int32_t process_id;
+  if (gin::ConvertFromV8(isolate, frame, &frame_id)) {
+    process_id = web_contents()->GetMainFrame()->GetProcess()->GetID();
+  } else {
+    std::vector<int32_t> id_pair;
+    if (gin::ConvertFromV8(isolate, frame, &id_pair) && id_pair.size() == 2) {
+      process_id = id_pair[0];
+      frame_id = id_pair[1];
+    } else {
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate,
+          "frameId must be a number or a pair of [processId, frameId]")));
+      return false;
+    }
+  }
+
+  auto* rfh = content::RenderFrameHost::FromID(process_id, frame_id);
+  if (!rfh || !rfh->IsRenderFrameLive() ||
+      content::WebContents::FromRenderFrameHost(rfh) != web_contents())
     return false;
 
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  rfh->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
   electron_renderer->Message(internal, send_to_all, channel, std::move(message),
                              0 /* sender_id */);
   return true;
