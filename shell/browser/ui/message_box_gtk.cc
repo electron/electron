@@ -87,9 +87,13 @@ class GtkMessageBox : public NativeWindowObserver {
 
     // Add buttons.
     GtkDialog* dialog = GTK_DIALOG(dialog_);
-    for (size_t i = 0; i < settings.buttons.size(); ++i) {
-      gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
-                            i);
+    if (settings.buttons.size() == 0) {
+      gtk_dialog_add_button(dialog, TranslateToStock(0, "OK"), 0);
+    } else {
+      for (size_t i = 0; i < settings.buttons.size(); ++i) {
+        gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
+                              i);
+      }
     }
     gtk_dialog_set_default_response(dialog, settings.default_id);
 
@@ -220,7 +224,7 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
     electron::MessageBoxSettings settings;
     settings.type = electron::MessageBoxType::kError;
-    settings.buttons = {"OK"};
+    settings.buttons = {};
     settings.title = "Error";
     settings.message = base::UTF16ToUTF8(title);
     settings.detail = base::UTF16ToUTF8(content);
