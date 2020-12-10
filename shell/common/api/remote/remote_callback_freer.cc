@@ -22,8 +22,8 @@ void RemoteCallbackFreer::BindTo(v8::Isolate* isolate,
                                  const std::string& context_id,
                                  int object_id,
                                  content::WebContents* web_contents) {
-  new RemoteCallbackFreer(isolate, target, process_id, context_id, object_id,
-                          web_contents);
+  new RemoteCallbackFreer(isolate, target, process_id, frame_id, context_id,
+                          object_id, web_contents);
 }
 
 RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
