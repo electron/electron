@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xianzhu Wang <wangxianzhu@chromium.org>
+Date: Mon, 16 Nov 2020 17:26:33 +0000
+Subject: Ensure change type for OverflowControlsClip is returned
+
+This at least ensures that we will update the paint properites for the
+composited overflow control layers in pre-CompositeAfterPaint to avoid
+stale properties on the layers.
+
+The test doesn't actually reproduce the bug because any test simpler
+than the bug case couldn't reproduce the bug as the update would be
+triggered in other code paths (any style change, layout change, etc.).
+
+Anyway this CL does fix the bug case.
+
+TBR=wangxianzhu@chromium.org
+
+(cherry picked from commit c20bb9897ef6d26a46391a4dc1658c5d33e0c100)
+
+(cherry picked from commit cfb81e677a508871f56d8bec958d0b585298ae0c)
+
+Bug: 1137603
+Change-Id: I5cca970bcf8cda6085527f79a97f269c4e3e9986
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2500264
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#820986}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2536910
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4240@{#1446}
+Cr-Original-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2540592
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240_112@{#26}
+Cr-Branched-From: 427c00d3874b6abcf4c4c2719768835fc3ef26d6-refs/branch-heads/4240@{#1291}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc b/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
+index e991dfac93cfa90f46b92e00c4f29318736bc7ba..b42f1d6bd9b04f293034ee97c8eaa7aa10390ac9 100644
+--- a/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
++++ b/third_party/blink/renderer/core/paint/compositing/compositing_layer_property_updater_test.cc
+@@ -174,4 +174,56 @@ TEST_F(CompositingLayerPropertyUpdaterTest,
+   }
+ }
+ 
++TEST_F(CompositingLayerPropertyUpdaterTest, OverflowControlsClip) {
++  SetBodyInnerHTML(R"HTML(
++    <style>
++      ::-webkit-scrollbar { width: 20px; }
++      #container {
++        width: 5px;
++        height: 100px;
++      }
++      #target {
++        overflow: scroll;
++        will-change: transform;
++        width: 100%;
++        height: 100%;
++      }
++    </style>
++    <div id="container">
++      <div id="target"></div>
++    </div>
++  )HTML");
++
++  // Initially the vertical scrollbar overflows the narrow border box.
++  auto* container = GetDocument().getElementById("container");
++  auto* target = ToLayoutBox(GetLayoutObjectByElementId("target"));
++  auto* scrollbar_layer =
++      target->GetScrollableArea()->GraphicsLayerForVerticalScrollbar();
++  auto target_state = target->FirstFragment().LocalBorderBoxProperties();
++  auto scrollbar_state = target_state;
++  auto* overflow_controls_clip =
++      target->FirstFragment().PaintProperties()->OverflowControlsClip();
++  ASSERT_TRUE(overflow_controls_clip);
++  scrollbar_state.SetClip(*overflow_controls_clip);
++  EXPECT_EQ(scrollbar_state, scrollbar_layer->GetPropertyTreeState());
++
++  // Widen target to make the vertical scrollbar contained by the border box.
++  container->setAttribute(html_names::kStyleAttr, "width: 100px");
++  UpdateAllLifecyclePhasesForTest();
++  LOG(ERROR) << target->Size();
++  EXPECT_FALSE(
++      target->FirstFragment().PaintProperties()->OverflowControlsClip());
++  EXPECT_EQ(target_state, scrollbar_layer->GetPropertyTreeState());
++
++  // Narrow down target back.
++  container->removeAttribute(html_names::kStyleAttr);
++  UpdateAllLifecyclePhasesForTest();
++  scrollbar_state = target_state;
++  overflow_controls_clip =
++      target->FirstFragment().PaintProperties()->OverflowControlsClip();
++  ASSERT_TRUE(overflow_controls_clip);
++  scrollbar_state.SetClip(*overflow_controls_clip);
++  EXPECT_EQ(scrollbar_state, scrollbar_layer->GetPropertyTreeState());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+index 0702a0fc65a69ab1da2cceeb4e6dcb9be30c8d3b..527024f5b1e9c71d7ad5311805c81c3587a7dc32 100644
+--- a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
++++ b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+@@ -1554,21 +1554,21 @@ void FragmentPaintPropertyTreeBuilder::UpdateOverflowControlsClip() {
+ 
+   if (NeedsOverflowControlsClip()) {
+     // Clip overflow controls to the border box rect. Not wrapped with
+-    // OnUpdateClip() because this clip doesn't affect descendants.
++    // OnUpdateClip() because this clip doesn't affect descendants. Wrap with
++    // OnUpdate() to let PrePaintTreeWalk see the change. This may cause
++    // unnecessary subtree update, but is not a big deal because it is rare.
+     const auto& clip_rect = PhysicalRect(context_.current.paint_offset,
+                                          ToLayoutBox(object_).Size());
+-    properties_->UpdateOverflowControlsClip(
++    OnUpdate(properties_->UpdateOverflowControlsClip(
+         *context_.current.clip,
+         ClipPaintPropertyNode::State(context_.current.transform,
+                                      FloatRoundedRect(FloatRect(clip_rect)),
+-                                     ToSnappedClipRect(clip_rect)));
++                                     ToSnappedClipRect(clip_rect))));
+   } else {
+-    properties_->ClearOverflowControlsClip();
++    OnClear(properties_->ClearOverflowControlsClip());
+   }
+ 
+-  // No need to set force_subtree_update_reasons and clip_changed because
+-  // OverflowControlsClip applies to overflow controls only, not descendants.
+-  // We also don't walk into custom scrollbars in PrePaintTreeWalk and
++  // We don't walk into custom scrollbars in PrePaintTreeWalk because
+   // LayoutObjects under custom scrollbars don't support paint properties.
+ }
+ 
