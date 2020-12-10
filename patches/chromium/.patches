@@ -158,3 +158,5 @@ cherry-pick-eec5025668f8.patch
 cherry-pick-5ffbb7ed173a.patch
 propagate_disable-dev-shm-usage_to_child_processes.patch
 cherry-pick-bbc6ab5bb49c.patch
+backport_1142331.patch
+backport_1151865.patch
