@@ -83,7 +83,8 @@ static_library("chrome") {
     "//components/proxy_config",
     "//components/security_state/content",
     "//content/public/browser",
-    "//electron:packed_resources",
+    "//services/strings",
+    "//chrome/browser:dev_ui_browser_resources",
   ]
 
   deps = [
