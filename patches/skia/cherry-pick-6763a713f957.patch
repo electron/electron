@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Osman <brianosman@google.com>
+Date: Thu, 3 Sep 2020 15:19:14 -0400
+Subject: Limit morphology radius to 100 pixels
+
+This limit is arbitrary, but hopefully prevents pathological (or
+malicious) SVG content from consuming huge amounts of CPU/GPU time,
+without impacting any legitimate uses of feMorphology. (Typical usage
+has a much smaller radius).
+
+Bug: chromium:1123035
+Change-Id: I4405bc595128e9a6287eb5efa1be14621baa3a00
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/315219
+Reviewed-by: Mike Reed <reed@google.com>
+Commit-Queue: Brian Osman <brianosman@google.com>
+
+diff --git a/src/effects/imagefilters/SkMorphologyImageFilter.cpp b/src/effects/imagefilters/SkMorphologyImageFilter.cpp
+index a4b970e565d1feee363c77eff59c0cee5f15fef0..9b488e802d7544b449e20b49661b78b08c2ee62e 100644
+--- a/src/effects/imagefilters/SkMorphologyImageFilter.cpp
++++ b/src/effects/imagefilters/SkMorphologyImageFilter.cpp
+@@ -744,7 +744,9 @@ sk_sp<SkSpecialImage> SkMorphologyImageFilterImpl::onFilterImage(const Context&
+     int height = SkScalarFloorToInt(radius.height());
+ 
+     // Width (or height) must fit in a signed 32-bit int to avoid UBSAN issues (crbug.com/1018190)
+-    constexpr int kMaxRadius = (std::numeric_limits<int>::max() - 1) / 2;
++    // Further, we limit the radius to something much smaller, to avoid extremely slow draw calls:
++    // (crbug.com/1123035):
++    constexpr int kMaxRadius = 100; // (std::numeric_limits<int>::max() - 1) / 2;
+ 
+     if (width < 0 || height < 0 || width > kMaxRadius || height > kMaxRadius) {
+         return nullptr;
