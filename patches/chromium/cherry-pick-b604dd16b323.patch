@@ -1,7 +1,7 @@
-From b604dd16b3233ec35127fef0a5d49baaa968ec7f Mon Sep 17 00:00:00 2001
-From: mark a. foltz <mfoltz@chromium.org>
-Date: Fri, 04 Sep 2020 18:43:26 +0000
-Subject: [PATCH] [DIAL MRP] Adds an Origin: header to DIAL requests.
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "mark a. foltz" <mfoltz@chromium.org>
+Date: Fri, 4 Sep 2020 18:43:26 +0000
+Subject: Adds an Origin: header to DIAL requests.
 
 This adds a fake Origin header to DIAL HTTP requests to mitigate
 security issues.
@@ -12,26 +12,26 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2391761
 Reviewed-by: Takumi Fujimoto <takumif@chromium.org>
 Commit-Queue: mark a. foltz <mfoltz@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#804570}
----
 
 diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
-index 430f2065..f86e0c1 100644
+index 6e7557f5b83dd37382d7ae45e04cd553fcfc2953..551b637ed8a3a95251e1eec49bb5315ac3a35924 100644
 --- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
 +++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
-@@ -5,9 +5,12 @@
+@@ -5,10 +5,13 @@
  #include "chrome/browser/media/router/discovery/dial/dial_url_fetcher.h"
  
  #include "base/bind.h"
 +#include "base/strings/strcat.h"
 +#include "base/strings/string_util.h"
  #include "base/strings/stringprintf.h"
+ #include "base/task/post_task.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/net/system_network_context_manager.h"
 +#include "components/version_info/version_info.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/pending_receiver.h"
-@@ -71,6 +74,16 @@
+@@ -72,6 +75,16 @@ void BindURLLoaderFactoryReceiverOnUIThread(
    factory->Clone(std::move(receiver));
  }
  
@@ -48,7 +48,7 @@ index 430f2065..f86e0c1 100644
  }  // namespace
  
  DialURLFetcher::DialURLFetcher(DialURLFetcher::SuccessCallback success_cb,
-@@ -112,6 +125,10 @@
+@@ -113,6 +126,10 @@ void DialURLFetcher::Start(const GURL& url,
    auto request = std::make_unique<network::ResourceRequest>();
    request->url = url;
    request->method = method;
@@ -59,7 +59,7 @@ index 430f2065..f86e0c1 100644
    method_ = method;
  
    // net::LOAD_BYPASS_PROXY: Proxies almost certainly hurt more cases than they
-@@ -119,6 +136,9 @@
+@@ -120,6 +137,9 @@ void DialURLFetcher::Start(const GURL& url,
    // net::LOAD_DISABLE_CACHE: The request should not touch the cache.
    request->load_flags = net::LOAD_BYPASS_PROXY | net::LOAD_DISABLE_CACHE;
    request->credentials_mode = network::mojom::CredentialsMode::kOmit;
@@ -70,10 +70,10 @@ index 430f2065..f86e0c1 100644
    loader_ = network::SimpleURLLoader::Create(std::move(request),
                                               kDialUrlFetcherTrafficAnnotation);
 diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
-index 79796e0..9996072 100644
+index 79796e0d81b0c28e9f0f9b7428586dbe1596102c..999607282da89f9e034f04223df1a5c54e22e4c4 100644
 --- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
 +++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
-@@ -21,12 +21,13 @@
+@@ -21,12 +21,13 @@ struct RedirectInfo;
  }
  
  namespace network {
@@ -88,7 +88,7 @@ index 79796e0..9996072 100644
  // from a DIAL device.  If successful, |success_cb| is invoked with the result;
  // otherwise, |error_cb| is invoked with an error reason.
  // This class is not sequence safe.
-@@ -59,6 +60,13 @@
+@@ -59,6 +60,13 @@ class DialURLFetcher {
    // of completion.
    const network::mojom::URLResponseHead* GetResponseHead() const;
  
@@ -102,7 +102,7 @@ index 79796e0..9996072 100644
   private:
    friend class TestDialURLFetcher;
  
-@@ -93,6 +101,7 @@
+@@ -93,6 +101,7 @@ class DialURLFetcher {
  
    // The HTTP method that was started on the fetcher (e.g., "GET").
    std::string method_;
@@ -111,7 +111,7 @@ index 79796e0..9996072 100644
    SEQUENCE_CHECKER(sequence_checker_);
    DISALLOW_COPY_AND_ASSIGN(DialURLFetcher);
 diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc b/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
-index 16884e4..1e82591 100644
+index 16884e48a1249df6505ed66f5513452c3c3dc72b..1e825912c0dbdc71d050163005d0e914188c56ab 100644
 --- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
 +++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
 @@ -9,11 +9,13 @@
@@ -128,7 +128,7 @@ index 16884e4..1e82591 100644
  #include "net/http/http_response_headers.h"
  #include "net/http/http_status_code.h"
  #include "services/network/test/test_url_loader_factory.h"
-@@ -35,6 +37,7 @@
+@@ -35,6 +37,7 @@ class DialURLFetcherTest : public testing::Test {
          base::BindOnce(&DialURLFetcherTest::OnSuccess, base::Unretained(this)),
          base::BindOnce(&DialURLFetcherTest::OnError, base::Unretained(this)),
          &loader_factory_);
@@ -136,7 +136,7 @@ index 16884e4..1e82591 100644
      fetcher_->Get(url_);
      base::RunLoop().RunUntilIdle();
    }
-@@ -47,6 +50,7 @@
+@@ -47,6 +50,7 @@ class DialURLFetcherTest : public testing::Test {
    network::TestURLLoaderFactory loader_factory_;
    const GURL url_;
    std::unique_ptr<TestDialURLFetcher> fetcher_;
@@ -144,7 +144,7 @@ index 16884e4..1e82591 100644
  
   private:
    DISALLOW_COPY_AND_ASSIGN(DialURLFetcherTest);
-@@ -60,6 +64,16 @@
+@@ -60,6 +64,16 @@ TEST_F(DialURLFetcherTest, FetchSuccessful) {
    loader_factory_.AddResponse(url_, network::mojom::URLResponseHead::New(),
                                body, status);
    StartGetRequest();
