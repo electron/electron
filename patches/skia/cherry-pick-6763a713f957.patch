@@ -1,7 +1,7 @@
-From 6763a713f957008a8f53a33299aadb829b54f1ff Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Brian Osman <brianosman@google.com>
-Date: Thu, 03 Sep 2020 15:19:14 -0400
-Subject: [PATCH] Limit morphology radius to 100 pixels
+Date: Thu, 3 Sep 2020 15:19:14 -0400
+Subject: Limit morphology radius to 100 pixels
 
 This limit is arbitrary, but hopefully prevents pathological (or
 malicious) SVG content from consuming huge amounts of CPU/GPU time,
@@ -13,13 +13,12 @@ Change-Id: I4405bc595128e9a6287eb5efa1be14621baa3a00
 Reviewed-on: https://skia-review.googlesource.com/c/skia/+/315219
 Reviewed-by: Mike Reed <reed@google.com>
 Commit-Queue: Brian Osman <brianosman@google.com>
----
 
 diff --git a/src/effects/imagefilters/SkMorphologyImageFilter.cpp b/src/effects/imagefilters/SkMorphologyImageFilter.cpp
-index e1cb998..9496474 100644
+index 35f35d7f8d6bb3c9b4aca8057d5b876c237dbb22..a9a617f648e2fa229d6a555610fac4c737dd1459 100644
 --- a/src/effects/imagefilters/SkMorphologyImageFilter.cpp
 +++ b/src/effects/imagefilters/SkMorphologyImageFilter.cpp
-@@ -637,7 +637,9 @@
+@@ -663,7 +663,9 @@ sk_sp<SkSpecialImage> SkMorphologyImageFilterImpl::onFilterImage(const Context&
      int height = SkScalarRoundToInt(radius.height());
  
      // Width (or height) must fit in a signed 32-bit int to avoid UBSAN issues (crbug.com/1018190)
