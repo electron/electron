@@ -35,6 +35,11 @@ declare namespace Electron {
     _initiallyShown: boolean;
   }
 
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number;
+  }
+
   interface SerializedError {
     message: string;
     stack?: string,

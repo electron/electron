@@ -94,6 +94,9 @@ function stringifySnapshots (snapshots: any, pretty = false) {
     if (key === 'openerId' && typeof value === 'number') {
       return 'placeholder-opener-id';
     }
+    if (key === 'processId' && typeof value === 'number') {
+      return 'placeholder-process-id';
+    }
     if (key === 'returnValue') {
       return 'placeholder-guest-contents-id';
     }
