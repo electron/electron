@@ -1,7 +1,7 @@
-From 2d18de63acf122e306de0dae9bbef566c71b5f31 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: danakj <danakj@chromium.org>
 Date: Tue, 17 Nov 2020 21:47:27 +0000
-Subject: [PATCH] Convert strides with padding in skia::SkBitmapToN32OpaqueOrPremul().
+Subject: Convert strides with padding in skia::SkBitmapToN32OpaqueOrPremul().
 
 Code using bitmaps converted with SkBitmapToN32OpaqueOrPremul() can
 easily assume that the pixels are one contiguous (width*4*height)-sized
@@ -17,27 +17,14 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2544032
 Commit-Queue: danakj <danakj@chromium.org>
 Reviewed-by: Florin Malita <fmalita@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#828406}
----
 
-diff --git a/skia/BUILD.gn b/skia/BUILD.gn
-index 2845e51..0c5a411 100644
---- a/skia/BUILD.gn
-+++ b/skia/BUILD.gn
-@@ -918,6 +918,7 @@
-     "ext/platform_canvas_unittest.cc",
-     "ext/recursive_gaussian_convolution_unittest.cc",
-     "ext/skia_memory_dump_provider_unittest.cc",
-+    "ext/skia_utils_base_unittest.cc",
-   ]
-   if (is_ios) {
-     sources += [ "ext/skia_utils_ios_unittest.mm" ]
 diff --git a/skia/ext/skia_utils_base.cc b/skia/ext/skia_utils_base.cc
-index 5b40d43..3dd233d 100644
+index 516ad7ea1e3a0acb1c8b207f98f6daf534262cbc..f9e622eff3ec6c3287138d7cdf68814b8535a338 100644
 --- a/skia/ext/skia_utils_base.cc
 +++ b/skia/ext/skia_utils_base.cc
-@@ -92,7 +92,8 @@
-     return true;
-   }
+@@ -85,7 +85,8 @@ void WriteSkFontStyle(base::Pickle* pickle, SkFontStyle style) {
+ bool SkBitmapToN32OpaqueOrPremul(const SkBitmap& in, SkBitmap* out) {
+   DCHECK(out);
    const SkImageInfo& info = in.info();
 -  if (info.colorType() == kN32_SkColorType &&
 +  const bool stride_matches_width = in.rowBytes() == info.minRowBytes();
@@ -46,10 +33,10 @@ index 5b40d43..3dd233d 100644
         info.alphaType() == kOpaque_SkAlphaType)) {
      // Shallow copy if the data is already in the right format.
 diff --git a/skia/ext/skia_utils_base.h b/skia/ext/skia_utils_base.h
-index c4532d0..b5c8f52f 100644
+index 2a1eca124e91695ddec635e593ad1e9b650aa156..40401bb2fe0e484fae64490757d63f85e5c5ffea 100644
 --- a/skia/ext/skia_utils_base.h
 +++ b/skia/ext/skia_utils_base.h
-@@ -42,9 +42,10 @@
+@@ -42,9 +42,10 @@ SK_API void WriteSkFontIdentity(
  // Writes style into the request pickle.
  SK_API void WriteSkFontStyle(base::Pickle* pickle, SkFontStyle style);
  
@@ -62,10 +49,10 @@ index c4532d0..b5c8f52f 100644
 +// the backing pixels. `out` may or may not be GPU-backed.
  //
  // If unsuccessful, returns false, but |out| may be modified.
- //
+ SK_API bool SkBitmapToN32OpaqueOrPremul(const SkBitmap& in, SkBitmap* out);
 diff --git a/skia/ext/skia_utils_base_unittest.cc b/skia/ext/skia_utils_base_unittest.cc
 new file mode 100644
-index 0000000..8369734
+index 0000000000000000000000000000000000000000..8369734498c0275437a12d4981264721e9d409d4
 --- /dev/null
 +++ b/skia/ext/skia_utils_base_unittest.cc
 @@ -0,0 +1,89 @@
