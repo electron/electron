@@ -965,7 +965,7 @@ Returns `Boolean` - Whether the window is in simple (pre-Lion) fullscreen mode.
 
 Returns `Boolean` - Whether the window is in normal state (not maximized, not minimized, not in fullscreen mode).
 
-#### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_ _Linux_
+#### `win.setAspectRatio(aspectRatio[, extraSize])`
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
@@ -985,6 +985,9 @@ the player itself we would call this function with arguments of 16/9 and
 { width: 40, height: 50 }. The second argument doesn't care where the extra width and height
 are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
+
+The aspect ratio is not respected when window is resized programmingly with
+APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
 
