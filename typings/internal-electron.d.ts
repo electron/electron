@@ -24,6 +24,11 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow;
   }
 
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number;
+  }
+
   interface SerializedError {
     message: string;
     stack?: string,
