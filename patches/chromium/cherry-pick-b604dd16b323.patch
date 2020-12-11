@@ -1,0 +1,163 @@
+From b604dd16b3233ec35127fef0a5d49baaa968ec7f Mon Sep 17 00:00:00 2001
+From: mark a. foltz <mfoltz@chromium.org>
+Date: Fri, 04 Sep 2020 18:43:26 +0000
+Subject: [PATCH] [DIAL MRP] Adds an Origin: header to DIAL requests.
+
+This adds a fake Origin header to DIAL HTTP requests to mitigate
+security issues.
+
+Bug: 1055608
+Change-Id: I72148bd81ef1804735feff9ec9fcfc0270c1500b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2391761
+Reviewed-by: Takumi Fujimoto <takumif@chromium.org>
+Commit-Queue: mark a. foltz <mfoltz@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#804570}
+---
+
+diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
+index 430f2065..f86e0c1 100644
+--- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
++++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.cc
+@@ -5,9 +5,12 @@
+ #include "chrome/browser/media/router/discovery/dial/dial_url_fetcher.h"
+ 
+ #include "base/bind.h"
++#include "base/strings/strcat.h"
++#include "base/strings/string_util.h"
+ #include "base/strings/stringprintf.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/net/system_network_context_manager.h"
++#include "components/version_info/version_info.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+@@ -71,6 +74,16 @@
+   factory->Clone(std::move(receiver));
+ }
+ 
++std::string GetFakeOriginForDialLaunch() {
++  // Syntax: package:Google-Chrome.87.Mac-OS-X
++  std::string product_name(version_info::GetProductName());
++  base::ReplaceChars(product_name, " ", "-", &product_name);
++  std::string os_type(version_info::GetOSType());
++  base::ReplaceChars(os_type, " ", "-", &os_type);
++  return base::StrCat({"package:", product_name, ".",
++                       version_info::GetMajorVersionNumber(), ".", os_type});
++}
++
+ }  // namespace
+ 
+ DialURLFetcher::DialURLFetcher(DialURLFetcher::SuccessCallback success_cb,
+@@ -112,6 +125,10 @@
+   auto request = std::make_unique<network::ResourceRequest>();
+   request->url = url;
+   request->method = method;
++  // As a security mitigation, DIAL launch requests now require a fake origin
++  // which cannot be spoofed by the drive-by Web.  Rather than attempt to
++  // coerce this fake origin into a url::Origin, set the header directly.
++  request->headers.SetHeader("Origin", GetFakeOriginForDialLaunch());
+   method_ = method;
+ 
+   // net::LOAD_BYPASS_PROXY: Proxies almost certainly hurt more cases than they
+@@ -119,6 +136,9 @@
+   // net::LOAD_DISABLE_CACHE: The request should not touch the cache.
+   request->load_flags = net::LOAD_BYPASS_PROXY | net::LOAD_DISABLE_CACHE;
+   request->credentials_mode = network::mojom::CredentialsMode::kOmit;
++  if (saved_request_for_test_) {
++    *saved_request_for_test_ = *request;
++  }
+ 
+   loader_ = network::SimpleURLLoader::Create(std::move(request),
+                                              kDialUrlFetcherTrafficAnnotation);
+diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
+index 79796e0..9996072 100644
+--- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
++++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher.h
+@@ -21,12 +21,13 @@
+ }
+ 
+ namespace network {
++struct ResourceRequest;
+ class SimpleURLLoader;
+ }  // namespace network
+ 
+ namespace media_router {
+ 
+-// Used to make a single HTTP GET request with |url| to fetch a response
++// Used to make a single HTTP request with |url| to fetch a response
+ // from a DIAL device.  If successful, |success_cb| is invoked with the result;
+ // otherwise, |error_cb| is invoked with an error reason.
+ // This class is not sequence safe.
+@@ -59,6 +60,13 @@
+   // of completion.
+   const network::mojom::URLResponseHead* GetResponseHead() const;
+ 
++  // If a non-nullptr |request| is passed, a copy of the resource request will
++  // be stored in it when the request is started.  |request| must outlive the
++  // call to Get(), Delete() or Post().
++  void SetSavedRequestForTest(network::ResourceRequest* request) {
++    saved_request_for_test_ = request;
++  }
++
+  private:
+   friend class TestDialURLFetcher;
+ 
+@@ -93,6 +101,7 @@
+ 
+   // The HTTP method that was started on the fetcher (e.g., "GET").
+   std::string method_;
++  network::ResourceRequest* saved_request_for_test_ = nullptr;
+ 
+   SEQUENCE_CHECKER(sequence_checker_);
+   DISALLOW_COPY_AND_ASSIGN(DialURLFetcher);
+diff --git a/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc b/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
+index 16884e4..1e82591 100644
+--- a/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
++++ b/chrome/browser/media/router/discovery/dial/dial_url_fetcher_unittest.cc
+@@ -9,11 +9,13 @@
+ #include "base/callback.h"
+ #include "base/macros.h"
+ #include "base/run_loop.h"
++#include "base/strings/string_util.h"
+ #include "base/test/task_environment.h"
+ #include "chrome/browser/media/router/discovery/dial/dial_url_fetcher.h"
+ #include "chrome/browser/media/router/test/test_helper.h"
+ #include "chrome/test/base/testing_profile.h"
+ #include "content/public/test/browser_task_environment.h"
++#include "net/base/load_flags.h"
+ #include "net/http/http_response_headers.h"
+ #include "net/http/http_status_code.h"
+ #include "services/network/test/test_url_loader_factory.h"
+@@ -35,6 +37,7 @@
+         base::BindOnce(&DialURLFetcherTest::OnSuccess, base::Unretained(this)),
+         base::BindOnce(&DialURLFetcherTest::OnError, base::Unretained(this)),
+         &loader_factory_);
++    fetcher_->SetSavedRequestForTest(&request_);
+     fetcher_->Get(url_);
+     base::RunLoop().RunUntilIdle();
+   }
+@@ -47,6 +50,7 @@
+   network::TestURLLoaderFactory loader_factory_;
+   const GURL url_;
+   std::unique_ptr<TestDialURLFetcher> fetcher_;
++  network::ResourceRequest request_;
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(DialURLFetcherTest);
+@@ -60,6 +64,16 @@
+   loader_factory_.AddResponse(url_, network::mojom::URLResponseHead::New(),
+                               body, status);
+   StartGetRequest();
++
++  // Verify the request parameters.
++  EXPECT_EQ(request_.url, url_);
++  EXPECT_EQ(request_.method, "GET");
++  std::string origin_header;
++  EXPECT_TRUE(request_.headers.GetHeader("Origin", &origin_header));
++  EXPECT_TRUE(base::StartsWith(origin_header, "package:"));
++  EXPECT_TRUE(request_.load_flags & net::LOAD_BYPASS_PROXY);
++  EXPECT_TRUE(request_.load_flags & net::LOAD_DISABLE_CACHE);
++  EXPECT_EQ(request_.credentials_mode, network::mojom::CredentialsMode::kOmit);
+ }
+ 
+ TEST_F(DialURLFetcherTest, FetchFailsOnMissingAppInfo) {
