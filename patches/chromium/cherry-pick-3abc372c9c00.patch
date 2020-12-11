@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Tue, 3 Nov 2020 23:00:29 +0000
+Subject: Apply markup sanitizer in CompositeEditCommand::MoveParagraphs()
+
+CompositeEditCommand::MoveParagraphs() serailizes part of the DOM and
+then re-parse it and insert it at some other place of the document. This
+is essentially a copy-and-paste, and can be exploited in the same way
+how copy-and-paste is exploited. So we should also sanitize markup in
+the function.
+
+(cherry picked from commit c529cbcc1bb0f72af944c30f03c2b3b435317bc7)
+
+Bug: 1141350
+Change-Id: I25c1dfc61c20b9134b23e057c5a3a0f56c190b5c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2500633
+Commit-Queue: Yoshifumi Inoue <yosin@chromium.org>
+Reviewed-by: Yoshifumi Inoue <yosin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#821098}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2518088
+Reviewed-by: Xiaocheng Hu <xiaochengh@chromium.org>
+Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4280@{#1099}
+Cr-Branched-From: ea420fb963f9658c9969b6513c56b8f47efa1a2a-refs/heads/master@{#812852}
+
+diff --git a/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc b/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
+index a665fe438041cce473b195a606378ee26500ebc4..2ba9c0cd368b3b907320ef2d6de550ae7598779e 100644
+--- a/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/composite_edit_command.cc
+@@ -1492,19 +1492,18 @@ void CompositeEditCommand::MoveParagraphs(
+   // FIXME: This is an inefficient way to preserve style on nodes in the
+   // paragraph to move. It shouldn't matter though, since moved paragraphs will
+   // usually be quite small.
+-  DocumentFragment* fragment =
+-      start_of_paragraph_to_move.DeepEquivalent() !=
+-              end_of_paragraph_to_move.DeepEquivalent()
+-          ? CreateFragmentFromMarkup(
+-                GetDocument(),
+-                CreateMarkup(start.ParentAnchoredEquivalent(),
+-                             end.ParentAnchoredEquivalent(),
+-                             CreateMarkupOptions::Builder()
+-                                 .SetShouldConvertBlocksToInlines(true)
+-                                 .SetConstrainingAncestor(constraining_ancestor)
+-                                 .Build()),
+-                "", kDisallowScriptingAndPluginContent)
+-          : nullptr;
++  DocumentFragment* fragment = nullptr;
++  if (start_of_paragraph_to_move.DeepEquivalent() !=
++      end_of_paragraph_to_move.DeepEquivalent()) {
++    const String paragraphs_markup = CreateMarkup(
++        start.ParentAnchoredEquivalent(), end.ParentAnchoredEquivalent(),
++        CreateMarkupOptions::Builder()
++            .SetShouldConvertBlocksToInlines(true)
++            .SetConstrainingAncestor(constraining_ancestor)
++            .Build());
++    fragment = CreateSanitizedFragmentFromMarkupWithContext(
++        GetDocument(), paragraphs_markup, 0, paragraphs_markup.length(), "");
++  }
+ 
+   // A non-empty paragraph's style is moved when we copy and move it.  We don't
+   // move anything if we're given an empty paragraph, but an empty paragraph can
