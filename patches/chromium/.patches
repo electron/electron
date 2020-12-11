@@ -162,3 +162,4 @@ propagate_disable-dev-shm-usage_to_child_processes.patch
 cherry-pick-bbc6ab5bb49c.patch
 cherry-pick-ecdec1fb0f42.patch
 only_zero_out_cross-origin_audio_that_doesn_t_get_played_out.patch
+fix_setparentacessibile_crash_win.patch
