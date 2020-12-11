@@ -161,29 +161,29 @@ WebContents.prototype._sendInternalToAll = function (channel, ...args) {
 
   return this._send(internal, sendToAll, channel, args);
 };
-WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
+WebContents.prototype.sendToFrame = function (frame, channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
-  } else if (typeof frameId !== 'number') {
-    throw new Error('Missing required frameId argument');
+  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
+    throw new Error('Missing required frame argument (must be number or array)');
   }
 
   const internal = false;
   const sendToAll = false;
 
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(internal, sendToAll, frame, channel, args);
 };
-WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
+WebContents.prototype._sendToFrameInternal = function (frame, channel, ...args) {
   if (typeof channel !== 'string') {
     throw new Error('Missing required channel argument');
-  } else if (typeof frameId !== 'number') {
-    throw new Error('Missing required frameId argument');
+  } else if (!(typeof frame === 'number' || Array.isArray(frame))) {
+    throw new Error('Missing required frame argument (must be number or array)');
   }
 
   const internal = true;
   const sendToAll = false;
 
-  return this._sendToFrame(internal, sendToAll, frameId, channel, args);
+  return this._sendToFrame(internal, sendToAll, frame, channel, args);
 };
 
 // Following methods are mapped to webFrame.
@@ -439,8 +439,9 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 };
 
 const addReplyToEvent = (event: any) => {
+  const { processId, frameId } = event;
   event.reply = (...args: any[]) => {
-    event.sender.sendToFrame(event.frameId, ...args);
+    event.sender.sendToFrame([processId, frameId], ...args);
   };
 };
 

@@ -294,7 +294,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   bool SendIPCMessageToFrame(bool internal,
                              bool send_to_all,
-                             int32_t frame_id,
+                             v8::Local<v8::Value> frame,
                              const std::string& channel,
                              v8::Local<v8::Value> args);
 
