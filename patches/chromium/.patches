@@ -106,3 +106,4 @@ cherry-pick-8f5a08079948.patch
 cherry-pick-275865e8c237.patch
 use_public_apis_to_determine_if_a_font_is_a_system_font_in_mas_build.patch
 cherry-pick-47e21abe349a.patch
+fix_setparentacessibile_crash_win.patch
