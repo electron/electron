@@ -14,7 +14,8 @@
 
 namespace electron {
 ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
-    content::RenderFrameHost* frame_host)
+    content::RenderFrameHost* frame_host,
+    mojo::PendingReceiver<mojom::ElectronBrowser> receiver)
     : render_process_id_(frame_host->GetProcess()->GetID()),
       render_frame_id_(frame_host->GetRoutingID()),
       weak_factory_(this) {
@@ -22,20 +23,13 @@ ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
       content::WebContents::FromRenderFrameHost(frame_host);
   DCHECK(web_contents);
   content::WebContentsObserver::Observe(web_contents);
-}
-
-ElectronBrowserHandlerImpl::~ElectronBrowserHandlerImpl() = default;
-
-void ElectronBrowserHandlerImpl::BindTo(
-    mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
-  // Note: BindTo might be called for multiple times.
-  if (receiver_.is_bound())
-    receiver_.reset();
 
   receiver_.Bind(std::move(receiver));
   receiver_.set_disconnect_handler(base::BindOnce(
       &ElectronBrowserHandlerImpl::OnConnectionError, GetWeakPtr()));
 }
+
+ElectronBrowserHandlerImpl::~ElectronBrowserHandlerImpl() = default;
 
 void ElectronBrowserHandlerImpl::WebContentsDestroyed() {
   delete this;
@@ -146,7 +140,7 @@ content::RenderFrameHost* ElectronBrowserHandlerImpl::GetRenderFrameHost() {
 void ElectronBrowserHandlerImpl::Create(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
-  auto* browser_handler = new ElectronBrowserHandlerImpl(frame_host);
-  browser_handler->BindTo(std::move(receiver));
+  auto* browser_handler =
+      new ElectronBrowserHandlerImpl(frame_host, std::move(receiver));
 }
 }  // namespace electron

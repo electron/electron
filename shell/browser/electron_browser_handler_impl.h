@@ -23,12 +23,11 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
                                    public content::WebContentsObserver {
  public:
   explicit ElectronBrowserHandlerImpl(
-      content::RenderFrameHost* render_frame_host);
+      content::RenderFrameHost* render_frame_host,
+      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
 
   static void Create(content::RenderFrameHost* frame_host,
                      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
-
-  void BindTo(mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
 
   // mojom::ElectronBrowser:
   void Message(bool internal,
@@ -69,7 +68,7 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
 
   void OnConnectionError();
 
-  api::WebContents* GetAPIWebContents();
+  content::RenderFrameHost* GetRenderFrameHost();
 
   const int render_process_id_;
   const int render_frame_id_;
