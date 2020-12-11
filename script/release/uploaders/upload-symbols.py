@@ -29,6 +29,8 @@ PDB_LIST = [
   os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))
 ]
 
+PDB_LIST += glob.glob(os.path.join(RELEASE_DIR, '*.dll.pdb'))
+
 NPX_CMD = "npx"
 if sys.platform == "win32":
     NPX_CMD += ".cmd"
