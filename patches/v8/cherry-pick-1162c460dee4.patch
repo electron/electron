@@ -1,0 +1,51 @@
+From 1162c460dee4218abd798b51b88926aef5c8bd61 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Wed, 25 Nov 2020 23:09:27 +0100
+Subject: [PATCH] [bigint] Fix possibly-uninitialized leading digit on right shift
+
+(cherry picked from commit e82a3b4d47a93ab64f07d8c03e3cd17b6b961c3f)
+
+Fixed: chromium:1151890
+Change-Id: I26f5c76494a9ff3f5a141f381e1c9a543e368571
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2561618
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Georg Neis <neis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#71422}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2565245
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.7@{#57}
+Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
+Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
+---
+
+diff --git a/src/objects/bigint.cc b/src/objects/bigint.cc
+index fbbfbeb..1e4f2d2 100644
+--- a/src/objects/bigint.cc
++++ b/src/objects/bigint.cc
+@@ -1872,6 +1872,8 @@
+   DCHECK_LE(result_length, length);
+   Handle<MutableBigInt> result = New(isolate, result_length).ToHandleChecked();
+   if (bits_shift == 0) {
++    // Zero out any overflow digit (see "rounding_can_overflow" above).
++    result->set_digit(result_length - 1, 0);
+     for (int i = digit_shift; i < length; i++) {
+       result->set_digit(i - digit_shift, x->digit(i));
+     }
+diff --git a/test/mjsunit/regress/regress-crbug-1151890.js b/test/mjsunit/regress/regress-crbug-1151890.js
+new file mode 100644
+index 0000000..70a3d6b
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1151890.js
+@@ -0,0 +1,11 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++for (let i = 0, j = 0; i < 10; ++i) {
++  let x = (-0xffffffffffffffff_ffffffffffffffffn >> 0x40n);
++  assertEquals(-0x10000000000000000n, x);
++  %SimulateNewspaceFull();
++}
