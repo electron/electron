@@ -140,7 +140,6 @@ content::RenderFrameHost* ElectronBrowserHandlerImpl::GetRenderFrameHost() {
 void ElectronBrowserHandlerImpl::Create(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
-  auto* browser_handler =
-      new ElectronBrowserHandlerImpl(frame_host, std::move(receiver));
+  new ElectronBrowserHandlerImpl(frame_host, std::move(receiver));
 }
 }  // namespace electron
