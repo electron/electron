@@ -1,0 +1,160 @@
+From 2d18de63acf122e306de0dae9bbef566c71b5f31 Mon Sep 17 00:00:00 2001
+From: danakj <danakj@chromium.org>
+Date: Tue, 17 Nov 2020 21:47:27 +0000
+Subject: [PATCH] Convert strides with padding in skia::SkBitmapToN32OpaqueOrPremul().
+
+Code using bitmaps converted with SkBitmapToN32OpaqueOrPremul() can
+easily assume that the pixels are one contiguous (width*4*height)-sized
+buffer. If it's not then out-of-bounds read/write can occur.
+
+Also adds tests for SkBitmapToN32OpaqueOrPremul().
+
+R=fmalita@chromium.org
+
+Bug: 1147431, 1144462
+Change-Id: I21f7a958a8c9231bf5f052f8ff246f2c249bd70b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2544032
+Commit-Queue: danakj <danakj@chromium.org>
+Reviewed-by: Florin Malita <fmalita@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#828406}
+---
+
+diff --git a/skia/BUILD.gn b/skia/BUILD.gn
+index 2845e51..0c5a411 100644
+--- a/skia/BUILD.gn
++++ b/skia/BUILD.gn
+@@ -918,6 +918,7 @@
+     "ext/platform_canvas_unittest.cc",
+     "ext/recursive_gaussian_convolution_unittest.cc",
+     "ext/skia_memory_dump_provider_unittest.cc",
++    "ext/skia_utils_base_unittest.cc",
+   ]
+   if (is_ios) {
+     sources += [ "ext/skia_utils_ios_unittest.mm" ]
+diff --git a/skia/ext/skia_utils_base.cc b/skia/ext/skia_utils_base.cc
+index 5b40d43..3dd233d 100644
+--- a/skia/ext/skia_utils_base.cc
++++ b/skia/ext/skia_utils_base.cc
+@@ -92,7 +92,8 @@
+     return true;
+   }
+   const SkImageInfo& info = in.info();
+-  if (info.colorType() == kN32_SkColorType &&
++  const bool stride_matches_width = in.rowBytes() == info.minRowBytes();
++  if (stride_matches_width && info.colorType() == kN32_SkColorType &&
+       (info.alphaType() == kPremul_SkAlphaType ||
+        info.alphaType() == kOpaque_SkAlphaType)) {
+     // Shallow copy if the data is already in the right format.
+diff --git a/skia/ext/skia_utils_base.h b/skia/ext/skia_utils_base.h
+index c4532d0..b5c8f52f 100644
+--- a/skia/ext/skia_utils_base.h
++++ b/skia/ext/skia_utils_base.h
+@@ -42,9 +42,10 @@
+ // Writes style into the request pickle.
+ SK_API void WriteSkFontStyle(base::Pickle* pickle, SkFontStyle style);
+ 
+-// Converts an SkBitmap to an Opaque or Premul N32 SkBitmap. If the input is in
+-// the right format (N32 Opaque or Premul) already, points |out| directly at
+-// |in|. |out| may or may not be GPU-backed.
++// Converts an SkBitmap to an Opaque or Premul N32 SkBitmap with stride matching
++// the width of each row. If the input is has the right format (N32 Opaque or
++// Premul) without stride padding already, this assigns `in` to `out`, sharing
++// the backing pixels. `out` may or may not be GPU-backed.
+ //
+ // If unsuccessful, returns false, but |out| may be modified.
+ //
+diff --git a/skia/ext/skia_utils_base_unittest.cc b/skia/ext/skia_utils_base_unittest.cc
+new file mode 100644
+index 0000000..8369734
+--- /dev/null
++++ b/skia/ext/skia_utils_base_unittest.cc
+@@ -0,0 +1,89 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "skia/ext/skia_utils_base.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "third_party/skia/include/core/SkImageInfo.h"
++
++namespace skia {
++namespace {
++
++#define EXPECT_EQ_BITMAP(a, b)                               \
++  do {                                                       \
++    EXPECT_EQ(a.pixmap().addr(), b.pixmap().addr());         \
++    EXPECT_EQ(a.pixmap().rowBytes(), b.pixmap().rowBytes()); \
++    EXPECT_EQ(a.pixmap().info(), b.pixmap().info());         \
++  } while (false)
++
++TEST(SkiaUtilsBase, ConvertNullToN32) {
++  SkBitmap bitmap;
++  SkBitmap out;
++  EXPECT_TRUE(SkBitmapToN32OpaqueOrPremul(bitmap, &out));
++  // Returned a copy of the input bitmap.
++  EXPECT_EQ_BITMAP(bitmap, out);
++}
++
++TEST(SkiaUtilsBase, ConvertValidToN32) {
++  SkBitmap bitmap;
++  bitmap.allocN32Pixels(10, 12);
++  SkBitmap out;
++  EXPECT_TRUE(SkBitmapToN32OpaqueOrPremul(bitmap, &out));
++  // Returned a copy of the input bitmap.
++  EXPECT_EQ_BITMAP(bitmap, out);
++}
++
++TEST(SkiaUtilsBase, ConvertWeirdStrideToN32) {
++  int width = 10;
++  int height = 12;
++
++  SkBitmap bitmap;
++  // Stride is > 4 * width.
++  bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType),
++                     width * 4 + 4);
++
++  SkBitmap out;
++  EXPECT_TRUE(SkBitmapToN32OpaqueOrPremul(bitmap, &out));
++  // The stride was converted.
++  EXPECT_NE(bitmap.rowBytes(), out.rowBytes());
++  EXPECT_EQ(out.rowBytes(), width * 4u);
++}
++
++TEST(SkiaUtilsBase, ConvertWeirdFormatToN32) {
++  int width = 10;
++  int height = 12;
++
++  // A format smaller than N32.
++  {
++    SkBitmap bitmap;
++    bitmap.allocPixels(SkImageInfo::MakeA8(width, height));
++
++    SkBitmap out;
++    EXPECT_TRUE(SkBitmapToN32OpaqueOrPremul(bitmap, &out));
++    // The format was converted.
++    EXPECT_NE(bitmap.rowBytes(), out.rowBytes());
++    EXPECT_NE(bitmap.info().colorType(), out.info().colorType());
++    EXPECT_EQ(out.rowBytes(), width * 4u);
++    EXPECT_EQ(out.info().colorType(), kN32_SkColorType);
++  }
++
++  // A format larger than N32.
++  {
++    SkBitmap bitmap;
++    bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_F16_SkColorType,
++                                         kPremul_SkAlphaType));
++
++    SkBitmap out;
++    EXPECT_TRUE(SkBitmapToN32OpaqueOrPremul(bitmap, &out));
++    // The format was converted.
++    EXPECT_NE(bitmap.rowBytes(), out.rowBytes());
++    EXPECT_NE(bitmap.info().colorType(), out.info().colorType());
++    EXPECT_EQ(out.rowBytes(), width * 4u);
++    EXPECT_EQ(out.info().colorType(), kN32_SkColorType);
++  }
++}
++
++}  // namespace
++}  // namespace skia
