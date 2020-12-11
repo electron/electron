@@ -13,10 +13,10 @@ This patch can likely be upstreamed. The crash cannot be fixed without
 patching something in Chromium - this is the least invasive change.
 
 diff --git a/ui/views/controls/native/native_view_host.cc b/ui/views/controls/native/native_view_host.cc
-index f9e1aa1b455ae49b59d53a75ae0634d0c092a130..4785f0c0368e0ab22db0cc968ad85d23a9b26240 100644
+index d8e5cf4ddb625519863837544c2f91b4e015029b..e1c2e2e41eed722a7989bc8e97e2ea73119b1f70 100644
 --- a/ui/views/controls/native/native_view_host.cc
 +++ b/ui/views/controls/native/native_view_host.cc
-@@ -55,6 +55,9 @@ void NativeViewHost::Detach() {
+@@ -54,6 +54,9 @@ void NativeViewHost::Detach() {
  }
  
  void NativeViewHost::SetParentAccessible(gfx::NativeViewAccessible accessible) {
