@@ -13,5 +13,7 @@
   
   "src/electron/patches/pdfium": "src/third_party/pdfium",
   
-  "src/electron/patches/angle": "src/third_party/angle"
+  "src/electron/patches/angle": "src/third_party/angle",
+  
+  "src/electron/patches/skia": "src/third_party/skia"
 }
