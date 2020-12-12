@@ -161,6 +161,8 @@ int NodeMain(int argc, char* argv[]) {
     scoped_refptr<UvTaskRunner> uv_task_runner(new UvTaskRunner(loop));
     base::ThreadTaskRunnerHandle handle(uv_task_runner);
 
+    node::PlatformInit();
+
     // Initialize feature list.
     auto feature_list = std::make_unique<base::FeatureList>();
     feature_list->InitializeFromCommandLine("", "");

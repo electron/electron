@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sat, 12 Dec 2020 09:23:21 -0800
+Subject: chore: expose PlatformInit to embedders
+
+In ELECTRON_RUN_AS_NODE, Electron should respond to signals the way that
+Node.js does, and they perform platform-specific initialization for
+signal handling in a method which we never invoke indirectly nor which
+is directly exposed to embedders. This exposes it so we can perform
+that initialization and correctly handle signals like SIGXFSZ.
+
+Upstreamed at https://github.com/nodejs/node/pull/36518.
+
+diff --git a/src/node.cc b/src/node.cc
+index 102847cd32d03addeb40c9539eafc92ba49c8ec4..3360f32f5b25e25c8202673c1279a650e6fba178 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -568,7 +568,7 @@ static struct {
+ #endif  // __POSIX__
+ 
+ 
+-inline void PlatformInit() {
++void PlatformInit() {
+ #ifdef __POSIX__
+ #if HAVE_INSPECTOR
+   sigset_t sigmask;
+diff --git a/src/node.h b/src/node.h
+index f150725b54ee1315476d202797963369490d5152..d37a0bfc80a639b233f69bfa5f979704f5dbae42 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -253,6 +253,8 @@ enum OptionEnvvarSettings {
+   kDisallowedInEnvironment
+ };
+ 
++NODE_EXTERN void PlatformInit();
++
+ NODE_EXTERN int ProcessGlobalArgs(std::vector<std::string>* args,
+                       std::vector<std::string>* exec_args,
+                       std::vector<std::string>* errors,
