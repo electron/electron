@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 const { createScreen } = process._linkedBinding('electron_common_screen');
 
 let _screen: Electron.Screen;
@@ -36,5 +37,11 @@ export default new Proxy({}, {
   getOwnPropertyDescriptor: (target, property: string) => {
     createScreenIfNeeded();
     return Reflect.getOwnPropertyDescriptor(_screen, property);
+  },
+  getPrototypeOf: () => {
+    // This is necessary as a result of weirdness with EventEmitterMixin
+    // and FunctionTemplate - we need to explicitly ensure it's returned
+    // in the prototype.
+    return EventEmitter.prototype;
   }
 });
