@@ -5,6 +5,7 @@ Subject: Chromium backport: crbug.com/1151865
 
 M87-1
 Reject mojom::DataElement serialization if array size read failed
+https://chromium-review.googlesource.com/c/chromium/src/+/2567130
 CVE-2020-16041
 
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
