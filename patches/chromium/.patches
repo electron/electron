@@ -121,7 +121,7 @@ cherry-pick-d8d64b7cd244.patch
 cherry-pick-5ffbb7ed173a.patch
 ui_check_that_unpremultiply_is_passed_a_32bpp_image.patch
 cherry-pick-ecdec1fb0f42.patch
-backport_1142331.patch
-backport_1151865.patch
 merge_m86_ensure_that_buffers_used_by_imagedecoder_haven_t_been.patch
 fix_setparentacessibile_crash_win.patch
+backport_1142331.patch
+backport_1151865.patch
