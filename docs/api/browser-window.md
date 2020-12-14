@@ -1784,6 +1784,12 @@ with `addBrowserView` or `setBrowserView`.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+#### `win.setTopBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Brings a BrowserView to top.
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
