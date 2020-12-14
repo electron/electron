@@ -84,6 +84,11 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::Closure& callback) {
+  if (!Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
   std::vector<ui::Accelerator> registered;
 
   for (auto& accelerator : accelerators) {
@@ -100,6 +105,11 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
+  if (!Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
 #if defined(OS_MAC)
   if (Command::IsMediaKey(accelerator)) {
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
@@ -119,6 +129,11 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
 }
 
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
+  if (!Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
   if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
 
@@ -145,6 +160,11 @@ bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
 }
 
 void GlobalShortcut::UnregisterAll() {
+  if (!Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
   accelerator_callback_map_.clear();
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }
