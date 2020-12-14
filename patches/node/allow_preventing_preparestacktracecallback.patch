@@ -10,7 +10,7 @@ therefore need to prevent this handler being set so that Blink falls back to its
 default handling and displays the correct stacktrace.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index e42416b4807fcc9d35a93399b916968b45ed0c7a..e1314533c5ada3843aaa2a21f745b765f8d076ae 100644
+index e42416b4807fcc9d35a93399b916968b45ed0c7a..adf033f2e1855ad1c9738f9746677566aabedd87 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -226,9 +226,11 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
