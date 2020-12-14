@@ -122,4 +122,5 @@ cherry-pick-5ffbb7ed173a.patch
 ui_check_that_unpremultiply_is_passed_a_32bpp_image.patch
 cherry-pick-ecdec1fb0f42.patch
 merge_m86_ensure_that_buffers_used_by_imagedecoder_haven_t_been.patch
+only_zero_out_cross-origin_audio_that_doesn_t_get_played_out.patch
 fix_setparentacessibile_crash_win.patch
