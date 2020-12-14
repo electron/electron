@@ -6,7 +6,7 @@ Subject: fix_disable_usage_of_abort_report_np_in_mas_builds.patch
 Disable usage of abort_report_np in MAS builds.
 
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index 7f30c2c3e5b75a5e3c1cec6d5eda8acded9a3f25..d291c1f0799ea03183a7003c4d63203def9233ac 100644
+index 702224dce1871c07b07f6882e46d14fe532d6ed2..797cb6646171486797a5e5fbbb1b187e3a9f81d4 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -21,17 +21,15 @@ index 7f30c2c3e5b75a5e3c1cec6d5eda8acded9a3f25..d291c1f0799ea03183a7003c4d63203d
  
  namespace sandbox {
  
-@@ -104,11 +106,13 @@ void SendAslLog(Level level, const char* message) {
+@@ -104,9 +106,11 @@ void SendAslLog(Level level, const char* message) {
    asl_set(asl_message.get(), ASL_KEY_MSG, message);
    asl_send(asl_client.get(), asl_message.get());
  
-+  #if !defined(MAS_BUILD)
-   if (__builtin_available(macOS 10.11, *)) {
-     if (level == Level::FATAL) {
-       abort_report_np(message);
-     }
++#if !defined(MAS_BUILD)
+   if (level == Level::FATAL) {
+     abort_report_np(message);
    }
-+  #endif
++#endif
  }
  
  // |error| is strerror(errno) when a P* logging function is called. Pass

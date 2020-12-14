@@ -244,13 +244,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   root_layer_.reset();
 }
 
-content::BrowserAccessibilityManager*
-OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
-    content::BrowserAccessibilityDelegate*,
-    bool) {
-  return nullptr;
-}
-
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   DCHECK(parent_host_view_);
 
@@ -418,9 +411,6 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   }
   Show();
 }
-
-void OffScreenRenderWidgetHostView::InitAsFullscreen(
-    content::RenderWidgetHostView*) {}
 
 void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
 

@@ -1480,7 +1480,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
             expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
           });
           w.webContents.executeJavaScript('a.click()');
         });

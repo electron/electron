@@ -426,15 +426,6 @@ bool ElectronBundleMover::Trash(NSString* path) {
                    error:NULL];
   }
 
-  if (!result) {
-    result = [[NSWorkspace sharedWorkspace]
-        performFileOperation:NSWorkspaceRecycleOperation
-                      source:[path stringByDeletingLastPathComponent]
-                 destination:@""
-                       files:[NSArray arrayWithObject:[path lastPathComponent]]
-                         tag:NULL];
-  }
-
   // As a last resort try trashing with AppleScript.
   // This allows us to trash the app in macOS Sierra even when the app is
   // running inside an app translocation image.

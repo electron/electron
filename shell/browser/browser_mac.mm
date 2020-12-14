@@ -308,6 +308,8 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 void RemoveFromLoginItems() {
+#pragma clang diagnostic push  // https://crbug.com/1154377
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   // logic to find the login item copied from GetLoginItemForApp in
   // base/mac/mac_util.mm
   base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
@@ -333,6 +335,7 @@ void RemoveFromLoginItems() {
       }
     }
   }
+#pragma clang diagnostic pop
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {

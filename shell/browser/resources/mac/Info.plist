@@ -28,6 +28,11 @@
     <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
+    <key>NSAppTransportSecurity</key>    
+    <dict>
+      <key>NSAllowsArbitraryLoads</key>
+      <true/>
+    </dict>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSHighResolutionCapable</key>
