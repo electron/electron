@@ -5,6 +5,7 @@ Subject: Chromium backport: crbug.com/1142331
 
 M87-1
 Clipboard: Fix UaP in ClipboardWriter/FileReaderLoader
+https://chromium-review.googlesource.com/c/chromium/src/+/2536946
 CVE-2020-16037
 
 diff --git a/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc b/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
