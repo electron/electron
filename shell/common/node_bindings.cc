@@ -173,14 +173,18 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::Environment* env = node::Environment::GetCurrent(isolate);
 
-  // TODO(codebytere): properly emit the after() hooks now
-  // that the exception has been handled.
-  // See node/lib/internal/process/execution.js#L176-L180
-
-  // Ensure that the async id stack is properly cleared so the async
-  // hook stack does not become corrupted.
-
   if (env) {
+    // Emit the after() hooks now that the exception has been handled.
+    // Analogous to node/lib/internal/process/execution.js#L176-L180
+    if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
+      while (env->async_hooks()->fields()[node::AsyncHooks::kStackLength]) {
+        node::AsyncWrap::EmitAfter(env, env->execution_async_id());
+        env->async_hooks()->pop_async_context(env->execution_async_id());
+      }
+    }
+
+    // Ensure that the async id stack is properly cleared so the async
+    // hook stack does not become corrupted.
     env->async_hooks()->clear_async_id_stack();
   }
 }
