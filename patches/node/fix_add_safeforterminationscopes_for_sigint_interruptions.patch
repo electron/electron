@@ -14,10 +14,10 @@ receive those events.
 Upstreamed at https://github.com/nodejs/node/pull/36344.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index f778b089dc4009912361342077793e7918286de3..9302fa6f68d83717a02b82891466ce12b6af2cfd 100644
+index 97403eb54c9445e170aad25764513a51f82e555c..096b85b8a39ce9227c94c31d824a633e12c6622e 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -350,6 +350,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
+@@ -332,6 +332,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
  
    ShouldNotAbortOnUncaughtScope no_abort_scope(env);
    TryCatchScope try_catch(env);
@@ -26,10 +26,10 @@ index f778b089dc4009912361342077793e7918286de3..9302fa6f68d83717a02b82891466ce12
    bool timed_out = false;
    bool received_signal = false;
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 848e883a829a9725649d837bff09b30156f4f661..a69570400cd897699b1033102767b3389ff8ef38 100644
+index b90b369d1b379c0e909fd6722d315dcac765a330..69cf0f17cff66d33164c2a31cc1e4feeb1c791fd 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -933,6 +933,7 @@ bool ContextifyScript::EvalMachine(Environment* env,
+@@ -908,6 +908,7 @@ bool ContextifyScript::EvalMachine(Environment* env,
      return false;
    }
    TryCatchScope try_catch(env);
