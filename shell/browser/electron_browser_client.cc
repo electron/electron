@@ -1005,6 +1005,22 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
   return true;
 }
 
+content::GeneratedCodeCacheSettings
+ElectronBrowserClient::GetGeneratedCodeCacheSettings(
+    content::BrowserContext* context) {
+  // We always set the browser process to save the generated code cache, but
+  // the storage partition will ensure that cache is not saved for in memory
+  // sessions.
+  // https://source.chromium.org/chromium/chromium/src/+/master:content/browser/storage_partition_impl.cc;l=1315
+  //
+  // Setting size to 0 will automatically pick up size based on available disk
+  // space.
+  //
+  // We use the user data path set for each browser context to save the cache.
+  // It will be under <user-data-dir>/Code Cache/
+  return content::GeneratedCodeCacheSettings(true, 0, context->GetPath());
+}
+
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
   // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
