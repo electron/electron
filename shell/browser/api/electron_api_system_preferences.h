@@ -117,7 +117,6 @@ class SystemPreferences
   v8::Local<v8::Value> GetAppLevelAppearance(v8::Isolate* isolate);
   void SetAppLevelAppearance(gin::Arguments* args);
 #endif
-  bool IsDarkMode();
   bool IsInvertedColorScheme();
   bool IsHighContrastColorScheme();
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
