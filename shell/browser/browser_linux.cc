@@ -130,10 +130,10 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
 
-bool Browser::SetBadgeCount(int count) {
-  if (IsUnityRunning()) {
-    unity::SetDownloadCount(count);
-    badge_count_ = count;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  if (IsUnityRunning() && count.has_value()) {
+    unity::SetDownloadCount(count.value());
+    badge_count_ = count.value();
     return true;
   } else {
     return false;
