@@ -7,7 +7,7 @@ import { ipcMain, BrowserWindow } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { NativeImage } from 'electron/common';
 import { serialize, deserialize } from '../lib/common/type-utils';
-import { nativeImage } from 'electron';
+import { protocol, nativeImage } from 'electron';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -640,6 +640,16 @@ ifdescribe(features.isRemoteModuleEnabled())('remote module', () => {
 
       const { functionWithToStringProperty } = require('electron').remote.require(path.join(fixtures, 'to-string-non-function.js'));
       expect(functionWithToStringProperty.toString).to.equal('hello');
+    });
+
+    const protocolKeys = Object.getOwnPropertyNames(protocol);
+    remotely.it(protocolKeys)('remote.protocol returns all keys', (protocolKeys: [string]) => {
+      const protocol = require('electron').remote.protocol;
+      const remoteKeys = Object.getOwnPropertyNames(protocol);
+      expect(remoteKeys).to.deep.equal(protocolKeys);
+      for (const key of remoteKeys) {
+        expect(typeof (protocol as any)[key]).to.equal('function');
+      }
     });
   });
 
