@@ -159,10 +159,10 @@ index 7e1acd4f7564c657780fb338614f067b95033825..1013750de1c595cc87808de1187144e9
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index aedabbfec070728597fc104307e14fcc9953b67b..caed17fa112d63536b45b735bb9c0cbdd21c2843 100644
+index 2f12bfd6d0c057aa28a95a043aa229d270a53dd7..25a3603a1a54da75013ba0f53d6c64619ccdedba 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -777,8 +777,7 @@ class Browser : public TabStripModelObserver,
+@@ -783,8 +783,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

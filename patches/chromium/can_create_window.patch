@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index fc1c7412b29400ffe9a30d4600961bfc04965750..d90269845ed76687fdcc652aed4d4e16fb8a1417 100644
+index ed027b42eb6d50bf5ad0bfe6615f8fb7aa5169b0..84f326e0056bb2d0034aa9c0a7416abd8de94298 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5226,6 +5226,7 @@ void RenderFrameHostImpl::CreateNewWindow(

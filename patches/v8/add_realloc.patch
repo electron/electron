@@ -30,7 +30,7 @@ index 8ec9f7bfce340ae9ec4b50f164cc9af439539ada..7c13c50971ca7c3e9b90d546c2872908
       * Free the memory block of size |length|, pointed to by |data|.
       * That memory is guaranteed to be previously allocated by |Allocate|.
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 579ac5e401a0f6fe3a716ee830b42814e30d689a..14333c87010c308b998d8a4488eaa6ce803bcd42 100644
+index 69ff751e8b814cbe96d27bf9951d3e9a492bdbc9..6af409c0a5f5ba0c7ba8a63fb76314a24a3325a3 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -544,6 +544,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
