@@ -31,7 +31,13 @@ const finalizationRegistry = new FinalizationRegistry((fi: FinalizerInfo) => {
   const ref = rendererFunctionCache.get(mapKey);
   if (ref !== undefined && ref.deref() === undefined) {
     rendererFunctionCache.delete(mapKey);
-    if (!fi.webContents.isDestroyed()) { fi.webContents._sendToFrameInternal(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]); }
+    if (!fi.webContents.isDestroyed()) {
+      try {
+        fi.webContents._sendToFrameInternal(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]);
+      } catch (error) {
+        console.warn(`_sendToFrameInternal() failed: ${error}`);
+      }
+    }
   }
 });
 
@@ -265,7 +271,11 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: [number, num
         const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false;
           if (!sender.isDestroyed()) {
-            succeed = sender._sendToFrameInternal(frameId, IPC_MESSAGES.RENDERER_CALLBACK, contextId, meta.id, valueToMeta(sender, contextId, args));
+            try {
+              succeed = sender._sendToFrameInternal(frameId, IPC_MESSAGES.RENDERER_CALLBACK, contextId, meta.id, valueToMeta(sender, contextId, args));
+            } catch (error) {
+              console.warn(`_sendToFrameInternal() failed: ${error}`);
+            }
           }
           if (!succeed) {
             removeRemoteListenersAndLogWarning(this, callIntoRenderer);
