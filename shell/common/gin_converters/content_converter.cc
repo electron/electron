@@ -15,6 +15,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -90,6 +91,18 @@ struct Converter<ui::MenuSourceType> {
         return StringToV8(isolate, "touch");
       case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
         return StringToV8(isolate, "touchMenu");
+      case ui::MENU_SOURCE_LONG_PRESS:
+        return StringToV8(isolate, "longPress");
+      case ui::MENU_SOURCE_LONG_TAP:
+        return StringToV8(isolate, "longTap");
+      case ui::MENU_SOURCE_TOUCH_HANDLE:
+        return StringToV8(isolate, "touchHandle");
+      case ui::MENU_SOURCE_STYLUS:
+        return StringToV8(isolate, "stylus");
+      case ui::MENU_SOURCE_ADJUST_SELECTION:
+        return StringToV8(isolate, "adjustSelection");
+      case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
+        return StringToV8(isolate, "adjustSelectionReset");
       default:
         return StringToV8(isolate, "none");
     }
@@ -138,11 +151,18 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
+  dict.Set("altText", params.alt_text);
+  dict.Set("suggestedFilename", params.suggested_filename);
   dict.Set("misspelledWord", params.misspelled_word);
+  dict.Set("selectionRect", params.selection_rect);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  dict.Set("spellcheckEnabled", params.spellcheck_enabled);
+#else
+  dict.Set("spellcheckEnabled", false);
 #endif
   dict.Set("frameCharset", params.frame_charset);
+  dict.Set("referrerPolicy", params.referrer_policy);
   dict.Set("inputFieldType", params.input_field_type);
   dict.Set("menuSourceType", params.source_type);
 

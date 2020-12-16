@@ -385,6 +385,8 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanSelectAll));
+  dict.Set("canEditRichly",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanEditRichly));
 
   return ConvertToV8(isolate, dict);
 }
@@ -396,16 +398,26 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   dict.Set("isPaused",
            !!(mediaFlags & blink::WebContextMenuData::kMediaPaused));
   dict.Set("isMuted", !!(mediaFlags & blink::WebContextMenuData::kMediaMuted));
+  dict.Set("canSave",
+           !!(mediaFlags & blink::WebContextMenuData::kMediaCanSave));
   dict.Set("hasAudio",
            !!(mediaFlags & blink::WebContextMenuData::kMediaHasAudio));
-  dict.Set("isLooping",
-           (mediaFlags & blink::WebContextMenuData::kMediaLoop) != 0);
+  dict.Set("isLooping", !!(mediaFlags & blink::WebContextMenuData::kMediaLoop));
   dict.Set("isControlsVisible",
-           (mediaFlags & blink::WebContextMenuData::kMediaControls) != 0);
+           !!(mediaFlags & blink::WebContextMenuData::kMediaControls));
   dict.Set("canToggleControls",
            !!(mediaFlags & blink::WebContextMenuData::kMediaCanToggleControls));
+  dict.Set("canPrint",
+           !!(mediaFlags & blink::WebContextMenuData::kMediaCanPrint));
   dict.Set("canRotate",
            !!(mediaFlags & blink::WebContextMenuData::kMediaCanRotate));
+  dict.Set(
+      "canShowPictureInPicture",
+      !!(mediaFlags & blink::WebContextMenuData::kMediaCanPictureInPicture));
+  dict.Set("isShowingPictureInPicture",
+           !!(mediaFlags & blink::WebContextMenuData::kMediaPictureInPicture));
+  dict.Set("canLoop",
+           !!(mediaFlags & blink::WebContextMenuData::kMediaCanLoop));
   return ConvertToV8(isolate, dict);
 }
 
