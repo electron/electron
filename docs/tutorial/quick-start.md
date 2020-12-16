@@ -124,6 +124,7 @@ Your Electron application uses the `package.json` file as the main entry point (
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
     "description": "My Electron app",
     "main": "main.js"
 }
@@ -131,12 +132,16 @@ Your Electron application uses the `package.json` file as the main entry point (
 
 > NOTE: If the `main` field is omitted, Electron will attempt to load an `index.js` file from the directory containing `package.json`.
 
+> NOTE: The `author` and `description` fields are required for packaging, otherwise error will occur when running `npm run make`.
+
 By default, the `npm start` command will run the main script with Node.js. To run the script with Electron, you need to change it as such:
 
 ```json
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
+    "description": "My Electron app",
     "main": "main.js",
     "scripts": {
         "start": "electron ."
