@@ -243,14 +243,8 @@ int NodeMain(int argc, char* argv[]) {
     NodeDebugger node_debugger(env);
     node_debugger.Start();
 
-    // TODO(codebytere): we should try to handle this upstream.
-    {
-      v8::HandleScope scope(isolate);
-      node::InternalCallbackScope callback_scope(
-          env, v8::Object::New(isolate), {1, 0},
-          node::InternalCallbackScope::kSkipAsyncHooks);
-      node::LoadEnvironment(env);
-    }
+    v8::HandleScope scope(isolate);
+    node::LoadEnvironment(env);
 
     env->set_trace_sync_io(env->options()->trace_sync_io);
 
