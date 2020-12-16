@@ -12,13 +12,13 @@
 
 namespace electron {
 
-class WindowStateWatcher : public ui::XEventObserver {
+class WindowStateWatcher : public x11::EventObserver {
  public:
   explicit WindowStateWatcher(NativeWindowViews* window);
   ~WindowStateWatcher() override;
 
  protected:
-  // ui::XEventObserver:
+  // x11::EventObserver:
   void OnEvent(const x11::Event& x11_event) override;
 
  private:

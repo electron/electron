@@ -12,11 +12,11 @@ WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window),
       widget_(window->GetAcceleratedWidget()),
       window_state_atom_(gfx::GetAtom("_NET_WM_STATE")) {
-  ui::X11EventSource::GetInstance()->AddXEventObserver(this);
+  ui::X11EventSource::GetInstance()->connection()->AddEventObserver(this);
 }
 
 WindowStateWatcher::~WindowStateWatcher() {
-  ui::X11EventSource::GetInstance()->RemoveXEventObserver(this);
+  ui::X11EventSource::GetInstance()->connection()->RemoveEventObserver(this);
 }
 
 void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
