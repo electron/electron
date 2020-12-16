@@ -305,17 +305,25 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     useStandardWindow = false;
   }
 
+  // The window without titlebar is treated the same with frameless window.
+  if (title_bar_style_ != TitleBarStyle::kNormal)
+    set_has_frame(false);
+
   NSUInteger styleMask = NSWindowStyleMaskTitled;
+
+  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
+  // for framless window.
+  bool rounded_corner = true;
+  options.Get(options::kRoundedCorner, &rounded_corner);
+  if (!rounded_corner && !has_frame())
+    styleMask = NSWindowStyleMaskFullSizeContentView;
+
   if (minimizable)
     styleMask |= NSMiniaturizableWindowMask;
   if (closable)
     styleMask |= NSWindowStyleMaskClosable;
   if (resizable_)
     styleMask |= NSResizableWindowMask;
-
-  // The window without titlebar is treated the same with frameless window.
-  if (title_bar_style_ != TitleBarStyle::kNormal)
-    set_has_frame(false);
   if (!useStandardWindow || transparent() || !has_frame())
     styleMask |= NSTexturedBackgroundWindowMask;
 
