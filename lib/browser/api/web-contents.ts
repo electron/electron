@@ -486,6 +486,13 @@ WebContents.prototype._init = function () {
   this.goToOffset = navigationController.goToOffset.bind(navigationController);
   this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
   this.length = navigationController.length.bind(navigationController);
+  // Read off the ID at construction time, so that it's accessible even after
+  // the underlying C++ WebContents is destroyed.
+  const id = this.id;
+  Object.defineProperty(this, 'id', {
+    value: id,
+    writable: false
+  });
 
   // Every remote callback from renderer process would add a listener to the
   // render-view-deleted event, so ignore the listeners warning.
