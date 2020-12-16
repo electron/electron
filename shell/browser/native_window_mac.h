@@ -159,8 +159,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // Custom traffic light positioning
   void RedrawTrafficLights() override;
   void SetExitingFullScreen(bool flag);
-  void SetTrafficLightPosition(const gfx::Point& position) override;
-  gfx::Point GetTrafficLightPosition() const override;
+  void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
+  base::Optional<gfx::Point> GetTrafficLightPosition() const override;
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   enum class VisualEffectState {
@@ -220,7 +220,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool fullscreen_window_title_ = false;
   bool resizable_ = true;
   bool exiting_fullscreen_ = false;
-  gfx::Point traffic_light_position_;
+  base::Optional<gfx::Point> traffic_light_position_;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 

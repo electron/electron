@@ -124,13 +124,18 @@
 @interface CustomWindowButtonView : NSView {
  @private
   BOOL mouse_inside_;
+  gfx::Point margin_;
 }
+
+- (id)initWithMargin:(const base::Optional<gfx::Point>&)margin;
+- (void)setMargin:(const base::Optional<gfx::Point>&)margin;
 @end
 
 @implementation CustomWindowButtonView
 
-- (id)initWithFrame:(NSRect)frame {
-  self = [super initWithFrame:frame];
+- (id)initWithMargin:(const base::Optional<gfx::Point>&)margin {
+  self = [super initWithFrame:NSZeroRect];
+  [self setMargin:margin];
 
   NSButton* close_button =
       [NSWindow standardWindowButton:NSWindowCloseButton
@@ -163,18 +168,20 @@
   return self;
 }
 
+- (void)setMargin:(const base::Optional<gfx::Point>&)margin {
+  margin_ = margin.value_or(gfx::Point(7, 3));
+}
+
 - (void)viewDidMoveToWindow {
   if (!self.window) {
     return;
   }
 
   // Stay in upper left corner.
-  const CGFloat top_margin = 3;
-  const CGFloat left_margin = 7;
   [self setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
-  [self setFrameOrigin:NSMakePoint(left_margin, self.window.frame.size.height -
+  [self setFrameOrigin:NSMakePoint(margin_.x(), self.window.frame.size.height -
                                                     self.frame.size.height -
-                                                    top_margin)];
+                                                    margin_.y())];
 }
 
 - (BOOL)_mouseInGroup:(NSButton*)button {
@@ -365,7 +372,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
-  options.Get(options::kTrafficLightPosition, &traffic_light_position_);
+  options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
   bool minimizable = true;
@@ -543,9 +550,10 @@ void NativeWindowMac::RedrawTrafficLights() {
   // Ensure maximizable options retain pre-existing state.
   SetMaximizable(maximizable_);
 
-  if (!traffic_light_position_.x() && !traffic_light_position_.y()) {
+  // Changing system titlebar is only allowed for "hidden" titleBarStyle.
+  if (!traffic_light_position_ || title_bar_style_ != TitleBarStyle::kHidden)
     return;
-  }
+
   if (IsFullscreen())
     return;
 
@@ -571,7 +579,7 @@ void NativeWindowMac::RedrawTrafficLights() {
 
   [titleBarContainerView setHidden:NO];
   CGFloat buttonHeight = [close frame].size.height;
-  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_position_.y();
+  CGFloat titleBarFrameHeight = buttonHeight + traffic_light_position_->y();
   CGRect titleBarRect = titleBarContainerView.frame;
   CGFloat titleBarWidth = NSWidth(titleBarRect);
   titleBarRect.size.height = titleBarFrameHeight;
@@ -589,10 +597,10 @@ void NativeWindowMac::RedrawTrafficLights() {
     if (isRTL) {
       CGFloat buttonWidth = NSWidth(rect);
       // origin is always top-left, even in RTL
-      rect.origin.x = titleBarWidth - traffic_light_position_.x() +
+      rect.origin.x = titleBarWidth - traffic_light_position_->x() +
                       (i * space_between) - buttonWidth;
     } else {
-      rect.origin.x = traffic_light_position_.x() + (i * space_between);
+      rect.origin.x = traffic_light_position_->x() + (i * space_between);
     }
     rect.origin.y = (titleBarFrameHeight - rect.size.height) / 2;
     [view setFrameOrigin:rect.origin];
@@ -1588,12 +1596,18 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setMaterial:vibrancyType];
 }
 
-void NativeWindowMac::SetTrafficLightPosition(const gfx::Point& position) {
-  traffic_light_position_ = position;
-  RedrawTrafficLights();
+void NativeWindowMac::SetTrafficLightPosition(
+    base::Optional<gfx::Point> position) {
+  traffic_light_position_ = std::move(position);
+  if (title_bar_style_ == TitleBarStyle::kHidden) {
+    RedrawTrafficLights();
+  } else if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
+    [buttons_view_ setMargin:position];
+    [buttons_view_ viewDidMoveToWindow];
+  }
 }
 
-gfx::Point NativeWindowMac::GetTrafficLightPosition() const {
+base::Optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
   return traffic_light_position_;
 }
 
@@ -1695,8 +1709,8 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
 
     // Create a custom window buttons view for kCustomButtonsOnHover.
     if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
-      buttons_view_.reset(
-          [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
+      buttons_view_.reset([[CustomWindowButtonView alloc]
+          initWithMargin:traffic_light_position_]);
 
       if (!minimizable)
         [[buttons_view_ viewWithTag:2] removeFromSuperview];

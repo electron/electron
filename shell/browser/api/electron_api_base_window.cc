@@ -842,11 +842,16 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 
 #if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
-  window_->SetTrafficLightPosition(position);
+  // For backward compatibility we treat (0, 0) as reseting to default.
+  if (position.IsOrigin())
+    window_->SetTrafficLightPosition(base::nullopt);
+  else
+    window_->SetTrafficLightPosition(position);
 }
 
 gfx::Point BaseWindow::GetTrafficLightPosition() const {
-  return window_->GetTrafficLightPosition();
+  // For backward compatibility we treat default value as (0, 0).
+  return window_->GetTrafficLightPosition().value_or(gfx::Point());
 }
 #endif
 

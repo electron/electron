@@ -1536,28 +1536,36 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('BrowserWindow.getTrafficLightPosition(pos)', () => {
+  ifdescribe(process.platform === 'darwin')('trafficLightPosition', () => {
+    const pos = { x: 10, y: 10 };
     afterEach(closeAllWindows);
 
-    it('gets the set traffic light position property', () => {
-      const pos = { x: 10, y: 10 };
-      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-      const currentPosition = w.getTrafficLightPosition();
+    describe('BrowserWindow.getTrafficLightPosition(pos)', () => {
+      it('gets position property for "hidden" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
+      });
 
-      expect(currentPosition).to.deep.equal(pos);
+      it('gets position property for "customButtonsOnHover" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
+        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
+      });
     });
-  });
 
-  ifdescribe(process.platform === 'darwin')('BrowserWindow.setTrafficLightPosition(pos)', () => {
-    afterEach(closeAllWindows);
+    describe('BrowserWindow.setTrafficLightPosition(pos)', () => {
+      it('sets position property for "hidden" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        const newPos = { x: 20, y: 20 };
+        w.setTrafficLightPosition(newPos);
+        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
+      });
 
-    it('can set the traffic light position property', () => {
-      const pos = { x: 10, y: 10 };
-      const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-      w.setTrafficLightPosition(pos);
-      const currentPosition = w.getTrafficLightPosition();
-
-      expect(currentPosition).to.deep.equal(pos);
+      it('sets position property for "customButtonsOnHover" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
+        const newPos = { x: 20, y: 20 };
+        w.setTrafficLightPosition(newPos);
+        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
+      });
     });
   });
 
