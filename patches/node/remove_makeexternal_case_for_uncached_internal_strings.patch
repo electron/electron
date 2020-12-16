@@ -10,7 +10,7 @@ through MakeExternal - to fix this we make the strings bigger so as to
 make then internal & external & not uncached (i.e. cached).
 
 diff --git a/test/parallel/test-fs-write.js b/test/parallel/test-fs-write.js
-index a6724eac300d16a36ca0e64788516adb9d6f6536..e152383b56c6f2791852d5f9fb151693c2d962a6 100644
+index bdee397eb58dd2e5ca59dc1ec280e9e664ba23f9..c52c958a1fd1a5679f731a1360b0563d13fa7581 100644
 --- a/test/parallel/test-fs-write.js
 +++ b/test/parallel/test-fs-write.js
 @@ -40,7 +40,7 @@ const constants = fs.constants;
