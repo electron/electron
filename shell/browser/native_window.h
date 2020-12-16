@@ -236,7 +236,7 @@ class NativeWindow : public base::SupportsUserData,
                            const std::string& display_name);
   virtual void CloseFilePreview();
 
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) = 0;
+  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
   // Converts between content bounds and window bounds.
   virtual gfx::Rect ContentBoundsToWindowBounds(

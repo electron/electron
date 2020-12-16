@@ -32,11 +32,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
-  // Cleanup observers when window is getting closed. Note that the destructor
-  // can be called much later after window gets closed, so we should not do
-  // cleanup in destructor.
-  void Cleanup();
-
   // NativeWindow:
   void SetContentView(views::View* view) override;
   void Close() override;
@@ -68,11 +63,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
-  void SetAspectRatio(double aspect_ratio,
-                      const gfx::Size& extra_size) override;
-  void PreviewFile(const std::string& path,
-                   const std::string& display_name) override;
-  void CloseFilePreview() override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
   bool IsMinimizable() override;
@@ -122,31 +112,37 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
-
   void SetVisibleOnAllWorkspaces(bool visible,
                                  bool visibleOnFullScreen) override;
   bool IsVisibleOnAllWorkspaces() override;
-
   void SetAutoHideCursor(bool auto_hide) override;
-
+  void SetVibrancy(const std::string& type) override;
+  void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
+  base::Optional<gfx::Point> GetTrafficLightPosition() const override;
+  void RedrawTrafficLights() override;
+  void SetTouchBar(
+      std::vector<gin_helper::PersistentDictionary> items) override;
+  void RefreshTouchBarItem(const std::string& item_id) override;
+  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
   void SelectPreviousTab() override;
   void SelectNextTab() override;
   void MergeAllWindows() override;
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
-
   bool SetWindowButtonVisibility(bool visible) override;
-
-  void SetVibrancy(const std::string& type) override;
-  void SetTouchBar(
-      std::vector<gin_helper::PersistentDictionary> items) override;
-  void RefreshTouchBarItem(const std::string& item_id) override;
-  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
-  void SetGTKDarkThemeEnabled(bool use_dark_theme) override {}
-
+  void SetAspectRatio(double aspect_ratio,
+                      const gfx::Size& extra_size) override;
+  void PreviewFile(const std::string& path,
+                   const std::string& display_name) override;
+  void CloseFilePreview() override;
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+
+  // Cleanup observers when window is getting closed. Note that the destructor
+  // can be called much later after window gets closed, so we should not do
+  // cleanup in destructor.
+  void Cleanup();
 
   // Use a custom content view instead of Chromium's BridgedContentView.
   void OverrideNSWindowContentView();
@@ -156,12 +152,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
-  // Custom traffic light positioning
-  void RedrawTrafficLights() override;
   void SetExitingFullScreen(bool flag);
-  void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
-  base::Optional<gfx::Point> GetTrafficLightPosition() const override;
-  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   enum class VisualEffectState {
     kFollowWindow,
@@ -188,6 +179,9 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // views::WidgetDelegate:
   bool CanResize() const override;
   views::View* GetContentsView() override;
+
+  // ui::NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
  private:
   // Add custom layers to the content view.
