@@ -1014,9 +1014,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     } else if (!window_button_visibility_.has_value()) {
       // Lets keep previous behaviour - hide window controls in titled
       // fullscreen mode when not specified otherwise.
-      [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
-      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
-      [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+      InternalSetWindowButtonVisibility(false);
     }
 
     [window setFrame:fullscreenFrame display:YES animate:YES];
@@ -1034,15 +1032,15 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       SetStyleMask(true, NSWindowStyleMaskTitled);
     }
 
-    // Restore window controls visibility state
-    const bool window_button_hidden =
-        !window_button_visibility_.value_or(true) || !has_frame();
-    [[window standardWindowButton:NSWindowZoomButton]
-        setHidden:window_button_hidden];
-    [[window standardWindowButton:NSWindowMiniaturizeButton]
-        setHidden:window_button_hidden];
-    [[window standardWindowButton:NSWindowCloseButton]
-        setHidden:window_button_hidden];
+    // Restore default window controls visibility state.
+    if (!window_button_visibility_.has_value()) {
+      bool visibility;
+      if (has_frame())
+        visibility = true;
+      else
+        visibility = title_bar_style_ != TitleBarStyle::kNormal;
+      InternalSetWindowButtonVisibility(visibility);
+    }
 
     [window setFrame:original_frame_ display:YES animate:YES];
     window.level = original_level_;
@@ -1435,6 +1433,20 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     [effect_view setMaterial:vibrancyType];
 }
 
+void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
+  window_button_visibility_ = visible;
+  InternalSetWindowButtonVisibility(visible);
+}
+
+bool NativeWindowMac::GetWindowButtonVisibility() const {
+  if (buttons_view_)
+    return ![buttons_view_ isHidden];
+  else
+    return ![window_ standardWindowButton:NSWindowZoomButton].hidden ||
+           ![window_ standardWindowButton:NSWindowMiniaturizeButton].hidden ||
+           ![window_ standardWindowButton:NSWindowCloseButton].hidden;
+}
+
 void NativeWindowMac::SetTrafficLightPosition(
     base::Optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
@@ -1576,19 +1588,6 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
       [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
                        ordered:NSWindowAbove];
   }
-  return true;
-}
-
-bool NativeWindowMac::SetWindowButtonVisibility(bool visible) {
-  if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
-    return false;
-  }
-
-  window_button_visibility_ = visible;
-
-  [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!visible];
-  [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!visible];
-  [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
   return true;
 }
 
@@ -1771,6 +1770,17 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
     // determine whether to show custom UI on hover, so we disable it here to
     // prevent them from doing so in a frameless app window.
     SetMaximizable(false);
+  }
+}
+
+void NativeWindowMac::InternalSetWindowButtonVisibility(bool visible) {
+  if (buttons_view_) {
+    [buttons_view_ setHidden:!visible];
+  } else {
+    [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!visible];
+    [[window_ standardWindowButton:NSWindowMiniaturizeButton]
+        setHidden:!visible];
+    [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
   }
 }
 

@@ -841,6 +841,14 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 #if defined(OS_MAC)
+void BaseWindow::SetWindowButtonVisibility(bool visible) {
+  window_->SetWindowButtonVisibility(visible);
+}
+
+bool BaseWindow::GetWindowButtonVisibility() const {
+  return window_->GetWindowButtonVisibility();
+}
+
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   // For backward compatibility we treat (0, 0) as reseting to default.
   if (position.IsOrigin())
@@ -892,13 +900,6 @@ void BaseWindow::AddTabbedWindow(NativeWindow* window,
                                  gin_helper::Arguments* args) {
   if (!window_->AddTabbedWindow(window))
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
-}
-
-void BaseWindow::SetWindowButtonVisibility(bool visible,
-                                           gin_helper::Arguments* args) {
-  if (!window_->SetWindowButtonVisibility(visible)) {
-    args->ThrowError("Not supported for this window");
-  }
 }
 
 void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
@@ -1230,6 +1231,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addTabbedWindow", &BaseWindow::AddTabbedWindow)
       .SetMethod("setWindowButtonVisibility",
                  &BaseWindow::SetWindowButtonVisibility)
+      .SetMethod("_getWindowButtonVisibility",
+                 &BaseWindow::GetWindowButtonVisibility)
       .SetProperty("excludedFromShownWindowsMenu",
                    &BaseWindow::IsExcludedFromShownWindowsMenu,
                    &BaseWindow::SetExcludedFromShownWindowsMenu)

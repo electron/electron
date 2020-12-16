@@ -199,6 +199,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Traffic Light API
 #if defined(OS_MAC)
+  virtual void SetWindowButtonVisibility(bool visible) = 0;
+  virtual bool GetWindowButtonVisibility() const = 0;
   virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
   virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
@@ -216,9 +218,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
   virtual bool AddTabbedWindow(NativeWindow* window);
-
-  // Returns false if unsupported.
-  virtual bool SetWindowButtonVisibility(bool visible);
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
