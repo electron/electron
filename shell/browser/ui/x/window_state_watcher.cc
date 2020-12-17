@@ -14,7 +14,7 @@ namespace electron {
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window),
       widget_(window->GetAcceleratedWidget()),
-      window_state_atom_(gfx::GetAtom("_NET_WM_STATE")) {
+      window_state_atom_(x11::GetAtom("_NET_WM_STATE")) {
   ui::X11EventSource::GetInstance()->connection()->AddEventObserver(this);
 }
 
@@ -35,14 +35,14 @@ void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
       auto props =
           base::flat_set<x11::Atom>(std::begin(wm_states), std::end(wm_states));
       bool is_minimized =
-          props.find(gfx::GetAtom("_NET_WM_STATE_HIDDEN")) != props.end();
+          props.find(x11::GetAtom("_NET_WM_STATE_HIDDEN")) != props.end();
       bool is_maximized =
-          props.find(gfx::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")) !=
+          props.find(x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")) !=
               props.end() &&
-          props.find(gfx::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ")) !=
+          props.find(x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ")) !=
               props.end();
       bool is_fullscreen =
-          props.find(gfx::GetAtom("_NET_WM_STATE_FULLSCREEN")) != props.end();
+          props.find(x11::GetAtom("_NET_WM_STATE_FULLSCREEN")) != props.end();
 
       if (is_minimized != was_minimized_) {
         if (is_minimized)
