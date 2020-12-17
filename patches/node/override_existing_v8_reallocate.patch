@@ -9,7 +9,7 @@ be overridden. This patch can be removed once the relevant version of V8
 makes its way into Node.js.
 
 diff --git a/src/node_internals.h b/src/node_internals.h
-index cb388f3a9f12949fd3ecb0406f7b550f4ca5ca7c..f4b5c9bb7058da2355204a7285e5f7cc70c4ffda 100644
+index b92cc7edbfb60ec8182db5083f8b7aebd5c5da94..294bed9175125bbd544c7aa7df4229d182ca442d 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -115,7 +115,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
