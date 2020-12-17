@@ -1760,7 +1760,7 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 * `fps` Integer
 
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
@@ -1858,7 +1858,7 @@ The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
 #### `contents.frameRate`
 
 An `Integer` property that sets the frame rate of the web contents to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
 
