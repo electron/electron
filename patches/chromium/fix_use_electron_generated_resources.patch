@@ -12,7 +12,7 @@ as they will loaded as empty strings.
 * IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME on Windows
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 398404c8240986d32887d9b0dd35036f95ef261e..40d4490fbdc9b82fa23c956f9cbc2d820312bd76 100644
+index 713afc08980fc13dff66870dde6528e44ffc9cd0..5b6511096065e6b02088c4a7dc638ed481657eef 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -9,8 +9,7 @@

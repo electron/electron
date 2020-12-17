@@ -7,13 +7,13 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bfaaddad8d 100644
+index 4453990236f07a58932f50701f31fab961d0fb9e..6193689e879f5e147ca1e6514fb2061423d31400 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
-@@ -19,7 +19,10 @@
- #include "base/strings/utf_string_conversions.h"
+@@ -20,7 +20,10 @@
  #include "base/values.h"
  #include "build/build_config.h"
+ #include "build/chromeos_buildflags.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
 +#endif
@@ -21,7 +21,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
  #include "chrome/common/pref_names.h"
  #include "chrome/common/webui_url_constants.h"
  #include "chrome/grit/dev_ui_browser_resources.h"
-@@ -47,9 +50,11 @@
+@@ -48,9 +51,11 @@
  #include "ui/views/accessibility/view_accessibility.h"
  
  #if !defined(OS_ANDROID)
@@ -33,7 +33,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
  #include "ui/views/accessibility/widget_ax_tree_id_map.h"
  #include "ui/views/widget/widget.h"
  #include "ui/views/widget/widget_delegate.h"
-@@ -160,7 +165,7 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
+@@ -161,7 +166,7 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
                                 accessibility_mode);
  }
  
@@ -42,7 +42,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
  std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(Browser* browser) {
    std::unique_ptr<base::DictionaryValue> target_data(
        new base::DictionaryValue());
-@@ -199,7 +204,9 @@ void HandleAccessibilityRequestCallback(
+@@ -200,7 +205,9 @@ void HandleAccessibilityRequestCallback(
    DCHECK(ShouldHandleAccessibilityRequestCallback(path));
  
    base::DictionaryValue data;
@@ -52,7 +52,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    ui::AXMode mode =
        content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
    bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
-@@ -228,9 +235,7 @@ void HandleAccessibilityRequestCallback(
+@@ -229,9 +236,7 @@ void HandleAccessibilityRequestCallback(
    // The "labelImages" flag works only if "web" is enabled, the current profile
    // has the kAccessibilityImageLabelsEnabled preference set and the appropriate
    // command line switch has been used.
@@ -63,7 +63,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    bool label_images = mode.has_mode(ui::AXMode::kLabelImages);
    data.SetString(kLabelImages, are_accessibility_image_labels_enabled
                                     ? (label_images ? kOn : kOff)
-@@ -244,7 +249,7 @@ void HandleAccessibilityRequestCallback(
+@@ -245,7 +250,7 @@ void HandleAccessibilityRequestCallback(
    data.SetBoolean(kViewsAccessibility,
                    features::IsAccessibilityTreeForViewsEnabled());
  
@@ -72,7 +72,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    data.SetString(kInternal, show_internal ? kOn : kOff);
  
    std::unique_ptr<base::ListValue> rvh_list(new base::ListValue());
-@@ -281,11 +286,11 @@ void HandleAccessibilityRequestCallback(
+@@ -282,11 +287,11 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(rvh_list));
  
    std::unique_ptr<base::ListValue> browser_list(new base::ListValue());
@@ -86,7 +86,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    data.Set(kBrowsersField, std::move(browser_list));
  
    std::unique_ptr<base::ListValue> widgets_list(new base::ListValue());
-@@ -504,8 +509,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(const base::ListValue* args) {
+@@ -505,8 +510,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(const base::ListValue* args) {
  
    AllowJavascript();
    if (flag_name_str == kInternal) {
@@ -97,7 +97,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
      return;
    }
  
-@@ -614,10 +621,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -615,10 +622,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -111,7 +111,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    result->SetString(kTreeField, accessibility_contents);
    FireWebUIListener(request_type, *(result.get()));
  }
-@@ -641,6 +650,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -642,6 +651,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -119,7 +119,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        std::unique_ptr<base::DictionaryValue> result(
-@@ -655,6 +665,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -656,6 +666,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -127,7 +127,7 @@ index 31c589009a7957dbb89a8bbc7eea21b377b2aae0..060c2f710e800b32be1af69b32a014bf
  #endif  // !defined(OS_ANDROID)
    // No browser with the specified |session_id| was found.
    std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
-@@ -770,5 +781,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -771,5 +782,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {

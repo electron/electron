@@ -261,7 +261,7 @@ index cd53727d64bf7d3b265fb6e3e95fa3b5390b091f..a4d0f77f284fa27e78789115aea77217
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index d98ad9e606863128af034726edfd31c796d5dd21..dbd60e778754ecfcffa5ed9f861b2515811925da 100644
+index 6532f5a49ffa359d355a8191dd144092bdb3fa1d..cdc18bdb3fe87df54e125c204fda485193410826 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -271,8 +271,8 @@ index d98ad9e606863128af034726edfd31c796d5dd21..dbd60e778754ecfcffa5ed9f861b2515
 +#include "base/command_line.h"
  #include "cc/paint/skia_paint_canvas.h"
  #include "components/viz/common/resources/resource_format_utils.h"
- #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -13,6 +14,7 @@
+ #include "third_party/blink/renderer/platform/graphics/canvas_resource_params.h"
+@@ -14,6 +15,7 @@
  #include "third_party/khronos/GLES3/gl3.h"
  #include "third_party/skia/include/core/SkSurfaceProps.h"
  #include "ui/gfx/color_space.h"
@@ -280,19 +280,7 @@ index d98ad9e606863128af034726edfd31c796d5dd21..dbd60e778754ecfcffa5ed9f861b2515
  
  namespace blink {
  
-@@ -115,6 +117,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
- }
- 
- gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
-+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-+  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
-+    return gfx::ColorSpace();
-+  }
-+
-   // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
-   // will need to take into account whether or not this texture will be sampled
-   // in linear or nonlinear space.
-@@ -122,6 +129,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -105,6 +107,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -305,7 +293,7 @@ index d98ad9e606863128af034726edfd31c796d5dd21..dbd60e778754ecfcffa5ed9f861b2515
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e5ce4688b 100644
+index 1e876620298ff54d500a02aad7b9ab50767a2507..93b9a9b91a22e162a6f52f479b5e51f13a69b125 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

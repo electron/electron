@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 31640b0e05709d82ebdd1684248037b11b33b9f7..12c3ff59b7fab1dd4a4751812fab713da98d84cc 100644
+index cd4519d88c3bb8688e772eb0ed2d68e368a32052..12544d1a531ac353802f452d49713d309d4322bb 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -215,6 +215,25 @@ struct CTPolicy {
+@@ -228,6 +228,25 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -39,7 +39,7 @@ index 31640b0e05709d82ebdd1684248037b11b33b9f7..12c3ff59b7fab1dd4a4751812fab713d
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -641,6 +660,8 @@ struct URLLoaderFactoryParams {
+@@ -660,6 +679,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
