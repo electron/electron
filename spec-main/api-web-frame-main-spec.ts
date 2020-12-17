@@ -190,8 +190,7 @@ describe('webFrameMain module', () => {
       const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
       w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
 
-      const events = await didFrameFinishLoad;
-      for (const [, isMainFrame, frameProcessId, frameRoutingId] of events) {
+      for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
         const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
         expect(frame).not.to.be.null();
         expect(frame?.processId).to.be.equal(frameProcessId);
