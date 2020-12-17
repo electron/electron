@@ -3171,6 +3171,13 @@ content::ColorChooser* WebContents::OpenColorChooser(
 #endif
 }
 
+std::unique_ptr<content::EyeDropper> Browser::OpenEyeDropper(
+    content::RenderFrameHost* frame,
+    content::EyeDropperListener* listener) {
+  LOG(INFO) << "Browser::OpenEyeDroppe - ITS HERE " << __LINE__;
+  // return window()->OpenEyeDropper(frame, listener);
+}
+
 void WebContents::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     scoped_refptr<content::FileSelectListener> listener,
