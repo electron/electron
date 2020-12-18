@@ -453,12 +453,17 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
 }
 
 void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
-  api::NativeImage* native_image = nullptr;
-  if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
-    return;
+  gfx::Image image;
+
+  if (!icon->IsNull()) {
+    api::NativeImage* native_image = nullptr;
+    if (api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image)) {
+      image = native_image->image();
+    }
+  }
 
   [[AtomApplication sharedApplication]
-      setApplicationIconImage:native_image->image().AsNSImage()];
+      setApplicationIconImage:image.AsNSImage()];
 }
 
 void Browser::ShowAboutPanel() {
