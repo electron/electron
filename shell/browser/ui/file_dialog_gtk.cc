@@ -74,6 +74,73 @@ void OnFileFilterDataDestroyed(std::string* file_extension) {
   delete file_extension;
 }
 
+void InitGtkFileChooserNativeSupport() {
+  // Return early if we have already setup the native functions or we have tried
+  // once before and failed. Avoid running expensive dynamic library operations.
+  if (supports_gtk_native_dialog) {
+    return;
+  }
+
+  // Mark that we have attempted to initialize support at least once
+  supports_gtk_native_dialog = false;
+
+  if (!g_module_supported()) {
+    return;
+  }
+
+  gtk_module = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
+  if (!gtk_module) {
+    return;
+  }
+
+  // Will never be unloaded
+  g_module_make_resident(gtk_module);
+
+  bool found = g_module_symbol(
+      gtk_module, "gtk_file_chooser_native_new",
+      reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
+  if (!found) {
+    return;
+  }
+
+  found = g_module_symbol(
+      gtk_module, "gtk_native_dialog_set_modal",
+      reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
+  if (!found) {
+    return;
+  }
+
+  found =
+      g_module_symbol(gtk_module, "gtk_native_dialog_destroy",
+                      reinterpret_cast<void**>(&dl_gtk_native_dialog_destroy));
+  if (!found) {
+    return;
+  }
+
+  found = g_module_symbol(gtk_module, "gtk_native_dialog_show",
+                          reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
+  if (!found) {
+    return;
+  }
+
+  found = g_module_symbol(gtk_module, "gtk_native_dialog_hide",
+                          reinterpret_cast<void**>(&dl_gtk_native_dialog_hide));
+  if (!found) {
+    return;
+  }
+
+  found = g_module_symbol(gtk_module, "gtk_native_dialog_run",
+                          reinterpret_cast<void**>(&dl_gtk_native_dialog_run));
+  if (!found) {
+    return;
+  }
+
+  supports_gtk_native_dialog =
+      dl_gtk_file_chooser_native_new && dl_gtk_native_dialog_set_modal &&
+      dl_gtk_native_dialog_destroy && dl_gtk_native_dialog_run &&
+      dl_gtk_native_dialog_show && dl_gtk_native_dialog_hide;
+}
+
 class FileChooserDialog {
  public:
   FileChooserDialog(GtkFileChooserAction action, const DialogSettings& settings)
@@ -89,7 +156,7 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = gtk_util::kOpenLabel;
 
-    file_dialog::InitGtkFileChooserNativeSupport();
+    InitGtkFileChooserNativeSupport();
 
     if (supports_gtk_native_dialog.value_or(false)) {
       dialog_ = GTK_FILE_CHOOSER(
@@ -403,73 +470,6 @@ void ShowSaveDialog(const DialogSettings& settings,
   FileChooserDialog* save_dialog =
       new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(std::move(promise));
-}
-
-void InitGtkFileChooserNativeSupport() {
-  // Return early if we have already setup the native functions or we have tried
-  // once before and failed. Avoid running expensive dynamic library operations.
-  if (supports_gtk_native_dialog) {
-    return;
-  }
-
-  // Mark that we have attempted to initialize support at least once
-  supports_gtk_native_dialog = false;
-
-  if (!g_module_supported()) {
-    return;
-  }
-
-  gtk_module = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
-  if (!gtk_module) {
-    return;
-  }
-
-  // Will never be unloaded
-  g_module_make_resident(gtk_module);
-
-  bool found = g_module_symbol(
-      gtk_module, "gtk_file_chooser_native_new",
-      reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(
-      gtk_module, "gtk_native_dialog_set_modal",
-      reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
-  if (!found) {
-    return;
-  }
-
-  found =
-      g_module_symbol(gtk_module, "gtk_native_dialog_destroy",
-                      reinterpret_cast<void**>(&dl_gtk_native_dialog_destroy));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_show",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_hide",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_hide));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_run",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_run));
-  if (!found) {
-    return;
-  }
-
-  supports_gtk_native_dialog =
-      dl_gtk_file_chooser_native_new && dl_gtk_native_dialog_set_modal &&
-      dl_gtk_native_dialog_destroy && dl_gtk_native_dialog_run &&
-      dl_gtk_native_dialog_show && dl_gtk_native_dialog_hide;
 }
 
 }  // namespace file_dialog
