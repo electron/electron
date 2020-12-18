@@ -59,10 +59,10 @@
 #include "shell/browser/ui/x/window_state_watcher.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
-#include "ui/gfx/x/xproto_util.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
+#include "ui/gfx/x/xproto_util.h"
 #endif
 
 #if defined(USE_OZONE) || defined(USE_X11)
@@ -355,8 +355,8 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
   if (!features::IsUsingOzonePlatform()) {
     const std::string color = use_dark_theme ? "dark" : "light";
     x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                          x11::GetAtom("_GTK_THEME_VARIANT"),
-                          x11::GetAtom("UTF8_STRING"), color);
+                           x11::GetAtom("_GTK_THEME_VARIANT"),
+                           x11::GetAtom("UTF8_STRING"), color);
   }
 #endif
 }

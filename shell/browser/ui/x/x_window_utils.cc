@@ -30,7 +30,7 @@ void SetWindowType(x11::Window window, const std::string& type) {
   std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
   x11::Atom window_type = x11::GetAtom(type_prefix + base::ToUpperASCII(type));
   x11::SetProperty(window, x11::GetAtom("_NET_WM_WINDOW_TYPE"), x11::Atom::ATOM,
-                  window_type);
+                   window_type);
 }
 
 bool ShouldUseGlobalMenuBar() {
