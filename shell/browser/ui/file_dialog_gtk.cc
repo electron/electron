@@ -259,7 +259,7 @@ class FileChooserDialog {
       // to make sure window gets correctly raised and gets focus.
       x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
       gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                    static_cast<uint32_t>(time));
+                                   static_cast<uint32_t>(time));
     }
 #endif
     }
