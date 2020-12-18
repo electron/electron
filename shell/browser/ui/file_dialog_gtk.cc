@@ -89,7 +89,7 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = gtk_util::kOpenLabel;
 
-    ::InitGtkFileChooserNativeSupport();
+    file_dialog::InitGtkFileChooserNativeSupport();
 
     if (supports_gtk_native_dialog.value_or(false)) {
       dialog_ = GTK_FILE_CHOOSER(
