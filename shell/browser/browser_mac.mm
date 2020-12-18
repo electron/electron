@@ -457,9 +457,9 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
 
   if (!icon->IsNull()) {
     api::NativeImage* native_image = nullptr;
-    if (api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image)) {
-      image = native_image->image();
-    }
+    if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+      return;
+    image = native_image->image();
   }
 
   [[AtomApplication sharedApplication]
