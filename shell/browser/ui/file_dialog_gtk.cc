@@ -91,7 +91,7 @@ class FileChooserDialog {
 
     InitGtkNativeDialogSupport();
 
-    if (supports_gtk_native_dialog_.value_or(false)) {
+    if (supports_gtk_native_dialog.value_or(false)) {
       dialog_ = GTK_FILE_CHOOSER(
           dl_gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
                                          confirm_text, gtk_util::kCancelLabel));
@@ -103,7 +103,7 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      if (supports_gtk_native_dialog_.value_or(false)) {
+      if (supports_gtk_native_dialog.value_or(false)) {
         dl_gtk_native_dialog_set_modal(static_cast<void*>(dialog_), TRUE);
       } else {
         gtk::SetGtkTransientForAura(GTK_WIDGET(dialog_),
@@ -147,7 +147,7 @@ class FileChooserDialog {
   }
 
   ~FileChooserDialog() {
-    if (supports_gtk_native_dialog_.value_or(false)) {
+    if (supports_gtk_native_dialog.value_or(false)) {
       dl_gtk_native_dialog_destroy(static_cast<void*>(dialog_));
     } else {
       gtk_widget_destroy(GTK_WIDGET(dialog_));
@@ -182,7 +182,7 @@ class FileChooserDialog {
   void RunAsynchronous() {
     g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
                      this);
-    if (supports_gtk_native_dialog_.value_or(false)) {
+    if (supports_gtk_native_dialog.value_or(false)) {
       dl_gtk_native_dialog_show(static_cast<void*>(dialog_));
     } else {
       gtk_widget_show_all(GTK_WIDGET(dialog_));
@@ -258,7 +258,7 @@ class FileChooserDialog {
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
-  if (supports_gtk_native_dialog_.value_or(false)) {
+  if (supports_gtk_native_dialog.value_or(false)) {
     dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
   } else {
     gtk_widget_hide(GTK_WIDGET(dialog_));
@@ -339,7 +339,7 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 }  // namespace
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
-  if (supports_gtk_native_dialog_.value_or(false)) {
+  if (supports_gtk_native_dialog.value_or(false)) {
     dl_gtk_native_dialog_show(static_cast<void*>(dialog.dialog()));
   } else {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
@@ -348,7 +348,7 @@ void ShowFileDialog(const FileChooserDialog& dialog) {
 
 int RunFileDialog(const FileChooserDialog& dialog) {
   int response = 0;
-  if (supports_gtk_native_dialog_.value_or(false)) {
+  if (supports_gtk_native_dialog.value_or(false)) {
     response = dl_gtk_native_dialog_run(static_cast<void*>(dialog.dialog()));
   } else {
     response = gtk_dialog_run(GTK_DIALOG(dialog.dialog()));
