@@ -51,6 +51,8 @@ The following methods are available on instances of `WebRequest`:
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -94,6 +96,8 @@ Some examples of valid `urls`:
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -121,6 +125,8 @@ The `callback` has to be called with a `response` object.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -141,6 +147,8 @@ response are visible by the time this listener is fired.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -173,6 +181,8 @@ The `callback` has to be called with a `response` object.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -197,6 +207,8 @@ and response headers are available.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -222,6 +234,8 @@ redirect is about to occur.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double
@@ -245,6 +259,8 @@ completed.
     * `url` String
     * `method` String
     * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain (optional)
     * `resourceType` String
     * `referrer` String
     * `timestamp` Double

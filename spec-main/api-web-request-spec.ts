@@ -86,6 +86,9 @@ describe('webRequest module', () => {
         expect(details.id).to.be.a('number');
         expect(details.timestamp).to.be.a('number');
         expect(details.webContentsId).to.be.a('number');
+        expect(details.webContents).to.be.an('object');
+        expect(details.webContents!.id).to.equal(details.webContentsId);
+        expect(details.frame).to.be.an('object');
         expect(details.url).to.be.a('string').that.is.equal(defaultURL);
         expect(details.method).to.be.a('string').that.is.equal('GET');
         expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
