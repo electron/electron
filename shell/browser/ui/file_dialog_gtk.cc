@@ -254,156 +254,156 @@ class FileChooserDialog {
       gtk_widget_show_all(GTK_WIDGET(dialog_));
 
 #if defined(USE_X11)
-    if (!features::IsUsingOzonePlatform()) {
-      // We need to call gtk_window_present after making the widgets visible to
-      // make sure window gets correctly raised and gets focus.
-      x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-      gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                   static_cast<uint32_t>(time));
-    }
+      if (!features::IsUsingOzonePlatform()) {
+        // We need to call gtk_window_present after making the widgets visible
+        // to make sure window gets correctly raised and gets focus.
+        x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+        gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                     static_cast<uint32_t>(time));
+      }
 #endif
-  }
+    }
 
-  void RunSaveAsynchronous(
-      gin_helper::Promise<gin_helper::Dictionary> promise) {
-    save_promise_ =
-        std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
-            std::move(promise));
-    RunAsynchronous();
-  }
+    void RunSaveAsynchronous(
+        gin_helper::Promise<gin_helper::Dictionary> promise) {
+      save_promise_ =
+          std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
+              std::move(promise));
+      RunAsynchronous();
+    }
 
-  void RunOpenAsynchronous(
-      gin_helper::Promise<gin_helper::Dictionary> promise) {
-    open_promise_ =
-        std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
-            std::move(promise));
-    RunAsynchronous();
-  }
+    void RunOpenAsynchronous(
+        gin_helper::Promise<gin_helper::Dictionary> promise) {
+      open_promise_ =
+          std::make_unique<gin_helper::Promise<gin_helper::Dictionary>>(
+              std::move(promise));
+      RunAsynchronous();
+    }
 
-  base::FilePath GetFileName() const {
-    gchar* filename = gtk_file_chooser_get_filename(dialog_);
-    const base::FilePath path(filename);
-    g_free(filename);
-    return path;
-  }
-
-  std::vector<base::FilePath> GetFileNames() const {
-    std::vector<base::FilePath> paths;
-    auto* filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
-    for (auto* iter = filenames; iter != nullptr; iter = iter->next) {
-      auto* filename = static_cast<char*>(iter->data);
-      paths.emplace_back(filename);
+    base::FilePath GetFileName() const {
+      gchar* filename = gtk_file_chooser_get_filename(dialog_);
+      const base::FilePath path(filename);
       g_free(filename);
+      return path;
     }
-    g_slist_free(filenames);
-    return paths;
-  }
 
-  CHROMEG_CALLBACK_1(FileChooserDialog,
-                     void,
-                     OnFileDialogResponse,
-                     GtkWidget*,
-                     int);
+    std::vector<base::FilePath> GetFileNames() const {
+      std::vector<base::FilePath> paths;
+      auto* filenames =
+          gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
+      for (auto* iter = filenames; iter != nullptr; iter = iter->next) {
+        auto* filename = static_cast<char*>(iter->data);
+        paths.emplace_back(filename);
+        g_free(filename);
+      }
+      g_slist_free(filenames);
+      return paths;
+    }
 
-  GtkFileChooser* dialog() const { return dialog_; }
+    CHROMEG_CALLBACK_1(FileChooserDialog, void, OnFileDialogResponse,
+                       GtkWidget*, int);
 
- private:
-  void AddFilters(const Filters& filters);
+    GtkFileChooser* dialog() const { return dialog_; }
 
-  electron::NativeWindowViews* parent_;
-  electron::UnresponsiveSuppressor unresponsive_suppressor_;
+   private:
+    void AddFilters(const Filters& filters);
 
-  GtkFileChooser* dialog_;
-  GtkWidget* preview_;
+    electron::NativeWindowViews* parent_;
+    electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
-  Filters filters_;
-  std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;
-  std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> open_promise_;
+    GtkFileChooser* dialog_;
+    GtkWidget* preview_;
 
-  // Callback for when we update the preview for the selection.
-  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
+    Filters filters_;
+    std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;
+    std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> open_promise_;
 
-  DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
-};
+    // Callback for when we update the preview for the selection.
+    CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview,
+                       GtkFileChooser*);
 
-void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
-  if (supports_gtk_file_chooser_native.value_or(false)) {
-    dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
-  } else {
-    gtk_widget_hide(GTK_WIDGET(dialog_));
-  }
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  if (save_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(save_promise_->isolate());
-    if (response == GTK_RESPONSE_ACCEPT) {
-      dict.Set("canceled", false);
-      dict.Set("filePath", GetFileName());
+    DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
+  };
+
+  void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget,
+                                               int response) {
+    if (supports_gtk_file_chooser_native.value_or(false)) {
+      dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
     } else {
-      dict.Set("canceled", true);
-      dict.Set("filePath", base::FilePath());
+      gtk_widget_hide(GTK_WIDGET(dialog_));
     }
-    save_promise_->Resolve(dict);
-  } else if (open_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(open_promise_->isolate());
-    if (response == GTK_RESPONSE_ACCEPT) {
-      dict.Set("canceled", false);
-      dict.Set("filePaths", GetFileNames());
-    } else {
-      dict.Set("canceled", true);
-      dict.Set("filePaths", std::vector<base::FilePath>());
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    if (save_promise_) {
+      gin_helper::Dictionary dict =
+          gin::Dictionary::CreateEmpty(save_promise_->isolate());
+      if (response == GTK_RESPONSE_ACCEPT) {
+        dict.Set("canceled", false);
+        dict.Set("filePath", GetFileName());
+      } else {
+        dict.Set("canceled", true);
+        dict.Set("filePath", base::FilePath());
+      }
+      save_promise_->Resolve(dict);
+    } else if (open_promise_) {
+      gin_helper::Dictionary dict =
+          gin::Dictionary::CreateEmpty(open_promise_->isolate());
+      if (response == GTK_RESPONSE_ACCEPT) {
+        dict.Set("canceled", false);
+        dict.Set("filePaths", GetFileNames());
+      } else {
+        dict.Set("canceled", true);
+        dict.Set("filePaths", std::vector<base::FilePath>());
+      }
+      open_promise_->Resolve(dict);
     }
-    open_promise_->Resolve(dict);
-  }
-  delete this;
-}
-
-void FileChooserDialog::AddFilters(const Filters& filters) {
-  for (const auto& filter : filters) {
-    GtkFileFilter* gtk_filter = gtk_file_filter_new();
-
-    for (const auto& extension : filter.second) {
-      auto file_extension = std::make_unique<std::string>("." + extension);
-      gtk_file_filter_add_custom(
-          gtk_filter, GTK_FILE_FILTER_FILENAME,
-          reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
-          file_extension.release(),
-          reinterpret_cast<GDestroyNotify>(OnFileFilterDataDestroyed));
-    }
-
-    gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
-    gtk_file_chooser_add_filter(dialog_, gtk_filter);
-  }
-}
-
-void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
-  gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
-  if (!filename) {
-    gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
-    return;
+    delete this;
   }
 
-  // Don't attempt to open anything which isn't a regular file. If a named pipe,
-  // this may hang. See https://crbug.com/534754.
-  struct stat stat_buf;
-  if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode)) {
+  void FileChooserDialog::AddFilters(const Filters& filters) {
+    for (const auto& filter : filters) {
+      GtkFileFilter* gtk_filter = gtk_file_filter_new();
+
+      for (const auto& extension : filter.second) {
+        auto file_extension = std::make_unique<std::string>("." + extension);
+        gtk_file_filter_add_custom(
+            gtk_filter, GTK_FILE_FILTER_FILENAME,
+            reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
+            file_extension.release(),
+            reinterpret_cast<GDestroyNotify>(OnFileFilterDataDestroyed));
+      }
+
+      gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
+      gtk_file_chooser_add_filter(dialog_, gtk_filter);
+    }
+  }
+
+  void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
+    gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
+    if (!filename) {
+      gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
+      return;
+    }
+
+    // Don't attempt to open anything which isn't a regular file. If a named
+    // pipe, this may hang. See https://crbug.com/534754.
+    struct stat stat_buf;
+    if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode)) {
+      g_free(filename);
+      gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
+      return;
+    }
+
+    // This will preserve the image's aspect ratio.
+    GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file_at_size(
+        filename, kPreviewWidth, kPreviewHeight, nullptr);
     g_free(filename);
-    gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
-    return;
+    if (pixbuf) {
+      gtk_image_set_from_pixbuf(GTK_IMAGE(preview_), pixbuf);
+      g_object_unref(pixbuf);
+    }
+    gtk_file_chooser_set_preview_widget_active(chooser, pixbuf ? TRUE : FALSE);
   }
-
-  // This will preserve the image's aspect ratio.
-  GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file_at_size(filename, kPreviewWidth,
-                                                       kPreviewHeight, nullptr);
-  g_free(filename);
-  if (pixbuf) {
-    gtk_image_set_from_pixbuf(GTK_IMAGE(preview_), pixbuf);
-    g_object_unref(pixbuf);
-  }
-  gtk_file_chooser_set_preview_widget_active(chooser, pixbuf ? TRUE : FALSE);
-}
 
 }  // namespace
 
@@ -474,4 +474,4 @@ void ShowSaveDialog(const DialogSettings& settings,
   save_dialog->RunSaveAsynchronous(std::move(promise));
 }
 
-}  // namespace file_dialog
+}  // namespace
