@@ -126,7 +126,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
         extensions::pref_names::kPrefPreferences);
     auto preference = update.Create();
     const base::Time install_time = base::Time().Now();
-    preference->SetStringKey(
+    preference->SetString(
         "install_time", base::NumberToString(install_time.ToInternalValue()));
   }
 
