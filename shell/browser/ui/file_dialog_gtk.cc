@@ -15,7 +15,6 @@
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "ui/aura/window.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gtk/gtk_util.h"
 
