@@ -37,11 +37,11 @@ using dl_gtk_native_dialog_destroy_t = void (*)(void*);
 using dl_gtk_native_dialog_set_modal_t = void (*)(void*, gboolean);
 using dl_gtk_native_dialog_run_t = int (*)(void*);
 using dl_gtk_native_dialog_hide_t = void (*)(void*);
-using dl_gtk_file_chooser_native_new_t = void (*)(const char*,
-                                                  GtkWindow*,
-                                                  GtkFileChooserAction,
-                                                  const char*,
-                                                  const char*);
+using dl_gtk_file_chooser_native_new_t = void* (*)(const char*,
+                                                   GtkWindow*,
+                                                   GtkFileChooserAction,
+                                                   const char*,
+                                                   const char*);
 
 static dl_gtk_native_dialog_show_t dl_gtk_native_dialog_show;
 static dl_gtk_native_dialog_destroy_t dl_gtk_native_dialog_destroy;
