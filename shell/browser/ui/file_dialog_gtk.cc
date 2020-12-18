@@ -89,7 +89,7 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = gtk_util::kOpenLabel;
 
-    InitGtkNativeDialogSupport();
+    InitGtkFileChooserNativeSupport();
 
     if (supports_gtk_native_dialog.value_or(false)) {
       dialog_ = GTK_FILE_CHOOSER(
@@ -405,7 +405,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   save_dialog->RunSaveAsynchronous(std::move(promise));
 }
 
-void InitGtkNativeDialogSupport() {
+void InitGtkFileChooserNativeSupport() {
   // Return early if we have already setup the native functions or we have tried
   // once before and failed. Avoid running expensive dynamic library operations.
   if (supports_gtk_native_dialog) {
