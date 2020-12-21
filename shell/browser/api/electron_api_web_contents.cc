@@ -3024,7 +3024,7 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     }
   } else {
     // Create one if not.
-    web_contents = WebContents::New(isolate, web_preferences);
+    web_contents = WebContents::Create(isolate, web_preferences);
   }
 
   return web_contents;
