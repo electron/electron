@@ -12,12 +12,15 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/sequenced_task_runner.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_runner_util.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/time/time.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/pref_names.h"
 #include "extensions/common/file_util.h"
 
 namespace extensions {
@@ -110,6 +113,23 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   if (extension) {
     extension_registrar_.AddExtension(extension);
   }
+
+  // Write extension install time to ExtensionPrefs. This is required by
+  // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
+  //
+  // Implementation for writing the pref was based on
+  // PreferenceAPIBase::SetExtensionControlledPref.
+  {
+    ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
+    ExtensionPrefs::ScopedDictionaryUpdate update(
+        extension_prefs, extension.get()->id(),
+        extensions::pref_names::kPrefPreferences);
+    auto preference = update.Create();
+    const base::Time install_time = base::Time().Now();
+    preference->SetString("install_time",
+                          base::NumberToString(install_time.ToInternalValue()));
+  }
+
   std::move(cb).Run(extension.get(), result.second);
 }
 
