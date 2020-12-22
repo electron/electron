@@ -6,7 +6,7 @@ Subject: Revert "[cleanup] Switch {OFFSET_OF} to {offsetof} where possible."
 This reverts commit d287e4bc46243841c77cf9798516ee4dcc54bf43.
 
 diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
-index e4b44eae1e8cb5985b23beba784a36427af2e510..2abb615450d5311fca7f82269be5b2a71c8d0d41 100644
+index e2cb30fffe5065d1d88d243de439d0251a8797e9..7f1ac45b411b10a658e3287a22b15bc3b8cfba0d 100644
 --- a/src/deoptimizer/deoptimizer.h
 +++ b/src/deoptimizer/deoptimizer.h
 @@ -515,14 +515,14 @@ class Deoptimizer : public Malloced {
@@ -28,7 +28,7 @@ index e4b44eae1e8cb5985b23beba784a36427af2e510..2abb615450d5311fca7f82269be5b2a7
    }
  
    V8_EXPORT_PRIVATE static int GetDeoptimizedCodeCount(Isolate* isolate);
-@@ -788,7 +788,7 @@ class FrameDescription {
+@@ -791,7 +791,7 @@ class FrameDescription {
    int parameter_count() { return parameter_count_; }
  
    static int registers_offset() {

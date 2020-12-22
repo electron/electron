@@ -61,7 +61,7 @@ index 4181c8d4328f7514c52b3a66766bb4860ede730b..e3a16bdf98cf444bd1b202a722763d26
    DISALLOW_COPY_AND_ASSIGN(NativeTheme);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 6bcec4c618ae2ee4e544ff0204a6349dee460707..0842657c39c0c0ecc8d2b3aa75dddefd9b5961d3 100644
+index f0e69f71da0c00b1aa7521af60e7d19a1cd2483a..f079b43ebba808633653164e042238c70f6575eb 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -741,6 +741,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
