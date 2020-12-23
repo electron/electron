@@ -46,6 +46,7 @@
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "third_party/electron_node/src/node_native_module_env.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -248,6 +249,11 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // A workaround was previously needed because there was no ThreadTaskRunner
   // set.  If this check is failing we may need to re-add that workaround
   DCHECK(base::ThreadTaskRunnerHandle::IsSet());
+
+  // We can ONLY use the node V8 cache when running in full Electron mode,
+  // calling this in node_main will result in a cache mismatch thing because the global "g_upstream_mode"
+  // is mutated by us.  It only works in the default mode of "normal electron".
+  node::native_module::NativeModuleEnv::InitializeCodeCache();
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
