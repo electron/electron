@@ -251,8 +251,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   DCHECK(base::ThreadTaskRunnerHandle::IsSet());
 
   // We can ONLY use the node V8 cache when running in full Electron mode,
-  // calling this in node_main will result in a cache mismatch thing because the global "g_upstream_mode"
-  // is mutated by us.  It only works in the default mode of "normal electron".
+  // calling this in node_main will result in a cache mismatch thing because the
+  // global "g_upstream_mode" is mutated by us.  It only works in the default
+  // mode of "normal electron".
   node::native_module::NativeModuleEnv::InitializeCodeCache();
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
