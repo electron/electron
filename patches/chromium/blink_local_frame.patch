@@ -14,10 +14,10 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 235d2b2ae975974daa33c72ef6767ba1ae3d3776..21247ac3539a80badd7c3f7821961492beeba6bf 100644
+index 34db682c660d0a3c3ff9f66719382d1acd3abcd4..27ba91f3bd64dcb77133862cee815bfb9d5b5440 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -646,10 +646,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -626,10 +626,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -26,9 +26,9 @@ index 235d2b2ae975974daa33c72ef6767ba1ae3d3776..21247ac3539a80badd7c3f7821961492
 -  // - Document::Shutdown() can dispose plugins which can run script.
 -  ScriptForbiddenScope forbid_script;
    if (!Client())
-     return;
+     return false;
  
-@@ -666,6 +662,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -669,6 +665,10 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    // Notify WindowProxyManager that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetWindowProxyManager()->ClearForClose();

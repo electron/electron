@@ -7,19 +7,19 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 8d3b32cc370985a865abe7759340dd2535e01b2e..d84980a88df00bf9c1dea9c559b3521a351f74db 100644
+index ed70b7dd27718b47c8e44fb08942739e15e55841..11c66dea0d2b79ec19b1b2f34ebd23ac35a8e118 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -266,7 +266,7 @@
-       0 == strcmp([value objCType], @encode(NSRange))) {
-     return PopulateRange([value rangeValue]);
+@@ -257,7 +257,7 @@
+       return PopulateSize([value sizeValue]);
+     }
    }
 -
 +#ifndef MAS_BUILD
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -277,6 +277,7 @@
+@@ -268,6 +268,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index 8d3b32cc370985a865abe7759340dd2535e01b2e..d84980a88df00bf9c1dea9c559b3521a
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -387,7 +388,7 @@
+@@ -378,7 +379,7 @@
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,7 +36,7 @@ index 8d3b32cc370985a865abe7759340dd2535e01b2e..d84980a88df00bf9c1dea9c559b3521a
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -401,7 +402,7 @@
+@@ -392,7 +393,7 @@
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
@@ -125,7 +125,7 @@ index 33a689c23c72b1d18d0fceb595a4a45cf2790454..808eaf45096fbeb5d4bd62448c64078c
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073db935a27 100644
+index b30b7d4c1332ce3f7694cfb1d8193ff201a2b9da..450bd2e6f1ffeb620acafadce68066b5c13fdf2b 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -209,6 +209,7 @@
@@ -316,7 +316,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
  
  // Returns a subrole based upon the role.
  - (NSString*)subrole {
-@@ -2687,11 +2717,13 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2689,11 +2719,13 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
    NSMutableAttributedString* attributedInnerText =
        [[[NSMutableAttributedString alloc]
            initWithString:base::SysUTF16ToNSString(innerText)] autorelease];
@@ -330,7 +330,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
  
    return [attributedInnerText attributedSubstringFromRange:range];
  }
-@@ -2804,9 +2836,8 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2806,9 +2838,8 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
        return ToBrowserAccessibilityCocoa(cell);
    }
  
@@ -342,7 +342,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
      BrowserAccessibilityPositionInstance position =
          CreatePositionFromTextMarker(parameter);
      if (!position->IsNullPosition())
-@@ -3119,6 +3150,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -3121,6 +3152,7 @@ AXPlatformRange range(std::move(lineStartPosition),
  
      return CreateTextMarker(root->CreatePositionAt(index));
    }
@@ -350,7 +350,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -3149,6 +3181,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -3151,6 +3183,7 @@ AXPlatformRange range(std::move(lineStartPosition),
      return nil;
    }
  
@@ -358,7 +358,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3263,6 +3296,7 @@ AXPlatformRange range(std::move(lineStartPosition),
+@@ -3265,6 +3298,7 @@ AXPlatformRange range(std::move(lineStartPosition),
  
      return @(child->GetIndexInParent());
    }
@@ -366,7 +366,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
  
    return nil;
  }
-@@ -3791,6 +3825,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3793,6 +3827,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
          AXPlatformRange(_owner->CreatePositionAt(range.location),
                          _owner->CreatePositionAt(NSMaxRange(range))));
    }
@@ -374,7 +374,7 @@ index 6ad3a7d0d35bbe1b4fe9f0300e3d1e1a83ea7f32..d4433954f501544ff19855a19d8bc073
    if ([attribute
            isEqualToString:NSAccessibilitySelectedTextMarkerRangeAttribute]) {
      AXPlatformRange range = CreateRangeFromTextMarkerRange(value);
-@@ -3800,6 +3835,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3802,6 +3837,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
      manager->SetSelection(AXPlatformRange(range.anchor()->AsLeafTextPosition(),
                                            range.focus()->AsLeafTextPosition()));
    }
