@@ -34,7 +34,7 @@ index b0309af577e9929b7cf244a2f076d5942ce45c5b..cd53727d64bf7d3b265fb6e3e95fa3b5
 +    use_zygote_(use_zygote) {}
 +#endif
 +
-   ~RendererSandboxedProcessLauncherDelegate() override {}
+   ~RendererSandboxedProcessLauncherDelegate() override = default;
  
  #if defined(OS_WIN)
 @@ -421,6 +426,9 @@ class RendererSandboxedProcessLauncherDelegate
