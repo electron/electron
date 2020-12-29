@@ -31,7 +31,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
       const extensions::Extension* extension,
-      const base::Callback<void(bool)>& callback) const override;
+      base::OnceCallback<void(bool)> callback) const override;
   std::unique_ptr<extensions::UninstallDialogDelegate>
   UninstallFunctionDelegate(
       extensions::ManagementUninstallFunctionBase* function,
