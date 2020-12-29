@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 5af12718cca99201c85d461b5204e58487136e1c..7ca72bc91a9ec06cfbd7aacfce7ca2d70481bae2 100644
+index 59779872c793906dcff3a7a0769c7f4e878510fb..8eaafb1a03a2b20a02294d8286c7d7b5aa7edc65 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5136,6 +5136,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 5af12718cca99201c85d461b5204e58487136e1c..7ca72bc91a9ec06cfbd7aacfce7ca2d7
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8056f3b12d567fe0ac27c2205c3cdefdd436d279..ba71c173bc162effc17e9717b1b070f8fe1f5ac5 100644
+index 7722679512271353d025ad62559109b58118158f..04d47f83885dff93b11cab67d7a8ca4572cad2cd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3582,6 +3582,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
