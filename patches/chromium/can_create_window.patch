@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 59779872c793906dcff3a7a0769c7f4e878510fb..8eaafb1a03a2b20a02294d8286c7d7b5aa7edc65 100644
+index 5a0c257c988249de4dd426073dcd2991c433af2d..5881ccc65a7e991510ff85ee8bdead25c929e723 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5136,6 +5136,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index 59779872c793906dcff3a7a0769c7f4e878510fb..8eaafb1a03a2b20a02294d8286c7d7b5
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7722679512271353d025ad62559109b58118158f..04d47f83885dff93b11cab67d7a8ca4572cad2cd 100644
+index cffe0a74946b1b43b243386eb0b1dc5d6b1b0352..f1cff1675763d3da9f3aac471d2a4994dd364557 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3582,6 +3582,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3587,6 +3587,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 7722679512271353d025ad62559109b58118158f..04d47f83885dff93b11cab67d7a8ca45
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3623,12 +3631,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3628,12 +3636,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddDestructionObserver(new_contents_impl);
    }
  
