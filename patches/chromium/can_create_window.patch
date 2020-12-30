@@ -21,10 +21,10 @@ index 5a0c257c988249de4dd426073dcd2991c433af2d..5881ccc65a7e991510ff85ee8bdead25
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cffe0a74946b1b43b243386eb0b1dc5d6b1b0352..f1cff1675763d3da9f3aac471d2a4994dd364557 100644
+index 1c6e62ea28e7981de2452c37faa4a4ecff7e8543..2ce3f4cd846a856d5209a2a2c2e2727c3df67d57 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3587,6 +3587,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3588,6 +3588,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index cffe0a74946b1b43b243386eb0b1dc5d6b1b0352..f1cff1675763d3da9f3aac471d2a4994
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3628,12 +3636,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3629,12 +3637,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddDestructionObserver(new_contents_impl);
    }
  
@@ -221,10 +221,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 9016c40b451c8f3a43737f24b120e3ffce5f9d04..f55023b59fdc76322d7415501a67331c427b3098 100644
+index cb4b823f516b8467ddcabda20ca795469685acef..2bb33db6fbd7b9f556ef12c3e76ef5d84bd28547 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1954,6 +1954,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1948,6 +1948,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);
