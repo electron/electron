@@ -48,7 +48,6 @@ index 0d5d1bf784f63f00724cdcf71263752e7715ebf1..5b7869255ec81c4a7bd1e0918609aafe
    // After this, we must no longer talk to the client since this clears
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
-
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
 index b11ef9562a034a1721c3c679d37015c2ce5a33ab..d88146acf3ba93a71e9034dcf0190fded09ab87e 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
