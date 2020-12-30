@@ -128,7 +128,7 @@ diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/cont
 index b30b7d4c1332ce3f7694cfb1d8193ff201a2b9da..450bd2e6f1ffeb620acafadce68066b5c13fdf2b 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
-@@ -209,6 +209,7 @@
+@@ -209,6 +209,7 @@ NSString* const
  NSString* const NSAccessibilityLengthForTextMarkerRangeParameterizedAttribute =
      @"AXLengthForTextMarkerRange";
  
@@ -136,14 +136,14 @@ index b30b7d4c1332ce3f7694cfb1d8193ff201a2b9da..450bd2e6f1ffeb620acafadce68066b5
  // Private attributes that can be used for testing text markers, e.g. in dump
  // tree tests.
  NSString* const
-@@ -220,6 +221,7 @@
+@@ -220,6 +221,7 @@ NSString* const
  NSString* const
      NSAccessibilityTextMarkerNodeDebugDescriptionParameterizedAttribute =
          @"AXTextMarkerNodeDebugDescription";
 +#endif
  
  // Other private attributes.
- NSString* const NSAccessibilitySelectTextWithCriteriaParameterizedAttribute =
+ NSString* const NSAccessibilityIdentifierChromeAttribute = @"ChromeAXNodeId";
 @@ -243,6 +245,7 @@
  // VoiceOver uses -1 to mean "no limit" for AXResultsLimit.
  const int kAXResultsLimitNoLimit = -1;
