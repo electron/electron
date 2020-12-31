@@ -293,7 +293,7 @@ index 6532f5a49ffa359d355a8191dd144092bdb3fa1d..cdc18bdb3fe87df54e125c204fda4851
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 1e876620298ff54d500a02aad7b9ab50767a2507..93b9a9b91a22e162a6f52f479b5e51f13a69b125 100644
+index 0336acc7e5c9d0af23de1a5af2d6da6aae1f64f0..47c842e7cac9f12e3a1b6d6fad6751cb28056831 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

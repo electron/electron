@@ -106,10 +106,10 @@ index d5c13ee46c9665d1a0854de756303998716a9fd5..e814f2d61dbf6f44f8417d0303396a9f
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index 7abf0e5542e94a64097f053cad4a30d7638e417e..b8eb2068d82fe17427a9db7703d35568477469a5 100644
+index 4af1f8eeb7b1a2cbdef56c346e594c85ba7822fb..40d10ef706ff427bc3d24f1ceac77ae771ac4271 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
-@@ -2673,6 +2673,16 @@ scoped_refptr<SiteInstance>
+@@ -2684,6 +2684,16 @@ scoped_refptr<SiteInstance>
  RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      NavigationRequest* request,
      std::string* reason) {
@@ -126,7 +126,7 @@ index 7abf0e5542e94a64097f053cad4a30d7638e417e..b8eb2068d82fe17427a9db7703d35568
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2700,10 +2710,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2711,10 +2721,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -191,7 +191,7 @@ index 7abf0e5542e94a64097f053cad4a30d7638e417e..b8eb2068d82fe17427a9db7703d35568
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2743,6 +2803,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2754,6 +2814,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
