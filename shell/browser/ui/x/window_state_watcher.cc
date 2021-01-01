@@ -29,9 +29,9 @@ void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
 
     std::vector<x11::Atom> wm_states;
 
-    if (ui::GetAtomArrayProperty(
+    if (x11::GetArrayProperty(
             static_cast<x11::Window>(window_->GetAcceleratedWidget()),
-            "_NET_WM_STATE", &wm_states)) {
+            x11::GetAtom("_NET_WM_STATE"), &wm_states)) {
       auto props =
           base::flat_set<x11::Atom>(std::begin(wm_states), std::end(wm_states));
       bool is_minimized =
