@@ -2819,10 +2819,16 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     files.push_back(file);
   }
 
-  gin::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
+  v8::Local<v8::Value> icon_value;
+  if (!item.Get("icon", &icon_value)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify non-empty 'icon' option");
+        .ThrowError("'icon' parameter is required");
+    return;
+  }
+
+  NativeImage* icon = nullptr;
+  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
+      icon->image().IsEmpty()) {
     return;
   }
 
