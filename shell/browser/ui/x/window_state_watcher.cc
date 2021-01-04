@@ -8,6 +8,7 @@
 
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_atom_cache.h"
+#include "ui/gfx/x/xproto_util.h"
 
 namespace electron {
 
@@ -29,7 +30,7 @@ void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
 
     std::vector<x11::Atom> wm_states;
 
-    if (x11::GetArrayProperty(
+    if (GetArrayProperty(
             static_cast<x11::Window>(window_->GetAcceleratedWidget()),
             x11::GetAtom("_NET_WM_STATE"), &wm_states)) {
       auto props =
