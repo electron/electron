@@ -1,0 +1,34 @@
+name: Feature Request
+about: Suggest an idea for Electron
+title: "[Feature Request]: "
+labels: "enhancement ✨"
+inputs:
+  - type: textarea
+  attributes:
+    label: Preflight Checklist
+    description: Please ensure you've completed the following steps by replacing [ ] with [x]
+    required: true
+    value: |
+      * [ ] I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
+      * [ ] I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) that this project adheres to.
+      * [ ] I have searched the issue tracker for a feature request that matches the one I want to file, without success.
+  - type: textarea
+  attributes:
+    label: Problem Description
+    description: Please add a clear and concise description of the problem you are seeking to solve with this feature request.
+    required: true
+  - type: textarea
+  attributes:
+    label: Proposed Solution
+    description: Describe the solution you'd like in a clear and concise manner.
+    required: true
+  - type: textarea
+  attributes:
+    label: Alternatives Considered
+    description: A clear and concise description of any alternative solutions or features you've considered. 
+    required: true
+  - type: textarea
+  attributes:
+    label: Additional Information
+    description: Add any other context about the problem here.
+    required: false
