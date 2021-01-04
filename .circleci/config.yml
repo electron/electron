@@ -419,7 +419,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        // ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
+        # ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
