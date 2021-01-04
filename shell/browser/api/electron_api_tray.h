@@ -43,7 +43,7 @@ class Tray : public gin::Wrappable<Tray>,
  public:
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
-                               gin::Handle<NativeImage> image,
+                               v8::Local<v8::Value> image,
                                base::Optional<UUID> guid,
                                gin::Arguments* args);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
@@ -54,9 +54,9 @@ class Tray : public gin::Wrappable<Tray>,
   static gin::WrapperInfo kWrapperInfo;
 
  private:
-  Tray(gin::Handle<NativeImage> image,
-       base::Optional<UUID> guid,
-       gin::Arguments* args);
+  Tray(v8::Isolate* isolate,
+       v8::Local<v8::Value> image,
+       base::Optional<UUID> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -83,8 +83,8 @@ class Tray : public gin::Wrappable<Tray>,
   // JS API:
   void Destroy();
   bool IsDestroyed();
-  void SetImage(gin::Handle<NativeImage> image);
-  void SetPressedImage(gin::Handle<NativeImage> image);
+  void SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image);
+  void SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title,
                 const base::Optional<gin_helper::Dictionary>& options,

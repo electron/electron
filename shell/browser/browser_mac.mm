@@ -20,6 +20,7 @@
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
@@ -451,7 +452,16 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
   [delegate setApplicationDockMenu:model];
 }
 
-void Browser::DockSetIcon(const gfx::Image& image) {
+void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
+  gfx::Image image;
+
+  if (!icon->IsNull()) {
+    api::NativeImage* native_image = nullptr;
+    if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+      return;
+    image = native_image->image();
+  }
+
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
