@@ -120,6 +120,14 @@ bool WebFrameMain::CheckRenderFrame() const {
 v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
     gin::Arguments* args,
     const std::u16string& code) {
+  return ExecuteJavaScriptInIsolatedWorld(
+      args, content::ISOLATED_WORLD_ID_GLOBAL, code);
+}
+
+v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScriptInIsolatedWorld(
+    gin::Arguments* args,
+    int world_id,
+    const std::u16string& code) {
   gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -144,8 +152,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 
   static_cast<content::RenderFrameHostImpl*>(render_frame_)
       ->ExecuteJavaScriptForTests(
-          code, user_gesture, true /* resolve_promises */,
-          content::ISOLATED_WORLD_ID_GLOBAL,
+          code, user_gesture, true /* resolve_promises */, world_id,
           base::BindOnce(
               [](gin_helper::Promise<base::Value> promise,
                  blink::mojom::JavaScriptExecutionResultType type,
@@ -388,6 +395,8 @@ v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
     v8::Local<v8::ObjectTemplate> templ) {
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrameMain::ExecuteJavaScriptInIsolatedWorld)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)

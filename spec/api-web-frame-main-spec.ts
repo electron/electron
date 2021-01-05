@@ -203,6 +203,57 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('WebFrame.executeJavaScriptInIsolatedWorld', () => {
+    it('can inject code into any subframe', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+      const webFrame = w.webContents.mainFrame;
+
+      const getUrl = (frame: WebFrameMain) => frame.executeJavaScriptInIsolatedWorld(999, 'location.href');
+      expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
+      expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
+      expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
+    });
+
+    it('can resolve promise', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = w.webContents.mainFrame;
+      const p = () => webFrame.executeJavaScriptInIsolatedWorld(999, 'new Promise(resolve => setTimeout(resolve(42), 2000));');
+      const result = await p();
+      expect(result).to.equal(42);
+    });
+
+    it('can reject with error', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = w.webContents.mainFrame;
+      const p = () => webFrame.executeJavaScriptInIsolatedWorld(999, 'new Promise((r,e) => setTimeout(e("error!"), 500));');
+      await expect(p()).to.be.eventually.rejectedWith('error!');
+      const errorTypes = new Set([
+        Error,
+        ReferenceError,
+        EvalError,
+        RangeError,
+        SyntaxError,
+        TypeError,
+        URIError
+      ]);
+      for (const error of errorTypes) {
+        await expect(webFrame.executeJavaScriptInIsolatedWorld(999, `Promise.reject(new ${error.name}("Wamp-wamp"))`))
+          .to.eventually.be.rejectedWith(/Error/);
+      }
+    });
+
+    it('can reject when script execution fails', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = w.webContents.mainFrame;
+      const p = () => webFrame.executeJavaScriptInIsolatedWorld(999, 'console.log(test)');
+      await expect(p()).to.be.eventually.rejectedWith(/ReferenceError/);
+    });
+  });
+
   describe('WebFrame.reload', () => {
     it('reloads a frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });

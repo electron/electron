@@ -93,6 +93,11 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
+  v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
+      gin::Arguments* args,
+      int world_id,
+      const std::u16string& code);
+
   bool Reload();
   void Send(v8::Isolate* isolate,
             bool internal,
