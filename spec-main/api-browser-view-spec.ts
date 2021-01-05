@@ -39,6 +39,15 @@ describe('BrowserView module', () => {
     expect(webContents.getAllWebContents()).to.have.length(0);
   });
 
+  it('can be created with an existing webContents', async () => {
+    const wc = (webContents as any).create({ sandbox: true });
+    await wc.loadURL('about:blank');
+
+    view = new BrowserView({ webContents: wc } as any);
+
+    expect(view.webContents.getURL()).to.equal('about:blank');
+  });
+
   describe('BrowserView.setBackgroundColor()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView();
