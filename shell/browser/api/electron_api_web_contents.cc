@@ -3784,6 +3784,33 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
 }
 
 // static
+gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
+    v8::Isolate* isolate,
+    const gin_helper::Dictionary& web_preferences) {
+  // Check if webPreferences has |webContents| option.
+  gin::Handle<WebContents> web_contents;
+  if (web_preferences.GetHidden("webContents", &web_contents) &&
+      !web_contents.IsEmpty()) {
+    // Set webPreferences from options if using an existing webContents.
+    // These preferences will be used when the webContent launches new
+    // render processes.
+    auto* existing_preferences =
+        WebContentsPreferences::From(web_contents->web_contents());
+    base::DictionaryValue web_preferences_dict;
+    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
+                           &web_preferences_dict)) {
+      existing_preferences->Clear();
+      existing_preferences->Merge(web_preferences_dict);
+    }
+  } else {
+    // Create one if not.
+    web_contents = WebContents::New(isolate, web_preferences);
+  }
+
+  return web_contents;
+}
+
+// static
 WebContents* WebContents::FromID(int32_t id) {
   return GetAllWebContents().Lookup(id);
 }
