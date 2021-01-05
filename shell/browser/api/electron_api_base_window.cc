@@ -99,13 +99,9 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
-  {
-    v8::TryCatch try_catch(isolate);
-    gin::Handle<NativeImage> icon;
-    if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
-      SetIcon(icon);
-    if (try_catch.HasCaught())
-      LOG(ERROR) << "Failed to convert NativeImage";
+  v8::Local<v8::Value> icon;
+  if (options.Get(options::kIcon, &icon)) {
+    SetIcon(isolate, icon);
   }
 #endif
 }
@@ -998,14 +994,18 @@ bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void BaseWindow::SetIcon(gin::Handle<NativeImage> icon) {
+void BaseWindow::SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
+  NativeImage* native_image = nullptr;
+  if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+    return;
+
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
-      ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
-                icon->GetHICON(GetSystemMetrics(SM_CXICON)));
+      ->SetIcon(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+                native_image->GetHICON(GetSystemMetrics(SM_CXICON)));
 #elif defined(OS_LINUX)
   static_cast<NativeWindowViews*>(window_.get())
-      ->SetIcon(icon->image().AsImageSkia());
+      ->SetIcon(native_image->image().AsImageSkia());
 #endif
 }
 #endif

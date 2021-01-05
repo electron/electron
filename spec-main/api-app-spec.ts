@@ -1541,6 +1541,15 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.setIcon', () => {
+      it('throws a descriptive error for a bad icon path', () => {
+        const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
+        expect(() => {
+          app.dock.setIcon(badPath);
+        }).to.throw(/Failed to load image from path (.+)/);
+      });
+    });
+
     describe('dock.bounce', () => {
       it('should return -1 for unknown bounce type', () => {
         expect(app.dock.bounce('bad type' as any)).to.equal(-1);

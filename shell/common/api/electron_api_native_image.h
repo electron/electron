@@ -77,6 +77,10 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
 
+  static bool TryConvertNativeImage(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> image,
+                                    NativeImage** native_image);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -132,19 +136,5 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-// A custom converter that allows converting path to NativeImage.
-template <>
-struct Converter<electron::api::NativeImage*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::api::NativeImage* val);
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::NativeImage** out);
-};
-
-}  // namespace gin
 
 #endif  // SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
