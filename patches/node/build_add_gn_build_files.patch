@@ -7,11 +7,12 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..93e3e4d2178996730c57467fa16f2a02f4ba0745
+index 0000000000000000000000000000000000000000..497a6348f184ecb5d87ab232bdbdbcb059bd9dfa
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,416 @@
+@@ -0,0 +1,419 @@
 +import("//electron/build/asar.gni")
++import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 +import("//v8/gni/v8.gni")
 +
 +declare_args() {
@@ -327,10 +328,7 @@ index 0000000000000000000000000000000000000000..93e3e4d2178996730c57467fa16f2a02
 +      "tools/code_cache/mkcodecache.cc",
 +    ]
 +
-+    configs += [
-+      ":node_internal_config",
-+      "//v8:external_startup_data",
-+    ]
++    configs += [ ":node_internal_config" ]
 +    public_configs = [ ":node_lib_config" ]
 +    include_dirs = [ "src" ]
 +
@@ -341,6 +339,11 @@ index 0000000000000000000000000000000000000000..93e3e4d2178996730c57467fa16f2a02
 +
 +    if (is_win) {
 +      libs += [ "psapi.lib" ]
++    }
++
++    if (use_v8_context_snapshot) {
++      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
++      configs += [ "//v8:external_startup_data" ]
 +    }
 +
 +    cflags_cc = node_cflags_cc
