@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..497a6348f184ecb5d87ab232bdbdbcb059bd9dfa
+index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc982525f8
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,419 @@
+@@ -0,0 +1,415 @@
 +import("//electron/build/asar.gni")
 +import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 +import("//v8/gni/v8.gni")
@@ -56,7 +56,7 @@ index 0000000000000000000000000000000000000000..497a6348f184ecb5d87ab232bdbdbcb0
 +  node_module_version = ""
 +
 +  # Pre-compile internal node scripts into V8 compile caches
-+  node_use_node_code_cache = host_cpu == target_cpu
++  node_use_node_code_cache = is_win || host_cpu == target_cpu
 +}
 +
 +assert(!node_use_dtrace, "node_use_dtrace not supported in GN")
@@ -336,10 +336,6 @@ index 0000000000000000000000000000000000000000..497a6348f184ecb5d87ab232bdbdbcb0
 +      ":node_lib_no_code_cache",
 +      "//gin",
 +    ]
-+
-+    if (is_win) {
-+      libs += [ "psapi.lib" ]
-+    }
 +
 +    if (use_v8_context_snapshot) {
 +      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
