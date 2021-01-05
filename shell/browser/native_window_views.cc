@@ -263,9 +263,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
 
     if (!state_atom_list.empty())
-      x11::SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                            x11::GetAtom("_NET_WM_STATE"), "ATOM",
-                            state_atom_list);
+      SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                       x11::GetAtom("_NET_WM_STATE"), "ATOM", state_atom_list);
 
     // Set the _NET_WM_WINDOW_TYPE.
     if (!window_type.empty())
