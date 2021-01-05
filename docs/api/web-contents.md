@@ -1570,7 +1570,9 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer | [number, number]
+* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+  pair of `[processId, frameId]` if the frame is in a different process to the
+  main frame.
 * `channel` String
 * `...args` any[]
 
