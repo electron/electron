@@ -156,6 +156,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  static gin::Handle<WebContents> CreateFromWebPreferences(
+      v8::Isolate* isolate,
+      const gin_helper::Dictionary& web_preferences);
+
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   // Destroy the managed content::WebContents instance.

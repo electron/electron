@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow } from 'electron/main';
+import { BrowserView, BrowserWindow, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
 
 describe('BrowserView module', () => {
@@ -44,6 +44,15 @@ describe('BrowserView module', () => {
       view.destroy();
       expect(view.isDestroyed()).to.be.true('view is destroyed');
     });
+  });
+
+  it('can be created with an existing webContents', async () => {
+    const wc = (webContents as any).create({ sandbox: true });
+    await wc.loadURL('about:blank');
+
+    view = new BrowserView({ webContents: wc } as any);
+
+    expect(view.webContents.getURL()).to.equal('about:blank');
   });
 
   describe('BrowserView.setBackgroundColor()', () => {
