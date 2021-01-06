@@ -36,7 +36,7 @@ void ElectronRuntimeAPIDelegate::ReloadExtension(
 
 bool ElectronRuntimeAPIDelegate::CheckForUpdates(
     const std::string& extension_id,
-    const UpdateCheckCallback& callback) {
+    UpdateCheckCallback callback) {
   return false;
 }
 
