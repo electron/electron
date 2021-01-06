@@ -92,8 +92,6 @@ Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 Despite the name of this method, the return value is a DIP point, not a screen point!
-To get the screen point (for example, to pass to [robotjs](https://github.com/octalmage/robotjs) for mouse control),
-use `dipToScreenPoint` on the return value.
 
 ### `screen.getPrimaryDisplay()`
 
