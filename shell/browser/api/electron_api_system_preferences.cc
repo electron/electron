@@ -38,7 +38,7 @@ bool SystemPreferences::IsInvertedColorScheme() {
 }
 
 bool SystemPreferences::IsHighContrastColorScheme() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->UsesHighContrastColors();
+  return ui::NativeTheme::GetInstanceForNativeUi()->UserHasContrastPreference();
 }
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
