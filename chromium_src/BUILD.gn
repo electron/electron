@@ -76,6 +76,7 @@ static_library("chrome") {
   }
 
   public_deps = [
+    "//chrome/browser:dev_ui_browser_resources",
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
@@ -83,6 +84,7 @@ static_library("chrome") {
     "//components/proxy_config",
     "//components/security_state/content",
     "//content/public/browser",
+    "//services/strings",
   ]
 
   deps = [
