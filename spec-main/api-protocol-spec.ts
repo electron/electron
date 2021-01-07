@@ -908,8 +908,12 @@ describe('protocol module', () => {
       await fs.promises.unlink(videoPath);
     });
 
-    beforeEach(async () => {
+    beforeEach(async function () {
       w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
     });
 
     afterEach(async () => {
