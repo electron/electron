@@ -19,10 +19,10 @@ describe('tray module', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray = new Tray(badPath);
-      }).to.throw(/Error processing argument at index 0/);
+      }).to.throw(/Failed to load image from path (.+)/);
     });
 
-    ifit(process.platform === 'win32')('throws a descriptive error if an invlaid guid is given', () => {
+    ifit(process.platform === 'win32')('throws a descriptive error if an invalid guid is given', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), 'I am not a guid');
       }).to.throw('Invalid GUID format');
@@ -132,14 +132,49 @@ describe('tray module', () => {
   });
 
   describe('tray.setImage(image)', () => {
+    it('throws a descriptive error for a missing file', () => {
+      const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
+      expect(() => {
+        tray.setImage(badPath);
+      }).to.throw(/Failed to load image from path (.+)/);
+    });
+
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty());
     });
   });
 
   describe('tray.setPressedImage(image)', () => {
+    it('throws a descriptive error for a missing file', () => {
+      const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
+      expect(() => {
+        tray.setPressedImage(badPath);
+      }).to.throw(/Failed to load image from path (.+)/);
+    });
+
     it('accepts empty image', () => {
       tray.setPressedImage(nativeImage.createEmpty());
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('tray.displayBalloon(image)', () => {
+    it('throws a descriptive error for a missing file', () => {
+      const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
+      expect(() => {
+        tray.displayBalloon({
+          title: 'title',
+          content: 'wow content',
+          icon: badPath
+        });
+      }).to.throw(/Failed to load image from path (.+)/);
+    });
+
+    it('accepts an empty image', () => {
+      tray.displayBalloon({
+        title: 'title',
+        content: 'wow content',
+        icon: nativeImage.createEmpty()
+      });
     });
   });
 

@@ -27,9 +27,19 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
   if (val->IsNull())
     return true;
 
-  gin::Handle<electron::api::NativeImage> native_image;
-  if (!gin::ConvertFromV8(isolate, val, &native_image))
-    return false;
+  // First see if the user has passed a path.
+  electron::api::NativeImage* native_image = nullptr;
+  base::FilePath icon_path;
+  if (gin::ConvertFromV8(isolate, val, &icon_path)) {
+    native_image =
+        electron::api::NativeImage::CreateFromPath(isolate, icon_path).get();
+    if (native_image->image().IsEmpty())
+      return false;
+  } else {
+    // Try a normal nativeImage if that fails.
+    if (!gin::ConvertFromV8(isolate, val, &native_image))
+      return false;
+  }
 
   *out = native_image->image();
   return true;
