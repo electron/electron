@@ -316,15 +316,17 @@ step-setup-goma-for-build: &step-setup-goma-for-build
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
     paths:
-      - /usr/local/Homebrew
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
     keys:
-      - v2-brew-cache-{{ arch }}
+      - v4-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
-      - /usr/local/Homebrew
-    key: v2-brew-cache-{{ arch }}
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
+    key: v4-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -464,8 +466,10 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
     name: Install gnu-tar on macos
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install gnu-tar
+        if [ ! -d /usr/local/Cellar/gnu-tar/ ]; then
+          brew update
+          brew install gnu-tar
+        fi
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
 
@@ -1198,7 +1202,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
-    - *step-restore-brew-cache
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
