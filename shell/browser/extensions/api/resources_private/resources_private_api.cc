@@ -63,14 +63,17 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
 
 void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
 #if BUILDFLAG(ENABLE_PDF)
+  dict->SetKey("pdfFormSaveEnabled",
+               base::Value(base::FeatureList::IsEnabled(
+                   chrome_pdf::features::kSaveEditedPDFForm)));
   dict->SetStringKey(
       "pdfViewerUpdateEnabledAttribute",
       base::FeatureList::IsEnabled(chrome_pdf::features::kPDFViewerUpdate)
           ? "pdf-viewer-update-enabled"
           : "");
-  dict->SetKey("pdfFormSaveEnabled",
+  dict->SetKey("presentationModeEnabled",
                base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kSaveEditedPDFForm)));
+                   chrome_pdf::features::kPdfViewerPresentationMode)));
   dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
   dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
