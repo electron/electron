@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index a12233b27f3d638d9045aaeb38a2af292c699f57..2e2d75499e43d752deeac09f5384d05d1a7776cb 100644
+index fa612b156034ca30446ccec5ec82098eafdf13a3..c6c06d1d62aee91a15827f30bf07b256e4d76c4e 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -248,7 +248,7 @@
+@@ -238,7 +238,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index a12233b27f3d638d9045aaeb38a2af292c699f57..2e2d75499e43d752deeac09f5384d05d
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToPosition(value).get(),
-@@ -259,6 +259,7 @@
+@@ -249,6 +249,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index a12233b27f3d638d9045aaeb38a2af292c699f57..2e2d75499e43d752deeac09f5384d05d
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -369,7 +370,7 @@
+@@ -359,7 +360,7 @@
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,7 +36,7 @@ index a12233b27f3d638d9045aaeb38a2af292c699f57..2e2d75499e43d752deeac09f5384d05d
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id object,
      const LineIndexer* line_indexer) const {
-@@ -383,7 +384,7 @@
+@@ -373,7 +374,7 @@
    dict.SetPath("focus", PopulateTextPosition(range.focus(), line_indexer));
    return dict;
  }
