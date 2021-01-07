@@ -385,7 +385,7 @@ index dfbaf97a1c3d73d324095f46a4ea73d68d5188cc..d5fd684fe8cef92ec0432143d284ff0c
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..d9285ff967c7e5aafbe7fa1050d6050158c94d0d 100644
+index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..d772c49da26c4838b9cdee406443cb138d768189 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -482,7 +482,7 @@ index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..d9285ff967c7e5aafbe7fa1050d60501
 +
 +    if (silent) {
 +      print_settings = mojom::PrintPagesParams::New();
-+      print_settings.params = mojom::PrintParams::New(
++      print_settings->params = mojom::PrintParams::New(
 +        print_pages_params_->params->page_size,
 +        print_pages_params_->params->content_size,
 +        print_pages_params_->params->printable_area,
@@ -546,18 +546,6 @@ index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..d9285ff967c7e5aafbe7fa1050d60501
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2483,8 +2528,9 @@ bool PrintRenderFrameHelper::CheckForCancel() {
-   const mojom::PrintParams& print_params = *print_pages_params_->params;
-   bool cancel = false;
- 
--  if (preview_ui_)
--    preview_ui_->CheckForCancel(print_params.preview_request_id, &cancel);
-+  // Never cancel for Electron
-+  // if (preview_ui_)
-+  //  preview_ui_->CheckForCancel(print_params.preview_request_id, &cancel);
- 
-   if (cancel)
-     notify_browser_of_print_failure_ = false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
 index 502fa982439553adf01d9c3b517b3facecefb8b7..f90f6603216b199910132f13a7b6f6d9583bd471 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
