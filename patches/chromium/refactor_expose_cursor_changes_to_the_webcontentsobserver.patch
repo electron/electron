@@ -43,7 +43,7 @@ index 603db59e5ef4f4dd07350fdeee883eb896966ecd..8f61a9677e5f5b6278c989c492965613
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2b1ea00b6352077216acf19f856ffc1341ab168a..08656c9cc211cbb1e1f89ac079d1294ee8fa8921 100644
+index b42ce5e3371b593f344d8902e414d27d5271a792..c8fa523deb218ccc9ff412fc0dee6300c1c18f54 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4121,6 +4121,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -60,10 +60,10 @@ index 2b1ea00b6352077216acf19f856ffc1341ab168a..08656c9cc211cbb1e1f89ac079d1294e
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 11987ab2168f4179de69659022ed5a68108b87b5..3d7c57bee06e4a1627c5b9616e0ba0a3e22f2f56 100644
+index 00ab358b87054453d19509141e1fe6c80c9473db..b999ccae083a6f15d67dcee98cad88d9aa71936e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -953,6 +953,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -955,6 +955,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;

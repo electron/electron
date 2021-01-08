@@ -6,7 +6,7 @@ Subject: remove some deps that do not work on arm64
 Once these deps have been fixed upstream we can remove this patch.
 
 diff --git a/.vpython b/.vpython
-index b03ea0669644ee801efb57410ba3a6215f4884f2..7f6c4c9abc38127548e301a203733d307a8f255c 100644
+index e76e966921da472fdf713eabe25235fb5951d0fc..031725b7b0417e456df5dab514382beb3e720226 100644
 --- a/.vpython
 +++ b/.vpython
 @@ -53,10 +53,10 @@ wheel: <

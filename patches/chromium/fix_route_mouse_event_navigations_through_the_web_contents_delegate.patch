@@ -13,7 +13,7 @@ This patch can be removed once app.allowRendererProcessReuse is forced
 to true as then Chromiums assumptions around processes become correct.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3ec0c07a1f3462a8eb1da6ea808c8817fd5a9da3..46c081b914ed2457caffa8b45c86b0981af917e4 100644
+index affd03f752f8e85b0b59f17f5a9523362dd17121..12af950eb6608934d927aaee182b6aefcc756533 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2973,11 +2973,13 @@ bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {

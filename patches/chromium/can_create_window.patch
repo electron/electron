@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 232588f816e7fedbc30c316c0515f0105446122b..3bf4648527d4a48b0f857d69332e3819d3b5fd20 100644
+index 1b7f87f5e20039153d02dc7499e1a64beae6991a..a3bd7e93eb40bef68e37b977bd0d86906cb07f35 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5208,6 +5208,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5240,6 +5240,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 232588f816e7fedbc30c316c0515f0105446122b..3bf4648527d4a48b0f857d69332e3819
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9b6671fa0a8b5d81ccd1de81dad8ec16b02692ed..3ec0c07a1f3462a8eb1da6ea808c8817fd5a9da3 100644
+index d89656fa90414ac508d93fc8aab5c32003e5286e..affd03f752f8e85b0b59f17f5a9523362dd17121 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3562,6 +3562,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -53,10 +53,10 @@ index 9b6671fa0a8b5d81ccd1de81dad8ec16b02692ed..3ec0c07a1f3462a8eb1da6ea808c8817
      observer->DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
                                    params.referrer.To<Referrer>(),
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 7db065f9737bded25a4c3f8879b10b3057508e38..759c0b382b9b037580d2af487fa5984dfe28fd0a 100644
+index 5a31b8758f609d8d11d1e2ca0f1581cd138149f3..b56a424926f1384907ac3ae2c8a7619bf06a90e6 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -285,6 +285,10 @@ struct CreateNewWindowParams {
+@@ -299,6 +299,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
    Impression? impression;
@@ -172,10 +172,10 @@ index 3128b21c95c7b4535787142b6250b77f2c58b269..087b9891b2f79b54cd22cf8dc3591fa6
    // We preserve this information before sending the message since |params| is
    // moved on send.
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 565e73f6c43fb8e20d31a094768fddda388d3768..a0acffed269faa7c9e3715744fa6c6b099813469 100644
+index 52bfdcfe1b1530133582dcd6bdef4ea80c8d8b45..adf92fa28b0a638cb311c48bc142448022513375 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -377,6 +377,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -442,6 +442,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

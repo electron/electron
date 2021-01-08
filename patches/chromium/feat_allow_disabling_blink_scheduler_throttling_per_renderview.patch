@@ -85,10 +85,10 @@ index fb648cda4e1aaa578cf271a60027e43b5d3a39d2..b567763c75832b742403356bb5deeaec
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 0d1cf9b1191f84dc28b32065a5e01c5518dc32e5..753c0397e4286369bb9ed40749e6741b87e6b4f1 100644
+index a49a490195187acd2a005aa20b861b83b2f32697..11be8a18dd295dae65b2e283487c183e84f736ef 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3472,6 +3472,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3474,6 +3474,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index 0d1cf9b1191f84dc28b32065a5e01c5518dc32e5..753c0397e4286369bb9ed40749e6741b
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3482,7 +3489,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3484,7 +3491,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
