@@ -547,10 +547,10 @@ index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index bd838cbf757deed871a166d5c3205a6619c87d68..efedc7f089ad9f995d52ca0c50378b99237ae6cf 100644
+index 19c038fea899cab6a9fede71f242b1cd7b7b888b..8f9cb7e6bc1003e6e64a3a5c4171f6ade933c5bc 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -248,6 +248,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -231,6 +231,7 @@ class DnsConfigServicePosix::Watcher {
  
    bool Watch() {
      bool success = true;
@@ -558,8 +558,8 @@ index bd838cbf757deed871a166d5c3205a6619c87d68..efedc7f089ad9f995d52ca0c50378b99
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -270,6 +271,7 @@ class DnsConfigServicePosix::Watcher {
-                                 DNS_CONFIG_WATCH_MAX);
+@@ -247,6 +248,7 @@ class DnsConfigServicePosix::Watcher {
+       success = false;
      }
  #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
 +#endif

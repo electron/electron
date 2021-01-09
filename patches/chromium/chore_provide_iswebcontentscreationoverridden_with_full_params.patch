@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c8fa523deb218ccc9ff412fc0dee6300c1c18f54..8e15ff09bed4bd3fa56213bfe9b67946f7a085c0 100644
+index 1dc2fa4a5cdf86eada6794a80a196f6ca3727fe8..be1a841f58baf700dcff1ffb74775af41cd95988 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3523,8 +3523,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3522,8 +3522,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -390,7 +390,7 @@ index d6f69a298932496ed5fe29ee2ae43e35503476d4..656abba62cc533f8b8805ce4c9b5e782
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 1eb384ea6673d425333a37cbe1ef59deb74bd9ae..97ac16cfc089a3a2d976688e878d7ce653c0cc84 100644
+index af6718c5d217b18c2afe42ef2d66ec8a0f6671f5..42ec80412a5be0fb034c145974aa6caba66b446c 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -170,8 +170,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

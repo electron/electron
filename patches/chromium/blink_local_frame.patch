@@ -14,10 +14,10 @@ when there is code doing that.
 This patch reverts the change to fix the crash in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index b11ef9562a034a1721c3c679d37015c2ce5a33ab..d88146acf3ba93a71e9034dcf0190fded09ab87e 100644
+index bc44c0826be2b7b780b980ddf33285090e0278fb..59bcf6963ba53506d2324a782a18993d374de31a 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -626,10 +626,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -627,10 +627,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -28,7 +28,7 @@ index b11ef9562a034a1721c3c679d37015c2ce5a33ab..d88146acf3ba93a71e9034dcf0190fde
    if (!Client())
      return false;
  
-@@ -667,6 +663,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -668,6 +664,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    DCHECK(!view_->IsAttached());
    Client()->WillBeDetached();
  
