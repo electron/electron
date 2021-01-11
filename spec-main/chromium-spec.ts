@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron/main';
-import { emittedOnce, emittedUntil } from './events-helpers';
+import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
 import * as http from 'http';
@@ -1283,17 +1283,15 @@ describe('chromium features', () => {
     it('opens when loading a pdf resource as top level navigation', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
-      await emittedUntil(app, 'web-contents-created', (event: Electron.Event, contents: WebContents) => {
-        return contents.getURL() === 'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html';
-      });
+      const [, contents] = await emittedOnce(app, 'web-contents-created');
+      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
-      await emittedUntil(app, 'web-contents-created', (event: Electron.Event, contents: WebContents) => {
-        return contents.getURL() === 'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html';
-      });
+      const [, contents] = await emittedOnce(app, 'web-contents-created');
+      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
   });
 
