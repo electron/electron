@@ -5,8 +5,6 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
 
-#include <utility>
-
 #include "gin/converter.h"
 
 namespace content {
