@@ -1,7 +1,7 @@
 [req]
 default_bits = 4096
 encrypt_key = no
-default_md = 512
+default_md = sha512
 distinguished_name = req_distinguished_name
 prompt = no
 
