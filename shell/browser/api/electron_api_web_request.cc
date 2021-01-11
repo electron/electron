@@ -21,6 +21,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -160,8 +161,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   auto* render_frame_host =
       content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
   if (render_frame_host) {
-    details->Set("frame",
-                 WebFrameMain::From(details->isolate(), render_frame_host));
+    details->Set("frame", render_frame_host);
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     auto* api_web_contents = WebContents::From(web_contents);
