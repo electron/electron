@@ -4,9 +4,9 @@
   `chromeMediaSourceId` constraint when calling
   [`navigator.webkitGetUserMedia`]. The format of the identifier will be
   `window:XX:YY` or `screen:ZZ:0`. XX is the windowID/handle. YY is 1 for
-  the current process, and 0 for all others. And ZZ is a sequential number
-  to indicate the screen (this does NOT correspond to the listing 
-  'screen 1', 'screen 2', ..., 'screen n' in the source's name. 
+  the current process, and 0 for all others. ZZ is a sequential number
+  that represents the screen, and it does not equal to the index in the
+  source's name.
 * `name` String - A screen source will be named either `Entire Screen` or
   `Screen <index>`, while the name of a window source will match the window
   title.
