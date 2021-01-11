@@ -4,15 +4,8 @@
 
 #include "shell/common/gin_converters/frame_converter.h"
 
-#include <string>
-#include <vector>
-
 #include "content/public/browser/render_frame_host.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
-#include "shell/common/gin_converters/blink_converter.h"
-#include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
 
