@@ -108,6 +108,49 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScriptInIsolatedWorld(
+    gin::Arguments* args,
+    int world_id,
+    const base::string16& code) {
+  gin_helper::Promise<base::Value> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // Optional userGesture parameter
+  bool user_gesture;
+  if (!args->PeekNext().IsEmpty()) {
+    if (args->PeekNext()->IsBoolean()) {
+      args->GetNext(&user_gesture);
+    } else {
+      args->ThrowTypeError("userGesture must be a boolean");
+      return handle;
+    }
+  } else {
+    user_gesture = false;
+  }
+
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+
+  if (user_gesture) {
+    auto* ftn = content::FrameTreeNode::From(render_frame_);
+    ftn->UpdateUserActivationState(
+        blink::mojom::UserActivationUpdateType::kNotifyActivation,
+        blink::mojom::UserActivationNotificationType::kTest);
+  }
+
+  render_frame_->ExecuteJavaScriptForTests(
+      code,
+      base::BindOnce([](gin_helper::Promise<base::Value> promise,
+                        base::Value value) { promise.Resolve(value); },
+                     std::move(promise)),
+      world_id);
+
+  return handle;
+}
+
 bool WebFrameMain::Reload(v8::Isolate* isolate) {
   if (!CheckRenderFrame())
     return false;
@@ -222,6 +265,8 @@ gin::ObjectTemplateBuilder WebFrameMain::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::Wrappable<WebFrameMain>::GetObjectTemplateBuilder(isolate)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrameMain::ExecuteJavaScriptInIsolatedWorld)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
