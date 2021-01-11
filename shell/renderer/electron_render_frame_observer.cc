@@ -21,6 +21,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
@@ -110,7 +111,7 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame_->GetRemoteInterfaces()->GetInterface(
+  render_frame_->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->UpdateDraggableRegions(std::move(regions));
 }
@@ -130,7 +131,7 @@ void ElectronRenderFrameObserver::DidMeaningfulLayout(
     blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
     mojo::Remote<mojom::ElectronBrowser> browser_remote;
-    render_frame_->GetRemoteInterfaces()->GetInterface(
+    render_frame_->GetBrowserInterfaceBroker()->GetInterface(
         browser_remote.BindNewPipeAndPassReceiver());
     browser_remote->OnFirstNonEmptyLayout();
   }

@@ -463,8 +463,12 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
+    auto on_disconnect = base::BindOnce([]() {
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce([]() { Browser::Get()->Quit(); }));
+    });
     content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
-        base::OnceClosure());
+        std::move(on_disconnect));
   } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();

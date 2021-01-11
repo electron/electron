@@ -612,11 +612,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
-
-  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
-                                             base::Unretained(this)));
-  receivers_.set_disconnect_handler(base::BindRepeating(
-      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -804,10 +799,6 @@ void WebContents::InitWithSessionAndOptions(
   script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif
 
-  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
-                                             base::Unretained(this)));
-  receivers_.set_disconnect_handler(base::BindRepeating(
-      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
   web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
@@ -1481,55 +1472,50 @@ bool WebContents::EmitNavigationEvent(
               frame_routing_id);
 }
 
-void WebContents::BindElectronBrowser(
-    mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
-    content::RenderFrameHost* render_frame_host) {
-  auto id = receivers_.Add(this, std::move(receiver), render_frame_host);
-  frame_to_receivers_map_[render_frame_host].push_back(id);
-}
-
-void WebContents::OnElectronBrowserConnectionError() {
-  auto receiver_id = receivers_.current_receiver();
-  auto* frame_host = receivers_.current_context();
-  base::Erase(frame_to_receivers_map_[frame_host], receiver_id);
-}
-
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          blink::CloneableMessage arguments) {
+                          blink::CloneableMessage arguments,
+                          content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", receivers_.current_context(), InvokeCallback(),
+  EmitWithSender("-ipc-message", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), internal,
+                 channel, std::move(arguments));
+}
+
+void WebContents::Invoke(
+    bool internal,
+    const std::string& channel,
+    blink::CloneableMessage arguments,
+    electron::mojom::ElectronBrowser::InvokeCallback callback,
+    content::RenderFrameHost* render_frame_host) {
+  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
+  // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
+  EmitWithSender("-ipc-invoke", render_frame_host, std::move(callback),
                  internal, channel, std::move(arguments));
 }
 
-void WebContents::Invoke(bool internal,
-                         const std::string& channel,
-                         blink::CloneableMessage arguments,
-                         InvokeCallback callback) {
-  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
-  // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
-  EmitWithSender("-ipc-invoke", receivers_.current_context(),
-                 std::move(callback), internal, channel, std::move(arguments));
-}
-
-void WebContents::OnFirstNonEmptyLayout() {
-  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+void WebContents::OnFirstNonEmptyLayout(
+    content::RenderFrameHost* render_frame_host) {
+  if (render_frame_host == web_contents()->GetMainFrame()) {
     Emit("ready-to-show");
   }
 }
 
-void WebContents::ReceivePostMessage(const std::string& channel,
-                                     blink::TransferableMessage message) {
+void WebContents::ReceivePostMessage(
+    const std::string& channel,
+    blink::TransferableMessage message,
+    content::RenderFrameHost* render_frame_host) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto wrapped_ports =
       MessagePort::EntanglePorts(isolate, std::move(message.ports));
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-  EmitWithSender("-ipc-ports", receivers_.current_context(), InvokeCallback(),
-                 false, channel, message_value, std::move(wrapped_ports));
+  EmitWithSender("-ipc-ports", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), false,
+                 channel, message_value, std::move(wrapped_ports));
 }
 
 void WebContents::PostMessage(const std::string& channel,
@@ -1565,15 +1551,17 @@ void WebContents::PostMessage(const std::string& channel,
                                         std::move(transferable_message));
 }
 
-void WebContents::MessageSync(bool internal,
-                              const std::string& channel,
-                              blink::CloneableMessage arguments,
-                              MessageSyncCallback callback) {
+void WebContents::MessageSync(
+    bool internal,
+    const std::string& channel,
+    blink::CloneableMessage arguments,
+    electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+    content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
-  EmitWithSender("-ipc-message-sync", receivers_.current_context(),
-                 std::move(callback), internal, channel, std::move(arguments));
+  EmitWithSender("-ipc-message-sync", render_frame_host, std::move(callback),
+                 internal, channel, std::move(arguments));
 }
 
 void WebContents::MessageTo(bool internal,
@@ -1591,11 +1579,13 @@ void WebContents::MessageTo(bool internal,
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              blink::CloneableMessage arguments) {
+                              blink::CloneableMessage arguments,
+                              content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", receivers_.current_context(),
-                 InvokeCallback(), channel, std::move(arguments));
+  EmitWithSender("ipc-message-host", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), channel,
+                 std::move(arguments));
 }
 
 void WebContents::UpdateDraggableRegions(
@@ -1609,18 +1599,6 @@ void WebContents::RenderFrameDeleted(
   // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
   // disposed to prevent access to it.
   WebFrameMain::RenderFrameDeleted(render_frame_host);
-
-  // A RenderFrameHost can be destroyed before the related Mojo binding is
-  // closed, which can result in Mojo calls being sent for RenderFrameHosts
-  // that no longer exist. To prevent this from happening, when a
-  // RenderFrameHost goes away, we close all the bindings related to that
-  // frame.
-  auto it = frame_to_receivers_map_.find(render_frame_host);
-  if (it == frame_to_receivers_map_.end())
-    return;
-  for (auto id : it->second)
-    receivers_.Remove(id);
-  frame_to_receivers_map_.erase(it);
 }
 
 void WebContents::DidStartNavigation(
@@ -3062,7 +3040,8 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }
 
-void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
+void WebContents::DoGetZoomLevel(
+    electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 

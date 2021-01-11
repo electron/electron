@@ -163,8 +163,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::CertVerifierCreationParams* cert_verifier_creation_params)
       override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
-  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
-      base::StringPiece name) override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(

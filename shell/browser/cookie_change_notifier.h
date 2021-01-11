@@ -24,9 +24,7 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   ~CookieChangeNotifier() override;
 
   // Register callbacks that needs to notified on any cookie store changes.
-  std::unique_ptr<base::CallbackList<
-      void(const net::CookieChangeInfo& change)>::Subscription>
-  RegisterCookieChangeCallback(
+  base::CallbackListSubscription RegisterCookieChangeCallback(
       const base::Callback<void(const net::CookieChangeInfo& change)>& cb);
 
  private:

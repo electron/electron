@@ -6,7 +6,7 @@ Subject: use public APIs to determine if a font is a system font in MAS build
 CTFontDescriptorIsSystemUIFont is a private API, we're using an _interesting_ technique in the MAS build to determine if the font is a system font by checking if it's kCTFontPriorityAttribute is set to system priority.
 
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index fc6047806e3511f60b58a669fdf628e1a48eb05b..bcc29ac87cfc965eb4c3f06d959605d2cb259770 100644
+index bc8aeaade0593f543de0e156bed02d685ac9bc39..b7d0127938ce8dfe66fc9f3375f0e01c674ee624 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -25,9 +25,11 @@
@@ -21,7 +21,7 @@ index fc6047806e3511f60b58a669fdf628e1a48eb05b..bcc29ac87cfc965eb4c3f06d959605d2
  
  namespace {
  
-@@ -269,7 +271,13 @@ NSInteger ToNSFontManagerWeight(Weight weight) {
+@@ -232,7 +234,13 @@ NSInteger ToNSFontManagerWeight(Weight weight) {
    // TODO(avi, etienneb): Figure out this font stuff.
    base::ScopedCFTypeRef<CTFontDescriptorRef> descriptor(
        CTFontCopyFontDescriptor(font));
