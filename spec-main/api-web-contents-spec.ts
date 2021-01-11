@@ -764,11 +764,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any);
-      }).to.throw('\'icon\' parameter is required');
+      }).to.throw('Must specify non-empty \'icon\' option');
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
-      }).to.throw(/Failed to load image from path (.+)/);
+      }).to.throw('Must specify non-empty \'icon\' option');
     });
   });
 
@@ -1785,14 +1785,9 @@ describe('webContents module', () => {
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', async function () {
+    it('works as expected', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
-
-      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
-        this.skip();
-      }
-
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);
       expect(result).to.be.true();

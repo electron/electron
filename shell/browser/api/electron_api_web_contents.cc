@@ -2556,16 +2556,10 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     files.push_back(file);
   }
 
-  v8::Local<v8::Value> icon_value;
-  if (!item.Get("icon", &icon_value)) {
+  gin::Handle<NativeImage> icon;
+  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("'icon' parameter is required");
-    return;
-  }
-
-  NativeImage* icon = nullptr;
-  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
-      icon->image().IsEmpty()) {
+        .ThrowError("Must specify non-empty 'icon' option");
     return;
   }
 
@@ -3118,33 +3112,6 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
     gin_helper::CallMethod(isolate, api_web_contents, "_init");
   }
   return gin::CreateHandle(isolate, api_web_contents);
-}
-
-// static
-gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
-    v8::Isolate* isolate,
-    const gin_helper::Dictionary& web_preferences) {
-  // Check if webPreferences has |webContents| option.
-  gin::Handle<WebContents> web_contents;
-  if (web_preferences.GetHidden("webContents", &web_contents) &&
-      !web_contents.IsEmpty()) {
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Create one if not.
-    web_contents = WebContents::New(isolate, web_preferences);
-  }
-
-  return web_contents;
 }
 
 // static

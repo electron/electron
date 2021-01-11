@@ -296,14 +296,11 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
     draggable_regions_ = mojo::Clone(regions);
 
   std::vector<gfx::Rect> drag_exclude_rects;
-  if (draggable_regions_.empty()) {
-    const auto bounds = GetBounds();
-    drag_exclude_rects.emplace_back(bounds.x(), bounds.y(), webViewWidth,
-                                    webViewHeight);
+  if (regions.empty()) {
+    drag_exclude_rects.emplace_back(0, 0, webViewWidth, webViewHeight);
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
-        DraggableRegionsToSkRegion(draggable_regions_), webViewWidth,
-        webViewHeight);
+        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
   UpdateDraggableRegions(drag_exclude_rects);

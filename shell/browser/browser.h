@@ -223,7 +223,7 @@ class Browser : public WindowListObserver {
   void DockSetMenu(ElectronMenuModel* model);
 
   // Set docks' icon.
-  void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
+  void DockSetIcon(const gfx::Image& image);
 
 #endif  // defined(OS_MAC)
 
