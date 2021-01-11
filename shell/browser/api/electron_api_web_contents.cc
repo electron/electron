@@ -133,6 +133,8 @@
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
+#include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
+
 #if BUILDFLAG(ENABLE_OSR)
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -3164,11 +3166,11 @@ content::ColorChooser* WebContents::OpenColorChooser(
 #endif
 }
 
-std::unique_ptr<content::EyeDropper> Browser::OpenEyeDropper(
+std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
     content::RenderFrameHost* frame,
     content::EyeDropperListener* listener) {
-  LOG(INFO) << "Browser::OpenEyeDroppe - ITS HERE " << __LINE__;
-  // return window()->OpenEyeDropper(frame, listener);
+  LOG(INFO) << "WebContents::OpenEyeDropper - HERE " << __LINE__;
+  return ShowEyeDropper(frame, listener);
 }
 
 void WebContents::RunFileChooser(
