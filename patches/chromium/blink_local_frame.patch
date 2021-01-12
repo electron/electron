@@ -13,6 +13,40 @@ when there is code doing that.
 
 This patch reverts the change to fix the crash in Electron.
 
+diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
+index 0d5d1bf784f63f00724cdcf71263752e7715ebf1..5b7869255ec81c4a7bd1e0918609aafe11849934 100644
+--- a/third_party/blink/renderer/core/frame/frame.cc
++++ b/third_party/blink/renderer/core/frame/frame.cc
+@@ -135,14 +135,6 @@ bool Frame::Detach(FrameDetachType type) {
+ 
+   DCHECK(!IsDetached());
+ 
+-  // TODO(dcheng): FocusController::FrameDetached() *should* fire JS events,
+-  // hence the above check for `client_` being null. However, when this was
+-  // previously placed before the `FrameDetached()` call, nothing crashes, which
+-  // is suspicious. Investigate if we really don't need to fire JS events--and
+-  // if we don't, move `forbid_scripts` up to be instantiated sooner and
+-  // simplify this code.
+-  ScriptForbiddenScope forbid_scripts;
+-
+   if (type == FrameDetachType::kRemove) {
+     if (provisional_frame_) {
+       provisional_frame_->Detach(FrameDetachType::kRemove);
+@@ -165,6 +157,14 @@ bool Frame::Detach(FrameDetachType type) {
+     GetWindowProxyManager()->ClearForSwap();
+   }
+ 
++  // TODO(dcheng): FocusController::FrameDetached() *should* fire JS events,
++  // hence the above check for `client_` being null. However, when this was
++  // previously placed before the `FrameDetached()` call, nothing crashes, which
++  // is suspicious. Investigate if we really don't need to fire JS events--and
++  // if we don't, move `forbid_scripts` up to be instantiated sooner and
++  // simplify this code.
++  ScriptForbiddenScope forbid_scripts;
++
+   // After this, we must no longer talk to the client since this clears
+   // its owning reference back to our owning LocalFrame.
+   client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
 index b11ef9562a034a1721c3c679d37015c2ce5a33ab..865a8bd463344f54e8ff7ba65a275d8633340eb8 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
