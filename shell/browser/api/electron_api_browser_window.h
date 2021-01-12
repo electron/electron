@@ -12,6 +12,7 @@
 #include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
 namespace electron {
@@ -49,8 +50,6 @@ class BrowserWindow : public BaseWindow,
                              content::RenderViewHost* new_host) override;
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
-  void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                     const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(
@@ -64,6 +63,9 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const base::string16& title,
                           bool explicit_set) override;
+#if defined(OS_MAC)
+  void OnDevToolsResized() override;
+#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -95,17 +97,13 @@ class BrowserWindow : public BaseWindow,
 
  private:
 #if defined(OS_MAC)
-  void OverrideNSWindowContentView(InspectableWebContents* iwc);
+  void OverrideNSWindowContentView(InspectableWebContentsView* webView);
 #endif
 
   // Helpers.
 
   // Called when the window needs to update its draggable region.
   void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
-  // Convert draggable regions in raw format to SkRegion format.
-  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Schedule a notification unresponsive event.
@@ -120,8 +118,6 @@ class BrowserWindow : public BaseWindow,
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
-
-  bool did_ready_to_show_fired_ = false;
 
 #if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;

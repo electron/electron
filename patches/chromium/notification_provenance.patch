@@ -7,10 +7,10 @@ Pass RenderProcessHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 659149f4c5dea45bead88d26369d8aeb9462b729..7105781e0019b456f287fd0ebb6e309efe2cecad 100644
+index d756a1b8cfeba5900c95863ca29cb15d9e1b15e4..3159df3456483453b9b362bb8942b45160d67b4d 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
-@@ -88,9 +88,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
+@@ -87,9 +87,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
      PlatformNotificationContextImpl* notification_context,
      BrowserContext* browser_context,
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
@@ -22,7 +22,7 @@ index 659149f4c5dea45bead88d26369d8aeb9462b729..7105781e0019b456f287fd0ebb6e309e
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
        origin_(origin),
-@@ -151,8 +153,9 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+@@ -150,8 +152,9 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
        notification_id, std::move(event_listener_remote));
  
    GetNotificationService(browser_context_)
@@ -55,10 +55,10 @@ index 5253f6be778cc78571b3df0a33d364a9b1e6ef52..dc5307e6500b0bfb5da83e8d8ff8886b
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 8465aa1395d0d4fa90a2702e697291508441bdd5..c5efb602468161a44e98836d507bdc67224c2863 100644
+index dcb0b03f0b814238860a17f88c1d7ed00546dad4..17184d672af88947c04b30de0aa62acda84084fb 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -140,7 +140,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
  
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
@@ -68,7 +68,7 @@ index 8465aa1395d0d4fa90a2702e697291508441bdd5..c5efb602468161a44e98836d507bdc67
          notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index ab588373be7ff0398d1835997e5216d955313f39..b0afd19d0cbc020874cd3ea31125443ede0a354f 100644
+index 15ba957ffdd3742912b7f7cac3e7ac57931c8954..5dc153c2a0f5680e05e7f397b2102982b28021bc 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -257,12 +257,13 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -108,10 +108,10 @@ index f9b6a18aa73968506ddeca13de69b368f4ca8606..d45cb1c32be1b5c76840dafcd96fd06c
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
  
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 2f321520413d3c6f27b2613dbf45ab32281ffa38..8161c636c202298457a2f7d503566112a3877c1d 100644
+index 1d77f9a3265e47a6a66b2b6782151d40eba28775..b0309af577e9929b7cf244a2f076d5942ce45c5b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2148,7 +2148,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2079,7 +2079,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      mojo::PendingReceiver<blink::mojom::NotificationService> receiver) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -142,7 +142,7 @@ index ca61088079c4150fcf389504ddcf26bcf6bf69cd..d9c034c39890eef1fe3d95c6d7c0ae68
        const GURL& origin,
        const blink::PlatformNotificationData& notification_data,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 639a93ac8d4f295910fcfb64d69d1498c9dbbe94..25d7b29b53b426d02664bc904f1c646662d9a5d5 100644
+index 2f5b8be21c8b37bb6a0c7fe52c87cb7f9debbca0..7934f6e625584466ff0aabc69583343c728759ea 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -30,6 +30,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(

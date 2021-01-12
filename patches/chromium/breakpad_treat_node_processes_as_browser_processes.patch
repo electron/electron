@@ -10,7 +10,7 @@ breakpad independently, as a "browser" process. This patches
 crash annotation.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 72ee7e8df3d62eca301b08586f06d51711e941b5..fdd76ee1490e39dbfcd39bbff6686864a5c5af29 100644
+index 76993a9ec8dcd6c69cf3e58c49838264783a06c9..7b38b3bc102448b1c6f0663875ce305bc6e986ff 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -716,8 +716,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
@@ -40,6 +40,6 @@ index 72ee7e8df3d62eca301b08586f06d51711e941b5..fdd76ee1490e39dbfcd39bbff6686864
 +    g_is_node = true;
 +  }
 +
- #if !defined(OS_CHROMEOS)
+ #if !BUILDFLAG(IS_CHROMEOS_ASH)
    SetUploadURL(GetCrashReporterClient()->GetUploadUrl());
  #endif

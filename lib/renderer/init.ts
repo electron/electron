@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const Module = require('module');
 
@@ -54,31 +55,19 @@ webFrameInit();
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 
-const parseOption = function<T> (
-  name: string, defaultValue: T, converter?: (value: string) => T
-) {
-  return hasSwitch(name)
-    ? (
-      converter
-        ? converter(getSwitchValue(name))
-        : getSwitchValue(name)
-    )
-    : defaultValue;
-};
-
-const contextIsolation = hasSwitch('context-isolation');
-const nodeIntegration = hasSwitch('node-integration');
-const webviewTag = hasSwitch('webview-tag');
-const isHiddenPage = hasSwitch('hidden-page');
-const usesNativeWindowOpen = hasSwitch('native-window-open');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
-
-const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[];
-const appPath = parseOption('app-path', null);
-const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
-const openerId = parseOption('opener-id', null, value => parseInt(value));
+const contextIsolation = getWebPreference(window, 'contextIsolation');
+const nodeIntegration = getWebPreference(window, 'nodeIntegration');
+const webviewTag = getWebPreference(window, 'webviewTag');
+const isHiddenPage = getWebPreference(window, 'hiddenPage');
+const usesNativeWindowOpen = getWebPreference(window, 'nativeWindowOpen');
+const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
+const preloadScript = getWebPreference(window, 'preload');
+const preloadScripts = getWebPreference(window, 'preloadScripts');
+const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
+const openerId = getWebPreference(window, 'openerId') || null;
+const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
@@ -94,8 +83,9 @@ switch (window.location.protocol) {
   case 'chrome-extension:': {
     break;
   }
-  case 'chrome:':
+  case 'chrome:': {
     break;
+  }
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
@@ -184,7 +174,7 @@ for (const preloadScript of preloadScripts) {
     console.error(`Unable to load preload script: ${preloadScript}`);
     console.error(error);
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, error);
+    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
   }
 }
 

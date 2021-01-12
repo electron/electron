@@ -10,6 +10,7 @@
 #include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace gfx {
@@ -39,6 +40,10 @@ class NativeBrowserView : public content::WebContentsObserver {
     return inspectable_web_contents_;
   }
 
+  const std::vector<mojom::DraggableRegionPtr>& GetDraggableRegions() const {
+    return draggable_regions_;
+  }
+
   InspectableWebContentsView* GetInspectableWebContentsView();
 
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
@@ -46,9 +51,12 @@ class NativeBrowserView : public content::WebContentsObserver {
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
 
+  virtual void UpdateDraggableRegions(
+      const std::vector<gfx::Rect>& drag_exclude_rects) {}
+
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-      const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
+      const std::vector<mojom::DraggableRegionPtr>& regions) {}
 
  protected:
   explicit NativeBrowserView(InspectableWebContents* inspectable_web_contents);
@@ -56,6 +64,7 @@ class NativeBrowserView : public content::WebContentsObserver {
   void WebContentsDestroyed() override;
 
   InspectableWebContents* inspectable_web_contents_;
+  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);

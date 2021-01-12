@@ -40,9 +40,6 @@ void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenCallback callback);
 
-// Move a file to trash. (Deprecated.)
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail);
-
 // Move a file to trash, asynchronously.
 void TrashItem(const base::FilePath& full_path,
                base::OnceCallback<void(bool, const std::string&)> callback);

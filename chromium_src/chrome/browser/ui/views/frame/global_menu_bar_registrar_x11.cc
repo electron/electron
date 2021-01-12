@@ -122,8 +122,7 @@ void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GObject* /* ignored */,
                                                    GParamSpec* /* ignored */) {
   // If the name owner changed, we need to reregister all the live x11::Window
   // with the system.
-  for (std::set<x11::Window>::const_iterator it = live_windows_.begin();
-       it != live_windows_.end(); ++it) {
-    RegisterXWindow(*it);
+  for (const auto& window : live_windows_) {
+    RegisterXWindow(window);
   }
 }

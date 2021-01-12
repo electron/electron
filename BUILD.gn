@@ -184,7 +184,6 @@ target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
 typescript_build("default_app_js") {
   deps = [ ":build_electron_definitions" ]
-  type_root = rebase_path("$target_gen_dir/tsc/electron/typings")
 
   sources = filenames.default_app_ts_sources
 
@@ -266,21 +265,6 @@ if (is_linux) {
   }
 }
 
-source_set("manifests") {
-  sources = [
-    "//electron/shell/app/manifests.cc",
-    "//electron/shell/app/manifests.h",
-  ]
-
-  include_dirs = [ "//electron" ]
-
-  deps = [
-    "//electron/shell/common/api:mojo",
-    "//printing/buildflags",
-    "//services/service_manager/public/cpp",
-  ]
-}
-
 npm_action("electron_version_args") {
   script = "generate-version-json"
 
@@ -303,6 +287,19 @@ templated_file("electron_version_header") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
+action("electron_fuses") {
+  script = "build/fuses/build.py"
+
+  inputs = [ "build/fuses/fuses.json" ]
+
+  outputs = [
+    "$target_gen_dir/fuses.h",
+    "$target_gen_dir/fuses.cc",
+  ]
+
+  args = rebase_path(outputs)
+}
+
 source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -313,9 +310,9 @@ source_set("electron_lib") {
   ]
 
   deps = [
+    ":electron_fuses",
     ":electron_js2c",
     ":electron_version_header",
-    ":manifests",
     ":resources",
     "buildflags",
     "chromium_src:chrome",
@@ -325,7 +322,6 @@ source_set("electron_lib") {
     "//base/allocator:buildflags",
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
-    "//chrome/services/printing/public/mojom",
     "//components/certificate_transparency",
     "//components/language/core/browser",
     "//components/net_log",
@@ -341,7 +337,6 @@ source_set("electron_lib") {
     "//components/viz/service",
     "//content/public/browser",
     "//content/public/child",
-    "//content/public/common:service_names",
     "//content/public/gpu",
     "//content/public/renderer",
     "//content/public/utility",
@@ -372,6 +367,7 @@ source_set("electron_lib") {
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
+    "//third_party/zlib/google:zip",
     "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
@@ -405,44 +401,26 @@ source_set("electron_lib") {
     defines += [ "GDK_DISABLE_DEPRECATION_WARNINGS" ]
   }
 
-  extra_source_filters = []
-  if (!is_linux) {
-    extra_source_filters += [
-      "*\bx/*",
-      "*_x11.h",
-      "*_x11.cc",
-      "*_gtk.h",
-      "*_gtk.cc",
-      "*\blibrary_loaders/*",
-    ]
-  }
-  if (!is_win) {
-    extra_source_filters += [
-      "*\bwin_*.h",
-      "*\bwin_*.cc",
-    ]
-  }
-  if (!is_posix) {
-    extra_source_filters += [
-      "*_posix.cc",
-      "*_posix.h",
-    ]
-  }
-  if (is_mac) {
-    extra_source_filters += [
-      "*_views.cc",
-      "*_views.h",
-      "*\bviews/*",
-    ]
-  }
   if (!is_mas_build) {
     deps += [ "//components/crash/core/app" ]
   }
 
-  set_sources_assignment_filter(
-      sources_assignment_filter + extra_source_filters)
   sources = filenames.lib_sources
-  set_sources_assignment_filter(sources_assignment_filter)
+  if (is_win) {
+    sources += filenames.lib_sources_win
+  }
+  if (is_mac) {
+    sources += filenames.lib_sources_mac
+  }
+  if (is_posix) {
+    sources += filenames.lib_sources_posix
+  }
+  if (is_linux) {
+    sources += filenames.lib_sources_linux
+  }
+  if (!is_mac) {
+    sources += filenames.lib_sources_views
+  }
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -513,6 +491,7 @@ source_set("electron_lib") {
     }
   }
   if (is_linux) {
+    libs = [ "xshmfence" ]
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
@@ -525,15 +504,13 @@ source_set("electron_lib") {
       "//ui/wm",
     ]
     if (use_x11) {
+      sources += filenames.lib_sources_linux_x11
       deps += [
         "//ui/gfx/x",
         "//ui/gtk/x",
       ]
     }
     configs += [ ":gio_unix" ]
-    if (use_x11) {
-      deps += [ "//ui/gfx/x" ]
-    }
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
@@ -589,7 +566,6 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/osr/osr_host_display_client.cc",
       "shell/browser/osr/osr_host_display_client.h",
-      "shell/browser/osr/osr_host_display_client_mac.mm",
       "shell/browser/osr/osr_render_widget_host_view.cc",
       "shell/browser/osr/osr_render_widget_host_view.h",
       "shell/browser/osr/osr_video_consumer.cc",
@@ -598,8 +574,13 @@ source_set("electron_lib") {
       "shell/browser/osr/osr_view_proxy.h",
       "shell/browser/osr/osr_web_contents_view.cc",
       "shell/browser/osr/osr_web_contents_view.h",
-      "shell/browser/osr/osr_web_contents_view_mac.mm",
     ]
+    if (is_mac) {
+      sources += [
+        "shell/browser/osr/osr_host_display_client_mac.mm",
+        "shell/browser/osr/osr_web_contents_view_mac.mm",
+      ]
+    }
     deps += [
       "//components/viz/service",
       "//services/viz/public/mojom",
@@ -634,7 +615,10 @@ source_set("electron_lib") {
       "shell/renderer/printing/print_render_frame_helper_delegate.cc",
       "shell/renderer/printing/print_render_frame_helper_delegate.h",
     ]
-    deps += [ "//components/printing/common:mojo_interfaces" ]
+    deps += [
+      "//chrome/services/printing/public/mojom",
+      "//components/printing/common:mojo_interfaces",
+    ]
   }
 
   if (enable_electron_extensions) {
@@ -673,6 +657,16 @@ source_set("electron_lib") {
       "shell/browser/electron_pdf_web_contents_helper_client.h",
     ]
   }
+
+  sources += get_target_outputs(":electron_fuses")
+
+  if (is_win && enable_win_dark_mode_window_ui) {
+    sources += [
+      "shell/browser/win/dark_mode.cc",
+      "shell/browser/win/dark_mode.h",
+    ]
+    libs += [ "uxtheme.lib" ]
+  }
 }
 
 electron_paks("packed_resources") {
@@ -698,10 +692,10 @@ if (is_mac) {
   action("fake_v8_context_snapshot_generator") {
     script = "build/fake_v8_context_snapshot_generator.py"
     args = [
-      rebase_path("$root_out_dir/v8_context_snapshot.bin"),
-      rebase_path("$root_out_dir/fake/v8_context_snapshot.bin"),
+      rebase_path("$root_out_dir/$v8_context_snapshot_filename"),
+      rebase_path("$root_out_dir/fake/$v8_context_snapshot_filename"),
     ]
-    outputs = [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+    outputs = [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
   }
 
   bundle_data("electron_framework_resources") {
@@ -715,10 +709,10 @@ if (is_mac) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
         if (use_prebuilt_v8_context_snapshot) {
-          sources += [ "$root_out_dir/fake/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
           public_deps += [ ":fake_v8_context_snapshot_generator" ]
         } else {
-          sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+          sources += [ "$root_out_dir/$v8_context_snapshot_filename" ]
           public_deps += [ "//tools/v8_context_snapshot" ]
         }
       } else {
@@ -1149,6 +1143,7 @@ if (is_mac) {
         "wtsapi32.lib",
       ]
 
+      configs -= [ "//build/config/win:console" ]
       configs += [
         "//build/config/win:windowed",
         "//build/config/win:delayloads",

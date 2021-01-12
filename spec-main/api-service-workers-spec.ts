@@ -7,6 +7,7 @@ import { v4 } from 'uuid';
 import { AddressInfo } from 'net';
 import { closeWindow } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
+import { ifdescribe } from './spec-helpers';
 
 const partition = 'service-workers-spec';
 const uuid = v4();
@@ -65,7 +66,8 @@ describe('session.serviceWorkers', () => {
     });
   });
 
-  describe('getFromVersionID()', () => {
+  // TODO (jkleinsc) - reenable this test once https://github.com/electron/electron/issues/26043 is resolved
+  ifdescribe(!process.arch.includes('arm'))('getFromVersionID()', () => {
     it('should report the correct script url and scope', async () => {
       const eventInfo = await emittedOnce(ses.serviceWorkers, 'console-message', () => w.loadURL(`${baseUrl}/index.html`));
       const details: Electron.MessageDetails = eventInfo[1];

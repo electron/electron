@@ -17,6 +17,10 @@ describe('webRequest module', () => {
       res.statusCode = 301;
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
+    } else if (req.url === '/contentDisposition') {
+      res.setHeader('content-disposition', [' attachement; filename=aa%E4%B8%ADaa.txt']);
+      const content = req.url;
+      res.end(content);
     } else {
       res.setHeader('Custom', ['Header']);
       let content = req.url;
@@ -86,6 +90,9 @@ describe('webRequest module', () => {
         expect(details.id).to.be.a('number');
         expect(details.timestamp).to.be.a('number');
         expect(details.webContentsId).to.be.a('number');
+        expect(details.webContents).to.be.an('object');
+        expect(details.webContents!.id).to.equal(details.webContentsId);
+        expect(details.frame).to.be.an('object');
         expect(details.url).to.be.a('string').that.is.equal(defaultURL);
         expect(details.method).to.be.a('string').that.is.equal('GET');
         expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
@@ -295,6 +302,16 @@ describe('webRequest module', () => {
       const { data, headers } = await ajax(defaultURL);
       expect(headers).to.match(/^custom: Header$/m);
       expect(data).to.equal('/');
+    });
+
+    it('does not change content-disposition header by default', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachement; filename=aa中aa.txt']);
+        callback({});
+      });
+      const { data, headers } = await ajax(defaultURL + 'contentDisposition');
+      expect(headers).to.match(/^content-disposition: attachement; filename=aa%E4%B8%ADaa.txt$/m);
+      expect(data).to.equal('/contentDisposition');
     });
 
     it('follows server redirect', async () => {

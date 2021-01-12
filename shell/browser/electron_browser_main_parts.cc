@@ -8,13 +8,10 @@
 
 #include <utility>
 
-#if defined(OS_LINUX)
-#include <glib.h>  // for g_setenv()
-#endif
-
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -41,7 +38,6 @@
 #include "shell/browser/feature_list.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
-#include "shell/browser/node_debugger.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
@@ -51,6 +47,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
 
 #if defined(USE_AURA)
@@ -60,24 +57,35 @@
 #include "ui/wm/core/wm_state.h"
 #endif
 
-#if defined(USE_X11)
+#if defined(OS_LINUX)
 #include "base/environment.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "ui/base/x/x11_util.h"
-#include "ui/events/devices/x11/touch_factory_x11.h"
-#include "ui/gfx/color_utils.h"
-#include "ui/gfx/x/x11_types.h"
-#include "ui/gfx/x/xproto_util.h"
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_delegate.h"
 #include "ui/gtk/gtk_util.h"
-#include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #include "ui/views/linux_ui/linux_ui.h"
+
+#if defined(USE_OZONE)
+#include "ui/ozone/public/ozone_platform.h"
+#endif
+
+#if defined(USE_X11)
+#include "ui/base/x/x11_util.h"
+#include "ui/events/devices/x11/touch_factory_x11.h"
+#include "ui/gfx/color_utils.h"
+#include "ui/gfx/x/connection.h"
+#include "ui/gfx/x/xproto_util.h"
+#include "ui/gtk/x/gtk_ui_delegate_x11.h"
+#endif
+
+#if defined(USE_OZONE) || defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#endif
+
 #endif
 
 #if defined(OS_WIN)
 #include "ui/base/cursor/cursor_loader_win.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -146,63 +154,7 @@ base::string16 MediaStringProvider(media::MessageId id) {
   }
 }
 
-#if defined(USE_X11)
-// Indicates that we're currently responding to an IO error (by shutting down).
-bool g_in_x11_io_error_handler = false;
-
-// Number of seconds to wait for UI thread to get an IO error if we get it on
-// the background thread.
-const int kWaitForUIThreadSeconds = 10;
-
-int BrowserX11ErrorHandler(Display* d, XErrorEvent* e) {
-  if (!g_in_x11_io_error_handler && base::ThreadTaskRunnerHandle::IsSet()) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&x11::LogErrorEventDescription, e->serial, e->error_code,
-                       e->request_code, e->minor_code));
-  }
-  return 0;
-}
-
-// This function is used to help us diagnose crash dumps that happen
-// during the shutdown process.
-NOINLINE void WaitingForUIThreadToHandleIOError() {
-  // Ensure function isn't optimized away.
-  asm("");
-  sleep(kWaitForUIThreadSeconds);
-}
-
-int BrowserX11IOErrorHandler(Display* d) {
-  if (!content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-    // Wait for the UI thread (which has a different connection to the X server)
-    // to get the error. We can't call shutdown from this thread without
-    // tripping an error. Doing it through a function so that we'll be able
-    // to see it in any crash dumps.
-    WaitingForUIThreadToHandleIOError();
-    return 0;
-  }
-
-  // If there's an IO error it likely means the X server has gone away.
-  // If this DCHECK fails, then that means SessionEnding() below triggered some
-  // code that tried to talk to the X server, resulting in yet another error.
-  DCHECK(!g_in_x11_io_error_handler);
-
-  g_in_x11_io_error_handler = true;
-  LOG(ERROR) << "X IO error received (X server probably went away)";
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-
-  return 0;
-}
-
-int X11EmptyErrorHandler(Display* d, XErrorEvent* error) {
-  return 0;
-}
-
-int X11EmptyIOErrorHandler(Display* d) {
-  return 0;
-}
-
+#if defined(OS_LINUX)
 // GTK does not provide a way to check if current theme is dark, so we compare
 // the text and background luminosity to get a result.
 // This trick comes from FireFox.
@@ -240,7 +192,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
     : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
       node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::BROWSER)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
       electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
@@ -278,19 +230,14 @@ void ElectronBrowserMainParts::RegisterDestructionCallback(
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-#if defined(USE_X11)
-
-  // Installs the X11 error handlers for the browser process used during
-  // startup. They simply print error messages and exit because
-  // we can't shutdown properly while creating and initializing services.
-  ui::SetX11ErrorHandlers(nullptr, nullptr);
+#if defined(OS_LINUX)
 #endif
 
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
 
-  return service_manager::RESULT_CODE_NORMAL_EXIT;
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void ElectronBrowserMainParts::PostEarlyInitialization() {
@@ -309,10 +256,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->context(), js_env_->platform());
   node_env_ = std::make_unique<NodeEnvironment>(env);
-
-  // Enable support for v8 inspector
-  node_debugger_ = std::make_unique<NodeDebugger>(env);
-  node_debugger_->Start();
 
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
@@ -348,9 +291,47 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   if (!views::LayoutProvider::Get())
     layout_provider_ = std::make_unique<views::LayoutProvider>();
 
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
+
+#if defined(OS_MAC)
+  // The browser process only wants to support the language Cocoa will use,
+  // so force the app locale to be overridden with that value. This must
+  // happen before the ResourceBundle is loaded
+  if (locale.empty())
+    l10n_util::OverrideLocaleWithCocoaLocale();
+#elif defined(OS_LINUX)
+  // l10n_util::GetApplicationLocaleInternal uses g_get_language_names(),
+  // which keys off of getenv("LC_ALL").
+  // We must set this env first to make ui::ResourceBundle accept the custom
+  // locale.
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::Optional<std::string> lc_all;
+  if (!locale.empty()) {
+    std::string str;
+    if (env->GetVar("LC_ALL", &str))
+      lc_all.emplace(std::move(str));
+    env->SetVar("LC_ALL", locale.c_str());
+  }
+#endif
+
+  // Load resources bundle according to locale.
+  std::string loaded_locale = LoadResourceBundle(locale);
+
   // Initialize the app locale.
-  fake_browser_process_->SetApplicationLocale(
-      ElectronBrowserClient::Get()->GetApplicationLocale());
+  std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
+  ElectronBrowserClient::SetApplicationLocale(app_locale);
+  fake_browser_process_->SetApplicationLocale(app_locale);
+
+#if defined(OS_LINUX)
+  // Reset to the original LC_ALL since we should not be changing it.
+  if (!locale.empty()) {
+    if (lc_all)
+      env->SetVar("LC_ALL", *lc_all);
+    else
+      env->UnSetVar("LC_ALL");
+  }
+#endif
 
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
@@ -390,11 +371,15 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(USE_X11)
-  // In Aura/X11, Gtk-based LinuxUI implementation is used.
-  gtk_ui_delegate_ =
-      std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
-  ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
-  views::LinuxUI* linux_ui = BuildGtkUi(gtk_ui_delegate_.get());
+  if (!features::IsUsingOzonePlatform()) {
+    // In Aura/X11, Gtk-based LinuxUI implementation is used.
+    gtk_ui_delegate_ =
+        std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
+    ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
+  }
+#endif
+#if defined(OS_LINUX)
+  views::LinuxUI* linux_ui = BuildGtkUi(ui::GtkUiDelegate::instance());
   views::LinuxUI::SetInstance(linux_ui);
   linux_ui->Initialize();
 
@@ -403,7 +388,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // issue to keep updated:
   // https://bugs.chromium.org/p/chromium/issues/detail?id=998903
   UpdateDarkThemeSetting();
-  // Update the naitve theme when GTK theme changes. The GetNativeTheme
+  // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_.reset(new DarkThemeObserver);
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
@@ -456,13 +441,9 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
 #endif
 
 #if defined(USE_X11)
-  ui::TouchFactory::SetTouchDeviceListFromCommandLine();
+  if (!features::IsUsingOzonePlatform())
+    ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
-
-  // Start idle gc.
-  gc_timer_.Start(FROM_HERE, base::TimeDelta::FromMinutes(1),
-                  base::BindRepeating(&v8::Isolate::LowMemoryNotification,
-                                      base::Unretained(js_env_->isolate())));
 
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
@@ -470,7 +451,12 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
-    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+    auto on_disconnect = base::BindOnce([]() {
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce([]() { Browser::Get()->Quit(); }));
+    });
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
+        std::move(on_disconnect));
   } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
@@ -498,28 +484,26 @@ void ElectronBrowserMainParts::PreDefaultMainMessageLoopRun(
 }
 
 void ElectronBrowserMainParts::PostMainMessageLoopStart() {
-#if defined(USE_X11)
-  // Installs the X11 error handlers for the browser process after the
-  // main message loop has started. This will allow us to exit cleanly
-  // if X exits before us.
-  ui::SetX11ErrorHandlers(BrowserX11ErrorHandler, BrowserX11IOErrorHandler);
+#if defined(USE_OZONE)
+  if (features::IsUsingOzonePlatform()) {
+    auto shutdown_cb =
+        base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+    ui::OzonePlatform::GetInstance()->PostMainMessageLoopStart(
+        std::move(shutdown_cb));
+  }
 #endif
 #if defined(OS_LINUX)
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
-  HandleShutdownSignals();
+  // Exit in response to SIGINT, SIGTERM, etc.
+  InstallShutdownSignalHandlers(
+      base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())),
+      content::GetUIThreadTaskRunner({}));
 #endif
 }
 
 void ElectronBrowserMainParts::PostMainMessageLoopRun() {
-#if defined(USE_X11)
-  // Unset the X11 error handlers. The X11 error handlers log the errors using a
-  // |PostTask()| on the message-loop. But since the message-loop is in the
-  // process of terminating, this can cause errors.
-  ui::SetX11ErrorHandlers(X11EmptyErrorHandler, X11EmptyIOErrorHandler);
-#endif
-
 #if defined(OS_MAC)
   FreeAppDelegate();
 #endif
@@ -538,13 +522,16 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_debugger_->Stop();
   node_env_->env()->set_trace_sync_io(false);
   js_env_->OnMessageLoopDestroying();
   node::Stop(node_env_->env());
   node_env_.reset();
 
+  auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
+  std::unique_ptr<ElectronBrowserContext> default_context = std::move(
+      ElectronBrowserContext::browser_context_map()[default_context_key]);
   ElectronBrowserContext::browser_context_map().clear();
+  default_context.reset();
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();

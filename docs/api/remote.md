@@ -35,8 +35,9 @@ win.loadURL('https://github.com')
 you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture).
 
 **Note:** The remote module can be disabled for security reasons in the following contexts:
-- [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
-- [`<webview>`](webview-tag.md) - by setting the `enableremotemodule` attribute to `false`.
+
+* [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
+* [`<webview>`](webview-tag.md) - by setting the `enableremotemodule` attribute to `false`.
 
 ## Remote Objects
 
@@ -206,7 +207,6 @@ module.exports = 'bar'
 // renderer process: renderer/index.js
 const foo = require('electron').remote.require('./foo') // bar
 ```
-
 
 ### `remote.process` _Readonly_
 

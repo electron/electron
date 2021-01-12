@@ -21,7 +21,7 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   v8::Isolate::Scope scope(isolate_);
   // In the browser process we follow Node.js microtask policy of kExplicit
   // and let the MicrotaskRunner which is a task observer for chromium UI thread
-  // scheduler run the micotask checkpoint. This worked fine because Node.js
+  // scheduler run the microtask checkpoint. This worked fine because Node.js
   // also runs microtasks through its task queue, but after
   // https://github.com/electron/electron/issues/20013 Node.js now performs its
   // own microtask checkpoint and it may happen is some situations that there is
@@ -29,11 +29,9 @@ void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
   // up Node.js dealying its callbacks. To fix this, now we always lets Node.js
   // handle the checkpoint in the browser process.
   {
-    auto* node_env = electron::ElectronBrowserMainParts::Get()->node_env();
     v8::HandleScope scope(isolate_);
-    node::InternalCallbackScope microtasks_scope(
-        node_env->env(), v8::Object::New(isolate_), {0, 0},
-        node::InternalCallbackScope::kNoFlags);
+    node::CallbackScope microtasks_scope(isolate_, v8::Object::New(isolate_),
+                                         {0, 0});
   }
 }
 

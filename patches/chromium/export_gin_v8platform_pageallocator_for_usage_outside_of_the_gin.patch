@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Tue, 3 Nov 2020 16:49:32 -0800
+Subject: export gin::V8Platform::PageAllocator for usage outside of the gin
+ platform
+
+In order for memory allocation in the main process node environment to be
+correctly tagged with MAP_JIT we need to use gins page allocator instead
+of the default V8 allocator.  This probably can't be usptreamed.
+
+diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
+index da2aeb2f2da84fe47d5cc7d721f8d3dade0c0972..4ddad9065782fad5927bc0481ad772014af0d689 100644
+--- a/gin/public/v8_platform.h
++++ b/gin/public/v8_platform.h
+@@ -23,6 +23,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
+ // Some configurations do not use page_allocator.
+ #if BUILDFLAG(USE_PARTITION_ALLOC)
+   v8::PageAllocator* GetPageAllocator() override;
++  static v8::PageAllocator* PageAllocator();
+   void OnCriticalMemoryPressure() override;
+ #endif
+   std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
+diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
+index 27c300ff640faeef04e8228d292e81643b7ab6a9..022395e37d270e480e9a47b760e5e172c88b354f 100644
+--- a/gin/v8_platform.cc
++++ b/gin/v8_platform.cc
+@@ -461,6 +461,10 @@ v8::PageAllocator* V8Platform::GetPageAllocator() {
+   return g_page_allocator.Pointer();
+ }
+ 
++v8::PageAllocator* V8Platform::PageAllocator() {
++  return g_page_allocator.Pointer();
++}
++
+ void V8Platform::OnCriticalMemoryPressure() {
+ // We only have a reservation on 32-bit Windows systems.
+ // TODO(bbudge) Make the #if's in BlinkInitializer match.

@@ -132,7 +132,6 @@ void ElectronApiServiceImpl::OnConnectionError() {
 }
 
 void ElectronApiServiceImpl::Message(bool internal,
-                                     bool send_to_all,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
@@ -168,18 +167,6 @@ void ElectronApiServiceImpl::Message(bool internal,
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
   EmitIPCEvent(context, internal, channel, {}, args, sender_id);
-
-  // Also send the message to all sub-frames.
-  // TODO(MarshallOfSound): Completely move this logic to the main process
-  if (send_to_all) {
-    for (blink::WebFrame* child = frame->FirstChild(); child;
-         child = child->NextSibling())
-      if (child->IsWebLocalFrame()) {
-        v8::Local<v8::Context> child_context =
-            renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
-        EmitIPCEvent(child_context, internal, channel, {}, args, sender_id);
-      }
-  }
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(
@@ -222,14 +209,14 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
     TakeHeapSnapshotCallback callback) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  base::PlatformFile platform_file;
+  base::ScopedPlatformFile platform_file;
   if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
       MOJO_RESULT_OK) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(platform_file);
+  base::File base_file(std::move(platform_file));
 
   bool success =
       electron::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);

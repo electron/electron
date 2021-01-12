@@ -78,8 +78,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   PowerObserverLinux power_observer_linux_{this};
 #endif
 
-  v8::Global<v8::Value> pinned_;
-
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
 

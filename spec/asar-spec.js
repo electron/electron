@@ -920,6 +920,16 @@ describe('asar package', function () {
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
       });
 
+      it('supports withFileTypes for a deep directory', function () {
+        const p = path.join(asarDir, 'a.asar', 'dir3');
+        const dirs = fs.readdirSync(p, { withFileTypes: true });
+        for (const dir of dirs) {
+          expect(dir instanceof fs.Dirent).to.be.true();
+        }
+        const names = dirs.map(a => a.name);
+        expect(names).to.deep.equal(['file1', 'file2', 'file3']);
+      });
+
       it('reads dirs from a linked dir', function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const dirs = fs.readdirSync(p);
@@ -1444,7 +1454,8 @@ describe('asar package', function () {
 
       it('reads a normal file with unpacked files', function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        expect(internalModuleReadJSON(p).toString().trim()).to.equal('a');
+        const [s, c] = internalModuleReadJSON(p);
+        expect([s.toString().trim(), c]).to.eql(['a', true]);
       });
     });
 

@@ -18,6 +18,8 @@
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
+#include "services/metrics/public/cpp/ukm_source_id.h"
+#include "shell/browser/serial/electron_serial_delegate.h"
 
 namespace content {
 class ClientCertificateDelegate;
@@ -82,6 +84,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   void SetCanUseCustomSiteInstance(bool should_disable);
   bool CanUseCustomSiteInstance() override;
+  content::SerialDelegate* GetSerialDelegate() override;
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -97,7 +100,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       const GURL& url,
       bool has_navigation_started,
-      bool has_request_started,
+      bool has_response_started,
       content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
@@ -160,8 +163,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::CertVerifierCreationParams* cert_verifier_creation_params)
       override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
-  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
-      base::StringPiece name) override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -177,8 +178,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetProduct() override;
   void RegisterNonNetworkNavigationURLLoaderFactories(
       int frame_tree_node_id,
-      base::UkmSourceId ukm_source_id,
-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
+      ukm::SourceIdObj ukm_source_id,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
@@ -186,7 +186,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
       int render_frame_id,
-      NonNetworkURLLoaderFactoryDeprecatedMap* uniquely_owned_factories,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void CreateWebSocket(
       content::RenderFrameHost* frame,
@@ -204,6 +203,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
       base::Optional<int64_t> navigation_id,
+      ukm::SourceIdObj ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
           header_client,
@@ -287,13 +287,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                                   content::RenderFrameHost* speculative_rfh,
                                   content::BrowserContext* browser_context,
                                   const GURL& dest_url,
-                                  bool has_request_started) const;
+                                  bool has_response_started) const;
   bool NavigationWasRedirectedCrossSite(
       content::BrowserContext* browser_context,
       content::SiteInstance* current_instance,
       content::SiteInstance* speculative_instance,
       const GURL& dest_url,
-      bool has_request_started) const;
+      bool has_response_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;
@@ -312,8 +312,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
-
-  std::map<int, base::ProcessId> render_process_host_pids_;
 
   std::set<int> renderer_is_subframe_;
 
@@ -334,6 +332,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.
   uint64_t next_id_ = 0;
+
+  std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

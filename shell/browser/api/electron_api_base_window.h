@@ -17,6 +17,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -63,6 +64,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowWillResize(const gfx::Rect& new_bounds,
                           bool* prevent_default) override;
   void OnWindowResize() override;
+  void OnWindowResized() override;
   void OnWindowWillMove(const gfx::Rect& new_bounds,
                         bool* prevent_default) override;
   void OnWindowMove() override;
@@ -82,6 +84,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
+  void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
 #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
@@ -219,7 +222,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(gin::Handle<NativeImage> icon);
+  void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,

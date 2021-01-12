@@ -4,8 +4,10 @@ Date: Fri, 26 Oct 2018 15:35:13 +1100
 Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
+This API is used by Electron to create Node's tracing controller.
+
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index bc1ab0bfcf87936b8d8156172319283704b05da8..4fa2d4175fb318f560b7b9a8ed8baa091d3ed6a2 100644
+index 2c4acbc4fa0eca3b7c6d03b997445633646446e7..53b07052e43a09f29f863ee1b2287bdebe7b7a7f 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -472,6 +472,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
@@ -20,10 +22,10 @@ index bc1ab0bfcf87936b8d8156172319283704b05da8..4fa2d4175fb318f560b7b9a8ed8baa09
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index d051b422d7c5a51a8590abda382676d3f661b532..80acb3f9f04ef8e6c363cf31384af4037abeeb87 100644
+index 34a16feaed229a59181e1b2e48b0e111d5b0b2a6..a649f52403659fd18898e1e813f97e32f33784e7 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -123,6 +123,7 @@ namespace node {
+@@ -125,6 +125,7 @@ namespace node {
  
  namespace tracing {
  
@@ -31,7 +33,7 @@ index d051b422d7c5a51a8590abda382676d3f661b532..80acb3f9f04ef8e6c363cf31384af403
  class TracingController;
  
  }
-@@ -510,6 +511,8 @@ NODE_DEPRECATED("Use GetMultiIsolatePlatform(env) instead",
+@@ -522,6 +523,8 @@ NODE_DEPRECATED("Use GetMultiIsolatePlatform(env) instead",
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  

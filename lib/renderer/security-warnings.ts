@@ -1,5 +1,6 @@
 import { webFrame } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 let shouldLog: boolean | null = null;
 
@@ -76,8 +77,9 @@ const isLocalhost = function () {
  *
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
  */
-const isUnsafeEvalEnabled = function () {
-  return webFrame.executeJavaScript(`(${(() => {
+const isUnsafeEvalEnabled: () => Promise<boolean> = function () {
+  // Call _executeJavaScript to bypass the world-safe deprecation warning
+  return (webFrame as any)._executeJavaScript(`(${(() => {
     try {
       new Function(''); // eslint-disable-line no-new,no-new-func
     } catch {
@@ -178,7 +180,7 @@ const warnAboutInsecureCSP = function () {
 
     console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
       'font-weight: bold;', warning);
-  });
+  }).catch(() => {});
 };
 
 /**
@@ -301,7 +303,7 @@ const logSecurityWarnings = function (
 
 const getWebPreferences = async function () {
   try {
-    return ipcRendererInternal.invoke<Electron.WebPreferences>('ELECTRON_BROWSER_GET_LAST_WEB_PREFERENCES');
+    return ipcRendererInternal.invoke<Electron.WebPreferences>(IPC_MESSAGES.BROWSER_GET_LAST_WEB_PREFERENCES);
   } catch (error) {
     console.warn(`getLastWebPreferences() failed: ${error}`);
   }

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -30,7 +31,7 @@ bool IsPDFViewerEnabled() {
 }
 
 bool IsRunAsNodeEnabled() {
-  return BUILDFLAG(ENABLE_RUN_AS_NODE);
+  return electron::fuses::IsRunAsNodeEnabled() && BUILDFLAG(ENABLE_RUN_AS_NODE);
 }
 
 bool IsFakeLocationProviderEnabled() {
@@ -55,6 +56,10 @@ bool IsExtensionsEnabled() {
 
 bool IsPictureInPictureEnabled() {
   return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);
+}
+
+bool IsWinDarkModeWindowUiEnabled() {
+  return BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI);
 }
 
 bool IsComponentBuild() {
@@ -84,6 +89,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
+  dict.SetMethod("isWinDarkModeWindowUiEnabled", &IsWinDarkModeWindowUiEnabled);
 }
 
 }  // namespace

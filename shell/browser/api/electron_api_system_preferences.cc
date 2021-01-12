@@ -31,12 +31,6 @@ SystemPreferences::~SystemPreferences() {
 #endif
 }
 
-#if !defined(OS_MAC)
-bool SystemPreferences::IsDarkMode() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-}
-#endif
-
 bool SystemPreferences::IsInvertedColorScheme() {
   return ui::NativeTheme::GetInstanceForNativeUi()
              ->GetPlatformHighContrastColorScheme() ==
@@ -115,11 +109,6 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::IsTrustedAccessibilityClient)
       .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
 #endif
-      .SetMethod("isInvertedColorScheme",
-                 &SystemPreferences::IsInvertedColorScheme)
-      .SetMethod("isHighContrastColorScheme",
-                 &SystemPreferences::IsHighContrastColorScheme)
-      .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode)
       .SetMethod("getAnimationSettings",
                  &SystemPreferences::GetAnimationSettings);
 }

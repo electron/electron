@@ -55,7 +55,7 @@ electron.d.ts
 spec/.hash
 
 # Eslint Cache
-.eslintcache
+.eslintcache*
 
 # Generated native addon files
 /spec-main/fixtures/native-addon/echo/build/
@@ -66,3 +66,6 @@ ts-gen
 # Used to accelerate CI builds
 .depshash
 .depshash-target
+
+# Used to accelerate builds after sync
+patches/mtime-cache.json

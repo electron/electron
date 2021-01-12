@@ -149,9 +149,7 @@ std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = NULL;
 
 void NativeWindowViews::Maximize() {
-  // Only use Maximize() when:
-  // 1. window has WS_THICKFRAME style;
-  // 2. and window is not frameless when there is autohide taskbar.
+  // Only use Maximize() when window has WS_THICKFRAME style
   if (::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME) {
     if (IsVisible())
       widget()->Maximize();
@@ -161,8 +159,8 @@ void NativeWindowViews::Maximize() {
     return;
   } else {
     restore_bounds_ = GetBounds();
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
+        GetNativeWindow());
     SetBounds(display.work_area(), false);
   }
 }
@@ -259,6 +257,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
     case WM_SIZING: {
+      is_resizing_ = true;
       bool prevent_default = false;
       NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
                              &prevent_default);
@@ -274,7 +273,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       HandleSizeEvent(w_param, l_param);
       return false;
     }
+    case WM_EXITSIZEMOVE: {
+      if (is_resizing_) {
+        NotifyWindowResized();
+        is_resizing_ = false;
+      }
+      if (is_moving_) {
+        NotifyWindowMoved();
+        is_moving_ = false;
+      }
+      return false;
+    }
     case WM_MOVING: {
+      is_moving_ = true;
       bool prevent_default = false;
       NotifyWindowWillMove(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
                            &prevent_default);
@@ -305,6 +316,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         }
       }
       return false;
+    }
+    case WM_CONTEXTMENU: {
+      bool prevent_default = false;
+      NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
+                                    GET_Y_LPARAM(l_param), &prevent_default);
+      return prevent_default;
     }
     default:
       return false;
@@ -378,7 +395,7 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
-    if (forwarding_windows_.size() == 0) {
+    if (forwarding_windows_.empty()) {
       UnhookWindowsHookEx(mouse_hook_);
       mouse_hook_ = NULL;
     }
@@ -391,7 +408,7 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  LPARAM l_param,
                                                  UINT_PTR subclass_id,
                                                  DWORD_PTR ref_data) {
-  NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
+  auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
     case WM_MOUSELEAVE: {
       // When input is forwarded to underlying windows, this message is posted.

@@ -46,6 +46,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -79,13 +80,13 @@ struct Converter<electron::ProcessIntegrityLevel> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::ProcessIntegrityLevel value) {
     switch (value) {
-      case electron::ProcessIntegrityLevel::Untrusted:
+      case electron::ProcessIntegrityLevel::kUntrusted:
         return StringToV8(isolate, "untrusted");
-      case electron::ProcessIntegrityLevel::Low:
+      case electron::ProcessIntegrityLevel::kLow:
         return StringToV8(isolate, "low");
-      case electron::ProcessIntegrityLevel::Medium:
+      case electron::ProcessIntegrityLevel::kMedium:
         return StringToV8(isolate, "medium");
-      case electron::ProcessIntegrityLevel::High:
+      case electron::ProcessIntegrityLevel::kHigh:
         return StringToV8(isolate, "high");
       default:
         return StringToV8(isolate, "unknown");
@@ -128,11 +129,11 @@ struct Converter<JumpListItem::Type> {
       return false;
 
     if (item_type == "task")
-      *out = JumpListItem::Type::TASK;
+      *out = JumpListItem::Type::kTask;
     else if (item_type == "separator")
-      *out = JumpListItem::Type::SEPARATOR;
+      *out = JumpListItem::Type::kSeparator;
     else if (item_type == "file")
-      *out = JumpListItem::Type::FILE;
+      *out = JumpListItem::Type::kFile;
     else
       return false;
 
@@ -143,15 +144,15 @@ struct Converter<JumpListItem::Type> {
                                    JumpListItem::Type val) {
     std::string item_type;
     switch (val) {
-      case JumpListItem::Type::TASK:
+      case JumpListItem::Type::kTask:
         item_type = "task";
         break;
 
-      case JumpListItem::Type::SEPARATOR:
+      case JumpListItem::Type::kSeparator:
         item_type = "separator";
         break;
 
-      case JumpListItem::Type::FILE:
+      case JumpListItem::Type::kFile:
         item_type = "file";
         break;
     }
@@ -172,7 +173,7 @@ struct Converter<JumpListItem> {
       return false;
 
     switch (out->type) {
-      case JumpListItem::Type::TASK:
+      case JumpListItem::Type::kTask:
         if (!dict.Get("program", &(out->path)) ||
             !dict.Get("title", &(out->title)))
           return false;
@@ -186,10 +187,10 @@ struct Converter<JumpListItem> {
         dict.Get("workingDirectory", &(out->working_dir));
         return true;
 
-      case JumpListItem::Type::SEPARATOR:
+      case JumpListItem::Type::kSeparator:
         return true;
 
-      case JumpListItem::Type::FILE:
+      case JumpListItem::Type::kFile:
         return dict.Get("path", &(out->path));
     }
 
@@ -203,7 +204,7 @@ struct Converter<JumpListItem> {
     dict.Set("type", val.type);
 
     switch (val.type) {
-      case JumpListItem::Type::TASK:
+      case JumpListItem::Type::kTask:
         dict.Set("program", val.path);
         dict.Set("args", val.arguments);
         dict.Set("title", val.title);
@@ -213,10 +214,10 @@ struct Converter<JumpListItem> {
         dict.Set("workingDirectory", val.working_dir);
         break;
 
-      case JumpListItem::Type::SEPARATOR:
+      case JumpListItem::Type::kSeparator:
         break;
 
-      case JumpListItem::Type::FILE:
+      case JumpListItem::Type::kFile:
         dict.Set("path", val.path);
         break;
     }
@@ -234,13 +235,13 @@ struct Converter<JumpListCategory::Type> {
       return false;
 
     if (category_type == "tasks")
-      *out = JumpListCategory::Type::TASKS;
+      *out = JumpListCategory::Type::kTasks;
     else if (category_type == "frequent")
-      *out = JumpListCategory::Type::FREQUENT;
+      *out = JumpListCategory::Type::kFrequent;
     else if (category_type == "recent")
-      *out = JumpListCategory::Type::RECENT;
+      *out = JumpListCategory::Type::kRecent;
     else if (category_type == "custom")
-      *out = JumpListCategory::Type::CUSTOM;
+      *out = JumpListCategory::Type::kCustom;
     else
       return false;
 
@@ -251,19 +252,19 @@ struct Converter<JumpListCategory::Type> {
                                    JumpListCategory::Type val) {
     std::string category_type;
     switch (val) {
-      case JumpListCategory::Type::TASKS:
+      case JumpListCategory::Type::kTasks:
         category_type = "tasks";
         break;
 
-      case JumpListCategory::Type::FREQUENT:
+      case JumpListCategory::Type::kFrequent:
         category_type = "frequent";
         break;
 
-      case JumpListCategory::Type::RECENT:
+      case JumpListCategory::Type::kRecent:
         category_type = "recent";
         break;
 
-      case JumpListCategory::Type::CUSTOM:
+      case JumpListCategory::Type::kCustom:
         category_type = "custom";
         break;
     }
@@ -285,13 +286,13 @@ struct Converter<JumpListCategory> {
 
     if (!dict.Get("type", &(out->type))) {
       if (out->name.empty())
-        out->type = JumpListCategory::Type::TASKS;
+        out->type = JumpListCategory::Type::kTasks;
       else
-        out->type = JumpListCategory::Type::CUSTOM;
+        out->type = JumpListCategory::Type::kCustom;
     }
 
-    if ((out->type == JumpListCategory::Type::TASKS) ||
-        (out->type == JumpListCategory::Type::CUSTOM)) {
+    if ((out->type == JumpListCategory::Type::kTasks) ||
+        (out->type == JumpListCategory::Type::kCustom)) {
       if (!dict.Get("items", &(out->items)))
         return false;
     }
@@ -306,27 +307,27 @@ struct Converter<JumpListResult> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, JumpListResult val) {
     std::string result_code;
     switch (val) {
-      case JumpListResult::SUCCESS:
+      case JumpListResult::kSuccess:
         result_code = "ok";
         break;
 
-      case JumpListResult::ARGUMENT_ERROR:
+      case JumpListResult::kArgumentError:
         result_code = "argumentError";
         break;
 
-      case JumpListResult::GENERIC_ERROR:
+      case JumpListResult::kGenericError:
         result_code = "error";
         break;
 
-      case JumpListResult::CUSTOM_CATEGORY_SEPARATOR_ERROR:
+      case JumpListResult::kCustomCategorySeparatorError:
         result_code = "invalidSeparatorError";
         break;
 
-      case JumpListResult::MISSING_FILE_TYPE_REGISTRATION_ERROR:
+      case JumpListResult::kMissingFileTypeRegistrationError:
         result_code = "fileTypeRegistrationError";
         break;
 
-      case JumpListResult::CUSTOM_CATEGORY_ACCESS_DENIED_ERROR:
+      case JumpListResult::kCustomCategoryAccessDeniedError:
         result_code = "customCategoryAccessDeniedError";
         break;
     }
@@ -474,8 +475,6 @@ int GetPathConstant(const std::string& name) {
   else if (name == "recent")
     return electron::DIR_RECENT;
 #endif
-  else if (name == "pepperFlashSystemPlugin")
-    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
     return -1;
 }
@@ -537,10 +536,10 @@ void OnClientCertificateSelected(
       data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
-    for (size_t i = 0; i < identities->size(); ++i) {
-      if (cert->EqualsExcludingChain((*identities)[i]->certificate())) {
+    for (auto& identity : *identities) {
+      if (cert->EqualsExcludingChain(identity->certificate())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
-            std::move((*identities)[i]),
+            std::move(identity),
             base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
         break;
       }
@@ -597,7 +596,7 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
-  base::ProcessId pid = base::GetCurrentProcId();
+  auto pid = content::ChildProcessHost::kInvalidUniqueID;
   auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
@@ -837,26 +836,26 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
-                       base::UTF16ToUTF8(data.name));
+  ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),
+                       data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
@@ -869,6 +868,7 @@ void App::BrowserChildProcessCrashedOrKilled(
   details.Set("type", content::GetProcessTypeNameInEnglish(data.process_type));
   details.Set("reason", info.status);
   details.Set("exitCode", info.exit_code);
+  details.Set("serviceName", data.metrics_name);
   if (!data.name.empty()) {
     details.Set("name", data.name);
   }
@@ -876,7 +876,7 @@ void App::BrowserChildProcessCrashedOrKilled(
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
                        host->GetProcess().Handle());
 
   // TODO(jeremy): this isn't really the right place to be creating
@@ -891,15 +891,15 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   }
 }
 
-void App::RenderProcessDisconnected(base::ProcessId host_pid) {
-  ChildProcessDisconnected(host_pid);
+void App::RenderProcessExited(content::RenderProcessHost* host) {
+  ChildProcessDisconnected(host->GetID());
 }
 
 void App::ChildProcessLaunched(int process_type,
+                               int pid,
                                base::ProcessHandle handle,
+                               const std::string& service_name,
                                const std::string& name) {
-  auto pid = base::GetProcId(handle);
-
 #if defined(OS_MAC)
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(
       handle, content::BrowserChildProcessHost::GetPortProvider());
@@ -907,10 +907,10 @@ void App::ChildProcessLaunched(int process_type,
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(handle);
 #endif
   app_metrics_[pid] = std::make_unique<electron::ProcessMetric>(
-      process_type, handle, std::move(metrics), name);
+      process_type, handle, std::move(metrics), service_name, name);
 }
 
-void App::ChildProcessDisconnected(base::ProcessId pid) {
+void App::ChildProcessDisconnected(int pid) {
   app_metrics_.erase(pid);
 }
 
@@ -1239,19 +1239,19 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
       !gin::ConvertFromV8(args->isolate(), val, &categories)) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("Argument must be null or an array of categories");
-    return JumpListResult::ARGUMENT_ERROR;
+    return JumpListResult::kArgumentError;
   }
 
   JumpList jump_list(Browser::Get()->GetAppUserModelID());
 
   if (delete_jump_list) {
-    return jump_list.Delete() ? JumpListResult::SUCCESS
-                              : JumpListResult::GENERIC_ERROR;
+    return jump_list.Delete() ? JumpListResult::kSuccess
+                              : JumpListResult::kGenericError;
   }
 
   // Start a transaction that updates the JumpList of this application.
   if (!jump_list.Begin())
-    return JumpListResult::GENERIC_ERROR;
+    return JumpListResult::kGenericError;
 
   JumpListResult result = jump_list.AppendCategories(categories);
   // AppendCategories may have failed to add some categories, but it's better
@@ -1261,8 +1261,8 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
     // It's more useful to return the earlier error code that might give
     // some indication as to why the transaction actually failed, so don't
     // overwrite it with a "generic error" code here.
-    if (result == JumpListResult::SUCCESS)
-      result = JumpListResult::GENERIC_ERROR;
+    if (result == JumpListResult::kSuccess)
+      result = JumpListResult::kGenericError;
   }
 
   return result;
@@ -1309,12 +1309,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
     gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
 
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
-        .SetHidden("simple", true);
-    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
-        .SetHidden("simple", true);
-
+    pid_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1337,6 +1333,10 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("creationTime",
                  process_metric.second->process.CreationTime().ToJsTime());
 
+    if (!process_metric.second->service_name.empty()) {
+      pid_dict.Set("serviceName", process_metric.second->service_name);
+    }
+
     if (!process_metric.second->name.empty()) {
       pid_dict.Set("name", process_metric.second->name);
     }
@@ -1345,9 +1345,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
-        .SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
@@ -1470,9 +1468,10 @@ int DockBounce(gin::Arguments* args) {
   args->GetNext(&type);
 
   if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BounceType::CRITICAL);
+    request_id = Browser::Get()->DockBounce(Browser::BounceType::kCritical);
   else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BounceType::INFORMATIONAL);
+    request_id =
+        Browser::Get()->DockBounce(Browser::BounceType::kInformational);
   return request_id;
 }
 
@@ -1647,6 +1646,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if defined(OS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
+      .SetProperty("runningUnderRosettaTranslation",
+                   &App::IsRunningUnderRosettaTranslation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)

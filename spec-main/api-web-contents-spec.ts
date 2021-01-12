@@ -42,6 +42,12 @@ describe('webContents module', () => {
     });
   });
 
+  describe('fromId()', () => {
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromId(12345)).to.be.undefined();
+    });
+  });
+
   describe('will-prevent-unload event', function () {
     afterEach(closeAllWindows);
     it('does not emit if beforeunload returns undefined', async () => {
@@ -758,11 +764,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any);
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw(/Failed to load image from path (.+)/);
     });
   });
 
@@ -1156,6 +1162,10 @@ describe('webContents module', () => {
             res.end();
           } else if (req.url === '/redirected') {
             res.end('<html><script>window.localStorage</script></html>');
+          } else if (req.url === '/first-window-open') {
+            res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
+          } else if (req.url === '/second-window-open') {
+            res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
           } else {
             res.end();
           }
@@ -1190,6 +1200,29 @@ describe('webContents module', () => {
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
+    });
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+      const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      let currentRenderViewDeletedEmitted = false;
+      let childWindow: BrowserWindow | null = null;
+      const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true;
+      };
+      const childWindowCreated = new Promise((resolve) => {
+        app.once('browser-window-created', (event, window) => {
+          childWindow = window;
+          window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+          resolve();
+        });
+      });
+      parentWindow.loadURL(`${serverUrl}/first-window-open`);
+      await childWindowCreated;
+      childWindow!.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
+      parentWindow.close();
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
     });
 
     it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
@@ -1244,6 +1277,54 @@ describe('webContents module', () => {
       expect(code).to.equal(0);
     });
   });
+
+  const crashPrefs = [
+    {
+      nodeIntegration: true
+    },
+    {
+      sandbox: true
+    }
+  ];
+
+  const nicePrefs = (o: any) => {
+    let s = '';
+    for (const key of Object.keys(o)) {
+      s += `${key}=${o[key]}, `;
+    }
+    return `(${s.slice(0, s.length - 2)})`;
+  };
+
+  for (const prefs of crashPrefs) {
+    describe(`crash  with webPreferences ${nicePrefs(prefs)}`, () => {
+      let w: BrowserWindow;
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        await w.loadURL('about:blank');
+      });
+      afterEach(closeAllWindows);
+
+      it('isCrashed() is false by default', () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+
+      it('forcefullyCrashRenderer() crashes the process with reason=killed||crashed', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+        w.webContents.forcefullyCrashRenderer();
+        const [, details] = await crashEvent;
+        expect(details.reason === 'killed' || details.reason === 'crashed').to.equal(true, 'reason should be killed || crashed');
+        expect(w.webContents.isCrashed()).to.equal(true);
+      });
+
+      it('a crashed process is recoverable with reload()', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        w.webContents.forcefullyCrashRenderer();
+        w.webContents.reload();
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+    });
+  }
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
@@ -1302,7 +1383,8 @@ describe('webContents module', () => {
     }
   });
 
-  describe('did-change-theme-color event', () => {
+  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
+  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct theme color', (done) => {
       const w = new BrowserWindow({ show: true });
@@ -1398,7 +1480,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
             expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
           });
           w.webContents.executeJavaScript('a.click()');
         });
@@ -1705,9 +1787,14 @@ describe('webContents module', () => {
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', async () => {
+    it('works as expected', async function () {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
+
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);
       expect(result).to.be.true();

@@ -13,6 +13,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "services/network/public/mojom/ssl_config.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -23,6 +24,11 @@
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_registry_observer.h"
 #endif
 
 class GURL;
@@ -56,6 +62,9 @@ class Session : public gin::Wrappable<Session>,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                 public SpellcheckHunspellDictionary::Observer,
 #endif
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+                public extensions::ExtensionRegistryObserver,
+#endif
                 public content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
@@ -86,6 +95,7 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearStorageData(gin::Arguments* args);
   void FlushStorageData();
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
+  v8::Local<v8::Promise> ForceReloadProxyConfig();
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const gin_helper::Dictionary& options);
   void DisableNetworkEmulation();
@@ -99,19 +109,21 @@ class Session : public gin::Wrappable<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin::Arguments* args);
   std::string GetUserAgent();
+  void SetSSLConfig(network::mojom::SSLConfigPtr config);
   bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
-  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
-  std::vector<base::FilePath::StringType> GetPreloads() const;
+  void SetPreloads(const std::vector<base::FilePath>& preloads);
+  std::vector<base::FilePath> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
+  v8::Local<v8::Promise> CloseAllConnections();
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
@@ -119,6 +131,8 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ListWordsInSpellCheckerDictionary();
   bool AddWordToSpellCheckerDictionary(const std::string& word);
   bool RemoveWordFromSpellCheckerDictionary(const std::string& word);
+  void SetSpellCheckerEnabled(bool b);
+  bool IsSpellCheckerEnabled() const;
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -126,6 +140,15 @@ class Session : public gin::Wrappable<Session>,
   void RemoveExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions();
+
+  // extensions::ExtensionRegistryObserver:
+  void OnExtensionLoaded(content::BrowserContext* browser_context,
+                         const extensions::Extension* extension) override;
+  void OnExtensionReady(content::BrowserContext* browser_context,
+                        const extensions::Extension* extension) override;
+  void OnExtensionUnloaded(content::BrowserContext* browser_context,
+                           const extensions::Extension* extension,
+                           extensions::UnloadedExtensionReason reason) override;
 #endif
 
  protected:

@@ -22,6 +22,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -128,7 +129,7 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
 }
 
 // Where the context bridge should create the exception it is about to throw
-enum BridgeErrorTarget {
+enum class BridgeErrorTarget {
   // The source / calling context.  This is default and correct 99% of the time,
   // the caller / context asking for the conversion will receive the error and
   // therefore the error should be made in that context
@@ -317,6 +318,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     }
     object_cache->CacheProxiedObject(value, cloned_arr);
     return v8::MaybeLocal<v8::Value>(cloned_arr);
+  }
+
+  // Custom logic to "clone" Element references
+  blink::WebElement elem = blink::WebElement::FromV8Value(value);
+  if (!elem.IsNull()) {
+    v8::Context::Scope destination_context_scope(destination_context);
+    return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
+        destination_context->Global(), destination_context->GetIsolate()));
   }
 
   // Proxy all objects
@@ -513,11 +522,13 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
   }
 }
 
-void ExposeAPIInMainWorld(const std::string& key,
-                          v8::Local<v8::Object> api_object,
+void ExposeAPIInMainWorld(v8::Isolate* isolate,
+                          const std::string& key,
+                          v8::Local<v8::Value> api,
                           gin_helper::Arguments* args) {
   TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
-  auto* render_frame = GetRenderFrame(api_object);
+
+  auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -539,12 +550,13 @@ void ExposeAPIInMainWorld(const std::string& key,
     context_bridge::ObjectCache object_cache;
     v8::Context::Scope main_context_scope(main_context);
 
-    v8::MaybeLocal<v8::Object> maybe_proxy = CreateProxyForAPI(
-        api_object, isolated_context, main_context, &object_cache, false, 0);
+    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
+        isolated_context, main_context, api, &object_cache, false, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
-    if (!DeepFreeze(proxy, main_context))
+    if (proxy->IsObject() && !proxy->IsTypedArray() &&
+        !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
       return;
 
     global.SetReadOnlyNonConfigurable(key, proxy);
@@ -564,7 +576,7 @@ void OverrideGlobalValueFromIsolatedWorld(
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return;
 
   auto* render_frame = GetRenderFrame(value);
@@ -596,7 +608,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
     gin_helper::Arguments* args) {
-  if (key_path.size() == 0)
+  if (key_path.empty())
     return false;
 
   auto* render_frame = GetRenderFrame(getter);

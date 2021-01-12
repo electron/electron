@@ -14,6 +14,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/optional.h"
 #include "base/strings/string16.h"
 #include "base/supports_user_data.h"
 #include "base/values.h"
@@ -198,8 +199,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Traffic Light API
 #if defined(OS_MAC)
-  virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
-  virtual gfx::Point GetTrafficLightPosition() const = 0;
+  virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
+  virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
 #endif
 
@@ -235,7 +236,7 @@ class NativeWindow : public base::SupportsUserData,
                            const std::string& display_name);
   virtual void CloseFilePreview();
 
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) = 0;
+  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
   // Converts between content bounds and window bounds.
   virtual gfx::Rect ContentBoundsToWindowBounds(
@@ -271,6 +272,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
                               bool* prevent_default);
   void NotifyWindowResize();
+  void NotifyWindowResized();
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
@@ -288,6 +290,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
+  void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

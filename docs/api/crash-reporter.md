@@ -39,6 +39,37 @@ is an implementation detail driven by Chromium, and it may change in future. In
 particular, crashpad is newer and will likely eventually replace breakpad on
 all platforms.
 
+### Note about Node child processes on Linux
+
+If you are using the Node.js `child_process` module and want to report crashes
+from those processes on Linux, there is an extra step you will need to take to
+properly initialize the crash reporter in the child process. This is not
+necessary on Mac or Windows, as those platforms use Crashpad, which
+automatically monitors child processes.
+
+Since `require('electron')` is not available in Node child processes, the
+following APIs are available on the `process` object in Node child processes.
+Note that, on Linux, each Node child process has its own separate instance of
+the breakpad crash reporter. This is dissimilar to renderer child processes,
+which have a "stub" breakpad reporter which returns information to the main
+process for reporting.
+
+#### `process.crashReporter.start(options)`
+
+See [`crashReporter.start()`](#crashreporterstartoptions).
+
+#### `process.crashReporter.getParameters()`
+
+See [`crashReporter.getParameters()`](#crashreportergetparameters).
+
+#### `process.crashReporter.addExtraParameter(key, value)`
+
+See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
+
+#### `process.crashReporter.removeExtraParameter(key)`
+
+See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
+
 ## Methods
 
 The `crashReporter` module has the following methods:
@@ -97,7 +128,7 @@ must be at most 39 bytes long, and values must be no longer than 127 bytes.
 Keys with names longer than the maximum will be silently ignored. Key values
 longer than the maximum length will be truncated.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getLastCrashReport()`
 
@@ -106,7 +137,7 @@ last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
 uploaded. In the case that there are no uploaded reports, `null` is returned.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getUploadedReports()`
 
@@ -115,14 +146,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getUploadToServer()`
 
 Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
 
@@ -131,13 +162,7 @@ the `start` method or `setUploadToServer`.
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
-**Note:** Calling this method from the renderer process is deprecated.
-
-### `crashReporter.getCrashesDirectory()` _Deprecated_
-
-Returns `String` - The directory where crashes are temporarily stored before being uploaded.
-
-**Note:** This method is deprecated, use `app.getPath('crashDumps')` instead.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.addExtraParameter(key, value)`
 

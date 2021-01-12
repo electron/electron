@@ -10,7 +10,7 @@ ipcRenderer.send = function (channel, ...args) {
 };
 
 ipcRenderer.sendSync = function (channel, ...args) {
-  return ipc.sendSync(internal, channel, args)[0];
+  return ipc.sendSync(internal, channel, args);
 };
 
 ipcRenderer.sendToHost = function (channel, ...args) {
@@ -18,7 +18,7 @@ ipcRenderer.sendToHost = function (channel, ...args) {
 };
 
 ipcRenderer.sendTo = function (webContentsId, channel, ...args) {
-  return ipc.sendTo(internal, false, webContentsId, channel, args);
+  return ipc.sendTo(internal, webContentsId, channel, args);
 };
 
 ipcRenderer.invoke = async function (channel, ...args) {

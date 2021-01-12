@@ -71,6 +71,8 @@ class NotifyIcon : public TrayIcon {
   void SetContextMenu(ElectronMenuModel* menu_model) override;
   gfx::Rect GetBounds() override;
 
+  base::WeakPtr<NotifyIcon> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+
  private:
   void InitIconData(NOTIFYICONDATA* icon_data);
 
@@ -100,6 +102,8 @@ class NotifyIcon : public TrayIcon {
 
   // Context menu associated with this icon (if any).
   std::unique_ptr<views::MenuRunner> menu_runner_;
+
+  base::WeakPtrFactory<NotifyIcon> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };

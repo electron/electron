@@ -6,11 +6,11 @@ Subject: Revert "[cleanup] Switch {OFFSET_OF} to {offsetof} where possible."
 This reverts commit d287e4bc46243841c77cf9798516ee4dcc54bf43.
 
 diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
-index 68b70d4a040b150c2d7de4f0afa2549fb782447e..24cb404a455d70356284927d2da4e6653c8134d8 100644
+index e2cb30fffe5065d1d88d243de439d0251a8797e9..7f1ac45b411b10a658e3287a22b15bc3b8cfba0d 100644
 --- a/src/deoptimizer/deoptimizer.h
 +++ b/src/deoptimizer/deoptimizer.h
-@@ -505,14 +505,14 @@ class Deoptimizer : public Malloced {
-                                     DeoptimizeKind* type);
+@@ -515,14 +515,14 @@ class Deoptimizer : public Malloced {
+                                     DeoptimizeKind* type_out);
  
    // Code generation support.
 -  static int input_offset() { return offsetof(Deoptimizer, input_); }
@@ -28,7 +28,7 @@ index 68b70d4a040b150c2d7de4f0afa2549fb782447e..24cb404a455d70356284927d2da4e665
    }
  
    V8_EXPORT_PRIVATE static int GetDeoptimizedCodeCount(Isolate* isolate);
-@@ -771,11 +771,11 @@ class FrameDescription {
+@@ -791,7 +791,7 @@ class FrameDescription {
    int parameter_count() { return parameter_count_; }
  
    static int registers_offset() {
@@ -36,9 +36,4 @@ index 68b70d4a040b150c2d7de4f0afa2549fb782447e..24cb404a455d70356284927d2da4e665
 +    return OFFSET_OF(FrameDescription, register_values_.registers_);
    }
  
-   static int double_registers_offset() {
--    return offsetof(FrameDescription, register_values_.double_registers_);
-+    return OFFSET_OF(FrameDescription, register_values_.double_registers_);
-   }
- 
-   static int frame_size_offset() {
+   static constexpr int double_registers_offset() {

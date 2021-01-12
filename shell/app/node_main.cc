@@ -25,7 +25,6 @@
 #include "gin/v8_initializer.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/node_debugger.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
@@ -202,24 +201,17 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                       node::EnvironmentFlags::kNoInitializeInspector;
-
       std::vector<std::string> args(argv, argv + argc);  // NOLINT
       std::vector<std::string> exec_args(exec_argv,
                                          exec_argv + exec_argc);  // NOLINT
       env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
-                                    exec_args,
-                                    (node::EnvironmentFlags::Flags)flags);
-      CHECK_NE(nullptr, env);
+                                    exec_args);
+      CHECK_NOT_NULL(env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
-#if defined(OS_WIN)
-      process.SetMethod("log", &ElectronBindings::Log);
-#endif
       process.SetMethod("crash", &ElectronBindings::Crash);
 
       // Setup process.crashReporter in child node processes
@@ -247,18 +239,8 @@ int NodeMain(int argc, char* argv[]) {
       }
     }
 
-    // Enable support for v8 inspector.
-    NodeDebugger node_debugger(env);
-    node_debugger.Start();
-
-    // TODO(codebytere): we should try to handle this upstream.
-    {
-      v8::HandleScope scope(isolate);
-      node::InternalCallbackScope callback_scope(
-          env, v8::Object::New(isolate), {1, 0},
-          node::InternalCallbackScope::kSkipAsyncHooks);
-      node::LoadEnvironment(env);
-    }
+    v8::HandleScope scope(isolate);
+    node::LoadEnvironment(env);
 
     env->set_trace_sync_io(env->options()->trace_sync_io);
 
@@ -287,8 +269,6 @@ int NodeMain(int argc, char* argv[]) {
       env->performance_state()->Mark(
           node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
     }
-
-    node_debugger.Stop();
 
     env->set_trace_sync_io(false);
 

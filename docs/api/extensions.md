@@ -115,3 +115,9 @@ The following methods of `chrome.management` are supported:
 - `chrome.management.getPermissionWarningsByManifest`
 - `chrome.management.onEnabled`
 - `chrome.management.onDisabled`
+
+### `chrome.webRequest`
+
+All features of this API are supported.
+
+> **NOTE:** Electron's [`webRequest`](web-request.md) module takes precedence over `chrome.webRequest` if there are conflicting handlers.

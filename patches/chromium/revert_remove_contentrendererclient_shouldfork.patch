@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a1695b0d1 100644
+index b8379e73d47c82114a155a24292d99651a18224d..fdf94df4a4311cc3222b7ad612691896df7c6f59 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1281,6 +1281,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1278,6 +1278,25 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
  #endif
  }
  
@@ -39,26 +39,26 @@ index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 04d63a82dde7b1ec4259ec90e0733f3536e97ad0..e335dfbfabe643d15e78c691750aed3aab4a006a 100644
+index 857b350afe980dd79e4c76ebd3cb1be461457f0a..1cac9fc1d8d92d5afe02aa1d1dba05895d4d2672 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -127,6 +127,11 @@ class ChromeContentRendererClient
+@@ -122,6 +122,11 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
 +  bool ShouldFork(blink::WebLocalFrame* frame,
-+                const GURL& url,
-+                const std::string& http_method,
-+                bool is_initial_navigation,
-+                bool is_server_redirect) override;
++                  const GURL& url,
++                  const std::string& http_method,
++                  bool is_initial_navigation,
++                  bool is_server_redirect) override;
+   blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
+       override;
    void WillSendRequest(blink::WebLocalFrame* frame,
-                        ui::PageTransition transition_type,
-                        const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960df7f4780f 100644
+index 78174b924c7b8429d1400b51f4a560d750cc0af6..20eee821969cfa32a61cc0c16e216d3821253d77 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
-@@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
+@@ -117,6 +117,14 @@ bool ContentRendererClient::HandleNavigation(
  }
  #endif
  
@@ -74,10 +74,10 @@ index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960d
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8b3fda222 100644
+index 16d0dd4456f214b14fbdf224ba938ebb1cb63106..4dc340938d54597a315ebb441d769dccb398757d 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -229,6 +229,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -210,6 +210,13 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
@@ -90,12 +90,12 @@ index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8
 +
    // Notifies the embedder that the given frame is requesting the resource at
    // |url|. If the function returns a valid |new_url|, the request must be
-   // updated to use it. The |force_ignore_site_for_cookies| output parameter
+   // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f9e97c36bca9c70af0c585b81902165c1ac6ba5d..f0c50a4693a5363c0b0f834de0e4924e66a39039 100644
+index efbfb14678cc28dbf3ea918aa6c280e7518a673f..75205d7112eb643392bcdb7368d311adfa14a10a 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5755,6 +5755,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5468,6 +5468,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

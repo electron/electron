@@ -21,6 +21,8 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -64,21 +66,18 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  bool use_context_isolation = renderer_client_->isolated_world();
+  auto prefs = render_frame_->GetBlinkPreferences();
+  bool use_context_isolation = prefs.context_isolation;
   // This logic matches the EXPLAINED logic in electron_renderer_client.cc
   // to avoid explaining it twice go check that implementation in
   // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
   bool reuse_renderer_processes_enabled =
-      command_line->HasSwitch(switches::kDisableElectronSiteInstanceOverrides);
-  bool is_not_opened =
-      !render_frame_->GetWebFrame()->Opener() ||
-      command_line->HasSwitch(switches::kEnableNodeLeakageInRenderers);
-  bool allow_node_in_sub_frames =
-      command_line->HasSwitch(switches::kNodeIntegrationInSubFrames);
+      prefs.disable_electron_site_instance_overrides;
+  bool is_not_opened = !render_frame_->GetWebFrame()->Opener() ||
+                       prefs.node_leakage_in_renderers;
+  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
       (is_main_frame || allow_node_in_sub_frames) &&
@@ -112,7 +111,7 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame_->GetRemoteInterfaces()->GetInterface(
+  render_frame_->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->UpdateDraggableRegions(std::move(regions));
 }
@@ -126,6 +125,16 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
 
 void ElectronRenderFrameObserver::OnDestruct() {
   delete this;
+}
+
+void ElectronRenderFrameObserver::DidMeaningfulLayout(
+    blink::WebMeaningfulLayout layout_type) {
+  if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
+    mojo::Remote<mojom::ElectronBrowser> browser_remote;
+    render_frame_->GetBrowserInterfaceBroker()->GetInterface(
+        browser_remote.BindNewPipeAndPassReceiver());
+    browser_remote->OnFirstNonEmptyLayout();
+  }
 }
 
 void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
@@ -153,10 +162,9 @@ bool ElectronRenderFrameObserver::IsIsolatedWorld(int world_id) {
 }
 
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
-  bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
-  if (renderer_client_->isolated_world() &&
+  auto prefs = render_frame_->GetBlinkPreferences();
+  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
+  if (prefs.context_isolation &&
       (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
     return IsIsolatedWorld(world_id);
   else

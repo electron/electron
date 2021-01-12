@@ -42,7 +42,8 @@ returns `null`.
 
 * `id` Integer
 
-Returns `WebContents` - A WebContents instance with the given ID.
+Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+`undefined` if there is no WebContents associated with the given ID.
 
 ## Class: WebContents
 
@@ -70,7 +71,7 @@ Returns:
 * `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed.
-The full list of error codes and their meaning is available [here](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
@@ -134,7 +135,7 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window'
+#### Event: 'new-window' _Deprecated_
 
 Returns:
 
@@ -154,6 +155,8 @@ Returns:
   will be sent to the new window, along with the appropriate headers that will
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
+
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -189,6 +192,40 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
 })
 ```
 
+#### Event: 'did-create-window'
+
+Returns:
+
+* `window` BrowserWindow
+* `details` Object
+  * `url` String - URL for the created window.
+  * `frameName` String - Name given to the created window in the
+     `window.open()` call.
+  * `options` BrowserWindowConstructorOptions - The options used to create the
+    BrowserWindow. They are merged in increasing precedence: options inherited
+    from the parent, parsed options from the `features` string from
+    `window.open()`, and options given by
+    [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+    Unrecognized options are not filtered out.
+  * `additionalFeatures` String[] - The non-standard features (features not
+    handled Chromium or Electron) _Deprecated_
+  * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+    passed to the new window. May or may not result in the `Referer` header
+    being sent, depending on the referrer policy.
+  * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+    that will be sent to the new window, along with the appropriate headers
+    that will be set. If no post data is to be sent, the value will be `null`.
+    Only defined when the window is being created by a form that set
+    `target=_blank`.
+  * `disposition` String - Can be `default`, `foreground-tab`,
+    `background-tab`, `new-window`, `save-to-disk` and `other`.
+
+Emitted _after_ successful creation of a window via `window.open` in the renderer.
+Not emitted if the creation of the window is canceled from
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+
+See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
+
 #### Event: 'will-navigate'
 
 Returns:
@@ -219,7 +256,7 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-Emitted when any frame (including main) starts navigating. `isInplace` will be
+Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
 
 #### Event: 'will-redirect'
@@ -364,7 +401,7 @@ Returns:
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
     * `crashed` - Process crashed
     * `oom` - Process ran out of memory
-    * `launch-failure` - Process never successfully launched
+    * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
@@ -438,6 +475,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 #### Event: 'zoom-changed'
 
 Returns:
+
 * `event` Event
 * `zoomDirection` String - Can be `in` or `out`.
 
@@ -602,8 +640,15 @@ Returns:
   * `isEditable` Boolean - Whether the context is editable.
   * `selectionText` String - Text of the selection that the context menu was
     invoked on.
-  * `titleText` String - Title or alt text of the selection that the context
-    was invoked on.
+  * `titleText` String - Title text of the selection that the context menu was
+    invoked on.
+  * `altText` String - Alt text of the selection that the context menu was
+    invoked on.
+  * `suggestedFilename` String - Suggested filename to be used when saving file through 'Save
+    Link As' option of context menu.
+  * `selectionRect` [Rectangle](structures/rectangle.md) - Rect representing the coordinates in the document space of the selection.
+  * `selectionStartOffset` Number - Start position of the selection text.
+  * `referrerPolicy` [Referrer](structures/referrer.md) - The referrer policy of the frame on which the menu is invoked.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
   * `dictionarySuggestions` String[] - An array of suggested words to show the
     user to replace the `misspelledWord`.  Only available if there is a misspelled
@@ -613,8 +658,9 @@ Returns:
   * `inputFieldType` String - If the context menu was invoked on an input
     field, the type of that field. Possible values are `none`, `plainText`,
     `password`, `other`.
+  * `spellcheckEnabled` Boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` String - Input source that invoked the context menu.
-    Can be `none`, `mouse`, `keyboard`, `touch` or `touchMenu`.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `mediaFlags` Object - The flags for the media element the context menu was
     invoked on.
     * `inError` Boolean - Whether the media element has crashed.
@@ -626,16 +672,22 @@ Returns:
       visible.
     * `canToggleControls` Boolean - Whether the media element's controls are
       toggleable.
+    * `canPrint` Boolean - Whether the media element can be printed.
+    * `canSave` Boolean - Whether or not the media element can be downloaded.
+    * `canShowPictureInPicture` Boolean - Whether the media element can show picture-in-picture.
+    * `isShowingPictureInPicture` Boolean - Whether the media element is currently showing picture-in-picture.
     * `canRotate` Boolean - Whether the media element can be rotated.
+    * `canLoop` Boolean - Whether the media element can be looped.
   * `editFlags` Object - These flags indicate whether the renderer believes it
     is able to perform the corresponding action.
     * `canUndo` Boolean - Whether the renderer believes it can undo.
     * `canRedo` Boolean - Whether the renderer believes it can redo.
     * `canCut` Boolean - Whether the renderer believes it can cut.
-    * `canCopy` Boolean - Whether the renderer believes it can copy
+    * `canCopy` Boolean - Whether the renderer believes it can copy.
     * `canPaste` Boolean - Whether the renderer believes it can paste.
     * `canDelete` Boolean - Whether the renderer believes it can delete.
     * `canSelectAll` Boolean - Whether the renderer believes it can select all.
+    * `canEditRichly` Boolean - Whether the renderer believes it can edit text richly.
 
 Emitted when there is a new context menu that needs to be handled.
 
@@ -837,6 +889,19 @@ Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
 Calling `event.preventDefault()` will prevent the object from being returned.
 Custom value can be returned by setting `event.returnValue`.
 
+#### Event: 'preferred-size-changed'
+
+Returns:
+
+* `event` Event
+* `preferredSize` [Size](structures/size.md) - The minimum size needed to
+  contain the layout of the document—without requiring scrolling.
+
+Emitted when the `WebContents` preferred size has changed.
+
+This event will only be emitted when `enablePreferredSizeMode` is set to `true`
+in `webPreferences`.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
@@ -846,7 +911,7 @@ Custom value can be returned by setting `event.returnValue`.
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
@@ -998,6 +1063,34 @@ Navigates to the specified offset from the "current entry".
 
 Returns `Boolean` - Whether the renderer process has crashed.
 
+#### `contents.forcefullyCrashRenderer()`
+
+Forcefully terminates the renderer process that is currently hosting this
+`webContents`. This will cause the `render-process-gone` event to be emitted
+with the `reason=killed || reason=crashed`. Please note that some webContents share renderer
+processes and therefore calling this method may also crash the host process
+for other webContents as well.
+
+Calling `reload()` immediately after calling this
+method will force the reload to occur in a new process. This should be used
+when this process is unstable or unusable, for instance in order to recover
+from the `unresponsive` event.
+
+```js
+contents.on('unresponsive', async () => {
+  const { response } = await dialog.showMessageBox({
+    message: 'App X has become unresponsive',
+    title: 'Do you want to try forcefully reloading the app?',
+    buttons: ['OK', 'Cancel'],
+    cancelId: 1
+  })
+  if (response === 0) {
+    contents.forcefullyCrashRenderer()
+    contents.reload()
+  }
+})
+```
+
 #### `contents.setUserAgent(userAgent)`
 
 * `userAgent` String
@@ -1080,6 +1173,22 @@ Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 * `ignore` Boolean
 
 Ignore application menu shortcuts while this web contents is focused.
+
+#### `contents.setWindowOpenHandler(handler)`
+
+* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+  * `details` Object
+    * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
+    * `frameName` String - Name of the window provided in `window.open()`
+    * `features` String - Comma separated list of window features provided to `window.open()`.
+  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  Returning an unrecognized value such as a null, undefined, or an object
+  without a recognized 'action' value will result in a console error and have
+  the same effect as returning `{action: 'deny'}`.
+
+Called before creating a window when `window.open()` is called from the
+renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1370,7 +1479,7 @@ By default, an empty `options` will be regarded as:
 }
 ```
 
-Use `page-break-before: always; ` CSS style to force to print to a new page.
+Use `page-break-before: always;` CSS style to force to print to a new page.
 
 An example of `webContents.printToPDF`:
 
@@ -1601,7 +1710,9 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer
+* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+  pair of `[processId, frameId]` if the frame is in a different process to the
+  main frame.
 * `channel` String
 * `...args` any[]
 
@@ -1649,6 +1760,7 @@ process by accessing the `ports` property of the emitted event. When they
 arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()
@@ -1775,7 +1887,7 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 * `fps` Integer
 
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
@@ -1873,7 +1985,7 @@ The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
 #### `contents.frameRate`
 
 An `Integer` property that sets the frame rate of the web contents to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
 
@@ -1909,3 +2021,7 @@ A [`Debugger`](debugger.md) instance for this webContents.
 
 A `Boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
+
+#### `contents.mainFrame` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.

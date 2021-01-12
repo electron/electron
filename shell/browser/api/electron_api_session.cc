@@ -19,6 +19,7 @@
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/download/public/common/download_url_parameters.h"
@@ -26,6 +27,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/proxy_config/proxy_prefs.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -180,6 +182,74 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+bool SSLProtocolVersionFromString(const std::string& version_str,
+                                  network::mojom::SSLVersion* version) {
+  if (version_str == switches::kSSLVersionTLSv1) {
+    *version = network::mojom::SSLVersion::kTLS1;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv11) {
+    *version = network::mojom::SSLVersion::kTLS11;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv12) {
+    *version = network::mojom::SSLVersion::kTLS12;
+    return true;
+  }
+  if (version_str == switches::kSSLVersionTLSv13) {
+    *version = network::mojom::SSLVersion::kTLS13;
+    return true;
+  }
+  return false;
+}
+
+template <>
+struct Converter<uint16_t> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     uint16_t* out) {
+    auto maybe = val->IntegerValue(isolate->GetCurrentContext());
+    if (maybe.IsNothing())
+      return false;
+    *out = maybe.FromJust();
+    return true;
+  }
+};
+
+template <>
+struct Converter<network::mojom::SSLConfigPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::SSLConfigPtr* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    *out = network::mojom::SSLConfig::New();
+    std::string version_min_str;
+    if (options.Get("minVersion", &version_min_str)) {
+      if (!SSLProtocolVersionFromString(version_min_str, &(*out)->version_min))
+        return false;
+    }
+    std::string version_max_str;
+    if (options.Get("maxVersion", &version_max_str)) {
+      if (!SSLProtocolVersionFromString(version_max_str,
+                                        &(*out)->version_max) ||
+          (*out)->version_max < network::mojom::SSLVersion::kTLS12)
+        return false;
+    }
+
+    if (options.Has("disabledCipherSuites") &&
+        !options.Get("disabledCipherSuites", &(*out)->disabled_cipher_suites)) {
+      return false;
+    }
+    std::sort((*out)->disabled_cipher_suites.begin(),
+              (*out)->disabled_cipher_suites.end());
+
+    // TODO(nornagon): also support other SSLConfig properties?
+    return true;
+  }
+};
+
 }  // namespace gin
 
 namespace electron {
@@ -281,6 +351,10 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     service->SetHunspellObserver(this);
   }
 #endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
+#endif
 }
 
 Session::~Session() {
@@ -293,6 +367,10 @@ Session::~Session() {
   if (service) {
     service->SetHunspellObserver(nullptr);
   }
+#endif
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions::ExtensionRegistry::Get(browser_context())->RemoveObserver(this);
 #endif
 }
 
@@ -427,30 +505,67 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     return handle;
   }
 
-  std::string proxy_rules, bypass_list, pac_url;
+  std::string mode, proxy_rules, bypass_list, pac_url;
 
   options.Get("pacScript", &pac_url);
   options.Get("proxyRules", &proxy_rules);
   options.Get("proxyBypassRules", &bypass_list);
 
-  // pacScript takes precedence over proxyRules.
-  if (!pac_url.empty()) {
-    browser_context_->in_memory_pref_store()->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_url, true /* pac_mandatory */)),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  ProxyPrefs::ProxyMode proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+  if (!options.Get("mode", &mode)) {
+    // pacScript takes precedence over proxyRules.
+    if (!pac_url.empty()) {
+      proxy_mode = ProxyPrefs::MODE_PAC_SCRIPT;
+    } else {
+      proxy_mode = ProxyPrefs::MODE_FIXED_SERVERS;
+    }
   } else {
-    browser_context_->in_memory_pref_store()->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
-            proxy_rules, bypass_list)),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+    if (!ProxyPrefs::StringToProxyMode(mode, &proxy_mode)) {
+      promise.RejectWithErrorMessage(
+          "Invalid mode, must be one of direct, auto_detect, pac_script, "
+          "fixed_servers or system");
+      return handle;
+    }
   }
+
+  std::unique_ptr<base::Value> proxy_config;
+  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect());
+  } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateSystem());
+  } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
+    proxy_config = std::make_unique<base::Value>(
+        ProxyConfigDictionary::CreateAutoDetect());
+  } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
+    proxy_config =
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
+            pac_url, true /* pac_mandatory */));
+  } else {
+    proxy_config = std::make_unique<base::Value>(
+        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list));
+  }
+  browser_context_->in_memory_pref_store()->SetValue(
+      proxy_config::prefs::kProxy, std::move(proxy_config),
+      WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                                 std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ForceReloadProxyConfig() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  auto handle = promise.GetHandle();
+
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      ->GetNetworkContext()
+      ->ForceReloadProxyConfig(base::BindOnce(
+          gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
 }
@@ -504,9 +619,6 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
   content::BrowserContext::GetDefaultStoragePartition(browser_context_)
       ->GetNetworkContext()
       ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
-
-  // This causes the cert verifier cache to be cleared.
-  content::GetNetworkService()->OnCertDBChanged();
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -609,6 +721,10 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
+  browser_context_->SetSSLConfig(std::move(config));
+}
+
 bool Session::IsPersistent() {
   return !browser_context_->IsOffTheRecord();
 }
@@ -665,14 +781,13 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
 
-void Session::SetPreloads(
-    const std::vector<base::FilePath::StringType>& preloads) {
+void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   prefs->set_preloads(preloads);
 }
 
-std::vector<base::FilePath::StringType> Session::GetPreloads() const {
+std::vector<base::FilePath> Session::GetPreloads() const {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
   return prefs->preloads();
@@ -748,6 +863,22 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(v8::Isolate::GetCurrent(), extensions_vector);
+}
+
+void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
+                                const extensions::Extension* extension) {
+  Emit("extension-loaded", extension);
+}
+
+void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
+                                  const extensions::Extension* extension,
+                                  extensions::UnloadedExtensionReason reason) {
+  Emit("extension-unloaded", extension);
+}
+
+void Session::OnExtensionReady(content::BrowserContext* browser_context,
+                               const extensions::Extension* extension) {
+  Emit("extension-ready", extension);
 }
 #endif
 
@@ -825,6 +956,19 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
                      url, num_sockets_to_preconnect));
 }
 
+v8::Local<v8::Promise> Session::CloseAllConnections() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  auto handle = promise.GetHandle();
+
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      ->GetNetworkContext()
+      ->CloseAllConnections(base::BindOnce(
+          gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
+
+  return handle;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -847,6 +991,9 @@ void Session::SetSpellCheckerLanguages(
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
+  // Enable spellcheck if > 0 languages, disable if no languages set
+  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                        !languages.empty());
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
@@ -868,9 +1015,11 @@ v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
   SpellcheckService* spellcheck =
       SpellcheckServiceFactory::GetForContext(browser_context_);
 
-  if (!spellcheck)
+  if (!spellcheck) {
     promise.RejectWithErrorMessage(
         "Spellcheck in unexpected state: failed to load custom dictionary.");
+    return handle;
+  }
 
   if (spellcheck->GetCustomDictionary()->IsLoaded()) {
     promise.Resolve(spellcheck->GetCustomDictionary()->GetWords());
@@ -925,11 +1074,22 @@ bool Session::RemoveWordFromSpellCheckerDictionary(const std::string& word) {
 #endif
   return service->GetCustomDictionary()->RemoveWord(word);
 }
+
+void Session::SetSpellCheckerEnabled(bool b) {
+  browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
+                                        b);
+}
+
+bool Session::IsSpellCheckerEnabled() const {
+  return browser_context_->prefs()->GetBoolean(
+      spellcheck::prefs::kSpellCheckEnable);
+}
+
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
 Session* Session::FromBrowserContext(content::BrowserContext* context) {
-  UserDataLink* data =
+  auto* data =
       static_cast<UserDataLink*>(context->GetUserData(kElectronApiSessionKey));
   return data ? data->session : nullptr;
 }
@@ -985,6 +1145,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("flushStorageData", &Session::FlushStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
+      .SetMethod("forceReloadProxyConfig", &Session::ForceReloadProxyConfig)
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
@@ -1000,6 +1161,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",
@@ -1025,8 +1187,13 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::AddWordToSpellCheckerDictionary)
       .SetMethod("removeWordFromSpellCheckerDictionary",
                  &Session::RemoveWordFromSpellCheckerDictionary)
+      .SetMethod("setSpellCheckerEnabled", &Session::SetSpellCheckerEnabled)
+      .SetMethod("isSpellCheckerEnabled", &Session::IsSpellCheckerEnabled)
+      .SetProperty("spellCheckerEnabled", &Session::IsSpellCheckerEnabled,
+                   &Session::SetSpellCheckerEnabled)
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
+      .SetMethod("closeAllConnections", &Session::CloseAllConnections)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

@@ -47,6 +47,27 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
   }
 };
 
+template <>
+struct Converter<network::mojom::CredentialsMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::CredentialsMode* out) {
+    std::string mode;
+    if (!ConvertFromV8(isolate, val, &mode))
+      return false;
+    if (mode == "omit")
+      *out = network::mojom::CredentialsMode::kOmit;
+    else if (mode == "include")
+      *out = network::mojom::CredentialsMode::kInclude;
+    else
+      // "same-origin" is technically a member of this enum as well, but it
+      // doesn't make sense in the context of `net.request()`, so don't convert
+      // it.
+      return false;
+    return true;
+  }
+};  // namespace gin
+
 }  // namespace gin
 
 namespace electron {
@@ -351,11 +372,82 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
-  request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
-  std::map<std::string, std::string> extra_headers;
+  std::string origin;
+  opts.Get("origin", &origin);
+  if (!origin.empty()) {
+    request->request_initiator = url::Origin::Create(GURL(origin));
+  }
+  bool has_user_activation;
+  if (opts.Get("hasUserActivation", &has_user_activation)) {
+    request->trusted_params = network::ResourceRequest::TrustedParams();
+    request->trusted_params->has_user_activation = has_user_activation;
+  }
+
+  std::string mode;
+  if (opts.Get("mode", &mode) && !mode.empty()) {
+    if (mode == "navigate") {
+      request->mode = network::mojom::RequestMode::kNavigate;
+    } else if (mode == "cors") {
+      request->mode = network::mojom::RequestMode::kCors;
+    } else if (mode == "no-cors") {
+      request->mode = network::mojom::RequestMode::kNoCors;
+    } else if (mode == "same-origin") {
+      request->mode = network::mojom::RequestMode::kSameOrigin;
+    }
+  }
+
+  std::string destination;
+  if (opts.Get("destination", &destination) && !destination.empty()) {
+    if (destination == "empty") {
+      request->destination = network::mojom::RequestDestination::kEmpty;
+    } else if (destination == "audio") {
+      request->destination = network::mojom::RequestDestination::kAudio;
+    } else if (destination == "audioworklet") {
+      request->destination = network::mojom::RequestDestination::kAudioWorklet;
+    } else if (destination == "document") {
+      request->destination = network::mojom::RequestDestination::kDocument;
+    } else if (destination == "embed") {
+      request->destination = network::mojom::RequestDestination::kEmbed;
+    } else if (destination == "font") {
+      request->destination = network::mojom::RequestDestination::kFont;
+    } else if (destination == "frame") {
+      request->destination = network::mojom::RequestDestination::kFrame;
+    } else if (destination == "iframe") {
+      request->destination = network::mojom::RequestDestination::kIframe;
+    } else if (destination == "image") {
+      request->destination = network::mojom::RequestDestination::kImage;
+    } else if (destination == "manifest") {
+      request->destination = network::mojom::RequestDestination::kManifest;
+    } else if (destination == "object") {
+      request->destination = network::mojom::RequestDestination::kObject;
+    } else if (destination == "paintworklet") {
+      request->destination = network::mojom::RequestDestination::kPaintWorklet;
+    } else if (destination == "report") {
+      request->destination = network::mojom::RequestDestination::kReport;
+    } else if (destination == "script") {
+      request->destination = network::mojom::RequestDestination::kScript;
+    } else if (destination == "serviceworker") {
+      request->destination = network::mojom::RequestDestination::kServiceWorker;
+    } else if (destination == "style") {
+      request->destination = network::mojom::RequestDestination::kStyle;
+    } else if (destination == "track") {
+      request->destination = network::mojom::RequestDestination::kTrack;
+    } else if (destination == "video") {
+      request->destination = network::mojom::RequestDestination::kVideo;
+    } else if (destination == "worker") {
+      request->destination = network::mojom::RequestDestination::kWorker;
+    } else if (destination == "xslt") {
+      request->destination = network::mojom::RequestDestination::kXslt;
+    }
+  }
+
+  bool credentials_specified =
+      opts.Get("credentials", &request->credentials_mode);
+  std::vector<std::pair<std::string, std::string>> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
@@ -370,7 +462,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
   int options = 0;
-  if (!use_session_cookies) {
+  if (!credentials_specified && !use_session_cookies) {
+    // This is the default case, as well as the case when credentials is not
+    // specified and useSessionCoookies is false. credentials_mode will be
+    // kInclude, but cookies will be blocked.
     request->credentials_mode = network::mojom::CredentialsMode::kInclude;
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
@@ -432,8 +527,8 @@ void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
-  Emit("data", array_buffer);
-  std::move(resume).Run();
+  Emit("data", array_buffer,
+       base::AdaptCallbackForRepeating(std::move(resume)));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {

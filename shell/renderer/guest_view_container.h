@@ -6,7 +6,6 @@
 #define SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
 
 #include "base/callback.h"
-#include "content/public/renderer/browser_plugin_delegate.h"
 #include "content/public/renderer/render_frame.h"
 
 namespace gfx {
@@ -15,21 +14,18 @@ class Size;
 
 namespace electron {
 
-class GuestViewContainer : public content::BrowserPluginDelegate {
+class GuestViewContainer {
  public:
   typedef base::Callback<void(const gfx::Size&)> ResizeCallback;
 
   explicit GuestViewContainer(content::RenderFrame* render_frame);
-  ~GuestViewContainer() override;
+  virtual ~GuestViewContainer();
 
   static GuestViewContainer* FromID(int element_instance_id);
 
   void RegisterElementResizeCallback(const ResizeCallback& callback);
-
-  // content::BrowserPluginDelegate:
-  void SetElementInstanceID(int element_instance_id) final;
-  void DidResizeElement(const gfx::Size& new_size) final;
-  base::WeakPtr<BrowserPluginDelegate> GetWeakPtr() final;
+  void SetElementInstanceID(int element_instance_id);
+  void DidResizeElement(const gfx::Size& new_size);
 
  private:
   int element_instance_id_;

@@ -23,7 +23,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefService;
@@ -151,7 +150,10 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
-  void GetSurveyAPIKey(const DispatchCallback& callback) override {}
+  void ShowSurvey(const DispatchCallback& callback,
+                  const std::string& trigger) override {}
+  void CanShowSurvey(const DispatchCallback& callback,
+                     const std::string& trigger) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);

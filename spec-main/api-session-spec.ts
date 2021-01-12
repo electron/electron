@@ -9,6 +9,7 @@ import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 
 /* The whole session API doesn't use standard callbacks */
@@ -340,9 +341,16 @@ describe('session module', () => {
   describe('ses.setProxy(options)', () => {
     let server: http.Server;
     let customSession: Electron.Session;
+    let created = false;
 
     beforeEach(async () => {
       customSession = session.fromPartition('proxyconfig');
+      if (!created) {
+        // Work around for https://github.com/electron/electron/issues/26166 to
+        // reduce flake
+        await delay(100);
+        created = true;
+      }
     });
 
     afterEach(() => {
@@ -383,10 +391,18 @@ describe('session module', () => {
         res.end(pac);
       });
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-      const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
-      await customSession.setProxy(config);
-      const proxy = await customSession.resolveProxy('https://google.com');
-      expect(proxy).to.equal('PROXY myproxy:8132');
+      {
+        const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+      {
+        const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
     });
 
     it('allows bypassing proxy settings', async () => {
@@ -397,6 +413,70 @@ describe('session module', () => {
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example/');
       expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `direct`', async () => {
+      const config = { mode: 'direct' as any, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `auto_detect`', async () => {
+      const config = { mode: 'auto_detect' as any };
+      await customSession.setProxy(config);
+    });
+
+    it('allows configuring proxy settings with mode `pac_script`', async () => {
+      const config = { mode: 'pac_script' as any };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `fixed_servers`', async () => {
+      const config = { mode: 'fixed_servers' as any, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with mode `system`', async () => {
+      const config = { mode: 'system' as any };
+      await customSession.setProxy(config);
+    });
+
+    it('disallows configuring proxy settings with mode `invalid`', async () => {
+      const config = { mode: 'invalid' as any };
+      await expect(customSession.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+    });
+
+    it('reload proxy configuration', async () => {
+      let proxyPort = 8132;
+      server = http.createServer((req, res) => {
+        const pac = `
+          function FindProxyForURL(url, host) {
+            return "PROXY myproxy:${proxyPort}";
+          }
+        `;
+        res.writeHead(200, {
+          'Content-Type': 'application/x-ns-proxy-autoconfig'
+        });
+        res.end(pac);
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+      await customSession.setProxy(config);
+      {
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
+      {
+        proxyPort = 8133;
+        await customSession.forceReloadProxyConfig();
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
     });
   });
 
@@ -459,7 +539,6 @@ describe('session module', () => {
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
           fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
         ],
-        requestCert: true,
         rejectUnauthorized: false
       };
 
@@ -471,25 +550,26 @@ describe('session module', () => {
     });
 
     afterEach((done) => {
-      session.defaultSession.setCertificateVerifyProc(null);
       server.close(done);
     });
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
         expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true();
         expect([-202, -200].includes(errorCode)).to.be.true();
         callback(0);
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(`https://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(w.webContents.getTitle()).to.equal('hello');
     });
 
     it('rejects the request when the callback is called with -2', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
         expect(hostname).to.equal('127.0.0.1');
         expect(certificate.issuerName).to.equal('Intermediate CA');
         expect(certificate.subjectName).to.equal('localhost');
@@ -505,25 +585,47 @@ describe('session module', () => {
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url);
     });
 
     it('saves cached results', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
-      session.defaultSession.setCertificateVerifyProc((e, callback) => {
+      ses.setCertificateVerifyProc((e, callback) => {
         numVerificationRequests++;
         callback(-2);
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       await emittedOnce(w.webContents, 'did-stop-loading');
       await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url + '/test');
       expect(numVerificationRequests).to.equal(1);
+    });
+
+    it('does not cancel requests in other sessions', async () => {
+      const ses1 = session.fromPartition(`${Math.random()}`);
+      ses1.setCertificateVerifyProc((opts, cb) => cb(0));
+      const ses2 = session.fromPartition(`${Math.random()}`);
+
+      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const req = net.request({ url, session: ses1, credentials: 'include' });
+      req.end();
+      setTimeout(() => {
+        ses2.setCertificateVerifyProc((opts, callback) => callback(0));
+      });
+      await expect(new Promise((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      })).to.eventually.be.fulfilled();
     });
   });
 
@@ -979,10 +1081,62 @@ describe('session module', () => {
 
   describe('session-created event', () => {
     it('is emitted when a session is created', async () => {
-      const eventEmitted = new Promise<Session>(resolve => app.once('session-created', resolve));
-      session.fromPartition('' + Math.random());
-      const s = await eventEmitted;
-      expect(s.constructor.name).to.equal('Session');
+      const sessionCreated = emittedOnce(app, 'session-created');
+      const session1 = session.fromPartition('' + Math.random());
+      const [session2] = await sessionCreated;
+      expect(session1).to.equal(session2);
+    });
+  });
+
+  describe('ses.setSSLConfig()', () => {
+    it('can disable cipher suites', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+      const certPath = path.join(fixturesPath, 'certificates');
+      const server = https.createServer({
+        key: fs.readFileSync(path.join(certPath, 'server.key')),
+        cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+        ca: [
+          fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+        ],
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.2',
+        ciphers: 'AES128-GCM-SHA256'
+      }, (req, res) => {
+        res.end('hi');
+      });
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      defer(() => server.close());
+      const { port } = server.address() as AddressInfo;
+
+      function request () {
+        return new Promise((resolve, reject) => {
+          const r = net.request({
+            url: `https://127.0.0.1:${port}`,
+            session: ses
+          });
+          r.on('response', (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk.toString('utf8');
+            });
+            res.on('end', () => {
+              resolve(data);
+            });
+          });
+          r.on('error', (err) => {
+            reject(err);
+          });
+          r.end();
+        });
+      }
+
+      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
+      ses.setSSLConfig({
+        disabledCipherSuites: [0x009C]
+      });
+      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
 });

@@ -99,13 +99,9 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
-  {
-    v8::TryCatch try_catch(isolate);
-    gin::Handle<NativeImage> icon;
-    if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
-      SetIcon(icon);
-    if (try_catch.HasCaught())
-      LOG(ERROR) << "Failed to convert NativeImage";
+  v8::Local<v8::Value> icon;
+  if (options.Get(options::kIcon, &icon)) {
+    SetIcon(isolate, icon);
   }
 #endif
 }
@@ -222,6 +218,10 @@ void BaseWindow::OnWindowResize() {
   Emit("resize");
 }
 
+void BaseWindow::OnWindowResized() {
+  Emit("resized");
+}
+
 void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {
   if (Emit("will-move", new_bounds)) {
@@ -292,6 +292,12 @@ void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
 
 void BaseWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
+}
+
+void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
+  if (Emit("system-context-menu", gfx::Point(x, y))) {
+    *prevent_default = true;
+  }
 }
 
 #if defined(OS_WIN)
@@ -749,6 +755,14 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
       if (browser_view->web_contents()) {
+        // If we're reparenting a BrowserView, ensure that it's detached from
+        // its previous owner window.
+        auto* owner_window = browser_view->web_contents()->owner_window();
+        if (owner_window && owner_window != window_.get()) {
+          owner_window->RemoveBrowserView(browser_view->view());
+          browser_view->web_contents()->SetOwnerWindow(nullptr);
+        }
+
         window_->AddBrowserView(browser_view->view());
         browser_view->web_contents()->SetOwnerWindow(window_.get());
       }
@@ -832,11 +846,16 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 
 #if defined(OS_MAC)
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
-  window_->SetTrafficLightPosition(position);
+  // For backward compatibility we treat (0, 0) as reseting to default.
+  if (position.IsOrigin())
+    window_->SetTrafficLightPosition(base::nullopt);
+  else
+    window_->SetTrafficLightPosition(position);
 }
 
 gfx::Point BaseWindow::GetTrafficLightPosition() const {
-  return window_->GetTrafficLightPosition();
+  // For backward compatibility we treat default value as (0, 0).
+  return window_->GetTrafficLightPosition().value_or(gfx::Point());
 }
 #endif
 
@@ -945,7 +964,7 @@ std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
 
 v8::Local<v8::Value> BaseWindow::GetBrowserView(
     gin_helper::Arguments* args) const {
-  if (browser_views_.size() == 0) {
+  if (browser_views_.empty()) {
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
     auto first_view = browser_views_.begin();
@@ -988,14 +1007,18 @@ bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 }
 
 #if defined(TOOLKIT_VIEWS)
-void BaseWindow::SetIcon(gin::Handle<NativeImage> icon) {
+void BaseWindow::SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
+  NativeImage* native_image = nullptr;
+  if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+    return;
+
 #if defined(OS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
-      ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
-                icon->GetHICON(GetSystemMetrics(SM_CXICON)));
-#elif defined(USE_X11)
+      ->SetIcon(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+                native_image->GetHICON(GetSystemMetrics(SM_CXICON)));
+#elif defined(OS_LINUX)
   static_cast<NativeWindowViews*>(window_.get())
-      ->SetIcon(icon->image().AsImageSkia());
+      ->SetIcon(native_image->image().AsImageSkia());
 #endif
 }
 #endif
@@ -1061,9 +1084,14 @@ void BaseWindow::ResetBrowserViews() {
                            v8::Local<v8::Value>::New(isolate(), item.second),
                            &browser_view) &&
         !browser_view.IsEmpty()) {
+      // There's a chance that the BrowserView may have been reparented - only
+      // reset if the owner window is *this* window.
       if (browser_view->web_contents()) {
-        window_->RemoveBrowserView(browser_view->view());
-        browser_view->web_contents()->SetOwnerWindow(nullptr);
+        auto* owner_window = browser_view->web_contents()->owner_window();
+        if (owner_window == window_.get()) {
+          browser_view->web_contents()->SetOwnerWindow(nullptr);
+          owner_window->RemoveBrowserView(browser_view->view());
+        }
       }
     }
 

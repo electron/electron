@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 1 Jun 2020 15:30:47 -0800
+Subject: fix: export zlib symbols
+
+This patch sets ZLIB_DLL so that we properly export zlib symbols.
+
+diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
+index d64cb38bcdab4fbf9449f259d4dd62d39edcbfe1..6e4cd5c43d98145df2eca6b1dbe6d0e4047c2750 100644
+--- a/third_party/zlib/BUILD.gn
++++ b/third_party/zlib/BUILD.gn
+@@ -301,6 +301,10 @@ component("zlib") {
+   defines = []
+   deps = []
+ 
++  if (is_win) {
++    defines += [ "ZLIB_DLL" ]
++  }
++
+   if (!use_x86_x64_optimizations && !use_arm_neon_optimizations) {
+     # Apparently android_cronet bot builds with NEON disabled and
+     # we also should disable optimizations for iOS@x86 (a.k.a. simulator).

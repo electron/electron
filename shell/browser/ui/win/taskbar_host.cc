@@ -67,7 +67,7 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   callback_map_.clear();
 
   // The number of buttons in thumbar can not be changed once it is created,
-  // so we have to claim kMaxButtonsCount buttons initialy in case users add
+  // so we have to claim kMaxButtonsCount buttons initially in case users add
   // more buttons later.
   base::win::ScopedHICON icons[kMaxButtonsCount] = {};
   THUMBBUTTON thumb_buttons[kMaxButtonsCount] = {};

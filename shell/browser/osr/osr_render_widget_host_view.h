@@ -68,10 +68,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
-  content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
-      content::BrowserAccessibilityDelegate*,
-      bool) override;
-
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
@@ -112,7 +108,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
                    const gfx::Rect& rect) override;
-  void InitAsFullscreen(content::RenderWidgetHostView*) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
@@ -128,6 +123,9 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void GetScreenInfo(blink::ScreenInfo* results) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
+  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  void SetDisplayFeatureForTesting(
+      const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
@@ -140,8 +138,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       content::RenderWidgetHost*,
       content::WebContentsView*) override;
 
-  const viz::LocalSurfaceIdAllocation& GetLocalSurfaceIdAllocation()
-      const override;
+  const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
 
   void DidNavigate() override;
@@ -254,10 +251,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceIdAllocation delegated_frame_host_allocation_;
+  viz::LocalSurfaceId delegated_frame_host_surface_id_;
   viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
 
-  viz::LocalSurfaceIdAllocation compositor_allocation_;
+  viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;

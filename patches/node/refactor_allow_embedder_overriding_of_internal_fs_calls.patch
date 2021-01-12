@@ -7,10 +7,10 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 6d6ca2af629c41df68fe1a4652cf94fef30be038..e1f70addc28e4fe31d3a7089ecec3b5874dde75a 100644
+index 2705f8b50a658db0fc1ce6fba245792f6a567300..5aab40071b68affe602be16d451be598b246faa1 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -56,6 +56,10 @@ setupBuffer();
+@@ -57,6 +57,10 @@ setupBuffer();
  process.domain = null;
  process._exiting = false;
  
@@ -22,19 +22,19 @@ index 6d6ca2af629c41df68fe1a4652cf94fef30be038..e1f70addc28e4fe31d3a7089ecec3b58
  process.config = JSONParse(internalBinding('native_module').config);
  require('internal/worker/js_transferable').setup();
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index edd5972002d7ad4d6932dfbed591a96d5b3f6fab..7067737952a5002899071bb4a434a93ec92103ce 100644
+index 5bebce776dc60052aa01422af29d7766033e7331..541c18d8032c5247433367f9e04c946cf203d475 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -67,7 +67,7 @@ const internalFS = require('internal/fs/utils');
+@@ -70,7 +70,7 @@ const fs = require('fs');
+ const internalFS = require('internal/fs/utils');
  const path = require('path');
  const { sep } = path;
- const { emitWarningSync } = require('internal/process/warning');
 -const { internalModuleStat } = internalBinding('fs');
 +const internalFsBinding = internalBinding('fs');
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -160,7 +160,7 @@ function stat(filename) {
+@@ -142,7 +142,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }

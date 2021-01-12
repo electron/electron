@@ -13,6 +13,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
+#include "services/network/public/cpp/features.h"
 
 namespace electron {
 
@@ -34,7 +35,8 @@ void InitializeFeatureList() {
       // https://groups.google.com/a/chromium.org/g/embedder-dev/c/4yJi4Twj2NM/m/9bhpWureCAAJ
       std::string(",") + net::features::kSameSiteByDefaultCookies.name +
       std::string(",") +
-      net::features::kCookiesWithoutSameSiteMustBeSecure.name;
+      net::features::kCookiesWithoutSameSiteMustBeSecure.name +
+      std::string(",") + network::features::kCertVerifierService.name;
 
   // https://www.polymer-project.org/blog/2018-10-02-webcomponents-v0-deprecations
   // https://chromium-review.googlesource.com/c/chromium/src/+/1869562

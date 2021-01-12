@@ -66,6 +66,14 @@ void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
   dict->SetKey("pdfFormSaveEnabled",
                base::Value(base::FeatureList::IsEnabled(
                    chrome_pdf::features::kSaveEditedPDFForm)));
+  dict->SetStringKey(
+      "pdfViewerUpdateEnabledAttribute",
+      base::FeatureList::IsEnabled(chrome_pdf::features::kPDFViewerUpdate)
+          ? "pdf-viewer-update-enabled"
+          : "");
+  dict->SetKey("presentationModeEnabled",
+               base::Value(base::FeatureList::IsEnabled(
+                   chrome_pdf::features::kPdfViewerPresentationMode)));
   dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
   dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
@@ -102,7 +110,8 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   const std::string& app_locale = g_browser_process->GetApplicationLocale();
   webui::SetLoadTimeDataDefaults(app_locale, dict.get());
 
-  return RespondNow(OneArgument(std::move(dict)));
+  return RespondNow(
+      OneArgument(base::Value::FromUniquePtrValue(std::move(dict))));
 }
 
 }  // namespace extensions

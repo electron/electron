@@ -26,10 +26,11 @@ namespace api {
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
 #if defined(OS_MAC)
-    : View(new DelayedNativeViewHost(
-          web_contents->managed_web_contents()->GetView()->GetNativeView())),
+    : View(new DelayedNativeViewHost(web_contents->inspectable_web_contents()
+                                         ->GetView()
+                                         ->GetNativeView())),
 #else
-    : View(web_contents->managed_web_contents()->GetView()->GetView()),
+    : View(web_contents->inspectable_web_contents()->GetView()->GetView()),
 #endif
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
@@ -96,25 +97,9 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     const gin_helper::Dictionary& web_preferences) {
-  // Check if BrowserWindow has passend |webContents| option to us.
-  gin::Handle<WebContents> web_contents;
-  if (web_preferences.GetHidden("webContents", &web_contents) &&
-      !web_contents.IsEmpty()) {
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(args->isolate(), web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Create one if not.
-    web_contents = WebContents::Create(args->isolate(), web_preferences);
-  }
+  auto web_contents =
+      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
+
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents);
   view->InitWithArgs(args);

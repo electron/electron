@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index c5a406062c48dd00d411e3d1d26e4c6f40c30513..0be31f4e02513682fc742e7a71c11a115245e3d8 100644
+index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92ba49c8ec4 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -134,6 +134,8 @@ using v8::Undefined;
@@ -36,7 +36,7 @@ index c5a406062c48dd00d411e3d1d26e4c6f40c30513..0be31f4e02513682fc742e7a71c11a11
  namespace per_process {
  
  // node_revert.h
-@@ -836,7 +838,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -837,7 +839,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -47,7 +47,7 @@ index c5a406062c48dd00d411e3d1d26e4c6f40c30513..0be31f4e02513682fc742e7a71c11a11
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -870,6 +874,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -871,6 +875,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -56,7 +56,7 @@ index c5a406062c48dd00d411e3d1d26e4c6f40c30513..0be31f4e02513682fc742e7a71c11a11
  
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -914,6 +920,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -915,6 +921,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    }
    per_process::metadata.versions.InitializeIntlVersions();
  #endif
@@ -65,10 +65,10 @@ index c5a406062c48dd00d411e3d1d26e4c6f40c30513..0be31f4e02513682fc742e7a71c11a11
    NativeModuleEnv::InitializeCodeCache();
  
 diff --git a/src/node.h b/src/node.h
-index 1914e72ee8fa4361379725b8d44892c8a62084e1..d051b422d7c5a51a8590abda382676d3f661b532 100644
+index 38e0ef50f9b283b1d7ca8f54412d99b8cd38e524..34a16feaed229a59181e1b2e48b0e111d5b0b2a6 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -218,6 +218,8 @@ namespace node {
+@@ -220,6 +220,8 @@ namespace node {
  
  class IsolateData;
  class Environment;

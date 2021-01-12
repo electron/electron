@@ -136,7 +136,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
     }
   }
 
-  // If "detail" is empty then don't make message hilighted.
+  // If "detail" is empty then don't make message highlighted.
   if (detail.empty()) {
     config.pszContent = message.c_str();
   } else {
@@ -161,7 +161,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
-  if (dialog_buttons.size() > 0) {
+  if (!dialog_buttons.empty()) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
     if (!no_link)
