@@ -74,7 +74,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                      const gfx::Vector2d& image_offset,
                      const blink::mojom::DragEventSourceInfo& event_info,
                      content::RenderWidgetHostImpl* source_rwh) override;
-  void UpdateDragCursor(blink::DragOperation operation) override;
+  void UpdateDragCursor(ui::mojom::DragOperation operation) override;
   void SetPainting(bool painting);
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
