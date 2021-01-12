@@ -228,6 +228,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "system-wake-lock");
     case content::PermissionType::WINDOW_PLACEMENT:
       return StringToV8(isolate, "window-placement");
+    case content::PermissionType::DISPLAY_CAPTURE:
+      return StringToV8(isolate, "display-capture");
     case content::PermissionType::NUM:
       break;
   }
