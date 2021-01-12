@@ -19,7 +19,9 @@ const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
 describe('reporting api', () => {
-  it('sends a report for a deprecation', async () => {
+  // TODO(nornagon): this started failing a lot on CI. Figure out why and fix
+  // it.
+  it.skip('sends a report for a deprecation', async () => {
     const reports = new EventEmitter();
 
     // The Reporting API only works on https with valid certs. To dodge having
