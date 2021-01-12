@@ -107,9 +107,9 @@ void ElectronMessagingDelegate::QueryIncognitoConnectability(
     const Extension* target_extension,
     content::WebContents* source_contents,
     const GURL& source_url,
-    const base::Callback<void(bool)>& callback) {
+    base::OnceCallback<void(bool)> callback) {
   DCHECK(context->IsOffTheRecord());
-  callback.Run(false);
+  std::move(callback).Run(false);
 }
 
 }  // namespace extensions
