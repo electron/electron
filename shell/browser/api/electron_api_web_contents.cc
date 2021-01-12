@@ -366,6 +366,9 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 
 namespace electron {
 
+class PrintingScopedAllowBlocking : public base::ScopedAllowBlockingForTesting {
+};
+
 namespace api {
 
 namespace {
@@ -421,8 +424,11 @@ bool IsDeviceNameValid(const base::string16& device_name) {
 }
 
 base::string16 GetDefaultPrinterAsync() {
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
+#if defined(OS_WIN)
+  // Blocking is needed here because Windows printer drivers are oftentimes
+  // not thread-safe and have to be accessed on the UI thread.
+  PrintingScopedAllowBlocking allow_blocking;
+#endif
 
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
@@ -2541,8 +2547,9 @@ void WebContents::Print(gin::Arguments* args) {
     settings.SetIntKey(printing::kSettingDpiVertical, dpi);
   }
 
-  print_task_runner_->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&GetDefaultPrinterAsync),
+  base::PostTaskAndReplyWithResult(
+      print_task_runner_.get(), FROM_HERE,
+      base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
                      std::move(callback), device_name, silent));
