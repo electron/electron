@@ -337,7 +337,6 @@ source_set("electron_lib") {
     "//components/viz/service",
     "//content/public/browser",
     "//content/public/child",
-    "//content/public/common:service_names",
     "//content/public/gpu",
     "//content/public/renderer",
     "//content/public/utility",
