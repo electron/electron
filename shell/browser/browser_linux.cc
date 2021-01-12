@@ -84,16 +84,6 @@ bool SetDefaultWebClient(const std::string& protocol) {
   return ran_ok && exit_code == EXIT_SUCCESS;
 }
 
-void Browser::Focus(gin::Arguments* args) {
-  // Focus on the first visible window.
-  for (auto* const window : WindowList::GetWindows()) {
-    if (window->IsVisible()) {
-      window->Focus(true);
-      break;
-    }
-  }
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
 void Browser::ClearRecentDocuments() {}

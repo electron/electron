@@ -43,19 +43,6 @@ namespace electron {
 
 namespace {
 
-BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
-  DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
-  DWORD process_id = 0;
-
-  GetWindowThreadProcessId(hwnd, &process_id);
-  if (process_id == target_process_id) {
-    SetFocus(hwnd);
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
 bool GetProcessExecPath(base::string16* exe) {
   base::FilePath path;
   if (!base::PathService::Get(base::FILE_EXE, &path)) {
@@ -291,12 +278,6 @@ std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
 Browser::UserTask::UserTask() = default;
 Browser::UserTask::UserTask(const UserTask&) = default;
 Browser::UserTask::~UserTask() = default;
-
-void Browser::Focus(gin::Arguments* args) {
-  // On Windows we just focus on the first window found for this process.
-  DWORD pid = GetCurrentProcessId();
-  EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
-}
 
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
