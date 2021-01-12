@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index a28df531ff474ae69e937668e77364db92558257..a6aa22ceaf3fd6942eda5b2d72b6cc3903e26554 100644
+index 8ee627925dfe2a113b1e17e0ff0d4dae582772b4..83235163284397899b1c7444d43d88f93921f37d 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1770,6 +1770,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -60,7 +60,7 @@ index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f1035f27bef6 100644
+index 88045687f03cbefa8c2adaee65f6ada75d3f3e52..53cb6859dd951dd79f9d463c2bb2177268f1a251 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -241,7 +241,7 @@ index d5d68aa5a40b577d7d7b545cdc67f60e18acdf86..8ab5b75d7eee5f3e17b997abcd84f504
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index cd53727d64bf7d3b265fb6e3e95fa3b5390b091f..a4d0f77f284fa27e78789115aea77217cebbce69 100644
+index d32cf0c76ec294915f615f1702d0b656056ba1bc..c12a2c3575b8b078a663e00f204e97ca415aa63f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -219,6 +219,7 @@
@@ -252,7 +252,7 @@ index cd53727d64bf7d3b265fb6e3e95fa3b5390b091f..a4d0f77f284fa27e78789115aea77217
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3172,6 +3173,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3174,6 +3175,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -293,7 +293,7 @@ index 6532f5a49ffa359d355a8191dd144092bdb3fa1d..cdc18bdb3fe87df54e125c204fda4851
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 1e876620298ff54d500a02aad7b9ab50767a2507..93b9a9b91a22e162a6f52f479b5e51f13a69b125 100644
+index 85f622015df490e7abe32935297863b541e7fa97..9a691d2f9823f80ff0afcd741740f9cb0f773585 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

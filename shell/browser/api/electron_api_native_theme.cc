@@ -64,7 +64,7 @@ bool NativeTheme::ShouldUseDarkColors() {
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->UsesHighContrastColors();
+  return ui_theme_->UserHasContrastPreference();
 }
 
 #if defined(OS_MAC)

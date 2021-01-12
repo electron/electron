@@ -30,10 +30,10 @@ index f3875c216b5f4169a3beb9ae3aeb73c9f4df23f1..5e471024655e1b9ee224ed8ba7fc416e
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 0db198a8cb657c679f6ba96fb9ac04460b448b14..0c5599d817c1327446e12d76b7cdca58369a7aae 100644
+index 603db59e5ef4f4dd07350fdeee883eb896966ecd..8f61a9677e5f5b6278c989c4929656130e7aa2b6 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1875,6 +1875,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -1912,6 +1912,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,10 +43,10 @@ index 0db198a8cb657c679f6ba96fb9ac04460b448b14..0c5599d817c1327446e12d76b7cdca58
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4e058f7bc0d9f58269816d4a4afe432d01212db9..ad7be058905cce2c4cc7e5829c80e0c47ba54fe3 100644
+index bcedde3b0f8f5112e25e5ae1c78a24b77bcc85d8..1dc2fa4a5cdf86eada6794a80a196f6ca3727fe8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4134,6 +4134,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4120,6 +4120,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 4e058f7bc0d9f58269816d4a4afe432d01212db9..ad7be058905cce2c4cc7e5829c80e0c4
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index a56cb369db3285348536eb344e595f0d8fee70dc..63cb45896b1cd589ada801e41e9fe547a9088416 100644
+index bd4c845cd98958360baffb075e7068c4274d9dcd..a205c2dafe97e3096d31846438e0c2da82a64458 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -943,6 +943,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -959,6 +959,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
