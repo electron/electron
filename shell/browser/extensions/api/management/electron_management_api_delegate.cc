@@ -38,7 +38,7 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
       const extensions::Extension* extension,
-      const base::Callback<void(bool)>& callback) {
+      base::OnceCallback<void(bool)> callback) {
     // TODO(sentialx): emit event
   }
   ~ManagementSetEnabledFunctionInstallPromptDelegate() override {}
@@ -109,10 +109,10 @@ ElectronManagementAPIDelegate::SetEnabledFunctionDelegate(
     content::WebContents* web_contents,
     content::BrowserContext* browser_context,
     const extensions::Extension* extension,
-    const base::Callback<void(bool)>& callback) const {
+    base::OnceCallback<void(bool)> callback) const {
   return std::unique_ptr<ManagementSetEnabledFunctionInstallPromptDelegate>(
       new ManagementSetEnabledFunctionInstallPromptDelegate(
-          web_contents, browser_context, extension, callback));
+          web_contents, browser_context, extension, std::move(callback)));
 }
 
 std::unique_ptr<extensions::UninstallDialogDelegate>
