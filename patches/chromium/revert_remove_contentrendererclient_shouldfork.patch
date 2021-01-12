@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index e9c8c71a0b2e7a431f14b873a114e741a4c129fb..5db4a2f36da1761f94d7ce58483d4d6544b8daf9 100644
+index fea876ec7fa3cf0d3c11dad64750837b28658bef..a87d23b7d2171663fa55c78d390bc3b8279a04f1 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1275,6 +1275,25 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
+@@ -1277,6 +1277,25 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
  #endif
  }
  
@@ -55,10 +55,10 @@ index 857b350afe980dd79e4c76ebd3cb1be461457f0a..1cac9fc1d8d92d5afe02aa1d1dba0589
        override;
    void WillSendRequest(blink::WebLocalFrame* frame,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index 6aea489e574bd0a8bc882d2f2d29e4929f8ce261..2397ccf48fa54e678652b93896665f89a039a992 100644
+index 78174b924c7b8429d1400b51f4a560d750cc0af6..20eee821969cfa32a61cc0c16e216d3821253d77 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
-@@ -115,6 +115,14 @@ bool ContentRendererClient::HandleNavigation(
+@@ -117,6 +117,14 @@ bool ContentRendererClient::HandleNavigation(
  }
  #endif
  
@@ -92,10 +92,10 @@ index 16d0dd4456f214b14fbdf224ba938ebb1cb63106..4dc340938d54597a315ebb441d769dcc
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 536b5a72f4994bde01c6c96ffbca74499ad39a7c..0faa12629b99ea9f5079b53c16f8d6b4b39a41d7 100644
+index 74301e21452af01ebbd5f945610c75cf66aed8a9..fd0e06f2b56b9380b2aef25118976dc137f6f4b0 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5502,6 +5502,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5461,6 +5461,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

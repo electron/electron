@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 977f166904fddc1b7c99b0e3350488e28ce07965..bfecf7bf69f0de16d772c20457ffd8c100b361dc 100644
+index 6a864ebf186ee22b5a3495562f25f473e51fece0..50c2c58fe6ce0bb3ab14f3dc80b4b2f90eedf8ac 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -357,6 +357,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -356,6 +356,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -42,7 +42,7 @@ index 977f166904fddc1b7c99b0e3350488e28ce07965..bfecf7bf69f0de16d772c20457ffd8c1
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 763b98c4042146ade58543820497b63e585c71fa..da9a221635f341daac5d3bd3ca4dd401612cc840 100644
+index 2969de7777e4104618149bacb99603b3f3fb416d..c7605301808133f9a995c0ceb95c84576d2cebd1 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -64,7 +64,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -115,7 +115,7 @@ index d08b6a27c0377140562b8feee14b3ae595eb336e..b3d47ac70bc91f3e1cb9931560e6fb36
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index c45c48d9de73004ed89651920247f65fa3035aac..6bcec4c618ae2ee4e544ff0204a6349dee460707 100644
+index 4d0ed521015660da2376ebc9c50b0f4235ff112c..f4dff8de98066ea0ee4fb30ce832b27707791743 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -652,6 +652,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

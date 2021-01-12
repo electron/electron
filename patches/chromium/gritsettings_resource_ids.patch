@@ -6,10 +6,10 @@ Subject: gritsettings_resource_ids.patch
 Add electron resources file to the list of resource ids generation.
 
 diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_ids.spec
-index adb9590e79cca869619f25a461faaea2f47610b0..0ceae9411f549843319707800b6706510d3b98c3 100644
+index 1343d7c03b07cb15416d353450a4b0f6937c4c4b..e199e5ad195c52943e81afc386dc9c7ba7e6f42d 100644
 --- a/tools/gritsettings/resource_ids.spec
 +++ b/tools/gritsettings/resource_ids.spec
-@@ -685,6 +685,11 @@
+@@ -696,6 +696,11 @@
      "includes": [3880],
    },
  
