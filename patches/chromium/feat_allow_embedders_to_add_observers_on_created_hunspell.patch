@@ -7,7 +7,7 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 1a5d8bf3536b911b0eb29d3ec8a9f0b818ec055b..e96cbd5c3d4568eab7819d0c7b2c4549d46f9441 100644
+index d56c8c83de75185dec10085c299eff88f25f4666..ccf8434c278900346c29b7f1e5693d593632b2c4 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -475,6 +475,9 @@ void SpellcheckService::LoadDictionaries() {
@@ -20,7 +20,7 @@ index 1a5d8bf3536b911b0eb29d3ec8a9f0b818ec055b..e96cbd5c3d4568eab7819d0c7b2c4549
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -527,6 +527,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -527,6 +530,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
           (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
  }
  
@@ -41,9 +41,8 @@ index 1a5d8bf3536b911b0eb29d3ec8a9f0b818ec055b..e96cbd5c3d4568eab7819d0c7b2c4549
  void SpellcheckService::Observe(int type,
                                  const content::NotificationSource& source,
                                  const content::NotificationDetails& details) {
-
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index 29ea018d1df9f34204d26766fe010e6b38def7da..68af07c361ee1934e3f76497429c9d30f0212283 100644
+index a810ed516cce5f491ea75ae2d0bbda65e066ad3e..fcfd3f5801a967fdd7b3e99094a35eddb1a31789 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -134,6 +134,8 @@ class SpellcheckService : public KeyedService,
@@ -55,7 +54,7 @@ index 29ea018d1df9f34204d26766fe010e6b38def7da..68af07c361ee1934e3f76497429c9d30
    // NotificationProfile implementation.
    void Observe(int type,
                 const content::NotificationSource& source,
-@@ -319,6 +321,8 @@ class SpellcheckService : public KeyedService,
+@@ -301,6 +303,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    content::BrowserContext* context_;
  
