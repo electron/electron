@@ -20,7 +20,7 @@ index 1a5d8bf3536b911b0eb29d3ec8a9f0b818ec055b..e96cbd5c3d4568eab7819d0c7b2c4549
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -527,6 +530,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -527,6 +527,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
           (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
  }
  
@@ -38,22 +38,23 @@ index 1a5d8bf3536b911b0eb29d3ec8a9f0b818ec055b..e96cbd5c3d4568eab7819d0c7b2c4549
 +  hunspell_observer_ = observer;
 +}
 +
- bool SpellcheckService::LoadExternalDictionary(std::string language,
-                                                std::string locale,
-                                                std::string path,
+ void SpellcheckService::Observe(int type,
+                                 const content::NotificationSource& source,
+                                 const content::NotificationDetails& details) {
+
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
 index 29ea018d1df9f34204d26766fe010e6b38def7da..68af07c361ee1934e3f76497429c9d30f0212283 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
-@@ -141,6 +141,8 @@ class SpellcheckService : public KeyedService,
+@@ -134,6 +134,8 @@ class SpellcheckService : public KeyedService,
    // dictionaries available.
    bool IsSpellcheckEnabled() const;
  
 +  void SetHunspellObserver(SpellcheckHunspellDictionary::Observer* observer);
 +
-   // Load a dictionary from a given path. Format specifies how the dictionary
-   // is stored. Return value is true if successful.
-   bool LoadExternalDictionary(std::string language,
+   // NotificationProfile implementation.
+   void Observe(int type,
+                const content::NotificationSource& source,
 @@ -319,6 +321,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    content::BrowserContext* context_;
