@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 63dcc09dc00d58eb141a1833db8abe9e8c43f05d..8d6546111e1e3b52b02b19d2f49265c3d8f55cbc 100644
+index 63dcc09dc00d58eb141a1833db8abe9e8c43f05d..c2025573bae6d53543ee9dd620e011735f7b7e6a 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -19,7 +19,9 @@
@@ -101,7 +101,7 @@ index 63dcc09dc00d58eb141a1833db8abe9e8c43f05d..8d6546111e1e3b52b02b19d2f49265c3
 +#if 0
    PrefService* pref = Profile::FromWebUI(web_ui())->GetPrefs();
    bool internal = pref->GetBoolean(prefs::kShowInternalAccessibilityTree);
-+#endif  
++#endif
    std::string accessibility_contents =
 -      web_contents->DumpAccessibilityTree(internal, property_filters);
 +      web_contents->DumpAccessibilityTree(true, property_filters);

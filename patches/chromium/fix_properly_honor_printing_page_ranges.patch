@@ -23,7 +23,7 @@ index 909aaf6ce803fed32eb1c64c0abcf272731762da..ba431655fe5894c7d9b04464ea36307a
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 51c8ff31497fd03842ac9e7da4eab8a5919ec898..53e11ca26e82f2eac18a3465cabde2605b061319 100644
+index 51c8ff31497fd03842ac9e7da4eab8a5919ec898..e48cb9427b8d288f61249e387239c1a2ff59d305 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -188,7 +188,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
@@ -43,7 +43,7 @@ index 51c8ff31497fd03842ac9e7da4eab8a5919ec898..53e11ca26e82f2eac18a3465cabde260
 +bool PrintingContextMac::SetPrintRangeInPrintSettings(const PageRanges& ranges) {
 +  // Default is already NSPrintAllPages - we can safely bail.
 +  if (ranges.empty())
-+    return true; 
++    return true;
 +
 +  auto* print_settings =
 +      static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
