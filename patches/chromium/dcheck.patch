@@ -24,7 +24,7 @@ index 66933a960afc2e6bcbbea36b3d013a5e541d8f42..22b53cde50483b22323dcf4dc413feef
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
--  // We only clear the session history when navigating to a new page.
+-  // We only clear the session history in tests when navigating to a new entry.
 -  DCHECK(!params.history_list_was_cleared);
 +  // Electron does its own book keeping of navigation entries and we
 +  // expect content to not track any, by clearing history list for
