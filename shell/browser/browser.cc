@@ -64,6 +64,18 @@ Browser* Browser::Get() {
   return ElectronBrowserMainParts::Get()->browser();
 }
 
+#if defined(OS_WIN) || defined(OS_LINUX)
+void Browser::Focus(gin::Arguments* args) {
+  // Focus on the first visible window.
+  for (auto* const window : WindowList::GetWindows()) {
+    if (window->IsVisible()) {
+      window->Focus(true);
+      break;
+    }
+  }
+}
+#endif
+
 void Browser::Quit() {
   if (is_quiting_)
     return;
