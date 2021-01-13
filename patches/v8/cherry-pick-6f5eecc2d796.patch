@@ -1,0 +1,78 @@
+From 6f5eecc2d7968dcf5211592d5f0a0038a06ec943 Mon Sep 17 00:00:00 2001
+From: ishell@chromium.org <ishell@chromium.org>
+Date: Tue, 15 Dec 2020 10:45:19 +0100
+Subject: [PATCH] Merged: [parser] Fix AST func reindexing for function fields
+
+Revision: a769ea7a4462115579ba87bc16fbffbae01310c1
+
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=leszeks@chromium.org
+
+Bug: chromium:1132111, chromium:1157790
+Change-Id: I01ccb83a60163b3c99716f78a5a69a0943cedde3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2593251
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.7@{#62}
+Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
+Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
+---
+
+diff --git a/src/ast/ast-function-literal-id-reindexer.cc b/src/ast/ast-function-literal-id-reindexer.cc
+index b583b5e..8c9318b 100644
+--- a/src/ast/ast-function-literal-id-reindexer.cc
++++ b/src/ast/ast-function-literal-id-reindexer.cc
+@@ -54,10 +54,10 @@
+     // Private fields have their key and value present in
+     // instance_members_initializer_function, so they will
+     // already have been visited.
+-    if (prop->value()->IsFunctionLiteral()) {
+-      Visit(prop->value());
+-    } else {
++    if (prop->kind() == ClassLiteralProperty::Kind::FIELD) {
+       CheckVisited(prop->value());
++    } else {
++      Visit(prop->value());
+     }
+   }
+   ZonePtrList<ClassLiteral::Property>* props = expr->public_members();
+@@ -67,7 +67,8 @@
+     // Public fields with computed names have their key
+     // and value present in instance_members_initializer_function, so they will
+     // already have been visited.
+-    if (prop->is_computed_name() && !prop->value()->IsFunctionLiteral()) {
++    if (prop->is_computed_name() &&
++        prop->kind() == ClassLiteralProperty::Kind::FIELD) {
+       if (!prop->key()->IsLiteral()) {
+         CheckVisited(prop->key());
+       }
+diff --git a/test/mjsunit/regress/regress-1132111.js b/test/mjsunit/regress/regress-1132111.js
+new file mode 100644
+index 0000000..1dd1b58
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1132111.js
+@@ -0,0 +1,23 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Public function field with computed name
++eval(`
++  buggy = ((bug = new class { [0] = x => 1337.0; }) => bug);
++`);
++
++// Public method with computed name
++eval(`
++  buggy = ((bug = new class { [0](x) { return 1337.0}; }) => bug);
++`);
++
++// Private function field with computed name
++eval(`
++  buggy = ((bug = new class { #foo = x => 1337.0; }) => bug);
++`);
++
++// Private method with computed name
++eval(`
++  buggy = ((bug = new class { #foo(x) { return 1337.0; } }) => bug);
++`);

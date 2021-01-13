@@ -23,3 +23,4 @@ perf_improve_heap_snapshot_performance.patch
 cherry-pick-815b12dfb5ec.patch
 cherry-pick-8c725f7b5bbf.patch
 cherry-pick-146bd99e762b.patch
+cherry-pick-6f5eecc2d796.patch
