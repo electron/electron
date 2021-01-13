@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 
 #include <memory>
+#include <utility>
 
 #include "base/callback.h"
 #include "base/logging.h"
