@@ -7,7 +7,7 @@ Disable usage of SetApplicationIsDaemon and
 _LSSetApplicationLaunchServicesServerConnectionStatus in MAS builds
 
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 9f5261425162791668c2d15b7ffba091f831d652..590cfca18a648ab90c5f27e723dcb19f8a021ba3 100644
+index 9f5261425162791668c2d15b7ffba091f831d652..dbeb65bad93120dca0d102f733ed8b3981a503eb 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
@@ -39,11 +39,11 @@ index 9f5261425162791668c2d15b7ffba091f831d652..590cfca18a648ab90c5f27e723dcb19f
  }
  
  void DisableCoreServicesCheckFix() {
-+#if !defined(MAS_BUILD)
++  #if !defined(MAS_BUILD)
    if (__builtin_available(macOS 10.15, *)) {
      _CSCheckFixDisable();
    }
-+  #endif  
++  #endif
  }
  
  }  // namespace sandbox

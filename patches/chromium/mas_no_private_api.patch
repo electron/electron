@@ -421,7 +421,7 @@ index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830a
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index 1db129740992672a4e8be8100da18b6813f1a4f8..5b1e456020ac859c826dbef2826cacf3bb60108b 100644
+index 1db129740992672a4e8be8100da18b6813f1a4f8..dc18d623869e815d4d1ef64ad8bceb6948f5cc9e 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
 @@ -7,11 +7,11 @@
@@ -447,7 +447,7 @@ index 1db129740992672a4e8be8100da18b6813f1a4f8..5b1e456020ac859c826dbef2826cacf3
 +#else
 +    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
 +    NSString *default_key = @"CGFontRenderingGetFontSmoothingDisabled";
-+    // Check that key exists since boolForKey defaults to NO when the 
++    // Check that key exists since boolForKey defaults to NO when the
 +    // key is missing and this key in fact defaults to YES;
 +    if ([defaults objectForKey:default_key] == nil)
 +      return false;

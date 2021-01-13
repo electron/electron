@@ -110,7 +110,7 @@ index 037bdda6f41c825dd112b0cc9fca0ebde47c6163..3b16c0350d8a8494202144407664af41
    Environment* env = Environment::GetCurrent(isolate);
    if (env == nullptr) return -1;
 diff --git a/src/node.h b/src/node.h
-index 60ecc3bd3499c23b297bc11e7f052aede20520c2..4c4e55e338d7b42c36818a45f6b41170c495adde 100644
+index 1e4e805fda7a8dc8d8a2f4f37180dc85ac67128e..0bf092cae8741459aa8ef883d18f5810b255abe3 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -739,6 +739,20 @@ NODE_EXTERN void RemoveEnvironmentCleanupHook(v8::Isolate* isolate,

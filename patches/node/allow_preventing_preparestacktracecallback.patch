@@ -29,7 +29,7 @@ index e42416b4807fcc9d35a93399b916968b45ed0c7a..adf033f2e1855ad1c9738f9746677566
  
  void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
 diff --git a/src/node.h b/src/node.h
-index 4c4e55e338d7b42c36818a45f6b41170c495adde..ad2727fbab366df0dcc60d7562951c953f952ae3 100644
+index 0bf092cae8741459aa8ef883d18f5810b255abe3..0917daec298229a942c1790becfbefd19d01fb8d 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -305,7 +305,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
