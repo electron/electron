@@ -243,11 +243,6 @@ BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
   return nullptr;
 }
 
-optimization_guide::OptimizationGuideService*
-BrowserProcessImpl::optimization_guide_service() {
-  return nullptr;
-}
-
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
   return nullptr;
