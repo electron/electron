@@ -17,7 +17,7 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 548457eb478bebc275d2dbb6370a8edfe17dbb07..7e8be66ed48b168948b03d322a915661898fc23b 100644
+index d189ac6c2506e5b95aaa12a3b270f91c5a18ae19..ccbd634031671229196f7c68eb4a241366af2379 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
 @@ -1306,8 +1306,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
