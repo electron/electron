@@ -79,7 +79,7 @@ index f89365a1aa7ffacbb423e01a68f484992751f76f..38d17f4e18aa38fde2c2f59a9816c8fb
    // This stores whether the --abort-on-uncaught-exception flag was passed
    // to Node.
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e0705784ccee7f 100644
+index ca5a01f925a2ae69ba4295d82316e546f45c60cd..f85ab2332a1c0267bd50d5f979d90e55c84a2990 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -3,6 +3,7 @@
@@ -90,18 +90,18 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -463,8 +464,19 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -463,8 +464,20 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
          if (env->force_context_aware()) {
            dlib->Close();
 -          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
--          return false;
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
 +                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
+           return false;
 +        } else if (env->warn_context_aware()) {
 +          char errmsg[1024];
 +          snprintf(errmsg,
