@@ -232,3 +232,10 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
   CHECK(icon_url.is_valid());
   return icon_url;
 }
+
+GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
+    const extensions::Extension& extension,
+    content::BrowserContext* context) const {
+  // TODO(codebytere): we do not currently support ExtensionManagement.
+  return GURL::EmptyGURL();
+}
