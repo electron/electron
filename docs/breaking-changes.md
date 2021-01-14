@@ -92,11 +92,13 @@ session.defaultSession.getAllExtensions()
 ### Removed: methods in `systemPreferences`
 
 The following `systemPreferences` methods have been deprecated:
+
 * `systemPreferences.isDarkMode()`
 * `systemPreferences.isInvertedColorScheme()`
 * `systemPreferences.isHighContrastColorScheme()`
 
 Use the following `nativeTheme` properties instead:
+
 * `nativeTheme.shouldUseDarkColors`
 * `nativeTheme.shouldUseInvertedColorScheme`
 * `nativeTheme.shouldUseHighContrastColors`
@@ -556,6 +558,7 @@ limits are now fixed at a minimum of 0.25 and a maximum of 5.0, as defined
 ### Deprecated events in `systemPreferences`
 
 The following `systemPreferences` events have been deprecated:
+
 * `inverted-color-scheme-changed`
 * `high-contrast-color-scheme-changed`
 
@@ -573,11 +576,13 @@ nativeTheme.on('updated', () => { /* ... */ })
 ### Deprecated: methods in `systemPreferences`
 
 The following `systemPreferences` methods have been deprecated:
+
 * `systemPreferences.isDarkMode()`
 * `systemPreferences.isInvertedColorScheme()`
 * `systemPreferences.isHighContrastColorScheme()`
 
 Use the following `nativeTheme` properties instead:
+
 * `nativeTheme.shouldUseDarkColors`
 * `nativeTheme.shouldUseInvertedColorScheme`
 * `nativeTheme.shouldUseHighContrastColors`
