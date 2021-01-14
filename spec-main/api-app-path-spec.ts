@@ -55,7 +55,7 @@ function CleanUp (output: Payload) {
 }
 
 describe('app path module', () => {
-  describe(`computes 'userData' from 'appData' and app name`, () => {
+  describe('computes \'userData\' from \'appData\' and app name', () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path');
       const expectedUserdata = path.join(output.appData, defaultAppName);
@@ -84,7 +84,7 @@ describe('app path module', () => {
     });
   });
 
-  describe(`customizes 'userData'`, () => {
+  describe('customizes \'userData\'', () => {
     it(`setPath('userData', '${userData}')`, async () => {
       RemoveDir(userData);
       const output = await runTestApp('app-custom-path', `-custom-userdata=${userData}`);
@@ -104,7 +104,7 @@ describe('app path module', () => {
     });
   });
 
-  describe(`computes 'userCache' from 'cache', 'appData' and app name`, () => {
+  describe('computes \'userCache\' from \'cache\', \'appData\' and app name', () => {
     it('by default', async () => {
       const output = await runTestApp('app-custom-path', '-create-cache');
       const expectedUsercache = path.join(output.appCache, defaultAppName);
@@ -136,7 +136,7 @@ describe('app path module', () => {
     });
   });
 
-  describe(`customizes 'userCache'`, () => {
+  describe('customizes \'userCache\'', () => {
     it(`setPath('userCache', '${userCache}')`, async () => {
       RemoveDir(userCache);
       const output = await runTestApp('app-custom-path', '-create-cache', `-custom-usercache=${userCache}`);
@@ -256,7 +256,7 @@ describe('app path module', () => {
     // }
 
     // To review later
-    it(`setAppLogsPath()`, async () => {
+    it('setAppLogsPath()', async () => {
       const defaultAppLogs = app.getPath('logs');
       app.setAppLogsPath(appLogsPath);
       expect(app.getPath('logs')).to.equal(appLogsPath);
