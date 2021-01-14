@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/x/window_state_watcher.h"
+
+#include <vector>
+
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
@@ -67,7 +70,7 @@ void WindowStateWatcher::OnEvent(const x11::Event* x11_event) {
 }
 
 bool WindowStateWatcher::IsWindowStateEvent(const x11::Event& x11_event) const {
-  auto* property = x11_event->As<x11::PropertyNotifyEvent>();
+  auto* property = x11_event.As<x11::PropertyNotifyEvent>();
   return (property && property->atom == window_state_atom_ &&
           static_cast<uint32_t>(property->window) == widget_);
 }
