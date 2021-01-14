@@ -263,8 +263,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
 
     if (!state_atom_list.empty())
-      ui::SetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                               "_NET_WM_STATE", "ATOM", state_atom_list);
+      SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                       x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
+                       state_atom_list);
 
     // Set the _NET_WM_WINDOW_TYPE.
     if (!window_type.empty())
@@ -1240,8 +1241,8 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     // determine whether the current window is visible on all workspaces.
     x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
     std::vector<x11::Atom> wm_states;
-    ui::GetAtomArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                             "_NET_WM_STATE", &wm_states);
+    GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                     x11::GetAtom("_NET_WM_STATE"), &wm_states);
     return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
            wm_states.end();
   }
