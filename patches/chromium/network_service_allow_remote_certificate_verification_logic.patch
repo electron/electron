@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f20f22457 100644
+index a75980730046a6f570e75461cf948414e7cf6580..6f406f2fb382596a07b9ac869ea06be740f1cf86 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -117,6 +117,11 @@
+@@ -118,6 +118,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -22,7 +22,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -375,6 +380,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
+@@ -376,6 +381,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -574,6 +652,13 @@ void NetworkContext::SetClient(
+@@ -575,6 +653,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1853,8 +1938,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1877,8 +1962,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
           "NetworkContext should pass CertVerifierServiceRemoteParams.";
  
    std::unique_ptr<net::CertVerifier> cert_verifier;
@@ -127,7 +127,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
    } else {
      if (params_->cert_verifier_params &&
          params_->cert_verifier_params->is_remote_params()) {
-@@ -1882,7 +1968,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1906,7 +1992,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          cert_net_fetcher_ =
              base::MakeRefCounted<net::CertNetFetcherURLRequest>();
  
@@ -136,7 +136,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
      }
  
  #if BUILDFLAG(IS_CT_SUPPORTED)
-@@ -1906,9 +1992,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1930,9 +2016,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
  
      // Whether the cert verifier is remote or in-process, we should wrap it in
      // caching and coalescing layers to avoid extra verifications and IPCs.
@@ -148,7 +148,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
      cert_verifier_with_trust_anchors_ =
-@@ -1917,13 +2003,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1941,13 +2027,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      UpdateAdditionalCertificates(
          std::move(params_->initial_additional_certificates));
      cert_verifier_with_trust_anchors_->InitializeOnIOThread(
@@ -181,7 +181,7 @@ index fb5b459f78f1418f6f1039d199d7cce589a5c5f8..494d15b781c70dcd49d3d6927449485f
  #if BUILDFLAG(IS_CT_SUPPORTED)
    if (params_->enforce_chrome_ct_policy) {
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 0b9c2c407a06160ffa1fcbe074a15e96fec02f41..d5621ca2a2774e566b3b6a47f7e8947138c6c80e 100644
+index b3c053ab425b923f1ae99d8d51f94acc58cfaa14..0c1b8bde497921c26347064023c3cf310a70b2a6 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -90,6 +90,7 @@ class DomainReliabilityMonitor;
@@ -201,7 +201,7 @@ index 0b9c2c407a06160ffa1fcbe074a15e96fec02f41..d5621ca2a2774e566b3b6a47f7e89471
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -696,6 +699,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -698,6 +701,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  
@@ -211,7 +211,7 @@ index 0b9c2c407a06160ffa1fcbe074a15e96fec02f41..d5621ca2a2774e566b3b6a47f7e89471
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index fc39ed2531910c7086b262a9488a7ac45e6d70e4..617ce5235124bdf62d2468b6adbf60f1d473abb9 100644
+index 294b04445bd375b2e0afa4a68ef5586d6a83c688..1a2e862862e1f6db0b18441509553082d5b049d9 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -228,6 +228,17 @@ struct CTPolicy {

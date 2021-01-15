@@ -7,7 +7,7 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index c5a25c66024fad35285c3916d560b361b3605784..d957c000d3b8f456e846326df38effcb72b1df7e 100644
+index b50f468c7666150ed501566d36ebe4e1fd32227f..4df4951e35aff1e02e5cd831211866279f44fedc 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -234,6 +234,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {

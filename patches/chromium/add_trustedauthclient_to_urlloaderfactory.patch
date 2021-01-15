@@ -10,7 +10,7 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 332b4393129bb4562a6211b25864344e3e507002..5aaa114c8bb08514c2ce42e9728ebce6aaee0bb1 100644
+index ac70e294f915f326095675d222f44519e2683ed0..c46465e5596eab620e10faff172f37d71833869f 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -228,6 +228,25 @@ struct CTPolicy {
@@ -49,10 +49,10 @@ index 332b4393129bb4562a6211b25864344e3e507002..5aaa114c8bb08514c2ce42e9728ebce6
    // the per-context allow patterns that is managed via NetworkContext
    // interface. This still respects the per-context block lists.
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ad66e313128279fe0a33d07617bdaa760b2b9de7..80eb9540aaa3020476dee2c79952f67a53cda748 100644
+index c02cabc51eb5a99c9857b8cb5a57e0793e04b863..4c87980dbad41372f3f23a9493877801ab4ed3d8 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -466,6 +466,7 @@ URLLoader::URLLoader(
+@@ -461,6 +461,7 @@ URLLoader::URLLoader(
      base::WeakPtr<KeepaliveStatisticsRecorder> keepalive_statistics_recorder,
      base::WeakPtr<NetworkUsageAccumulator> network_usage_accumulator,
      mojom::TrustedURLLoaderHeaderClient* url_loader_header_client,
@@ -60,7 +60,7 @@ index ad66e313128279fe0a33d07617bdaa760b2b9de7..80eb9540aaa3020476dee2c79952f67a
      mojom::OriginPolicyManager* origin_policy_manager,
      std::unique_ptr<TrustTokenRequestHelperFactory> trust_token_helper_factory,
      const cors::OriginAccessList* origin_access_list,
-@@ -530,6 +531,11 @@ URLLoader::URLLoader(
+@@ -525,6 +526,11 @@ URLLoader::URLLoader(
      header_client_.set_disconnect_handler(
          base::BindOnce(&URLLoader::OnMojoDisconnect, base::Unretained(this)));
    }
@@ -72,7 +72,7 @@ index ad66e313128279fe0a33d07617bdaa760b2b9de7..80eb9540aaa3020476dee2c79952f67a
    if (want_raw_headers_) {
      options_ |= mojom::kURLLoadOptionSendSSLInfoWithResponse |
                  mojom::kURLLoadOptionSendSSLInfoForCertificateError;
-@@ -1191,7 +1197,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1170,7 +1176,7 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
      // |this| may have been deleted.
      return;
    }
@@ -81,7 +81,7 @@ index ad66e313128279fe0a33d07617bdaa760b2b9de7..80eb9540aaa3020476dee2c79952f67a
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1207,11 +1213,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1186,11 +1192,20 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
    if (url_request->response_headers())
      head->headers = url_request->response_headers();
    head->auth_challenge_info = auth_info;
