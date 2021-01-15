@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
-import { BrowserWindow, WebFrameMain, webFrameMain } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
@@ -170,6 +170,24 @@ describe('webFrameMain module', () => {
       expect(webFrame.reload()).to.be.true();
       await emittedOnce(w.webContents, 'dom-ready');
       expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
+    });
+  });
+
+  describe('WebFrame.send', () => {
+    it('works', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js'),
+          nodeIntegrationInSubFrames: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const webFrame = w.webContents.mainFrame;
+      const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+      webFrame.send('preload-ping');
+      const [, routingId] = await pongPromise;
+      expect(routingId).to.equal(webFrame.routingId);
     });
   });
 
