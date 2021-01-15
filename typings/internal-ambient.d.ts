@@ -215,6 +215,10 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
+    _linkedBinding(name: 'electron_browser_web_frame_main'): {
+      WebFrameMain: typeof Electron.WebFrameMain;
+      fromId(processId: number, routingId: number): Electron.WebFrameMain;
+    }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
     log: NodeJS.WriteStream['write'];
