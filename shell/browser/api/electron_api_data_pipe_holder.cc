@@ -146,7 +146,8 @@ gin::WrapperInfo DataPipeHolder::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 DataPipeHolder::DataPipeHolder(const network::DataElement& element)
     : id_(base::NumberToString(++g_next_id)) {
-  data_pipe_.Bind(element.CloneDataPipeGetter());
+  data_pipe_.Bind(
+      element.As<network::DataElementDataPipe>().CloneDataPipeGetter());
 }
 
 DataPipeHolder::~DataPipeHolder() = default;
