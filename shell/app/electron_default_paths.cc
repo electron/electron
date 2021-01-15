@@ -11,7 +11,7 @@
 #include "shell/browser/browser.h"
 
 #if defined(OS_MAC)
-#include "shell/app/electron_register_path_mac.h"
+#include "shell/app/electron_default_paths_mac.h"
 #endif
 
 #if defined(USE_X11)
