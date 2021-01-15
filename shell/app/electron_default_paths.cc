@@ -10,7 +10,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "shell/browser/browser.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
 #include "shell/app/electron_register_path_mac.h"
 #endif
 
@@ -36,7 +36,7 @@ bool GetDefaultCrashDumpsPath(base::FilePath* path) {
   base::FilePath cur;
   if (!base::PathService::Get(DIR_USER_DATA, &cur))
     return false;
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_MAC) || defined(OS_WIN)
   cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
 #else
   cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
@@ -69,7 +69,7 @@ bool ElectronDefaultPaths::GetDefault(int key, base::FilePath* path) {
           base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
       return true;
     case DIR_APP_LOGS:
-#if defined(OS_MACOSX)
+#if defined(OS_MAC)
       GetMacAppLogsPath(path);
 #else
       base::PathService::Get(DIR_USER_DATA, path);
