@@ -520,6 +520,16 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   FreeAppDelegate();
 #endif
 
+  // Shutdown the DownloadManager before destroying Node to prevent
+  // DownloadItem callbacks from crashing.
+  for (auto& iter : ElectronBrowserContext::browser_context_map()) {
+    auto* download_manager =
+        content::BrowserContext::GetDownloadManager(iter.second.get());
+    if (download_manager) {
+      download_manager->Shutdown();
+    }
+  }
+
   // Make sure destruction callbacks are called before message loop is
   // destroyed, otherwise some objects that need to be deleted on IO thread
   // won't be freed.
