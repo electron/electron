@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_frame.h"
@@ -24,6 +25,12 @@
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+
+namespace features {
+
+const base::Feature kContextBridgeMutability{"ContextBridgeMutability",
+                                             base::FEATURE_DISABLED_BY_DEFAULT};
+}
 
 namespace electron {
 
@@ -552,6 +559,12 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
+
+    if (base::FeatureList::IsEnabled(features::kContextBridgeMutability)) {
+      global.Set(key, proxy);
+      return;
+    }
+
     if (proxy->IsObject() && !proxy->IsTypedArray() &&
         !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
       return;
