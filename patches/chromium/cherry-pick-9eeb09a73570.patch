@@ -1,0 +1,205 @@
+From 9eeb09a73570ffaed6f7caea95912a9ffface755 Mon Sep 17 00:00:00 2001
+From: Alexander Dunaev <adunaev@igalia.com>
+Date: Fri, 04 Dec 2020 02:49:22 +0000
+Subject: [PATCH] [x11] Fixed UAF in drag and drop.
+
+To short-cut round trips to the X server when drag and drop happens
+between two Chromium windows, XDragContext stored the raw pointer to
+XDragDropClient of the source window in its source_client_ attribute.
+This made possible to access the deleted object (use after free) if the
+source window had been destroyed during the operation.  In short,
+although the target context can call the source client directly via the
+shortcut, the PropertyNotify event comes from the X server (not using
+the shortcut), and apparently it can come to the target context after
+the source window and its client had been destroyed but before the
+target context is notified.  See the issue for full details.
+
+Here the XDragContext::source_client_ is removed, and all its uses
+are replaced with getting the client from the global map of clients
+[1]. The client removes itself from the map upon destruction [2] so
+this change eliminates the vulnerability.
+
+For the record, there is the test in the interactive_ui_tests suite
+(namely BookmarkBarViewTest22.CloseSourceBrowserDuringDrag) that should
+emulate this situation but is has some flaws [3].
+
+[1] https://source.chromium.org/chromium/chromium/src/+/master:ui/base/x/x11_drag_drop_client.cc;l=120
+[2] https://source.chromium.org/chromium/chromium/src/+/master:ui/base/x/x11_drag_drop_client.cc;l=200
+[3] https://crbug.com/1106379
+
+Bug: 1153595
+Change-Id: Ibb875cb4fa04ddfa8f99b39e4dab654048da86c7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2567229
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Alexander Dunaev <adunaev@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#833577}
+---
+
+diff --git a/ui/base/x/x11_drag_context.cc b/ui/base/x/x11_drag_context.cc
+index d07e44d..32cbb35 100644
+--- a/ui/base/x/x11_drag_context.cc
++++ b/ui/base/x/x11_drag_context.cc
+@@ -42,12 +42,12 @@
+ 
+ XDragContext::XDragContext(x11::Window local_window,
+                            const x11::ClientMessageEvent& event,
+-                           XDragDropClient* source_client,
+                            const SelectionFormatMap& data)
+     : local_window_(local_window),
+-      source_window_(static_cast<x11::Window>(event.data.data32[0])),
+-      source_client_(source_client) {
+-  if (!source_client_) {
++      source_window_(static_cast<x11::Window>(event.data.data32[0])) {
++  XDragDropClient* source_client =
++      XDragDropClient::GetForWindow(source_window_);
++  if (!source_client) {
+     bool get_types_from_property = ((event.data.data32[1] & 1) != 0);
+ 
+     if (get_types_from_property) {
+@@ -160,7 +160,9 @@
+ }
+ 
+ void XDragContext::ReadActions() {
+-  if (!source_client_) {
++  XDragDropClient* source_client =
++      XDragDropClient::GetForWindow(source_window_);
++  if (!source_client) {
+     std::vector<x11::Atom> atom_array;
+     if (!GetAtomArrayProperty(source_window_, kXdndActionList, &atom_array))
+       actions_.clear();
+@@ -170,7 +172,7 @@
+     // We have a property notify set up for other windows in case they change
+     // their action list. Thankfully, the views interface is static and you
+     // can't change the action list after you enter StartDragAndDrop().
+-    actions_ = source_client_->GetOfferedDragOperations();
++    actions_ = source_client->GetOfferedDragOperations();
+   }
+ }
+ 
+diff --git a/ui/base/x/x11_drag_context.h b/ui/base/x/x11_drag_context.h
+index 909fc35..5e9a2ca 100644
+--- a/ui/base/x/x11_drag_context.h
++++ b/ui/base/x/x11_drag_context.h
+@@ -23,7 +23,6 @@
+  public:
+   XDragContext(x11::Window local_window,
+                const x11::ClientMessageEvent& event,
+-               XDragDropClient* source_client,
+                const SelectionFormatMap& data);
+   ~XDragContext();
+ 
+@@ -31,7 +30,6 @@
+   XDragContext& operator=(const XDragContext&) = delete;
+ 
+   x11::Window source_window() const { return source_window_; }
+-  XDragDropClient* source_client() { return source_client_; }
+   const SelectionFormatMap& fetched_targets() const { return fetched_targets_; }
+ 
+   // When we receive an XdndPosition message, we need to have all the data
+@@ -73,10 +71,6 @@
+   // The x11::Window of the window that initiated the drag.
+   x11::Window source_window_;
+ 
+-  // The DesktopDragDropClientAuraX11 for |source_window_| if |source_window_|
+-  // belongs to a Chrome window.
+-  XDragDropClient* source_client_;
+-
+   // The client we inform once we're done with requesting data.
+   XDragDropClient* drag_drop_client_ = nullptr;
+ 
+diff --git a/ui/base/x/x11_drag_drop_client.cc b/ui/base/x/x11_drag_drop_client.cc
+index 51ff062..2fa606f9 100644
+--- a/ui/base/x/x11_drag_drop_client.cc
++++ b/ui/base/x/x11_drag_drop_client.cc
+@@ -310,11 +310,11 @@
+       GetForWindow(static_cast<x11::Window>(event.data.data32[0]));
+   DCHECK(!source_client || source_client->source_provider_);
+   target_current_context_ = std::make_unique<XDragContext>(
+-      xwindow_, event, source_client,
++      xwindow_, event,
+       (source_client ? source_client->source_provider_->GetFormatMap()
+                      : SelectionFormatMap()));
+ 
+-  if (!target_current_context()->source_client()) {
++  if (!source_client) {
+     // The window doesn't have a DesktopDragDropClientAuraX11, which means it's
+     // created by some other process.  Listen for messages on it.
+     delegate_->OnBeginForeignDrag(
+@@ -485,7 +485,9 @@
+ void XDragDropClient::ResetDragContext() {
+   if (!target_current_context())
+     return;
+-  if (!target_current_context()->source_client())
++  XDragDropClient* source_client =
++      GetForWindow(target_current_context()->source_window());
++  if (!source_client)
+     delegate_->OnEndForeignDrag();
+ 
+   target_current_context_.reset();
+diff --git a/ui/base/x/x11_drag_drop_client.h b/ui/base/x/x11_drag_drop_client.h
+index ecc58ef..e32e731 100644
+--- a/ui/base/x/x11_drag_drop_client.h
++++ b/ui/base/x/x11_drag_drop_client.h
+@@ -77,6 +77,11 @@
+   XDragDropClient(const XDragDropClient&) = delete;
+   XDragDropClient& operator=(const XDragDropClient&) = delete;
+ 
++  // We maintain a mapping of live XDragDropClient objects to their X11 windows,
++  // so that we'd able to short circuit sending X11 messages to windows in our
++  // process.
++  static XDragDropClient* GetForWindow(x11::Window window);
++
+   x11::Window xwindow() const { return xwindow_; }
+   XDragContext* target_current_context() {
+     return target_current_context_.get();
+@@ -194,11 +199,6 @@
+   void SendXdndLeave(x11::Window dest_window);
+   void SendXdndDrop(x11::Window dest_window);
+ 
+-  // We maintain a mapping of live XDragDropClient objects to their X11 windows,
+-  // so that we'd able to short circuit sending X11 messages to windows in our
+-  // process.
+-  static XDragDropClient* GetForWindow(x11::Window window);
+-
+   void EndMoveLoop();
+ 
+   Delegate* const delegate_;
+diff --git a/ui/platform_window/x11/x11_window.cc b/ui/platform_window/x11/x11_window.cc
+index 45e4235..61c355f 100644
+--- a/ui/platform_window/x11/x11_window.cc
++++ b/ui/platform_window/x11/x11_window.cc
+@@ -864,15 +864,17 @@
+     suggested_operations |= DragDropTypes::DRAG_COPY;
+   }
+ 
++  XDragDropClient* source_client =
++      XDragDropClient::GetForWindow(target_current_context->source_window());
+   if (!notified_enter_) {
+-    drop_handler->OnDragEnter(
+-        gfx::PointF(screen_point), std::move(data), suggested_operations,
+-        GetKeyModifiers(target_current_context->source_client()));
++    drop_handler->OnDragEnter(gfx::PointF(screen_point), std::move(data),
++                              suggested_operations,
++                              GetKeyModifiers(source_client));
+     notified_enter_ = true;
+   }
+-  drag_operation_ = drop_handler->OnDragMotion(
+-      gfx::PointF(screen_point), suggested_operations,
+-      GetKeyModifiers(target_current_context->source_client()));
++  drag_operation_ = drop_handler->OnDragMotion(gfx::PointF(screen_point),
++                                               suggested_operations,
++                                               GetKeyModifiers(source_client));
+   return drag_operation_;
+ }
+ 
+@@ -909,8 +911,8 @@
+   // should have it since then.
+   auto* target_current_context = drag_drop_client_->target_current_context();
+   DCHECK(target_current_context);
+-  drop_handler->OnDragDrop(
+-      {}, GetKeyModifiers(target_current_context->source_client()));
++  drop_handler->OnDragDrop({}, GetKeyModifiers(XDragDropClient::GetForWindow(
++                                   target_current_context->source_window())));
+   notified_enter_ = false;
+   return drag_operation_;
+ }

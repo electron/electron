@@ -125,3 +125,4 @@ merge_m86_ensure_that_buffers_used_by_imagedecoder_haven_t_been.patch
 cherry-pick-2d18de63acf1.patch
 only_zero_out_cross-origin_audio_that_doesn_t_get_played_out.patch
 fix_setparentacessibile_crash_win.patch
+cherry-pick-9eeb09a73570.patch
