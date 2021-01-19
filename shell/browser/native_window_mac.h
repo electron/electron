@@ -117,6 +117,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool IsVisibleOnAllWorkspaces() override;
   void SetAutoHideCursor(bool auto_hide) override;
   void SetVibrancy(const std::string& type) override;
+  void SetWindowButtonVisibility(bool visible) override;
+  bool GetWindowButtonVisibility() const override;
   void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
   base::Optional<gfx::Point> GetTrafficLightPosition() const override;
   void RedrawTrafficLights() override;
@@ -130,7 +132,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
-  bool SetWindowButtonVisibility(bool visible) override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
   void PreviewFile(const std::string& path,
@@ -187,6 +188,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // Add custom layers to the content view.
   void AddContentViewLayers(bool minimizable, bool closable);
 
+  void InternalSetWindowButtonVisibility(bool visible);
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
 

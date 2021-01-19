@@ -1598,8 +1598,6 @@ Changes window icon.
 
 Sets whether the window traffic light buttons should be visible.
 
-This cannot be called when `titleBarStyle` is set to `customButtonsOnHover`.
-
 #### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean
