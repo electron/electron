@@ -1,7 +1,7 @@
-From 861253f1de98cd113407008d87d0b06565c288bd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adam Rice <ricea@chromium.org>
-Date: Sat, 05 Dec 2020 03:19:09 +0000
-Subject: [PATCH] Update the restricted port list
+Date: Sat, 5 Dec 2020 03:19:09 +0000
+Subject: Update the restricted port list
 
 Add ports 69, 137, 161, 554, 1719, 1720, 1723, 6566 to the restricted
 ports list to match Firefox. See
@@ -19,7 +19,6 @@ Commit-Queue: Adam Rice <ricea@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#832169}
 (cherry picked from commit c36c5078c41bd1a9e2455d747d69ac1703d977d3)
 
-
 TBR=ricea@chromium.org
 
 Change-Id: I9cc989e46ac63b3c656eb2eaed825add9b8346f8
@@ -28,13 +27,12 @@ Reviewed-by: Adam Rice <ricea@chromium.org>
 Commit-Queue: Adam Rice <ricea@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4324@{#611}
 Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
----
 
 diff --git a/net/base/port_util.cc b/net/base/port_util.cc
-index 72af86d..12bfd9a 100644
+index 41deaaded2f251d6153c01203b68cc6bdc06554f..bd0dcaf319fdd794a8033569240f3081f206a529 100644
 --- a/net/base/port_util.cc
 +++ b/net/base/port_util.cc
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,7 @@ const int kRestrictedPorts[] = {
      42,    // name
      43,    // nicname
      53,    // domain
@@ -42,7 +40,7 @@ index 72af86d..12bfd9a 100644
      77,    // priv-rjs
      79,    // finger
      87,    // ttylink
-@@ -54,8 +55,10 @@
+@@ -54,8 +55,10 @@ const int kRestrictedPorts[] = {
      119,   // nntp
      123,   // NTP
      135,   // loc-srv /epmap
@@ -53,7 +51,7 @@ index 72af86d..12bfd9a 100644
      179,   // BGP
      389,   // ldap
      427,   // SLP (Also used by Apple Filing Protocol)
-@@ -70,6 +73,7 @@
+@@ -70,6 +73,7 @@ const int kRestrictedPorts[] = {
      532,   // netnews
      540,   // uucp
      548,   // AFP (Apple Filing Protocol)
@@ -61,7 +59,7 @@ index 72af86d..12bfd9a 100644
      556,   // remotefs
      563,   // nntp+ssl
      587,   // smtp (rfc6409)
-@@ -77,12 +81,16 @@
+@@ -77,12 +81,16 @@ const int kRestrictedPorts[] = {
      636,   // ldap+ssl
      993,   // ldap+ssl
      995,   // pop3+ssl
