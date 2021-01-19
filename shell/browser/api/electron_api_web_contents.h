@@ -684,6 +684,8 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   bool initially_shown_ = true;
 
+  scoped_refptr<base::TaskRunner> print_task_runner_;
+
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
   mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>
       receivers_;

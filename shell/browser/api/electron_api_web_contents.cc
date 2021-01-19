@@ -393,8 +393,11 @@ bool IsDeviceNameValid(const base::string16& device_name) {
 }
 
 base::string16 GetDefaultPrinterAsync() {
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
+#if defined(OS_WIN)
+  // Blocking is needed here because Windows printer drivers are oftentimes
+  // not thread-safe and have to be accessed on the UI thread.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+#endif
 
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
@@ -411,6 +414,29 @@ base::string16 GetDefaultPrinterAsync() {
       printer_name = printers.front().printer_name;
   }
   return base::UTF8ToUTF16(printer_name);
+}
+
+// Copied from
+// chrome/browser/ui/webui/print_preview/local_printer_handler_default.cc:L36-L54
+scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
+  // USER_VISIBLE because the result is displayed in the print preview dialog.
+#if !defined(OS_WIN)
+  static constexpr base::TaskTraits kTraits = {
+      base::MayBlock(), base::TaskPriority::USER_VISIBLE};
+#endif
+
+#if defined(USE_CUPS)
+  // CUPS is thread safe.
+  return base::ThreadPool::CreateTaskRunner(kTraits);
+#elif defined(OS_WIN)
+  // Windows drivers are likely not thread-safe and need to be accessed on the
+  // UI thread.
+  return content::GetUIThreadTaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
+#else
+  // Be conservative on unsupported platforms.
+  return base::ThreadPool::CreateSingleThreadTaskRunner(kTraits);
+#endif
 }
 #endif
 
@@ -450,6 +476,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       id_(GetAllWebContents().Add(this)),
+      print_task_runner_(CreatePrinterHandlerTaskRunner()),
       weak_factory_(this) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
@@ -485,6 +512,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
       id_(GetAllWebContents().Add(this)),
+      print_task_runner_(CreatePrinterHandlerTaskRunner()),
       weak_factory_(this) {
   DCHECK(type != Type::REMOTE)
       << "Can't take ownership of a remote WebContents";
@@ -496,7 +524,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
-    : id_(GetAllWebContents().Add(this)), weak_factory_(this) {
+    : id_(GetAllWebContents().Add(this)),
+      print_task_runner_(CreatePrinterHandlerTaskRunner()),
+      weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -2217,9 +2247,8 @@ void WebContents::Print(gin::Arguments* args) {
     settings.SetIntKey(printing::kSettingDpiVertical, dpi);
   }
 
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
-      base::BindOnce(&GetDefaultPrinterAsync),
+  print_task_runner_->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
                      std::move(callback), device_name, silent));
