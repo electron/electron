@@ -1056,7 +1056,8 @@ shell.openPath('/home/user/Desktop/test.txt').then(err => {
 })
 
 shell.openExternal('https://github.com', {
-  activate: false
+  activate: false,
+  fallbackToUser: true
 }).then(() => {})
 
 shell.beep()

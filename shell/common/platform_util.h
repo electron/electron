@@ -31,6 +31,7 @@ void OpenPath(const base::FilePath& full_path, OpenCallback callback);
 
 struct OpenExternalOptions {
   bool activate = true;
+  bool fallbackToUser = false;
   base::FilePath working_dir;
 };
 
