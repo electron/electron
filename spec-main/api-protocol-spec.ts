@@ -671,6 +671,26 @@ describe('protocol module', () => {
       const r = await ajax('http://fake-host');
       expect(r.data).to.equal('redirect');
     });
+
+    it('should discard post data after redirection', async () => {
+      interceptStreamProtocol('http', (request, callback) => {
+        if (request.url.indexOf('http://fake-host') === 0) {
+          setTimeout(() => {
+            callback({
+              statusCode: 302,
+              headers: {
+                Location: 'http://fake-redirect'
+              }
+            });
+          }, 300);
+        } else {
+          expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
+          callback(getStream(3, request.method));
+        }
+      });
+      const r = await ajax('http://fake-host', { type: 'POST', data: postData });
+      expect(r.data).to.equal('GET');
+    });
   });
 
   describe('protocol.uninterceptProtocol', () => {
