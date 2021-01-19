@@ -40,6 +40,7 @@ Open the given file in the desktop's default manner.
 * `options` Object (optional)
   * `activate` Boolean (optional) _macOS_ - `true` to bring the opened application to the foreground. The default is `true`.
   * `workingDirectory` String (optional) _Windows_ - The working directory.
+  * `fallbackToUser` Boolean (optional) _Windows_ - `true` to open an Open With dialog if the file to be opened does not have a program associated with it. The default is `false`.
 
 Returns `Promise<void>`
 

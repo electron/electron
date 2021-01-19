@@ -244,17 +244,16 @@ std::string OpenExternalOnWorkerThread(
   base::string16 escaped_url = L"\"" + base::UTF8ToUTF16(url.spec()) + L"\"";
   base::string16 working_dir = options.working_dir.value();
 
-  if (reinterpret_cast<ULONG_PTR>(
-          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
-                        working_dir.empty() ? nullptr : working_dir.c_str(),
-                        SW_SHOWNORMAL)) <= 32) {
-    if (!options.fallbackToUser ||
-        reinterpret_cast<ULONG_PTR>(
-            ShellExecuteW(nullptr, L"openas", escaped_url.c_str(), nullptr,
-                          working_dir.empty() ? nullptr : working_dir.c_str(),
-                          SW_SHOWNORMAL)) <= 32) {
-      return "Failed to open";
-    }
+  ULONG_PTR res = reinterpret_cast<ULONG_PTR>(ShellExecuteW(
+      nullptr, L"open", escaped_url.c_str(), nullptr,
+      working_dir.empty() ? nullptr : working_dir.c_str(), SW_SHOWNORMAL));
+  if (options.fallbackToUser && res == SE_ERR_NOASSOC) {
+    res = reinterpret_cast<ULONG_PTR>(ShellExecuteW(
+        nullptr, L"openas", escaped_url.c_str(), nullptr,
+        working_dir.empty() ? nullptr : working_dir.c_str(), SW_SHOWNORMAL));
+  }
+  if (res <= 32) {
+    return "Failed to open";
   }
   return "";
 }
