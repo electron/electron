@@ -1594,7 +1594,6 @@ void WebContents::MessageSync(
 }
 
 void WebContents::MessageTo(bool internal,
-                            bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
@@ -1602,7 +1601,7 @@ void WebContents::MessageTo(bool internal,
   auto* web_contents = FromID(web_contents_id);
 
   if (web_contents) {
-    web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
+    web_contents->SendIPCMessageWithSender(internal, channel,
                                            std::move(arguments), ID());
   }
 }
@@ -2691,7 +2690,6 @@ bool WebContents::IsFocused() const {
 #endif
 
 bool WebContents::SendIPCMessage(bool internal,
-                                 bool send_to_all,
                                  const std::string& channel,
                                  v8::Local<v8::Value> args) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -2701,37 +2699,21 @@ bool WebContents::SendIPCMessage(bool internal,
         gin::StringToV8(isolate, "Failed to serialize arguments")));
     return false;
   }
-  return SendIPCMessageWithSender(internal, send_to_all, channel,
-                                  std::move(message));
+  return SendIPCMessageWithSender(internal, channel, std::move(message));
 }
 
 bool WebContents::SendIPCMessageWithSender(bool internal,
-                                           bool send_to_all,
                                            const std::string& channel,
                                            blink::CloneableMessage args,
                                            int32_t sender_id) {
-  std::vector<content::RenderFrameHost*> target_hosts;
-  if (!send_to_all) {
-    auto* frame_host = web_contents()->GetMainFrame();
-    if (frame_host) {
-      target_hosts.push_back(frame_host);
-    }
-  } else {
-    target_hosts = web_contents()->GetAllFrames();
-  }
-
-  for (auto* frame_host : target_hosts) {
-    mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        &electron_renderer);
-    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
-                               sender_id);
-  }
+  auto* frame_host = web_contents()->GetMainFrame();
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
+  electron_renderer->Message(internal, channel, std::move(args), sender_id);
   return true;
 }
 
 bool WebContents::SendIPCMessageToFrame(bool internal,
-                                        bool send_to_all,
                                         v8::Local<v8::Value> frame,
                                         const std::string& channel,
                                         v8::Local<v8::Value> args) {
@@ -2766,7 +2748,7 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
 
   mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->Message(internal, send_to_all, channel, std::move(message),
+  electron_renderer->Message(internal, channel, std::move(message),
                              0 /* sender_id */);
   return true;
 }
