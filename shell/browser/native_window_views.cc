@@ -1368,6 +1368,10 @@ void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
 #endif
 }
 
+void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
+  widget_destroyed_ = true;
+}
+
 void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && this->parent()) {
     auto* parent = this->parent();
@@ -1464,6 +1468,9 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  if (widget_destroyed_)
+    return;
+
 #if defined(OS_LINUX)
   if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
     NotifyWindowExecuteAppCommand(kBrowserBackward);
