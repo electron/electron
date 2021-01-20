@@ -1,7 +1,7 @@
-From 6f5eecc2d7968dcf5211592d5f0a0038a06ec943 Mon Sep 17 00:00:00 2001
-From: ishell@chromium.org <ishell@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
 Date: Tue, 15 Dec 2020 10:45:19 +0100
-Subject: [PATCH] Merged: [parser] Fix AST func reindexing for function fields
+Subject: Merged: [parser] Fix AST func reindexing for function fields
 
 Revision: a769ea7a4462115579ba87bc16fbffbae01310c1
 
@@ -17,13 +17,12 @@ Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.7@{#62}
 Cr-Branched-From: 0d81cd72688512abcbe1601015baee390c484a6a-refs/heads/8.7.220@{#1}
 Cr-Branched-From: 942c2ef85caef00fcf02517d049f05e9a3d4b440-refs/heads/master@{#70196}
----
 
 diff --git a/src/ast/ast-function-literal-id-reindexer.cc b/src/ast/ast-function-literal-id-reindexer.cc
-index b583b5e..8c9318b 100644
+index b583b5e4214ad469848844923ef03dba06b6554c..8c9318bfe7475d3c9b8cc2bdb50786b9118fd4a0 100644
 --- a/src/ast/ast-function-literal-id-reindexer.cc
 +++ b/src/ast/ast-function-literal-id-reindexer.cc
-@@ -54,10 +54,10 @@
+@@ -54,10 +54,10 @@ void AstFunctionLiteralIdReindexer::VisitClassLiteral(ClassLiteral* expr) {
      // Private fields have their key and value present in
      // instance_members_initializer_function, so they will
      // already have been visited.
@@ -37,7 +36,7 @@ index b583b5e..8c9318b 100644
      }
    }
    ZonePtrList<ClassLiteral::Property>* props = expr->public_members();
-@@ -67,7 +67,8 @@
+@@ -67,7 +67,8 @@ void AstFunctionLiteralIdReindexer::VisitClassLiteral(ClassLiteral* expr) {
      // Public fields with computed names have their key
      // and value present in instance_members_initializer_function, so they will
      // already have been visited.
@@ -49,7 +48,7 @@ index b583b5e..8c9318b 100644
        }
 diff --git a/test/mjsunit/regress/regress-1132111.js b/test/mjsunit/regress/regress-1132111.js
 new file mode 100644
-index 0000000..1dd1b58
+index 0000000000000000000000000000000000000000..1dd1b58806862aaf6c0847f107377095105dcab1
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-1132111.js
 @@ -0,0 +1,23 @@
