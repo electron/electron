@@ -332,15 +332,17 @@ step-setup-goma-for-build: &step-setup-goma-for-build
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
     paths:
-      - /usr/local/Homebrew
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
     keys:
-      - v1-brew-cache-{{ arch }}
+      - v4-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
-      - /usr/local/Homebrew
-    key: v1-brew-cache-{{ arch }}
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
+    key: v4-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -480,8 +482,10 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
     name: Install gnu-tar on macos
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install gnu-tar
+        if [ ! -d /usr/local/Cellar/gnu-tar/ ]; then
+          brew update
+          brew install gnu-tar
+        fi
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
 
@@ -1158,7 +1162,6 @@ steps-checkout-and-save-cache: &steps-checkout-and-save-cache
     - *step-maybe-early-exit-doc-only-change
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
     - *step-get-more-space-on-mac
     - *step-install-gnutar-on-mac
 
