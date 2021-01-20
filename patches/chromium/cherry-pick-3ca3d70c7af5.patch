@@ -1,7 +1,8 @@
-From 3ca3d70c7af50aa7024a351f70b289b8ccdc4a5f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yuri Wiitala <miu@chromium.org>
 Date: Thu, 10 Dec 2020 18:07:39 +0000
-Subject: [PATCH] Minor UI logic changes to prevent a UAF bug when starting tab capture.
+Subject: Minor UI logic changes to prevent a UAF bug when starting tab
+ capture.
 
 See discussion in crbug 1155426 for details. Changes:
 
@@ -17,16 +18,15 @@ Reviewed-by: Guido Urdaneta <guidou@chromium.org>
 Reviewed-by: Marina Ciocea <marinaciocea@chromium.org>
 Commit-Queue: Yuri Wiitala <miu@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#835736}
----
 
 diff --git a/chrome/browser/media/webrtc/media_stream_capture_indicator.cc b/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
-index 7858dd5..0296c44 100644
+index 8e353fba8ffcd9724252be114e2d621ce3788068..418419abd04c258eedc100a56c1b056503af1a8c 100644
 --- a/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
 +++ b/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
-@@ -208,7 +208,12 @@
-       const std::string& label,
-       std::vector<content::DesktopMediaID> screen_capture_ids,
-       StateChangeCallback state_change_callback) override {
+@@ -185,7 +185,12 @@ class MediaStreamCaptureIndicator::UIDelegate : public content::MediaStreamUI {
+   gfx::NativeViewId OnStarted(
+       base::OnceClosure stop_callback,
+       content::MediaStreamUI::SourceCallback source_callback) override {
 -    DCHECK(!started_);
 +    if (started_) {
 +      // Ignore possibly-compromised renderers that might call
@@ -38,10 +38,10 @@ index 7858dd5..0296c44 100644
  
      if (device_usage_) {
 diff --git a/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc b/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
-index 8c73fc2..1ad0717 100644
+index 1582ccedd3fac5368e7adf94ec222e5d85b18aab..35e4f3e93c41f52fb50599da4050c0f3c25dd0d4 100644
 --- a/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
 +++ b/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
-@@ -135,8 +135,10 @@
+@@ -134,8 +134,10 @@ TabSharingUIViews::TabSharingUIViews(const content::DesktopMediaID& media_id,
  }
  
  TabSharingUIViews::~TabSharingUIViews() {
