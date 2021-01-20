@@ -1,7 +1,7 @@
-From 19aeffd4d93f5b82cf6877ff83614ff9cb6e1d1f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matthew Denton <mpdenton@chromium.org>
 Date: Tue, 15 Dec 2020 01:09:52 +0000
-Subject: [PATCH] Fix UAF in ~MultiThreadedCertVerifier
+Subject: Fix UAF in ~MultiThreadedCertVerifier
 
 MultiThreadedCertVerifier keeps a list of
 MultiThreadedCertVerifier::InternalRequests in order to eagerly reset
@@ -34,13 +34,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2587560
 Reviewed-by: Ryan Sleevi <rsleevi@chromium.org>
 Commit-Queue: Matthew Denton <mpdenton@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#836903}
----
 
 diff --git a/net/cert/multi_threaded_cert_verifier.cc b/net/cert/multi_threaded_cert_verifier.cc
-index 7346569..842e166 100644
+index f2546d9187dc6aedbf5eab055d2017939df6a705..b46dbf68d0f239c2d002f9dedeecd6f10709f9c4 100644
 --- a/net/cert/multi_threaded_cert_verifier.cc
 +++ b/net/cert/multi_threaded_cert_verifier.cc
-@@ -202,10 +202,13 @@
+@@ -202,10 +202,13 @@ MultiThreadedCertVerifier::~MultiThreadedCertVerifier() {
    DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
    // Reset the callbacks for each InternalRequest to fulfill the respective
    // net::CertVerifier contract.
@@ -59,10 +58,10 @@ index 7346569..842e166 100644
  }
  
 diff --git a/net/cert/multi_threaded_cert_verifier.h b/net/cert/multi_threaded_cert_verifier.h
-index 82b750a..05c5463 100644
+index 82b750a42f8eb99675e35aa41ef167c1e7896a33..05c5463abffc61644e31293b6876801efc6138fb 100644
 --- a/net/cert/multi_threaded_cert_verifier.h
 +++ b/net/cert/multi_threaded_cert_verifier.h
-@@ -50,6 +50,10 @@
+@@ -50,6 +50,10 @@ class NET_EXPORT_PRIVATE MultiThreadedCertVerifier : public CertVerifier {
    Config config_;
    scoped_refptr<CertVerifyProc> verify_proc_;
  
@@ -74,10 +73,10 @@ index 82b750a..05c5463 100644
  
  #if defined(USE_NSS_CERTS)
 diff --git a/net/cert/multi_threaded_cert_verifier_unittest.cc b/net/cert/multi_threaded_cert_verifier_unittest.cc
-index 89c3945..b5cf4bba 100644
+index 89c394541a94697036e34c7430e982c4eeb1a1f7..b5cf4bbaf3648f8b562fffd3804b65ab5b9379ab 100644
 --- a/net/cert/multi_threaded_cert_verifier_unittest.cc
 +++ b/net/cert/multi_threaded_cert_verifier_unittest.cc
-@@ -152,6 +152,45 @@
+@@ -152,6 +152,45 @@ TEST_F(MultiThreadedCertVerifierTest, DeleteVerifier) {
    RunUntilIdle();
  }
  
