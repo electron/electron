@@ -1,7 +1,8 @@
-From d74ba931c4b75858b36b0e97b6853579a6f7c510 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Achuith Bhandarkar <achuith@chromium.org>
 Date: Wed, 13 Jan 2021 21:27:05 +0000
-Subject: [PATCH] content-visibility: Don't adjust position of a locked hittest result node.
+Subject: content-visibility: Don't adjust position of a locked hittest result
+ node.
 
 This patch ensures that if we have a hittest result that has a locked
 node, we don't try to recurse into its subtree. This can happen when we
@@ -29,10 +30,9 @@ Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
 Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1520}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/layout/hit_test_result.cc b/third_party/blink/renderer/core/layout/hit_test_result.cc
-index 1359aa6b..9d02cab 100644
+index 1359aa6bdd532028d8280b093a4381a70e4a7577..9d02cabafa3b8acc19ae2c0007c0eb6b86f1fb5d 100644
 --- a/third_party/blink/renderer/core/layout/hit_test_result.cc
 +++ b/third_party/blink/renderer/core/layout/hit_test_result.cc
 @@ -21,12 +21,14 @@
@@ -50,7 +50,7 @@ index 1359aa6b..9d02cab 100644
  #include "third_party/blink/renderer/core/editing/visible_units.h"
  #include "third_party/blink/renderer/core/frame/local_frame.h"
  #include "third_party/blink/renderer/core/frame/visual_viewport.h"
-@@ -144,6 +146,20 @@
+@@ -144,6 +146,20 @@ PositionWithAffinity HitTestResult::GetPosition() const {
    LayoutObject* layout_object = GetLayoutObject();
    if (!layout_object)
      return PositionWithAffinity();
@@ -73,7 +73,7 @@ index 1359aa6b..9d02cab 100644
      return PositionWithAffinity(MostForwardCaretPosition(
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html
 new file mode 100644
-index 0000000..d3cea5f
+index 0000000000000000000000000000000000000000..d3cea5fb83767ddfc236850097387644e0f74c8e
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html
 @@ -0,0 +1,31 @@
