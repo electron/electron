@@ -1155,6 +1155,19 @@ if (is_mac) {
         ldflags += [ "/guard:cf,nolongjmp" ]
       }
 
+      if (current_cpu == "x86") {
+        # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by
+        # Chrome's main thread. This saves significant memory on threads (like
+        # those in the Windows thread pool, and others) whose stack size we can
+        # only control through this setting. Because Chrome's main thread needs
+        # a minimum 1.5 MiB stack, the main thread (in 32-bit builds only) uses
+        # fibers to switch to a 1.5 MiB stack before running any other code.
+        ldflags += [ "/STACK:0x80000" ]
+      } else {
+        # Increase the initial stack size. The default is 1MB, this is 8MB.
+        ldflags += [ "/STACK:0x800000" ]
+      }
+
       # This is to support renaming of electron.exe. node-gyp has hard-coded
       # executable names which it will recognise as node. This module definition
       # file claims that the electron executable is in fact named "node.exe",
