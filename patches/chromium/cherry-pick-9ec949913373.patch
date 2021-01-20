@@ -1,7 +1,7 @@
-From 9ec949913373bd6c359046dd0c821a6b96786adf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Tue, 12 Jan 2021 18:36:22 +0000
-Subject: [PATCH] Mojo: Fix UAF on NodeChannel
+Subject: Mojo: Fix UAF on NodeChannel
 
 TBR=rockot@google.com
 
@@ -24,13 +24,12 @@ Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1517}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/mojo/core/BUILD.gn b/mojo/core/BUILD.gn
-index c42daf24..a7f5744 100644
+index c42daf24d62b3a1c8479466d1bc4efe753099136..a7f574455ac02b656a451257cdc11a2968dd5b68 100644
 --- a/mojo/core/BUILD.gn
 +++ b/mojo/core/BUILD.gn
-@@ -309,6 +309,7 @@
+@@ -309,6 +309,7 @@ source_set("test_sources") {
        "data_pipe_unittest.cc",
        "invitation_unittest.cc",
        "multiprocess_message_pipe_unittest.cc",
@@ -39,10 +38,10 @@ index c42daf24..a7f5744 100644
      ]
    }
 diff --git a/mojo/core/core.cc b/mojo/core/core.cc
-index d02b4fc..d6b2231 100644
+index 6d06ab1fdee75c8fc8670ff7a35923aa90c4bf8c..5eed4e1be13df656897c60378dde8ec024e81a59 100644
 --- a/mojo/core/core.cc
 +++ b/mojo/core/core.cc
-@@ -137,7 +137,7 @@
+@@ -137,7 +137,7 @@ void Core::SetIOTaskRunner(
  NodeController* Core::GetNodeController() {
    base::AutoLock lock(node_controller_lock_);
    if (!node_controller_)
@@ -52,7 +51,7 @@ index d02b4fc..d6b2231 100644
  }
  
 diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
-index f761f39..f9319c2 100644
+index ff93f0c3a6b2bf4a340e027ee803b9006152f031..c7646fa4dc5c5062e8a8a620e55839301af51bed 100644
 --- a/mojo/core/node_controller.cc
 +++ b/mojo/core/node_controller.cc
 @@ -21,7 +21,6 @@
@@ -63,7 +62,7 @@ index f761f39..f9319c2 100644
  #include "mojo/core/request_context.h"
  #include "mojo/core/user_message_impl.h"
  #include "mojo/public/cpp/platform/named_platform_channel.h"
-@@ -146,10 +145,8 @@
+@@ -146,10 +145,8 @@ class ThreadDestructionObserver
  
  NodeController::~NodeController() = default;
  
@@ -76,7 +75,7 @@ index f761f39..f9319c2 100644
    DVLOG(1) << "Initializing node " << name_;
  }
  
-@@ -587,10 +584,17 @@
+@@ -587,10 +584,17 @@ void NodeController::AddPeer(const ports::NodeName& name,
    }
  }
  
@@ -96,10 +95,10 @@ index f761f39..f9319c2 100644
      base::AutoLock lock(peers_lock_);
      auto it = peers_.find(name);
 diff --git a/mojo/core/node_controller.h b/mojo/core/node_controller.h
-index f35237f4..b0ddd29 100644
+index 9494de5b809e0216fde750960cd5f86c2f14b46e..6f9f0680062db679587ab1846c768846f0fbcb13 100644
 --- a/mojo/core/node_controller.h
 +++ b/mojo/core/node_controller.h
-@@ -52,11 +52,10 @@
+@@ -52,11 +52,10 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
    };
  
    // |core| owns and out-lives us.
@@ -112,7 +111,7 @@ index f35237f4..b0ddd29 100644
    ports::Node* node() const { return node_.get(); }
    scoped_refptr<base::SingleThreadTaskRunner> io_task_runner() const {
      return io_task_runner_;
-@@ -135,6 +134,8 @@
+@@ -135,6 +134,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
        base::span<const unsigned char> data);
    static void DeserializeMessageAsEventForFuzzer(Channel::MessagePtr message);
  
@@ -121,7 +120,7 @@ index f35237f4..b0ddd29 100644
   private:
    friend Core;
  
-@@ -176,7 +177,6 @@
+@@ -176,7 +177,6 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
  
    scoped_refptr<NodeChannel> GetPeerChannel(const ports::NodeName& name);
    scoped_refptr<NodeChannel> GetInviterChannel();
@@ -129,7 +128,7 @@ index f35237f4..b0ddd29 100644
  
    void AddPeer(const ports::NodeName& name,
                 scoped_refptr<NodeChannel> channel,
-@@ -254,7 +254,6 @@
+@@ -254,7 +254,6 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
    void ForceDisconnectProcessForTestingOnIOThread(base::ProcessId process_id);
  
    // These are safe to access from any thread as long as the Node is alive.
@@ -137,7 +136,7 @@ index f35237f4..b0ddd29 100644
    const ports::NodeName name_;
    const std::unique_ptr<ports::Node> node_;
    scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
-@@ -319,7 +318,7 @@
+@@ -319,7 +318,7 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
    AtomicFlag shutdown_callback_flag_;
  
    // All other fields below must only be accessed on the I/O thread, i.e., the
@@ -148,7 +147,7 @@ index f35237f4..b0ddd29 100644
    NodeMap pending_invitations_;
 diff --git a/mojo/core/node_controller_unittest.cc b/mojo/core/node_controller_unittest.cc
 new file mode 100644
-index 0000000..316e162
+index 0000000000000000000000000000000000000000..316e162376323f27f83868d6b943c40e395511bb
 --- /dev/null
 +++ b/mojo/core/node_controller_unittest.cc
 @@ -0,0 +1,42 @@
