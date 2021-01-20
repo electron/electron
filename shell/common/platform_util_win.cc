@@ -244,17 +244,17 @@ std::string OpenExternalOnWorkerThread(
   base::string16 escaped_url = L"\"" + base::UTF8ToUTF16(url.spec()) + L"\"";
   base::string16 working_dir = options.working_dir.value();
 
-  ULONG openCallRes = reinterpret_cast<ULONG>(ShellExecuteW(
+  LONGLONG open_call_res = reinterpret_cast<LONGLONG>(ShellExecuteW(
       nullptr, L"open", escaped_url.c_str(), nullptr,
       working_dir.empty() ? nullptr : working_dir.c_str(), SW_SHOWNORMAL));
-  if (options.fallbackToUser && openCallRes == SE_ERR_NOASSOC) {
+  if (options.fallback_to_user && open_call_res == SE_ERR_NOASSOC) {
     const OPENASINFO info = {escaped_url.c_str(), nullptr,
                              OAIF_ALLOW_REGISTRATION | OAIF_REGISTER_EXT |
                                  OAIF_EXEC | OAIF_FILE_IS_URI};
     if (SHOpenWithDialog(NULL, &info) != S_OK) {
       return "Failed to open";
     }
-  } else if (openCallRes <= 32) {
+  } else if (open_call_res <= 32) {
     return "Failed to open";
   }
   return "";

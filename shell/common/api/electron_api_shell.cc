@@ -63,6 +63,7 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
     if (args->GetNext(&obj)) {
       obj.Get("activate", &options.activate);
       obj.Get("workingDirectory", &options.working_dir);
+      obj.Get("fallbackToUser", &options.fallback_to_user);
     }
   }
 
