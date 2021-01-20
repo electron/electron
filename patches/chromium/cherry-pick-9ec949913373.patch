@@ -1,0 +1,196 @@
+From 9ec949913373bd6c359046dd0c821a6b96786adf Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Tue, 12 Jan 2021 18:36:22 +0000
+Subject: [PATCH] Mojo: Fix UAF on NodeChannel
+
+TBR=rockot@google.com
+
+(cherry picked from commit 9c8a98b3983dd1c7828ceae2fc8a5a2e9bad1f68)
+
+(cherry picked from commit 06fe641d21bda1b5869a46e59b13873762ce1324)
+
+Fixed: 1162198
+Change-Id: Ief850903a7e6ba3d7c5c0129704d1f80aa3467ce
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2612085
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#840942}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2621996
+Cr-Original-Commit-Position: refs/branch-heads/4324@{#1637}
+Cr-Original-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2623929
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1517}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/mojo/core/BUILD.gn b/mojo/core/BUILD.gn
+index c42daf24..a7f5744 100644
+--- a/mojo/core/BUILD.gn
++++ b/mojo/core/BUILD.gn
+@@ -309,6 +309,7 @@
+       "data_pipe_unittest.cc",
+       "invitation_unittest.cc",
+       "multiprocess_message_pipe_unittest.cc",
++      "node_controller_unittest.cc",
+       "platform_wrapper_unittest.cc",
+     ]
+   }
+diff --git a/mojo/core/core.cc b/mojo/core/core.cc
+index d02b4fc..d6b2231 100644
+--- a/mojo/core/core.cc
++++ b/mojo/core/core.cc
+@@ -137,7 +137,7 @@
+ NodeController* Core::GetNodeController() {
+   base::AutoLock lock(node_controller_lock_);
+   if (!node_controller_)
+-    node_controller_.reset(new NodeController(this));
++    node_controller_ = std::make_unique<NodeController>();
+   return node_controller_.get();
+ }
+ 
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index f761f39..f9319c2 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -21,7 +21,6 @@
+ #include "mojo/core/broker.h"
+ #include "mojo/core/broker_host.h"
+ #include "mojo/core/configuration.h"
+-#include "mojo/core/core.h"
+ #include "mojo/core/request_context.h"
+ #include "mojo/core/user_message_impl.h"
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
+@@ -146,10 +145,8 @@
+ 
+ NodeController::~NodeController() = default;
+ 
+-NodeController::NodeController(Core* core)
+-    : core_(core),
+-      name_(GetRandomNodeName()),
+-      node_(new ports::Node(name_, this)) {
++NodeController::NodeController()
++    : name_(GetRandomNodeName()), node_(new ports::Node(name_, this)) {
+   DVLOG(1) << "Initializing node " << name_;
+ }
+ 
+@@ -587,10 +584,17 @@
+   }
+ }
+ 
+-void NodeController::DropPeer(const ports::NodeName& name,
++void NodeController::DropPeer(const ports::NodeName& node_name,
+                               NodeChannel* channel) {
+   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
+ 
++  // NOTE: Either the `peers_` erasure or the `pending_invitations_` erasure
++  // below, if executed, may drop the last reference to the named NodeChannel
++  // and thus result in its deletion. The passed `node_name` argument may be
++  // owned by that same NodeChannel, so we make a copy of it here to avoid
++  // potentially unsafe references further below.
++  ports::NodeName name = node_name;
++
+   {
+     base::AutoLock lock(peers_lock_);
+     auto it = peers_.find(name);
+diff --git a/mojo/core/node_controller.h b/mojo/core/node_controller.h
+index f35237f4..b0ddd29 100644
+--- a/mojo/core/node_controller.h
++++ b/mojo/core/node_controller.h
+@@ -52,11 +52,10 @@
+   };
+ 
+   // |core| owns and out-lives us.
+-  explicit NodeController(Core* core);
++  NodeController();
+   ~NodeController() override;
+ 
+   const ports::NodeName& name() const { return name_; }
+-  Core* core() const { return core_; }
+   ports::Node* node() const { return node_.get(); }
+   scoped_refptr<base::SingleThreadTaskRunner> io_task_runner() const {
+     return io_task_runner_;
+@@ -135,6 +134,8 @@
+       base::span<const unsigned char> data);
+   static void DeserializeMessageAsEventForFuzzer(Channel::MessagePtr message);
+ 
++  scoped_refptr<NodeChannel> GetBrokerChannel();
++
+  private:
+   friend Core;
+ 
+@@ -176,7 +177,6 @@
+ 
+   scoped_refptr<NodeChannel> GetPeerChannel(const ports::NodeName& name);
+   scoped_refptr<NodeChannel> GetInviterChannel();
+-  scoped_refptr<NodeChannel> GetBrokerChannel();
+ 
+   void AddPeer(const ports::NodeName& name,
+                scoped_refptr<NodeChannel> channel,
+@@ -254,7 +254,6 @@
+   void ForceDisconnectProcessForTestingOnIOThread(base::ProcessId process_id);
+ 
+   // These are safe to access from any thread as long as the Node is alive.
+-  Core* const core_;
+   const ports::NodeName name_;
+   const std::unique_ptr<ports::Node> node_;
+   scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
+@@ -319,7 +318,7 @@
+   AtomicFlag shutdown_callback_flag_;
+ 
+   // All other fields below must only be accessed on the I/O thread, i.e., the
+-  // thread on which core_->io_task_runner() runs tasks.
++  // thread on which `io_task_runner_` runs tasks.
+ 
+   // Channels to invitees during handshake.
+   NodeMap pending_invitations_;
+diff --git a/mojo/core/node_controller_unittest.cc b/mojo/core/node_controller_unittest.cc
+new file mode 100644
+index 0000000..316e162
+--- /dev/null
++++ b/mojo/core/node_controller_unittest.cc
+@@ -0,0 +1,42 @@
++// Copyright 2013 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "base/logging.h"
++#include "mojo/core/core.h"
++#include "mojo/core/test/mojo_test_base.h"
++#include "mojo/public/c/system/types.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace mojo {
++namespace core {
++namespace {
++
++using NodeControllerTest = test::MojoTestBase;
++
++TEST_F(NodeControllerTest, AcceptInvitationFailure) {
++  // Spawn a child process that will send an invalid AcceptInvitation
++  // NodeChannel message. This is a regression test for
++  // https://crbug.com/1162198.
++  RunTestClient("SendInvalidAcceptInvitation",
++                [&](MojoHandle h) { WriteMessage(h, "hi"); });
++}
++
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(SendInvalidAcceptInvitation,
++                                  NodeControllerTest,
++                                  h) {
++  // A little communication to synchronize against Mojo bringup. By the time
++  // this read completes, we must have an internal NodeController with the
++  // parent test process connected as its broker.
++  EXPECT_EQ("hi", ReadMessage(h));
++
++  // Send an unexpected AcceptInvitation message to the parent process. This
++  // exercises the regression code path in the parent process.
++  NodeController* controller = Core::Get()->GetNodeController();
++  scoped_refptr<NodeChannel> channel = controller->GetBrokerChannel();
++  channel->AcceptInvitation(ports::NodeName{0, 0}, ports::NodeName{0, 0});
++}
++
++}  // namespace
++}  // namespace core
++}  // namespace mojo
