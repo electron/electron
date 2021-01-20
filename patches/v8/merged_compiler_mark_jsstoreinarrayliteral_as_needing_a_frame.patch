@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Fri, 8 Jan 2021 10:24:06 +0100
+Subject: Merged: [compiler] Mark JSStoreInArrayLiteral as needing a frame
+ state
+
+Revision: b837e0338963611c08344cbb6f655a0abd9238c1
+
+BUG=chromium:1161357
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=mythria@chromium.org
+
+Change-Id: Ic95dfd20d45d895934dee1592ebf427544eec73b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2616223
+Reviewed-by: Mythri Alle <mythria@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.8@{#24}
+Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
+Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
+
+diff --git a/src/compiler/operator-properties.cc b/src/compiler/operator-properties.cc
+index c77249f6216a8dd2dd181ad9bc6ca5172c8fe0b9..a8e29416b5d0dda398630df8a81a6712e8932197 100644
+--- a/src/compiler/operator-properties.cc
++++ b/src/compiler/operator-properties.cc
+@@ -193,16 +193,17 @@ bool OperatorProperties::HasFrameStateInput(const Operator* op) {
+     case IrOpcode::kJSCloneObject:
+ 
+     // Property access operations
++    case IrOpcode::kJSDeleteProperty:
++    case IrOpcode::kJSLoadGlobal:
+     case IrOpcode::kJSLoadNamed:
+     case IrOpcode::kJSLoadNamedFromSuper:
+-    case IrOpcode::kJSStoreNamed:
+     case IrOpcode::kJSLoadProperty:
+-    case IrOpcode::kJSStoreProperty:
+-    case IrOpcode::kJSLoadGlobal:
++    case IrOpcode::kJSStoreDataPropertyInLiteral:
++    case IrOpcode::kJSStoreInArrayLiteral:
+     case IrOpcode::kJSStoreGlobal:
++    case IrOpcode::kJSStoreNamed:
+     case IrOpcode::kJSStoreNamedOwn:
+-    case IrOpcode::kJSStoreDataPropertyInLiteral:
+-    case IrOpcode::kJSDeleteProperty:
++    case IrOpcode::kJSStoreProperty:
+ 
+     // Conversions
+     case IrOpcode::kJSToLength:
