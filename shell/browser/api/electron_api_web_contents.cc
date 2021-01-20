@@ -3169,7 +3169,6 @@ content::ColorChooser* WebContents::OpenColorChooser(
 std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
     content::RenderFrameHost* frame,
     content::EyeDropperListener* listener) {
-  LOG(INFO) << "WebContents::OpenEyeDropper - HERE " << __LINE__;
   return ShowEyeDropper(frame, listener);
 }
 
