@@ -1,7 +1,7 @@
-From da9b5ec032ad503c5c0c147b6b2ce20ee86270e7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniele Castagna <dcastagna@chromium.org>
 Date: Mon, 14 Dec 2020 23:03:31 +0000
-Subject: [PATCH] viz: Destroy |gpu_memory_buffer_factory_| on IOThread
+Subject: viz: Destroy |gpu_memory_buffer_factory_| on IOThread
 
 |gpu_memory_buffer_factory_| weak pointers are checked on the
 IOThread.
@@ -18,13 +18,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2563077
 Commit-Queue: Daniele Castagna <dcastagna@chromium.org>
 Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#836827}
----
 
 diff --git a/components/viz/service/gl/gpu_service_impl.cc b/components/viz/service/gl/gpu_service_impl.cc
-index 0a19757..03834a7 100644
+index 98cdbff9bf021f9665abdb339a25753b2e7b4807..6ab1e86035089b748eb636cc5e654702ee19fd9e 100644
 --- a/components/viz/service/gl/gpu_service_impl.cc
 +++ b/components/viz/service/gl/gpu_service_impl.cc
-@@ -430,16 +430,18 @@
+@@ -428,16 +428,18 @@ GpuServiceImpl::~GpuServiceImpl() {
    GetLogMessageManager()->ShutdownLogging();
  
    // Destroy the receiver on the IO thread.
@@ -53,7 +52,7 @@ index 0a19757..03834a7 100644
  
    if (watchdog_thread_)
      watchdog_thread_->OnGpuProcessTearDown();
-@@ -447,6 +449,26 @@
+@@ -445,6 +447,26 @@ GpuServiceImpl::~GpuServiceImpl() {
    media_gpu_channel_manager_.reset();
    gpu_channel_manager_.reset();
  
