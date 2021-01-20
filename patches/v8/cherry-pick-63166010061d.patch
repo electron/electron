@@ -1,7 +1,7 @@
-From 63166010061d2af4fef6a713d448ebf074a9d2cb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
-Date: Tue, 01 Dec 2020 19:10:26 +0100
-Subject: [PATCH] [liftoff][arm] Release temp registers after use
+Date: Tue, 1 Dec 2020 19:10:26 +0100
+Subject: Release temp registers after use
 
 The {ParallelRegisterMove} at the end of {AtomicLoad} might need a
 temporary scratch register for spilling values to the stack. Make sure
@@ -16,13 +16,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2566759
 Reviewed-by: Andreas Haas <ahaas@chromium.org>
 Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#71564}
----
 
 diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
-index 4513393..da3f8d9 100644
+index 4a9cffb9728405f36804d660744ed15d20a27ab0..94672036de4e6c2592b2dc9fed1dc388bf9e40a0 100644
 --- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
 +++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
-@@ -1036,11 +1036,13 @@
+@@ -945,11 +945,13 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
    if (cache_state()->is_used(LiftoffRegister(dst_high))) {
      SpillRegister(LiftoffRegister(dst_high));
    }
@@ -39,9 +38,9 @@ index 4513393..da3f8d9 100644
 +    dmb(ISH);
 +  }
  
-   ParallelRegisterMove(
-       {{dst, LiftoffRegister::ForPair(dst_low, dst_high), kWasmI64}});
-@@ -1354,12 +1356,10 @@
+   LiftoffAssembler::ParallelRegisterMoveTuple reg_moves[]{
+       {dst, LiftoffRegister::ForPair(dst_low, dst_high), kWasmI64}};
+@@ -1261,12 +1263,10 @@ void LiftoffAssembler::Move(DoubleRegister dst, DoubleRegister src,
  }
  
  void LiftoffAssembler::Spill(int offset, LiftoffRegister reg, ValueType type) {
@@ -56,7 +55,7 @@ index 4513393..da3f8d9 100644
    MemOperand dst(fp, -offset);
 diff --git a/test/mjsunit/regress/wasm/regress-1153442.js b/test/mjsunit/regress/wasm/regress-1153442.js
 new file mode 100644
-index 0000000..989da11
+index 0000000000000000000000000000000000000000..989da11a25b85f9b3a9905e6506e56c3e8c82654
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-1153442.js
 @@ -0,0 +1,61 @@
