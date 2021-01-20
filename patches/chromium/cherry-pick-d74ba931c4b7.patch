@@ -1,0 +1,110 @@
+From d74ba931c4b75858b36b0e97b6853579a6f7c510 Mon Sep 17 00:00:00 2001
+From: Achuith Bhandarkar <achuith@chromium.org>
+Date: Wed, 13 Jan 2021 21:27:05 +0000
+Subject: [PATCH] content-visibility: Don't adjust position of a locked hittest result node.
+
+This patch ensures that if we have a hittest result that has a locked
+node, we don't try to recurse into its subtree. This can happen when we
+do a PositionWithAffinity check.
+
+R=chrishtr@chromium.org
+
+(cherry picked from commit 8483cf6944e38203c3b247163c54cfa105e89c56)
+
+(cherry picked from commit 3f7b67374a1121b6756ccfd2e4e414987f167489)
+
+Bug: 1162131
+Change-Id: I357bd7032c6c2b6c9405bf26c49a36bda22d6a0d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2611453
+Reviewed-by: Chris Harrelson <chrishtr@chromium.org>
+Commit-Queue: vmpstr <vmpstr@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#840727}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2618603
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4324@{#1566}
+Cr-Original-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2618982
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1520}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/third_party/blink/renderer/core/layout/hit_test_result.cc b/third_party/blink/renderer/core/layout/hit_test_result.cc
+index 1359aa6b..9d02cab 100644
+--- a/third_party/blink/renderer/core/layout/hit_test_result.cc
++++ b/third_party/blink/renderer/core/layout/hit_test_result.cc
+@@ -21,12 +21,14 @@
+ 
+ #include "third_party/blink/renderer/core/layout/hit_test_result.h"
+ 
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+ #include "third_party/blink/renderer/core/dom/pseudo_element.h"
+ #include "third_party/blink/renderer/core/dom/shadow_root.h"
+ #include "third_party/blink/renderer/core/editing/editing_utilities.h"
+ #include "third_party/blink/renderer/core/editing/frame_selection.h"
+ #include "third_party/blink/renderer/core/editing/position_with_affinity.h"
++#include "third_party/blink/renderer/core/editing/text_affinity.h"
+ #include "third_party/blink/renderer/core/editing/visible_units.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/visual_viewport.h"
+@@ -144,6 +146,20 @@
+   LayoutObject* layout_object = GetLayoutObject();
+   if (!layout_object)
+     return PositionWithAffinity();
++
++  // We should never have a layout object that is within a locked subtree.
++  CHECK(!DisplayLockUtilities::NearestLockedExclusiveAncestor(*layout_object));
++
++  // If the layout object is blocked by display lock, we return the beginning of
++  // the node as the position. This is because we don't paint contents of the
++  // element. Furthermore, any caret adjustments below can access layout-dirty
++  // state in the subtree of this object.
++  if (layout_object->PaintBlockedByDisplayLock(
++          DisplayLockLifecycleTarget::kChildren)) {
++    return PositionWithAffinity(Position(*inner_node_, 0),
++                                TextAffinity::kDefault);
++  }
++
+   if (inner_possibly_pseudo_node_->IsPseudoElement() &&
+       inner_possibly_pseudo_node_->GetPseudoId() == kPseudoIdBefore) {
+     return PositionWithAffinity(MostForwardCaretPosition(
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html
+new file mode 100644
+index 0000000..d3cea5f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-080.html
+@@ -0,0 +1,31 @@
++<!doctype HTML>
++<html id=html>
++<meta charset="utf8">
++<title>Content Visibility: caret position with html hidden</title>
++<link rel="author" title="Vladimir Levin" href="mailto:vmpstr@chromium.org">
++<link rel="help" href="https://drafts.csswg.org/css-contain/#content-visibility">
++<meta name="assert" content="caretRangeFromPoint works even if html has content-visibility hidden">
++
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<meter></meter>
++<iframe></iframe>
++<style>
++* {
++  all: initial;
++  content-visibility: hidden;
++}
++</style>
++
++<script>
++test(() => {
++  const range = document.caretRangeFromPoint();
++  assert_not_equals(range, null, "range exists");
++  assert_equals(range.startContainer, html, "startContainer is html");
++  assert_equals(range.startOffset, 0, "startOffset is zero");
++  assert_equals(range.endContainer, html, "endContainer is html");
++  assert_equals(range.endOffset, 0, "endOffset is zero");
++}, "Caret range from point");
++</script>
++</html>
