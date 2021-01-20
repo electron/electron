@@ -127,7 +127,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
 
   void SetVisibleOnAllWorkspaces(bool visible,
-                                 bool visibleOnFullScreen) override;
+                                 bool visibleOnFullScreen,
+                                 bool skipTransformProcessType) override;
 
   bool IsVisibleOnAllWorkspaces() override;
 

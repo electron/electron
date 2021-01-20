@@ -1624,7 +1624,10 @@ Returns `Boolean` - Whether the menu bar is visible.
 * `visible` Boolean
 * `options` Object (optional)
   * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
-    the window should be visible above fullscreen windows
+    the window should be visible above fullscreen windows.
+  * `skipTransformProcessType` Boolean (optional) _macOS_ - Transforming
+    the process type must hide the window and dock for a short time. This
+    can be skipped if the process type has already been transformed.
 
 Sets whether the window should be visible on all workspaces.
 
