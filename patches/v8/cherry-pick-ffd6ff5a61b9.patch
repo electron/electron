@@ -1,7 +1,7 @@
-From ffd6ff5a61b9343ccc62e6c03b71a33682c6084d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Zhi An Ng <zhin@chromium.org>
-Date: Fri, 08 Jan 2021 07:29:02 +0000
-Subject: [PATCH] Merged: [wasm-simd] Fix loading fp pair registers
+Date: Fri, 8 Jan 2021 07:29:02 +0000
+Subject: Merged: [wasm-simd] Fix loading fp pair registers
 
 We were incorrectly clearing the high reg from the list of regs to load.
 The intention was to prevent double (and incorrect) loading - loading
@@ -27,13 +27,12 @@ Reviewed-by: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.8@{#28}
 Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
 Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
----
 
 diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
-index 70a037d..dea5221 100644
+index e219025e5390a2fb48712e15bc28a41f0a3bee79..52f11ddafe7e7fea8f58cee187e479b3f739fafb 100644
 --- a/src/wasm/baseline/liftoff-assembler.cc
 +++ b/src/wasm/baseline/liftoff-assembler.cc
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,7 @@ class StackTransferRecipe {
  
    struct RegisterLoad {
      enum LoadKind : uint8_t {
@@ -41,7 +40,7 @@ index 70a037d..dea5221 100644
        kConstant,      // load a constant value into a register.
        kStack,         // fill a register from a stack slot.
        kLowHalfStack,  // fill a register from the low half of a stack slot.
-@@ -63,6 +64,10 @@
+@@ -63,6 +64,10 @@ class StackTransferRecipe {
        return {half == kLowWord ? kLowHalfStack : kHighHalfStack, kWasmI32,
                offset};
      }
@@ -52,7 +51,7 @@ index 70a037d..dea5221 100644
  
     private:
      RegisterLoad(LoadKind kind, ValueType type, int32_t value)
-@@ -219,11 +224,11 @@
+@@ -217,11 +222,11 @@ class StackTransferRecipe {
            RegisterLoad::HalfStack(stack_offset, kHighWord);
      } else if (dst.is_fp_pair()) {
        DCHECK_EQ(kWasmS128, type);
@@ -68,7 +67,7 @@ index 70a037d..dea5221 100644
      } else {
        *register_load(dst) = RegisterLoad::Stack(stack_offset, type);
      }
-@@ -320,6 +325,8 @@
+@@ -318,6 +323,8 @@ class StackTransferRecipe {
      for (LiftoffRegister dst : load_dst_regs_) {
        RegisterLoad* load = register_load(dst);
        switch (load->kind) {
@@ -79,7 +78,7 @@ index 70a037d..dea5221 100644
                                        ? WasmValue(int64_t{load->value})
 diff --git a/test/mjsunit/regress/wasm/regress-1161654.js b/test/mjsunit/regress/wasm/regress-1161654.js
 new file mode 100644
-index 0000000..93f2c3b
+index 0000000000000000000000000000000000000000..93f2c3b556fc55edc157dadc49b23d5bc9538135
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-1161654.js
 @@ -0,0 +1,56 @@
