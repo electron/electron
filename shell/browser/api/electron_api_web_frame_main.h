@@ -12,6 +12,7 @@
 #include "base/process/process.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "shell/common/gin_helper/constructible.h"
 
 class GURL;
 
@@ -32,8 +33,12 @@ namespace electron {
 namespace api {
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain : public gin::Wrappable<WebFrameMain> {
+class WebFrameMain : public gin::Wrappable<WebFrameMain>,
+                     public gin_helper::Constructible<WebFrameMain> {
  public:
+  // Create a new WebFrameMain and return the V8 wrapper of it.
+  static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
+
   static gin::Handle<WebFrameMain> FromID(v8::Isolate* isolate,
                                           int render_process_id,
                                           int render_frame_id);
@@ -51,8 +56,9 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain> {
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
  protected:
@@ -71,6 +77,14 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain> {
       int world_id,
       const base::string16& code);
   bool Reload(v8::Isolate* isolate);
+  void Send(v8::Isolate* isolate,
+            bool internal,
+            const std::string& channel,
+            v8::Local<v8::Value> args);
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message_value,
+                   base::Optional<v8::Local<v8::Value>> transfer);
 
   int FrameTreeNodeID(v8::Isolate* isolate) const;
   std::string Name(v8::Isolate* isolate) const;

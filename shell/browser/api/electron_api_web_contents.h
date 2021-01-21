@@ -260,15 +260,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                                 blink::CloneableMessage args,
                                 int32_t sender_id = 0);
 
-  bool SendIPCMessageToFrame(bool internal,
-                             v8::Local<v8::Value> frame,
-                             const std::string& channel,
-                             v8::Local<v8::Value> args);
-
-  void PostMessage(const std::string& channel,
-                   v8::Local<v8::Value> message,
-                   base::Optional<v8::Local<v8::Value>> transfer);
-
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
