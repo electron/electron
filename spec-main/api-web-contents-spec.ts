@@ -1738,28 +1738,6 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
     });
 
-    it('respects custom settings', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-
-      const data = await w.webContents.printToPDF({
-        pageRanges: {
-          from: 0,
-          to: 2
-        },
-        landscape: true
-      });
-
-      const doc = await pdfjs.getDocument(data).promise;
-
-      // Check that correct # of pages are rendered.
-      expect(doc.numPages).to.equal(3);
-
-      // Check that PDF is generated in landscape mode.
-      const firstPage = await doc.getPage(1);
-      const { width, height } = firstPage.getViewport({ scale: 100 });
-      expect(width).to.be.greaterThan(height);
-    });
-
     it('does not crash when called multiple times in parallel', async () => {
       const promises = [];
       for (let i = 0; i < 3; i++) {
@@ -1782,6 +1760,35 @@ describe('webContents module', () => {
       for (const data of results) {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
+    });
+
+    describe('using a large document', () => {
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+        await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
+      });
+
+      afterEach(closeAllWindows);
+
+      it('respects custom settings', async () => {
+        const data = await w.webContents.printToPDF({
+          pageRanges: {
+            from: 0,
+            to: 2
+          },
+          landscape: true
+        });
+
+        const doc = await pdfjs.getDocument(data).promise;
+
+        // Check that correct # of pages are rendered.
+        expect(doc.numPages).to.equal(3);
+
+        // Check that PDF is generated in landscape mode.
+        const firstPage = await doc.getPage(1);
+        const { width, height } = firstPage.getViewport({ scale: 100 });
+        expect(width).to.be.greaterThan(height);
+      });
     });
   });
 

@@ -5,7 +5,7 @@ const path = require('path');
 const temp = require('temp').track();
 const util = require('util');
 const { emittedOnce } = require('./events-helpers');
-const { ifit } = require('./spec-helpers');
+const { ifit, ifdescribe } = require('./spec-helpers');
 const nativeImage = require('electron').nativeImage;
 
 const features = process._linkedBinding('electron_common_features');
@@ -1385,16 +1385,10 @@ describe('asar package', function () {
       });
     });
 
-    describe('child_process.execFile', function () {
+    ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('child_process.execFile', function () {
       const execFile = ChildProcess.execFile;
       const execFileSync = ChildProcess.execFileSync;
       const echo = path.join(asarDir, 'echo.asar', 'echo');
-
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip();
-        }
-      });
 
       it('executes binaries', function (done) {
         execFile(echo, ['test'], function (error, stdout) {
