@@ -20,6 +20,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/download_manager.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
@@ -565,6 +566,16 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if defined(OS_MAC)
   FreeAppDelegate();
 #endif
+
+  // Shutdown the DownloadManager before destroying Node to prevent
+  // DownloadItem callbacks from crashing.
+  for (auto& iter : ElectronBrowserContext::browser_context_map()) {
+    auto* download_manager =
+        content::BrowserContext::GetDownloadManager(iter.second.get());
+    if (download_manager) {
+      download_manager->Shutdown();
+    }
+  }
 
   // Make sure destruction callbacks are called before message loop is
   // destroyed, otherwise some objects that need to be deleted on IO thread

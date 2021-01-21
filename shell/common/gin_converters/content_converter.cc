@@ -192,7 +192,6 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-sanitized-write");
     case content::PermissionType::FLASH:
       return StringToV8(isolate, "flash");
-    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
     case content::PermissionType::FONT_ACCESS:
       return StringToV8(isolate, "font-access");
     case content::PermissionType::IDLE_DETECTION:
@@ -211,6 +210,7 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "persistent-storage");
     case content::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");
+    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
     case content::PermissionType::AUDIO_CAPTURE:
     case content::PermissionType::VIDEO_CAPTURE:
       return StringToV8(isolate, "media");
