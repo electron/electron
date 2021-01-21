@@ -1,0 +1,169 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Fri, 18 Dec 2020 02:41:27 +0000
+Subject: Sanitize descriptions for file types.
+
+This collapses white space, limits the length of descriptions to 64
+characters, and on windows strips out '*' characters to ensure the
+windows dialog itself will still include the true extension.
+
+This last behavior is triggered by the `keep_extension_visible` flag
+that was added in https://crrev.com/c/2582842 to fix a similar problem
+on Mac.
+
+(cherry picked from commit 25f38bb6322c0d93722c1faa3f6b4ea2daf2dc90)
+
+Tested: Verified that the extension is shown in the pickers shown by https://fsa-tests.glitch.me/accepts.html
+Bug: 1137247
+Change-Id: Ife2344589427dbc1055234026601642113b6a791
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2586958
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Reviewed-by: Victor Costan <pwnall@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#837391}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2597151
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#1052}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
+index 0d3936538e60a26e620e7794b055221c782e062d..32b1934f3420451495c3d3478767f09cf0509502 100644
+--- a/content/browser/file_system_access/file_system_chooser.cc
++++ b/content/browser/file_system_access/file_system_chooser.cc
+@@ -8,7 +8,9 @@
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+ #include "base/i18n/file_util_icu.h"
++#include "base/i18n/rtl.h"
+ #include "base/metrics/histogram_functions.h"
++#include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/post_task.h"
+ #include "build/build_config.h"
+@@ -19,6 +21,7 @@
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/common/content_client.h"
+ #include "net/base/mime_util.h"
++#include "ui/gfx/text_elider.h"
+ #include "ui/shell_dialogs/select_file_policy.h"
+ #include "ui/shell_dialogs/selected_file_info.h"
+ 
+@@ -26,6 +29,13 @@ namespace content {
+ 
+ namespace {
+ 
++// The maximum number of unicode code points the description of a file type is
++// allowed to be. Any longer descriptions will be truncated to this length.
++// The exact number here is fairly arbitrary, since font, font size, dialog
++// size and underlying platform all influence how many characters will actually
++// be visible. As such this can be adjusted as needed.
++constexpr int kMaxDescriptionLength = 64;
++
+ std::string TypeToString(blink::mojom::ChooseFileSystemEntryType type) {
+   switch (type) {
+     case blink::mojom::ChooseFileSystemEntryType::kOpenFile:
+@@ -144,7 +154,16 @@ bool GetFileTypesFromAcceptsOption(
+   if (extensions->empty())
+     return false;
+ 
+-  *description = option.description;
++  base::string16 sanitized_description = option.description;
++  if (!sanitized_description.empty()) {
++    sanitized_description = base::CollapseWhitespace(
++        sanitized_description, /*trim_sequences_with_line_breaks=*/false);
++    sanitized_description = gfx::TruncateString(
++        sanitized_description, kMaxDescriptionLength, gfx::CHARACTER_BREAK);
++    base::i18n::SanitizeUserSuppliedString(&sanitized_description);
++  }
++  *description = sanitized_description;
++
+   return true;
+ }
+ 
+diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
+index 292671a22e2b5726521fe065dca1d56b8982406d..bdd26085cffaed7fadc21b98b4dfc9707b2adf46 100644
+--- a/content/browser/file_system_access/file_system_chooser_unittest.cc
++++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
+@@ -233,4 +233,43 @@ TEST_F(FileSystemChooserTest, ExternalPath) {
+   EXPECT_EQ(results[0].path, virtual_path);
+ }
+ 
++TEST_F(FileSystemChooserTest, DescriptionSanitization) {
++  SelectFileDialogParams dialog_params;
++  ui::SelectFileDialog::SetFactory(
++      new CancellingSelectFileDialogFactory(&dialog_params));
++  std::vector<blink::mojom::ChooseFileSystemEntryAcceptsOptionPtr> accepts;
++  accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
++      base::UTF8ToUTF16("Description        with \t      a  \r   lot   of  \n "
++                        "                                 spaces"),
++      std::vector<std::string>({}), std::vector<std::string>({"txt"})));
++  accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
++      base::UTF8ToUTF16("Description that is very long and should be "
++                        "truncated to 64 code points if it works"),
++      std::vector<std::string>({}), std::vector<std::string>({"js"})));
++  accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
++      base::UTF8ToUTF16("Unbalanced RTL \xe2\x80\xae section"),
++      std::vector<std::string>({}), std::vector<std::string>({"js"})));
++  accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
++      base::UTF8ToUTF16("Unbalanced RTL \xe2\x80\xae section in a otherwise "
++                        "very long description that will be truncated"),
++      std::vector<std::string>({}), std::vector<std::string>({"js"})));
++  SyncShowDialog(std::move(accepts), /*include_accepts_all=*/false);
++
++  ASSERT_TRUE(dialog_params.file_types);
++  ASSERT_EQ(4u,
++            dialog_params.file_types->extension_description_overrides.size());
++  EXPECT_EQ(base::UTF8ToUTF16("Description with a lot of spaces"),
++            dialog_params.file_types->extension_description_overrides[0]);
++  EXPECT_EQ(
++      base::UTF8ToUTF16(
++          "Description that is very long and should be truncated to 64 cod…"),
++      dialog_params.file_types->extension_description_overrides[1]);
++  EXPECT_EQ(
++      base::UTF8ToUTF16("Unbalanced RTL \xe2\x80\xae section\xe2\x80\xac"),
++      dialog_params.file_types->extension_description_overrides[2]);
++  EXPECT_EQ(base::UTF8ToUTF16("Unbalanced RTL \xe2\x80\xae section in a "
++                              "otherwise very long description t…\xe2\x80\xac"),
++            dialog_params.file_types->extension_description_overrides[3]);
++}
++
+ }  // namespace content
+diff --git a/ui/shell_dialogs/select_file_dialog_win.cc b/ui/shell_dialogs/select_file_dialog_win.cc
+index 2ea1f94ad3b1f7bbcfda89304fd833149019e1b3..37fe4b5fa350f3f70c16c2d9ee23344110ef58b0 100644
+--- a/ui/shell_dialogs/select_file_dialog_win.cc
++++ b/ui/shell_dialogs/select_file_dialog_win.cc
+@@ -63,7 +63,8 @@ bool GetRegistryDescriptionFromExtension(const base::string16& file_ext,
+ std::vector<FileFilterSpec> FormatFilterForExtensions(
+     const std::vector<base::string16>& file_ext,
+     const std::vector<base::string16>& ext_desc,
+-    bool include_all_files) {
++    bool include_all_files,
++    bool keep_extension_visible) {
+   const base::string16 all_ext = L"*.*";
+   const base::string16 all_desc =
+       l10n_util::GetStringUTF16(IDS_APP_SAVEAS_ALL_FILES);
+@@ -112,6 +113,11 @@ std::vector<FileFilterSpec> FormatFilterForExtensions(
+       }
+       if (desc.empty())
+         desc = L"*." + ext_name;
++    } else if (keep_extension_visible) {
++      // Having '*' in the description could cause the windows file dialog to
++      // not include the file extension in the file dialog. So strip out any '*'
++      // characters if `keep_extension_visible` is set.
++      base::ReplaceChars(desc, L"*", L"", &desc);
+     }
+ 
+     result.push_back({desc, ext});
+@@ -318,9 +324,9 @@ std::vector<FileFilterSpec> SelectFileDialogImpl::GetFilterForFileTypes(
+     }
+     exts.push_back(ext_string);
+   }
+-  return FormatFilterForExtensions(exts,
+-                                   file_types->extension_description_overrides,
+-                                   file_types->include_all_files);
++  return FormatFilterForExtensions(
++      exts, file_types->extension_description_overrides,
++      file_types->include_all_files, file_types->keep_extension_visible);
+ }
+ 
+ }  // namespace
