@@ -60,7 +60,7 @@ const main = async () => {
       output += chunk.toString();
     });
     child.stderr.on('data', chunk => console.error(chunk.toString()));
-    await new Promise((resolve, reject) => child.on('exit', (code) => {
+    await new Promise<void>((resolve, reject) => child.on('exit', (code) => {
       if (code !== 0) {
         console.error(output);
         return reject(new Error(`Failed to list webpack dependencies for entry: ${webpackTarget.name}`));

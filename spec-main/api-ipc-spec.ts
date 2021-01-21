@@ -33,7 +33,7 @@ describe('ipc module', () => {
         expect(arg).to.equal(123);
         return 3;
       });
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg).to.deep.equal({ result: 3 });
         resolve();
       }));
@@ -47,7 +47,7 @@ describe('ipc module', () => {
         await new Promise(setImmediate);
         return 3;
       });
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg).to.deep.equal({ result: 3 });
         resolve();
       }));
@@ -59,7 +59,7 @@ describe('ipc module', () => {
       ipcMain.handleOnce('test', () => {
         throw new Error('some error');
       });
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/some error/);
         resolve();
       }));
@@ -72,7 +72,7 @@ describe('ipc module', () => {
         await new Promise(setImmediate);
         throw new Error('some error');
       });
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/some error/);
         resolve();
       }));
@@ -81,7 +81,7 @@ describe('ipc module', () => {
     });
 
     it('throws an error if no handler is registered', async () => {
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/No handler registered/);
         resolve();
       }));
@@ -92,7 +92,7 @@ describe('ipc module', () => {
     it('throws an error when invoking a handler that was removed', async () => {
       ipcMain.handle('test', () => {});
       ipcMain.removeHandler('test');
-      const done = new Promise(resolve => ipcMain.once('result', (e, arg) => {
+      const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/No handler registered/);
         resolve();
       }));
@@ -136,7 +136,7 @@ describe('ipc module', () => {
       const received: number[] = [];
       ipcMain.on('test-async', (e, i) => { received.push(i); });
       ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null; });
-      const done = new Promise(resolve => ipcMain.once('done', () => { resolve(); }));
+      const done = new Promise<void>(resolve => ipcMain.once('done', () => { resolve(); }));
       function rendererStressTest () {
         const { ipcRenderer } = require('electron');
         for (let i = 0; i < 1000; i++) {
@@ -167,7 +167,7 @@ describe('ipc module', () => {
       ipcMain.handle('test-invoke', (e, i) => { received.push(i); });
       ipcMain.on('test-async', (e, i) => { received.push(i); });
       ipcMain.on('test-sync', (e, i) => { received.push(i); e.returnValue = null; });
-      const done = new Promise(resolve => ipcMain.once('done', () => { resolve(); }));
+      const done = new Promise<void>(resolve => ipcMain.once('done', () => { resolve(); }));
       function rendererStressTest () {
         const { ipcRenderer } = require('electron');
         for (let i = 0; i < 1000; i++) {

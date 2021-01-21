@@ -32,7 +32,7 @@ describe('shell module', () => {
 
     it('opens an external link', async () => {
       let url = 'http://127.0.0.1';
-      let requestReceived;
+      let requestReceived: Promise<any>;
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true';
         process.env.DE = 'generic';
@@ -49,12 +49,12 @@ describe('shell module', () => {
         const server = http.createServer((req, res) => {
           res.end();
         });
-        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-        requestReceived = new Promise(resolve => server.on('connection', () => resolve()));
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        requestReceived = new Promise<void>(resolve => server.on('connection', () => resolve()));
         url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       }
 
-      await Promise.all([
+      await Promise.all<void>([
         shell.openExternal(url),
         requestReceived
       ]);

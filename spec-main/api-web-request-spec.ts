@@ -452,7 +452,7 @@ describe('webRequest module', () => {
       });
 
       // Start server.
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = String((server.address() as AddressInfo).port);
 
       // Use a separate session for testing.

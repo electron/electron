@@ -72,7 +72,7 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       // Keep a weak reference to the window.
       // eslint-disable-next-line no-undef
-      const wr = new (globalThis as any).WeakRef(w);
+      const wr = new WeakRef(w);
       await delay();
       // Do garbage collection, since |w| is not referenced in this closure
       // it would be gone after next call if there is no other reference.
@@ -1445,7 +1445,7 @@ describe('BrowserWindow module', () => {
       });
       server.on('connection', () => { connections++; });
 
-      await new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => resolve()));
       url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     });
     afterEach(async () => {

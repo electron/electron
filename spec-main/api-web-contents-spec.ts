@@ -327,7 +327,7 @@ describe('webContents module', () => {
 
     it('rejects if the load is aborted', async () => {
       const s = http.createServer(() => { /* never complete the request */ });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
@@ -345,9 +345,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -369,9 +369,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-frame-finish-load', (event, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -1210,7 +1210,7 @@ describe('webContents module', () => {
       const renderViewDeletedHandler = () => {
         currentRenderViewDeletedEmitted = true;
       };
-      const childWindowCreated = new Promise((resolve) => {
+      const childWindowCreated = new Promise<void>((resolve) => {
         app.once('browser-window-created', (event, window) => {
           childWindow = window;
           window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);

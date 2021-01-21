@@ -36,7 +36,7 @@ describe('chrome extensions', () => {
       });
     });
 
-    await new Promise(resolve => server.listen(0, '127.0.0.1', () => {
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => {
       port = String((server.address() as AddressInfo).port);
       url = `http://127.0.0.1:${port}`;
       resolve();
@@ -287,7 +287,7 @@ describe('chrome extensions', () => {
     });
 
     it('does not take precedence over Electron webRequest - http', async () => {
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         (async () => {
           customSession.webRequest.onBeforeRequest((details, callback) => {
             resolve();
@@ -302,7 +302,7 @@ describe('chrome extensions', () => {
     });
 
     it('does not take precedence over Electron webRequest - WebSocket', () => {
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         (async () => {
           customSession.webRequest.onBeforeSendHeaders(() => {
             resolve();

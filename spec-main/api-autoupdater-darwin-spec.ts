@@ -184,7 +184,7 @@ describeFn('autoUpdater behavior', function () {
 
     afterEach(async () => {
       if (httpServer) {
-        await new Promise(resolve => {
+        await new Promise<void>(resolve => {
           httpServer.close(() => {
             httpServer = null as any;
             server = null as any;
@@ -288,7 +288,7 @@ describeFn('autoUpdater behavior', function () {
             pub_date: (new Date()).toString()
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();
@@ -338,7 +338,7 @@ describeFn('autoUpdater behavior', function () {
             ]
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();

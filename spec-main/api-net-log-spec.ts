@@ -89,7 +89,7 @@ describe('netLog module', () => {
   it('should include cookies when requested', async () => {
     await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'includeSensitive' });
     const unique = require('uuid').v4();
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       const req = net.request(serverUrl);
       req.setHeader('Cookie', `foo=${unique}`);
       req.on('response', (response) => {
@@ -107,7 +107,7 @@ describe('netLog module', () => {
   it('should include socket bytes when requested', async () => {
     await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'everything' });
     const unique = require('uuid').v4();
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       const req = net.request({ method: 'POST', url: serverUrl });
       req.on('response', (response) => {
         response.on('data', () => {}); // https://github.com/electron/electron/issues/19214

@@ -31,7 +31,7 @@ describe('session.serviceWorkers', () => {
       }
       res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
     });
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       server.listen(0, '127.0.0.1', () => {
         baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/${uuid}`;
         resolve();

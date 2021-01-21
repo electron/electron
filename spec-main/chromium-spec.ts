@@ -59,7 +59,7 @@ describe('reporting api', () => {
       // "deprecation" report.
       res.end('<script>webkitRequestAnimationFrame(() => {})</script>');
     });
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
     const bw = new BrowserWindow({
       show: false
     });
@@ -220,7 +220,7 @@ describe('web security', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
     serverUrl = `http://localhost:${(server.address() as any).port}`;
   });
   after(() => {
@@ -574,7 +574,7 @@ describe('chromium features', () => {
           res.end(`body:${body}`);
         });
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       serverUrl = `http://localhost:${(server.address() as any).port}`;
     });
     after(async () => {
