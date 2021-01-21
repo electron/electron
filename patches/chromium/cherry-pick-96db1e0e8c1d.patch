@@ -1,7 +1,7 @@
-From 96db1e0e8c1dfdfab9b8e305e3d2f3ffc9e1ba49 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Sullivan <asully@chromium.org>
-Date: Mon, 07 Dec 2020 22:09:02 +0000
-Subject: [PATCH] Add restrictions to allowed extensions for File System Access API
+Date: Mon, 7 Dec 2020 22:09:02 +0000
+Subject: Add restrictions to allowed extensions for File System Access API
 
 These restrictions apply to showOpenFilePicker and showSaveFilePicker.
 
@@ -27,10 +27,9 @@ Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
 Auto-Submit: Austin Sullivan <asully@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4324@{#649}
 Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
----
 
 diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
-index 95dbf69..41f7297 100644
+index e16cc9bd3bebb0e9460807b5a17a2909dbe0a28c..0a8248badf55121430b4a38b65b570213c2ad3f5 100644
 --- a/content/browser/file_system_access/file_system_chooser.cc
 +++ b/content/browser/file_system_access/file_system_chooser.cc
 @@ -7,6 +7,7 @@
@@ -41,7 +40,7 @@ index 95dbf69..41f7297 100644
  #include "base/metrics/histogram_functions.h"
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/post_task.h"
-@@ -47,6 +48,51 @@
+@@ -47,6 +48,51 @@ void RecordFileSelectionResult(blink::mojom::ChooseFileSystemEntryType type,
        "NativeFileSystemAPI.FileChooserResult." + TypeToString(type), count);
  }
  
@@ -93,7 +92,7 @@ index 95dbf69..41f7297 100644
  // Converts the accepted mime types and extensions from |option| into a list
  // of just extensions to be passed to the file dialog implementation.
  // The returned list will start with all the explicit website provided
-@@ -67,7 +113,8 @@
+@@ -67,7 +113,8 @@ bool GetFileTypesFromAcceptsOption(
  #else
      extension = extension_string;
  #endif
@@ -103,7 +102,7 @@ index 95dbf69..41f7297 100644
        extensions->push_back(std::move(extension));
      }
    }
-@@ -76,7 +123,8 @@
+@@ -76,7 +123,8 @@ bool GetFileTypesFromAcceptsOption(
      base::FilePath::StringType preferred_extension;
      if (net::GetPreferredExtensionForMimeType(mime_type,
                                                &preferred_extension)) {
@@ -113,7 +112,7 @@ index 95dbf69..41f7297 100644
          extensions->push_back(std::move(preferred_extension));
        }
      }
-@@ -86,7 +134,8 @@
+@@ -86,7 +134,8 @@ bool GetFileTypesFromAcceptsOption(
      if (inner.empty())
        continue;
      for (auto& extension : inner) {
@@ -124,10 +123,10 @@ index 95dbf69..41f7297 100644
        }
      }
 diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
-index c82e373..0166261 100644
+index 1f282f037ddc8966c26e5d5d7e9b9eb9fc581861..292671a22e2b5726521fe065dca1d56b8982406d 100644
 --- a/content/browser/file_system_access/file_system_chooser_unittest.cc
 +++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
-@@ -180,6 +180,32 @@
+@@ -180,6 +180,32 @@ TEST_F(FileSystemChooserTest, AcceptsExtensionsAndMimeTypes) {
              dialog_params.file_types->extension_description_overrides[0]);
  }
  
@@ -161,7 +160,7 @@ index c82e373..0166261 100644
    const base::FilePath local_path(FILE_PATH_LITERAL("/foo/bar"));
    ui::SelectedFileInfo selected_file(local_path, local_path);
 diff --git a/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc b/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
-index 0622d1d..10f759d 100644
+index 0622d1d59317754fb0696ab4918740a434e6eaa6..10f759dca7775c189bf692f1743b196a1463d077 100644
 --- a/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
 +++ b/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
 @@ -29,6 +29,7 @@
@@ -172,7 +171,7 @@ index 0622d1d..10f759d 100644
  
  namespace blink {
  
-@@ -38,14 +39,42 @@
+@@ -38,14 +39,42 @@ constexpr bool IsHTTPWhitespace(UChar chr) {
    return chr == ' ' || chr == '\n' || chr == '\t' || chr == '\r';
  }
  
@@ -219,10 +218,10 @@ index 0622d1d..10f759d 100644
    return true;
  }
 diff --git a/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js b/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
-index e8f0d3f..d1dabf3 100644
+index e8f0d3f540485120cd15d642b1b0d33110797098..d1dabf37da8305094bf7e0bd0fea4e0200d8dd2e 100644
 --- a/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
 +++ b/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
-@@ -80,9 +80,39 @@
+@@ -80,9 +80,39 @@ function define_file_picker_error_tests(showPickerMethod) {
        showPickerMethod +
            ': MIME type can\'t have invalid characters in subtype.');
  
