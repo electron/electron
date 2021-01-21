@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Mon, 7 Dec 2020 17:55:30 +0000
+Subject: Clear handlers when the base context goes away.
+
+Previously, in BaseAudioContext::Clear() we called
+GetDeferredTaskHandler().ClearHandlersToBeDeleted().  But this was
+also called in DeferredTaskHandler::ContextWillBeDestroyed(), which is
+called in BaseAudioContext::~BaseAudioContext().
+
+There's no need to call this twice while handling the audio context
+going away.
+
+Manually verified that the tests from issue 1125635 and 1153658 work,
+and the deadlock in issue 1136571 is gone.
+
+Bug: 1150065, 1153658
+Change-Id: Iee15c31dc637bf82d66bfd79d5238b1f80813153
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2575418
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#834265}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+index e203973a516c630af3decaddc1080ab9697c634a..cd16a1f31fb4d8469f35a8c5e08c51d15efb0cf8 100644
+--- a/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
++++ b/third_party/blink/renderer/modules/webaudio/base_audio_context.cc
+@@ -142,9 +142,8 @@ void BaseAudioContext::Initialize() {
+ 
+ void BaseAudioContext::Clear() {
+   destination_node_.Clear();
+-  // The audio rendering thread is dead.  Nobody will schedule AudioHandler
+-  // deletion.  Let's do it ourselves.
+-  GetDeferredTaskHandler().ClearHandlersToBeDeleted();
++  // Make a note that we've cleared out the context so that there's no pending
++  // activity.
+   is_cleared_ = true;
+ }
+ 
