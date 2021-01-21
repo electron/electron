@@ -15,6 +15,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
@@ -219,9 +220,15 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
-bool Browser::SetBadgeCount(int count) {
-  DockSetBadgeText(count != 0 ? base::NumberToString(count) : "");
-  badge_count_ = count;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  DockSetBadgeText(!count.has_value() || count.value() != 0
+                       ? badging::BadgeManager::GetBadgeString(count)
+                       : "");
+  if (count.has_value()) {
+    badge_count_ = count.value();
+  } else {
+    badge_count_ = 0;
+  }
   return true;
 }
 

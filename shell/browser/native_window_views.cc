@@ -1209,7 +1209,9 @@ void NativeWindowViews::SetProgressBar(double progress,
 void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
                                        const std::string& description) {
 #if defined(OS_WIN)
-  taskbar_host_.SetOverlayIcon(GetAcceleratedWidget(), overlay, description);
+  SkBitmap overlay_bitmap = overlay.AsBitmap();
+  taskbar_host_.SetOverlayIcon(GetAcceleratedWidget(), overlay_bitmap,
+                               description);
 #endif
 }
 

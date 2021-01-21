@@ -65,6 +65,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_request.h"
+#include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
@@ -1622,12 +1623,6 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
 #endif
 }
 
-void BindBadgeManagerFrameReceiver(
-    content::RenderFrameHost* frame,
-    mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
-  LOG(WARNING) << "The Chromium Badging API is not available in Electron";
-}
-
 void BindElectronBrowser(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<electron::mojom::ElectronBrowser> receiver) {
@@ -1671,7 +1666,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   map->Add<network_hints::mojom::NetworkHintsHandler>(
       base::BindRepeating(&BindNetworkHintsHandler));
   map->Add<blink::mojom::BadgeService>(
-      base::BindRepeating(&BindBadgeManagerFrameReceiver));
+      base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<electron::mojom::ElectronBrowser>(
       base::BindRepeating(&BindElectronBrowser));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
