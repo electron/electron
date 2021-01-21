@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/files/file_util.h"
+#include "base/logging.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -156,14 +157,12 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
 #else
       const auto img_path = icon_path.value();
 #endif
-      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate, "Failed to load image from path '" + img_path + "'")));
+      LOG(WARNING) << "Failed to load image from path '" << img_path << "'";
       return false;
     }
   } else {
     if (!gin::ConvertFromV8(isolate, image, native_image)) {
-      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate, "Argument must be a file path or a NativeImage")));
+      LOG(WARNING) << "Argument must be a file path or a NativeImage";
       return false;
     }
   }
