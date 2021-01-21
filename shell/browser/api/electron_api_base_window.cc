@@ -101,7 +101,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #if defined(TOOLKIT_VIEWS)
   v8::Local<v8::Value> icon;
   if (options.Get(options::kIcon, &icon)) {
-    SetIcon(isolate, icon);
+    SetIconImpl(isolate, icon, NativeImage::OnConvertError::kWarn);
   }
 #endif
 }
@@ -1003,8 +1003,15 @@ bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
 
 #if defined(TOOLKIT_VIEWS)
 void BaseWindow::SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
+  SetIconImpl(isolate, icon, NativeImage::OnConvertError::kThrow);
+}
+
+void BaseWindow::SetIconImpl(v8::Isolate* isolate,
+                             v8::Local<v8::Value> icon,
+                             NativeImage::OnConvertError on_error) {
   NativeImage* native_image = nullptr;
-  if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+  if (!NativeImage::TryConvertNativeImage(isolate, icon, &native_image,
+                                          on_error))
     return;
 
 #if defined(OS_WIN)
