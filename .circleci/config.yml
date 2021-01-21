@@ -2390,14 +2390,6 @@ jobs:
       <<: *env-apple-silicon
     <<: *steps-tests
 
-  osx-testing-forked-arm64-tests:
-    <<: *machine-mac-arm64
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-apple-silicon
-    <<: *steps-tests
-
   mas-testing-x64-tests:
     <<: *machine-mac-large
     environment:
@@ -2422,14 +2414,6 @@ jobs:
     <<: *steps-verify-ffmpeg
 
   mas-testing-arm64-tests:
-    <<: *machine-mac-arm64
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-apple-silicon
-    <<: *steps-tests
-
-  mas-testing-forked-arm64-tests:
     <<: *machine-mac-arm64
     environment:
       <<: *env-mac-large
@@ -2656,24 +2640,6 @@ workflows:
           requires:
             - osx-testing-arm64
 
-      - hold-testing-osx-arm64-tests:
-          filters:
-            branches:
-              # Only run this on forked pull requests
-              only: /pull\/[0-9]+/
-          type: approval
-          requires:
-           - osx-testing-arm64
-           - mas-testing-arm64
-
-      - osx-testing-forked-arm64-tests:
-          filters:
-            branches:
-              # Only run this on forked pull requests
-              only: /pull\/[0-9]+/
-          requires:
-            - hold-testing-osx-arm64-tests
-
       - mas-testing-x64:
           requires:
             - mac-checkout-and-save-cache
@@ -2697,14 +2663,6 @@ workflows:
               ignore: /pull\/[0-9]+/
           requires:
             - mas-testing-arm64
-
-      - mas-testing-forked-arm64-tests:
-          filters:
-            branches:
-              # Only run this on forked pull requests
-              only: /pull\/[0-9]+/
-          requires:
-            - hold-testing-osx-arm64-tests   
 
   nightly-linux-release-test:
     triggers:
