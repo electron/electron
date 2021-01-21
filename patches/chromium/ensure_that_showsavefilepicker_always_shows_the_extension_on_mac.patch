@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@google.com>
+Date: Fri, 18 Dec 2020 00:49:47 +0000
+Subject: Ensure that showSaveFilePicker always shows the extension on Mac.
+
+While not a very strong security boundary, making it possible for
+users to know what extension a file will be saved with is a good idea.
+
+This also fixes support for compound extensions with the File System
+Access API (i.e. ".tar.gz"). The mac file dialog already had a
+workaround if the default path ended in such an extension, but the
+same problem occurs if the file type filters include a type with a
+compound extension.
+
+(cherry picked from commit 5bf1c6c22201394711a9067d2c970ab9f55555d0)
+
+Bug: 1137247
+Change-Id: I492bf36baced3de044b8fed5d57fc7b9b5b64400
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2582842
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#835803}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2597785
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#1044}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+index 7d89bebe61156f266805f0abc81bfafde2c70653..a621a83f29461f8490fc8c0a859ce841be1e0e6f 100644
+--- a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
++++ b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+@@ -206,6 +206,8 @@ - (void)popupAction:(id)sender {
+     }
+   }
+ 
++  const bool keep_extension_visible =
++      file_types ? file_types->keep_extension_visible : false;
+   if (type_ != SelectFileDialogType::kFolder &&
+       type_ != SelectFileDialogType::kUploadFolder &&
+       type_ != SelectFileDialogType::kExistingFolder) {
+@@ -227,7 +229,7 @@ - (void)popupAction:(id)sender {
+     // this by never hiding extensions in that case.
+     base::FilePath::StringType penultimate_extension =
+         default_path.RemoveFinalExtension().FinalExtension();
+-    if (!penultimate_extension.empty()) {
++    if (!penultimate_extension.empty() || keep_extension_visible) {
+       [dialog setExtensionHidden:NO];
+     } else {
+       [dialog setExtensionHidden:YES];
+diff --git a/components/remote_cocoa/common/select_file_dialog.mojom b/components/remote_cocoa/common/select_file_dialog.mojom
+index 31e91923ada59f308d4132dd269e65c2d342fa37..916eb21df6438997e660de758d8c7966dd5040f0 100644
+--- a/components/remote_cocoa/common/select_file_dialog.mojom
++++ b/components/remote_cocoa/common/select_file_dialog.mojom
+@@ -28,6 +28,9 @@ struct SelectFileTypeInfo {
+ 
+   // Specifies whether or not there is be a filter added for all files.
+   bool include_all_files;
++
++  // Specifies whether the (save) file dialog should keep the extension visible.
++  bool keep_extension_visible;
+ };
+ 
+ // The interface to a file selection (Save As, Upload, etc) dialog.
+diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
+index 0a8248badf55121430b4a38b65b570213c2ad3f5..0d3936538e60a26e620e7794b055221c782e062d 100644
+--- a/content/browser/file_system_access/file_system_chooser.cc
++++ b/content/browser/file_system_access/file_system_chooser.cc
+@@ -173,6 +173,7 @@ ui::SelectFileDialog::FileTypeInfo ConvertAcceptsToFileTypeInfo(
+     file_types.include_all_files = true;
+ 
+   file_types.allowed_paths = ui::SelectFileDialog::FileTypeInfo::ANY_PATH;
++  file_types.keep_extension_visible = true;
+ 
+   return file_types;
+ }
+diff --git a/ui/shell_dialogs/select_file_dialog.cc b/ui/shell_dialogs/select_file_dialog.cc
+index 96e589f89803bf9c5c7e0bd3e72f33b44791c975..6e76013970887a6de4e6ea1136f0e98840aaed73 100644
+--- a/ui/shell_dialogs/select_file_dialog.cc
++++ b/ui/shell_dialogs/select_file_dialog.cc
+@@ -26,8 +26,7 @@ ui::SelectFileDialogFactory* dialog_factory_ = NULL;
+ 
+ namespace ui {
+ 
+-SelectFileDialog::FileTypeInfo::FileTypeInfo()
+-    : include_all_files(false), allowed_paths(NATIVE_PATH) {}
++SelectFileDialog::FileTypeInfo::FileTypeInfo() = default;
+ 
+ SelectFileDialog::FileTypeInfo::FileTypeInfo(const FileTypeInfo& other) =
+     default;
+diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
+index 832c12fb4a687fb1473f636745e383fd659e3341..0bcc440b21c1729dac4bfba03cabf87ec2aa6d83 100644
+--- a/ui/shell_dialogs/select_file_dialog.h
++++ b/ui/shell_dialogs/select_file_dialog.h
+@@ -135,7 +135,13 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+     std::vector<base::string16> extension_description_overrides;
+ 
+     // Specifies whether there will be a filter added for all files (i.e. *.*).
+-    bool include_all_files;
++    bool include_all_files = false;
++
++    // Some implementations by default hide the extension of a file, in
++    // particular in a save file dialog. If this is set to true, where
++    // supported, the save file dialog will instead keep the file extension
++    // visible.
++    bool keep_extension_visible = false;
+ 
+     // Specifies which type of paths the caller can handle.
+     enum AllowedPaths {
+@@ -153,7 +159,7 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+       // docs.google.com URL.
+       ANY_PATH_OR_URL
+     };
+-    AllowedPaths allowed_paths;
++    AllowedPaths allowed_paths = NATIVE_PATH;
+   };
+ 
+   // Returns a file path with a base name at most 255 characters long. This
+diff --git a/ui/shell_dialogs/select_file_dialog_mac.mm b/ui/shell_dialogs/select_file_dialog_mac.mm
+index 9b16bab3b3b1889f182cb61903f8003310a503be..2fcf6f46aa8d44084b55569e431f669a700236c7 100644
+--- a/ui/shell_dialogs/select_file_dialog_mac.mm
++++ b/ui/shell_dialogs/select_file_dialog_mac.mm
+@@ -135,6 +135,8 @@
+     mojo_file_types->extension_description_overrides =
+         file_types->extension_description_overrides;
+     mojo_file_types->include_all_files = file_types->include_all_files;
++    mojo_file_types->keep_extension_visible =
++        file_types->keep_extension_visible;
+   }
+ 
+   auto callback = base::BindOnce(&SelectFileDialogImpl::FileWasSelected,
+diff --git a/ui/shell_dialogs/select_file_dialog_mac_unittest.mm b/ui/shell_dialogs/select_file_dialog_mac_unittest.mm
+index 8d983f5050a8de5a8fe469b37bab0c2dc007a0f2..8b65d667414c1bdfb7a4eace0892b9b3f4b7d372 100644
+--- a/ui/shell_dialogs/select_file_dialog_mac_unittest.mm
++++ b/ui/shell_dialogs/select_file_dialog_mac_unittest.mm
+@@ -501,8 +501,29 @@ void ResetDialog() {
+   EXPECT_FALSE([panel isExtensionHidden]);
+ }
+ 
+-// Test to ensure lifetime is sound if a reference to the panel outlives the
+-// delegate.
++// Verify that the file dialog does not hide extension when the
++// `keep_extension_visible` flag is set to true.
++TEST_F(SelectFileDialogMacTest, KeepExtensionVisible) {
++  const std::string extensions_arr[][2] = {{"html", "htm"}, {"jpeg", "jpg"}};
++
++  SelectFileDialog::FileTypeInfo file_type_info;
++  file_type_info.extensions.push_back(
++      GetVectorFromArray<std::string>(extensions_arr[0]));
++  file_type_info.extensions.push_back(
++      GetVectorFromArray<std::string>(extensions_arr[1]));
++  file_type_info.keep_extension_visible = true;
++
++  FileDialogArguments args(GetDefaultArguments());
++  args.file_types = &file_type_info;
++
++  SelectFileWithParams(args);
++  NSSavePanel* panel = GetPanel();
++  EXPECT_FALSE([panel canSelectHiddenExtension]);
++  EXPECT_FALSE([panel isExtensionHidden]);
++}
++
++// Test to ensure lifetime is sound if a reference to
++// the panel outlives the delegate.
+ TEST_F(SelectFileDialogMacTest, Lifetime) {
+   base::scoped_nsobject<NSSavePanel> panel;
+   @autoreleasepool {

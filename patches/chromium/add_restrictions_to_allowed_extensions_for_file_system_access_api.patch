@@ -1,0 +1,269 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Mon, 7 Dec 2020 22:09:02 +0000
+Subject: Add restrictions to allowed extensions for File System Access API
+
+These restrictions apply to showOpenFilePicker and showSaveFilePicker.
+
+Existing restriction:
+- Extension must start with "."
+
+New restrictions:
+- Allowed code points: [A-Za-z0-9+.]
+- Extension length cannot exceed to 16, inclusive of leading "."
+- Extension cannot end with "."
+- Extension cannot end with "local" or "lnk"
+
+(cherry picked from commit c75c5a1e1d72fc923c82ebcaeacc874c88215eff)
+
+Bug: 1137247, 1140403, 1140410, 1140417, 1140435, 1152327
+Change-Id: I593f7ca60e05177402885bd3026add16b3a07d0c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2568534
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Austin Sullivan <asully@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#833695}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2576109
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#649}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
+index e16cc9bd3bebb0e9460807b5a17a2909dbe0a28c..0a8248badf55121430b4a38b65b570213c2ad3f5 100644
+--- a/content/browser/file_system_access/file_system_chooser.cc
++++ b/content/browser/file_system_access/file_system_chooser.cc
+@@ -7,6 +7,7 @@
+ #include "base/bind.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
++#include "base/i18n/file_util_icu.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/post_task.h"
+@@ -47,6 +48,51 @@ void RecordFileSelectionResult(blink::mojom::ChooseFileSystemEntryType type,
+       "NativeFileSystemAPI.FileChooserResult." + TypeToString(type), count);
+ }
+ 
++// Similar to base::FilePath::FinalExtension, but operates with the
++// understanding that the StringType passed in is an extension, not a path.
++// Returns the last extension without a leading ".".
++base::FilePath::StringType GetLastExtension(
++    const base::FilePath::StringType& extension) {
++  auto last_separator = extension.rfind(base::FilePath::kExtensionSeparator);
++  return (last_separator != base::FilePath::StringType::npos)
++             ? extension.substr(last_separator + 1)
++             : extension;
++}
++
++// Returns whether the specified extension receives special handling by the
++// Windows shell.
++bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
++  // TODO(https://crbug.com/1154757): Figure out some way to unify this with
++  // net::IsSafePortablePathComponent, with the result probably ending up in
++  // base/i18n/file_util_icu.h.
++  base::FilePath::StringType extension_lower = base::ToLowerASCII(extension);
++
++  // .lnk files may be used to execute arbitrary code (see
++  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568). .local files are used by
++  // Windows to determine which DLLs to load for an application.
++  if ((extension_lower == FILE_PATH_LITERAL("local")) ||
++      (extension_lower == FILE_PATH_LITERAL("lnk")))
++    return true;
++
++  // Setting a file's extension to a CLSID may conceal its actual file type on
++  // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
++  if (!extension_lower.empty() &&
++      (extension_lower.front() == FILE_PATH_LITERAL('{')) &&
++      (extension_lower.back() == FILE_PATH_LITERAL('}')))
++    return true;
++  return false;
++}
++
++// Extension validation primarily takes place in the renderer. This checks for a
++// subset of invalid extensions in the event the renderer is compromised.
++bool IsInvalidExtension(base::FilePath::StringType& extension) {
++  std::string component8 = base::FilePath(extension).AsUTF8Unsafe();
++  auto extension16 = base::UTF8ToUTF16(component8.c_str());
++
++  return !base::i18n::IsFilenameLegal(extension16) ||
++         IsShellIntegratedExtension(GetLastExtension(extension));
++}
++
+ // Converts the accepted mime types and extensions from |option| into a list
+ // of just extensions to be passed to the file dialog implementation.
+ // The returned list will start with all the explicit website provided
+@@ -67,7 +113,8 @@ bool GetFileTypesFromAcceptsOption(
+ #else
+     extension = extension_string;
+ #endif
+-    if (extension_set.insert(extension).second) {
++    if (extension_set.insert(extension).second &&
++        !IsInvalidExtension(extension)) {
+       extensions->push_back(std::move(extension));
+     }
+   }
+@@ -76,7 +123,8 @@ bool GetFileTypesFromAcceptsOption(
+     base::FilePath::StringType preferred_extension;
+     if (net::GetPreferredExtensionForMimeType(mime_type,
+                                               &preferred_extension)) {
+-      if (extension_set.insert(preferred_extension).second) {
++      if (extension_set.insert(preferred_extension).second &&
++          !IsInvalidExtension(preferred_extension)) {
+         extensions->push_back(std::move(preferred_extension));
+       }
+     }
+@@ -86,7 +134,8 @@ bool GetFileTypesFromAcceptsOption(
+     if (inner.empty())
+       continue;
+     for (auto& extension : inner) {
+-      if (extension_set.insert(extension).second) {
++      if (extension_set.insert(extension).second &&
++          !IsInvalidExtension(extension)) {
+         extensions->push_back(std::move(extension));
+       }
+     }
+diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
+index 1f282f037ddc8966c26e5d5d7e9b9eb9fc581861..292671a22e2b5726521fe065dca1d56b8982406d 100644
+--- a/content/browser/file_system_access/file_system_chooser_unittest.cc
++++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
+@@ -180,6 +180,32 @@ TEST_F(FileSystemChooserTest, AcceptsExtensionsAndMimeTypes) {
+             dialog_params.file_types->extension_description_overrides[0]);
+ }
+ 
++TEST_F(FileSystemChooserTest, IgnoreShellIntegratedExtensions) {
++  SelectFileDialogParams dialog_params;
++  ui::SelectFileDialog::SetFactory(
++      new CancellingSelectFileDialogFactory(&dialog_params));
++  std::vector<blink::mojom::ChooseFileSystemEntryAcceptsOptionPtr> accepts;
++  accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
++      base::ASCIIToUTF16(""), std::vector<std::string>({}),
++      std::vector<std::string>(
++          {"lnk", "foo.lnk", "foo.bar.local", "text", "local"})));
++  SyncShowDialog(std::move(accepts), /*include_accepts_all=*/false);
++
++  ASSERT_TRUE(dialog_params.file_types);
++  EXPECT_FALSE(dialog_params.file_types->include_all_files);
++  ASSERT_EQ(1u, dialog_params.file_types->extensions.size());
++  EXPECT_EQ(1, dialog_params.file_type_index);
++
++  ASSERT_EQ(1u, dialog_params.file_types->extensions[0].size());
++  EXPECT_EQ(dialog_params.file_types->extensions[0][0],
++            FILE_PATH_LITERAL("text"));
++
++  ASSERT_EQ(1u,
++            dialog_params.file_types->extension_description_overrides.size());
++  EXPECT_EQ(base::ASCIIToUTF16(""),
++            dialog_params.file_types->extension_description_overrides[0]);
++}
++
+ TEST_F(FileSystemChooserTest, LocalPath) {
+   const base::FilePath local_path(FILE_PATH_LITERAL("/foo/bar"));
+   ui::SelectedFileInfo selected_file(local_path, local_path);
+diff --git a/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc b/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
+index 0622d1d59317754fb0696ab4918740a434e6eaa6..10f759dca7775c189bf692f1743b196a1463d077 100644
+--- a/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
++++ b/third_party/blink/renderer/modules/file_system_access/global_native_file_system.cc
+@@ -29,6 +29,7 @@
+ #include "third_party/blink/renderer/platform/network/http_parsers.h"
+ #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
++#include "third_party/blink/renderer/platform/wtf/text/ascii_ctype.h"
+ 
+ namespace blink {
+ 
+@@ -38,14 +39,42 @@ constexpr bool IsHTTPWhitespace(UChar chr) {
+   return chr == ' ' || chr == '\n' || chr == '\t' || chr == '\r';
+ }
+ 
+-bool AddExtension(const String& extension,
+-                  Vector<String>& extensions,
+-                  ExceptionState& exception_state) {
++bool IsValidSuffixCodePoint(UChar chr) {
++  return IsASCIIAlphanumeric(chr) || chr == '+' || chr == '.';
++}
++
++bool VerifyIsValidExtension(const String& extension,
++                            ExceptionState& exception_state) {
+   if (!extension.StartsWith(".")) {
+     exception_state.ThrowTypeError("Extension '" + extension +
+                                    "' must start with '.'.");
+     return false;
+   }
++  if (!extension.IsAllSpecialCharacters<IsValidSuffixCodePoint>()) {
++    exception_state.ThrowTypeError("Extension '" + extension +
++                                   "' contains invalid characters.");
++    return false;
++  }
++  if (extension.EndsWith(".")) {
++    exception_state.ThrowTypeError("Extension '" + extension +
++                                   "' must not end with '.'.");
++    return false;
++  }
++  if (extension.length() > 16) {
++    exception_state.ThrowTypeError("Extension '" + extension +
++                                   "' cannot be longer than 16 characters.");
++    return false;
++  }
++
++  return true;
++}
++
++bool AddExtension(const String& extension,
++                  Vector<String>& extensions,
++                  ExceptionState& exception_state) {
++  if (!VerifyIsValidExtension(extension, exception_state))
++    return false;
++
+   extensions.push_back(extension.Substring(1));
+   return true;
+ }
+diff --git a/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js b/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
+index e8f0d3f540485120cd15d642b1b0d33110797098..d1dabf37da8305094bf7e0bd0fea4e0200d8dd2e 100644
+--- a/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
++++ b/third_party/blink/web_tests/external/wpt/native-file-system/showPicker-errors.https.window.js
+@@ -80,9 +80,39 @@ function define_file_picker_error_tests(showPickerMethod) {
+       showPickerMethod +
+           ': MIME type can\'t have invalid characters in subtype.');
+ 
+-  promise_test(async t => {
+-    await promise_rejects_js(t, TypeError, self[showPickerMethod]({
+-                               types: [{accept: {'text/plain': ['.txt', 'txt']}}]
+-                             }));
+-  }, showPickerMethod + ': extension has to start with ".".');
++  const invalid_extensions = {
++    '.extensiontoolong': 'extension length more than 16.',
++    '.txt.': 'extenstion ends with "."',
++    'txt': 'extenstion does not start with "."',
++    '.$txt' : 'illegal character "$"',
++    '.t<xt': 'illegal character "<"',
++    '.t/xt': 'illegal character "\"',
++    '.\txt': 'illegal character "/"',
++    '.txt\\': 'illegal characters "\\"',
++    '.txt?': 'illegal character "?"',
++    '.txt*': 'illegal character "*"',
++    '.{txt': 'illegal character "{"',
++    '.}txt': 'illegal character "}"',
++    ' .txt': 'illegal whitespace at front of extension',
++    '. txt': 'illegal whitespace in extension',
++    '.txt ': 'illegal whitespace at end of extension',
++    '.\u202etxt\u202e' : 'illegal RTL character',
++    '.t\u00E6xt': 'non-ASCII character "æ"',
++    '.קום': 'non-ASCII character "קום"',
++    '.txt🙂': 'non-ASCII character "🙂"',
++    '.{txt}': 'illegal characters "{" and "}"',
++  }
++
++  for (const [extension, description] of Object.entries(invalid_extensions)) {
++    define_file_picker_extension_error_test(showPickerMethod, extension, description)
++  }
+ }
++
++function define_file_picker_extension_error_test(showPickerMethod, extension, description) {
++  promise_test(async t => {
++    await promise_rejects_js(
++      t, TypeError,
++      self[showPickerMethod](
++        { types: [{ accept: { 'text/plain': ['.txt', extension] } }] }));
++  }, showPickerMethod + ': invalid extension "' + extension + '". ' + description + ".");
++}
+\ No newline at end of file
