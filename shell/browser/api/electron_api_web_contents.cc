@@ -28,6 +28,7 @@
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
+#include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -3169,6 +3170,12 @@ content::ColorChooser* WebContents::OpenColorChooser(
 #else
   return nullptr;
 #endif
+}
+
+std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
+    content::RenderFrameHost* frame,
+    content::EyeDropperListener* listener) {
+  return ShowEyeDropper(frame, listener);
 }
 
 void WebContents::RunFileChooser(
