@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhi An Ng <zhin@chromium.org>
+Date: Fri, 8 Jan 2021 07:29:02 +0000
+Subject: Merged: [wasm-simd] Fix loading fp pair registers
+
+We were incorrectly clearing the high reg from the list of regs to load.
+The intention was to prevent double (and incorrect) loading - loading
+128 bits from the low fp and the loading 128 bits from the high fp.
+But this violates the assumption that the two regs in a pair would be
+set or unset at the same time.
+
+The fix here is to introduce a new enum for register loads, a nop, which
+does nothing. The high fp of the fp pair will be tied to this nop, so as
+we iterate down the reglist, we load 128 bits using the low fp, then
+don't load anything for the high fp.
+
+Bug: chromium:1161654
+(cherry picked from commit 8c698702ced0de085aa91370d8cb44deab3fcf54)
+
+Change-Id: Ib8134574b24f74f24ca9efd34b3444173296d8f1
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2619416
+Commit-Queue: Zhi An Ng <zhin@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.8@{#28}
+Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
+Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
+
+diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
+index 74df00590ff77377321092a3a2a51fb52154e5cf..acc4896d02782a9faccb5d91ab04d9d2603bbd44 100644
+--- a/src/wasm/baseline/liftoff-assembler.cc
++++ b/src/wasm/baseline/liftoff-assembler.cc
+@@ -36,6 +36,7 @@ class StackTransferRecipe {
+ 
+   struct RegisterLoad {
+     enum LoadKind : uint8_t {
++      kNop,           // no-op, used for high fp of a fp pair.
+       kConstant,      // load a constant value into a register.
+       kStack,         // fill a register from a stack slot.
+       kLowHalfStack,  // fill a register from the low half of a stack slot.
+@@ -62,6 +63,10 @@ class StackTransferRecipe {
+       return {half == kLowWord ? kLowHalfStack : kHighHalfStack, kWasmI32,
+               offset};
+     }
++    static RegisterLoad Nop() {
++      // ValueType does not matter.
++      return {kNop, kWasmI32, 0};
++    }
+ 
+    private:
+     RegisterLoad(LoadKind kind, ValueType type, int32_t value)
+@@ -216,11 +221,11 @@ class StackTransferRecipe {
+           RegisterLoad::HalfStack(stack_offset, kHighWord);
+     } else if (dst.is_fp_pair()) {
+       DCHECK_EQ(kWasmS128, type);
+-      // load_dst_regs_.set above will set both low and high fp regs.
+-      // But unlike gp_pair, we load a kWasm128 in one go in ExecuteLoads.
+-      // So unset the top fp register to skip loading it.
+-      load_dst_regs_.clear(dst.high());
++      // Only need register_load for low_gp since we load 128 bits at one go.
++      // Both low and high need to be set in load_dst_regs_ but when iterating
++      // over it, both low and high will be cleared, so we won't load twice.
+       *register_load(dst.low()) = RegisterLoad::Stack(stack_offset, type);
++      *register_load(dst.high()) = RegisterLoad::Nop();
+     } else {
+       *register_load(dst) = RegisterLoad::Stack(stack_offset, type);
+     }
+@@ -317,6 +322,8 @@ class StackTransferRecipe {
+     for (LiftoffRegister dst : load_dst_regs_) {
+       RegisterLoad* load = register_load(dst);
+       switch (load->kind) {
++        case RegisterLoad::kNop:
++          break;
+         case RegisterLoad::kConstant:
+           asm_->LoadConstant(dst, load->type == kWasmI64
+                                       ? WasmValue(int64_t{load->value})
+diff --git a/test/mjsunit/regress/wasm/regress-1161654.js b/test/mjsunit/regress/wasm/regress-1161654.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..93f2c3b556fc55edc157dadc49b23d5bc9538135
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1161654.js
+@@ -0,0 +1,56 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-staging
++
++// This is a fuzzer-generated test case that exposed a bug in Liftoff that only
++// affects ARM, where the fp register aliasing is different from other archs.
++// We were inncorrectly clearing the the high fp register in a LiftoffRegList
++// indicating registers to load, hitting a DCHECK.
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(19, 32, false);
++builder.addGlobal(kWasmI32, 0);
++builder.addType(makeSig([], []));
++builder.addType(makeSig([kWasmI64, kWasmS128, kWasmF32], [kWasmI32]));
++// Generate function 1 (out of 5).
++builder.addFunction(undefined, 0 /* sig */)
++  .addBodyWithEnd([
++// signature: v_v
++// body:
++kExprI32Const, 0x05,  // i32.const
++kExprReturn,  // return
++kExprUnreachable,  // unreachable
++kExprEnd,  // end @5
++]);
++// Generate function 4 (out of 5).
++builder.addFunction(undefined, 1 /* sig */)
++  .addBodyWithEnd([
++// signature: i_lsf
++// body:
++kExprLocalGet, 0x01,  // local.get
++kExprLocalGet, 0x01,  // local.get
++kExprGlobalGet, 0x00,  // global.get
++kExprDrop,  // drop
++kExprLoop, kWasmStmt,  // loop @8
++  kExprLoop, 0x00,  // loop @10
++    kExprI32Const, 0x01,  // i32.const
++    kExprMemoryGrow, 0x00,  // memory.grow
++    kExprI64LoadMem8U, 0x00, 0x70,  // i64.load8_u
++    kExprLoop, 0x00,  // loop @19
++      kExprCallFunction, 0x00,  // call function #0: v_v
++      kExprEnd,  // end @23
++    kExprI64Const, 0xf1, 0x24,  // i64.const
++    kExprGlobalGet, 0x00,  // global.get
++    kExprDrop,  // drop
++    kExprBr, 0x00,  // br depth=0
++    kExprEnd,  // end @32
++  kExprEnd,  // end @33
++kExprI32Const, 0x5b,  // i32.const
++kExprReturn,  // return
++kExprEnd,  // end @37
++]);
++// Instantiation is enough to cause a crash.
++const instance = builder.instantiate();
