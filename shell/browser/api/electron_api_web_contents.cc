@@ -28,6 +28,7 @@
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
+#include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -133,8 +134,6 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-
-#include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "shell/browser/osr/osr_render_widget_host_view.h"
