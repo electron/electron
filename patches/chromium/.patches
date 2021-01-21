@@ -167,3 +167,4 @@ fix_setparentacessibile_crash_win.patch
 backport_1142331.patch
 backport_1151865.patch
 cherry-pick-861253f1de98.patch
+cherry-pick-d866af575997.patch
