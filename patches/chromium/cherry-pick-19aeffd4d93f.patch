@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthew Denton <mpdenton@chromium.org>
+Date: Tue, 15 Dec 2020 01:09:52 +0000
+Subject: Fix UAF in ~MultiThreadedCertVerifier
+
+MultiThreadedCertVerifier keeps a list of
+MultiThreadedCertVerifier::InternalRequests in order to eagerly reset
+callbacks passed to Verify() if the MultiThreadedCertVerifier is
+itself deleted (CertVerifier contract guarantees this eager reset
+behavior).
+
+In ~MultiThreadedCertVerifier we loop through this list and reset the
+callbacks, but then delete the InternalRequest from the list. However,
+the callbacks are allowed to own the InternalRequest, so this leads
+to a UaF.
+
+We don't need to remove the InternalRequest from the list in
+~MultiThreadedCertVerifier, because we are not in charge of the
+lifetime of the InternalRequest. InternalRequest can remove itself
+from the list during ~InternalRequest, or MultiThreadedCertVerifier
+can remove it from the list when a CertVerification job is complete.
+The former is safe because ~InternalRequest won't remove itself from
+the list if the MultiThreadedCertVerifier is already destructed.
+The latter is obviously safe because if the request was cancelled,
+then InternalRequest::OnJobCompleted will never run, so
+|this| is always valid to remove from the list during
+InternalRequest::OnJobCompleted.
+
+The added test reproduces the UAF without the fix.
+
+Bug: 1157562
+Change-Id: I92d0dc6ca6df084f55ea511ea692853ee63f5033
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2587560
+Reviewed-by: Ryan Sleevi <rsleevi@chromium.org>
+Commit-Queue: Matthew Denton <mpdenton@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#836903}
+
+diff --git a/net/cert/multi_threaded_cert_verifier.cc b/net/cert/multi_threaded_cert_verifier.cc
+index f2546d9187dc6aedbf5eab055d2017939df6a705..b46dbf68d0f239c2d002f9dedeecd6f10709f9c4 100644
+--- a/net/cert/multi_threaded_cert_verifier.cc
++++ b/net/cert/multi_threaded_cert_verifier.cc
+@@ -202,10 +202,13 @@ MultiThreadedCertVerifier::~MultiThreadedCertVerifier() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   // Reset the callbacks for each InternalRequest to fulfill the respective
+   // net::CertVerifier contract.
+-  while (!request_list_.empty()) {
+-    base::LinkNode<InternalRequest>* curr = request_list_.head();
+-    curr->value()->ResetCallback();
+-    curr->RemoveFromList();
++  for (base::LinkNode<InternalRequest>* node = request_list_.head();
++       node != request_list_.end();) {
++    // Resetting the callback may delete the request, so save a pointer to the
++    // next node first.
++    base::LinkNode<InternalRequest>* next_node = node->next();
++    node->value()->ResetCallback();
++    node = next_node;
+   }
+ }
+ 
+diff --git a/net/cert/multi_threaded_cert_verifier.h b/net/cert/multi_threaded_cert_verifier.h
+index 82b750a42f8eb99675e35aa41ef167c1e7896a33..05c5463abffc61644e31293b6876801efc6138fb 100644
+--- a/net/cert/multi_threaded_cert_verifier.h
++++ b/net/cert/multi_threaded_cert_verifier.h
+@@ -50,6 +50,10 @@ class NET_EXPORT_PRIVATE MultiThreadedCertVerifier : public CertVerifier {
+   Config config_;
+   scoped_refptr<CertVerifyProc> verify_proc_;
+ 
++  // Holds a list of CertVerifier::Requests that have not yet completed or been
++  // deleted. It is used to ensure that when the MultiThreadedCertVerifier is
++  // deleted, we eagerly reset all of the callbacks provided to Verify(), and
++  // don't call them later, as required by the CertVerifier contract.
+   base::LinkedList<InternalRequest> request_list_;
+ 
+ #if defined(USE_NSS_CERTS)
+diff --git a/net/cert/multi_threaded_cert_verifier_unittest.cc b/net/cert/multi_threaded_cert_verifier_unittest.cc
+index 89c394541a94697036e34c7430e982c4eeb1a1f7..b5cf4bbaf3648f8b562fffd3804b65ab5b9379ab 100644
+--- a/net/cert/multi_threaded_cert_verifier_unittest.cc
++++ b/net/cert/multi_threaded_cert_verifier_unittest.cc
+@@ -152,6 +152,45 @@ TEST_F(MultiThreadedCertVerifierTest, DeleteVerifier) {
+   RunUntilIdle();
+ }
+ 
++namespace {
++
++struct CertVerifyResultHelper {
++  void FailTest(int /* result */) { FAIL(); }
++  std::unique_ptr<CertVerifier::Request> request;
++};
++
++}  // namespace
++
++// The same as the above "DeleteVerifier" test, except the callback provided
++// will own the CertVerifier::Request as allowed by the CertVerifier contract.
++// This is a regression test for https://crbug.com/1157562.
++TEST_F(MultiThreadedCertVerifierTest, DeleteVerifierCallbackOwnsResult) {
++  base::FilePath certs_dir = GetTestCertsDirectory();
++  scoped_refptr<X509Certificate> test_cert(
++      ImportCertFromFile(certs_dir, "ok_cert.pem"));
++  ASSERT_NE(static_cast<X509Certificate*>(nullptr), test_cert.get());
++
++  int error;
++  CertVerifyResult verify_result;
++  std::unique_ptr<CertVerifyResultHelper> result_helper =
++      std::make_unique<CertVerifyResultHelper>();
++  CertVerifyResultHelper* result_helper_ptr = result_helper.get();
++  CompletionOnceCallback callback = base::BindOnce(
++      &CertVerifyResultHelper::FailTest, std::move(result_helper));
++
++  error = verifier_->Verify(
++      CertVerifier::RequestParams(test_cert, "www.example.com", 0,
++                                  /*ocsp_response=*/std::string(),
++                                  /*sct_list=*/std::string()),
++      &verify_result, std::move(callback), &result_helper_ptr->request,
++      NetLogWithSource());
++  ASSERT_THAT(error, IsError(ERR_IO_PENDING));
++  ASSERT_TRUE(result_helper_ptr->request);
++  verifier_.reset();
++
++  RunUntilIdle();
++}
++
+ // Tests that a canceled request is not leaked.
+ TEST_F(MultiThreadedCertVerifierTest, CancelRequestThenQuit) {
+   base::FilePath certs_dir = GetTestCertsDirectory();

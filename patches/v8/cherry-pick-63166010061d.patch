@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Tue, 1 Dec 2020 19:10:26 +0100
+Subject: Release temp registers after use
+
+The {ParallelRegisterMove} at the end of {AtomicLoad} might need a
+temporary scratch register for spilling values to the stack. Make sure
+that one is available by giving up the scratch register used for the
+address of the atomic access.
+
+R=ahaas@chromium.org
+
+Bug: chromium:1153442
+Change-Id: I267c43e2193662c420f96f6683ebd4bbb0e1bca3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2566759
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#71564}
+
+diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+index 4a9cffb9728405f36804d660744ed15d20a27ab0..94672036de4e6c2592b2dc9fed1dc388bf9e40a0 100644
+--- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
++++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+@@ -945,11 +945,13 @@ void LiftoffAssembler::AtomicLoad(LiftoffRegister dst, Register src_addr,
+   if (cache_state()->is_used(LiftoffRegister(dst_high))) {
+     SpillRegister(LiftoffRegister(dst_high));
+   }
+-  UseScratchRegisterScope temps(this);
+-  Register actual_addr = liftoff::CalculateActualAddress(
+-      this, &temps, src_addr, offset_reg, offset_imm);
+-  ldrexd(dst_low, dst_high, actual_addr);
+-  dmb(ISH);
++  {
++    UseScratchRegisterScope temps(this);
++    Register actual_addr = liftoff::CalculateActualAddress(
++        this, &temps, src_addr, offset_reg, offset_imm);
++    ldrexd(dst_low, dst_high, actual_addr);
++    dmb(ISH);
++  }
+ 
+   LiftoffAssembler::ParallelRegisterMoveTuple reg_moves[]{
+       {dst, LiftoffRegister::ForPair(dst_low, dst_high), kWasmI64}};
+@@ -1261,12 +1263,10 @@ void LiftoffAssembler::Move(DoubleRegister dst, DoubleRegister src,
+ }
+ 
+ void LiftoffAssembler::Spill(int offset, LiftoffRegister reg, ValueType type) {
+-#ifdef DEBUG
+   // The {str} instruction needs a temp register when the immediate in the
+   // provided MemOperand does not fit into 12 bits. This happens for large stack
+   // frames. This DCHECK checks that the temp register is available when needed.
+   DCHECK(UseScratchRegisterScope{this}.CanAcquire());
+-#endif
+   DCHECK_LT(0, offset);
+   RecordUsedSpillOffset(offset);
+   MemOperand dst(fp, -offset);
+diff --git a/test/mjsunit/regress/wasm/regress-1153442.js b/test/mjsunit/regress/wasm/regress-1153442.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..989da11a25b85f9b3a9905e6506e56c3e8c82654
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1153442.js
+@@ -0,0 +1,61 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --experimental-wasm-threads
++
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(1, 1, false, true);
++builder.addGlobal(kWasmI32, 1);
++builder.addGlobal(kWasmI32, 1);
++builder.addType(makeSig([kWasmI32, kWasmI64, kWasmI32], []));
++// Generate function 1 (out of 1).
++builder.addFunction(undefined, 0 /* sig */)
++  .addLocals(kWasmI32, 10)
++  .addBodyWithEnd([
++// signature: v_ili
++// body:
++kExprI32Const, 0x00,  // i32.const
++kExprLocalSet, 0x04,  // local.set
++kExprI32Const, 0x01,  // i32.const
++kExprLocalSet, 0x05,  // local.set
++kExprBlock, kWasmStmt,  // block @11
++  kExprBr, 0x00,  // br depth=0
++  kExprEnd,  // end @15
++kExprGlobalGet, 0x01,  // global.get
++kExprLocalSet, 0x03,  // local.set
++kExprLocalGet, 0x03,  // local.get
++kExprI32Const, 0x01,  // i32.const
++kExprI32Sub,  // i32.sub
++kExprLocalSet, 0x06,  // local.set
++kExprI64Const, 0x01,  // i64.const
++kExprLocalSet, 0x01,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kExprI32Eqz,  // i32.eqz
++kExprLocalSet, 0x07,  // local.set
++kExprBlock, kWasmStmt,  // block @36
++  kExprBr, 0x00,  // br depth=0
++  kExprEnd,  // end @40
++kExprGlobalGet, 0x01,  // global.get
++kExprLocalSet, 0x08,  // local.set
++kExprI32Const, 0x01,  // i32.const
++kExprI32Const, 0x01,  // i32.const
++kExprI32Sub,  // i32.sub
++kExprLocalSet, 0x09,  // local.set
++kExprLocalGet, 0x00,  // local.get
++kExprLocalSet, 0x0a,  // local.set
++kExprGlobalGet, 0x00,  // global.get
++kExprLocalSet, 0x0b,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kExprI32Const, 0x0f,  // i32.const
++kExprI32And,  // i32.and
++kExprLocalSet, 0x0c,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kAtomicPrefix, kExprI64AtomicLoad, 0x03, 0x04,  // i64.atomic.load64
++kExprDrop,  // drop
++kExprUnreachable,  // unreachable
++kExprEnd,  // end @75
++]);
++builder.toModule();
