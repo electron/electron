@@ -1481,8 +1481,10 @@ describe('net module', () => {
         response.end();
       });
       const urlRequest = net.request(serverUrl);
+      console.log('urlRequest is: ', urlRequest);
       urlRequest.end(randomBuffer(kOneMegaByte));
       const [error] = await emittedOnce(urlRequest, 'error');
+      console.log('Error message is: ', error.message);
       expect(error.message).to.be.oneOf(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
     });
 
