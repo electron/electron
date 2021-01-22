@@ -40,7 +40,7 @@ void URLPipeLoader::Start(
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data) {
   loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
-  loader_->SetOnResponseStartedCallback(base::Bind(
+  loader_->SetOnResponseStartedCallback(base::BindOnce(
       &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
   // TODO(zcbenz): The old protocol API only supports string as upload data,

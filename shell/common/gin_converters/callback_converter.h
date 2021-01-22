@@ -19,7 +19,7 @@ struct Converter<base::RepeatingCallback<Sig>> {
     // We don't use CreateFunctionTemplate here because it creates a new
     // FunctionTemplate everytime, which is cached by V8 and causes leaks.
     auto translater =
-        base::Bind(&gin_helper::NativeFunctionInvoker<Sig>::Go, val);
+        base::BindRepeating(&gin_helper::NativeFunctionInvoker<Sig>::Go, val);
     // To avoid memory leak, we ensure that the callback can only be called
     // for once.
     return gin_helper::CreateFunctionFromTranslater(isolate, translater, true);

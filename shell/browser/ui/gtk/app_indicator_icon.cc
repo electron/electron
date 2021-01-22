@@ -365,8 +365,9 @@ void AppIndicatorIcon::UpdateClickActionReplacementMenuItem() {
   DCHECK(!tool_tip_.empty());
   menu_->UpdateClickActionReplacementMenuItem(
       tool_tip_.c_str(),
-      base::Bind(&AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
-                 base::Unretained(this)));
+      base::BindRepeating(
+          &AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
+          base::Unretained(this)));
 }
 
 void AppIndicatorIcon::OnClickActionReplacementMenuItemActivated() {

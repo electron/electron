@@ -173,11 +173,11 @@ AppSorting* ElectronExtensionSystem::app_sorting() {
 void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     base::OnceClosure callback) {
-  base::PostTaskAndReply(
-      FROM_HERE, {BrowserThread::IO},
-      base::Bind(&InfoMap::AddExtension, info_map(),
-                 base::RetainedRef(extension), base::Time::Now(), false, false),
-      std::move(callback));
+  base::PostTaskAndReply(FROM_HERE, {BrowserThread::IO},
+                         base::BindOnce(&InfoMap::AddExtension, info_map(),
+                                        base::RetainedRef(extension),
+                                        base::Time::Now(), false, false),
+                         std::move(callback));
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(
