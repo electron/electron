@@ -1,0 +1,197 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Tue, 8 Dec 2020 01:42:34 +0000
+Subject: Fail gracefully if |parameter| object has an invalid array topology
+
+AudioWorkletProcessor::CopyParamValueMapToObject() assumed the array
+topology is always valid (DCHECK), but if the user code actively mangles
+the parameter descriptor getter the array to return invalid content
+this assumption becomes invalid.
+
+The fix is to fail gracefully when the object type or the array content
+is not correct.
+
+Bug: 1151069
+Test: The repro case does not reproduce any more after 1 hour run.
+Change-Id: I3f8decd3721e9b00ba201e2f76751e4bc941e05d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2569788
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#834503}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
+index 9ac9bcc91967e2228516e6cdc7065b83316c25e7..3518f24ea248862ea9d96ab8e6bbfecfe001fb33 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_processor.cc
+@@ -107,8 +107,13 @@ bool AudioWorkletProcessor::Process(
+   DCHECK(!params_.IsEmpty());
+   DCHECK(params_.NewLocal(isolate)->IsObject());
+ 
+-  // Copies |param_value_map| to the internal |params_| object;
+-  CopyParamValueMapToObject(isolate, context, *param_value_map, params_);
++  // Copies |param_value_map| to the internal |params_| object. This operation
++  // could fail if the getter of parameterDescriptors is overridden by user code
++  // and returns incompatible data. (crbug.com/1151069)
++  if (!CopyParamValueMapToObject(isolate, context, *param_value_map, params_)) {
++    SetErrorState(AudioWorkletProcessorErrorState::kProcessError);
++    return false;
++  }
+ 
+   // Performs the user-defined AudioWorkletProcessor.process() function.
+   v8::TryCatch try_catch(isolate);
+@@ -444,6 +449,7 @@ bool AudioWorkletProcessor::CloneParamValueMapToObject(
+         break;
+       }
+     }
++    DCHECK(array_size == 1 || array_size == param_float_array->size());
+ 
+     v8::Local<v8::ArrayBuffer> array_buffer =
+         v8::ArrayBuffer::New(isolate, array_size * sizeof(float));
+@@ -482,18 +488,23 @@ bool AudioWorkletProcessor::CopyParamValueMapToObject(
+ 
+     v8::Local<v8::Value> param_array_value;
+     if (!params_object->Get(context, V8String(isolate, param_name))
+-                      .ToLocal(&param_array_value)) {
++                      .ToLocal(&param_array_value) ||
++        !param_array_value->IsFloat32Array()) {
+       return false;
+     }
+-    DCHECK(param_array_value->IsFloat32Array());
++
+     v8::Local<v8::Float32Array> float32_array =
+         param_array_value.As<v8::Float32Array>();
++    size_t array_length = float32_array->Length();
++
++    // The |float32_array| is neither 1 nor 128 frames, or the array buffer is
++    // trasnferred/detached, do not proceed.
++    if ((array_length != 1 && array_length != param_array->size()) ||
++        float32_array->Buffer()->ByteLength() == 0)
++      return false;
+ 
+-    // The Float32Array is either 1 or 128 frames, but it always should be
+-    // less than equal to the size of the given AudioFloatArray.
+-    DCHECK_LE(float32_array->Length(), param_array->size());
+     memcpy(float32_array->Buffer()->GetContents().Data(), param_array->Data(),
+-           float32_array->Length() * sizeof(float));
++           array_length * sizeof(float));
+   }
+ 
+   return true;
+diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e3fb6e533df8ccaa88564f836239e0c9e9c1d5e4
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html
+@@ -0,0 +1,59 @@
++<!DOCTYPE html>
++<html>
++  <head>
++    <title>
++      Test if AudioWorkletProcessor with invalid parameters array getter
++    </title>
++    <script src="/resources/testharness.js"></script>
++    <script src="/resources/testharnessreport.js"></script>
++    <script src="/webaudio/resources/audit.js"></script>
++  </head>
++  <body>
++    <script id="layout-test-code">
++      let audit = Audit.createTaskRunner();
++
++      // Arbitrarily determined. Any numbers should work.
++      let sampleRate = 16000;
++      let renderLength = 1280;
++      let context;
++      let filePath = 'processors/invalid-param-array-processor.js';
++
++      audit.define('Initializing AudioWorklet and Context', async (task) => {
++        context = new OfflineAudioContext(1, renderLength, sampleRate);
++        await context.audioWorklet.addModule(filePath);
++        task.done();
++      });
++
++      audit.define('Verifying AudioParam in AudioWorkletNode',
++          async (task, should) => {
++            let buffer = context.createBuffer(1, 2, context.sampleRate);
++            buffer.getChannelData(0)[0] = 1;
++
++            let source = new AudioBufferSourceNode(context);
++            source.buffer = buffer;
++            source.loop = true;
++            source.start();
++
++            let workletNode1 =
++                new AudioWorkletNode(context, 'invalid-param-array-1');
++            let workletNode2 =
++                new AudioWorkletNode(context, 'invalid-param-array-2');
++            workletNode1.connect(workletNode2).connect(context.destination);
++
++            // Manually invoke the param getter.
++            source.connect(workletNode2.parameters.get('invalidParam'));
++
++            const renderedBuffer = await context.startRendering();
++
++            // |workletNode2| should be no-op after the parameter getter is
++            // invoked. Therefore, the rendered result should be silent.
++            should(renderedBuffer.getChannelData(0), 'The rendered buffer')
++                .beConstantValueOf(0);
++            task.done();
++          }
++      );
++
++      audit.run();
++    </script>
++  </body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/processors/invalid-param-array-processor.js b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/processors/invalid-param-array-processor.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e4a5dc39ba16b282e254eba84e8038ae59a6471d
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioworklet-interface/processors/invalid-param-array-processor.js
+@@ -0,0 +1,47 @@
++/**
++ * @class InvalidParamArrayProcessor
++ * @extends AudioWorkletProcessor
++ *
++ * This processor intentionally returns an array with an invalid size when the
++ * processor's getter is queried.
++ */
++let singleton = undefined;
++let secondFetch = false;
++let useDescriptor = false;
++let processCounter = 0;
++
++class InvalidParamArrayProcessor extends AudioWorkletProcessor {
++  static get parameterDescriptors() {
++    if (useDescriptor)
++      return [{name: 'invalidParam'}];
++    useDescriptor = true;
++    return [];
++  }
++
++  constructor() {
++    super();
++    if (singleton === undefined)
++      singleton = this;
++    return singleton;
++  }
++
++  process(inputs, outputs, parameters) {
++    const output = outputs[0];
++    for (let channel = 0; channel < output.length; ++channel)
++      output[channel].fill(1);
++    return false;
++  }
++}
++
++// This overridden getter is invoked under the hood before process() gets
++// called. After this gets called, process() method above will be invalidated,
++// and mark the worklet node non-functional. (i.e. in an error state)
++Object.defineProperty(Object.prototype, 'invalidParam', {'get': () => {
++  if (secondFetch)
++    return new Float32Array(256);
++  secondFetch = true;
++  return new Float32Array(128);
++}});
++
++registerProcessor('invalid-param-array-1', InvalidParamArrayProcessor);
++registerProcessor('invalid-param-array-2', InvalidParamArrayProcessor);
