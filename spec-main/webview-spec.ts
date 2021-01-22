@@ -63,7 +63,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         sandbox: true
       }
     });
@@ -76,7 +75,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true
       }
     });
@@ -89,12 +87,22 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true,
         sandbox: true
       }
     });
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+    await emittedOnce(ipcMain, 'pong');
+  });
+
+  it('works with Trusted Types', async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true
+      }
+    });
+    w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
     await emittedOnce(ipcMain, 'pong');
   });
 
