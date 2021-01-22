@@ -183,7 +183,7 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
 
     afterEach(async () => {
       if (httpServer) {
-        await new Promise(resolve => {
+        await new Promise<void>(resolve => {
           httpServer.close(() => {
             httpServer = null as any;
             server = null as any;
@@ -287,7 +287,7 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
             pub_date: (new Date()).toString()
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();
@@ -337,7 +337,7 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
             ]
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();

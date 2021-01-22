@@ -262,7 +262,7 @@ describe('protocol module', () => {
         res.end(text);
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = 'http://127.0.0.1:' + port;
@@ -292,7 +292,7 @@ describe('protocol module', () => {
         }
       });
       after(() => server.close());
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = `${protocolName}://fake-host`;
@@ -778,7 +778,7 @@ describe('protocol module', () => {
         server.close();
         requestReceived.resolve();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = (server.address() as AddressInfo).port;
       const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));

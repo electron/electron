@@ -187,7 +187,7 @@ for (const method of webFrameMethods) {
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     webContents.once('did-stop-loading', () => {
       resolve();
     });
