@@ -156,7 +156,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScriptInIsolatedWorld(
   return handle;
 }
 
-bool WebFrameMain::Reload(v8::Isolate* isolate) {
+bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
@@ -219,19 +219,19 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
                                         std::move(transferable_message));
 }
 
-int WebFrameMain::FrameTreeNodeID(v8::Isolate* isolate) const {
+int WebFrameMain::FrameTreeNodeID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetFrameTreeNodeId();
 }
 
-std::string WebFrameMain::Name(v8::Isolate* isolate) const {
+std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
     return std::string();
   return render_frame_->GetFrameName();
 }
 
-base::ProcessId WebFrameMain::OSProcessID(v8::Isolate* isolate) const {
+base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   base::ProcessHandle process_handle =
@@ -239,38 +239,37 @@ base::ProcessId WebFrameMain::OSProcessID(v8::Isolate* isolate) const {
   return base::GetProcId(process_handle);
 }
 
-int WebFrameMain::ProcessID(v8::Isolate* isolate) const {
+int WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetProcess()->GetID();
 }
 
-int WebFrameMain::RoutingID(v8::Isolate* isolate) const {
+int WebFrameMain::RoutingID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrameMain::URL(v8::Isolate* isolate) const {
+GURL WebFrameMain::URL() const {
   if (!CheckRenderFrame())
     return GURL::EmptyGURL();
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrameMain::Top(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrameMain::Parent(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Parent() const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrameMain::Frames(
-    v8::Isolate* isolate) const {
+std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;
@@ -283,8 +282,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames(
   return frame_hosts;
 }
 
-std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree(
-    v8::Isolate* isolate) const {
+std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;
