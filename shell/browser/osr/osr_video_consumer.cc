@@ -18,8 +18,7 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
     OnPaintCallback callback)
     : callback_(callback),
       view_(view),
-      video_capturer_(view->CreateVideoCapturer()),
-      weak_ptr_factory_(this) {
+      video_capturer_(view->CreateVideoCapturer()) {
   video_capturer_->SetResolutionConstraints(view_->SizeInPixels(),
                                             view_->SizeInPixels(), true);
   video_capturer_->SetAutoThrottlingEnabled(false);

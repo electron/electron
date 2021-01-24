@@ -48,7 +48,7 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
+    : widget_(new views::Widget), parent_(parent) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);

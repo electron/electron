@@ -35,7 +35,7 @@ class ScopedHString {
   bool success() const { return str_; }
 
  private:
-  HSTRING str_;
+  HSTRING str_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(ScopedHString);
 };

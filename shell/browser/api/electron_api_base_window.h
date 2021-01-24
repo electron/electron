@@ -274,7 +274,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
-  base::WeakPtrFactory<BaseWindow> weak_factory_;
+  base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
 }  // namespace api

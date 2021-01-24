@@ -79,7 +79,7 @@ namespace api {
 gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context), weak_ptr_factory_(this) {
+    : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
 

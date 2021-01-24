@@ -57,7 +57,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
 
   RendererClientBase* renderer_client_;
-  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_;
+  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };

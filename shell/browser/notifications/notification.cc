@@ -14,7 +14,7 @@ NotificationOptions::~NotificationOptions() = default;
 
 Notification::Notification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter)
-    : delegate_(delegate), presenter_(presenter), weak_factory_(this) {}
+    : delegate_(delegate), presenter_(presenter) {}
 
 Notification::~Notification() {
   if (delegate())

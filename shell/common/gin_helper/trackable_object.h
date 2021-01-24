@@ -43,7 +43,7 @@ class TrackableObjectBase {
  private:
   void Destroy();
 
-  base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
+  base::WeakPtrFactory<TrackableObjectBase> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
 };

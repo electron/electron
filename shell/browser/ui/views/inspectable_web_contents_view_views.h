@@ -55,13 +55,13 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   InspectableWebContents* inspectable_web_contents_;
 
   std::unique_ptr<views::Widget> devtools_window_;
-  views::WebView* devtools_window_web_view_;
-  views::View* contents_web_view_;
-  views::WebView* devtools_web_view_;
+  views::WebView* devtools_window_web_view_ = nullptr;
+  views::View* contents_web_view_ = nullptr;
+  views::WebView* devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
-  bool devtools_visible_;
-  views::WidgetDelegate* devtools_window_delegate_;
+  bool devtools_visible_ = false;
+  views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   base::string16 title_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);

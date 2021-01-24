@@ -201,7 +201,7 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  bool frontend_loaded_;
+  bool frontend_loaded_ = false;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
   std::unique_ptr<DevToolsEmbedderMessageDispatcher>
@@ -209,11 +209,11 @@ class InspectableWebContents
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
-  bool can_dock_;
+  bool can_dock_ = true;
   std::string dock_state_;
   bool activate_ = true;
 
-  InspectableWebContentsDelegate* delegate_;  // weak references.
+  InspectableWebContentsDelegate* delegate_ = nullptr;  // weak references.
 
   PrefService* pref_service_;  // weak reference.
 
@@ -235,7 +235,7 @@ class InspectableWebContents
   using ExtensionsAPIs = std::map<std::string, std::string>;
   ExtensionsAPIs extensions_api_;
 
-  base::WeakPtrFactory<InspectableWebContents> weak_factory_;
+  base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContents);
 };

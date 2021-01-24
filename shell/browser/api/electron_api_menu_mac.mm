@@ -30,7 +30,7 @@ namespace electron {
 
 namespace api {
 
-MenuMac::MenuMac(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
+MenuMac::MenuMac(gin::Arguments* args) : Menu(args) {}
 
 MenuMac::~MenuMac() = default;
 

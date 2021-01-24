@@ -95,7 +95,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;
 
-  base::WeakPtrFactory<NodeStreamLoader> weak_factory_;
+  base::WeakPtrFactory<NodeStreamLoader> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NodeStreamLoader);
 };

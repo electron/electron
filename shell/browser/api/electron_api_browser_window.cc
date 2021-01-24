@@ -32,7 +32,7 @@ namespace api {
 
 BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const gin_helper::Dictionary& options)
-    : BaseWindow(args->isolate(), options), weak_factory_(this) {
+    : BaseWindow(args->isolate(), options) {
   // Use options.webPreferences in WebContents.
   v8::Isolate* isolate = args->isolate();
   gin_helper::Dictionary web_preferences =

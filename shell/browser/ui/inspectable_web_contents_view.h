@@ -23,7 +23,7 @@ class InspectableWebContentsViewDelegate;
 
 class InspectableWebContentsView {
  public:
-  InspectableWebContentsView() : delegate_(nullptr) {}
+  InspectableWebContentsView() {}
   virtual ~InspectableWebContentsView() {}
 
   // The delegate manages its own life.
@@ -54,7 +54,7 @@ class InspectableWebContentsView {
   virtual void SetTitle(const base::string16& title) = 0;
 
  private:
-  InspectableWebContentsViewDelegate* delegate_;  // weak references.
+  InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
 };
 
 }  // namespace electron

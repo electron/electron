@@ -16,10 +16,7 @@ namespace electron {
 namespace gtkui {
 
 AppIndicatorIconMenu::AppIndicatorIconMenu(ui::MenuModel* model)
-    : menu_model_(model),
-      click_action_replacement_menu_item_added_(false),
-      gtk_menu_(nullptr),
-      block_activation_(false) {
+    : menu_model_(model) {
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;  // http://crbug.com/378770
     gtk_menu_ = gtk_menu_new();

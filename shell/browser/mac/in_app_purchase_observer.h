@@ -53,7 +53,7 @@ class TransactionObserver {
  private:
   InAppTransactionObserver* observer_;
 
-  base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_;
+  base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(TransactionObserver);
 };

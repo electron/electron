@@ -17,8 +17,7 @@ ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<mojom::ElectronBrowser> receiver)
     : render_process_id_(frame_host->GetProcess()->GetID()),
-      render_frame_id_(frame_host->GetRoutingID()),
-      weak_factory_(this) {
+      render_frame_id_(frame_host->GetRoutingID()) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
   DCHECK(web_contents);

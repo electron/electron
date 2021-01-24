@@ -41,7 +41,7 @@ class WebDialogHelper {
   NativeWindow* window_;
   bool offscreen_;
 
-  base::WeakPtrFactory<WebDialogHelper> weak_factory_;
+  base::WeakPtrFactory<WebDialogHelper> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(WebDialogHelper);
 };

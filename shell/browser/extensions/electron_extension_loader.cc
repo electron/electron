@@ -69,8 +69,7 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 ElectronExtensionLoader::ElectronExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
-      extension_registrar_(browser_context, this),
-      weak_factory_(this) {}
+      extension_registrar_(browser_context, this) {}
 
 ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 

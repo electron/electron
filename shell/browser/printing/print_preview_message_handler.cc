@@ -53,7 +53,7 @@ void StopWorker(int document_cookie) {
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), weak_ptr_factory_(this) {
+    : content::WebContentsObserver(web_contents) {
   DCHECK(web_contents);
 }
 

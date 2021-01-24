@@ -96,7 +96,7 @@ class PrintPreviewMessageHandler
 
   mojo::AssociatedReceiver<printing::mojom::PrintPreviewUI> receiver_{this};
 
-  base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
+  base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_{this};
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

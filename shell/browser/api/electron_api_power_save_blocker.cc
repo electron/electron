@@ -45,8 +45,7 @@ namespace api {
 gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
-    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension),
-      is_wake_lock_active_(false) {}
+    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
 
 PowerSaveBlocker::~PowerSaveBlocker() = default;
 

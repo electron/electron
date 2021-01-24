@@ -90,7 +90,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   // LoadExtensionForReload().
   bool did_schedule_reload_ = false;
 
-  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionLoader);
 };

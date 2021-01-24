@@ -113,7 +113,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // Signaled when the extension system has completed its startup tasks.
   base::OneShotEvent ready_;
 
-  base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystem);
 };
