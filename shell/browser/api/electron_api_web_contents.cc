@@ -618,7 +618,9 @@ WebContents::WebContents(v8::Isolate* isolate,
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
@@ -652,7 +654,9 @@ WebContents::WebContents(v8::Isolate* isolate,
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
@@ -668,7 +672,9 @@ WebContents::WebContents(v8::Isolate* isolate,
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
