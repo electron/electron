@@ -120,6 +120,45 @@ The `event` that is passed as the first argument to the handler is the same as
 that passed to a regular event listener. It includes information about which
 WebContents is the source of the invoke request.
 
+Errors thrown through `handle` in the main process are not transparent as they 
+are serialized and only the error message from the is provided to the renderer 
+process. If needed, an unsafe workaround uses a wrapper for `handle` to throw 
+custom errors.
+```js
+// Main process
+const encodeError = (e) => {
+  return {name: e.name, message: e.message, extra: {...e}}
+}
+
+const handleWithCustomErrors = (channel, handler) => {
+  ipcMain.handle(channel, async (...args) => {
+    try {
+      return {result: await Promise.resolve(handler(...args))}
+    } catch (e) {
+      return {error: encodeError(e)}
+    }
+  })
+}
+
+// Renderer process
+const decodeError = ({name, message, extra}) => {
+  const e = new Error(message)
+  e.name = name
+  Object.assign(e, extra)
+  return e
+}
+
+const invokeWithCustomErrors = async (...args) => {
+  const {error, result} = await ipcRenderer.invoke(...args)
+  if (error) {
+    throw decodeError(error)
+  }
+  return result
+}
+```
+Please refer to [#24427](https://github.com/electron/electron/issues/24427)
+for details.
+
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` String
