@@ -185,7 +185,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   clipboard->ReadImage(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
-      base::Bind(
+      base::BindOnce(
           [](base::Optional<gfx::Image>* image, const SkBitmap& result) {
             image->emplace(gfx::Image::CreateFrom1xBitmap(result));
           },

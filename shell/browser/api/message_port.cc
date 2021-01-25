@@ -132,7 +132,7 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(
-      base::Bind(&MessagePort::Close, weak_factory_.GetWeakPtr()));
+      base::BindOnce(&MessagePort::Close, weak_factory_.GetWeakPtr()));
   if (HasPendingActivity())
     Pin();
 }
