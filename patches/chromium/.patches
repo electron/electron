@@ -172,3 +172,4 @@ cherry-pick-861253f1de98.patch
 cherry-pick-d866af575997.patch
 cherry-pick-da9b5ec032ad.patch
 mojo_fix_uaf_on_nodechannel.patch
+mediacapabilities_use_threadsafe_static_wtf_string.patch
