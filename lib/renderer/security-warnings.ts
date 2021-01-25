@@ -79,7 +79,7 @@ const isLocalhost = function () {
 const isUnsafeEvalEnabled = function () {
   return webFrame.executeJavaScript(`(${(() => {
     try {
-      new Function(''); // eslint-disable-line no-new,no-new-func
+      eval(window.trustedTypes.emptyScript); // eslint-disable-line no-eval
     } catch {
       return false;
     }
