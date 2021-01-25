@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: dan <Dan Kennedy>
+Date: Tue, 22 Dec 2020 16:23:29 +0000
+Subject: Fix a problem handling sub-queries with both a correlated WHERE
+ clause and a "HAVING 0" clause where the parent query is itself an aggregate.
+
+FossilOrigin-Name: f62f983b56623f0ec34f9a54ce1c21b013a20399162f5ee6ee43b23f10c2ecd5
+(cherry picked from commit f39168e468af3b1d6b6d37efdcb081eced6724b2)
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index e53e58ddb2844b19da2aa7d04462d8c089cc04dd..439a4c8f7a3162be775bea2d37e7b821cf2acd33 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -1173,7 +1173,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.33.0"
+ #define SQLITE_VERSION_NUMBER 3033000
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8a3984"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -134871,7 +134871,9 @@ static void explainSimpleCount(
+ static int havingToWhereExprCb(Walker *pWalker, Expr *pExpr){
+   if( pExpr->op!=TK_AND ){
+     Select *pS = pWalker->u.pSelect;
+-    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy) ){
++    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy)
++     && ExprAlwaysFalse(pExpr)==0
++    ){
+       sqlite3 *db = pWalker->pParse->db;
+       Expr *pNew = sqlite3Expr(db, TK_INTEGER, "1");
+       if( pNew ){
+@@ -225225,7 +225227,7 @@ static void fts5SourceIdFunc(
+ ){
+   assert( nArg==0 );
+   UNUSED_PARAM2(nArg, apUnused);
+-  sqlite3_result_text(pCtx, "fts5: 2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f", -1, SQLITE_TRANSIENT);
++  sqlite3_result_text(pCtx, "fts5: 2020-08-14 13:23:32 0000000000000000000000000000000000000000000000000000000000000000", -1, SQLITE_TRANSIENT);
+ }
+ 
+ /*
+@@ -230008,9 +230010,9 @@ SQLITE_API int sqlite3_stmt_init(
+ #endif /* !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB) */
+ 
+ /************** End of stmt.c ************************************************/
+-#if __LINE__!=230011
++#if __LINE__!=230013
+ #undef SQLITE_SOURCE_ID
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0alt2"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8aalt2"
+ #endif
+ /* Return the source-id for this library */
+ SQLITE_API const char *sqlite3_sourceid(void){ return SQLITE_SOURCE_ID; }
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index 910b687aa7df2d45ada1e7a57bd1794ae3fd4227..fa3733fc1e68b49317e9531f690d634a3a508d74 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -125,7 +125,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.33.0"
+ #define SQLITE_VERSION_NUMBER 3033000
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8a3984"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index a82744931c0b7f1ed3baf079bcc75090448d00b4..b98eb8b971f979d50a74bfb6b738625c515064ca 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -1173,7 +1173,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.33.0"
+ #define SQLITE_VERSION_NUMBER 3033000
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8a3984"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -134884,7 +134884,9 @@ static void explainSimpleCount(
+ static int havingToWhereExprCb(Walker *pWalker, Expr *pExpr){
+   if( pExpr->op!=TK_AND ){
+     Select *pS = pWalker->u.pSelect;
+-    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy) ){
++    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy)
++     && ExprAlwaysFalse(pExpr)==0
++    ){
+       sqlite3 *db = pWalker->pParse->db;
+       Expr *pNew = sqlite3Expr(db, TK_INTEGER, "1");
+       if( pNew ){
+@@ -225725,7 +225727,7 @@ static void fts5SourceIdFunc(
+ ){
+   assert( nArg==0 );
+   UNUSED_PARAM2(nArg, apUnused);
+-  sqlite3_result_text(pCtx, "fts5: 2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f", -1, SQLITE_TRANSIENT);
++  sqlite3_result_text(pCtx, "fts5: 2020-08-14 13:23:32 0000000000000000000000000000000000000000000000000000000000000000", -1, SQLITE_TRANSIENT);
+ }
+ 
+ /*
+@@ -230508,9 +230510,9 @@ SQLITE_API int sqlite3_stmt_init(
+ #endif /* !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB) */
+ 
+ /************** End of stmt.c ************************************************/
+-#if __LINE__!=230511
++#if __LINE__!=230513
+ #undef SQLITE_SOURCE_ID
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0alt2"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8aalt2"
+ #endif
+ /* Return the source-id for this library */
+ SQLITE_API const char *sqlite3_sourceid(void){ return SQLITE_SOURCE_ID; }
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index 910b687aa7df2d45ada1e7a57bd1794ae3fd4227..fa3733fc1e68b49317e9531f690d634a3a508d74 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -125,7 +125,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.33.0"
+ #define SQLITE_VERSION_NUMBER 3033000
+-#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f"
++#define SQLITE_SOURCE_ID      "2020-08-14 13:23:32 ba9c5a7088bb97ded8e889d7e21e6afe229baf8e670ea4f20d9625b61c8a3984"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/manifest b/manifest
+index 9122e4aaf4ec1de79e4eceaee27b911d3376cea8..dedff0947551e496fd7bd174d7ce47d362552987 100644
+--- a/manifest
++++ b/manifest
+@@ -535,7 +535,7 @@ F src/printf.c 9efcd4e984f22bcccb1ded37a1178cac98f6e3a0534e1e0629f64899971f8838
+ F src/random.c 80f5d666f23feb3e6665a6ce04c7197212a88384
+ F src/resolve.c d74715aceed2a8f493ba244d535646fa93132042a4400a29dfd26ec841514048
+ F src/rowset.c ba9515a922af32abe1f7d39406b9d35730ed65efab9443dc5702693b60854c92
+-F src/select.c 510fdf819f218be3dac2683d3eaaf64e5080f548061a4dd12205590beda976bb
++F src/select.c ed982264245ab7613730792ef6457dce0d600b7cddf1a641410accda911c4328
+ F src/shell.c.in b9b819feede7b85585ab0826490a352e04e2ee46e8132c92597d29972b2be1d7
+ F src/sqlite.h.in d2c03414a8ee5d4a6855c04dd7cd5998e45139b0fe66b65bae86d4223edd091f
+ F src/sqlite3.rc 5121c9e10c3964d5755191c80dd1180c122fc3a8
+@@ -1042,7 +1042,7 @@ F test/fuzzerfault.test 8792cd77fd5bce765b05d0c8e01b9edcf8af8536
+ F test/gcfault.test dd28c228a38976d6336a3fc42d7e5f1ad060cb8c
+ F test/gencol1.test b05e6c5edb9b10d48efb634ed07342441bddc89d225043e17095c36e567521a0
+ F test/genesis.tcl 1e2e2e8e5cc4058549a154ff1892fe5c9de19f98
+-F test/having.test e4098a4b8962f9596035c3b87a8928a10648acc509f1bb8d6f96413bbf79a1b3
++F test/having.test ea5cb01cdf3d90fd1b516ef36b1fbde518dbbd61c50141f5eb830d8101844040
+ F test/hexlit.test 4a6a5f46e3c65c4bf1fa06f5dd5a9507a5627751
+ F test/hidden.test 23c1393a79e846d68fd902d72c85d5e5dcf98711
+ F test/hook.test e97382e68e4379838e888756d653afd159f5f14780315ff97b70360d3d8485bc
+diff --git a/manifest.uuid b/manifest.uuid
+index 4231aa8eafe78f7511cdee3185247f5fe786d4e5..cd09bbf164ef5a0d555a222499be733c36bd405d 100644
+--- a/manifest.uuid
++++ b/manifest.uuid
+@@ -1 +1 @@
+-fca8dc8b578f215a969cd899336378966156154710873e68b3d9ac5881b0ff3f
+\ No newline at end of file
++0000000000000000000000000000000000000000000000000000000000000000
+diff --git a/src/select.c b/src/select.c
+index 8b1fae75a510e0ec8f9fb5c5732ca7426662f801..0bc3792dce6ba1f9db7f5cc65a4c5981f74bbd19 100644
+--- a/src/select.c
++++ b/src/select.c
+@@ -5585,7 +5585,9 @@ static void explainSimpleCount(
+ static int havingToWhereExprCb(Walker *pWalker, Expr *pExpr){
+   if( pExpr->op!=TK_AND ){
+     Select *pS = pWalker->u.pSelect;
+-    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy) ){
++    if( sqlite3ExprIsConstantOrGroupBy(pWalker->pParse, pExpr, pS->pGroupBy) 
++     && ExprAlwaysFalse(pExpr)==0
++    ){
+       sqlite3 *db = pWalker->pParse->db;
+       Expr *pNew = sqlite3Expr(db, TK_INTEGER, "1");
+       if( pNew ){
+diff --git a/test/having.test b/test/having.test
+index a3882552d311785e9c1345833cd2b63fa6ade34a..71a44637b9f03161d035bda47e299a60b6b9018d 100644
+--- a/test/having.test
++++ b/test/having.test
+@@ -65,8 +65,8 @@ foreach {tn sql1 sql2} {
+   3 "SELECT a, sum(b) FROM t1 GROUP BY a COLLATE binary HAVING a=2"
+     "SELECT a, sum(b) FROM t1 WHERE a=2 GROUP BY a COLLATE binary"
+ 
+-  5 "SELECT a, sum(b) FROM t1 GROUP BY a COLLATE binary HAVING 0"
+-    "SELECT a, sum(b) FROM t1 WHERE 0 GROUP BY a COLLATE binary"
++  5 "SELECT a, sum(b) FROM t1 GROUP BY a COLLATE binary HAVING 1"
++    "SELECT a, sum(b) FROM t1 WHERE 1 GROUP BY a COLLATE binary"
+ 
+   6 "SELECT count(*) FROM t1,t2 WHERE a=c GROUP BY b, d HAVING b=d"
+     "SELECT count(*) FROM t1,t2 WHERE a=c AND b=d GROUP BY b, d"
+@@ -154,5 +154,25 @@ do_execsql_test 4.3 {
+   SELECT a, sum(b) FROM t3 WHERE nondeter(a) GROUP BY a
+ } {1 4 2 2}
+ 
++#-------------------------------------------------------------------------
++reset_db
++do_execsql_test 5.0 {
++  CREATE TABLE t1(a, b);
++  CREATE TABLE t2(x, y);
++  INSERT INTO t1 VALUES('a', 'b');
++}
++
++# The WHERE clause (a=2), uses an aggregate column from the outer query.
++# If the HAVING term (0) is moved into the WHERE clause in this case,
++# SQLite would at one point optimize (a=2 AND 0) to simply (0). Which
++# is logically correct, but happened to cause problems in aggregate
++# processing for the outer query. This test case verifies that those 
++# problems are no longer present.
++do_execsql_test 5.1 {
++  SELECT min(b), (
++    SELECT x FROM t2 WHERE a=2 GROUP BY y HAVING 0
++  ) FROM t1;
++} {b {}}
++
+ 
+ finish_test
