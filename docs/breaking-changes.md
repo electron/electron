@@ -20,6 +20,8 @@ In Electron 14, `worldSafeExecuteJavaScript` will be removed.  There is no alter
 ensure your code works with this property enabled.  It has been enabled by default since Electron
 12.
 
+You will be affected by this change if you use either `webFrame.executeJavaScript` or `webFrame.executeJavaScriptInIsolatedWorld`. You will need to ensure that values returned by either of those methods are supported by the [Context Bridge API](api/context-bridge.md#parameter--error--return-type-support) as these methods use the same value passing semantics.
+
 ## Planned Breaking API Changes (13.0)
 
 ### API Changed: `session.setPermissionCheckHandler(handler)`
