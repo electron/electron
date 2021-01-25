@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Sat, 5 Dec 2020 03:19:09 +0000
+Subject: Update the restricted port list
+
+Add ports 69, 137, 161, 554, 1719, 1720, 1723, 6566 to the restricted
+ports list to match Firefox. See
+https://hg.mozilla.org/mozilla-central/file/tip/netwerk/base/nsIOService.cpp.
+
+Leave out port 10080 for now as it seems likely to cause compatibility
+problems.
+
+BUG=1148309
+
+Change-Id: I16f9a61068dbe35334fd5ca2bf55b3ab0287df74
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2562905
+Reviewed-by: David Schinazi <dschinazi@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#832169}
+(cherry picked from commit c36c5078c41bd1a9e2455d747d69ac1703d977d3)
+
+TBR=ricea@chromium.org
+
+Change-Id: I9cc989e46ac63b3c656eb2eaed825add9b8346f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2574877
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#611}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/net/base/port_util.cc b/net/base/port_util.cc
+index 72af86dd6acf2db65a14b2f1bb2e3a241a1d043d..12bfd9a36a0e8e9331420c597faf670477100e47 100644
+--- a/net/base/port_util.cc
++++ b/net/base/port_util.cc
+@@ -37,6 +37,7 @@ const int kRestrictedPorts[] = {
+     42,    // name
+     43,    // nicname
+     53,    // domain
++    69,    // tftp
+     77,    // priv-rjs
+     79,    // finger
+     87,    // ttylink
+@@ -54,8 +55,10 @@ const int kRestrictedPorts[] = {
+     119,   // nntp
+     123,   // NTP
+     135,   // loc-srv /epmap
++    137,   // netbios
+     139,   // netbios
+     143,   // imap2
++    161,   // snmp
+     179,   // BGP
+     389,   // ldap
+     427,   // SLP (Also used by Apple Filing Protocol)
+@@ -70,6 +73,7 @@ const int kRestrictedPorts[] = {
+     532,   // netnews
+     540,   // uucp
+     548,   // AFP (Apple Filing Protocol)
++    554,   // rtsp
+     556,   // remotefs
+     563,   // nntp+ssl
+     587,   // smtp (rfc6409)
+@@ -77,12 +81,16 @@ const int kRestrictedPorts[] = {
+     636,   // ldap+ssl
+     993,   // ldap+ssl
+     995,   // pop3+ssl
++    1719,  // h323gatestat
++    1720,  // h323hostcall
++    1723,  // pptp
+     2049,  // nfs
+     3659,  // apple-sasl / PasswordServer
+     4045,  // lockd
+     5060,  // sip
+     5061,  // sips
+     6000,  // X11
++    6566,  // sane-port
+     6665,  // Alternate IRC [Apple addition]
+     6666,  // Alternate IRC [Apple addition]
+     6667,  // Standard IRC [Apple addition]
