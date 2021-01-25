@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Fri, 8 Jan 2021 09:33:18 +0100
+Subject: Merged: [deoptimizer] Stricter checks during deoptimization
+
+Revision: 506e893b812e03dbebe34b11d8aa9d4eb6869d89
+
+BUG=chromium:1161357
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=mythria@chromium.org
+
+Change-Id: I97b69ae11d85bc0acd4a0c7bd28e1b692433de80
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2616219
+Reviewed-by: Mythri Alle <mythria@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.8@{#23}
+Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
+Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
+
+diff --git a/src/deoptimizer/deoptimizer.cc b/src/deoptimizer/deoptimizer.cc
+index 44c92f557046dbb4268b218d0753367356ee9cd3..05cd675bedcc1e2ff0511be1a2d969f02ea2dfc4 100644
+--- a/src/deoptimizer/deoptimizer.cc
++++ b/src/deoptimizer/deoptimizer.cc
+@@ -249,6 +249,7 @@ class ActivationsFinder : public ThreadVisitor {
+           SafepointEntry safepoint = code.GetSafepointEntry(it.frame()->pc());
+           int trampoline_pc = safepoint.trampoline_pc();
+           DCHECK_IMPLIES(code == topmost_, safe_to_deopt_);
++          CHECK_GE(trampoline_pc, 0);
+           // Replace the current pc on the stack with the trampoline.
+           // TODO(v8:10026): avoid replacing a signed pointer.
+           Address* pc_addr = it.frame()->pc_address();
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 989c097908047c976748a61f20a3ea13242434a3..a4399a87bb96cb69f3ea03f0514821fe1d50d9f7 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -65,6 +65,10 @@
+   # BUG(v8:10197)
+   'regress/regress-748069': [SKIP],
+ 
++  # crbug.com/1161357
++  # TODO(solanes): Remove this entry once the underlying issue is fixed.
++  'regress/regress-1161357': [PASS, FAIL],
++
+   ##############################################################################
+   # Tests where variants make no sense.
+   'd8/enable-tracing': [PASS, NO_VARIANTS],
+diff --git a/test/mjsunit/regress/regress-1161357.js b/test/mjsunit/regress/regress-1161357.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6f03b92ac970f1f24c8e6aa03b27e849d2ae7bc
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1161357.js
+@@ -0,0 +1,15 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++for (let i = 0; i < 3; i++) {
++  for (let j = 0; j < 32767; j++) {
++    Number;
++  }
++  for (let j = 0; j < 2335; j++) {
++    Number;
++  }
++  var arr = [, ...(new Int16Array(0xffff)), 4294967296];
++  arr.concat(Number, arr)
++}
++eval(``);
