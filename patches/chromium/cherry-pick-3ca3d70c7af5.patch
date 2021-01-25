@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yuri Wiitala <miu@chromium.org>
+Date: Thu, 10 Dec 2020 18:07:39 +0000
+Subject: Minor UI logic changes to prevent a UAF bug when starting tab
+ capture.
+
+See discussion in crbug 1155426 for details. Changes:
+
+MediaStreamCaptureIndicator::UIDelegate: Ignore multiple calls to
+OnStarted().
+
+TabSharingUIViews: Unconditionally execute clean-up tasks in destructor.
+
+Bug: 1155426
+Change-Id: I392fba38118ce51744ba36b4dec19ebfe39f1fbe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2581028
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Marina Ciocea <marinaciocea@chromium.org>
+Commit-Queue: Yuri Wiitala <miu@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#835736}
+
+diff --git a/chrome/browser/media/webrtc/media_stream_capture_indicator.cc b/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
+index ce93d308a3d1099d9edbeea88ce8d05e60158117..99203ebb36edc21697518d172d67831deed8ba04 100644
+--- a/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
++++ b/chrome/browser/media/webrtc/media_stream_capture_indicator.cc
+@@ -186,7 +186,12 @@ class MediaStreamCaptureIndicator::UIDelegate : public content::MediaStreamUI {
+   gfx::NativeViewId OnStarted(
+       base::OnceClosure stop_callback,
+       content::MediaStreamUI::SourceCallback source_callback) override {
+-    DCHECK(!started_);
++    if (started_) {
++      // Ignore possibly-compromised renderers that might call
++      // MediaStreamDispatcherHost::OnStreamStarted() more than once.
++      // See: https://crbug.com/1155426
++      return 0;
++    }
+     started_ = true;
+ 
+     if (device_usage_) {
+diff --git a/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc b/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
+index 1582ccedd3fac5368e7adf94ec222e5d85b18aab..35e4f3e93c41f52fb50599da4050c0f3c25dd0d4 100644
+--- a/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
++++ b/chrome/browser/ui/views/tab_sharing/tab_sharing_ui_views.cc
+@@ -134,8 +134,10 @@ TabSharingUIViews::TabSharingUIViews(const content::DesktopMediaID& media_id,
+ }
+ 
+ TabSharingUIViews::~TabSharingUIViews() {
+-  if (!infobars_.empty())
+-    StopSharing();
++  // Unconditionally call StopSharing(), to ensure all clean-up has been
++  // performed if tasks race (e.g., OnStarted() is called after
++  // OnInfoBarRemoved()). See: https://crbug.com/1155426
++  StopSharing();
+ }
+ 
+ gfx::NativeViewId TabSharingUIViews::OnStarted(
