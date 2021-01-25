@@ -744,14 +744,6 @@ describe('chromium features', () => {
       expect(await w.webContents.executeJavaScript('b.location.href')).to.equal('about:blank');
     });
 
-    it('sets the window title to the specified frameName', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
-      w.webContents.executeJavaScript('{ b = window.open(\'\', \'hello\'); null }');
-      const [, window] = await emittedOnce(app, 'browser-window-created');
-      expect(window.getTitle()).to.equal('hello');
-    });
-
     it('does not throw an exception when the frameName is a built-in object property', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
