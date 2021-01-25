@@ -1780,7 +1780,8 @@ Replacement API for setBrowserView supporting work with multi browser views.
 
 * `browserView` [BrowserView](browser-view.md)
 
-Raises `browserView` above other `BrowserView`s attached to `win`. If the given `browserView` is not yet attached, it will be added.
+Raises `browserView` above other `BrowserView`s attached to `win`.
+Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 

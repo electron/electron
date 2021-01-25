@@ -783,7 +783,8 @@ void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   }
 }
 
-void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value) {
+void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
+                                   gin_helper::Arguments* args) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
@@ -791,14 +792,11 @@ void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value) {
       return;
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
-      if (browser_view->web_contents()) {
-        window_->AddBrowserView(browser_view->view());
-        browser_view->web_contents()->SetOwnerWindow(window_.get());
-      }
-      browser_views_[browser_view->ID()].Reset(isolate(), value);
-    } else {
-      window_->SetTopBrowserView(browser_view->view());
+      args->ThrowError("Given BrowserView is not attached to the window");
+      return;
     }
+
+    window_->SetTopBrowserView(browser_view->view());
   }
 }
 

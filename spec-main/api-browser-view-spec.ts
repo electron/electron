@@ -180,6 +180,15 @@ describe('BrowserView module', () => {
     });
   });
 
+  describe('BrowserWindow.setTopBrowserView()', () => {
+    it('should throw an error when a BrowserView is not attached to the window', () => {
+      const view = new BrowserView();
+      expect(() => {
+        w.setTopBrowserView(view);
+      }).to.throw(/is not attached/);
+    });
+  });
+
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView();
