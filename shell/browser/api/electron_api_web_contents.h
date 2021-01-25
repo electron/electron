@@ -684,7 +684,9 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   bool initially_shown_ = true;
 
+#if BUILDFLAG(ENABLE_PRINTING)
   scoped_refptr<base::TaskRunner> print_task_runner_;
+#endif
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
   mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>

@@ -476,7 +476,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::REMOTE),
       id_(GetAllWebContents().Add(this)),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
@@ -512,7 +514,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
       id_(GetAllWebContents().Add(this)),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
   DCHECK(type != Type::REMOTE)
       << "Can't take ownership of a remote WebContents";
@@ -525,7 +529,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
     : id_(GetAllWebContents().Add(this)),
+#if BUILDFLAG(ENABLE_PRINTING)
       print_task_runner_(CreatePrinterHandlerTaskRunner()),
+#endif
       weak_factory_(this) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
