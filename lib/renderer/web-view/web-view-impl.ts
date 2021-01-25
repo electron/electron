@@ -44,7 +44,9 @@ export class WebViewImpl {
     // Create internal iframe element.
     this.internalElement = this.createInternalElement();
     const shadowRoot = this.webviewNode.attachShadow({ mode: 'open' });
-    shadowRoot.innerHTML = '<!DOCTYPE html><style type="text/css">:host { display: flex; }</style>';
+    const style = shadowRoot.ownerDocument.createElement('style');
+    style.textContent = ':host { display: flex; }';
+    shadowRoot.appendChild(style);
     this.setupWebViewAttributes();
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.internalElement);
