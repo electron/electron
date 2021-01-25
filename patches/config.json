@@ -13,5 +13,7 @@
 
   "src/electron/patches/depot_tools": "src/third_party/depot_tools",
 
+  "src/electron/patches/sqlite": "src/third_party/sqlite/src",
+
   "src/electron/patches/icu": "src/third_party/icu"
 }
