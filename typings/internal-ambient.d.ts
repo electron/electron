@@ -111,6 +111,7 @@ declare interface Window {
     }
   };
   ResizeObserver: ResizeObserver;
+  trustedTypes: TrustedTypePolicyFactory;
 }
 
 /**
@@ -161,4 +162,42 @@ interface ResizeObserverEntry {
    * Element's content rect when ResizeObserverCallback is invoked.
    */
   readonly contentRect: DOMRectReadOnly;
+}
+
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#trusted-types
+
+type TrustedHTML = string;
+type TrustedScript = string;
+type TrustedScriptURL = string;
+type TrustedType = TrustedHTML | TrustedScript | TrustedScriptURL;
+type StringContext = 'TrustedHTML' | 'TrustedScript' | 'TrustedScriptURL';
+
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicy
+
+interface TrustedTypePolicy {
+  createHTML(input: string, ...arguments: any[]): TrustedHTML;
+  createScript(input: string, ...arguments: any[]): TrustedScript;
+  createScriptURL(input: string, ...arguments: any[]): TrustedScriptURL;
+}
+
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyoptions
+
+interface TrustedTypePolicyOptions {
+  createHTML?: (input: string, ...arguments: any[]) => TrustedHTML;
+  createScript?: (input: string, ...arguments: any[]) => TrustedScript;
+  createScriptURL?: (input: string, ...arguments: any[]) => TrustedScriptURL;
+}
+
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyfactory
+
+interface TrustedTypePolicyFactory {
+  createPolicy(policyName: string, policyOptions: TrustedTypePolicyOptions): TrustedTypePolicy
+  isHTML(value: any): boolean;
+  isScript(value: any): boolean;
+  isScriptURL(value: any): boolean;
+  readonly emptyHTML: TrustedHTML;
+  readonly emptyScript: TrustedScript;
+  getAttributeType(tagName: string, attribute: string, elementNs?: string, attrNs?: string): StringContext | null;
+  getPropertyType(tagName: string, property: string, elementNs?: string): StringContext | null;
+  readonly defaultPolicy: TrustedTypePolicy | null;
 }
