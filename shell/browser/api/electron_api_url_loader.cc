@@ -492,8 +492,11 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
                               args->isolate(), body_func,
                               data_pipe_getter.InitWithNewPipeAndPassReceiver())
                               .ToV8();
-      request->request_body = new network::ResourceRequestBody();
-      request->request_body->SetToChunkedDataPipe(std::move(data_pipe_getter));
+      request->request_body =
+          base::MakeRefCounted<network::ResourceRequestBody>();
+      request->request_body->SetToChunkedDataPipe(
+          std::move(data_pipe_getter),
+          network::ResourceRequestBody::ReadOnlyOnce(false));
     }
   }
 

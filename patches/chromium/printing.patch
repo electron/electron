@@ -385,7 +385,7 @@ index dfbaf97a1c3d73d324095f46a4ea73d68d5188cc..d5fd684fe8cef92ec0432143d284ff0c
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..8dcfa1fb449a575b6ce4d611b1a736a17dbd856b 100644
+index d741272adb91a0cfa35af937edf42d88203ae987..08c4c5914810eea5885be46cfa0f87c4265cf027 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -516,7 +516,7 @@ index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..8dcfa1fb449a575b6ce4d611b1a736a1
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2106,7 +2147,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2109,7 +2150,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -527,7 +527,7 @@ index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..8dcfa1fb449a575b6ce4d611b1a736a1
    mojom::PrintPagesParams settings;
    settings.params = mojom::PrintParams::New();
    GetPrintManagerHost()->GetDefaultPrintSettings(&settings.params);
-@@ -2130,12 +2173,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2133,12 +2176,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
