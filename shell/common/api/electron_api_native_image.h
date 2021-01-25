@@ -77,9 +77,13 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
 
-  static bool TryConvertNativeImage(v8::Isolate* isolate,
-                                    v8::Local<v8::Value> image,
-                                    NativeImage** native_image);
+  enum class OnConvertError { kThrow, kWarn };
+
+  static bool TryConvertNativeImage(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> image,
+      NativeImage** native_image,
+      OnConvertError on_error = OnConvertError::kThrow);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
