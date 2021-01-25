@@ -437,7 +437,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 #endif
 
   prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript);
+      IsEnabled(options::kWorldSafeExecuteJavaScript, true);
 
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
