@@ -127,4 +127,7 @@ only_zero_out_cross-origin_audio_that_doesn_t_get_played_out.patch
 fix_setparentacessibile_crash_win.patch
 cherry-pick-19aeffd4d93f.patch
 cherry-pick-4794770cf175.patch
+cherry-pick-79440c3a0675.patch
 cherry-pick-d866af575997.patch
+cherry-pick-da9b5ec032ad.patch
+cherry-pick-861253f1de98.patch
