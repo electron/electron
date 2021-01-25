@@ -280,8 +280,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRotateGesture(float rotation);
   void NotifyWindowSheetBegin();
   void NotifyWindowSheetEnd();
-  void NotifyWindowEnterFullScreen();
-  void NotifyWindowLeaveFullScreen();
+  virtual void NotifyWindowEnterFullScreen();
+  virtual void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowAlwaysOnTopChanged();
