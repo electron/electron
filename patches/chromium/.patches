@@ -113,3 +113,4 @@ ensure_that_showsavefilepicker_always_shows_the_extension_on_mac.patch
 sanitize_descriptions_for_file_types.patch
 mediacapabilities_use_threadsafe_static_wtf_string.patch
 cherry-pick-06fe641d21bd.patch
+cherry-pick-3f7b67374a11.patch
