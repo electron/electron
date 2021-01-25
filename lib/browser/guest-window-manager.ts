@@ -214,16 +214,17 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, isNativeWind
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
 
   console.log(frameName);
-  console.log(parsedOptions);
   console.log({
-    ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
-    show: true,
-    title: frameName,
-    width: 800,
-    height: 600,
-    ...parsedOptions,
-    ...overrideOptions,
-    webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
+    additionalFeatures,
+    options: {
+      ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
+      show: true,
+      width: 800,
+      height: 600,
+      ...parsedOptions,
+      ...overrideOptions,
+      webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
+    }
   });
 
   return {
