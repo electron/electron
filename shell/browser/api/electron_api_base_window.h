@@ -223,6 +223,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
+  void SetIconImpl(v8::Isolate* isolate,
+                   v8::Local<v8::Value> icon,
+                   NativeImage::OnConvertError on_error);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
