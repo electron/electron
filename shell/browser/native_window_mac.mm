@@ -1764,12 +1764,12 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
       [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
       [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
       [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
-    }
 
-    // Some third-party macOS utilities check the zoom button's enabled state to
-    // determine whether to show custom UI on hover, so we disable it here to
-    // prevent them from doing so in a frameless app window.
-    SetMaximizable(false);
+      // Some third-party macOS utilities check the zoom button's enabled state
+      // to determine whether to show custom UI on hover, so we disable it here
+      // to prevent them from doing so in a frameless app window.
+      SetMaximizable(false);
+    }
   }
 }
 
