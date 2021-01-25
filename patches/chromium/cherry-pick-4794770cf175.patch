@@ -1,0 +1,326 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Fri, 4 Dec 2020 10:19:12 +0000
+Subject: Correctly handle detach during (de)compression
+
+Sometimes CompressionStream and DecompressionStream enqueue multiple
+output chunks for a single input chunk. When this happens, JavaScript
+code can detach the input ArrayBuffer while the stream is processing it.
+This will cause an error when zlib tries to read the buffer again
+afterwards.
+
+To prevent this, buffer output chunks until the entire input chunk has
+been processed, and then enqueue them all at once.
+
+Bug: 1151298
+Change-Id: I03fca26fc641d54b09067e3994b76ee8efca6839
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2567539
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#833659}
+
+diff --git a/third_party/blink/renderer/modules/compression/deflate_transformer.cc b/third_party/blink/renderer/modules/compression/deflate_transformer.cc
+index 4ee5a115ba828690b76fb73664eb84ce80b7c4d8..e93da96d3b3c0fac42be5f13abaf4db4c455c17d 100644
+--- a/third_party/blink/renderer/modules/compression/deflate_transformer.cc
++++ b/third_party/blink/renderer/modules/compression/deflate_transformer.cc
+@@ -111,6 +111,10 @@ void DeflateTransformer::Deflate(const uint8_t* start,
+   // Zlib treats this pointer as const, so this cast is safe.
+   stream_.next_in = const_cast<uint8_t*>(start);
+ 
++  // enqueue() may execute JavaScript which may invalidate the input buffer. So
++  // accumulate all the output before calling enqueue().
++  HeapVector<Member<DOMUint8Array>, 1u> buffers;
++
+   do {
+     stream_.avail_out = out_buffer_.size();
+     stream_.next_out = out_buffer_.data();
+@@ -120,16 +124,21 @@ void DeflateTransformer::Deflate(const uint8_t* start,
+ 
+     wtf_size_t bytes = out_buffer_.size() - stream_.avail_out;
+     if (bytes) {
+-      controller->enqueue(
+-          script_state_,
+-          ScriptValue::From(script_state_,
+-                            DOMUint8Array::Create(out_buffer_.data(), bytes)),
+-          exception_state);
+-      if (exception_state.HadException()) {
+-        return;
+-      }
++      buffers.push_back(DOMUint8Array::Create(out_buffer_.data(), bytes));
+     }
+   } while (stream_.avail_out == 0);
++
++  DCHECK_EQ(stream_.avail_in, 0u);
++
++  // JavaScript may be executed inside this loop, however it is safe because
++  // |buffers| is a local variable that JavaScript cannot modify.
++  for (DOMUint8Array* buffer : buffers) {
++    controller->enqueue(script_state_, ScriptValue::From(script_state_, buffer),
++                        exception_state);
++    if (exception_state.HadException()) {
++      return;
++    }
++  }
+ }
+ 
+ void DeflateTransformer::Trace(Visitor* visitor) {
+diff --git a/third_party/blink/renderer/modules/compression/inflate_transformer.cc b/third_party/blink/renderer/modules/compression/inflate_transformer.cc
+index 414b126ac218230b1c82f2f37d2a3fbd37983796..8c9a95c3ef5b00c0ae772bc18715574640914781 100644
+--- a/third_party/blink/renderer/modules/compression/inflate_transformer.cc
++++ b/third_party/blink/renderer/modules/compression/inflate_transformer.cc
+@@ -20,6 +20,7 @@
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/bindings/to_v8.h"
+ #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++#include "third_party/blink/renderer/platform/wtf/vector.h"
+ #include "v8/include/v8.h"
+ 
+ namespace blink {
+@@ -93,11 +94,15 @@ ScriptPromise InflateTransformer::Flush(
+     TransformStreamDefaultController* controller,
+     ExceptionState& exception_state) {
+   DCHECK(!was_flush_called_);
++  was_flush_called_ = true;
+   Inflate(nullptr, 0u, IsFinished(true), controller, exception_state);
+   inflateEnd(&stream_);
+-  was_flush_called_ = true;
+   out_buffer_.clear();
+ 
++  if (exception_state.HadException()) {
++    return ScriptPromise();
++  }
++
+   if (!reached_end_) {
+     exception_state.ThrowTypeError("Compressed input was truncated.");
+   }
+@@ -121,12 +126,22 @@ void InflateTransformer::Inflate(const uint8_t* start,
+   // Zlib treats this pointer as const, so this cast is safe.
+   stream_.next_in = const_cast<uint8_t*>(start);
+ 
++  // enqueue() may execute JavaScript which may invalidate the input buffer. So
++  // accumulate all the output before calling enqueue().
++  HeapVector<Member<DOMUint8Array>, 1u> buffers;
++
+   do {
+     stream_.avail_out = out_buffer_.size();
+     stream_.next_out = out_buffer_.data();
+     const int err = inflate(&stream_, finished ? Z_FINISH : Z_NO_FLUSH);
+     if (err != Z_OK && err != Z_STREAM_END && err != Z_BUF_ERROR) {
+       DCHECK_NE(err, Z_STREAM_ERROR);
++
++      EnqueueBuffers(controller, std::move(buffers), exception_state);
++      if (exception_state.HadException()) {
++        return;
++      }
++
+       if (err == Z_DATA_ERROR) {
+         exception_state.ThrowTypeError(
+             String("The compressed data was not valid: ") + stream_.msg + ".");
+@@ -138,25 +153,44 @@ void InflateTransformer::Inflate(const uint8_t* start,
+ 
+     wtf_size_t bytes = out_buffer_.size() - stream_.avail_out;
+     if (bytes) {
+-      controller->enqueue(
+-          script_state_,
+-          ScriptValue::From(script_state_,
+-                            DOMUint8Array::Create(out_buffer_.data(), bytes)),
+-          exception_state);
+-      if (exception_state.HadException()) {
+-        return;
+-      }
++      buffers.push_back(DOMUint8Array::Create(out_buffer_.data(), bytes));
+     }
+ 
+     if (err == Z_STREAM_END) {
+       reached_end_ = true;
+-      if (stream_.next_in < start + length) {
++      const bool junk_found = stream_.avail_in > 0;
++
++      EnqueueBuffers(controller, std::move(buffers), exception_state);
++      if (exception_state.HadException()) {
++        return;
++      }
++
++      if (junk_found) {
+         exception_state.ThrowTypeError(
+             "Junk found after end of compressed data.");
+       }
+       return;
+     }
+   } while (stream_.avail_out == 0);
++
++  DCHECK_EQ(stream_.avail_in, 0u);
++
++  EnqueueBuffers(controller, std::move(buffers), exception_state);
++}
++
++void InflateTransformer::EnqueueBuffers(
++    TransformStreamDefaultController* controller,
++    HeapVector<Member<DOMUint8Array>, 1u> buffers,
++    ExceptionState& exception_state) {
++  // JavaScript may be executed inside this loop, however it is safe because
++  // |buffers| is a local variable that JavaScript cannot modify.
++  for (DOMUint8Array* buffer : buffers) {
++    controller->enqueue(script_state_, ScriptValue::From(script_state_, buffer),
++                        exception_state);
++    if (exception_state.HadException()) {
++      return;
++    }
++  }
+ }
+ 
+ void InflateTransformer::Trace(Visitor* visitor) {
+diff --git a/third_party/blink/renderer/modules/compression/inflate_transformer.h b/third_party/blink/renderer/modules/compression/inflate_transformer.h
+index e7f0510faf5bf96c14ec8dff06b11fe0670c187c..12b05bcb29a0565b441a63d6d97833527bf332eb 100644
+--- a/third_party/blink/renderer/modules/compression/inflate_transformer.h
++++ b/third_party/blink/renderer/modules/compression/inflate_transformer.h
+@@ -41,6 +41,10 @@ class InflateTransformer final : public TransformStreamTransformer {
+                TransformStreamDefaultController*,
+                ExceptionState&);
+ 
++  void EnqueueBuffers(TransformStreamDefaultController*,
++                      HeapVector<Member<DOMUint8Array>, 1u> buffers,
++                      ExceptionState&);
++
+   Member<ScriptState> script_state_;
+ 
+   z_stream stream_;
+diff --git a/third_party/blink/web_tests/external/wpt/compression/compression-with-detach.tentative.any.js b/third_party/blink/web_tests/external/wpt/compression/compression-with-detach.tentative.any.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..786bba21c800ca9f067a6d033f0345a52bfbb218
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/compression/compression-with-detach.tentative.any.js
+@@ -0,0 +1,55 @@
++// META: global=window,worker
++// META: script=resources/concatenate-stream.js
++
++'use strict';
++
++const kInputLength = 500000;
++
++function createLargeRandomInput() {
++  const buffer = new ArrayBuffer(kInputLength);
++  // The getRandomValues API will only let us get 65536 bytes at a time, so call
++  // it multiple times.
++  const kChunkSize = 65536;
++  for (let offset = 0; offset < kInputLength; offset += kChunkSize) {
++    const length =
++        offset + kChunkSize > kInputLength ? kInputLength - offset : kChunkSize;
++    const view = new Uint8Array(buffer, offset, length);
++    crypto.getRandomValues(view);
++  }
++  return new Uint8Array(buffer);
++}
++
++function decompress(view) {
++  const ds = new DecompressionStream('deflate');
++  const writer = ds.writable.getWriter();
++  writer.write(view);
++  writer.close();
++  return concatenateStream(ds.readable);
++}
++
++promise_test(async () => {
++  const input = createLargeRandomInput();
++  const inputCopy = input.slice(0, input.byteLength);
++  const cs = new CompressionStream('deflate');
++  const writer = cs.writable.getWriter();
++  writer.write(input);
++  writer.close();
++  // Object.prototype.then will be looked up synchronously when the promise
++  // returned by read() is resolved.
++  Object.defineProperty(Object.prototype, 'then', {
++    get() {
++      // Cause input to become detached and unreferenced.
++      try {
++        postMessage(undefined, 'nowhere', [input.buffer]);
++      } catch (e) {
++        // It's already detached.
++      }
++    }
++  });
++  const output = await concatenateStream(cs.readable);
++  // Perform the comparison as strings since this is reasonably fast even when
++  // JITted JavaScript is running under an emulator.
++  assert_equals(
++      inputCopy.toString(), (await decompress(output)).toString(),
++      'decompressing the output should return the input');
++}, 'data should be correctly compressed even if input is detached partway');
+diff --git a/third_party/blink/web_tests/external/wpt/compression/decompression-with-detach.tentative.any.js b/third_party/blink/web_tests/external/wpt/compression/decompression-with-detach.tentative.any.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a2f8bda09148f0d323022b1f93be78d83c4aa654
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/compression/decompression-with-detach.tentative.any.js
+@@ -0,0 +1,41 @@
++// META: global=window,worker
++// META: script=resources/concatenate-stream.js
++
++'use strict';
++
++const kInputLength = 1000000;
++
++async function createLargeCompressedInput() {
++  const cs = new CompressionStream('deflate');
++  // The input has to be large enough that it won't fit in a single chunk when
++  // decompressed.
++  const writer = cs.writable.getWriter();
++  writer.write(new Uint8Array(kInputLength));
++  writer.close();
++  return concatenateStream(cs.readable);
++}
++
++promise_test(async () => {
++  const input = await createLargeCompressedInput();
++  const ds = new DecompressionStream('deflate');
++  const writer = ds.writable.getWriter();
++  writer.write(input);
++  writer.close();
++  // Object.prototype.then will be looked up synchronously when the promise
++  // returned by read() is resolved.
++  Object.defineProperty(Object.prototype, 'then', {
++    get() {
++      // Cause input to become detached and unreferenced.
++      try {
++        postMessage(undefined, 'nowhere', [input.buffer]);
++      } catch (e) {
++        // It's already detached.
++      }
++    }
++  });
++  const output = await concatenateStream(ds.readable);
++  // If output successfully decompressed and gave the right length, we can be
++  // reasonably confident that no data corruption happened.
++  assert_equals(
++      output.byteLength, kInputLength, 'output should be the right length');
++}, 'data should be correctly decompressed even if input is detached partway');
+diff --git a/third_party/blink/web_tests/external/wpt/compression/resources/concatenate-stream.js b/third_party/blink/web_tests/external/wpt/compression/resources/concatenate-stream.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a35bb1416e754893e331c0089d97720ae3b5af8e
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/compression/resources/concatenate-stream.js
+@@ -0,0 +1,25 @@
++'use strict';
++
++// Read all the chunks from a stream that returns BufferSource objects and
++// concatenate them into a single Uint8Array.
++async function concatenateStream(readableStream) {
++  const reader = readableStream.getReader();
++  let totalSize = 0;
++  const buffers = [];
++  while (true) {
++    const { value, done } = await reader.read();
++    if (done) {
++      break;
++    }
++    buffers.push(value);
++    totalSize += value.byteLength;
++  }
++  reader.releaseLock();
++  const concatenated = new Uint8Array(totalSize);
++  let offset = 0;
++  for (const buffer of buffers) {
++    concatenated.set(buffer, offset);
++    offset += buffer.byteLength;
++  }
++  return concatenated;
++}
