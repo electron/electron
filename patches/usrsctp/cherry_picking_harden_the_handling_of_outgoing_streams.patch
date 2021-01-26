@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Tuexen <tuexen@fh-muenster.de>
+Date: Mon, 14 Dec 2020 00:57:51 +0100
+Subject: Cherry picking: Harden the handling of outgoing streams in case of an
+ restart or INIT collision.
+
+This avouds an out-of-bounce access in case the peer can
+break the cookie signature. Thanks to Felix Wilhelm from Google for
+reporting the issue.
+
+diff --git a/usrsctplib/netinet/sctp_input.c b/usrsctplib/netinet/sctp_input.c
+index 669b2b2131d6e1e844f98fc10547db1715e6a0bd..6a5bdba4264b47e10766467255dd9ebd5d135556 100755
+--- a/usrsctplib/netinet/sctp_input.c
++++ b/usrsctplib/netinet/sctp_input.c
+@@ -34,7 +34,7 @@
+ 
+ #if defined(__FreeBSD__) && !defined(__Userspace__)
+ #include <sys/cdefs.h>
+-__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 368593 2020-12-12 22:23:45Z tuexen $");
++__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 368622 2020-12-13 23:51:51Z tuexen $");
+ #endif
+ 
+ #include <netinet/sctp_os.h>
+@@ -1886,7 +1886,9 @@ sctp_process_cookie_existing(struct mbuf *m, int iphlen, int offset,
+ 					 NULL);
+ 		}
+ 		asoc->my_rwnd = ntohl(initack_cp->init.a_rwnd);
+-		asoc->pre_open_streams = ntohs(initack_cp->init.num_outbound_streams);
++		if (asoc->pre_open_streams < asoc->streamoutcnt) {
++			asoc->pre_open_streams = asoc->streamoutcnt;
++		}
+ 
+ 		if (ntohl(init_cp->init.initiate_tag) != asoc->peer_vtag) {
+ 			/* Ok the peer probably discarded our
+@@ -2040,8 +2042,9 @@ sctp_process_cookie_existing(struct mbuf *m, int iphlen, int offset,
+ 			/* move to OPEN state, if not in SHUTDOWN_SENT */
+ 			SCTP_SET_STATE(stcb, SCTP_STATE_OPEN);
+ 		}
+-		asoc->pre_open_streams =
+-			ntohs(initack_cp->init.num_outbound_streams);
++		if (asoc->pre_open_streams < asoc->streamoutcnt) {
++			asoc->pre_open_streams = asoc->streamoutcnt;
++		}
+ 		asoc->init_seq_number = ntohl(initack_cp->init.initial_tsn);
+ 		asoc->sending_seq = asoc->asconf_seq_out = asoc->str_reset_seq_out = asoc->init_seq_number;
+ 		asoc->asconf_seq_out_acked = asoc->asconf_seq_out - 1;
+@@ -2361,7 +2364,6 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 	/* process the INIT-ACK info (my info) */
+ 	asoc->my_vtag = ntohl(initack_cp->init.initiate_tag);
+ 	asoc->my_rwnd = ntohl(initack_cp->init.a_rwnd);
+-	asoc->pre_open_streams = ntohs(initack_cp->init.num_outbound_streams);
+ 	asoc->init_seq_number = ntohl(initack_cp->init.initial_tsn);
+ 	asoc->sending_seq = asoc->asconf_seq_out = asoc->str_reset_seq_out = asoc->init_seq_number;
+ 	asoc->asconf_seq_out_acked = asoc->asconf_seq_out - 1;
