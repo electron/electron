@@ -125,41 +125,6 @@ are serialized and only the `message` property from the original error is
 provided to the renderer process. Please refer to 
 [#24427](https://github.com/electron/electron/issues/24427) for details.
 
-If needed, an unsafe workaround uses a wrapper for `handle` to throw 
-custom errors. 
-```js
-// Main process
-const encodeError = (e) => {
-  return {name: e.name, message: e.message, extra: {...e}}
-}
-
-const handleWithCustomErrors = (channel, handler) => {
-  ipcMain.handle(channel, async (...args) => {
-    try {
-      return {result: await Promise.resolve(handler(...args))}
-    } catch (e) {
-      return {error: encodeError(e)}
-    }
-  })
-}
-
-// Renderer process
-const decodeError = ({name, message, extra}) => {
-  const e = new Error(message)
-  e.name = name
-  Object.assign(e, extra)
-  return e
-}
-
-const invokeWithCustomErrors = async (...args) => {
-  const {error, result} = await ipcRenderer.invoke(...args)
-  if (error) {
-    throw decodeError(error)
-  }
-  return result
-}
-```
-
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` String
