@@ -121,9 +121,12 @@ that passed to a regular event listener. It includes information about which
 WebContents is the source of the invoke request.
 
 Errors thrown through `handle` in the main process are not transparent as they 
-are serialized and only the error message from the is provided to the renderer 
-process. If needed, an unsafe workaround uses a wrapper for `handle` to throw 
-custom errors.
+are serialized and only the `message` property from the original error is 
+provided to the renderer process. Please refer to 
+[#24427](https://github.com/electron/electron/issues/24427) for details.
+
+If needed, an unsafe workaround uses a wrapper for `handle` to throw 
+custom errors. 
 ```js
 // Main process
 const encodeError = (e) => {
@@ -156,8 +159,6 @@ const invokeWithCustomErrors = async (...args) => {
   return result
 }
 ```
-Please refer to [#24427](https://github.com/electron/electron/issues/24427)
-for details.
 
 ### `ipcMain.handleOnce(channel, listener)`
 
