@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Mon, 11 Jan 2021 14:33:32 +0000
+Subject: Backport of "[glyf] Guard access to maxp version 1 field"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit fac68744a85e8c601f60f1ef73a6e9ddf150855e)
+
+Bug: 1153329, 1158774
+Change-Id: I6acd298f841f92a751f606d710415fe32343825f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2593261
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Auto-Submit: Dominik Röttsches <drott@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#837353}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2621064
+Commit-Queue: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#1625}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/third_party/ots/README.chromium b/third_party/ots/README.chromium
+index c35d4f71f5af26c19675a3a5d8ef8ee3730c94da..43ddc08a0e1a65bb084b60d66c641c911cfba279 100644
+--- a/third_party/ots/README.chromium
++++ b/third_party/ots/README.chromium
+@@ -15,3 +15,5 @@ Local Modifications:
+ - glyf.h, glyf.cc - Backport of "Sanitise values for fonts with invalid
+   maxPoints and maxComponentPoints"
+   https://github.com/khaledhosny/ots/pull/227
++- glyf.cc - Backport of "[glyf] Guard access to maxp version 1 field"
++  Upstream commit 1141c81c411b599e40496679129d0884715e8650
+diff --git a/third_party/ots/src/glyf.cc b/third_party/ots/src/glyf.cc
+index 8d2e498ea8f48160e06de8200f2afc6e598252df..ab9232ea2dcb5fe0ea2b4d3274b11103c85e51fa 100644
+--- a/third_party/ots/src/glyf.cc
++++ b/third_party/ots/src/glyf.cc
+@@ -99,7 +99,8 @@ bool OpenTypeGLYF::ParseSimpleGlyph(Buffer &glyph,
+     num_flags = tmp_index + 1;
+   }
+ 
+-  if (num_flags > this->maxp->max_points) {
++  if (this->maxp->version_1 &&
++      num_flags > this->maxp->max_points) {
+     Warning("Number of contour points exceeds maxp maxPoints, adjusting limit.");
+     this->maxp->max_points = num_flags;
+   }
+@@ -336,7 +337,8 @@ bool OpenTypeGLYF::Parse(const uint8_t *data, size_t length) {
+             std::numeric_limits<uint16_t>::max()) {
+           return Error("Illegal composite points value "
+                        "exceeding 0xFFFF for base glyph %d.", i);
+-        } else if (component_point_count.accumulated_component_points >
++        } else if (this->maxp->version_1 &&
++                   component_point_count.accumulated_component_points >
+                    this->maxp->max_c_points) {
+           Warning("Number of composite points in glyph %d exceeds "
+                   "maxp maxCompositePoints: %d vs %d, adjusting limit.",
+@@ -413,7 +415,8 @@ bool OpenTypeGLYF::TraverseComponentsCountingPoints(
+   if (level > std::numeric_limits<uint16_t>::max()) {
+     return Error("Illegal component depth exceeding 0xFFFF in base glyph id %d.",
+                  base_glyph_id);
+-  } else if (level > this->maxp->max_c_depth) {
++  } else if (this->maxp->version_1 &&
++             level > this->maxp->max_c_depth) {
+     this->maxp->max_c_depth = level;
+     Warning("Component depth exceeds maxp maxComponentDepth "
+             "in glyph %d, adjust limit to %d.",
