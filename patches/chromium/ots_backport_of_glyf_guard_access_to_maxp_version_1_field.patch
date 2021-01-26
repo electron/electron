@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
 Date: Mon, 11 Jan 2021 14:33:32 +0000
-Subject: [ots] Backport of "[glyf] Guard access to maxp version 1 field"
+Subject: Backport of "[glyf] Guard access to maxp version 1 field"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
