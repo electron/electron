@@ -275,12 +275,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
-  // The hiddenInset style does not show title in fullscreen mode by default.
-  if (title_bar_style_ == TitleBarStyle::kHiddenInset)
-    fullscreen_window_title_ = false;
-
-  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
-
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
 
@@ -901,14 +895,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       window.level = NSPopUpMenuWindowLevel;
     }
 
-    if (!fullscreen_window_title_) {
-      // Hide the titlebar
-      SetStyleMask(false, NSWindowStyleMaskTitled);
-
-      // Resize the window to accommodate the _entire_ screen size
-      fullscreenFrame.size.height -=
-          [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
-    } else if (!window_button_visibility_.has_value()) {
+    if (!window_button_visibility_.has_value()) {
       // Lets keep previous behaviour - hide window controls in titled
       // fullscreen mode when not specified otherwise.
       InternalSetWindowButtonVisibility(false);
@@ -923,11 +910,6 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     SetMovable(false);
   } else if (!simple_fullscreen && is_simple_fullscreen_) {
     is_simple_fullscreen_ = false;
-
-    if (!fullscreen_window_title_) {
-      // Restore the titlebar
-      SetStyleMask(true, NSWindowStyleMaskTitled);
-    }
 
     // Restore default window controls visibility state.
     if (!window_button_visibility_.has_value()) {
@@ -1484,7 +1466,7 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 void NativeWindowMac::NotifyWindowEnterFullScreen() {
   NativeWindow::NotifyWindowEnterFullScreen();
   // Restore the window title under fullscreen mode.
-  if (buttons_view_ && fullscreen_window_title_)
+  if (buttons_view_)
     [window_ setTitleVisibility:NSWindowTitleVisible];
   RedrawTrafficLights();
 }

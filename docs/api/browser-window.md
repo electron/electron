@@ -230,9 +230,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a
     custom position for the traffic light buttons. Can only be used with
     `titleBarStyle` set to `hidden` or `customButtonsOnHover`.
-  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
-    title bar in full screen mode on macOS for all `titleBarStyle` options.
-    Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.

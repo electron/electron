@@ -216,7 +216,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool is_kiosk_ = false;
   bool was_fullscreen_ = false;
   bool zoom_to_page_width_ = false;
-  bool fullscreen_window_title_ = true;
   bool resizable_ = true;
   bool exiting_fullscreen_ = false;
   base::Optional<gfx::Point> traffic_light_position_;
