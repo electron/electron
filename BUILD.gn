@@ -648,6 +648,7 @@ source_set("electron_lib") {
   }
   if (enable_pdf_viewer) {
     deps += [
+      "//chrome/browser/resources/pdf:pdf_resources",
       "//components/pdf/browser",
       "//components/pdf/renderer",
       "//pdf:pdf_ppapi",

@@ -18,6 +18,7 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
+#include "chrome/grit/pdf_resources_map.h"
 #include "extensions/common/constants.h"
 #endif
 
@@ -28,6 +29,8 @@ ElectronComponentExtensionResourceManager::
   AddComponentResourceEntries(kComponentExtensionResources,
                               kComponentExtensionResourcesSize);
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+  AddComponentResourceEntries(kPdfResources, kPdfResourcesSize);
+
   // Register strings for the PDF viewer, so that $i18n{} replacements work.
   base::Value pdf_strings(base::Value::Type::DICTIONARY);
   pdf_extension_util::AddStrings(
