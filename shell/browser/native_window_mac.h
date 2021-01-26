@@ -188,7 +188,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
 
  private:
   // Add custom layers to the content view.
-  void AddContentViewLayers(bool minimizable, bool closable);
+  void AddContentViewLayers();
 
   void InternalSetWindowButtonVisibility(bool visible);
   void InternalSetStandardButtonsVisibility(bool visible);

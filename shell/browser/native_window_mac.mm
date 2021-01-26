@@ -421,7 +421,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   // Default content view.
   SetContentView(new views::View());
-  AddContentViewLayers(minimizable, closable);
+  AddContentViewLayers();
 
   original_frame_ = [window_ frame];
   original_level_ = [window_ level];
@@ -724,6 +724,8 @@ bool NativeWindowMac::IsMovable() {
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
   SetStyleMask(minimizable, NSMiniaturizableWindowMask);
+  if (buttons_view_)
+    [[buttons_view_ viewWithTag:1] setEnabled:minimizable];
 }
 
 bool NativeWindowMac::IsMinimizable() {
@@ -745,6 +747,8 @@ void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
   // On EL Capitan this flag is required to hide fullscreen button.
   SetCollectionBehavior(!fullscreenable,
                         NSWindowCollectionBehaviorFullScreenAuxiliary);
+  if (buttons_view_)
+    [[buttons_view_ viewWithTag:2] setEnabled:fullscreenable];
 }
 
 bool NativeWindowMac::IsFullScreenable() {
@@ -754,6 +758,8 @@ bool NativeWindowMac::IsFullScreenable() {
 
 void NativeWindowMac::SetClosable(bool closable) {
   SetStyleMask(closable, NSWindowStyleMaskClosable);
+  if (buttons_view_)
+    [[buttons_view_ viewWithTag:0] setEnabled:closable];
 }
 
 bool NativeWindowMac::IsClosable() {
@@ -1519,7 +1525,7 @@ void NativeWindowMac::OverrideNSWindowContentView() {
   [container_view_
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [window_ setContentView:container_view_];
-  AddContentViewLayers(IsMinimizable(), IsClosable());
+  AddContentViewLayers();
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
@@ -1562,7 +1568,7 @@ void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
       base::BindOnce(&NativeWindow::RedrawTrafficLights, GetWeakPtr()));
 }
 
-void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
+void NativeWindowMac::AddContentViewLayers() {
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264.
   if (!is_modal()) {
@@ -1594,13 +1600,8 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
       [[window_ contentView] viewDidMoveToWindow];
     }
 
-    if (title_bar_style_ == TitleBarStyle::kNormal) {
-      // Some third-party macOS utilities check the zoom button's enabled state
-      // to determine whether to show custom UI on hover, so we disable it here
-      // to prevent them from doing so in a frameless app window.
-      SetMaximizable(false);
-    } else {
-      // Create a custom window buttons view.
+    // Create a custom window buttons view.
+    if (title_bar_style_ != TitleBarStyle::kNormal) {
       buttons_view_.reset(
           [[WindowButtonsView alloc] initWithMargin:traffic_light_position_]);
       if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
@@ -1608,10 +1609,14 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
       if (title_bar_style_ == TitleBarStyle::kHiddenInset &&
           !traffic_light_position_)
         [buttons_view_ setMargin:gfx::Point(12, 11)];
-      if (!closable)
-        [[buttons_view_ viewWithTag:1] removeFromSuperview];
-      if (!minimizable)
-        [[buttons_view_ viewWithTag:2] removeFromSuperview];
+
+      if (!IsClosable())
+        [[buttons_view_ viewWithTag:0] setEnabled:NO];
+      if (!IsMinimizable())
+        [[buttons_view_ viewWithTag:1] setEnabled:NO];
+      if (!IsFullScreenable())
+        [[buttons_view_ viewWithTag:2] setEnabled:NO];
+
       [[window_ contentView] addSubview:buttons_view_];
     }
   }
