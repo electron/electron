@@ -54,16 +54,16 @@ class AppIndicatorIconMenu {
   ui::MenuModel* menu_model_;
 
   // Whether a "click action replacement" menu item has been added to the menu.
-  bool click_action_replacement_menu_item_added_;
+  bool click_action_replacement_menu_item_added_ = false;
 
   // Called when the click action replacement menu item is activated. When a
   // menu item from |menu_model_| is activated, MenuModel::ActivatedAt() is
   // invoked and is assumed to do any necessary processing.
   base::Closure click_action_replacement_callback_;
 
-  GtkWidget* gtk_menu_;
+  GtkWidget* gtk_menu_ = nullptr;
 
-  bool block_activation_;
+  bool block_activation_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AppIndicatorIconMenu);
 };

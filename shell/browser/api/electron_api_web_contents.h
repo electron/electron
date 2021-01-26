@@ -787,7 +787,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
 
-  base::WeakPtrFactory<WebContents> weak_factory_;
+  base::WeakPtrFactory<WebContents> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

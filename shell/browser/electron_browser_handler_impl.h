@@ -74,7 +74,7 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
 
   mojo::Receiver<mojom::ElectronBrowser> receiver_{this};
 
-  base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_;
+  base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserHandlerImpl);
 };

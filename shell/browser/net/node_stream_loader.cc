@@ -21,8 +21,7 @@ NodeStreamLoader::NodeStreamLoader(
     : binding_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
-      emitter_(isolate, emitter),
-      weak_factory_(this) {
+      emitter_(isolate, emitter) {
   binding_.set_connection_error_handler(
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));

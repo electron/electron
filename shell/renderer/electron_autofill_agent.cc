@@ -51,7 +51,7 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 
 AutofillAgent::AutofillAgent(content::RenderFrame* frame,
                              blink::AssociatedInterfaceRegistry* registry)
-    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
+    : content::RenderFrameObserver(frame) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
   registry->AddInterface(base::BindRepeating(&AutofillAgent::BindReceiver,
                                              base::Unretained(this)));

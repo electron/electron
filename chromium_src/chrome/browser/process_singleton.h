@@ -127,10 +127,11 @@ class ProcessSingleton {
   NotificationCallback notification_callback_;  // Handler for notifications.
 
 #if defined(OS_WIN)
-  HWND remote_window_;               // The HWND_MESSAGE of another browser.
+  HWND remote_window_ = nullptr;     // The HWND_MESSAGE of another browser.
   base::win::MessageWindow window_;  // The message-only window.
-  bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
-  HANDLE lock_file_;
+  bool is_virtualized_ =
+      false;  // Stuck inside Microsoft Softricity VM environment.
+  HANDLE lock_file_ = INVALID_HANDLE_VALUE;
   base::FilePath user_data_dir_;
   ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 #elif defined(OS_POSIX) && !defined(OS_ANDROID)
@@ -175,7 +176,7 @@ class ProcessSingleton {
   // because it posts messages between threads.
   class LinuxWatcher;
   scoped_refptr<LinuxWatcher> watcher_;
-  int sock_;
+  int sock_ = -1;
   bool listen_on_ready_ = false;
 #endif
 

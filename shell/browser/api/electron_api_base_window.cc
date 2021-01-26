@@ -76,8 +76,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
-                       const gin_helper::Dictionary& options)
-    : weak_factory_(this) {
+                       const gin_helper::Dictionary& options) {
   // The parent window.
   gin::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())

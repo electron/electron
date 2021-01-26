@@ -280,7 +280,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<SkBitmap> backing_;
 
-  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
+  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };

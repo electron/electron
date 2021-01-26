@@ -337,14 +337,10 @@ InspectableWebContents::InspectableWebContents(
     content::WebContents* web_contents,
     PrefService* pref_service,
     bool is_guest)
-    : frontend_loaded_(false),
-      can_dock_(true),
-      delegate_(nullptr),
-      pref_service_(pref_service),
+    : pref_service_(pref_service),
       web_contents_(web_contents),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)),
-      weak_factory_(this) {
+      view_(CreateInspectableContentsView(this)) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
     devtools_bounds_ = DictionaryToRect(bounds_dict);

@@ -84,7 +84,7 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   mojo::AssociatedReceiver<mojom::ElectronAutofillAgent> receiver_{this};
 
-  base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
+  base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(AutofillAgent);
 };

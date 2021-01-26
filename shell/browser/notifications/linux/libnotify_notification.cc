@@ -75,7 +75,7 @@ bool LibnotifyNotification::Initialize() {
 
 LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
                                              NotificationPresenter* presenter)
-    : Notification(delegate, presenter), notification_(nullptr) {}
+    : Notification(delegate, presenter) {}
 
 LibnotifyNotification::~LibnotifyNotification() {
   if (notification_) {

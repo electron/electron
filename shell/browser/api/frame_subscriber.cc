@@ -26,8 +26,7 @@ FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
                                  bool only_dirty)
     : content::WebContentsObserver(web_contents),
       callback_(callback),
-      only_dirty_(only_dirty),
-      weak_ptr_factory_(this) {
+      only_dirty_(only_dirty) {
   content::RenderViewHost* rvh = web_contents->GetRenderViewHost();
   if (rvh)
     AttachToHost(rvh->GetWidget());

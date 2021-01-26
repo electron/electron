@@ -43,7 +43,7 @@ class TrayIconCocoa : public TrayIcon {
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<ElectronMenuController> menu_;
 
-  base::WeakPtrFactory<TrayIconCocoa> weak_factory_;
+  base::WeakPtrFactory<TrayIconCocoa> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };

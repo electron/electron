@@ -49,8 +49,7 @@ namespace extensions {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())),
-      weak_factory_(this) {}
+      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 

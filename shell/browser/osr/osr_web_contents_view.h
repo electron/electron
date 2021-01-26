@@ -88,7 +88,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   OffScreenRenderWidgetHostView* GetView() const;
 
-  NativeWindow* native_window_;
+  NativeWindow* native_window_ = nullptr;
 
   const bool transparent_;
   bool painting_ = true;

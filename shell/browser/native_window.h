@@ -382,7 +382,7 @@ class NativeWindow : public base::SupportsUserData,
   // Accessible title.
   base::string16 accessible_title_;
 
-  base::WeakPtrFactory<NativeWindow> weak_factory_;
+  base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };

@@ -31,7 +31,7 @@ class IDUserData : public base::SupportsUserData::Data {
 
 }  // namespace
 
-TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
+TrackableObjectBase::TrackableObjectBase() {
   // TODO(zcbenz): Make TrackedObject work in renderer process.
   DCHECK(gin_helper::Locker::IsBrowserProcess())
       << "This class only works for browser process";
