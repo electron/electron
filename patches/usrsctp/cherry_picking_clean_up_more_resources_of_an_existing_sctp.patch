@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Tuexen <tuexen@fh-muenster.de>
 Date: Sat, 12 Dec 2020 23:30:59 +0100
-Subject: Cherry picking: Clean up more resouces of an existing SCTP association
-    in case of a restart.
+Subject: Cherry picking: Clean up more resouces of an existing SCTP
+ association in case of a restart.
 
 This fixes a use-after-free scenario, which was reported by Felix
 Wilhelm from Google in case a peer is able to modify the cookie.
