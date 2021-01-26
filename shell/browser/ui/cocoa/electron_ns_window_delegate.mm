@@ -228,8 +228,8 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->NotifyWindowLeaveFullScreen();
   shell_->SetResizable(is_resizable_);
+  shell_->NotifyWindowLeaveFullScreen();
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
