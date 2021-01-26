@@ -1280,6 +1280,13 @@ describe('chromium features', () => {
       slashes: true
     });
 
+    it('successfully loads a PDF file', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.loadURL(pdfSource);
+      await emittedOnce(w.webContents, 'did-finish-load');
+    });
+
     it('opens when loading a pdf resource as top level navigation', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
