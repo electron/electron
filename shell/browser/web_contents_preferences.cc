@@ -137,7 +137,7 @@ WebContentsPreferences::WebContentsPreferences(
                 "electron");
   }
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
-  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
+  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -437,7 +437,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 #endif
 
   prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript);
+      IsEnabled(options::kWorldSafeExecuteJavaScript, true);
 
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
