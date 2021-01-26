@@ -76,7 +76,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       gin::Arguments* args,
       int world_id,
       const base::string16& code);
-  bool Reload(v8::Isolate* isolate);
+  bool Reload();
   void Send(v8::Isolate* isolate,
             bool internal,
             const std::string& channel,
@@ -86,18 +86,17 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
                    v8::Local<v8::Value> message_value,
                    base::Optional<v8::Local<v8::Value>> transfer);
 
-  int FrameTreeNodeID(v8::Isolate* isolate) const;
-  std::string Name(v8::Isolate* isolate) const;
-  base::ProcessId OSProcessID(v8::Isolate* isolate) const;
-  int ProcessID(v8::Isolate* isolate) const;
-  int RoutingID(v8::Isolate* isolate) const;
-  GURL URL(v8::Isolate* isolate) const;
+  int FrameTreeNodeID() const;
+  std::string Name() const;
+  base::ProcessId OSProcessID() const;
+  int ProcessID() const;
+  int RoutingID() const;
+  GURL URL() const;
 
-  content::RenderFrameHost* Top(v8::Isolate* isolate) const;
-  content::RenderFrameHost* Parent(v8::Isolate* isolate) const;
-  std::vector<content::RenderFrameHost*> Frames(v8::Isolate* isolate) const;
-  std::vector<content::RenderFrameHost*> FramesInSubtree(
-      v8::Isolate* isolate) const;
+  content::RenderFrameHost* Top() const;
+  content::RenderFrameHost* Parent() const;
+  std::vector<content::RenderFrameHost*> Frames() const;
+  std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
