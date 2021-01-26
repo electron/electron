@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Tuexen <tuexen@fh-muenster.de>
+Date: Sat, 12 Dec 2020 23:30:59 +0100
+Subject: Cherry picking: Clean up more resouces of an existing SCTP
+ association in case of a restart.
+
+This fixes a use-after-free scenario, which was reported by Felix
+Wilhelm from Google in case a peer is able to modify the cookie.
+However, this can also be triggered by an assciation restart under
+some specific conditions.
+
+diff --git a/usrsctplib/netinet/sctp_input.c b/usrsctplib/netinet/sctp_input.c
+index e2f03c73165d8e1ecd08b9f103afe03a3d2adb7f..669b2b2131d6e1e844f98fc10547db1715e6a0bd 100755
+--- a/usrsctplib/netinet/sctp_input.c
++++ b/usrsctplib/netinet/sctp_input.c
+@@ -34,7 +34,7 @@
+ 
+ #if defined(__FreeBSD__) && !defined(__Userspace__)
+ #include <sys/cdefs.h>
+-__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 366248 2020-09-29 09:36:06Z tuexen $");
++__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 368593 2020-12-12 22:23:45Z tuexen $");
+ #endif
+ 
+ #include <netinet/sctp_os.h>
+@@ -1595,6 +1595,11 @@ sctp_process_cookie_existing(struct mbuf *m, int iphlen, int offset,
+ 	struct sctp_association *asoc;
+ 	struct sctp_init_chunk *init_cp, init_buf;
+ 	struct sctp_init_ack_chunk *initack_cp, initack_buf;
++	struct sctp_asconf_addr *aparam, *naparam;
++	struct sctp_asconf_ack *aack, *naack;
++	struct sctp_tmit_chunk *chk, *nchk;
++	struct sctp_stream_reset_list *strrst, *nstrrst;
++	struct sctp_queued_to_read *sq, *nsq;
+ 	struct sctp_nets *net;
+ 	struct mbuf *op_err;
+ 	struct timeval old;
+@@ -1891,8 +1896,7 @@ sctp_process_cookie_existing(struct mbuf *m, int iphlen, int offset,
+ 			 * kick us so it COULD still take a timeout
+ 			 * to move these.. but it can't hurt to mark them.
+ 			 */
+-			struct sctp_tmit_chunk *chk;
+-		        TAILQ_FOREACH(chk, &stcb->asoc.sent_queue, sctp_next) {
++			TAILQ_FOREACH(chk, &stcb->asoc.sent_queue, sctp_next) {
+ 				if (chk->sent < SCTP_DATAGRAM_RESEND) {
+ 					chk->sent = SCTP_DATAGRAM_RESEND;
+ 					sctp_flight_size_decrease(chk);
+@@ -2084,6 +2088,57 @@ sctp_process_cookie_existing(struct mbuf *m, int iphlen, int offset,
+ 			stcb->asoc.strmout[i].next_mid_unordered = 0;
+ 			stcb->asoc.strmout[i].last_msg_incomplete = 0;
+ 		}
++		TAILQ_FOREACH_SAFE(strrst, &asoc->resetHead, next_resp, nstrrst) {
++			TAILQ_REMOVE(&asoc->resetHead, strrst, next_resp);
++			SCTP_FREE(strrst, SCTP_M_STRESET);
++		}
++		TAILQ_FOREACH_SAFE(sq, &asoc->pending_reply_queue, next, nsq) {
++			TAILQ_REMOVE(&asoc->pending_reply_queue, sq, next);
++			if (sq->data) {
++				sctp_m_freem(sq->data);
++				sq->data = NULL;
++			}
++			sctp_free_remote_addr(sq->whoFrom);
++			sq->whoFrom = NULL;
++			sq->stcb = NULL;
++			sctp_free_a_readq(stcb, sq);
++		}
++		TAILQ_FOREACH_SAFE(chk, &asoc->control_send_queue, sctp_next, nchk) {
++			TAILQ_REMOVE(&asoc->control_send_queue, chk, sctp_next);
++			if (chk->data) {
++				sctp_m_freem(chk->data);
++				chk->data = NULL;
++			}
++			if (chk->holds_key_ref)
++				sctp_auth_key_release(stcb, chk->auth_keyid, SCTP_SO_LOCKED);
++			sctp_free_remote_addr(chk->whoTo);
++			SCTP_ZONE_FREE(SCTP_BASE_INFO(ipi_zone_chunk), chk);
++			SCTP_DECR_CHK_COUNT();
++		}
++		TAILQ_FOREACH_SAFE(chk, &asoc->asconf_send_queue, sctp_next, nchk) {
++			TAILQ_REMOVE(&asoc->asconf_send_queue, chk, sctp_next);
++			if (chk->data) {
++				sctp_m_freem(chk->data);
++				chk->data = NULL;
++			}
++			if (chk->holds_key_ref)
++				sctp_auth_key_release(stcb, chk->auth_keyid, SCTP_SO_LOCKED);
++			sctp_free_remote_addr(chk->whoTo);
++			SCTP_ZONE_FREE(SCTP_BASE_INFO(ipi_zone_chunk), chk);
++			SCTP_DECR_CHK_COUNT();
++		}
++		TAILQ_FOREACH_SAFE(aparam, &asoc->asconf_queue, next, naparam) {
++			TAILQ_REMOVE(&asoc->asconf_queue, aparam, next);
++			SCTP_FREE(aparam,SCTP_M_ASC_ADDR);
++		}
++		TAILQ_FOREACH_SAFE(aack, &asoc->asconf_ack_sent, next, naack) {
++			TAILQ_REMOVE(&asoc->asconf_ack_sent, aack, next);
++			if (aack->data != NULL) {
++				sctp_m_freem(aack->data);
++			}
++			SCTP_ZONE_FREE(SCTP_BASE_INFO(ipi_zone_asconf_ack), aack);
++		}
++
+ 		/* process the INIT-ACK info (my info) */
+ 		asoc->my_vtag = ntohl(initack_cp->init.initiate_tag);
+ 		asoc->my_rwnd = ntohl(initack_cp->init.a_rwnd);
