@@ -183,7 +183,7 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  // 'userData' (`DIR_USER_DATA) and `userCache` (DIR_USER_CACHE) can
+  // 'userData' (DIR_USER_DATA) and 'userCache' (DIR_USER_CACHE) can
   // be customized by the user up until the `ready` event is fired.
   // Now that we've reached that point, it's time to freeze their values.
   // FIXME: setPath() should reject changes to these paths after this point

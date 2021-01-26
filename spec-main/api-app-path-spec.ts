@@ -243,19 +243,6 @@ describe('app path module', () => {
       }
     });
 
-    // Linux
-    // app path module setAppLogsPath() setAppLogsPath(/tmp/mylogs) - setAppLogsPath(/tmp/mylogs)
-    // /home/builduser/project/src/electron/spec-main/api-app-path-spec.ts
-    // AssertionError: expected '/home/builduser/.config/app-custom-path/logs' to equal '/tmp/mylogs'
-
-    // if (process.platform === 'win32') {
-    //   it(`setAppLogsPath('${appLogsPath}')`, async () => {
-    //     const output = await runTestApp('app-custom-path', `-custom-applogs=${appLogsPath}`)
-    //     expect(output.appLogs).to.equal(appLogsPath)
-    //   })
-    // }
-
-    // To review later
     it('setAppLogsPath()', async () => {
       const defaultAppLogs = app.getPath('logs');
       app.setAppLogsPath(appLogsPath);
@@ -272,26 +259,6 @@ describe('app path module', () => {
       }).to.throw(/Path must be absolute/);
     });
   });
-
-  //  describe('getPath("logs")', () => {
-  //    const logsPaths = {
-  //      'darwin': path.resolve(os.homedir(), 'Library', 'Logs'),
-  //      'linux': path.resolve(app.getPath('userData'), 'logs'),
-  //      'win32': path.resolve(app.getPath('userData'), 'logs'),
-  //    }
-
-  //    it('has no logs directory by default', () => {
-  //      const osLogPath = (logsPaths as any)[process.platform]
-  //      expect(fs.existsSync(osLogPath)).to.be.false()
-  //    })
-
-  //    it('creates a new logs directory if one does not exist', () => {
-  //      expect(() => { app.getPath('logs') }).to.not.throw()
-
-  //      const osLogPath = (logsPaths as any)[process.platform]
-  //      expect(fs.existsSync(osLogPath)).to.be.true()
-  //    })
-  //  })
 });
 
 async function runTestApp (name: string, ...args: any[]) {
