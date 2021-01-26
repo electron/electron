@@ -922,7 +922,7 @@ webContents.getZoomFactor((factor) => {
   console.log(factor)
 })
 // Replace with
-const factor = webContents.getZoomLevel()
+const factor = webContents.getZoomFactor()
 console.log(factor)
 ```
 
