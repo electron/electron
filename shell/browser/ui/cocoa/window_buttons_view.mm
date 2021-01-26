@@ -4,6 +4,23 @@
 
 #include "shell/browser/ui/cocoa/window_buttons_view.h"
 
+#include "base/i18n/rtl.h"
+#include "base/logging.h"
+#include "base/stl_util.h"
+#include "ui/gfx/mac/coordinate_conversion.h"
+
+namespace {
+
+const CGFloat kButtonPadding = 20.;
+
+const NSWindowButton kButtonTypes[] = {
+    NSWindowCloseButton,
+    NSWindowMiniaturizeButton,
+    NSWindowZoomButton,
+};
+
+}  // namespace
+
 @implementation WindowButtonsView
 
 - (id)initWithMargin:(const base::Optional<gfx::Point>&)margin {
@@ -12,40 +29,22 @@
 
   mouse_inside_ = false;
   show_on_hover_ = false;
+  is_rtl_ = base::i18n::IsRTL();
 
-  NSButton* close_button =
-      [NSWindow standardWindowButton:NSWindowCloseButton
-                        forStyleMask:NSWindowStyleMaskTitled];
-  [close_button setTag:1];
-  NSButton* miniaturize_button =
-      [NSWindow standardWindowButton:NSWindowMiniaturizeButton
-                        forStyleMask:NSWindowStyleMaskTitled];
-  [miniaturize_button setTag:2];
-  NSButton* zoom_button =
-      [NSWindow standardWindowButton:NSWindowZoomButton
-                        forStyleMask:NSWindowStyleMaskTitled];
-  [zoom_button setTag:3];
+  for (size_t i = 0; i < base::size(kButtonTypes); ++i) {
+    NSButton* button = [NSWindow standardWindowButton:kButtonTypes[i]
+                                         forStyleMask:NSWindowStyleMaskTitled];
+    [button setTag:i];
+    int left_index = is_rtl_ ? base::size(kButtonTypes) - i - 1 : i;
+    [button setFrameOrigin:NSMakePoint(left_index * kButtonPadding, 0)];
+    [self addSubview:button];
+  }
 
-  CGFloat x = 0;
-  const CGFloat space_between = 20;
-
-  [close_button setFrameOrigin:NSMakePoint(x, 0)];
-  x += space_between;
-  [self addSubview:close_button];
-
-  [miniaturize_button setFrameOrigin:NSMakePoint(x, 0)];
-  x += space_between;
-  [self addSubview:miniaturize_button];
-
-  [zoom_button setFrameOrigin:NSMakePoint(x, 0)];
-  x += space_between;
-  [self addSubview:zoom_button];
-
-  const auto last_button_frame = zoom_button.frame;
-  [self setFrameSize:NSMakeSize(last_button_frame.origin.x +
-                                    last_button_frame.size.width,
-                                last_button_frame.size.height)];
-
+  NSView* last_button =
+      is_rtl_ ? [[self subviews] firstObject] : [[self subviews] lastObject];
+  [self setFrameSize:NSMakeSize(last_button.frame.origin.x +
+                                    last_button.frame.size.width,
+                                last_button.frame.size.height)];
   [self setNeedsDisplayForButtons];
 
   return self;
@@ -74,10 +73,17 @@
 
 - (void)viewDidMoveToWindow {
   // Stay in upper left corner.
-  [self setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
-  [self setFrameOrigin:NSMakePoint(margin_.x(), self.window.frame.size.height -
-                                                    self.frame.size.height -
-                                                    margin_.y())];
+  CGFloat y =
+      self.superview.frame.size.height - self.frame.size.height - margin_.y();
+  if (is_rtl_) {
+    CGFloat x =
+        self.superview.frame.size.width - self.frame.size.width - margin_.x();
+    [self setAutoresizingMask:NSViewMinXMargin | NSViewMinYMargin];
+    [self setFrameOrigin:NSMakePoint(x, y)];
+  } else {
+    [self setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
+    [self setFrameOrigin:NSMakePoint(margin_.x(), y)];
+  }
 }
 
 - (BOOL)_mouseInGroup:(NSButton*)button {

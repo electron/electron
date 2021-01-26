@@ -17,6 +17,7 @@
  @private
   BOOL mouse_inside_;
   BOOL show_on_hover_;
+  BOOL is_rtl_;
   gfx::Point margin_;
   base::scoped_nsobject<NSTrackingArea> tracking_area_;
 }

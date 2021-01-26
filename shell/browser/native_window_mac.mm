@@ -1605,10 +1605,13 @@ void NativeWindowMac::AddContentViewLayers(bool minimizable, bool closable) {
           [[WindowButtonsView alloc] initWithMargin:traffic_light_position_]);
       if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
         [buttons_view_ setShowOnHover:YES];
-      if (!minimizable)
-        [[buttons_view_ viewWithTag:2] removeFromSuperview];
+      if (title_bar_style_ == TitleBarStyle::kHiddenInset &&
+          !traffic_light_position_)
+        [buttons_view_ setMargin:gfx::Point(12, 11)];
       if (!closable)
         [[buttons_view_ viewWithTag:1] removeFromSuperview];
+      if (!minimizable)
+        [[buttons_view_ viewWithTag:2] removeFromSuperview];
       [[window_ contentView] addSubview:buttons_view_];
     }
   }
