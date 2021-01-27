@@ -42,7 +42,7 @@ index 65e627f2fa89352b0be27b5813d71a622bf1d326..113f4fd00f1cf994b39f64c9da387855
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index ff7bf9a9523431c0129baee01b725b22c9db7f27..f730a30bc952b2ac5fef0437b2b8b7aa4435046c 100644
+index 9327ad77091532e8baa2633f1b68c2371a090477..2173796efbba1a4e1f5795b4ad2efd0b60426264 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1490,6 +1490,21 @@ void NavigationRequest::BeginNavigation() {
@@ -91,7 +91,7 @@ index ff7bf9a9523431c0129baee01b725b22c9db7f27..f730a30bc952b2ac5fef0437b2b8b7aa
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
-index 63cc56b13dd9831a220544151a5aaa0d1e8cf0f5..6fabf7ff363ab8bf9966e8a5d99217e61c77ccb9 100644
+index aba5509fb978631f226b1250c06e3c3a8cd93671..dae9fa49923575f2c85ada46333c188c76b4b2f5 100644
 --- a/content/browser/renderer_host/navigation_request.h
 +++ b/content/browser/renderer_host/navigation_request.h
 @@ -133,6 +133,10 @@ class CONTENT_EXPORT NavigationRequest
