@@ -39,7 +39,7 @@ index 496c364797997997f2886abc95db2e6f49d848c6..3981c2caabd0362530c27e0dee572a56
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3601,12 +3609,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3582,12 +3582,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddDestructionObserver(new_contents_impl);
    }
  
@@ -49,9 +49,9 @@ index 496c364797997997f2886abc95db2e6f49d848c6..3981c2caabd0362530c27e0dee572a56
 -                                  params.target_url, new_contents_impl);
 -  }
 -
-   observers_.ForEachObserver([&](WebContentsObserver* observer) {
-     observer->DidOpenRequestedURL(new_contents_impl, opener, params.target_url,
-                                   params.referrer.To<Referrer>(),
+   observers_.NotifyObservers(&WebContentsObserver::DidOpenRequestedURL,
+                              new_contents_impl, opener, params.target_url,
+                              params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index 182c6bf04e9937080efcedfc617fb9e072f10500..6fb3a1ee4a31e9a228e8ab04b1ce21c8af50ae74 100644
 --- a/content/common/frame.mojom
@@ -154,23 +154,24 @@ index 3128b21c95c7b4535787142b6250b77f2c58b269..087b9891b2f79b54cd22cf8dc3591fa6
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -28,6 +28,7 @@
- #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/platform/impression_conversions.h"
  #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
  #include "third_party/blink/public/platform/url_conversion.h"
 +#include "third_party/blink/public/platform/web_url_request_util.h"
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -385,6 +386,9 @@ WebView* RenderViewImpl::CreateView(
-   if (impression) {
-     params->impression = ConvertWebImpressionToImpression(*impression);
+@@ -386,6 +387,10 @@ WebView* RenderViewImpl::CreateView(
+     params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
+ 
 +  params->raw_features = features.raw_features.Utf8(
 +      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
 +  params->body = GetRequestBodyForWebURLRequest(request);
- 
++
    // We preserve this information before sending the message since |params| is
    // moved on send.
+   bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
 index 52bfdcfe1b1530133582dcd6bdef4ea80c8d8b45..adf92fa28b0a638cb311c48bc142448022513375 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
