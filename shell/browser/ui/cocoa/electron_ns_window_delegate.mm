@@ -213,7 +213,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  shell_->NoitfyWindowWillEnterFullScreen();
+  shell_->NotifyWindowWillEnterFullScreen();
   // Setting resizable to true before entering fullscreen.
   is_resizable_ = shell_->IsResizable();
   shell_->SetResizable(true);
@@ -224,7 +224,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  shell_->NoitfyWindowWillLeaveFullScreen();
+  shell_->NotifyWindowWillLeaveFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {

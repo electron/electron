@@ -1487,7 +1487,7 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
   }
 }
 
-void NativeWindowMac::NoitfyWindowWillEnterFullScreen() {
+void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
   // Remove the buttonsView otherwise window buttons won't show under
   // fullscreen mode.
   if (buttons_view_) {
@@ -1496,7 +1496,7 @@ void NativeWindowMac::NoitfyWindowWillEnterFullScreen() {
   }
 }
 
-void NativeWindowMac::NoitfyWindowWillLeaveFullScreen() {
+void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
   // Hide window title after leaving fullscreen.
   if (buttons_view_)
     [window_ setTitleVisibility:NSWindowTitleHidden];
