@@ -211,12 +211,13 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOpti
 
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
 
+  if (parsedOptions.title == null) parsedOptions.title = frameName;
+
   return {
     additionalFeatures,
     options: {
       ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       show: true,
-      title: frameName,
       width: 800,
       height: 600,
       ...parsedOptions,
