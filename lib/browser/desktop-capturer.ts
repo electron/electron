@@ -28,6 +28,7 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
+      event.sender.removeListener('destroyed', stopRunning);
     };
 
     const emitter = new EventEmitter();
@@ -54,7 +55,7 @@ export const getSources = (event: Electron.IpcMainEvent, options: ElectronIntern
     // If the WebContents is destroyed before receiving result, just remove the
     // reference to emit and the capturer itself so that it never dispatches
     // back to the renderer
-    event.sender.once('destroyed', () => stopRunning());
+    event.sender.once('destroyed', stopRunning);
   });
 
   currentlyRunning.push({
