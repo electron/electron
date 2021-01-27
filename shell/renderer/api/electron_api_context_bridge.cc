@@ -95,7 +95,8 @@ bool IsPlainObject(const v8::Local<v8::Value>& object) {
            object->IsArrayBuffer() || object->IsArrayBufferView() ||
            object->IsArray() || object->IsDataView() ||
            object->IsSharedArrayBuffer() || object->IsProxy() ||
-           object->IsWasmModuleObject() || object->IsModuleNamespaceObject());
+           object->IsWasmModuleObject() || object->IsWasmMemoryObject() ||
+           object->IsModuleNamespaceObject());
 }
 
 bool IsPlainArray(const v8::Local<v8::Value>& arr) {
