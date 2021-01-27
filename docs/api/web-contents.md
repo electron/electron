@@ -1585,8 +1585,7 @@ included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
 > **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1634,9 +1633,8 @@ Send an asynchronous message to a specific frame in a renderer process via
 chains will not be included. Sending Functions, Promises, Symbols, WeakMaps, or
 WeakSets will throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
