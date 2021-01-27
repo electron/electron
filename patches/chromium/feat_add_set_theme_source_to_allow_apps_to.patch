@@ -26,7 +26,7 @@ index 6f9221b95d5609d6bc3395bd3a3c81670877fdd0..bd4cd7cf50ea7f8816b35b3150bea8c4
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index d254838cfb21ec2135691b84fd0432cbdbb92e24..f6a6e48ddd93ed1026cf216a59fa4a4d3d0b56d6 100644
+index 20943ab98c28b2689d3e4f548dba95ad0e40b2da..a9364d386d42315e1fca52e4eb316569d3c7a9e0 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -402,6 +402,22 @@ class NATIVE_THEME_EXPORT NativeTheme {

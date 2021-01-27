@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index c11f6e1ccb92aebad9bc3c50b7cecf9306ae815a..c89ddc95ffe595ec310f316b796eeea88f5f4e2c 100644
+index 70491781c7c97a86a3469b3a6954b579156f164d..813ebf8fc088822e7d17d0fbe4aeb7538e1a7cf7 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -7,6 +7,7 @@
