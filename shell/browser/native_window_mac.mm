@@ -275,6 +275,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
+  if (options.Has(options::kFullscreenWindowTitle)) {
+    EmitWarning(node::Environment::GetCurrent(v8::Isolate::GetCurrent()),
+                "\"fullscreenWindowTitle\" option has been deprecated and is "
+                "no-op now.",
+                "electron");
+  }
+
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
 
