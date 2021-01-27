@@ -10,9 +10,13 @@
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "components/os_crypt/keychain_password_mac.h"
+#include "components/os_crypt/os_crypt.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
+#include "content/public/common/network_service_util.h"
+#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -21,6 +25,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
@@ -218,6 +223,21 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   network_service->CreateNetworkContext(
       network_context_.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams());
+
+  if (electron::fuses::IsCookieEncryptionEnabled()) {
+#if defined(OS_WIN) || defined(OS_MAC)
+#if defined(OS_MAC)
+    KeychainPassword::service_name =
+        electron::Browser::Get()->GetName() + " Safe Storage";
+    KeychainPassword::account_name = electron::Browser::Get()->GetName();
+#endif
+    // The OSCrypt keys are process bound, so if network service is out of
+    // process, send it the required key.
+    if (content::IsOutOfProcessNetworkService()) {
+      network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
+    }
+#endif
+  }
 }
 
 network::mojom::NetworkContextParamsPtr
