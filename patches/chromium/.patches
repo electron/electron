@@ -132,6 +132,7 @@ cherry-pick-d866af575997.patch
 cherry-pick-da9b5ec032ad.patch
 cherry-pick-861253f1de98.patch
 cherry-pick-3ca3d70c7af5.patch
+mediacapabilities_use_threadsafe_static_wtf_string.patch
 cherry-pick-d74ba931c4b7.patch
 cherry-pick-9ec949913373.patch
 ots_backport_maxp_sanitization.patch
