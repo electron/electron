@@ -656,7 +656,9 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   // -1 means no speculative RVH has been committed yet.
   int currently_committed_process_id_ = -1;
 
+#if BUILDFLAG(ENABLE_PRINTING)
   scoped_refptr<base::TaskRunner> print_task_runner_;
+#endif
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
   mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>
