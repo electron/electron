@@ -232,6 +232,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
+    mainModule: NodeJS.Module;
   }
 }
 
@@ -271,6 +272,7 @@ declare interface Window {
       completeURL: (project: string, path: string) => string;
     }
   };
+  WebView: typeof ElectronInternal.WebViewElement;
   ResizeObserver: ResizeObserver;
   trustedTypes: TrustedTypePolicyFactory;
 }

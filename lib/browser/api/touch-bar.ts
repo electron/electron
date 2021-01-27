@@ -13,14 +13,14 @@ const extendConstructHook = (target: any, hook: Function) => {
 };
 
 const ImmutableProperty = <T extends TouchBarItem<any>>(def: (config: T extends TouchBarItem<infer C> ? C : never, setInternalProp: <K extends keyof T>(k: K, v: T[K]) => void) => any) => (target: T, propertyKey: keyof T) => {
-  extendConstructHook(target as any, function (this: T) {
+  extendConstructHook(target, function (this: T) {
     (this as any)[hiddenProperties][propertyKey] = def((this as any)._config, (k, v) => {
       (this as any)[hiddenProperties][k] = v;
     });
   });
   Object.defineProperty(target, propertyKey, {
     get: function () {
-      return (this as any)[hiddenProperties][propertyKey];
+      return this[hiddenProperties][propertyKey];
     },
     set: function () {
       throw new Error(`Cannot override property ${name}`);
@@ -31,7 +31,7 @@ const ImmutableProperty = <T extends TouchBarItem<any>>(def: (config: T extends 
 };
 
 const LiveProperty = <T extends TouchBarItem<any>>(def: (config: T extends TouchBarItem<infer C> ? C : never) => any, onMutate?: (self: T, newValue: any) => void) => (target: T, propertyKey: keyof T) => {
-  extendConstructHook(target as any, function (this: T) {
+  extendConstructHook(target, function (this: T) {
     (this as any)[hiddenProperties][propertyKey] = def((this as any)._config);
     if (onMutate) onMutate((this as any), (this as any)[hiddenProperties][propertyKey]);
   });
@@ -59,7 +59,7 @@ abstract class TouchBarItem<ConfigType> extends EventEmitter {
 
   constructor (config: ConfigType) {
     super();
-    this._config = this._config || config || {} as any;
+    this._config = this._config || config || {} as ConfigType;
     (this as any)[hiddenProperties] = {};
     const hook = (this as any)._hook;
     if (hook) hook.call(this);

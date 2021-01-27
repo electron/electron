@@ -22,18 +22,8 @@ const getNextId = function () {
 
 type PostData = LoadURLOptions['postData']
 
-/* eslint-disable camelcase */
-type MediaSize = {
-  name: string,
-  custom_display_name: string,
-  height_microns: number,
-  width_microns: number,
-  is_default?: 'true',
-}
-/* eslint-enable camelcase */
-
 // Stock page sizes
-const PDFPageSizes: Record<string, MediaSize> = {
+const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
   A5: {
     custom_display_name: 'A5',
     height_microns: 210000,
@@ -90,7 +80,7 @@ const isValidCustomPageSize = (width: number, height: number) => {
 const defaultPrintingSetting = {
   // Customizable.
   pageRange: [] as {from: number, to: number}[],
-  mediaSize: {} as MediaSize,
+  mediaSize: {} as ElectronInternal.MediaSize,
   landscape: false,
   headerFooterEnabled: false,
   marginsType: 0,
@@ -353,7 +343,7 @@ WebContents.prototype.printToPDF = async function (options) {
   }
 };
 
-WebContents.prototype.print = function (options = {}, callback) {
+WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
   // TODO(codebytere): deduplicate argument sanitization by moving rest of
   // print param logic into new file shared between printToPDF and print
   if (typeof options === 'object') {
@@ -372,14 +362,14 @@ WebContents.prototype.print = function (options = {}, callback) {
           throw new Error('height and width properties must be minimum 352 microns.');
         }
 
-        (options as any).mediaSize = {
+        options.mediaSize = {
           name: 'CUSTOM',
           custom_display_name: 'Custom',
           height_microns: height,
           width_microns: width
         };
       } else if (PDFPageSizes[pageSize]) {
-        (options as any).mediaSize = PDFPageSizes[pageSize];
+        options.mediaSize = PDFPageSizes[pageSize];
       } else {
         throw new Error(`Unsupported pageSize: ${pageSize}`);
       }
@@ -428,7 +418,7 @@ WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electr
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: any, url: string, frameName: string, rawFeatures: string): BrowserWindowConstructorOptions | null {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, url: string, frameName: string, rawFeatures: string): BrowserWindowConstructorOptions | null {
   if (!this._windowOpenHandler) {
     return null;
   }
@@ -458,21 +448,21 @@ WebContents.prototype._callWindowOpenHandler = function (event: any, url: string
   }
 };
 
-const addReplyToEvent = (event: any) => {
+const addReplyToEvent = (event: Electron.IpcMainEvent) => {
   const { processId, frameId } = event;
-  event.reply = (...args: any[]) => {
-    event.sender.sendToFrame([processId, frameId], ...args);
+  event.reply = (channel: string, ...args: any[]) => {
+    event.sender.sendToFrame([processId, frameId], channel, ...args);
   };
 };
 
-const addSenderFrameToEvent = (event: any) => {
+const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
   const { processId, frameId } = event;
   Object.defineProperty(event, 'senderFrame', {
     get: () => webFrameMain.fromId(processId, frameId)
   });
 };
 
-const addReturnValueToEvent = (event: any) => {
+const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   Object.defineProperty(event, 'returnValue', {
     set: (value) => event.sendReply(value),
     get: () => {}
@@ -521,7 +511,7 @@ WebContents.prototype._init = function () {
   this.setMaxListeners(0);
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
@@ -532,7 +522,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, function (event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-invoke' as any, function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
     event._reply = (result: any) => event.sendReply({ result });
     event._throw = (error: Error) => {
@@ -547,7 +537,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: any, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
     addReturnValueToEvent(event);
     if (internal) {
@@ -559,13 +549,13 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-ports' as any, function (event: any, internal: boolean, channel: string, message: any, ports: any[]) {
+  this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     event.ports = ports.map(p => new MessagePortMain(p));
     ipcMain.emit(channel, event, message);
   });
 
   // Handle context menu action request from pepper plugin.
-  this.on('pepper-context-menu' as any, function (event: any, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
+  this.on('pepper-context-menu' as any, function (event: ElectronInternal.Event, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
     // Access Menu via electron.Menu to prevent circular require.
     const menu = require('electron').Menu.buildFromTemplate(params.menu);
     menu.popup({
@@ -596,8 +586,8 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: any, postData: PostData) => {
+    this.on('-new-window' as any, (event: ElectronInternal.Event, url: string, frameName: string, disposition: string,
+      rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
       openGuestWindow({
         event,
         embedder: event.sender,
@@ -614,7 +604,7 @@ WebContents.prototype._init = function () {
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
-    this.on('-will-add-new-contents' as any, (event: any, url: string, frameName: string, rawFeatures: string) => {
+    this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string) => {
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, url, frameName, rawFeatures);
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
@@ -632,7 +622,7 @@ WebContents.prototype._init = function () {
 
     // Create a new browser window for the native implementation of
     // "window.open", used in sandbox and nativeWindowOpen mode.
-    this.on('-add-new-contents' as any, (event: any, webContents: Electron.WebContents, disposition: string,
+    this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;

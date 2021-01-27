@@ -28,7 +28,7 @@ const getGuestWindow = function (guestContents: WebContents) {
 };
 
 const isChildWindow = function (sender: WebContents, target: WebContents) {
-  return (target as any).getLastWebPreferences().openerId === sender.id;
+  return target.getLastWebPreferences().openerId === sender.id;
 };
 
 const isRelatedWindow = function (sender: WebContents, target: WebContents) {
@@ -43,7 +43,7 @@ const isScriptableWindow = function (sender: WebContents, target: WebContents) {
 };
 
 const isNodeIntegrationEnabled = function (sender: WebContents) {
-  return (sender as any).getLastWebPreferences().nodeIntegration === true;
+  return sender.getLastWebPreferences().nodeIntegration === true;
 };
 
 // Checks whether |sender| can access the |target|:
@@ -65,15 +65,15 @@ ipcMainInternal.on(
     features: string
   ) => {
     // This should only be allowed for senders that have nativeWindowOpen: false
-    const lastWebPreferences = (event.sender as any).getLastWebPreferences();
+    const lastWebPreferences = event.sender.getLastWebPreferences();
     if (lastWebPreferences.nativeWindowOpen || lastWebPreferences.sandbox) {
-      (event as any).returnValue = null;
+      event.returnValue = null;
       throw new Error(
         'GUEST_WINDOW_MANAGER_WINDOW_OPEN denied: expected native window.open'
       );
     }
 
-    const browserWindowOptions = (event.sender as any)._callWindowOpenHandler(event, url, frameName, features);
+    const browserWindowOptions = event.sender._callWindowOpenHandler(event, url, frameName, features);
     if (event.defaultPrevented) {
       return;
     }
@@ -82,7 +82,7 @@ ipcMainInternal.on(
       embedder: event.sender,
       referrer: { url: '', policy: 'default' },
       disposition: 'new-window',
-      overrideBrowserWindowOptions: browserWindowOptions,
+      overrideBrowserWindowOptions: browserWindowOptions!,
       windowOpenArgs: {
         url: url || 'about:blank',
         frameName: frameName || '',
@@ -90,7 +90,7 @@ ipcMainInternal.on(
       }
     });
 
-    (event as any).returnValue = guest ? guest.webContents.id : null;
+    event.returnValue = guest ? guest.webContents.id : null;
   }
 );
 

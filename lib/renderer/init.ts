@@ -144,7 +144,7 @@ if (nodeIntegration) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.
-      global.process.emit('uncaughtException' as any, error as any);
+      global.process.emit('uncaughtException', error as any);
       return true;
     } else {
       return false;

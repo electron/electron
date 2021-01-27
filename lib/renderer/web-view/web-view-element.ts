@@ -94,7 +94,7 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
   // The customElements.define has to be called in a special scope.
   webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
-    (window as any).WebView = WebViewElement;
+    window.WebView = WebViewElement;
 
     // Delete the callbacks so developers cannot call them and produce unexpected
     // behavior.
