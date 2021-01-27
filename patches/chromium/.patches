@@ -114,3 +114,5 @@ sanitize_descriptions_for_file_types.patch
 mediacapabilities_use_threadsafe_static_wtf_string.patch
 cherry-pick-06fe641d21bd.patch
 cherry-pick-3f7b67374a11.patch
+ots_backport_maxp_sanitization.patch
+ots_backport_of_glyf_guard_access_to_maxp_version_1_field.patch

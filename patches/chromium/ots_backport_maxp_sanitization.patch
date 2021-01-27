@@ -1,0 +1,342 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Mon, 11 Jan 2021 12:27:12 +0000
+Subject: Backport maxp sanitization
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Backport [1] to perform additional sanitization on maxp values.
+
+[1] https://github.com/khaledhosny/ots/pull/227
+
+(cherry picked from commit 6d0e7d799a46336c6bc297d4075a27dd0e7c235d)
+
+Bug: 1153329
+Change-Id: I4bc2288574802559f6c9c67a52b6dfcd8cc7467a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2588339
+Auto-Submit: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#836679}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2620800
+Commit-Queue: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#1620}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/third_party/ots/README.chromium b/third_party/ots/README.chromium
+index 8e8aaba85b508110eb9662d5714712dd481e037c..c35d4f71f5af26c19675a3a5d8ef8ee3730c94da 100644
+--- a/third_party/ots/README.chromium
++++ b/third_party/ots/README.chromium
+@@ -11,4 +11,7 @@ Local Modifications:
+ - BUILD.gn: Added.
+ - fuzz/: Added.
+ - ots.cc: Allow CFF2 outlines, upstreamed in
+-  https://github.com/khaledhosny/ots/pull/161
+\ No newline at end of file
++  https://github.com/khaledhosny/ots/pull/161
++- glyf.h, glyf.cc - Backport of "Sanitise values for fonts with invalid
++  maxPoints and maxComponentPoints"
++  https://github.com/khaledhosny/ots/pull/227
+diff --git a/third_party/ots/src/glyf.cc b/third_party/ots/src/glyf.cc
+index b8fb2866da7d16c2cafc470dcc10277a19bd325a..8d2e498ea8f48160e06de8200f2afc6e598252df 100644
+--- a/third_party/ots/src/glyf.cc
++++ b/third_party/ots/src/glyf.cc
+@@ -99,6 +99,11 @@ bool OpenTypeGLYF::ParseSimpleGlyph(Buffer &glyph,
+     num_flags = tmp_index + 1;
+   }
+ 
++  if (num_flags > this->maxp->max_points) {
++    Warning("Number of contour points exceeds maxp maxPoints, adjusting limit.");
++    this->maxp->max_points = num_flags;
++  }
++
+   uint16_t bytecode_length = 0;
+   if (!glyph.ReadU16(&bytecode_length)) {
+     return Error("Can't read bytecode length");
+@@ -143,7 +148,9 @@ bool OpenTypeGLYF::ParseSimpleGlyph(Buffer &glyph,
+ #define WE_HAVE_A_TWO_BY_TWO     (1u << 7)
+ #define WE_HAVE_INSTRUCTIONS     (1u << 8)
+ 
+-bool OpenTypeGLYF::ParseCompositeGlyph(Buffer &glyph) {
++bool OpenTypeGLYF::ParseCompositeGlyph(
++    Buffer &glyph,
++    ComponentPointCount* component_point_count) {
+   uint16_t flags = 0;
+   uint16_t gid = 0;
+   do {
+@@ -192,6 +199,10 @@ bool OpenTypeGLYF::ParseCompositeGlyph(Buffer &glyph) {
+         return Error("Can't read transform");
+       }
+     }
++
++    // Push inital components on stack at level 1
++    // to traverse them in parent function.
++    component_point_count->gid_stack.push_back({gid, 1});
+   } while (flags & MORE_COMPONENTS);
+ 
+   if (flags & WE_HAVE_INSTRUCTIONS) {
+@@ -241,29 +252,16 @@ bool OpenTypeGLYF::Parse(const uint8_t *data, size_t length) {
+   uint32_t current_offset = 0;
+ 
+   for (unsigned i = 0; i < num_glyphs; ++i) {
+-    const unsigned gly_offset = offsets[i];
+-    // The LOCA parser checks that these values are monotonic
+-    const unsigned gly_length = offsets[i + 1] - offsets[i];
+-    if (!gly_length) {
+-      // this glyph has no outline (e.g. the space charactor)
++
++    Buffer glyph(GetGlyphBufferSection(data, length, offsets, i));
++    if (!glyph.buffer())
++      return false;
++
++    if (!glyph.length()) {
+       resulting_offsets[i] = current_offset;
+       continue;
+     }
+ 
+-    if (gly_offset >= length) {
+-      return Error("Glyph %d offset %d too high %ld", i, gly_offset, length);
+-    }
+-    // Since these are unsigned types, the compiler is not allowed to assume
+-    // that they never overflow.
+-    if (gly_offset + gly_length < gly_offset) {
+-      return Error("Glyph %d length (%d < 0)!", i, gly_length);
+-    }
+-    if (gly_offset + gly_length > length) {
+-      return Error("Glyph %d length %d too high", i, gly_length);
+-    }
+-
+-    Buffer glyph(data + gly_offset, gly_length);
+-
+     int16_t num_contours, xmin, ymin, xmax, ymax;
+     if (!glyph.ReadS16(&num_contours) ||
+         !glyph.ReadS16(&xmin) ||
+@@ -300,9 +298,56 @@ bool OpenTypeGLYF::Parse(const uint8_t *data, size_t length) {
+         return Error("Failed to parse glyph %d", i);
+       }
+     } else {
+-      if (!ParseCompositeGlyph(glyph)) {
++
++      ComponentPointCount component_point_count;
++      if (!ParseCompositeGlyph(glyph, &component_point_count)) {
+         return Error("Failed to parse glyph %d", i);
+       }
++
++      // Check maxComponentDepth and validate maxComponentPoints.
++      // ParseCompositeGlyph placed the first set of component glyphs on the
++      // component_point_count.gid_stack, which we start to process below. If a
++      // nested glyph is in turn a component glyph, additional glyphs are placed
++      // on the stack.
++      while (component_point_count.gid_stack.size()) {
++        GidAtLevel stack_top_gid = component_point_count.gid_stack.back();
++        component_point_count.gid_stack.pop_back();
++
++        Buffer points_count_glyph(GetGlyphBufferSection(
++            data,
++            length,
++            offsets,
++            stack_top_gid.gid));
++
++        if (!points_count_glyph.buffer())
++          return false;
++
++        if (!points_count_glyph.length())
++          continue;
++
++        if (!TraverseComponentsCountingPoints(points_count_glyph,
++                                              i,
++                                              stack_top_gid.level,
++                                              &component_point_count)) {
++          return Error("Error validating component points and depth.");
++        }
++
++        if (component_point_count.accumulated_component_points >
++            std::numeric_limits<uint16_t>::max()) {
++          return Error("Illegal composite points value "
++                       "exceeding 0xFFFF for base glyph %d.", i);
++        } else if (component_point_count.accumulated_component_points >
++                   this->maxp->max_c_points) {
++          Warning("Number of composite points in glyph %d exceeds "
++                  "maxp maxCompositePoints: %d vs %d, adjusting limit.",
++                  i,
++                  component_point_count.accumulated_component_points,
++                  this->maxp->max_c_points
++                  );
++          this->maxp->max_c_points =
++              component_point_count.accumulated_component_points;
++        }
++      }
+     }
+ 
+     size_t new_size = glyph.offset();
+@@ -342,6 +387,122 @@ bool OpenTypeGLYF::Parse(const uint8_t *data, size_t length) {
+   return true;
+ }
+ 
++bool OpenTypeGLYF::TraverseComponentsCountingPoints(
++    Buffer &glyph,
++    uint16_t base_glyph_id,
++    uint32_t level,
++    ComponentPointCount* component_point_count) {
++
++  int16_t num_contours;
++  if (!glyph.ReadS16(&num_contours) ||
++      !glyph.Skip(8)) {
++    return Error("Can't read glyph header.");
++  }
++
++  if (num_contours <= -2) {
++    return Error("Bad number of contours %d in glyph.", num_contours);
++  }
++
++  if (num_contours == 0)
++    return true;
++
++  // FontTools counts a component level for each traversed recursion. We start
++  // counting at level 0. If we reach a level that's deeper than
++  // maxComponentDepth, we expand maxComponentDepth unless it's larger than
++  // the maximum possible depth.
++  if (level > std::numeric_limits<uint16_t>::max()) {
++    return Error("Illegal component depth exceeding 0xFFFF in base glyph id %d.",
++                 base_glyph_id);
++  } else if (level > this->maxp->max_c_depth) {
++    this->maxp->max_c_depth = level;
++    Warning("Component depth exceeds maxp maxComponentDepth "
++            "in glyph %d, adjust limit to %d.",
++            base_glyph_id, level);
++  }
++
++  if (num_contours > 0) {
++    uint16_t num_points = 0;
++    for (int i = 0; i < num_contours; ++i) {
++      // Simple glyph, add contour points.
++      uint16_t tmp_index = 0;
++      if (!glyph.ReadU16(&tmp_index)) {
++        return Error("Can't read contour index %d", i);
++      }
++      num_points = tmp_index + 1;
++    }
++
++    component_point_count->accumulated_component_points += num_points;
++    return true;
++  } else  {
++    assert(num_contours == -1);
++
++    // Composite glyph, add gid's to stack.
++    uint16_t flags = 0;
++    uint16_t gid = 0;
++    do {
++      if (!glyph.ReadU16(&flags) || !glyph.ReadU16(&gid)) {
++        return Error("Can't read composite glyph flags or glyphIndex");
++      }
++
++      size_t skip_bytes = 0;
++      skip_bytes += flags & ARG_1_AND_2_ARE_WORDS ? 4 : 2;
++
++      if (flags & WE_HAVE_A_SCALE) {
++        skip_bytes += 2;
++      } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
++        skip_bytes += 4;
++      } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
++        skip_bytes += 8;
++      }
++
++      if (!glyph.Skip(skip_bytes)) {
++        return Error("Failed to parse component glyph.");
++      }
++
++      if (gid >= this->maxp->num_glyphs) {
++        return Error("Invalid glyph id used in composite glyph: %d", gid);
++      }
++
++      component_point_count->gid_stack.push_back({gid, level + 1u});
++    } while (flags & MORE_COMPONENTS);
++    return true;
++  }
++}
++
++Buffer OpenTypeGLYF::GetGlyphBufferSection(
++    const uint8_t *data,
++    size_t length,
++    const std::vector<uint32_t>& loca_offsets,
++    unsigned glyph_id) {
++
++  Buffer null_buffer(nullptr, 0);
++
++  const unsigned gly_offset = loca_offsets[glyph_id];
++  // The LOCA parser checks that these values are monotonic
++  const unsigned gly_length = loca_offsets[glyph_id + 1] - loca_offsets[glyph_id];
++  if (!gly_length) {
++    // this glyph has no outline (e.g. the space character)
++    return Buffer(data + gly_offset, 0);
++  }
++
++  if (gly_offset >= length) {
++    Error("Glyph %d offset %d too high %ld", glyph_id, gly_offset, length);
++    return null_buffer;
++  }
++  // Since these are unsigned types, the compiler is not allowed to assume
++  // that they never overflow.
++  if (gly_offset + gly_length < gly_offset) {
++    Error("Glyph %d length (%d < 0)!", glyph_id, gly_length);
++    return null_buffer;
++  }
++  if (gly_offset + gly_length > length) {
++    Error("Glyph %d length %d too high", glyph_id, gly_length);
++    return null_buffer;
++  }
++
++  return Buffer(data + gly_offset, gly_length);
++}
++
+ bool OpenTypeGLYF::Serialize(OTSStream *out) {
+   for (unsigned i = 0; i < this->iov.size(); ++i) {
+     if (!out->Write(this->iov[i].first, this->iov[i].second)) {
+diff --git a/third_party/ots/src/glyf.h b/third_party/ots/src/glyf.h
+index 1da94e4b9455c47371ffb07a39921be1aaca61e8..08c585df349db447a7b9bfa0fd2e8dde31728e5d 100644
+--- a/third_party/ots/src/glyf.h
++++ b/third_party/ots/src/glyf.h
+@@ -23,12 +23,38 @@ class OpenTypeGLYF : public Table {
+   bool Serialize(OTSStream *out);
+ 
+  private:
++  struct GidAtLevel {
++    uint16_t gid;
++    uint32_t level;
++  };
++
++  struct ComponentPointCount {
++    ComponentPointCount() : accumulated_component_points(0) {};
++    uint32_t accumulated_component_points;
++    std::vector<GidAtLevel> gid_stack;
++  };
++
+   bool ParseFlagsForSimpleGlyph(Buffer &glyph,
+                                 uint32_t num_flags,
+                                 uint32_t *flag_index,
+                                 uint32_t *coordinates_length);
+   bool ParseSimpleGlyph(Buffer &glyph, int16_t num_contours);
+-  bool ParseCompositeGlyph(Buffer &glyph);
++  bool ParseCompositeGlyph(
++      Buffer &glyph,
++      ComponentPointCount* component_point_count);
++
++
++  bool TraverseComponentsCountingPoints(
++      Buffer& glyph,
++      uint16_t base_glyph_id,
++      uint32_t level,
++      ComponentPointCount* component_point_count);
++
++  Buffer GetGlyphBufferSection(
++      const uint8_t *data,
++      size_t length,
++      const std::vector<uint32_t>& loca_offsets,
++      unsigned glyph_id);
+ 
+   OpenTypeMAXP* maxp;
+ 
