@@ -617,6 +617,10 @@ class WebContents : public gin_helper::TrackableObject<WebContents>,
   void InitZoomController(content::WebContents* web_contents,
                           const gin_helper::Dictionary& options);
 
+  std::unique_ptr<content::EyeDropper> OpenEyeDropper(
+      content::RenderFrameHost* frame,
+      content::EyeDropperListener* listener) override;
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
