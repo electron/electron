@@ -33,28 +33,28 @@ void ExecuteCommand(content::WebContents* web_contents,
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
                               const content::CustomContextMenuContext& context,
-                              const std::vector<content::MenuItem>& menu);
+                              const std::vector<blink::MenuItem>& menu);
 
 v8::Local<v8::Value> MenuItemToV8(
     v8::Isolate* isolate,
     content::WebContents* web_contents,
     const content::CustomContextMenuContext& context,
-    const content::MenuItem& item) {
+    const blink::MenuItem& item) {
   gin_helper::Dictionary v8_item = gin::Dictionary::CreateEmpty(isolate);
   switch (item.type) {
-    case content::MenuItem::CHECKABLE_OPTION:
-    case content::MenuItem::GROUP:
+    case blink::MenuItem::CHECKABLE_OPTION:
+    case blink::MenuItem::GROUP:
       v8_item.Set("checked", item.checked);
       FALLTHROUGH;
-    case content::MenuItem::OPTION:
-    case content::MenuItem::SUBMENU:
+    case blink::MenuItem::OPTION:
+    case blink::MenuItem::SUBMENU:
       v8_item.Set("label", item.label);
       v8_item.Set("enabled", item.enabled);
       FALLTHROUGH;
     default:
       v8_item.Set("type", item.type);
   }
-  if (item.type == content::MenuItem::SUBMENU)
+  if (item.type == blink::MenuItem::SUBMENU)
     v8_item.Set("submenu",
                 MenuToV8(isolate, web_contents, context, item.submenu));
   else if (item.action > 0)
@@ -66,7 +66,7 @@ v8::Local<v8::Value> MenuItemToV8(
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
                               const content::CustomContextMenuContext& context,
-                              const std::vector<content::MenuItem>& menu) {
+                              const std::vector<blink::MenuItem>& menu) {
   std::vector<v8::Local<v8::Value>> v8_menu;
   v8_menu.reserve(menu.size());
   for (const auto& menu_item : menu)
@@ -110,19 +110,19 @@ struct Converter<ui::MenuSourceType> {
 };
 
 // static
-v8::Local<v8::Value> Converter<content::MenuItem::Type>::ToV8(
+v8::Local<v8::Value> Converter<blink::MenuItem::Type>::ToV8(
     v8::Isolate* isolate,
-    const content::MenuItem::Type& val) {
+    const blink::MenuItem::Type& val) {
   switch (val) {
-    case content::MenuItem::CHECKABLE_OPTION:
+    case blink::MenuItem::CHECKABLE_OPTION:
       return StringToV8(isolate, "checkbox");
-    case content::MenuItem::GROUP:
+    case blink::MenuItem::GROUP:
       return StringToV8(isolate, "radio");
-    case content::MenuItem::SEPARATOR:
+    case blink::MenuItem::SEPARATOR:
       return StringToV8(isolate, "separator");
-    case content::MenuItem::SUBMENU:
+    case blink::MenuItem::SUBMENU:
       return StringToV8(isolate, "submenu");
-    case content::MenuItem::OPTION:
+    case blink::MenuItem::OPTION:
     default:
       return StringToV8(isolate, "normal");
   }
