@@ -43,17 +43,16 @@ index d155e69df2abb9cec5f2153c7cb3c7b45cf46bbc..037a25e8f59b76181423e27865f0d476
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d72a6ca4307a71d0f9dc8a8b4ce32e1dce305148..ca9d1ba8becf184bc346162d15ec5a63d46cf951 100644
+index d72a6ca4307a71d0f9dc8a8b4ce32e1dce305148..39ef587971d4c171fb5878efb7a94c3523b4b80c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4087,6 +4087,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4087,6 +4087,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
 +void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
-+  observers_.ForEachObserver([&](WebContentsObserver* observer) {
-+    observer->OnCursorChanged(cursor);
-+  });
++  observers_.NotifyObservers(&WebContentsObserver::OnCursorChanged,
++                             cursor);
 +}
 +
  bool WebContentsImpl::IsWidgetForMainFrame(
