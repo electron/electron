@@ -10,7 +10,6 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/untrustworthy_context_menu_params.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 
@@ -25,20 +25,20 @@ namespace {
 
 void ExecuteCommand(content::WebContents* web_contents,
                     int action,
-                    const content::CustomContextMenuContext& context) {
+                    const blink::CustomContextMenuContext& context) {
   web_contents->ExecuteCustomContextMenuCommand(action, context);
 }
 
 // Forward declaration for nested recursive call.
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
-                              const content::CustomContextMenuContext& context,
+                              const blink::CustomContextMenuContext& context,
                               const std::vector<blink::MenuItem>& menu);
 
 v8::Local<v8::Value> MenuItemToV8(
     v8::Isolate* isolate,
     content::WebContents* web_contents,
-    const content::CustomContextMenuContext& context,
+    const blink::CustomContextMenuContext& context,
     const blink::MenuItem& item) {
   gin_helper::Dictionary v8_item = gin::Dictionary::CreateEmpty(isolate);
   switch (item.type) {
@@ -65,7 +65,7 @@ v8::Local<v8::Value> MenuItemToV8(
 
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
-                              const content::CustomContextMenuContext& context,
+                              const blink::CustomContextMenuContext& context,
                               const std::vector<blink::MenuItem>& menu) {
   std::vector<v8::Local<v8::Value>> v8_menu;
   v8_menu.reserve(menu.size());
