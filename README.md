@@ -28,15 +28,12 @@ The preferred method is to install Electron as a development dependency in your
 app:
 
 ```sh
-npm install electron --save-dev [--save-exact]
+npm install electron --save-dev
 ```
 
-The `--save-exact` flag is recommended for Electron prior to version 2, as it does not follow semantic
-versioning. As of version 2.0.0, Electron follows semver, so you don't need `--save-exact` flag. For info on how to manage Electron versions in your apps, see
-[Electron versioning](docs/tutorial/electron-versioning.md).
-
 For more installation options and troubleshooting tips, see
-[installation](docs/tutorial/installation.md).
+[installation](docs/tutorial/installation.md). For info on how to manage Electron versions in your apps, see
+[Electron versioning](docs/tutorial/electron-versioning.md).
 
 ## Quick start & Electron Fiddle
 
