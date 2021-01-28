@@ -11,9 +11,9 @@
     "new-window",
     {
       "show": true,
-      "title": "frame-name",
       "width": 800,
       "height": 600,
+      "title": "frame-name",
       "top": 5,
       "left": 10,
       "resizable": false,
@@ -46,9 +46,9 @@
     "new-window",
     {
       "show": true,
-      "title": "frame-name",
       "width": 800,
       "height": 600,
+      "title": "frame-name",
       "resizable": false,
       "x": 0,
       "y": 10,
@@ -80,9 +80,9 @@
     "new-window",
     {
       "show": true,
-      "title": "frame-name",
       "width": 800,
       "height": 600,
+      "title": "frame-name",
       "backgroundColor": "gray",
       "webPreferences": {
         "nodeIntegration": false,
@@ -114,9 +114,9 @@
     "new-window",
     {
       "show": true,
-      "title": "sup",
       "width": 800,
       "height": 600,
+      "title": "sup",
       "x": 50,
       "y": 20,
       "webPreferences": {
@@ -146,9 +146,9 @@
     "new-window",
     {
       "show": false,
-      "title": "frame-name",
       "width": 800,
       "height": 600,
+      "title": "frame-name",
       "top": 1,
       "left": 1,
       "x": 1,
