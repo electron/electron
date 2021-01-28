@@ -10,7 +10,7 @@ function genSnapshot (browserWindow: BrowserWindow, features: string) {
     browserWindow.webContents.on('new-window', (...args: any[]) => {
       resolve([features, ...args]);
     });
-    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame name', '${features}') && true`);
+    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame-name', '${features}') && true`);
   });
 }
 
