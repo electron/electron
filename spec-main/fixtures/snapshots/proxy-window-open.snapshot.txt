@@ -11,7 +11,7 @@
     "new-window",
     {
       "show": true,
-      "title": "cool",
+      "title": "frame-name",
       "width": 800,
       "height": 600,
       "top": 5,
@@ -46,7 +46,7 @@
     "new-window",
     {
       "show": true,
-      "title": "cool",
+      "title": "frame-name",
       "width": 800,
       "height": 600,
       "resizable": false,
@@ -80,7 +80,7 @@
     "new-window",
     {
       "show": true,
-      "title": "cool",
+      "title": "frame-name",
       "width": 800,
       "height": 600,
       "backgroundColor": "gray",
