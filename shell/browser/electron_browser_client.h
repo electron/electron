@@ -92,7 +92,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsPlatform* GetTtsPlatform() override;
 
-  void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
+  void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* current_rfh,

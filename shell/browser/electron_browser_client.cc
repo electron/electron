@@ -568,7 +568,7 @@ content::TtsPlatform* ElectronBrowserClient::GetTtsPlatform() {
 }
 
 void ElectronBrowserClient::OverrideWebkitPrefs(
-    content::RenderViewHost* host,
+    content::WebContents* web_contents,
     blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
@@ -597,7 +597,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
 
-  auto* web_contents = content::WebContents::FromRenderViewHost(host);
   auto preloads =
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
