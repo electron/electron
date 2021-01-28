@@ -1,7 +1,7 @@
-From 0d2bf89e15cc1d9d34631935977409a49e371048 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam McNally <sammc@chromium.org>
 Date: Thu, 17 Dec 2020 02:58:09 +0000
-Subject: [PATCH] Observe ProcessManager shutdowns from KeepAliveImpl.
+Subject: Observe ProcessManager shutdowns from KeepAliveImpl.
 
 ExtensionRegistry uses the underlying BrowserContext for incognito
 contexts. Thus, for incognito uses, the ProcessManager can be destroyed
@@ -33,10 +33,9 @@ Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
 Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1496}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/extensions/browser/mojo/keep_alive_impl.cc b/extensions/browser/mojo/keep_alive_impl.cc
-index 0cc7465..a734401 100644
+index 0cc74657805296772e00d98225f8113b69904ac5..a7344015d62c4d84eeeddcf9da6f5d38db7e802c 100644
 --- a/extensions/browser/mojo/keep_alive_impl.cc
 +++ b/extensions/browser/mojo/keep_alive_impl.cc
 @@ -8,7 +8,6 @@
@@ -47,7 +46,7 @@ index 0cc7465..a734401 100644
  
  namespace extensions {
  
-@@ -32,6 +31,7 @@
+@@ -32,6 +31,7 @@ KeepAliveImpl::KeepAliveImpl(content::BrowserContext* context,
    receiver_.set_disconnect_handler(
        base::BindOnce(&KeepAliveImpl::OnDisconnected, base::Unretained(this)));
    extension_registry_observer_.Add(ExtensionRegistry::Get(context_));
@@ -55,7 +54,7 @@ index 0cc7465..a734401 100644
  }
  
  KeepAliveImpl::~KeepAliveImpl() = default;
-@@ -54,4 +54,8 @@
+@@ -54,4 +54,8 @@ void KeepAliveImpl::OnDisconnected() {
    delete this;
  }
  
@@ -65,7 +64,7 @@ index 0cc7465..a734401 100644
 +
  }  // namespace extensions
 diff --git a/extensions/browser/mojo/keep_alive_impl.h b/extensions/browser/mojo/keep_alive_impl.h
-index a3e4233a..331fc2f 100644
+index a3e4233a3e6691999decb281dbaf80f74bf922cc..331fc2fdf670e44d51adc610ee39144dac15ae87 100644
 --- a/extensions/browser/mojo/keep_alive_impl.h
 +++ b/extensions/browser/mojo/keep_alive_impl.h
 @@ -10,6 +10,8 @@
@@ -77,7 +76,7 @@ index a3e4233a..331fc2f 100644
  #include "extensions/common/mojom/keep_alive.mojom.h"
  #include "mojo/public/cpp/bindings/pending_receiver.h"
  #include "mojo/public/cpp/bindings/receiver.h"
-@@ -21,10 +23,13 @@
+@@ -21,10 +23,13 @@ class RenderFrameHost;
  
  namespace extensions {
  class Extension;
@@ -92,7 +91,7 @@ index a3e4233a..331fc2f 100644
   public:
    // Create a keep alive for |extension| running in |context| and connect it to
    // |receiver|. When the receiver closes its pipe, the keep alive ends.
-@@ -45,6 +50,9 @@
+@@ -45,6 +50,9 @@ class KeepAliveImpl : public KeepAlive, public ExtensionRegistryObserver {
                             UnloadedExtensionReason reason) override;
    void OnShutdown(ExtensionRegistry* registry) override;
  
@@ -102,7 +101,7 @@ index a3e4233a..331fc2f 100644
    // Invoked when the mojo connection is disconnected.
    void OnDisconnected();
  
-@@ -52,6 +60,8 @@
+@@ -52,6 +60,8 @@ class KeepAliveImpl : public KeepAlive, public ExtensionRegistryObserver {
    const Extension* extension_;
    ScopedObserver<ExtensionRegistry, ExtensionRegistryObserver>
        extension_registry_observer_{this};
@@ -112,10 +111,10 @@ index a3e4233a..331fc2f 100644
  
    DISALLOW_COPY_AND_ASSIGN(KeepAliveImpl);
 diff --git a/extensions/browser/mojo/keep_alive_impl_unittest.cc b/extensions/browser/mojo/keep_alive_impl_unittest.cc
-index 90599cc..e6f60c3 100644
+index 90599cc46d24dc7ec0eabb1da17545b489d93445..e6f60c39cf29d9554cb0f1096ed87345d3e38923 100644
 --- a/extensions/browser/mojo/keep_alive_impl_unittest.cc
 +++ b/extensions/browser/mojo/keep_alive_impl_unittest.cc
-@@ -160,7 +160,7 @@
+@@ -160,7 +160,7 @@ TEST_F(KeepAliveTest, UnloadExtension) {
    run_loop.Run();
  }
  
@@ -124,7 +123,7 @@ index 90599cc..e6f60c3 100644
    mojo::Remote<KeepAlive> keep_alive;
    CreateKeepAlive(keep_alive.BindNewPipeAndPassReceiver());
    EXPECT_EQ(1, GetKeepAliveCount());
-@@ -178,4 +178,22 @@
+@@ -178,4 +178,22 @@ TEST_F(KeepAliveTest, Shutdown) {
    run_loop.Run();
  }
  
