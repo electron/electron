@@ -1,0 +1,149 @@
+From 0d2bf89e15cc1d9d34631935977409a49e371048 Mon Sep 17 00:00:00 2001
+From: Sam McNally <sammc@chromium.org>
+Date: Thu, 17 Dec 2020 02:58:09 +0000
+Subject: [PATCH] Observe ProcessManager shutdowns from KeepAliveImpl.
+
+ExtensionRegistry uses the underlying BrowserContext for incognito
+contexts. Thus, for incognito uses, the ProcessManager can be destroyed
+without the KeepAliveImpl being notified. Observe ProcessManager
+shutdowns directly to ensure KeepAliveImpls are cleaned up when a
+ProcessManager is shut down.
+
+[Substituted ScopedObserver for base::ScopedObservation since the latter
+ was introduced in 88]
+
+(cherry picked from commit 5a55fe16e633dd02e3c40e513acabf4324bb6318)
+
+(cherry picked from commit c2bf2463fbeff3959ea1998a4f3ae82dd648b56c)
+
+Bug: 1149177
+Change-Id: I39a0cf54bcf8cf0d58e36560935b8d2f79399cd2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2548585
+Auto-Submit: Sam McNally <sammc@chromium.org>
+Commit-Queue: Ben Wells <benwells@chromium.org>
+Reviewed-by: Ben Wells <benwells@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#830107}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2563379
+Reviewed-by: Sam McNally <sammc@chromium.org>
+Commit-Queue: Sam McNally <sammc@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4280@{#1653}
+Cr-Original-Branched-From: ea420fb963f9658c9969b6513c56b8f47efa1a2a-refs/heads/master@{#812852}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2587154
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1496}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/extensions/browser/mojo/keep_alive_impl.cc b/extensions/browser/mojo/keep_alive_impl.cc
+index 0cc7465..a734401 100644
+--- a/extensions/browser/mojo/keep_alive_impl.cc
++++ b/extensions/browser/mojo/keep_alive_impl.cc
+@@ -8,7 +8,6 @@
+ 
+ #include "base/bind.h"
+ #include "content/public/browser/browser_context.h"
+-#include "extensions/browser/process_manager.h"
+ 
+ namespace extensions {
+ 
+@@ -32,6 +31,7 @@
+   receiver_.set_disconnect_handler(
+       base::BindOnce(&KeepAliveImpl::OnDisconnected, base::Unretained(this)));
+   extension_registry_observer_.Add(ExtensionRegistry::Get(context_));
++  process_manager_observation_.Add(ProcessManager::Get(context_));
+ }
+ 
+ KeepAliveImpl::~KeepAliveImpl() = default;
+@@ -54,4 +54,8 @@
+   delete this;
+ }
+ 
++void KeepAliveImpl::OnProcessManagerShutdown(ProcessManager* manager) {
++  delete this;
++}
++
+ }  // namespace extensions
+diff --git a/extensions/browser/mojo/keep_alive_impl.h b/extensions/browser/mojo/keep_alive_impl.h
+index a3e4233a..331fc2f 100644
+--- a/extensions/browser/mojo/keep_alive_impl.h
++++ b/extensions/browser/mojo/keep_alive_impl.h
+@@ -10,6 +10,8 @@
+ #include "base/scoped_observer.h"
+ #include "extensions/browser/extension_registry.h"
+ #include "extensions/browser/extension_registry_observer.h"
++#include "extensions/browser/process_manager.h"
++#include "extensions/browser/process_manager_observer.h"
+ #include "extensions/common/mojom/keep_alive.mojom.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+@@ -21,10 +23,13 @@
+ 
+ namespace extensions {
+ class Extension;
++class ProcessManager;
+ 
+ // An RAII mojo service implementation for extension keep alives. This adds a
+ // keep alive on construction and removes it on destruction.
+-class KeepAliveImpl : public KeepAlive, public ExtensionRegistryObserver {
++class KeepAliveImpl : public KeepAlive,
++                      public ExtensionRegistryObserver,
++                      public ProcessManagerObserver {
+  public:
+   // Create a keep alive for |extension| running in |context| and connect it to
+   // |receiver|. When the receiver closes its pipe, the keep alive ends.
+@@ -45,6 +50,9 @@
+                            UnloadedExtensionReason reason) override;
+   void OnShutdown(ExtensionRegistry* registry) override;
+ 
++  // ProcessManagerObserver overrides.
++  void OnProcessManagerShutdown(ProcessManager* manager) override;
++
+   // Invoked when the mojo connection is disconnected.
+   void OnDisconnected();
+ 
+@@ -52,6 +60,8 @@
+   const Extension* extension_;
+   ScopedObserver<ExtensionRegistry, ExtensionRegistryObserver>
+       extension_registry_observer_{this};
++  ScopedObserver<ProcessManager, ProcessManagerObserver>
++      process_manager_observation_{this};
+   mojo::Receiver<KeepAlive> receiver_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(KeepAliveImpl);
+diff --git a/extensions/browser/mojo/keep_alive_impl_unittest.cc b/extensions/browser/mojo/keep_alive_impl_unittest.cc
+index 90599cc..e6f60c3 100644
+--- a/extensions/browser/mojo/keep_alive_impl_unittest.cc
++++ b/extensions/browser/mojo/keep_alive_impl_unittest.cc
+@@ -160,7 +160,7 @@
+   run_loop.Run();
+ }
+ 
+-TEST_F(KeepAliveTest, Shutdown) {
++TEST_F(KeepAliveTest, ShutdownExtensionRegistry) {
+   mojo::Remote<KeepAlive> keep_alive;
+   CreateKeepAlive(keep_alive.BindNewPipeAndPassReceiver());
+   EXPECT_EQ(1, GetKeepAliveCount());
+@@ -178,4 +178,22 @@
+   run_loop.Run();
+ }
+ 
++TEST_F(KeepAliveTest, ShutdownProcessManager) {
++  mojo::Remote<KeepAlive> keep_alive;
++  CreateKeepAlive(keep_alive.BindNewPipeAndPassReceiver());
++  EXPECT_EQ(1, GetKeepAliveCount());
++  EXPECT_EQ(1u, GetActivities().count(mojo_activity_));
++
++  ProcessManager::Get(browser_context())->Shutdown();
++  // After a shutdown event, the KeepAliveImpl should not access its
++  // ProcessManager and so the keep-alive count should remain unchanged.
++  EXPECT_EQ(1, GetKeepAliveCount());
++  EXPECT_EQ(1u, GetActivities().count(mojo_activity_));
++
++  // Wait for |keep_alive| to disconnect.
++  base::RunLoop run_loop;
++  keep_alive.set_disconnect_handler(run_loop.QuitClosure());
++  run_loop.Run();
++}
++
+ }  // namespace extensions
