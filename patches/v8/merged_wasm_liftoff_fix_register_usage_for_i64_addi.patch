@@ -1,0 +1,173 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Mon, 9 Nov 2020 17:31:52 +0100
+Subject: Merged: [wasm][liftoff] Fix register usage for i64_addi
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The arm implementation made the assumption that the {lhs} and {dst}
+registers are either the same, or there is no overlap. This assumption
+does not hold.
+ia32 on the other hand has a lot of complicated logic (and unnecessary
+code generation) for different cases of overlap.
+
+This CL fixes the arm issue *and* simplifies the ia32 logic by making
+the arm assumption hold, and using it to eliminate special handling on
+ia32.
+
+R=​thibaudm@chromium.org
+
+(cherry picked from commit 89ca48c907e25ef94a135255092c4e150654c4fc)
+
+Bug: chromium:1146861
+Change-Id: I96c4985fb8ff710b98e009e457444fc8804bce58
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2584242
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.6@{#50}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+index 94672036de4e6c2592b2dc9fed1dc388bf9e40a0..3cd70d3896e4c1c1bde8d23e189cd3a01e515283 100644
+--- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
++++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+@@ -140,6 +140,8 @@ template <void (Assembler::*op)(Register, Register, const Operand&, SBit,
+                                            SBit, Condition)>
+ inline void I64BinopI(LiftoffAssembler* assm, LiftoffRegister dst,
+                       LiftoffRegister lhs, int32_t imm) {
++  // The compiler allocated registers such that either {dst == lhs} or there is
++  // no overlap between the two.
+   DCHECK_NE(dst.low_gp(), lhs.high_gp());
+   (assm->*op)(dst.low_gp(), lhs.low_gp(), Operand(imm), SetCC, al);
+   // Top half of the immediate sign extended, either 0 or -1.
+diff --git a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+index 468450aef66e7e5c408057915db38d616ecd42bc..ae98aa34f89fd0c4c10e1c79f21ab2bae932d536 100644
+--- a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
++++ b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+@@ -1023,31 +1023,19 @@ template <void (Assembler::*op)(Register, const Immediate&),
+           void (Assembler::*op_with_carry)(Register, int32_t)>
+ inline void OpWithCarryI(LiftoffAssembler* assm, LiftoffRegister dst,
+                          LiftoffRegister lhs, int32_t imm) {
+-  // First, compute the low half of the result, potentially into a temporary dst
+-  // register if {dst.low_gp()} equals any register we need to
+-  // keep alive for computing the upper half.
+-  LiftoffRegList keep_alive = LiftoffRegList::ForRegs(lhs.high_gp());
+-  Register dst_low = keep_alive.has(dst.low_gp())
+-                         ? assm->GetUnusedRegister(kGpReg, keep_alive).gp()
+-                         : dst.low_gp();
+-
+-  if (dst_low != lhs.low_gp()) assm->mov(dst_low, lhs.low_gp());
+-  (assm->*op)(dst_low, Immediate(imm));
++  // The compiler allocated registers such that either {dst == lhs} or there is
++  // no overlap between the two.
++  DCHECK_NE(dst.low_gp(), lhs.high_gp());
+ 
+-  // Now compute the upper half, while keeping alive the previous result.
+-  keep_alive = LiftoffRegList::ForRegs(dst_low);
+-  Register dst_high = keep_alive.has(dst.high_gp())
+-                          ? assm->GetUnusedRegister(kGpReg, keep_alive).gp()
+-                          : dst.high_gp();
++  // First, compute the low half of the result.
++  if (dst.low_gp() != lhs.low_gp()) assm->mov(dst.low_gp(), lhs.low_gp());
++  (assm->*op)(dst.low_gp(), Immediate(imm));
+ 
+-  if (dst_high != lhs.high_gp()) assm->mov(dst_high, lhs.high_gp());
++  // Now compute the upper half.
++  if (dst.high_gp() != lhs.high_gp()) assm->mov(dst.high_gp(), lhs.high_gp());
+   // Top half of the immediate sign extended, either 0 or -1.
+   int32_t sign_extend = imm < 0 ? -1 : 0;
+-  (assm->*op_with_carry)(dst_high, sign_extend);
+-
+-  // If necessary, move result into the right registers.
+-  LiftoffRegister tmp_result = LiftoffRegister::ForPair(dst_low, dst_high);
+-  if (tmp_result != dst) assm->Move(dst, tmp_result, kWasmI64);
++  (assm->*op_with_carry)(dst.high_gp(), sign_extend);
+ }
+ }  // namespace liftoff
+ 
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index d2beb398c153f5c123ec9fcc672147cda5283f22..66794af93f899146c8e0ac59493abc95c8254494 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -1154,9 +1154,12 @@ class LiftoffCompiler {
+       int32_t imm = rhs_slot.i32_const();
+ 
+       LiftoffRegister lhs = __ PopToRegister();
++      // Either reuse {lhs} for {dst}, or choose a register (pair) which does
++      // not overlap, for easier code generation.
++      LiftoffRegList pinned = LiftoffRegList::ForRegs(lhs);
+       LiftoffRegister dst = src_rc == result_rc
+-                                ? __ GetUnusedRegister(result_rc, {lhs}, {})
+-                                : __ GetUnusedRegister(result_rc, {});
++                                ? __ GetUnusedRegister(result_rc, {lhs}, pinned)
++                                : __ GetUnusedRegister(result_rc, pinned);
+ 
+       CallEmitFn(fnImm, dst, lhs, imm);
+       __ PushRegister(ValueType::Primitive(result_type), dst);
+diff --git a/test/mjsunit/regress/wasm/regress-1146861.js b/test/mjsunit/regress/wasm/regress-1146861.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d9d80e58ccc1a1093d414bbafa05ef2cfdc03379
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1146861.js
+@@ -0,0 +1,56 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addGlobal(kWasmI32, 1);
++builder.addType(makeSig([], [kWasmF64]));
++// Generate function 1 (out of 1).
++builder.addFunction(undefined, 0 /* sig */)
++  .addLocals(kWasmI32, 8).addLocals(kWasmI64, 3)
++  .addBodyWithEnd([
++// signature: d_v
++// body:
++kExprGlobalGet, 0x00,  // global.get
++kExprLocalSet, 0x00,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kExprI32Eqz,  // i32.eqz
++kExprLocalSet, 0x01,  // local.set
++kExprGlobalGet, 0x00,  // global.get
++kExprLocalSet, 0x02,  // local.set
++kExprI32Const, 0x01,  // i32.const
++kExprI32Const, 0x01,  // i32.const
++kExprI32Sub,  // i32.sub
++kExprLocalSet, 0x03,  // local.set
++kExprGlobalGet, 0x00,  // global.get
++kExprLocalSet, 0x04,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kExprI32Eqz,  // i32.eqz
++kExprLocalSet, 0x05,  // local.set
++kExprGlobalGet, 0x00,  // global.get
++kExprLocalSet, 0x06,  // local.set
++kExprI32Const, 0x00,  // i32.const
++kExprI32Const, 0x01,  // i32.const
++kExprI32Sub,  // i32.sub
++kExprLocalSet, 0x07,  // local.set
++kExprBlock, kWasmStmt,  // block @45
++  kExprI32Const, 0x00,  // i32.const
++  kExprIf, kWasmStmt,  // if @49
++    kExprLocalGet, 0x0a,  // local.get
++    kExprLocalSet, 0x08,  // local.set
++  kExprElse,  // else @55
++    kExprNop,  // nop
++    kExprEnd,  // end @57
++  kExprLocalGet, 0x08,  // local.get
++  kExprLocalSet, 0x09,  // local.set
++  kExprLocalGet, 0x09,  // local.get
++  kExprI64Const, 0xff, 0x01,  // i64.const
++  kExprI64Add,  // i64.add
++  kExprDrop,  // drop
++  kExprEnd,  // end @69
++kExprF64Const, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f,  // f64.const
++kExprEnd,  // end @79
++]);
++builder.instantiate();
