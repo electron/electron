@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Mon, 14 Dec 2020 17:37:14 +0000
+Subject: LayoutNG: Fix an incorrect cache-hit for line boxes
+
+If an IFC contains an item for an orthogonal writing-mode root,
+NGFragmentItems::DirtyLinesFromNeedsLayout() failed to mark it as dirty
+because NeedsLayout flag for the item was already cleared in the
+ComputeMinMaxSizes() step.
+
+This CL avoids this issue by assuming orthogonal writing-mode roots
+dirty regardless of NeedsLayout flag.
+
+(cherry picked from commit 21976a78429ccd8325acb00b41b4120271580bfb)
+
+Bug: 1125870, 1147357
+Change-Id: I603bdd76f9015fbcde46da8e09fb6757b4b0222b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2544326
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#828237}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2584928
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1483}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index cdd49a53f8138572d746d87ba7116880eca850ef..b6915f3501150bc2d4fca79c21fb358d01f9f88e 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -1235,6 +1235,7 @@ jumbo_source_set("unit_tests") {
+     "layout/ng/inline/ng_bidi_paragraph_test.cc",
+     "layout/ng/inline/ng_caret_position_test.cc",
+     "layout/ng/inline/ng_fragment_item_test.cc",
++    "layout/ng/inline/ng_fragment_items_test.cc",
+     "layout/ng/inline/ng_inline_cursor_test.cc",
+     "layout/ng/inline/ng_inline_fragment_traversal_test.cc",
+     "layout/ng/inline/ng_inline_items_builder_test.cc",
+diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items.cc
+index cfe1900729d4dacc5dad8d94f39b8f80114f6104..de2bc38dc0fe41ef16340642a60208e327173fe2 100644
+--- a/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items.cc
++++ b/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items.cc
+@@ -249,9 +249,15 @@ void NGFragmentItems::DirtyLinesFromNeedsLayout(
+   // opportunities. Doing this complicates the logic, especially when culled
+   // inline is involved, and common case is to append to large IFC. Choose
+   // simpler logic and faster to check over more reuse opportunities.
++  const auto writing_mode = container->StyleRef().GetWritingMode();
+   for (LayoutObject* child = container->FirstChild(); child;
+        child = child->NextSibling()) {
+-    if (child->NeedsLayout()) {
++    // NeedsLayout is not helpful for an orthogonal writing-mode root because
++    // its NeedsLayout flag is cleared during the ComputeMinMaxSizes() step of
++    // the container.
++    if (child->NeedsLayout() ||
++        !IsParallelWritingMode(writing_mode,
++                               child->StyleRef().GetWritingMode())) {
+       DirtyLinesFromChangedChild(child);
+       return;
+     }
+diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items_test.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a36ada712c0bbc9afe0edad70dfb68c5028d84e
+--- /dev/null
++++ b/third_party/blink/renderer/core/layout/ng/inline/ng_fragment_items_test.cc
+@@ -0,0 +1,43 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/layout/ng/ng_layout_test.h"
++
++namespace blink {
++
++class NGFragmentItemsTest : public NGLayoutTest {};
++
++// crbug.com/1147357
++// DirtyLinesFromNeedsLayout() didn't work well with an orthogonal writing-mode
++// root as a child, and it caused a failure of OOF descendants propagation.
++TEST_F(NGFragmentItemsTest,
++       DirtyLinesFromNeedsLayoutWithOrthogonalWritingMode) {
++  SetBodyInnerHTML(R"HTML(
++<style>
++button {
++  font-size: 100px;
++}
++#span1 {
++  position: absolute;
++}
++code {
++  writing-mode: vertical-rl;
++}
++</style>
++<rt id="rt1"><span id="span1"></span></rt>
++<button>
++<code><ruby id="ruby1"></ruby></code>
++b AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
++</button>)HTML");
++  RunDocumentLifecycle();
++
++  GetDocument().getElementById("ruby1")->appendChild(
++      GetDocument().getElementById("rt1"));
++  RunDocumentLifecycle();
++
++  EXPECT_TRUE(GetLayoutObjectByElementId("span1")->EverHadLayout());
++}
++
++}  // namespace blink
