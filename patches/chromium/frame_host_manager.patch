@@ -106,7 +106,7 @@ index e29e67f5c91215a317d4244c7b62d89bea91a1fe..7ed0f9e6586b42b073d9dea8225baf38
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index 91f88109dacae55b8bb849e13d06309e89d028db..d2ccfbc682cb62f8e635156cf0dc108b35582767 100644
+index 91f88109dacae55b8bb849e13d06309e89d028db..b57dbf3fb0aa6f9398cf09839d4208c5f055ee70 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
 @@ -2745,6 +2745,16 @@ scoped_refptr<SiteInstance>
@@ -126,7 +126,7 @@ index 91f88109dacae55b8bb849e13d06309e89d028db..d2ccfbc682cb62f8e635156cf0dc108b
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2772,10 +2782,60 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2772,10 +2782,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    //
    // TODO(clamy): We should also consider as a candidate SiteInstance the
    // speculative SiteInstance that was computed on redirects.
@@ -136,8 +136,7 @@ index 91f88109dacae55b8bb849e13d06309e89d028db..d2ccfbc682cb62f8e635156cf0dc108b
 -          : nullptr;
 +  if (!GetContentClient()->browser()->CanUseCustomSiteInstance() &&
 +      frame_tree_node_->IsMainFrame()) {
-+    BrowserContext* browser_context =
-+        delegate_->GetControllerForRenderManager().GetBrowserContext();
++    BrowserContext* browser_context = GetNavigationController().GetBrowserContext();
 +    bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
 +    bool has_response_started =
 +        (request->state() >= NavigationRequest::WILL_PROCESS_RESPONSE &&
@@ -191,7 +190,7 @@ index 91f88109dacae55b8bb849e13d06309e89d028db..d2ccfbc682cb62f8e635156cf0dc108b
  
    // Account for renderer-initiated reload as well.
    // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2815,6 +2875,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2815,6 +2874,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
