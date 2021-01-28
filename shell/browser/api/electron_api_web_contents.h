@@ -44,7 +44,6 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
-#include "components/printing/common/print_messages.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
 #endif
 
