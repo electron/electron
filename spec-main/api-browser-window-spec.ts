@@ -103,6 +103,14 @@ describe('BrowserWindow module', () => {
       await emittedOnce(w.webContents, 'before-unload-fired');
     });
 
+    it('should not crash when keyboard event is sent before closing', async () => {
+      await w.loadURL('data:text/html,pls no crash');
+      const closed = emittedOnce(w, 'closed');
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.close();
+      await closed;
+    });
+
     describe('when invoked synchronously inside navigation observer', () => {
       let server: http.Server = null as unknown as http.Server;
       let url: string = null as unknown as string;

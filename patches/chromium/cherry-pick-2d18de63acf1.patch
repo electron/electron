@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: danakj <danakj@chromium.org>
+Date: Tue, 17 Nov 2020 21:47:27 +0000
+Subject: Convert strides with padding in skia::SkBitmapToN32OpaqueOrPremul().
+
+Code using bitmaps converted with SkBitmapToN32OpaqueOrPremul() can
+easily assume that the pixels are one contiguous (width*4*height)-sized
+buffer. If it's not then out-of-bounds read/write can occur.
+
+Also adds tests for SkBitmapToN32OpaqueOrPremul().
+
+R=fmalita@chromium.org
+
+Bug: 1147431, 1144462
+Change-Id: I21f7a958a8c9231bf5f052f8ff246f2c249bd70b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2544032
+Commit-Queue: danakj <danakj@chromium.org>
+Reviewed-by: Florin Malita <fmalita@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#828406}
+
+diff --git a/skia/ext/skia_utils_base.cc b/skia/ext/skia_utils_base.cc
+index 516ad7ea1e3a0acb1c8b207f98f6daf534262cbc..f9e622eff3ec6c3287138d7cdf68814b8535a338 100644
+--- a/skia/ext/skia_utils_base.cc
++++ b/skia/ext/skia_utils_base.cc
+@@ -85,7 +85,8 @@ void WriteSkFontStyle(base::Pickle* pickle, SkFontStyle style) {
+ bool SkBitmapToN32OpaqueOrPremul(const SkBitmap& in, SkBitmap* out) {
+   DCHECK(out);
+   const SkImageInfo& info = in.info();
+-  if (info.colorType() == kN32_SkColorType &&
++  const bool stride_matches_width = in.rowBytes() == info.minRowBytes();
++  if (stride_matches_width && info.colorType() == kN32_SkColorType &&
+       (info.alphaType() == kPremul_SkAlphaType ||
+        info.alphaType() == kOpaque_SkAlphaType)) {
+     // Shallow copy if the data is already in the right format.
+diff --git a/skia/ext/skia_utils_base.h b/skia/ext/skia_utils_base.h
+index 2a1eca124e91695ddec635e593ad1e9b650aa156..40401bb2fe0e484fae64490757d63f85e5c5ffea 100644
+--- a/skia/ext/skia_utils_base.h
++++ b/skia/ext/skia_utils_base.h
+@@ -42,9 +42,10 @@ SK_API void WriteSkFontIdentity(
+ // Writes style into the request pickle.
+ SK_API void WriteSkFontStyle(base::Pickle* pickle, SkFontStyle style);
+ 
+-// Converts an SkBitmap to an Opaque or Premul N32 SkBitmap. If the input is in
+-// the right format (N32 Opaque or Premul) already, points |out| directly at
+-// |in|. |out| may or may not be GPU-backed.
++// Converts an SkBitmap to an Opaque or Premul N32 SkBitmap with stride matching
++// the width of each row. If the input is has the right format (N32 Opaque or
++// Premul) without stride padding already, this assigns `in` to `out`, sharing
++// the backing pixels. `out` may or may not be GPU-backed.
+ //
+ // If unsuccessful, returns false, but |out| may be modified.
+ SK_API bool SkBitmapToN32OpaqueOrPremul(const SkBitmap& in, SkBitmap* out);

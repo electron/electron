@@ -12,6 +12,8 @@
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
@@ -73,6 +75,11 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::Closure& callback) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
   std::vector<ui::Accelerator> registered;
 
   for (auto& accelerator : accelerators) {
@@ -89,6 +96,11 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
 #if defined(OS_MACOSX)
   if (RegisteringMediaKeyForUntrustedClient(accelerator))
     return false;
@@ -104,6 +116,11 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
 }
 
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return;
+  }
   if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
 
@@ -123,6 +140,11 @@ bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
 }
 
 void GlobalShortcut::UnregisterAll() {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return;
+  }
   accelerator_callback_map_.clear();
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }

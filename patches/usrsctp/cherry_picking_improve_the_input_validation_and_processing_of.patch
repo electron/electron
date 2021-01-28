@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Tuexen <tuexen@fh-muenster.de>
+Date: Tue, 29 Sep 2020 11:38:11 +0200
+Subject: Cherry picking: Improve the input validation and processing of
+ cookies.
+
+This avoids setting the association in an inconsistent
+state, which could result in a use-after-free situation.
+The issue can be triggered by a malicious peer, if the peer
+can modify the cookie without the local endpoint recognizing it.
+
+Thanks to Ned Williamson for reporting the issue.
+
+diff --git a/usrsctplib/netinet/sctp_input.c b/usrsctplib/netinet/sctp_input.c
+index b7e4aea13613bef798be7cddc1e72d4c42afac8e..b8e1259d8cf0c90cf2dcb03a1fd853c11a6abbd3 100755
+--- a/usrsctplib/netinet/sctp_input.c
++++ b/usrsctplib/netinet/sctp_input.c
+@@ -34,7 +34,7 @@
+ 
+ #ifdef __FreeBSD__
+ #include <sys/cdefs.h>
+-__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 355135 2019-11-27 19:32:29Z tuexen $");
++__FBSDID("$FreeBSD: head/sys/netinet/sctp_input.c 366248 2020-09-29 09:36:06Z tuexen $");
+ #endif
+ 
+ #include <netinet/sctp_os.h>
+@@ -2272,10 +2272,6 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 		                       vrf_id, port);
+ 		return (NULL);
+ 	}
+-	/* get the correct sctp_nets */
+-	if (netp)
+-		*netp = sctp_findnet(stcb, init_src);
+-
+ 	asoc = &stcb->asoc;
+ 	/* get scope variables out of cookie */
+ 	asoc->scope.ipv4_local_scope = cookie->ipv4_scope;
+@@ -2332,10 +2328,7 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 	asoc->advanced_peer_ack_point = asoc->last_acked_seq;
+ 
+ 	/* process the INIT info (peer's info) */
+-	if (netp)
+-		retval = sctp_process_init(init_cp, stcb);
+-	else
+-		retval = 0;
++	retval = sctp_process_init(init_cp, stcb);
+ 	if (retval < 0) {
+ #if defined(__APPLE__) || defined(SCTP_SO_LOCK_TESTING)
+ 		atomic_add_int(&stcb->asoc.refcnt, 1);
+@@ -2518,19 +2511,21 @@ sctp_process_cookie_new(struct mbuf *m, int iphlen, int offset,
+ 		 */
+ 		;
+ 	}
+-	/* since we did not send a HB make sure we don't double things */
+-	if ((netp) && (*netp))
+-		(*netp)->hb_responded = 1;
+-
+ 	if (stcb->asoc.sctp_autoclose_ticks &&
+ 	    sctp_is_feature_on(inp, SCTP_PCB_FLAGS_AUTOCLOSE)) {
+ 		sctp_timer_start(SCTP_TIMER_TYPE_AUTOCLOSE, inp, stcb, NULL);
+ 	}
+ 	(void)SCTP_GETTIME_TIMEVAL(&stcb->asoc.time_entered);
+-	if ((netp != NULL) && (*netp != NULL)) {
++	*netp = sctp_findnet(stcb, init_src);
++	if (*netp != NULL) {
+ 		struct timeval old;
+ 
+-		/* calculate the RTT and set the encaps port */
++		/*
++		 * Since we did not send a HB, make sure we don't double
++		 * things.
++		 */
++		(*netp)->hb_responded = 1;
++		/* Calculate the RTT. */
+ 		old.tv_sec = cookie->time_entered.tv_sec;
+ 		old.tv_usec = cookie->time_entered.tv_usec;
+ 		sctp_calculate_rto(stcb, asoc, *netp, &old, SCTP_RTT_FROM_NON_DATA);
+diff --git a/usrsctplib/netinet/sctp_pcb.c b/usrsctplib/netinet/sctp_pcb.c
+index 02779e536c14ac7fb707e1b30cac1ab72ee3ec66..cae35aedfd18df2cdfff82006b3e09250ed33b41 100755
+--- a/usrsctplib/netinet/sctp_pcb.c
++++ b/usrsctplib/netinet/sctp_pcb.c
+@@ -34,7 +34,7 @@
+ 
+ #ifdef __FreeBSD__
+ #include <sys/cdefs.h>
+-__FBSDID("$FreeBSD: head/sys/netinet/sctp_pcb.c 356377 2020-01-05 14:06:40Z tuexen $");
++__FBSDID("$FreeBSD: head/sys/netinet/sctp_pcb.c 366248 2020-09-29 09:36:06Z tuexen $");
+ #endif
+ 
+ #include <netinet/sctp_os.h>
+@@ -5011,7 +5011,15 @@ sctp_aloc_assoc(struct sctp_inpcb *inp, struct sockaddr *firstaddr,
+ 		if ((ntohs(sin->sin_port) == 0) ||
+ 		    (sin->sin_addr.s_addr == INADDR_ANY) ||
+ 		    (sin->sin_addr.s_addr == INADDR_BROADCAST) ||
+-		    IN_MULTICAST(ntohl(sin->sin_addr.s_addr))) {
++		    IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ||
++#if defined(__Userspace__)
++		    (((inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_CONN) != 0) ||
++		     (((inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_V6) != 0) &&
++		      (SCTP_IPV6_V6ONLY(inp) != 0)))) {
++#else
++		    (((inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_V6) != 0) &&
++		     (SCTP_IPV6_V6ONLY(inp) != 0))) {
++#endif
+ 			/* Invalid address */
+ 			SCTP_INP_RUNLOCK(inp);
+ 			SCTP_LTRACE_ERR_RET(inp, NULL, NULL, SCTP_FROM_SCTP_PCB, EINVAL);
+@@ -5030,7 +5038,8 @@ sctp_aloc_assoc(struct sctp_inpcb *inp, struct sockaddr *firstaddr,
+ 		sin6 = (struct sockaddr_in6 *)firstaddr;
+ 		if ((ntohs(sin6->sin6_port) == 0) ||
+ 		    IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr) ||
+-		    IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr)) {
++		    IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) ||
++		    ((inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_V6) == 0)) {
+ 			/* Invalid address */
+ 			SCTP_INP_RUNLOCK(inp);
+ 			SCTP_LTRACE_ERR_RET(inp, NULL, NULL, SCTP_FROM_SCTP_PCB, EINVAL);
+@@ -5048,7 +5057,8 @@ sctp_aloc_assoc(struct sctp_inpcb *inp, struct sockaddr *firstaddr,
+ 
+ 		sconn = (struct sockaddr_conn *)firstaddr;
+ 		if ((ntohs(sconn->sconn_port) == 0) ||
+-		    (sconn->sconn_addr == NULL)) {
++		    (sconn->sconn_addr == NULL) ||
++		    ((inp->sctp_flags & SCTP_PCB_FLAGS_BOUND_CONN) == 0)) {
+ 			/* Invalid address */
+ 			SCTP_INP_RUNLOCK(inp);
+ 			SCTP_LTRACE_ERR_RET(inp, NULL, NULL, SCTP_FROM_SCTP_PCB, EINVAL);

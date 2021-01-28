@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniele Castagna <dcastagna@chromium.org>
+Date: Mon, 14 Dec 2020 23:03:31 +0000
+Subject: viz: Destroy |gpu_memory_buffer_factory_| on IOThread
+
+|gpu_memory_buffer_factory_| weak pointers are checked on the
+IOThread.
+Weak pointers should be invalidated on the same thread that
+checks them.
+
+This CL moves the destruction of |gpu_memory_buffer_factory_|
+on the IOThread to avoid possible use after free issues.
+
+Bug: 1152645
+
+Change-Id: I0d42814f0e435a3746728515da1f32d08a1252cf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2563077
+Commit-Queue: Daniele Castagna <dcastagna@chromium.org>
+Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#836827}
+
+diff --git a/components/viz/service/gl/gpu_service_impl.cc b/components/viz/service/gl/gpu_service_impl.cc
+index 98cdbff9bf021f9665abdb339a25753b2e7b4807..6ab1e86035089b748eb636cc5e654702ee19fd9e 100644
+--- a/components/viz/service/gl/gpu_service_impl.cc
++++ b/components/viz/service/gl/gpu_service_impl.cc
+@@ -428,16 +428,18 @@ GpuServiceImpl::~GpuServiceImpl() {
+   GetLogMessageManager()->ShutdownLogging();
+ 
+   // Destroy the receiver on the IO thread.
+-  base::WaitableEvent wait;
+-  auto destroy_receiver_task = base::BindOnce(
+-      [](mojo::Receiver<mojom::GpuService>* receiver,
+-         base::WaitableEvent* wait) {
+-        receiver->reset();
+-        wait->Signal();
+-      },
+-      &receiver_, &wait);
+-  if (io_runner_->PostTask(FROM_HERE, std::move(destroy_receiver_task)))
+-    wait.Wait();
++  {
++    base::WaitableEvent wait;
++    auto destroy_receiver_task = base::BindOnce(
++        [](mojo::Receiver<mojom::GpuService>* receiver,
++           base::WaitableEvent* wait) {
++          receiver->reset();
++          wait->Signal();
++        },
++        &receiver_, base::Unretained(&wait));
++    if (io_runner_->PostTask(FROM_HERE, std::move(destroy_receiver_task)))
++      wait.Wait();
++  }
+ 
+   if (watchdog_thread_)
+     watchdog_thread_->OnGpuProcessTearDown();
+@@ -445,6 +447,26 @@ GpuServiceImpl::~GpuServiceImpl() {
+   media_gpu_channel_manager_.reset();
+   gpu_channel_manager_.reset();
+ 
++  // Destroy |gpu_memory_buffer_factory_| on the IO thread since its weakptrs
++  // are checked there.
++  {
++    base::WaitableEvent wait;
++    auto destroy_gmb_factory = base::BindOnce(
++        [](std::unique_ptr<gpu::GpuMemoryBufferFactory> gmb_factory,
++           base::WaitableEvent* wait) {
++          gmb_factory.reset();
++          wait->Signal();
++        },
++        std::move(gpu_memory_buffer_factory_), base::Unretained(&wait));
++
++    if (io_runner_->PostTask(FROM_HERE, std::move(destroy_gmb_factory))) {
++      // |gpu_memory_buffer_factory_| holds a raw pointer to
++      // |vulkan_context_provider_|. Waiting here enforces the correct order
++      // of destruction.
++      wait.Wait();
++    }
++  }
++
+   // Scheduler must be destroyed before sync point manager is destroyed.
+   scheduler_.reset();
+   owned_sync_point_manager_.reset();

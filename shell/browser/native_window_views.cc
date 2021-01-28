@@ -1368,6 +1368,10 @@ void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
 #endif
 }
 
+void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
+  widget_destroyed_ = true;
+}
+
 void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && this->parent()) {
     auto* parent = this->parent();
@@ -1411,6 +1415,16 @@ views::View* NativeWindowViews::GetContentsView() {
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
+  // App window should claim mouse events that fall within any BrowserViews'
+  // draggable region.
+  for (auto* view : browser_views()) {
+    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
+    auto* view_draggable_region = native_view->draggable_region();
+    if (view_draggable_region &&
+        view_draggable_region->contains(location.x(), location.y()))
+      return false;
+  }
+
   // App window should claim mouse events that fall within the draggable region.
   if (draggable_region() &&
       draggable_region()->contains(location.x(), location.y()))
@@ -1454,6 +1468,9 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  if (widget_destroyed_)
+    return;
+
 #if defined(OS_LINUX)
   if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
     NotifyWindowExecuteAppCommand(kBrowserBackward);

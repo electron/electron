@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 10 Dec 2020 14:39:33 -0800
+Subject: fix: add SafeForTerminationScopes for SIGINT interruptions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We start Node.js with only_terminate_in_safe_scope set to true becuase
+it's set by gin’s IsolateHolder. In those cases, parts of the API that
+expect execution termination to happen need to be marked as able to
+receive those events.
+
+Upstreamed at https://github.com/nodejs/node/pull/36344.
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 29078bf6e58ce1782c08946dae760e7d62de486d..592cdedaa427393296ae5d9cd7c3a0d124b52673 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -313,6 +313,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
+ 
+   ShouldNotAbortOnUncaughtScope no_abort_scope(env);
+   TryCatchScope try_catch(env);
++  Isolate::SafeForTerminationScope safe_for_termination(env->isolate());
+ 
+   bool timed_out = false;
+   bool received_signal = false;
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 2d30e0b8038ce473d1c8740861e13c5eabc2a0be..0902ac29b6f48c86302954a22a6e3318dc29836e 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -902,6 +902,7 @@ bool ContextifyScript::EvalMachine(Environment* env,
+     return false;
+   }
+   TryCatchScope try_catch(env);
++  Isolate::SafeForTerminationScope safe_for_termination(env->isolate());
+   ContextifyScript* wrapped_script;
+   ASSIGN_OR_RETURN_UNWRAP(&wrapped_script, args.Holder(), false);
+   Local<UnboundScript> unbound_script =

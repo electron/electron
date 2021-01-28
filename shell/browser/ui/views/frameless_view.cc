@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/frameless_view.h"
 
+#include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
@@ -67,6 +68,15 @@ gfx::Rect FramelessView::GetWindowBoundsForClientBounds(
 int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
+
+  // Check attached BrowserViews for potential draggable areas.
+  for (auto* view : window_->browser_views()) {
+    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
+    auto* view_draggable_region = native_view->draggable_region();
+    if (view_draggable_region &&
+        view_draggable_region->contains(cursor.x(), cursor.y()))
+      return HTCAPTION;
+  }
 
   // Check for possible draggable region in the client area for the frameless
   // window.
