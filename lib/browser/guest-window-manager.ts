@@ -47,6 +47,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     embedder,
     features,
     frameName,
+    isNativeWindowOpen,
     overrideOptions: overrideBrowserWindowOptions
   });
 
@@ -199,10 +200,11 @@ const securityWebPreferences: { [key: string]: boolean } = {
   enableWebSQL: false
 };
 
-function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOptions, useDeprecatedBehaviorForBareValues = true, useDeprecatedBehaviorForOptionInheritance = true }: {
+function makeBrowserWindowOptions ({ embedder, features, frameName, isNativeWindowOpen, overrideOptions, useDeprecatedBehaviorForBareValues = true, useDeprecatedBehaviorForOptionInheritance = true }: {
   embedder: WebContents,
   features: string,
   frameName: string,
+  isNativeWindowOpen: boolean,
   overrideOptions?: BrowserWindowConstructorOptions,
   useDeprecatedBehaviorForBareValues?: boolean
   useDeprecatedBehaviorForOptionInheritance?: boolean
@@ -216,9 +218,9 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, overrideOpti
     options: {
       ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       show: true,
-      title: frameName,
       width: 800,
       height: 600,
+      ...(!isNativeWindowOpen && { title: frameName }),
       ...parsedOptions,
       ...overrideOptions,
       webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
