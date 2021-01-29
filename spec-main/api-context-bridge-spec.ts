@@ -283,7 +283,7 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'Uncaught Error: i-rejected');
+        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
       });
 
       it('should proxy nested promises and reject with the correct value', async () => {
@@ -300,7 +300,7 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'Uncaught Error: i-rejected');
+        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
       });
 
       it('should proxy promises and resolve with the correct value if it resolves later', async () => {
@@ -833,6 +833,12 @@ describe('contextBridge', () => {
             getArr: () => [123, 'string', true, ['foo']],
             getPromise: async () => ({ number: 123, string: 'string', boolean: true, fn: () => 'string', arr: [123, 'string', true, ['foo']] }),
             getFunctionFromFunction: async () => () => null,
+            getError: () => new Error('foo'),
+            getWeirdError: () => {
+              const e = new Error('foo');
+              e.message = { garbage: true } as any;
+              return e;
+            },
             object: {
               number: 123,
               string: 'string',
@@ -892,6 +898,10 @@ describe('contextBridge', () => {
             [cleanedRoot.getFunctionFromFunction, Function],
             [cleanedRoot.getFunctionFromFunction(), Promise],
             [await cleanedRoot.getFunctionFromFunction(), Function],
+            [cleanedRoot.getError(), Error],
+            [cleanedRoot.getError().message, String],
+            [cleanedRoot.getWeirdError(), Error],
+            [cleanedRoot.getWeirdError().message, String],
             [cleanedRoot.getPromise(), Promise],
             [await cleanedRoot.getPromise(), Object],
             [(await cleanedRoot.getPromise()).number, Number],

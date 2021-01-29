@@ -127,22 +127,6 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
                           gin::StringToV8(context->GetIsolate(), key)));
 }
 
-// Where the context bridge should create the exception it is about to throw
-enum class BridgeErrorTarget {
-  // The source / calling context.  This is default and correct 99% of the time,
-  // the caller / context asking for the conversion will receive the error and
-  // therefore the error should be made in that context
-  kSource,
-  // The destination / target context.  This should only be used when the source
-  // won't catch the error that results from the value it is passing over the
-  // bridge.  This can **only** occur when returning a value from a function as
-  // we convert the return value after the method has terminated and execution
-  // has been returned to the caller.  In this scenario the error will the be
-  // catchable in the "destination" context and therefore we create the error
-  // there.
-  kDestination
-};
-
 }  // namespace
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
@@ -152,7 +136,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth,
-    BridgeErrorTarget error_target = BridgeErrorTarget::kSource) {
+    BridgeErrorTarget error_target) {
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContext");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
@@ -288,6 +272,18 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // re-construct in the destination context
   if (value->IsNativeError()) {
     v8::Context::Scope destination_context_scope(destination_context);
+    // We should try to pull "message" straight off of the error as a
+    // v8::Message includes some pretext that can get duplicated each time it
+    // crosses the bridge we fallback to the v8::Message approach if we can't
+    // pull "message" for some reason
+    v8::MaybeLocal<v8::Value> maybe_message = value.As<v8::Object>()->Get(
+        source_context,
+        gin::ConvertToV8(source_context->GetIsolate(), "message"));
+    v8::Local<v8::Value> message;
+    if (maybe_message.ToLocal(&message) && message->IsString()) {
+      return v8::MaybeLocal<v8::Value>(
+          v8::Exception::Error(message.As<v8::String>()));
+    }
     return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
         v8::Exception::CreateMessage(destination_context->GetIsolate(), value)
             ->Get()));
