@@ -80,7 +80,7 @@ class MenuBar : public views::AccessiblePaneView,
   // views::View:
   const char* GetClassName() const override;
 
-  void ButtonPressed(views::Button* source, const ui::Event& event);
+  void ButtonPressed(int id, const ui::Event& event);
 
   void RebuildChildren();
   void UpdateViewColors();

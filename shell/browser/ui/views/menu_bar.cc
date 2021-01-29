@@ -167,7 +167,7 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
 
         if (keycode == accelerator.key_code()) {
           auto event = accelerator.ToKeyEvent();
-          ButtonPressed(button, event);
+          ButtonPressed(button->tag(), event);
           return true;
         }
       }
@@ -254,7 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
+void MenuBar::ButtonPressed(int id, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
@@ -264,12 +264,21 @@ void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   if (!window_->HasFocus())
     window_->RequestFocus();
 
-  int id = source->tag();
   ElectronMenuModel::ItemType type = menu_model_->GetTypeAt(id);
   if (type != ElectronMenuModel::TYPE_SUBMENU) {
     menu_model_->ActivatedAt(id, 0);
     return;
   }
+
+  SubmenuButton* source = nullptr;
+  for (auto* child : children()) {
+    auto* button = static_cast<SubmenuButton*>(child);
+    if (button->tag() == id) {
+      source = button;
+      break;
+    }
+  }
+  DCHECK(source);
 
   // Deleted in MenuDelegate::OnMenuClosed
   auto* menu_delegate = new MenuDelegate(this);
@@ -304,12 +313,10 @@ void MenuBar::OnThemeChanged() {
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
-    auto* button =
-        new SubmenuButton(menu_model_->GetLabelAt(i), background_color_);
+    auto* button = new SubmenuButton(
+        base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
+        menu_model_->GetLabelAt(i), background_color_);
     button->set_tag(i);
-    button->SetCallback(base::BindRepeating(&MenuBar::ButtonPressed,
-                                            base::Unretained(this),
-                                            base::Unretained(button)));
     AddChildView(button);
   }
   UpdateViewColors();
