@@ -85,7 +85,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
       httpReferrer: referrer,
       ...(postData && {
         postData,
-        extraHeaders: formatPostDataHeaders(postData)
+        extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
       })
     });
   }
@@ -134,7 +134,7 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
  * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
  */
 function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, additionalFeatures, disposition, referrer, postData }: {
-  event: { sender: WebContents, defaultPrevented: boolean },
+  event: { sender: WebContents, defaultPrevented: boolean, newGuest?: BrowserWindow },
   embedder: WebContents,
   guest?: WebContents,
   windowOpenArgs: WindowOpenArgs,
@@ -145,10 +145,10 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
   postData?: PostData,
 }): boolean {
   const { url, frameName } = windowOpenArgs;
-  const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && (embedder as any).getLastWebPreferences().disablePopups;
+  const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences().disablePopups;
   const postBody = postData ? {
     data: postData,
-    headers: formatPostDataHeaders(postData)
+    headers: formatPostDataHeaders(postData as Electron.UploadRawData[])
   } : null;
 
   embedder.emit(
@@ -166,14 +166,14 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
     postBody
   );
 
-  const { newGuest } = event as any;
+  const { newGuest } = event;
   if (isWebViewWithPopupsDisabled) return true;
   if (event.defaultPrevented) {
     if (newGuest) {
       if (guest === newGuest.webContents) {
         // The webContents is not changed, so set defaultPrevented to false to
         // stop the callers of this event from destroying the webContents.
-        (event as any).defaultPrevented = false;
+        event.defaultPrevented = false;
       }
 
       handleWindowLifecycleEvents({
@@ -224,7 +224,7 @@ function makeBrowserWindowOptions ({ embedder, features, frameName, isNativeWind
       ...parsedOptions,
       ...overrideOptions,
       webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
-    }
+    } as Electron.BrowserViewConstructorOptions
   };
 }
 
@@ -239,13 +239,13 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   useDeprecatedBehaviorForOptionInheritance?: boolean
 }) {
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
-  const parentWebPreferences = (embedder as any).getLastWebPreferences();
-  const securityWebPreferencesFromParent = Object.keys(securityWebPreferences).reduce((map, key) => {
-    if (securityWebPreferences[key] === parentWebPreferences[key]) {
-      map[key] = parentWebPreferences[key];
+  const parentWebPreferences = embedder.getLastWebPreferences();
+  const securityWebPreferencesFromParent = (Object.keys(securityWebPreferences).reduce((map, key) => {
+    if (securityWebPreferences[key] === parentWebPreferences[key as keyof Electron.WebPreferences]) {
+      (map as any)[key] = parentWebPreferences[key as keyof Electron.WebPreferences];
     }
     return map;
-  }, {} as any);
+  }, {} as Electron.WebPreferences));
   const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
 
   return {
@@ -270,18 +270,18 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
  * only critical security preferences will be inherited by default.
  */
 function getDeprecatedInheritedOptions (embedder: WebContents) {
-  if (!(embedder as any).browserWindowOptions) {
+  if (!embedder.browserWindowOptions) {
     // If it's a webview, return just the webPreferences.
     return {
-      webPreferences: (embedder as any).getLastWebPreferences()
+      webPreferences: embedder.getLastWebPreferences()
     };
   }
 
-  const { type, show, ...inheritableOptions } = (embedder as any).browserWindowOptions;
+  const { type, show, ...inheritableOptions } = embedder.browserWindowOptions;
   return inheritableOptions;
 }
 
-function formatPostDataHeaders (postData: any) {
+function formatPostDataHeaders (postData: Electron.UploadRawData[]) {
   if (!postData) return;
 
   let extraHeaders = 'content-type: application/x-www-form-urlencoded';

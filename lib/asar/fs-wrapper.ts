@@ -639,8 +639,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   fs.promises.readdir = util.promisify(fs.readdir);
 
+  type ReaddirSyncOptions = { encoding: BufferEncoding | null; withFileTypes?: false };
+
   const { readdirSync } = fs;
-  fs.readdirSync = function (pathArgument: string, options: { encoding: BufferEncoding | null; withFileTypes?: false } | BufferEncoding | null) {
+  fs.readdirSync = function (pathArgument: string, options: ReaddirSyncOptions | BufferEncoding | null) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return readdirSync.apply(this, arguments);
     const { asarPath, filePath } = pathInfo;
@@ -655,7 +657,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
     }
 
-    if (options && (options as any).withFileTypes) {
+    if (options && (options as ReaddirSyncOptions).withFileTypes) {
       const dirents = [];
       for (const file of files) {
         const childPath = path.join(filePath, file);

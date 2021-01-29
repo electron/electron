@@ -60,7 +60,7 @@ export class WebViewAttribute implements MutationHandler {
   }
 
   // Called when the attribute's value changes.
-  public handleMutation: MutationHandler['handleMutation'] = () => undefined as any
+  public handleMutation: MutationHandler['handleMutation'] = () => undefined
 }
 
 // An attribute that is treated as a Boolean.

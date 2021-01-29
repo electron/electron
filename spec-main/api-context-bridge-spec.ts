@@ -981,7 +981,7 @@ describe('contextBridge', () => {
         describe('overrideGlobalValueFromIsolatedWorld', () => {
           it('should override top level properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['open'], () => ({ you: 'are a wizard' }));
+              contextBridge.internalContextBridge!.overrideGlobalValueFromIsolatedWorld(['open'], () => ({ you: 'are a wizard' }));
             });
             const result = await callWithBindings(async (root: any) => {
               return root.open();
@@ -991,7 +991,7 @@ describe('contextBridge', () => {
 
           it('should override deep properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['document', 'foo'], () => 'I am foo');
+              contextBridge.internalContextBridge!.overrideGlobalValueFromIsolatedWorld(['document', 'foo'], () => 'I am foo');
             });
             const result = await callWithBindings(async (root: any) => {
               return root.document.foo();
@@ -1008,7 +1008,7 @@ describe('contextBridge', () => {
                 callCount++;
                 return true;
               };
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], getter);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], getter);
               contextBridge.exposeInMainWorld('foo', {
                 callCount: () => callCount
               });
@@ -1022,7 +1022,7 @@ describe('contextBridge', () => {
 
           it('should not make a setter if none is provided', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true);
             });
             const result = await callWithBindings(async (root: any) => {
               root.isFun = 123;
@@ -1038,7 +1038,7 @@ describe('contextBridge', () => {
                 callArgs.push(args);
                 return true;
               };
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true, setter);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true, setter);
               contextBridge.exposeInMainWorld('foo', {
                 callArgs: () => callArgs
               });
@@ -1056,7 +1056,7 @@ describe('contextBridge', () => {
         describe('overrideGlobalValueWithDynamicPropsFromIsolatedWorld', () => {
           it('should not affect normal values', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 a: 123,
                 b: () => 2,
                 c: () => ({ d: 3 })
@@ -1070,7 +1070,7 @@ describe('contextBridge', () => {
 
           it('should work with getters', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 get foo () {
                   return 'hi there';
                 }
@@ -1085,7 +1085,7 @@ describe('contextBridge', () => {
           it('should work with setters', async () => {
             await makeBindingWindow(() => {
               let a: any = null;
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 get foo () {
                   return a;
                 },
@@ -1103,7 +1103,7 @@ describe('contextBridge', () => {
 
           it('should work with deep properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 a: () => ({
                   get foo () {
                     return 'still here';

@@ -206,7 +206,7 @@ const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...a
     if (remoteEvents.length > 0) {
       message += `\nRemote event names: ${remoteEvents.join(', ')}`;
       remoteEvents.forEach((eventName) => {
-        sender.removeListener(eventName as any, callIntoRenderer);
+        sender.removeListener(eventName, callIntoRenderer);
       });
     }
   }
@@ -365,7 +365,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_REQUIRE, function (event, contextId, mo
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.require('${moduleName}')`);
     } else {
-      customEvent.returnValue = (process as any).mainModule.require(moduleName);
+      customEvent.returnValue = process.mainModule.require(moduleName);
     }
   }
 
