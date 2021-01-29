@@ -109,8 +109,11 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image), isolate_(isolate) {
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(
-        image_.ToImageSkia()->bitmap()->computeByteSize());
+    auto* const image_skia = image_.ToImageSkia();
+    if (!image_skia->isNull()) {
+      isolate_->AdjustAmountOfExternalAllocatedMemory(
+          image_skia->bitmap()->computeByteSize());
+    }
   }
 }
 
@@ -122,16 +125,21 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(
-        image_.ToImageSkia()->bitmap()->computeByteSize());
+    if (!image_skia.isNull()) {
+      isolate_->AdjustAmountOfExternalAllocatedMemory(
+          image_.ToImageSkia()->bitmap()->computeByteSize());
+    }
   }
 }
 #endif
 
 NativeImage::~NativeImage() {
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(-static_cast<int64_t>(
-        image_.ToImageSkia()->bitmap()->computeByteSize()));
+    auto* const image_skia = image_.ToImageSkia();
+    if (!image_skia->isNull()) {
+      isolate_->AdjustAmountOfExternalAllocatedMemory(
+          image_skia->bitmap()->computeByteSize());
+    }
   }
 }
 
@@ -325,7 +333,9 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
   bool height_set = options.GetInteger("height", &height);
   size.SetSize(width, height);
 
-  if (width_set && !height_set) {
+  if (width <= 0 && height <= 0) {
+    return CreateEmpty(args->isolate());
+  } else if (width_set && !height_set) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
     size =
@@ -500,8 +510,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
 
-  gfx::ImageSkia image_skia;
-  image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
+  gfx::ImageSkia image_skia =
+      gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
   return Create(thrower.isolate(), gfx::Image(image_skia));
 }
