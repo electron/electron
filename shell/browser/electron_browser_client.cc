@@ -1106,6 +1106,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
   RemoveProcessPreferences(process_id);
+  host->RemoveObserver(this);
 }
 
 void ElectronBrowserClient::RenderProcessReady(
@@ -1566,15 +1567,18 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 }
 
 #if defined(OS_WIN)
-bool ElectronBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
-                                             RendererSpawnFlags flags) {
-  // Allow crashpad to communicate via named pipe.
-  sandbox::ResultCode result = policy->AddRule(
-      sandbox::TargetPolicy::SUBSYS_FILES,
-      sandbox::TargetPolicy::FILES_ALLOW_ANY, L"\\??\\pipe\\crashpad_*");
-  if (result != sandbox::SBOX_ALL_OK)
-    return false;
-  return true;
+bool ElectronBrowserClient::PreSpawnChild(
+    sandbox::TargetPolicy* policy,
+    sandbox::policy::SandboxType sandbox_type,
+    ChildSpawnFlags flags) override;
+// Allow crashpad to communicate via named pipe.
+sandbox::ResultCode result =
+    policy->AddRule(sandbox::TargetPolicy::SUBSYS_FILES,
+                    sandbox::TargetPolicy::FILES_ALLOW_ANY,
+                    L"\\??\\pipe\\crashpad_*");
+if (result != sandbox::SBOX_ALL_OK)
+  return false;
+return true;
 }
 #endif  // defined(OS_WIN)
 
