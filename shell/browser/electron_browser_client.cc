@@ -1570,15 +1570,14 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 bool ElectronBrowserClient::PreSpawnChild(
     sandbox::TargetPolicy* policy,
     sandbox::policy::SandboxType sandbox_type,
-    ChildSpawnFlags flags) override;
-// Allow crashpad to communicate via named pipe.
-sandbox::ResultCode result =
-    policy->AddRule(sandbox::TargetPolicy::SUBSYS_FILES,
-                    sandbox::TargetPolicy::FILES_ALLOW_ANY,
-                    L"\\??\\pipe\\crashpad_*");
-if (result != sandbox::SBOX_ALL_OK)
-  return false;
-return true;
+    ChildSpawnFlags flags) {
+  // Allow crashpad to communicate via named pipe.
+  sandbox::ResultCode result = policy->AddRule(
+      sandbox::TargetPolicy::SUBSYS_FILES,
+      sandbox::TargetPolicy::FILES_ALLOW_ANY, L"\\??\\pipe\\crashpad_*");
+  if (result != sandbox::SBOX_ALL_OK)
+    return false;
+  return true;
 }
 #endif  // defined(OS_WIN)
 
