@@ -1,0 +1,8 @@
+{
+  "name": "load-error",
+  "version": "1.0",
+  "icons": {
+    "16": "/images/error.png"
+  },
+  "manifest_version": 2
+}
