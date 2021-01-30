@@ -21,7 +21,7 @@
 @class ElectronNSWindowDelegate;
 @class ElectronPreviewItem;
 @class ElectronTouchBar;
-@class CustomWindowButtonView;
+@class WindowButtonsView;
 
 namespace electron {
 
@@ -139,6 +139,11 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void CloseFilePreview() override;
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+  void NotifyWindowEnterFullScreen() override;
+  void NotifyWindowLeaveFullScreen() override;
+
+  void NotifyWindowWillEnterFullScreen();
+  void NotifyWindowWillLeaveFullScreen();
 
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
@@ -152,8 +157,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
-
-  void SetExitingFullScreen(bool flag);
 
   enum class VisualEffectState {
     kFollowWindow,
@@ -172,7 +175,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   ElectronPreviewItem* preview_item() const { return preview_item_.get(); }
   ElectronTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
-  bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
   bool exiting_fullscreen() const { return exiting_fullscreen_; }
 
@@ -186,9 +188,10 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
 
  private:
   // Add custom layers to the content view.
-  void AddContentViewLayers(bool minimizable, bool closable);
+  void AddContentViewLayers();
 
   void InternalSetWindowButtonVisibility(bool visible);
+  void InternalSetStandardButtonsVisibility(bool visible);
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
 
@@ -197,7 +200,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;
   base::scoped_nsobject<ElectronTouchBar> touch_bar_;
-  base::scoped_nsobject<CustomWindowButtonView> buttons_view_;
+  base::scoped_nsobject<WindowButtonsView> buttons_view_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
@@ -213,7 +216,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool is_kiosk_ = false;
   bool was_fullscreen_ = false;
   bool zoom_to_page_width_ = false;
-  bool fullscreen_window_title_ = false;
   bool resizable_ = true;
   bool exiting_fullscreen_ = false;
   base::Optional<gfx::Point> traffic_light_position_;

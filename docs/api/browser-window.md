@@ -222,16 +222,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the top left.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-    * `customButtonsOnHover` Boolean (optional) - Draw custom close,
-      and minimize buttons on macOS frameless windows. These buttons will not display
-      unless hovered over in the top left of the window. These custom buttons prevent
-      issues with mouse events that occur with the standard window toolbar buttons.
-      **Note:** This option is currently experimental.
+    * `customButtonsOnHover` - Results in a hidden title bar and a full size
+      content window, the traffic light buttons will display when being hovered
+      over in the top left of the window.  **Note:** This option is currently
+      experimental.
   * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a
-    custom position for the traffic light buttons. Can only be used with
-    `titleBarStyle` set to `hidden` or `customButtonsOnHover`.
-  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
-    title bar in full screen mode on macOS for all `titleBarStyle` options.
+    custom position for the traffic light buttons in frameless windows.
+  * `fullscreenWindowTitle` Boolean (optional) _Deprecated_ - Shows the title in
+    the title bar in full screen mode on macOS for `hiddenInset` titleBarStyle.
     Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
@@ -1740,13 +1738,12 @@ deprecated and will be removed in an upcoming version of macOS.
 
 * `position` [Point](structures/point.md)
 
-Set a custom position for the traffic light buttons. Can only be used with
-`titleBarStyle` set to `hidden` or `customButtonsOnHover`.
+Set a custom position for the traffic light buttons in frameless window.
 
 #### `win.getTrafficLightPosition()` _macOS_
 
-Returns `Point` - The current position for the traffic light buttons. Can only
-be used with `titleBarStyle` set to `hidden` or `customButtonsOnHover`.
+Returns `Point` - The custom position for the traffic light buttons in
+frameless window.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 

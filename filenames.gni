@@ -180,6 +180,8 @@ filenames = {
     "shell/browser/ui/cocoa/root_view_mac.mm",
     "shell/browser/ui/cocoa/views_delegate_mac.h",
     "shell/browser/ui/cocoa/views_delegate_mac.mm",
+    "shell/browser/ui/cocoa/window_buttons_view.h",
+    "shell/browser/ui/cocoa/window_buttons_view.mm",
     "shell/browser/ui/drag_util_mac.mm",
     "shell/browser/ui/file_dialog_mac.mm",
     "shell/browser/ui/inspectable_web_contents_view_mac.h",
