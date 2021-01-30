@@ -111,6 +111,12 @@ describe('chrome extensions', () => {
     expect(bg).to.equal('red');
   });
 
+  it('does not crash when failing to load an extension', async () => {
+    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const promise = customSession.loadExtension(path.join(fixtures, 'extensions', 'load-error'));
+    await expect(promise).to.eventually.be.rejected();
+  });
+
   it('serializes a loaded extension', async () => {
     const extensionPath = path.join(fixtures, 'extensions', 'red-bg');
     const manifest = JSON.parse(fs.readFileSync(path.join(extensionPath, 'manifest.json'), 'utf-8'));
