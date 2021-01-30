@@ -187,6 +187,17 @@ describe('BrowserView module', () => {
         w.setTopBrowserView(view);
       }).to.throw(/is not attached/);
     });
+
+    it('should throw an error when a BrowserView is attached to some other window', () => {
+      view = new BrowserView();
+
+      const window2 = new BrowserWindow();
+      window2.addBrowserView(view);
+
+      expect(() => {
+        w.setTopBrowserView(view);
+      }).to.throw(/is not attached/);
+    });
   });
 
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
