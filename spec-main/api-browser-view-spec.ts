@@ -191,8 +191,11 @@ describe('BrowserView module', () => {
     it('should throw an error when a BrowserView is attached to some other window', () => {
       view = new BrowserView();
 
-      const window2 = new BrowserWindow();
-      window2.addBrowserView(view);
+      const win2 = new BrowserWindow();
+
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 100, height: 100 });
+      win2.addBrowserView(view);
 
       expect(() => {
         w.setTopBrowserView(view);
