@@ -34,6 +34,7 @@ class ServiceWorkerContext
   void OnReportConsoleMessage(int64_t version_id,
                               const GURL& scope,
                               const content::ConsoleMessage& message) override;
+  void OnRegistrationCompleted(const GURL& scope) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
   // gin::Wrappable

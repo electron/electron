@@ -15,6 +15,7 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -100,6 +101,10 @@ void ServiceWorkerContext::OnReportConsoleMessage(
            .Set("lineNumber", message.line_number)
            .Set("sourceUrl", message.source_url.spec())
            .Build());
+}
+
+void ServiceWorkerContext::OnRegistrationCompleted(const GURL& scope) {
+  Emit("registration-completed", scope);
 }
 
 void ServiceWorkerContext::OnDestruct(content::ServiceWorkerContext* context) {

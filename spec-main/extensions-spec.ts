@@ -650,4 +650,16 @@ describe('chrome extensions', () => {
       expect(textContent).to.equal('script loaded ok\n');
     });
   });
+
+  describe('manifest v3', () => {
+    it('registers background service worker', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const registrationPromise = new Promise<string>(resolve => {
+        customSession.serviceWorkers.once('registration-completed', (event, scope) => resolve(scope));
+      });
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+      const swScope = await registrationPromise;
+      expect(swScope).equals(extension.url);
+    });
+  });
 });

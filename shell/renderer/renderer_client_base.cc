@@ -118,9 +118,6 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     url::AddSecureScheme(scheme.data());
-  // In Chrome we should set extension's origins to match the pages they can
-  // work on, but in Electron currently we just let extensions do anything.
-  url::AddSecureScheme(extensions::kExtensionScheme);
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,

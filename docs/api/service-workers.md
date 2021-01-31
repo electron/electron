@@ -45,6 +45,15 @@ Returns:
 
 Emitted when a service worker logs something to the console.
 
+#### Event: 'registration-completed'
+
+Returns:
+
+* `event` Event
+* `scope` String - The base URL that a service worker is registered for.
+
+Emitted when a service worker has been registered.
+
 ### Instance Methods
 
 The following methods are available on instances of `ServiceWorkers`:
