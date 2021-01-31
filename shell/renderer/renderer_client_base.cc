@@ -427,6 +427,20 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
 #endif
 }
 
+void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
+    blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Local<v8::Context> v8_context,
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_->GetDispatcher()
+      ->WillEvaluateServiceWorkerOnWorkerThread(
+          context_proxy, v8_context, service_worker_version_id,
+          service_worker_scope, script_url);
+#endif
+}
+
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
