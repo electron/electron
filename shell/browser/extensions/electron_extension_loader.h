@@ -37,6 +37,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
   void LoadExtension(const base::FilePath& extension_dir,
+                     int load_flags,
                      base::OnceCallback<void(const Extension* extension,
                                              const std::string&)> cb);
 

@@ -41,6 +41,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // success, or nullptr otherwise.
   void LoadExtension(
       const base::FilePath& extension_dir,
+      int load_flags,
       base::OnceCallback<void(const Extension*, const std::string&)> cb);
 
   // Finish initialization for the shell extension system.
