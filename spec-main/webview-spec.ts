@@ -200,7 +200,7 @@ describe('<webview> tag', function () {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
               const { UI } = (window as any);
               const tabs = UI.inspectorView._tabbedPane._tabs;
-              const lastPanelId: any = tabs[tabs.length - 1].id;
+              const lastPanelId = tabs[tabs.length - 1].id;
               UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');
           } else {
