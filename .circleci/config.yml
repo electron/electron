@@ -452,10 +452,6 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python src/tools/clang/scripts/update.py
-        # Temporarily use an older version of gn
-        unset CI
-        python src/buildtools/ensure_gn_version.py git_revision:53d92014bf94c3893886470a1c7c1289f8818db0
-        export CI=true
       fi
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
