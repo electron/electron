@@ -45,7 +45,6 @@
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
@@ -128,10 +127,6 @@
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/printing_message_filter.h"
-#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "chrome/common/webui_url_constants.h"
@@ -535,11 +530,6 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
 
   auto* browser_context = host->GetBrowserContext();
   ALLOW_UNUSED_LOCAL(browser_context);
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  host->AddFilter(
-      new printing::PrintingMessageFilter(process_id, browser_context));
-#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   host->AddFilter(

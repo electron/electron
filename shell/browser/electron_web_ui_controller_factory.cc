@@ -40,12 +40,6 @@ bool ElectronWebUIControllerFactory::UseWebUIForURL(
   return GetWebUIType(browser_context, url) != content::WebUI::kNoWebUI;
 }
 
-bool ElectronWebUIControllerFactory::UseWebUIBindingsForURL(
-    content::BrowserContext* browser_context,
-    const GURL& url) {
-  return UseWebUIForURL(browser_context, url);
-}
-
 std::unique_ptr<content::WebUIController>
 ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
     content::WebUI* web_ui,

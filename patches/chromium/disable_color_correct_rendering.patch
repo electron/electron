@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 33b0abba38ee3531353a5dd5548c63886f68c1e0..ec1c418ce090589b44d67f5ecb3f0e4b048eb505 100644
+index 3988b82b28eedcad0e776f109853b32672423684..803342c0eccf3ddd5e307cf1bc0c97c4b121d6aa 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1773,6 +1773,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1770,6 +1770,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,7 +35,7 @@ index 33b0abba38ee3531353a5dd5548c63886f68c1e0..ec1c418ce090589b44d67f5ecb3f0e4b
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 3d411412c72f3d23f71529617e7d11fe34509c34..f7d66bc1e075c0313d16b3c426ebefa0f5c85d72 100644
+index 63f087b74b93efe884df3833865e9aa7af912508..eb41d143ed1dd622a362b0f008a725034d6e1a97 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -97,6 +97,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -60,7 +60,7 @@ index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f1035f27bef6 100644
+index 88045687f03cbefa8c2adaee65f6ada75d3f3e52..53cb6859dd951dd79f9d463c2bb2177268f1a251 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -229,7 +229,7 @@ index 9f60a5f7b0062775b8451a82658b1c719775b332..7053104b6575991f2edbeff89028bd1b
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 28799999f686d71c905efd9becc5b6fcb2a4fca2..87b2a9846a2f8192a8d5c27a644f98a6392df496 100644
+index d5d68aa5a40b577d7d7b545cdc67f60e18acdf86..8ab5b75d7eee5f3e17b997abcd84f504ec6283ea 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index 28799999f686d71c905efd9becc5b6fcb2a4fca2..87b2a9846a2f8192a8d5c27a644f98a6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1b4d95b6dd43bcb030bba4aa1f2454c7466c82ba..3967ee4920aaeffa9aa52535eee275eb5ad7872f 100644
+index 3da3babcc13efc598faf17a4349dae73b908c380..9fd391a313f8fedeffc948201a5caf373ba3b12d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -220,6 +220,7 @@
@@ -252,7 +252,7 @@ index 1b4d95b6dd43bcb030bba4aa1f2454c7466c82ba..3967ee4920aaeffa9aa52535eee275eb
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3195,6 +3196,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3175,6 +3176,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -261,7 +261,7 @@ index 1b4d95b6dd43bcb030bba4aa1f2454c7466c82ba..3967ee4920aaeffa9aa52535eee275eb
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9b14d797a 100644
+index 9bd9885624666a8d65b0b1bb710c79077321c451..ff5842db80d81adc8f17d2eef36e82d37dbdbe47 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -271,8 +271,8 @@ index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9
 +#include "base/command_line.h"
  #include "cc/paint/skia_paint_canvas.h"
  #include "components/viz/common/resources/resource_format_utils.h"
- #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -13,6 +14,7 @@
+ #include "third_party/blink/renderer/platform/graphics/canvas_resource_params.h"
+@@ -14,6 +15,7 @@
  #include "third_party/khronos/GLES3/gl3.h"
  #include "third_party/skia/include/core/SkSurfaceProps.h"
  #include "ui/gfx/color_space.h"
@@ -280,19 +280,7 @@ index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9
  
  namespace blink {
  
-@@ -92,6 +94,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
- }
- 
- gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
-+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-+  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
-+    return gfx::ColorSpace();
-+  }
-+
-   // TODO(ccameron): If we add support for uint8srgb as a pixel format, this
-   // will need to take into account whether or not this texture will be sampled
-   // in linear or nonlinear space.
-@@ -99,6 +106,11 @@ gfx::ColorSpace CanvasColorParams::GetSamplerGfxColorSpace() const {
+@@ -144,6 +146,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
@@ -305,7 +293,7 @@ index 8d6308af4befcac7c0a0f1cce3a4af89ff248895..b83fdd165b3d9c7bfaf1524d03c319c9
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e5ce4688b 100644
+index 2c8e7445e9226f4860a0d36284e0cf770dbaa233..6cabd21b8dd996578d9aa02a553d4e3bca5fde04 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -316,7 +304,7 @@ index 008619ad943c432b5bc013943195be9b7995213e..042c9eb43bbe1fb34cf86f53072c249e
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -179,6 +180,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -177,6 +178,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

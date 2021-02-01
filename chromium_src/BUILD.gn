@@ -217,8 +217,6 @@ static_library("chrome") {
       "//chrome/browser/printing/print_view_manager_basic.h",
       "//chrome/browser/printing/printer_query.cc",
       "//chrome/browser/printing/printer_query.h",
-      "//chrome/browser/printing/printing_message_filter.cc",
-      "//chrome/browser/printing/printing_message_filter.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
     ]

@@ -94,7 +94,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 504c1f1efd5d9bdfad5b4fe65475fd3f18dad0c9..c8abc5ca4847b71e4a400acce621a97f22c23d1c 100644
+index c66d791c7c9ade70473ba7f91056d403b10df24b..d1fb89d2ef0f81f2fbe37fabc8e466984d24280c 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -119,6 +119,8 @@ viz_component("service") {
@@ -455,10 +455,10 @@ index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c0
    waiting_on_draw_ack_ = true;
  
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 8532a82205834ed6eee143abb577945e177d2a9a..f7a5f787f1016355e90b1a1ecd2641fa8e8c5fda 100644
+index 11ac1649ed0f5be1d12e8a30b8d170f86b8e9bb8..ade5afce4a5d3c9e44081a3b1ac971b595e7a5da 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -410,8 +410,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -414,8 +414,13 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
@@ -475,10 +475,10 @@ index 8532a82205834ed6eee143abb577945e177d2a9a..f7a5f787f1016355e90b1a1ecd2641fa
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
-index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab1cacffef 100644
+index 4ff82130b358cd4f0bf1bd5673a9f7b89c087ea5..2bb5dfb20ab58b623b43da1f36b4d586cd5b8ecb 100644
 --- a/mojo/public/cpp/bindings/sync_call_restrictions.h
 +++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
-@@ -29,6 +29,7 @@ class Compositor;
+@@ -33,6 +33,7 @@ class Compositor;
  
  namespace viz {
  class HostFrameSinkManager;
@@ -486,7 +486,7 @@ index c9a75d59b7eb480c3e64e14bdcb9516150ec368c..7370f0b80057ce7b24560c41b70c0bab
  }
  
  namespace mojo {
-@@ -78,6 +79,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+@@ -83,6 +84,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
    // For destroying the GL context/surface that draw to a platform window before
    // the platform window is destroyed.
    friend class viz::HostFrameSinkManager;
@@ -527,10 +527,10 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index bb08a017bd27b65731baf68264cc880399d5fc65..4c1d2244bf785394f40a2c637f540d9f7094b180 100644
+index e1db8f745c077b2f57b39a48aeab434fe0e98541..08c7dfa4988ef0247b0bd788171e4a9653612f19 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -76,6 +76,7 @@ class ExternalBeginFrameController;
+@@ -77,6 +77,7 @@ class ExternalBeginFrameController;
  class DelegatedInkPointRenderer;
  }  // namespace mojom
  class ContextProvider;
@@ -538,7 +538,7 @@ index bb08a017bd27b65731baf68264cc880399d5fc65..4c1d2244bf785394f40a2c637f540d9f
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -129,6 +130,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -133,6 +134,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -554,7 +554,7 @@ index bb08a017bd27b65731baf68264cc880399d5fc65..4c1d2244bf785394f40a2c637f540d9f
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -163,6 +173,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -167,6 +177,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -564,7 +564,7 @@ index bb08a017bd27b65731baf68264cc880399d5fc65..4c1d2244bf785394f40a2c637f540d9f
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -434,6 +447,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -435,6 +448,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

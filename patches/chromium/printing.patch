@@ -102,10 +102,10 @@ index 47a5b3c2a11ec595ff926df10f856ed3c5375c55..38769ab454b143a1f50d1291a363092c
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d14094510816 100644
+index ae1ab34986d15dcdb3e8db484e7b3cc9d8a2e4ab..7c20cf3c06bca2191be035ac9171ce5ea5ae56b7 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
-@@ -30,10 +30,7 @@
+@@ -29,10 +29,7 @@
  #include "chrome/browser/printing/print_view_manager_common.h"
  #include "chrome/browser/printing/printer_query.h"
  #include "chrome/browser/profiles/profile.h"
@@ -116,7 +116,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  #include "chromeos/constants/chromeos_features.h"
  #include "components/prefs/pref_service.h"
  #include "components/printing/browser/print_composite_client.h"
-@@ -50,6 +47,7 @@
+@@ -49,6 +46,7 @@
  #include "content/public/browser/render_process_host.h"
  #include "content/public/browser/render_view_host.h"
  #include "content/public/browser/web_contents.h"
@@ -124,7 +124,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  #include "mojo/public/cpp/system/buffer.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
-@@ -74,6 +72,8 @@ using PrintSettingsCallback =
+@@ -78,6 +76,8 @@ using PrintSettingsCallback =
      base::OnceCallback<void(std::unique_ptr<PrinterQuery>)>;
  
  void ShowWarningMessageBox(const base::string16& message) {
@@ -133,7 +133,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    // Runs always on the UI thread.
    static bool is_dialog_shown = false;
    if (is_dialog_shown)
-@@ -82,6 +82,7 @@ void ShowWarningMessageBox(const base::string16& message) {
+@@ -86,6 +86,7 @@ void ShowWarningMessageBox(const base::string16& message) {
    base::AutoReset<bool> auto_reset(&is_dialog_shown, true);
  
    chrome::ShowWarningMessageBox(nullptr, base::string16(), message);
@@ -141,7 +141,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -219,7 +220,9 @@ void UpdatePrintSettingsReplyOnIO(
+@@ -223,7 +224,9 @@ void UpdatePrintSettingsReplyOnIO(
    DCHECK(printer_query);
    auto params = mojom::PrintPagesParams::New();
    params->params = mojom::PrintParams::New();
@@ -152,7 +152,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
      RenderParamsFromPrintSettings(printer_query->settings(),
                                    params->params.get());
      params->params->document_cookie = printer_query->cookie();
-@@ -272,12 +275,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
+@@ -346,12 +349,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
      : PrintManager(web_contents),
        queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_);
@@ -167,7 +167,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -285,7 +290,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
+@@ -359,7 +364,10 @@ PrintViewManagerBase::~PrintViewManagerBase() {
    DisconnectFromCurrentPrintJob();
  }
  
@@ -179,7 +179,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    DisconnectFromCurrentPrintJob();
  
    // Don't print / print preview crashed tabs.
-@@ -293,7 +301,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
+@@ -367,7 +375,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
      return false;
  
    SetPrintingRFH(rfh);
@@ -195,7 +195,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    return true;
  }
  
-@@ -414,9 +429,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -488,9 +503,9 @@ void PrintViewManagerBase::StartLocalPrintJob(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -208,7 +208,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -532,12 +547,13 @@ void PrintViewManagerBase::DidPrintDocument(
+@@ -607,12 +622,13 @@ void PrintViewManagerBase::DidPrintDocument(
  void PrintViewManagerBase::GetDefaultPrintSettings(
      GetDefaultPrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -223,7 +223,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    content::RenderFrameHost* render_frame_host =
        print_manager_host_receivers_.GetCurrentTargetFrame();
  
-@@ -553,11 +569,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -628,11 +644,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -237,7 +237,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    if (!job_settings.FindIntKey(kSettingPrinterType)) {
      UpdatePrintSettingsReply(std::move(callback), nullptr, false);
      return;
-@@ -578,7 +595,7 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
+@@ -671,7 +688,7 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
    PrintManager::PrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -246,7 +246,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  #endif
  
    ReleasePrinterQuery();
-@@ -597,6 +614,11 @@ void PrintViewManagerBase::OnScriptedPrint(
+@@ -683,6 +700,11 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
  }
  
  void PrintViewManagerBase::ShowInvalidPrinterSettingsError() {
@@ -258,7 +258,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -666,9 +688,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -752,9 +774,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -274,7 +274,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
        NOTREACHED();
        break;
      }
-@@ -766,8 +792,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -852,8 +878,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -287,7 +287,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
-@@ -791,8 +819,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -877,8 +905,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    print_job_->SetSource(source, /*source_id=*/"");
  #endif
  
@@ -296,7 +296,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    printing_succeeded_ = false;
    return true;
  }
-@@ -841,14 +867,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -927,14 +953,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -321,7 +321,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -884,7 +918,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -970,7 +1004,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -331,7 +331,7 @@ index 94774af53c16d13329c189739fb8c25a58e42494..9364f3bf37d5244bbcedb672e891d140
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 59ef9a7f60dc21bdf1f4f87092e490cc1f1f1fe7..0c6da3f7658314776bf8fd7898a50d4cd30c6eb9 100644
+index 93103940036ece118c511703c20c659d73724202..fcbf4c69d1b6cd30124444158e3f2c6da3371977 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -38,6 +38,8 @@ class PrintJob;
@@ -355,7 +355,7 @@ index 59ef9a7f60dc21bdf1f4f87092e490cc1f1f1fe7..0c6da3f7658314776bf8fd7898a50d4c
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -217,9 +222,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -214,9 +219,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_ = nullptr;
  
@@ -371,83 +371,11 @@ index 59ef9a7f60dc21bdf1f4f87092e490cc1f1f1fe7..0c6da3f7658314776bf8fd7898a50d4c
    // Set while running an inner message loop inside RenderAllMissingPagesNow().
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
-diff --git a/chrome/browser/printing/printing_message_filter.cc b/chrome/browser/printing/printing_message_filter.cc
-index ca5858bffffa5fabd77de502f6453ccd8b315653..943d753ed78276acc094d92b171b7220f1caa49f 100644
---- a/chrome/browser/printing/printing_message_filter.cc
-+++ b/chrome/browser/printing/printing_message_filter.cc
-@@ -22,6 +22,7 @@
- #include "components/printing/browser/print_manager_utils.h"
- #include "components/printing/common/print.mojom.h"
- #include "components/printing/common/print_messages.h"
-+#include "content/public/browser/browser_context.h"
- #include "content/public/browser/browser_task_traits.h"
- #include "content/public/browser/render_frame_host.h"
- #include "content/public/browser/web_contents.h"
-@@ -65,19 +66,22 @@ class PrintingMessageFilterShutdownNotifierFactory
- 
- }  // namespace
- 
--PrintingMessageFilter::PrintingMessageFilter(int render_process_id,
--                                             Profile* profile)
-+PrintingMessageFilter::PrintingMessageFilter(
-+    int render_process_id,
-+    content::BrowserContext* browser_context)
-     : BrowserMessageFilter(PrintMsgStart),
-       render_process_id_(render_process_id),
-       queue_(g_browser_process->print_job_manager()->queue()) {
-   DCHECK(queue_.get());
-   printing_shutdown_subscription_ =
-       PrintingMessageFilterShutdownNotifierFactory::GetInstance()
--          ->Get(profile)
-+          ->Get(browser_context)
-           ->Subscribe(base::Bind(&PrintingMessageFilter::ShutdownOnUIThread,
-                                  base::Unretained(this)));
-+  #if 0
-   is_printing_enabled_.Init(prefs::kPrintingEnabled, profile->GetPrefs());
-   is_printing_enabled_.MoveToSequence(content::GetIOThreadTaskRunner({}));
-+  #endif
- }
- 
- PrintingMessageFilter::~PrintingMessageFilter() {
-@@ -152,7 +156,7 @@ void PrintingMessageFilter::OnScriptedPrintReply(
- #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
- void PrintingMessageFilter::OnCheckForCancel(const mojom::PreviewIds& ids,
-                                              bool* cancel) {
--  *cancel = PrintPreviewUI::ShouldCancelRequest(ids);
-+  *cancel = false;
- }
- #endif
- 
-diff --git a/chrome/browser/printing/printing_message_filter.h b/chrome/browser/printing/printing_message_filter.h
-index ec7bda04cfac09eba3d5285770d1054c2997c170..c36d6eca8c6aa1a23d39d742c04496b4fcc56e4e 100644
---- a/chrome/browser/printing/printing_message_filter.h
-+++ b/chrome/browser/printing/printing_message_filter.h
-@@ -22,6 +22,10 @@
- 
- class Profile;
- 
-+namespace content {
-+class BrowserContext;
-+}
-+
- namespace printing {
- 
- class PrintQueriesQueue;
-@@ -31,7 +35,8 @@ class PrinterQuery;
- // renderer process on the IPC thread.
- class PrintingMessageFilter : public content::BrowserMessageFilter {
-  public:
--  PrintingMessageFilter(int render_process_id, Profile* profile);
-+  PrintingMessageFilter(int render_process_id,
-+                        content::BrowserContext* browser_context);
- 
-   // content::BrowserMessageFilter:
-   bool OnMessageReceived(const IPC::Message& message) override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 2c19fe79d3c4286749bf5e66e3b042b7367b674e..5fe34d36c872945c3bc16b35b2844f4561368254 100644
+index dfbaf97a1c3d73d324095f46a4ea73d68d5188cc..d5fd684fe8cef92ec0432143d284ff0cc825694d 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -230,7 +230,7 @@ interface PrintPreviewUI {
+@@ -246,7 +246,7 @@ interface PrintPreviewUI {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -457,7 +385,7 @@ index 2c19fe79d3c4286749bf5e66e3b042b7367b674e..5fe34d36c872945c3bc16b35b2844f45
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 07c52050b6dd6ebd8dfa06736ec962b889f1c2b7..f78e0a255fdcf4114beb3c7e19efa899424523e9 100644
+index 96bee841f51e340f7c91925b1d5e76c10dd0e6f7..8dcfa1fb449a575b6ce4d611b1a736a17dbd856b 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -545,17 +473,16 @@ index 07c52050b6dd6ebd8dfa06736ec962b889f1c2b7..f78e0a255fdcf4114beb3c7e19efa899
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -1861,10 +1869,41 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -1861,8 +1869,41 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
-     mojom::PrintPagesParams print_settings;
--    print_settings.params = mojom::PrintParams::New();
-+
      auto self = weak_ptr_factory_.GetWeakPtr();
--    GetPrintSettingsFromUser(frame_ref.GetFrame(), node, expected_page_count,
--                             print_request_type, &print_settings);
-+    if (silent)
-+      print_settings.params = mojom::PrintParams::New(
+-    mojom::PrintPagesParamsPtr print_settings = GetPrintSettingsFromUser(
++    mojom::PrintPagesParamsPtr print_settings;
++
++    if (silent) {
++      print_settings = mojom::PrintPagesParams::New();
++      print_settings->params = mojom::PrintParams::New(
 +        print_pages_params_->params->page_size,
 +        print_pages_params_->params->content_size,
 +        print_pages_params_->params->printable_area,
@@ -582,15 +509,14 @@ index 07c52050b6dd6ebd8dfa06736ec962b889f1c2b7..f78e0a255fdcf4114beb3c7e19efa899
 +        print_pages_params_->params->printed_doc_type,
 +        print_pages_params_->params->prefer_css_page_size,
 +        print_pages_params_->params->pages_per_sheet);
-+    else {
-+      print_settings.params = mojom::PrintParams::New();
-+      GetPrintSettingsFromUser(frame_ref.GetFrame(), node, expected_page_count,
-+                               print_request_type, &print_settings);
++    } else {
++      print_settings = GetPrintSettingsFromUser(
+         frame_ref.GetFrame(), node, expected_page_count, print_request_type);
 +    }
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2108,7 +2147,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2106,7 +2147,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -601,7 +527,7 @@ index 07c52050b6dd6ebd8dfa06736ec962b889f1c2b7..f78e0a255fdcf4114beb3c7e19efa899
    mojom::PrintPagesParams settings;
    settings.params = mojom::PrintParams::New();
    GetPrintManagerHost()->GetDefaultPrintSettings(&settings.params);
-@@ -2132,12 +2173,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+@@ -2130,12 +2173,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
    return result;
  }
  
@@ -621,7 +547,7 @@ index 07c52050b6dd6ebd8dfa06736ec962b889f1c2b7..f78e0a255fdcf4114beb3c7e19efa899
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index a874a182e048adf4a6cfb0444b79420b8e0e31bf..8fc1db14a0d6d523a53ac6e47d5107fec5561aaf 100644
+index 502fa982439553adf01d9c3b517b3facecefb8b7..f90f6603216b199910132f13a7b6f6d9583bd471 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -231,7 +231,7 @@ class PrintRenderFrameHelper

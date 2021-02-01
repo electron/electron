@@ -13,11 +13,45 @@ when there is code doing that.
 
 This patch reverts the change to fix the crash in Electron.
 
+diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
+index 9305b576b06a8020583939f357cd42902302b543..d772a31a436bf8f0617d87b5fcf5bd960bf871d9 100644
+--- a/third_party/blink/renderer/core/frame/frame.cc
++++ b/third_party/blink/renderer/core/frame/frame.cc
+@@ -135,14 +135,6 @@ bool Frame::Detach(FrameDetachType type) {
+ 
+   DCHECK(!IsDetached());
+ 
+-  // TODO(dcheng): FocusController::FrameDetached() *should* fire JS events,
+-  // hence the above check for `client_` being null. However, when this was
+-  // previously placed before the `FrameDetached()` call, nothing crashes, which
+-  // is suspicious. Investigate if we really don't need to fire JS events--and
+-  // if we don't, move `forbid_scripts` up to be instantiated sooner and
+-  // simplify this code.
+-  ScriptForbiddenScope forbid_scripts;
+-
+   if (type == FrameDetachType::kRemove) {
+     if (provisional_frame_) {
+       provisional_frame_->Detach(FrameDetachType::kRemove);
+@@ -165,6 +157,14 @@ bool Frame::Detach(FrameDetachType type) {
+     GetWindowProxyManager()->ClearForSwap();
+   }
+ 
++  // TODO(dcheng): FocusController::FrameDetached() *should* fire JS events,
++  // hence the above check for `client_` being null. However, when this was
++  // previously placed before the `FrameDetached()` call, nothing crashes, which
++  // is suspicious. Investigate if we really don't need to fire JS events--and
++  // if we don't, move `forbid_scripts` up to be instantiated sooner and
++  // simplify this code.
++  ScriptForbiddenScope forbid_scripts;
++
+   // After this, we must no longer talk to the client since this clears
+   // its owning reference back to our owning LocalFrame.
+   client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 7494f3eaa8dda5c4f8d5d8e46514fa0767b4b750..ba30bb5d4f50d9f536af2bcbf1cbb84f20ba78e9 100644
+index c4d167eff1b6311b834089fccaa636ecad07d680..afce9452ae07f18dd5655c73d3ce548bb7742af4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -641,10 +641,6 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -621,10 +621,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -26,12 +60,12 @@ index 7494f3eaa8dda5c4f8d5d8e46514fa0767b4b750..ba30bb5d4f50d9f536af2bcbf1cbb84f
 -  // - Document::Shutdown() can dispose plugins which can run script.
 -  ScriptForbiddenScope forbid_script;
    if (!Client())
-     return;
+     return false;
  
-@@ -661,6 +657,10 @@ void LocalFrame::DetachImpl(FrameDetachType type) {
-   // Notify WindowProxyManager that the frame is closing, since its cleanup ends
-   // up calling back to LocalFrameClient via WindowProxy.
-   GetWindowProxyManager()->ClearForClose();
+@@ -661,6 +657,10 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+ 
+   DCHECK(!view_->IsAttached());
+   Client()->WillBeDetached();
 +  // This is the earliest that scripting can be disabled:
 +  // - FrameLoader::Detach() can fire XHR abort events
 +  // - Document::Shutdown() can dispose plugins which can run script.

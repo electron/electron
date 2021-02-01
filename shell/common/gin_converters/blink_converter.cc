@@ -325,21 +325,21 @@ bool Converter<blink::DeviceEmulationParams>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
+v8::Local<v8::Value> Converter<blink::mojom::ContextMenuDataMediaType>::ToV8(
     v8::Isolate* isolate,
-    const blink::ContextMenuDataMediaType& in) {
+    const blink::mojom::ContextMenuDataMediaType& in) {
   switch (in) {
-    case blink::ContextMenuDataMediaType::kImage:
+    case blink::mojom::ContextMenuDataMediaType::kImage:
       return StringToV8(isolate, "image");
-    case blink::ContextMenuDataMediaType::kVideo:
+    case blink::mojom::ContextMenuDataMediaType::kVideo:
       return StringToV8(isolate, "video");
-    case blink::ContextMenuDataMediaType::kAudio:
+    case blink::mojom::ContextMenuDataMediaType::kAudio:
       return StringToV8(isolate, "audio");
-    case blink::ContextMenuDataMediaType::kCanvas:
+    case blink::mojom::ContextMenuDataMediaType::kCanvas:
       return StringToV8(isolate, "canvas");
-    case blink::ContextMenuDataMediaType::kFile:
+    case blink::mojom::ContextMenuDataMediaType::kFile:
       return StringToV8(isolate, "file");
-    case blink::ContextMenuDataMediaType::kPlugin:
+    case blink::mojom::ContextMenuDataMediaType::kPlugin:
       return StringToV8(isolate, "plugin");
     default:
       return StringToV8(isolate, "none");

@@ -67,9 +67,10 @@ struct Converter<blink::DeviceEmulationParams> {
 };
 
 template <>
-struct Converter<blink::ContextMenuDataMediaType> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::ContextMenuDataMediaType& in);
+struct Converter<blink::mojom::ContextMenuDataMediaType> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::mojom::ContextMenuDataMediaType& in);
 };
 
 template <>

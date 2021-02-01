@@ -161,8 +161,7 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   // frame is modified.
   SkBitmap copy;
   copy.allocPixels(SkImageInfo::Make(bitmap.width(), bitmap.height(),
-                                     kRGBA_8888_SkColorType,
-                                     kPremul_SkAlphaType));
+                                     kN32_SkColorType, kPremul_SkAlphaType));
   SkPixmap pixmap;
   bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
   CHECK(success);

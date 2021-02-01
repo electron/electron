@@ -15,7 +15,7 @@
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/kiosk/kiosk_delegate.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
-#include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
 
 class PrefService;
 
@@ -71,7 +71,7 @@ class ElectronExtensionsBrowserClient
       bool send_cors_header) override;
   bool AllowCrossRendererResourceLoad(
       const network::ResourceRequest& request,
-      blink::mojom::ResourceType resource_type,
+      network::mojom::RequestDestination destination,
       ui::PageTransition page_transition,
       int child_id,
       bool is_incognito,

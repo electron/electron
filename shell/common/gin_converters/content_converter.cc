@@ -131,7 +131,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("mediaType", params.media_type);
   dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
-      (params.media_type == blink::ContextMenuDataMediaType::kImage) &&
+      (params.media_type == blink::mojom::ContextMenuDataMediaType::kImage) &&
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
@@ -228,6 +228,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "system-wake-lock");
     case content::PermissionType::WINDOW_PLACEMENT:
       return StringToV8(isolate, "window-placement");
+    case content::PermissionType::DISPLAY_CAPTURE:
+      return StringToV8(isolate, "display-capture");
     case content::PermissionType::NUM:
       break;
   }

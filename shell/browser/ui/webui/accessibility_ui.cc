@@ -164,6 +164,7 @@ bool MatchesPropertyFilters(
     if (base::MatchPattern(text, filter.match_str)) {
       switch (filter.type) {
         case ui::AXPropertyFilter::ALLOW_EMPTY:
+        case ui::AXPropertyFilter::SCRIPT:
           allow = true;
           break;
         case ui::AXPropertyFilter::ALLOW:

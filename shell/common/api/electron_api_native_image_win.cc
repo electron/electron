@@ -93,9 +93,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   base::win::ScopedHICON icon(CreateIconIndirect(&icon_info));
   SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon.get());
-  gfx::ImageSkia image_skia;
-  image_skia.AddRepresentation(
-      gfx::ImageSkiaRep(skbitmap, 1.0 /*scale factor*/));
+  gfx::ImageSkia image_skia =
+      gfx::ImageSkia::CreateFromBitmap(skbitmap, 1.0 /*scale factor*/);
   gfx::Image gfx_image = gfx::Image(image_skia);
   promise.Resolve(gfx_image);
   return handle;

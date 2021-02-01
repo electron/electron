@@ -30,15 +30,23 @@ index 8a0d9cb9a0737e1642d666754926485b06136e98..31cb7545a37911f64597476eb4c4eb40
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index 784b90ccc9e86796bf45f1e7a87a6d0085b4bbb2..b8fa05588a7b6717a4f14e0019d57b9a78150100 100644
+index 5b6ba7f444994c5e8a5079f9f399a15d4a34ff24..4805909fffdb4b65a97f019eab1caf05902adaa1 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -49,7 +49,7 @@ class BooleanObject;
- class CFunction;
+@@ -50,6 +50,7 @@ class CFunction;
+ class CallHandlerHelper;
  class Context;
  class CppHeap;
--struct CppHeapCreateParams;
 +class CppHeapCreateParams;
  class Data;
  class Date;
- class External;
+ class EscapableHandleScope;
+@@ -93,7 +94,7 @@ class Utils;
+ class Value;
+ class WasmMemoryObject;
+ class WasmModuleObject;
+-struct CppHeapCreateParams;
++class CppHeapCreateParams;
+ template <class K, class V, class T>
+ class GlobalValueMap;
+ template <class K, class V, class T>
