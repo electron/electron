@@ -88,14 +88,6 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     if (!renderer_client_->IsWebViewFrame(context, render_frame_))
       renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
-
-#if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (world_id >= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS &&
-      world_id <= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS_END) {
-    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
-                                                   world_id);
-  }
-#endif
 }
 
 void ElectronRenderFrameObserver::DraggableRegionsChanged() {

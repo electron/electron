@@ -73,9 +73,6 @@ class RendererClientBase : public content::ContentRendererClient
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
                                        content::RenderFrame* render_frame) = 0;
-  virtual void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
-                                            content::RenderFrame* render_frame,
-                                            int world_id) = 0;
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
