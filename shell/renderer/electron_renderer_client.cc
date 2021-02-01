@@ -109,12 +109,16 @@ void ElectronRendererClient::DidCreateScriptContext(
                        (is_not_opened || reuse_renderer_processes_enabled);
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
+  // If we're loading Node.js into a subframe and we've already initialized
+  // the integration, that means we're here because a new subframe was created,
+  // not because we've reloaded the page. In that case, don't re-prepare the
+  // message loop.
+  bool node_in_subframe = !is_main_frame && allow_node_in_subframes;
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
-  if (!should_load_node) {
+  if (!should_load_node)
     return;
-  }
 
   injected_frames_.insert(render_frame);
 
@@ -122,7 +126,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
-  } else if (reuse_renderer_processes_enabled) {
+  } else if (reuse_renderer_processes_enabled && !node_in_subframe) {
     node_bindings_->PrepareMessageLoop();
   }
 
