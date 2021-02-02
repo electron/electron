@@ -228,7 +228,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       experimental.
   * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a
     custom position for the traffic light buttons in frameless windows.
-  * `roundedCorner` Boolean (optional) - Whether frameless window should have
+  * `roundedCorners` Boolean (optional) - Whether frameless window should have
     rounded corners on macOS. Default is `true`.
   * `fullscreenWindowTitle` Boolean (optional) _Deprecated_ - Shows the title in
     the title bar in full screen mode on macOS for `hiddenInset` titleBarStyle.

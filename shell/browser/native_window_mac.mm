@@ -314,7 +314,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
   // for framless window.
   bool rounded_corner = true;
-  options.Get(options::kRoundedCorner, &rounded_corner);
+  options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
     styleMask = NSWindowStyleMaskFullSizeContentView;
 
