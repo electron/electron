@@ -254,10 +254,12 @@ void RendererClientBase::RenderFrameCreated(
 
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
-  auto* service = new ElectronApiServiceImpl(render_frame, this);
+  int id = render_frame->GetRoutingID();
+  service_map_[id] =
+      std::make_unique<ElectronApiServiceImpl>(render_frame, this);
   render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
       base::BindRepeating(&ElectronApiServiceImpl::BindTo,
-                          service->GetWeakPtr()));
+                          service_map_[id]->GetWeakPtr()));
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {
@@ -398,6 +400,10 @@ void RendererClientBase::RunScriptsAtDocumentStart(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_.get()->RunScriptsAtDocumentStart(render_frame);
 #endif
+  auto service = service_map_.find(render_frame->GetRoutingID());
+  if (service != service_map_.end()) {
+    service->second->ProcessPendingMessages();
+  }
 }
 
 void RendererClientBase::RunScriptsAtDocumentIdle(

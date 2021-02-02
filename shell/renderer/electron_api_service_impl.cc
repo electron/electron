@@ -117,6 +117,15 @@ void ElectronApiServiceImpl::BindTo(
       base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
 }
 
+void ElectronApiServiceImpl::ProcessPendingMessages() {
+  while (!pending_messages_.empty()) {
+    auto msg = std::move(pending_messages_.front());
+    pending_messages_.pop();
+
+    Message(msg.internal, msg.channel, std::move(msg.arguments), msg.sender_id);
+  }
+}
+
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
   document_created_ = true;
 }
@@ -134,24 +143,20 @@ void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
-  // Don't handle browser messages before document element is created.
+  // Don't handle browser messages before document element is created - instead,
+  // save the messages and then replay them after the document is ready.
   //
-  // Note: It is probably better to save the message and then replay it after
-  // document is ready, but current behavior has been there since the first
-  // day of Electron, and no one has complained so far.
-  //
-  // Reason 1:
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  // (See https://github.com/electron/electron/pull/1044.)
-  //
-  // Reason 2:
-  // The libuv message loop integration would be broken for unkown reasons.
-  // (See https://github.com/electron/electron/issues/19368.)
-  if (!document_created_)
+  // See: https://chromium-review.googlesource.com/c/chromium/src/+/2601063.
+  if (!document_created_) {
+    PendingElectronApiServiceMessage message;
+    message.internal = internal;
+    message.channel = channel;
+    message.arguments = std::move(arguments);
+    message.sender_id = sender_id;
+
+    pending_messages_.push(std::move(message));
     return;
+  }
 
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)

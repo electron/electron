@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
@@ -41,6 +42,8 @@ struct WebPluginInfo;
 #endif
 
 namespace electron {
+
+class ElectronApiServiceImpl;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
@@ -129,6 +132,8 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
+
+  std::unordered_map<int, std::unique_ptr<ElectronApiServiceImpl>> service_map_;
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
