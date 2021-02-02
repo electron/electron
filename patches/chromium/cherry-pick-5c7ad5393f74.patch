@@ -23,8 +23,40 @@ Commit-Queue: Nektarios Paisios <nektar@chromium.org>
 Reviewed-by: Nektarios Paisios <nektar@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#846707}
 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b/content/browser/accessibility/browser_accessibility_manager_mac.h
+index 925bfe1ea191ab846805fdbff1b0314e779b1c9e..5488245e22b883105dbe1e225156ab18e1a64534 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.h
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
+@@ -19,6 +19,8 @@
+ 
+ namespace content {
+ 
++class BrowserAccessibilityCocoaBrowserTest;
++
+ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+     : public BrowserAccessibilityManager {
+  public:
+@@ -54,8 +56,7 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+                               const std::vector<Change>& changes) override;
+ 
+   // Returns an autoreleased object.
+-  NSDictionary* GetUserInfoForSelectedTextChangedNotification(
+-      bool focus_changed);
++  NSDictionary* GetUserInfoForSelectedTextChangedNotification();
+ 
+   // Returns an autoreleased object.
+   NSDictionary* GetUserInfoForValueChangedNotification(
+@@ -80,6 +81,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+   // constructor.
+   friend class BrowserAccessibilityManager;
+ 
++  friend class BrowserAccessibilityCocoaBrowserTest;
++
+   DISALLOW_COPY_AND_ASSIGN(BrowserAccessibilityManagerMac);
+ };
+ 
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 4232959e30ab758bff58aa8e4457b6cdd3c7745b..c5485060149b414f474095c3b68fac702ebedf33 100644
+index 4232959e30ab758bff58aa8e4457b6cdd3c7745b..d172d9625c3d762a861873b2e938a931c49b9501 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -125,8 +125,6 @@ void PostAnnouncementNotification(NSString* announcement) {
@@ -69,7 +101,7 @@ index 4232959e30ab758bff58aa8e4457b6cdd3c7745b..c5485060149b414f474095c3b68fac70
      [user_info setObject:@(ui::AXTextStateChangeTypeSelectionMove)
                    forKey:ui::NSAccessibilityTextStateChangeTypeKey];
    } else {
-@@ -465,23 +465,21 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -465,25 +465,22 @@ void PostAnnouncementNotification(NSString* announcement) {
                    forKey:ui::NSAccessibilityTextStateChangeTypeKey];
    }
  
@@ -96,13 +128,15 @@ index 4232959e30ab758bff58aa8e4457b6cdd3c7745b..c5485060149b414f474095c3b68fac70
 -        [user_info setObject:selected_text
 -                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
 -      }
+-#endif
 +    id selected_text = [native_focus_object selectedTextMarkerRange];
 +    if (selected_text) {
 +      NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
 +          @"AXSelectedTextMarkerRange";
 +      [user_info setObject:selected_text
 +                    forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
-+    }
- #endif
      }
++#endif
    }
+ 
+   return user_info;
