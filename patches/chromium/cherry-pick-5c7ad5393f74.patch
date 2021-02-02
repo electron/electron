@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Mon, 25 Jan 2021 14:27:23 +0000
+Subject: Mac a11y: Use the keyboard focusable element for
+ NSAccessibilityTextChangeElement
+
+When setting the NSAccessibilityTextChangeElement property for
+NSAccessibilitySelectedTextChangedNotifications, use the keyboard
+focusable element instead of the element that has the focus side of the
+text selection. Using the latter, when the element is an empty group,
+VoiceOver will focus the containing Web View (when using the VO
+cursor follows keyboard focus setting). This makes it impossible to use
+the down keyboard key to move past these empty nodes.
+
+VoiceOver cursor" setting in contenteditable nodes.
+
+AX-Relnotes: Fix a bug with the "Synchronize keyboard focus and
+Bug: 952922
+Change-Id: I3627936726f89b01132c32bd5d83758fc7c3dac4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2642686
+Auto-Submit: Martin Robinson <mrobinson@igalia.com>
+Commit-Queue: Nektarios Paisios <nektar@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#846707}
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 4232959e30ab758bff58aa8e4457b6cdd3c7745b..c5485060149b414f474095c3b68fac702ebedf33 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -125,8 +125,6 @@ void PostAnnouncementNotification(NSString* announcement) {
+   auto native_node = ToBrowserAccessibilityCocoa(node);
+   DCHECK(native_node);
+ 
+-  bool focus_changed = GetFocus() != GetLastFocusedNode();
+-
+   // Refer to |AXObjectCache::postPlatformNotification| in WebKit source code.
+   NSString* mac_notification = nullptr;
+   switch (event_type) {
+@@ -212,8 +210,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+         // 10.11 or later to notify Voiceover about text selection changes. This
+         // API has been present on versions of OS X since 10.7 but doesn't
+         // appear to be needed by Voiceover before version 10.11.
+-        NSDictionary* user_info =
+-            GetUserInfoForSelectedTextChangedNotification(focus_changed);
++        NSDictionary* user_info = GetUserInfoForSelectedTextChangedNotification();
+ 
+         BrowserAccessibilityManager* root_manager = GetRootManager();
+         if (!root_manager)
+@@ -439,8 +436,8 @@ void PostAnnouncementNotification(NSString* announcement) {
+ }
+ 
+ NSDictionary*
+-BrowserAccessibilityManagerMac::GetUserInfoForSelectedTextChangedNotification(
+-    bool focus_changed) {
++BrowserAccessibilityManagerMac::
++    GetUserInfoForSelectedTextChangedNotification() {
+   NSMutableDictionary* user_info =
+       [[[NSMutableDictionary alloc] init] autorelease];
+   [user_info setObject:@YES forKey:ui::NSAccessibilityTextStateSyncKey];
+@@ -457,7 +454,10 @@ void PostAnnouncementNotification(NSString* announcement) {
+   // TODO(mrobinson): Determine definitively what the type of this text
+   // selection change is. This requires passing this information here from
+   // blink.
+-  if (focus_changed) {
++  BrowserAccessibility* focused_accessibility = GetFocus();
++  DCHECK(focused_accessibility);
++
++  if (focused_accessibility != GetLastFocusedNode()) {
+     [user_info setObject:@(ui::AXTextStateChangeTypeSelectionMove)
+                   forKey:ui::NSAccessibilityTextStateChangeTypeKey];
+   } else {
+@@ -465,23 +465,21 @@ void PostAnnouncementNotification(NSString* announcement) {
+                   forKey:ui::NSAccessibilityTextStateChangeTypeKey];
+   }
+ 
+-  int32_t focus_id = ax_tree()->GetUnignoredSelection().focus_object_id;
+-  BrowserAccessibility* focus_object = GetFromID(focus_id);
+-  if (focus_object) {
+-    focus_object = focus_object->PlatformGetClosestPlatformObject();
+-    auto native_focus_object = ToBrowserAccessibilityCocoa(focus_object);
+-    if (native_focus_object && [native_focus_object instanceActive]) {
+-      [user_info setObject:native_focus_object
+-                    forKey:ui::NSAccessibilityTextChangeElement];
++  focused_accessibility =
++      focused_accessibility->PlatformGetClosestPlatformObject();
++  auto native_focus_object = ToBrowserAccessibilityCocoa(focused_accessibility);
++  if (native_focus_object && [native_focus_object instanceActive]) {
++    [user_info setObject:native_focus_object
++                  forKey:ui::NSAccessibilityTextChangeElement];
+ 
+ #ifndef MAS_BUILD
+-      id selected_text = [native_focus_object selectedTextMarkerRange];
+-      if (selected_text) {
+-        NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
+-            @"AXSelectedTextMarkerRange";
+-        [user_info setObject:selected_text
+-                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
+-      }
++    id selected_text = [native_focus_object selectedTextMarkerRange];
++    if (selected_text) {
++      NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
++          @"AXSelectedTextMarkerRange";
++      [user_info setObject:selected_text
++                    forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
++    }
+ #endif
+     }
+   }
