@@ -715,9 +715,6 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
 
   auto& prefs = render_frame->GetBlinkPreferences();
 
-  // Debugging tip: if you see a crash stack trace beginning from this call,
-  // then it is very likely that some exception happened when executing the
-  // "content_script/init.js" script.
   render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType,
