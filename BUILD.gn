@@ -992,6 +992,8 @@ if (is_mac) {
     deps = [
       ":electron_app_framework_bundle_data",
       ":electron_app_resources",
+      "//base",
+      "//electron/buildflags",
     ]
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]
