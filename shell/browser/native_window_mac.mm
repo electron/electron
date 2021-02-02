@@ -1239,8 +1239,11 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
     }
 
-    // Make frameless Vibrant windows have rounded corners.
-    if (!has_frame() && !is_modal()) {
+    // Make Vibrant view have rounded corners, so the frameless window can keep
+    // its rounded corners.
+    const bool no_rounded_corner =
+        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
+    if (!has_frame() && !is_modal() && !no_rounded_corner) {
       CGFloat radius = 5.0f;  // default corner radius
       CGFloat dimension = 2 * radius + 1;
       NSSize size = NSMakeSize(dimension, dimension);
@@ -1259,7 +1262,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [maskImage setResizingMode:NSImageResizingModeStretch];
 
       [effect_view setMaskImage:maskImage];
-      [window_ setCornerMask:maskImage];
     }
 
     [[window_ contentView] addSubview:effect_view
