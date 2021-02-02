@@ -104,7 +104,10 @@ void ServiceWorkerContext::OnReportConsoleMessage(
 }
 
 void ServiceWorkerContext::OnRegistrationCompleted(const GURL& scope) {
-  Emit("registration-completed", scope);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  Emit("registration-completed",
+       gin::DataObjectBuilder(isolate).Set("scope", scope).Build());
 }
 
 void ServiceWorkerContext::OnDestruct(content::ServiceWorkerContext* context) {

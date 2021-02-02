@@ -655,11 +655,11 @@ describe('chrome extensions', () => {
     it('registers background service worker', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const registrationPromise = new Promise<string>(resolve => {
-        customSession.serviceWorkers.once('registration-completed', (event, scope) => resolve(scope));
+        customSession.serviceWorkers.once('registration-completed', (event, { scope }) => resolve(scope));
       });
       const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
-      const swScope = await registrationPromise;
-      expect(swScope).equals(extension.url);
+      const scope = await registrationPromise;
+      expect(scope).equals(extension.url);
     });
   });
 });

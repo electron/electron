@@ -50,7 +50,8 @@ Emitted when a service worker logs something to the console.
 Returns:
 
 * `event` Event
-* `scope` String - The base URL that a service worker is registered for.
+* `details` Object - Information about the registered service worker
+  * `scope` String - The base URL that a service worker is registered for
 
 Emitted when a service worker has been registered.
 
