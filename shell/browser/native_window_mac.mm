@@ -1487,11 +1487,6 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
   NativeWindow::NotifyWindowLeaveFullScreen();
   exiting_fullscreen_ = false;
-  // Add back buttonsView after leaving fullscreen mode.
-  if (buttons_view_) {
-    InternalSetStandardButtonsVisibility(false);
-    [[window_ contentView] addSubview:buttons_view_];
-  }
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
@@ -1504,9 +1499,12 @@ void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
 }
 
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
-  // Hide window title after leaving fullscreen.
-  if (buttons_view_)
+  // Hide window title and restore buttonsView when leaving fullscreen.
+  if (buttons_view_) {
     [window_ setTitleVisibility:NSWindowTitleHidden];
+    InternalSetStandardButtonsVisibility(false);
+    [[window_ contentView] addSubview:buttons_view_];
+  }
   exiting_fullscreen_ = true;
   RedrawTrafficLights();
 }
