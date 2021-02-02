@@ -1161,18 +1161,21 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
-                                                bool visibleOnFullScreen) {
+                                                bool visibleOnFullScreen,
+                                                bool skipTransformProcessType) {
   // In order for NSWindows to be visible on fullscreen we need to functionally
   // mimic app.dock.hide() since Apple changed the underlying functionality of
   // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
   // fullscreen apps.
-  ProcessSerialNumber psn = {0, kCurrentProcess};
-  if (visibleOnFullScreen) {
-    [window_ setCanHide:NO];
-    TransformProcessType(&psn, kProcessTransformToUIElementApplication);
-  } else {
-    [window_ setCanHide:YES];
-    TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  if (!skipTransformProcessType) {
+    ProcessSerialNumber psn = {0, kCurrentProcess};
+    if (visibleOnFullScreen) {
+      [window_ setCanHide:NO];
+      TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+    } else {
+      [window_ setCanHide:YES];
+      TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+    }
   }
 
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);

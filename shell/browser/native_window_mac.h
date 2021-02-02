@@ -113,7 +113,8 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
   void SetVisibleOnAllWorkspaces(bool visible,
-                                 bool visibleOnFullScreen) override;
+                                 bool visibleOnFullScreen,
+                                 bool skipTransformProcessType) override;
   bool IsVisibleOnAllWorkspaces() override;
   void SetAutoHideCursor(bool auto_hide) override;
   void SetVibrancy(const std::string& type) override;
