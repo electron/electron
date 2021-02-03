@@ -748,10 +748,9 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
-      const [, , frameName, , test] = await emittedOnce(w.webContents, 'new-window');
+      const [, , frameName] = await emittedOnce(w.webContents, 'new-window');
 
       expect(frameName).to.equal('__proto__');
-      console.log(test);
     });
 
     it('denies custom open when nativeWindowOpen: true', async () => {

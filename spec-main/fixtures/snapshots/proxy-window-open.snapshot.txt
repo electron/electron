@@ -119,6 +119,7 @@
       "title": "sup",
       "x": 50,
       "y": 20,
+      "title": "sup",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
