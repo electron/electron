@@ -216,7 +216,6 @@ function makeBrowserWindowOptions ({ embedder, features, overrideOptions, useDep
       show: true,
       width: 800,
       height: 600,
-      ...(!isNativeWindowOpen && { title: frameName }),
       ...parsedOptions,
       ...overrideOptions,
       webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
