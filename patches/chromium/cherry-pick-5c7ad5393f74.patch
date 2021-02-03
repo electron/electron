@@ -1,0 +1,296 @@
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Mon, 25 Jan 2021 14:27:23 +0000
+Subject: Mac a11y: Use the keyboard focusable element for
+ NSAccessibilityTextChangeElement
+
+When setting the NSAccessibilityTextChangeElement property for
+NSAccessibilitySelectedTextChangedNotifications, use the keyboard
+focusable element instead of the element that has the focus side of the
+text selection. Using the latter, when the element is an empty group,
+VoiceOver will focus the containing Web View (when using the VO
+cursor follows keyboard focus setting). This makes it impossible to use
+the down keyboard key to move past these empty nodes.
+
+VoiceOver cursor" setting in contenteditable nodes.
+
+AX-Relnotes: Fix a bug with the "Synchronize keyboard focus and
+Bug: 952922
+Change-Id: I3627936726f89b01132c32bd5d83758fc7c3dac4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2642686
+Auto-Submit: Martin Robinson <mrobinson@igalia.com>
+Commit-Queue: Nektarios Paisios <nektar@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#846707}
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+index 03b84fa0963df86c699c4c0a56ca527d5b50a46c..9d042a004217ec5c182bf562207c86cb967df2d2 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa_browsertest.mm
+@@ -20,12 +20,11 @@
+ #include "net/base/data_url.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "testing/gtest_mac.h"
++#include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
+ #include "url/gurl.h"
+ 
+ namespace content {
+ 
+-namespace {
+-
+ class BrowserAccessibilityCocoaBrowserTest : public ContentBrowserTest {
+  public:
+   BrowserAccessibilityCocoaBrowserTest() {}
+@@ -73,6 +72,11 @@ void FocusAccessibilityElementAndWaitForFocusChange(
+     WaitForAccessibilityFocusChange();
+   }
+ 
++  NSDictionary* GetUserInfoForSelectedTextChangedNotification() {
++    auto* manager = static_cast<BrowserAccessibilityManagerMac*>(GetManager());
++    return manager->GetUserInfoForSelectedTextChangedNotification();
++  }
++
+  private:
+   BrowserAccessibility* FindNodeInSubtree(BrowserAccessibility& node,
+                                           ax::mojom::Role role) {
+@@ -89,8 +93,6 @@ void FocusAccessibilityElementAndWaitForFocusChange(
+   }
+ };
+ 
+-}  // namespace
+-
+ IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
+                        AXTextMarkerForTextEdit) {
+   EXPECT_TRUE(NavigateToURL(shell(), GURL(url::kAboutBlankURL)));
+@@ -106,12 +108,11 @@ GURL url(R"HTML(data:text/html,
+ 
+   BrowserAccessibility* text_field = FindNode(ax::mojom::Role::kTextField);
+   ASSERT_NE(nullptr, text_field);
+-  EXPECT_TRUE(content::ExecuteScript(
+-      shell()->web_contents(), "document.querySelector('input').focus()"));
++  EXPECT_TRUE(ExecuteScript(shell()->web_contents(),
++                            "document.querySelector('input').focus()"));
+ 
+-  content::SimulateKeyPress(shell()->web_contents(),
+-                            ui::DomKey::FromCharacter('B'), ui::DomCode::US_B,
+-                            ui::VKEY_B, false, false, false, false);
++  SimulateKeyPress(shell()->web_contents(), ui::DomKey::FromCharacter('B'),
++                   ui::DomCode::US_B, ui::VKEY_B, false, false, false, false);
+ 
+   base::scoped_nsobject<BrowserAccessibilityCocoa> cocoa_text_field(
+       [ToBrowserAccessibilityCocoa(text_field) retain]);
+@@ -122,10 +123,9 @@ AccessibilityNotificationWaiter value_waiter(shell()->web_contents(),
+   AXTextEdit text_edit = [cocoa_text_field computeTextEdit];
+   EXPECT_NE(text_edit.edit_text_marker, nil);
+ 
+-  EXPECT_EQ(
+-      content::AXTextMarkerToPosition(text_edit.edit_text_marker)->ToString(),
+-      "TextPosition anchor_id=4 text_offset=1 affinity=downstream "
+-      "annotated_text=B<>");
++  EXPECT_EQ(AXTextMarkerToPosition(text_edit.edit_text_marker)->ToString(),
++            "TextPosition anchor_id=4 text_offset=1 affinity=downstream "
++            "annotated_text=B<>");
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
+@@ -604,7 +604,7 @@ GURL url(R"HTML(data:text/html,
+   ASSERT_NSEQ(@"AXRow", [tree_children[0] role]);
+   ASSERT_NSEQ(@"AXRow", [tree_children[1] role]);
+ 
+-  content::RenderProcessHost* render_process_host =
++  RenderProcessHost* render_process_host =
+       shell()->web_contents()->GetMainFrame()->GetProcess();
+   auto menu_filter = base::MakeRefCounted<ContextMenuFilter>(
+       ContextMenuFilter::ShowBehavior::kPreventShow);
+@@ -619,9 +619,8 @@ GURL url(R"HTML(data:text/html,
+   EXPECT_NE(tree_point, item_2_point);
+ 
+   // Now focus the second child and trigger a context menu on the tree.
+-  ASSERT_TRUE(
+-      content::ExecuteScript(shell()->web_contents(),
+-                             "document.body.children[0].children[1].focus();"));
++  ASSERT_TRUE(ExecuteScript(shell()->web_contents(),
++                            "document.body.children[0].children[1].focus();"));
+   WaitForAccessibilityFocusChange();
+ 
+   // Triggering a context menu on the tree should now trigger the menu
+@@ -741,4 +740,63 @@ GURL url(R"HTML(data:text/html,
+   }
+ }
+ 
++IN_PROC_BROWSER_TEST_F(BrowserAccessibilityCocoaBrowserTest,
++                       TestNSAccessibilityTextChangeElement) {
++  AccessibilityNotificationWaiter waiter(shell()->web_contents(),
++                                         ui::kAXModeComplete,
++                                         ax::mojom::Event::kLoadComplete);
++
++  GURL url(R"HTML(data:text/html,
++                  <div id="editable" contenteditable="true" dir="auto">
++                    <p>One</p>
++                    <p>Two</p>
++                    <p><br></p>
++                    <p>Three</p>
++                    <p>Four</p>
++                  </div>)HTML");
++
++  ASSERT_TRUE(NavigateToURL(shell(), url));
++  waiter.WaitForNotification();
++
++  base::scoped_nsobject<BrowserAccessibilityCocoa> content_editable(
++      [ToBrowserAccessibilityCocoa(GetManager()->GetRoot()->PlatformGetChild(0))
++          retain]);
++  EXPECT_EQ([[content_editable children] count], 5ul);
++
++  WebContents* web_contents = shell()->web_contents();
++  auto run_script_and_wait_for_selection_change =
++      [web_contents](const char* script) {
++        AccessibilityNotificationWaiter waiter(
++            web_contents, ui::kAXModeComplete,
++            ax::mojom::Event::kTextSelectionChanged);
++        ASSERT_TRUE(ExecuteScript(web_contents, script));
++        waiter.WaitForNotification();
++      };
++
++  FocusAccessibilityElementAndWaitForFocusChange(content_editable);
++
++  run_script_and_wait_for_selection_change(R"script(
++      let editable = document.getElementById('editable');
++      const selection = window.getSelection();
++      selection.collapse(editable.children[0].childNodes[0], 1);)script");
++
++  // The focused node in the user info should be the keyboard focusable
++  // ancestor.
++  NSDictionary* info = GetUserInfoForSelectedTextChangedNotification();
++  EXPECT_EQ(id{content_editable},
++            [info objectForKey:ui::NSAccessibilityTextChangeElement]);
++
++  AccessibilityNotificationWaiter waiter2(
++      web_contents, ui::kAXModeComplete,
++      ax::mojom::Event::kTextSelectionChanged);
++  run_script_and_wait_for_selection_change(
++      "selection.collapse(editable.children[2].childNodes[0], 0);");
++
++  // Even when the cursor is in the empty paragraph text node, the focused
++  // object should be the keyboard focusable ancestor.
++  info = GetUserInfoForSelectedTextChangedNotification();
++  EXPECT_EQ(id{content_editable},
++            [info objectForKey:ui::NSAccessibilityTextChangeElement]);
++}
++
+ }  // namespace content
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.h b/content/browser/accessibility/browser_accessibility_manager_mac.h
+index 925bfe1ea191ab846805fdbff1b0314e779b1c9e..5488245e22b883105dbe1e225156ab18e1a64534 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.h
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.h
+@@ -19,6 +19,8 @@
+ 
+ namespace content {
+ 
++class BrowserAccessibilityCocoaBrowserTest;
++
+ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+     : public BrowserAccessibilityManager {
+  public:
+@@ -54,8 +56,7 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+                               const std::vector<Change>& changes) override;
+ 
+   // Returns an autoreleased object.
+-  NSDictionary* GetUserInfoForSelectedTextChangedNotification(
+-      bool focus_changed);
++  NSDictionary* GetUserInfoForSelectedTextChangedNotification();
+ 
+   // Returns an autoreleased object.
+   NSDictionary* GetUserInfoForValueChangedNotification(
+@@ -80,6 +81,8 @@ class CONTENT_EXPORT BrowserAccessibilityManagerMac
+   // constructor.
+   friend class BrowserAccessibilityManager;
+ 
++  friend class BrowserAccessibilityCocoaBrowserTest;
++
+   DISALLOW_COPY_AND_ASSIGN(BrowserAccessibilityManagerMac);
+ };
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index 93bcc87244d41c6b72908ed31f83cdd629f6e69f..13ec5f9b1ba0c7edf3d36a7e308f1fbdb3d6796a 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -131,8 +131,6 @@ void PostAnnouncementNotification(NSString* announcement) {
+   auto native_node = ToBrowserAccessibilityCocoa(node);
+   DCHECK(native_node);
+ 
+-  bool focus_changed = GetFocus() != GetLastFocusedNode();
+-
+   // Refer to |AXObjectCache::postPlatformNotification| in WebKit source code.
+   NSString* mac_notification = nullptr;
+   switch (event_type) {
+@@ -183,8 +181,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+       if (!focus)
+         break;  // Just fire a notification on the root.
+ 
+-      NSDictionary* user_info =
+-          GetUserInfoForSelectedTextChangedNotification(focus_changed);
++      NSDictionary* user_info = GetUserInfoForSelectedTextChangedNotification();
+ 
+       BrowserAccessibilityManager* root_manager = GetRootManager();
+       if (!root_manager)
+@@ -452,9 +449,8 @@ void PostAnnouncementNotification(NSString* announcement) {
+   }
+ }
+ 
+-NSDictionary*
+-BrowserAccessibilityManagerMac::GetUserInfoForSelectedTextChangedNotification(
+-    bool focus_changed) {
++NSDictionary* BrowserAccessibilityManagerMac::
++    GetUserInfoForSelectedTextChangedNotification() {
+   NSMutableDictionary* user_info =
+       [[[NSMutableDictionary alloc] init] autorelease];
+   [user_info setObject:@YES forKey:ui::NSAccessibilityTextStateSyncKey];
+@@ -471,7 +467,10 @@ void PostAnnouncementNotification(NSString* announcement) {
+   // TODO(mrobinson): Determine definitively what the type of this text
+   // selection change is. This requires passing this information here from
+   // blink.
+-  if (focus_changed) {
++  BrowserAccessibility* focused_accessibility = GetFocus();
++  DCHECK(focused_accessibility);
++
++  if (focused_accessibility != GetLastFocusedNode()) {
+     [user_info setObject:@(ui::AXTextStateChangeTypeSelectionMove)
+                   forKey:ui::NSAccessibilityTextStateChangeTypeKey];
+   } else {
+@@ -479,23 +478,20 @@ void PostAnnouncementNotification(NSString* announcement) {
+                   forKey:ui::NSAccessibilityTextStateChangeTypeKey];
+   }
+ 
+-  int32_t focus_id = ax_tree()->GetUnignoredSelection().focus_object_id;
+-  BrowserAccessibility* focus_object = GetFromID(focus_id);
+-  if (focus_object) {
+-    focus_object = focus_object->PlatformGetClosestPlatformObject();
+-    auto native_focus_object = ToBrowserAccessibilityCocoa(focus_object);
+-    if (native_focus_object && [native_focus_object instanceActive]) {
+-      [user_info setObject:native_focus_object
+-                    forKey:ui::NSAccessibilityTextChangeElement];
++  focused_accessibility =
++      focused_accessibility->PlatformGetClosestPlatformObject();
++  auto native_focus_object = ToBrowserAccessibilityCocoa(focused_accessibility);
++  if (native_focus_object && [native_focus_object instanceActive]) {
++    [user_info setObject:native_focus_object
++                  forKey:ui::NSAccessibilityTextChangeElement];
+ 
+ #ifndef MAS_BUILD
+-      id selected_text = [native_focus_object selectedTextMarkerRange];
+-      if (selected_text) {
+-        NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
+-            @"AXSelectedTextMarkerRange";
+-        [user_info setObject:selected_text
+-                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
+-      }
++    id selected_text = [native_focus_object selectedTextMarkerRange];
++    if (selected_text) {
++      NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
++          @"AXSelectedTextMarkerRange";
++      [user_info setObject:selected_text
++                    forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
+ #endif
+     }
+   }
