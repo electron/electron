@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Martin Robinson <mrobinson@igalia.com>
 Date: Fri, 15 Jan 2021 10:52:00 +0000
-Subject: [PATCH] Use the native combobox a11y role more often on MacOS
+Subject: Use the native combobox a11y role more often on MacOS
 
 Instead of mapping the ARIA combobox role to other roles on MacOS,
 always use it unless it is applied to a multiline edit field. This
@@ -16,7 +16,6 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2611093
 Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
 Commit-Queue: Martin Robinson <mrobinson@igalia.com>
 Cr-Commit-Position: refs/heads/master@{#844021}
----
 
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
 index f1f75aae285bbffc05e5598f411821a18ca47729..d997cfaa6275a570686d0c1703c30f21ca82a926 100644
