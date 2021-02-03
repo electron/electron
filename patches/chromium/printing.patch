@@ -387,7 +387,7 @@ index 4fde003f2a12794bfcd479ef2797cc6281c5720b..bc3bc4aee26f9373de35366ddb07f7ba
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index bf5d2e30dbf6e01d435f523aefa36492b6e669b9..eda27ceada8a6107b4e56aa4974c07d27f59d93e 100644
+index bf5d2e30dbf6e01d435f523aefa36492b6e669b9..3ac6b4e60f25734e6e01abccf7227b7cd37ae420 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -548,6 +548,26 @@ index bf5d2e30dbf6e01d435f523aefa36492b6e669b9..eda27ceada8a6107b4e56aa4974c07d2
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
+@@ -2469,18 +2514,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+ }
+ 
+ bool PrintRenderFrameHelper::CheckForCancel() {
+-  const mojom::PrintParams& print_params = *print_pages_params_->params;
+-  bool cancel = false;
+-
+-  if (!GetPrintManagerHost()->CheckForCancel(print_params.preview_ui_id,
+-                                             print_params.preview_request_id,
+-                                             &cancel)) {
+-    cancel = true;
+-  }
+-
+-  if (cancel)
+-    notify_browser_of_print_failure_ = false;
+-  return cancel;
++  return false;
+ }
+ 
+ bool PrintRenderFrameHelper::PreviewPageRendered(
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
 index 5b042a088a2f82fed1d48b05b7b2509343fecca1..983cff70dc991adb330e083ff1c35c8c63a58a37 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
