@@ -1539,29 +1539,30 @@ describe('net module', () => {
 
     it('should not trigger errors on the response stream', async () => {
       const ses = session.fromPartition(`${Math.random()}`);
-      const statusCode = await new Promise<number>((resolve, reject) => {
+      const serverPort = await new Promise(resolve => {
         const server = createServer((c) => {
           c.end('HTTP/1.1 407 Authentication Required\nProxy-Authenticate: Basic realm="Foo"\n\n');
         }).listen(0, '127.0.0.1', async () => {
-          const port = (server.address() as AddressInfo).port;
-          await ses.setProxy({ proxyRules: `localhost:${port}` });
-          net
-            .request({ method: 'GET', url: 'https://example.com', session: ses })
-            .once('response', (res) => {
-              resolve(res.statusCode);
-              res.on('error', () => {
-                reject(new Error('response stream should not emit error'));
-              });
-            })
-            .once('abort', () => resolve(-1))
-            .once('error', () => {
-              reject(new Error('request stream should not emit error'));
-            })
-            .once('login', (_, callback) => { callback('username', 'password'); })
-            .end();
+          resolve((server.address() as AddressInfo).port);
         });
       });
-      expect(statusCode).to.equal(407);
+      await ses.setProxy({ proxyRules: `127.0.0.1:${serverPort}` });
+      const error = await new Promise<Error>((resolve, reject) => {
+        net
+          .request({ method: 'GET', url: 'https://example.com', session: ses })
+          .once('response', (res) => {
+            res.on('error', () => {
+              reject(new Error('response stream should not emit error'));
+            });
+          })
+          .once('abort', () => reject(new Error('should not abort')))
+          .once('error', (err) => {
+            resolve(err);
+          })
+          .once('login', (_, callback) => { callback('username', 'password'); })
+          .end();
+      });
+      expect(error.message).to.equal('net::ERR_TUNNEL_CONNECTION_FAILED');
     });
   });
 
