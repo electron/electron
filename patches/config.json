@@ -16,6 +16,8 @@
   "src/electron/patches/sqlite": "src/third_party/sqlite/src",
 
   "src/electron/patches/icu": "src/third_party/icu",
+  
+  "src/electron/patches/skia": "src/third_party/skia",
 
   "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
 }
