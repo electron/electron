@@ -14,6 +14,7 @@
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
+#include "chrome/browser/extensions/extension_management.h"
 #include "chrome/common/extensions/extension_metrics.h"
 #include "chrome/common/extensions/manifest_handlers/app_launch_info.h"
 #include "chrome/common/webui_url_constants.h"
@@ -231,4 +232,11 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
                                    grayscale ? "?grayscale=true" : ""));
   CHECK(icon_url.is_valid());
   return icon_url;
+}
+
+GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
+    const extensions::Extension& extension,
+    content::BrowserContext* context) const {
+  // TODO(codebytere): we do not currently support ExtensionManagement.
+  return GURL::EmptyGURL();
 }
