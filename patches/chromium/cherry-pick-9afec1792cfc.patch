@@ -1,0 +1,111 @@
+From 9afec1792cfc2616a368c29b949f0765df37f9a2 Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Wed, 03 Feb 2021 14:56:15 +0000
+Subject: [PATCH] [LTS-M86 Merge] Move FontPreloadManager to Oilpan
+
+Currently, TimerBase cannot correctly track the lifetime of objects
+embedded in GC-ed objects, like FontPreloadManager which is embedded in
+Document. This causes some memory safety issues.
+
+This patch moves FontPreloadManager to Oilpan to avoid the issue.
+
+(cherry picked from commit d31bbf2910ee44e4a206d926ddae6827d16a2754)
+
+(cherry picked from commit cdab130053839ffae4a02d00812c1c3a0ecf01bd)
+
+Bug: 1154965
+Change-Id: I490b416abc6a997034baaa7994cd3a50bca7e055
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2611755
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#841039}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2653946
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Auto-Submit: Xiaocheng Hu <xiaochengh@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4324@{#2045}
+Cr-Original-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2665939
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1536}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
+index 74856aa..42b2cd9 100644
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -790,7 +790,7 @@
+       fragment_directive_(MakeGarbageCollected<FragmentDirective>()),
+       display_lock_document_state_(
+           MakeGarbageCollected<DisplayLockDocumentState>(this)),
+-      font_preload_manager_(*this),
++      font_preload_manager_(MakeGarbageCollected<FontPreloadManager>(*this)),
+       data_(MakeGarbageCollected<DocumentData>(GetExecutionContext())) {
+   if (GetFrame()) {
+     DCHECK(GetFrame()->GetPage());
+@@ -6963,7 +6963,7 @@
+     return;
+   if (!HaveRenderBlockingResourcesLoaded())
+     return;
+-  font_preload_manager_.WillBeginRendering();
++  font_preload_manager_->WillBeginRendering();
+   View()->BeginLifecycleUpdates();
+ }
+ 
+@@ -7670,7 +7670,7 @@
+ bool Document::HaveRenderBlockingResourcesLoaded() const {
+   return HaveImportsLoaded() &&
+          style_engine_->HaveRenderBlockingStylesheetsLoaded() &&
+-         !font_preload_manager_.HasPendingRenderBlockingFonts();
++         !font_preload_manager_->HasPendingRenderBlockingFonts();
+ }
+ 
+ Locale& Document::GetCachedLocale(const AtomicString& locale) {
+@@ -8462,7 +8462,7 @@
+ }
+ 
+ void Document::FontPreloadingFinishedOrTimedOut() {
+-  DCHECK(!font_preload_manager_.HasPendingRenderBlockingFonts());
++  DCHECK(!font_preload_manager_->HasPendingRenderBlockingFonts());
+   if (IsA<HTMLDocument>(this) && body()) {
+     // For HTML, we resume only when we're past the body tag, so that we should
+     // have something to paint now.
+diff --git a/third_party/blink/renderer/core/dom/document.h b/third_party/blink/renderer/core/dom/document.h
+index 1aeda1f..561c706 100644
+--- a/third_party/blink/renderer/core/dom/document.h
++++ b/third_party/blink/renderer/core/dom/document.h
+@@ -1629,7 +1629,7 @@
+                                  unsigned new_length);
+   void NotifyChangeChildren(const ContainerNode& container);
+ 
+-  FontPreloadManager& GetFontPreloadManager() { return font_preload_manager_; }
++  FontPreloadManager& GetFontPreloadManager() { return *font_preload_manager_; }
+   void FontPreloadingFinishedOrTimedOut();
+ 
+   void IncrementAsyncScriptCount() { async_script_count_++; }
+@@ -2169,7 +2169,7 @@
+   // call or potential user prompt.
+   bool expressly_denied_storage_access_ = false;
+ 
+-  FontPreloadManager font_preload_manager_;
++  Member<FontPreloadManager> font_preload_manager_;
+ 
+   int async_script_count_ = 0;
+   bool first_paint_recorded_ = false;
+diff --git a/third_party/blink/renderer/core/loader/font_preload_manager.h b/third_party/blink/renderer/core/loader/font_preload_manager.h
+index 3e98fc9..631f0f9 100644
+--- a/third_party/blink/renderer/core/loader/font_preload_manager.h
++++ b/third_party/blink/renderer/core/loader/font_preload_manager.h
+@@ -20,9 +20,8 @@
+ // API) and notifies the relevant document, so that it can manage the first
+ // rendering timing to work with preloaded fonts.
+ // Design doc: https://bit.ly/36E8UKB
+-class CORE_EXPORT FontPreloadManager final {
+-  DISALLOW_NEW();
+-
++class CORE_EXPORT FontPreloadManager final
++    : public GarbageCollected<FontPreloadManager> {
+  public:
+   explicit FontPreloadManager(Document&);
+   ~FontPreloadManager() = default;
