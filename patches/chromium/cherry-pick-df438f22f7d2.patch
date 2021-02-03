@@ -1,0 +1,144 @@
+From df438f22f7d206899b6361ad0a93ab690e3a03e0 Mon Sep 17 00:00:00 2001
+From: Artem Sumaneev <asumaneev@google.com>
+Date: Wed, 03 Feb 2021 15:00:25 +0000
+Subject: [PATCH] [navigation] Fix navigation request reset logic
+
+Do not delete navigation request which has started upon receiving
+notification about beforeunload dialog being cancelled, as a) this
+navigation request is not waiting for beforeunload and b) it might have
+been this navigation request which canceled this beforeunload dialog.
+
+M86 merge conflicts and resolution:
+* content/browser/frame_host/*
+  In ToT files the affected under frame_host directory are moved to
+  renderer_host dir. Applied patch to frame_host, no further conflicts.
+
+R=​alexmos@chromium.org
+BUG=1161705
+
+(cherry picked from commit 23c110b5b81dc401ded5d4dcecfab65d5d88fdfa)
+
+(cherry picked from commit 87550e04d9fed4bbedff4546f4161e3c02415d7e)
+
+Change-Id: I7d385d4326fac6f67d17a003679471806b5ad3b2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2624733
+Commit-Queue: Alexander Timin <altimin@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#843343}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2652791
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Auto-Submit: Alexander Timin <altimin@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4324@{#2040}
+Cr-Original-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2666397
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1537}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/content/browser/frame_host/frame_tree_node.cc b/content/browser/frame_host/frame_tree_node.cc
+index 7bb47e8..9ef06c9 100644
+--- a/content/browser/frame_host/frame_tree_node.cc
++++ b/content/browser/frame_host/frame_tree_node.cc
+@@ -579,10 +579,12 @@
+       render_manager_.speculative_frame_host();
+   if (speculative_frame_host)
+     speculative_frame_host->ResetLoadingState();
+-  // Note: there is no need to set an error code on the NavigationHandle here
+-  // as it has not been created yet. It is only created when the
+-  // BeforeUnloadCompleted callback is invoked.
+-  if (navigation_request_)
++  // Note: there is no need to set an error code on the NavigationHandle as
++  // the observers have not been notified about its creation.
++  // We also reset navigation request only when this navigation request was
++  // responsible for this dialog, as a new navigation request might cancel
++  // existing unrelated dialog.
++  if (navigation_request_ && navigation_request_->IsWaitingForBeforeUnload())
+     ResetNavigationRequest(false);
+ }
+ 
+diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
+index 2c8589e..a070f74 100644
+--- a/content/browser/frame_host/navigation_request.cc
++++ b/content/browser/frame_host/navigation_request.cc
+@@ -5018,4 +5018,8 @@
+   state_ = state;
+ }
+ 
++bool NavigationRequest::IsWaitingForBeforeUnload() {
++  return state_ < WILL_START_NAVIGATION;
++}
++
+ }  // namespace content
+diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
+index df4b386..5738509 100644
+--- a/content/browser/frame_host/navigation_request.h
++++ b/content/browser/frame_host/navigation_request.h
+@@ -699,6 +699,10 @@
+   // tracing purposes.
+   void AsValueInto(base::trace_event::TracedValue* traced_value);
+ 
++  // Whether this navigation request waits for the result of beforeunload before
++  // proceeding.
++  bool IsWaitingForBeforeUnload();
++
+  private:
+   friend class NavigationRequestTest;
+ 
+diff --git a/content/browser/frame_host/render_frame_host_impl_browsertest.cc b/content/browser/frame_host/render_frame_host_impl_browsertest.cc
+index 5b565d4..0bd8e5e 100644
+--- a/content/browser/frame_host/render_frame_host_impl_browsertest.cc
++++ b/content/browser/frame_host/render_frame_host_impl_browsertest.cc
+@@ -1122,6 +1122,51 @@
+ 
+ namespace {
+ 
++class OnDidStartNavigation : public WebContentsObserver {
++ public:
++  OnDidStartNavigation(WebContents* web_contents,
++                       base::RepeatingClosure callback)
++      : WebContentsObserver(web_contents), callback_(callback) {}
++
++  void DidStartNavigation(NavigationHandle* navigation) override {
++    callback_.Run();
++  }
++
++ private:
++  base::RepeatingClosure callback_;
++};
++
++}  // namespace
++
++// This test closes beforeunload dialog due to a new navigation starting from
++// within WebContentsObserver::DidStartNavigation. This test succeeds if it
++// doesn't crash with a UAF while loading the second page.
++IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBeforeUnloadBrowserTest,
++                       DidStartNavigationClosesDialog) {
++  GURL url1 = embedded_test_server()->GetURL("a.com", "/title1.html");
++  GURL url2 = embedded_test_server()->GetURL("b.com", "/title1.html");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url1));
++
++  // This matches the behaviour of TabModalDialogManager in
++  // components/javascript_dialogs.
++  OnDidStartNavigation close_dialog(web_contents(),
++                                    base::BindLambdaForTesting([&]() {
++                                      CloseDialogAndCancel();
++
++                                      // Check that web_contents() were not
++                                      // deleted.
++                                      DCHECK(web_contents()->GetMainFrame());
++                                    }));
++
++  web_contents()->GetMainFrame()->RunBeforeUnloadConfirm(true,
++                                                         base::DoNothing());
++
++  EXPECT_TRUE(NavigateToURL(shell(), url2));
++}
++
++namespace {
++
+ // A helper to execute some script in a frame just before it is deleted, such
+ // that no message loops are pumped and no sync IPC messages are processed
+ // between script execution and the destruction of the RenderFrameHost  .
