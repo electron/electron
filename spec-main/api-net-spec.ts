@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
-import { AddressInfo, Socket } from 'net';
+import { AddressInfo, Socket, createServer } from 'net';
 import { emittedOnce } from './events-helpers';
 import { defer, delay } from './spec-helpers';
 
@@ -1535,6 +1535,33 @@ describe('net module', () => {
       const response = await getResponse(urlRequest);
       expect(response.statusCode).to.equal(200);
       await collectStreamBody(response);
+    });
+
+    it('should not trigger errors on the response stream', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      const statusCode = await new Promise<number>((resolve, reject) => {
+        const server = createServer((c) => {
+          c.end('HTTP/1.1 407 Authentication Required\nProxy-Authenticate: Basic realm="Foo"\n\n');
+        }).listen(0, '127.0.0.1', async () => {
+          const port = (server.address() as AddressInfo).port;
+          await ses.setProxy({ proxyRules: `localhost:${port}` });
+          net
+            .request({ method: 'GET', url: 'https://example.com', session: ses })
+            .once('response', (res) => {
+              resolve(res.statusCode);
+              res.on('error', () => {
+                reject(new Error('response stream should not emit error'));
+              });
+            })
+            .once('abort', () => resolve(-1))
+            .once('error', () => {
+              reject(new Error('request stream should not emit error'));
+            })
+            .once('login', (_, callback) => { callback('username', 'password'); })
+            .end();
+        });
+      });
+      expect(statusCode).to.equal(407);
     });
   });
 
