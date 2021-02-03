@@ -211,7 +211,7 @@ index 925bfe1ea191ab846805fdbff1b0314e779b1c9e..5488245e22b883105dbe1e225156ab18
  };
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 93bcc87244d41c6b72908ed31f83cdd629f6e69f..13ec5f9b1ba0c7edf3d36a7e308f1fbdb3d6796a 100644
+index 93bcc87244d41c6b72908ed31f83cdd629f6e69f..bbffc89e4f6f2f7b85d285de24120ade082a0090 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -131,8 +131,6 @@ void PostAnnouncementNotification(NSString* announcement) {
@@ -257,7 +257,7 @@ index 93bcc87244d41c6b72908ed31f83cdd629f6e69f..13ec5f9b1ba0c7edf3d36a7e308f1fbd
      [user_info setObject:@(ui::AXTextStateChangeTypeSelectionMove)
                    forKey:ui::NSAccessibilityTextStateChangeTypeKey];
    } else {
-@@ -479,23 +478,20 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -479,25 +478,22 @@ void PostAnnouncementNotification(NSString* announcement) {
                    forKey:ui::NSAccessibilityTextStateChangeTypeKey];
    }
  
@@ -284,12 +284,15 @@ index 93bcc87244d41c6b72908ed31f83cdd629f6e69f..13ec5f9b1ba0c7edf3d36a7e308f1fbd
 -        [user_info setObject:selected_text
 -                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
 -      }
+-#endif
 +    id selected_text = [native_focus_object selectedTextMarkerRange];
 +    if (selected_text) {
 +      NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
 +          @"AXSelectedTextMarkerRange";
 +      [user_info setObject:selected_text
 +                    forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
- #endif
      }
++#endif
    }
+ 
+   return user_info;
