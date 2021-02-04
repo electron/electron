@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 2 Feb 2021 22:38:53 -0800
+Subject: src: allow embedders to provide a custom PageAllocator
+
+For certain embedder use cases there are more complex memory allocation requirements
+that the default V8 page allocator does not handle, for example using MAP_JIT when running
+under a hardened runtime environment on macOS.  This allows such embedders to provide their
+own allocator that does handle these cases.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index adf033f2e1855ad1c9738f9746677566aabedd87..f51e4362835290b84eae2e01a0360f9a83d05473 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -350,8 +350,9 @@ node::tracing::Agent* CreateAgent() {
+ 
+ MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+-    node::tracing::TracingController* tracing_controller) {
+-  return new NodePlatform(thread_pool_size, tracing_controller);
++    node::tracing::TracingController* tracing_controller,
++    v8::PageAllocator* page_allocator) {
++  return new NodePlatform(thread_pool_size, tracing_controller, page_allocator);
+ }
+ 
+ void FreePlatform(MultiIsolatePlatform* platform) {
+diff --git a/src/node.h b/src/node.h
+index 0917daec298229a942c1790becfbefd19d01fb8d..e45670b8101bbf1379ee4e7ba39059eba8617c06 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -392,7 +392,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+ 
+ NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+-    node::tracing::TracingController* tracing_controller);
++    node::tracing::TracingController* tracing_controller,
++    v8::PageAllocator* page_allocator = nullptr);
+ NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform);
+ 
+ NODE_EXTERN void EmitBeforeExit(Environment* env);
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index a0ea118861867277d8f5f15625227d49505d1c6a..18a55973fdd672c7286bb85339d40f646628a849 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -320,16 +320,24 @@ void PerIsolatePlatformData::DecreaseHandleCount() {
+ }
+ 
+ NodePlatform::NodePlatform(int thread_pool_size,
+-                           TracingController* tracing_controller) {
++                           TracingController* tracing_controller,
++                           v8::PageAllocator* page_allocator) {
+   if (tracing_controller) {
+     tracing_controller_ = tracing_controller;
+   } else {
+     tracing_controller_ = new TracingController();
+   }
++  // This being nullptr is acceptable as V8 will default to its built
++  // in allocator if none is provided
++  page_allocator_ = page_allocator;
+   worker_thread_task_runner_ =
+       std::make_shared<WorkerThreadsTaskRunner>(thread_pool_size);
+ }
+ 
++v8::PageAllocator* NodePlatform::GetPageAllocator() {
++  return page_allocator_;
++}
++
+ void NodePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+   Mutex::ScopedLock lock(per_isolate_mutex_);
+   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
+diff --git a/src/node_platform.h b/src/node_platform.h
+index 1e14daa711ba62f9619ca83a8655482b11cef41d..e2afae6fa4a8b9a7fba3be0da82ce1520090df37 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -137,7 +137,8 @@ class WorkerThreadsTaskRunner {
+ class NodePlatform : public MultiIsolatePlatform {
+  public:
+   NodePlatform(int thread_pool_size,
+-               node::tracing::TracingController* tracing_controller);
++               node::tracing::TracingController* tracing_controller,
++               v8::PageAllocator* page_allocator = nullptr);
+   ~NodePlatform() override = default;
+ 
+   void DrainTasks(v8::Isolate* isolate) override;
+@@ -164,6 +165,7 @@ class NodePlatform : public MultiIsolatePlatform {
+       v8::Isolate* isolate) override;
+ 
+   Platform::StackTracePrinter GetStackTracePrinter() override;
++  v8::PageAllocator* GetPageAllocator() override;
+ 
+  private:
+   std::shared_ptr<PerIsolatePlatformData> ForIsolate(v8::Isolate* isolate);
+@@ -173,6 +175,7 @@ class NodePlatform : public MultiIsolatePlatform {
+                      std::shared_ptr<PerIsolatePlatformData>> per_isolate_;
+ 
+   node::tracing::TracingController* tracing_controller_;
++  v8::PageAllocator* page_allocator_;
+   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
+ };
+ 
