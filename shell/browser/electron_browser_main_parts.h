@@ -76,11 +76,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Gets the exit code
   int GetExitCode();
 
-  // Register a callback that should be destroyed before JavaScript environment
-  // gets destroyed.
-  // Returns a closure that can be used to remove |callback| from the list.
-  void RegisterDestructionCallback(base::OnceClosure callback);
-
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
   device::mojom::GeolocationControl* GetGeolocationControl();
@@ -158,9 +153,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<ElectronExtensionsClient> extensions_client_;
   std::unique_ptr<ElectronExtensionsBrowserClient> extensions_browser_client_;
 #endif
-
-  // List of callbacks should be executed before destroying JS env.
-  std::list<base::OnceClosure> destructors_;
 
   mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
 
