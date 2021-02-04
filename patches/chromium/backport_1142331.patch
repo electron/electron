@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <anbelen@microsoft.com>
+Date: Thu, 10 Dec 2020 18:04:03 +0100
+Subject: Chromium backport: crbug.com/1142331
+
+M87-1
+Clipboard: Fix UaP in ClipboardWriter/FileReaderLoader
+https://chromium-review.googlesource.com/c/chromium/src/+/2536946
+CVE-2020-16037
+
+diff --git a/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc b/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
+index fc5f32d86fd2cc4aeeaadddc94da6ce5e8e7990a..9c72fb55426f685045418947427406016d947589 100644
+--- a/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
++++ b/third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
+@@ -104,7 +104,7 @@ ScriptPromise ClipboardPromise::CreateForWriteText(ExecutionContext* context,
+ 
+ ClipboardPromise::ClipboardPromise(ExecutionContext* context,
+                                    ScriptState* script_state)
+-    : ExecutionContextClient(context),
++    : ExecutionContextLifecycleObserver(context),
+       script_state_(script_state),
+       script_promise_resolver_(
+           MakeGarbageCollected<ScriptPromiseResolver>(script_state)),
+@@ -483,13 +483,20 @@ scoped_refptr<base::SingleThreadTaskRunner> ClipboardPromise::GetTaskRunner() {
+   return GetExecutionContext()->GetTaskRunner(TaskType::kUserInteraction);
+ }
+ 
++// ExecutionContextLifecycleObserver implementation.
++void ClipboardPromise::ContextDestroyed() {
++  script_promise_resolver_->Reject(MakeGarbageCollected<DOMException>(
++      DOMExceptionCode::kNotAllowedError, "Document detached."));
++  clipboard_writer_.Clear();
++}
++
+ void ClipboardPromise::Trace(Visitor* visitor) const {
+   visitor->Trace(script_state_);
+   visitor->Trace(script_promise_resolver_);
+   visitor->Trace(clipboard_writer_);
+   visitor->Trace(permission_service_);
+   visitor->Trace(clipboard_item_data_);
+-  ExecutionContextClient::Trace(visitor);
++  ExecutionContextLifecycleObserver::Trace(visitor);
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/clipboard/clipboard_promise.h b/third_party/blink/renderer/modules/clipboard/clipboard_promise.h
+index 18efbc8c632dd7061fb31437529f1b14a25beb3a..307ce3b51a7c75b60301885685f5c0d780997250 100644
+--- a/third_party/blink/renderer/modules/clipboard/clipboard_promise.h
++++ b/third_party/blink/renderer/modules/clipboard/clipboard_promise.h
+@@ -26,7 +26,7 @@ class ExecutionContext;
+ class ClipboardItemOptions;
+ 
+ class ClipboardPromise final : public GarbageCollected<ClipboardPromise>,
+-                               public ExecutionContextClient {
++                               public ExecutionContextLifecycleObserver {
+   USING_GARBAGE_COLLECTED_MIXIN(ClipboardPromise);
+ 
+  public:
+@@ -83,6 +83,9 @@ class ClipboardPromise final : public GarbageCollected<ClipboardPromise>,
+   LocalFrame* GetLocalFrame() const;
+   scoped_refptr<base::SingleThreadTaskRunner> GetTaskRunner();
+ 
++  // ExecutionContextLifecycleObserver
++  void ContextDestroyed() override;
++
+   Member<ScriptState> script_state_;
+   Member<ScriptPromiseResolver> script_promise_resolver_;
+ 
+diff --git a/third_party/blink/renderer/modules/clipboard/clipboard_writer.cc b/third_party/blink/renderer/modules/clipboard/clipboard_writer.cc
+index 2891db58d47b30575efd782ae1c7cf8ee7558cc4..4b224c9679ca51c01328479685970235f35a32fd 100644
+--- a/third_party/blink/renderer/modules/clipboard/clipboard_writer.cc
++++ b/third_party/blink/renderer/modules/clipboard/clipboard_writer.cc
+@@ -188,9 +188,12 @@ ClipboardWriter::ClipboardWriter(SystemClipboard* system_clipboard,
+       file_reading_task_runner_(promise->GetExecutionContext()->GetTaskRunner(
+           TaskType::kFileReading)),
+       system_clipboard_(system_clipboard),
+-      raw_system_clipboard_(raw_system_clipboard) {}
++      raw_system_clipboard_(raw_system_clipboard),
++      self_keep_alive_(PERSISTENT_FROM_HERE, this) {}
+ 
+-ClipboardWriter::~ClipboardWriter() = default;
++ClipboardWriter::~ClipboardWriter() {
++  DCHECK(!file_reader_);
++}
+ 
+ // static
+ bool ClipboardWriter::IsValidType(const String& type, bool is_raw) {
+@@ -220,7 +223,9 @@ void ClipboardWriter::DidFinishLoading() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DOMArrayBuffer* array_buffer = file_reader_->ArrayBufferResult();
+   DCHECK(array_buffer);
++
+   file_reader_.reset();
++  self_keep_alive_.Clear();
+ 
+   worker_pool::PostTask(
+       FROM_HERE, CrossThreadBindOnce(&ClipboardWriter::DecodeOnBackgroundThread,
+@@ -230,6 +235,8 @@ void ClipboardWriter::DidFinishLoading() {
+ }
+ 
+ void ClipboardWriter::DidFail(FileErrorCode error_code) {
++  file_reader_.reset();
++  self_keep_alive_.Clear();
+   promise_->RejectFromReadOrDecodeFailure();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/clipboard/clipboard_writer.h b/third_party/blink/renderer/modules/clipboard/clipboard_writer.h
+index 527b063cd20900653dc37027bef8d24af31fb6de..3de3f5ad34b8ebf378421c64c917e3091e5343c6 100644
+--- a/third_party/blink/renderer/modules/clipboard/clipboard_writer.h
++++ b/third_party/blink/renderer/modules/clipboard/clipboard_writer.h
+@@ -9,6 +9,7 @@
+ #include "third_party/blink/renderer/core/fileapi/blob.h"
+ #include "third_party/blink/renderer/core/fileapi/file_reader_loader_client.h"
+ #include "third_party/blink/renderer/platform/heap/heap.h"
++#include "third_party/blink/renderer/platform/heap/self_keep_alive.h"
+ #include "third_party/skia/include/core/SkImage.h"
+ 
+ namespace blink {
+@@ -27,6 +28,11 @@ class RawSystemClipboard;
+ //     take advantage of vulnerabilities in their decoders. In
+ //     ClipboardRawDataWriter, this decoding is skipped.
+ // (3) Writing the blob's decoded contents to the system clipboard.
++//
++// ClipboardWriter is owned only by itself and ClipboardPromise. It keeps
++// itself alive for the duration of FileReaderLoader's async operations using
++// SelfKeepAlive, and keeps itself alive afterwards during cross-thread
++// operations by using WrapCrossThreadPersistent.
+ class ClipboardWriter : public GarbageCollected<ClipboardWriter>,
+                         public FileReaderLoaderClient {
+  public:
+@@ -80,6 +86,10 @@ class ClipboardWriter : public GarbageCollected<ClipboardWriter>,
+   Member<SystemClipboard> system_clipboard_;
+   // Access to the global unsanitized system clipboard.
+   Member<RawSystemClipboard> raw_system_clipboard_;
++
++  // Oilpan: ClipboardWriter must remain alive until Member<T>::Clear() is
++  // called, to keep the FileReaderLoader alive and avoid unexpected UaPs.
++  SelfKeepAlive<ClipboardWriter> self_keep_alive_;
+ };
+ 
+ }  // namespace blink

@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <anbelen@microsoft.com>
+Date: Thu, 10 Dec 2020 22:08:54 +0100
+Subject: Chromium backport: crbug.com/1151890
+
+M87-1
+Fix possibly-uninitialized leading digit on right shift
+https://chromium-review.googlesource.com/c/v8/v8/+/2565245
+CVE-2020-16042
+
+diff --git a/src/objects/bigint.cc b/src/objects/bigint.cc
+index 2f8337db979d767dd421b5cf02ded59061ac64f4..d62e4cc00c8459adecaada32599ca25c7d1ad9e4 100644
+--- a/src/objects/bigint.cc
++++ b/src/objects/bigint.cc
+@@ -1862,6 +1862,8 @@ Handle<BigInt> MutableBigInt::RightShiftByAbsolute(Isolate* isolate,
+   DCHECK_LE(result_length, length);
+   Handle<MutableBigInt> result = New(isolate, result_length).ToHandleChecked();
+   if (bits_shift == 0) {
++    // Zero out any overflow digit (see "rounding_can_overflow" above).
++    result->set_digit(result_length - 1, 0);
+     for (int i = digit_shift; i < length; i++) {
+       result->set_digit(i - digit_shift, x->digit(i));
+     }
