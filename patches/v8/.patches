@@ -23,3 +23,4 @@ backport_1151890.patch
 cherry-pick-ffd6ff5a61b9.patch
 merged_deoptimizer_stricter_checks_during_deoptimization.patch
 merged_compiler_mark_jsstoreinarrayliteral_as_needing_a_frame.patch
+cherry-pick-36abafa0a316.patch
