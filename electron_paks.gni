@@ -91,9 +91,15 @@ template("electron_extra_paks") {
     }
 
     # New paks should be added here by default.
-    sources +=
-        [ "$root_gen_dir/content/browser/devtools/devtools_resources.pak" ]
+    sources += [
+      "$root_gen_dir/content/browser/devtools/devtools_resources.pak",
+      "$root_gen_dir/ui/resources/webui_generated_resources.pak",
+    ]
     deps += [ "//content/browser/devtools:devtools_resources" ]
+    if (enable_pdf_viewer) {
+      sources += [ "$root_gen_dir/chrome/pdf_resources.pak" ]
+      deps += [ "//chrome/browser/resources/pdf:pdf_resources" ]
+    }
     if (enable_print_preview) {
       sources += [ "$root_gen_dir/chrome/print_preview_resources.pak" ]
       deps +=

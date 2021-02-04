@@ -5,11 +5,11 @@
       "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "width": 800,
-      "title": "frame name",
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false,
       "webPreferences": {
@@ -33,7 +33,7 @@
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -43,11 +43,11 @@
       "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "width": 800,
-      "title": "frame name",
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false,
       "webPreferences": {
@@ -70,7 +70,7 @@
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -80,11 +80,11 @@
       "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "width": 800,
-      "title": "frame name",
+      "title": "cool",
       "backgroundColor": "gray",
       "focusable": false,
       "webPreferences": {
@@ -105,7 +105,7 @@
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -115,7 +115,7 @@
       "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "width": 800,
@@ -140,7 +140,7 @@
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -150,11 +150,11 @@
       "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "width": 800,
-      "title": "frame name",
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false,
       "webPreferences": {
@@ -177,7 +177,7 @@
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ]

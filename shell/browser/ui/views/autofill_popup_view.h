@@ -147,7 +147,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   // key presses
   content::RenderWidgetHost::KeyPressEventCallback keypress_callback_;
 
-  base::WeakPtrFactory<AutofillPopupView> weak_ptr_factory_;
+  base::WeakPtrFactory<AutofillPopupView> weak_ptr_factory_{this};
 };
 
 }  // namespace electron

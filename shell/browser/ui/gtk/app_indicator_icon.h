@@ -96,13 +96,13 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   base::nix::DesktopEnvironment desktop_env_;
 
   // Gtk status icon wrapper
-  AppIndicator* icon_;
+  AppIndicator* icon_ = nullptr;
 
   std::unique_ptr<AppIndicatorIconMenu> menu_;
-  ui::MenuModel* menu_model_;
+  ui::MenuModel* menu_model_ = nullptr;
 
   base::FilePath temp_dir_;
-  int icon_change_count_;
+  int icon_change_count_ = 0;
 
   base::WeakPtrFactory<AppIndicatorIcon> weak_factory_{this};
 

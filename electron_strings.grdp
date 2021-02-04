@@ -83,5 +83,18 @@
   <message name="IDS_DOWNLOAD_MORE_ACTIONS"
           desc="Tooltip of a button on the downloads page that shows a menu with actions like 'Open downloads folder' or 'Clear all'">
     More actions
-</message>
+  </message>
+  <!-- Badging -->
+  <message name="IDS_SATURATED_BADGE_CONTENT" desc="The content to display when the application's badge is too large to display to indicate that the badge is more than a given maximum. This string should be as short as possible, preferably only one character beyond the content">
+    <ph name="MAXIMUM_VALUE">$1<ex>99</ex></ph>+
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS_SATURATED" desc="The accessibility text which will be read by a screen reader when the notification count is too large to display (e.g. greater than 99).">
+    {MAX_UNREAD_NOTIFICATIONS, plural, =1 {More than 1 unread notification} other {More than # unread notifications}}
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS_UNSPECIFIED" desc="The accessibility text which will be read by a screen reader when there are some unspecified number of notifications, or user attention is required">
+    Unread Notifications
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS" desc="The accessibility text which will be read by a screen reader when there are notifcatications">
+    {UNREAD_NOTIFICATIONS, plural, =1 {1 Unread Notification} other {# Unread Notifications}}
+  </message>  
 </grit-part>

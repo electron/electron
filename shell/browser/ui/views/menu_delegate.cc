@@ -18,8 +18,7 @@
 
 namespace electron {
 
-MenuDelegate::MenuDelegate(MenuBar* menu_bar)
-    : menu_bar_(menu_bar), id_(-1), hold_first_switch_(false) {}
+MenuDelegate::MenuDelegate(MenuBar* menu_bar) : menu_bar_(menu_bar) {}
 
 MenuDelegate::~MenuDelegate() = default;
 

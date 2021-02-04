@@ -67,9 +67,7 @@ build_script:
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        $env:GCLIENT_EXTRA_ARGS="$env:GCLIENT_EXTRA_ARGS --custom-var=checkout_requests=True"
-      } else {
+      if ($env:GN_CONFIG -ne 'release') {
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
@@ -150,7 +148,6 @@ build_script:
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
-  - gn check out/Default //electron:manifests
   - gn check out/Default //electron/shell/common/api:mojo
   - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )

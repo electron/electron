@@ -14,21 +14,19 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '3a75ada69d1ac06d6903a2c981ab90a8162f1ba0',
+    '97adba472d4bf3f97675b5d9eade34526ebf730c',
   'node_version':
-    'v14.15.1',
+    'v14.15.4',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
     'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
 
   'pyyaml_version': '3.12',
-  'requests_version': 'e4d59bedfd3c7f4f254f4f5d036587bcd8152458',
 
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
   'nodejs_git': 'https://github.com/nodejs',
-  'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
   'squirrel_git': 'https://github.com/Squirrel',
 
@@ -49,9 +47,6 @@ vars = {
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
-
-  # Python "requests" module is used for releases only.
-  'checkout_requests': False,
 
   'mac_xcode_version': 'default',
 
@@ -94,10 +89,6 @@ deps = {
   'src/electron/vendor/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
     'condition': 'checkout_pyyaml and process_deps',
-  },
-  'src/electron/vendor/requests': {
-    'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
-    'condition': 'checkout_requests and process_deps',
   },
   'src/third_party/squirrel.mac': {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
@@ -160,16 +151,6 @@ hooks = [
       'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python3", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
-    ],
-  },
-  {
-    'name': 'setup_requests',
-    'pattern': 'src/electron',
-    'condition': 'checkout_requests and process_deps',
-    'action': [
-      'python3',
-      '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "requests")); subprocess.check_call(["python3", "setup.py", "build"]);',
     ],
   },
 ]

@@ -67,7 +67,7 @@ class FrameSubscriber : public content::WebContentsObserver,
   content::RenderWidgetHost* host_;
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
-  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_;
+  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };

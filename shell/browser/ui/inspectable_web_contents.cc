@@ -194,12 +194,12 @@ class InspectableWebContents::NetworkResourceLoader
                      const network::ResourceRequest& resource_request,
                      const net::NetworkTrafficAnnotationTag& traffic_annotation,
                      URLLoaderFactoryHolder url_loader_factory,
-                     const DispatchCallback& callback,
+                     DispatchCallback callback,
                      base::TimeDelta retry_delay = base::TimeDelta()) {
     auto resource_loader =
         std::make_unique<InspectableWebContents::NetworkResourceLoader>(
             stream_id, bindings, resource_request, traffic_annotation,
-            std::move(url_loader_factory), callback, retry_delay);
+            std::move(url_loader_factory), std::move(callback), retry_delay);
     bindings->loaders_.insert(std::move(resource_loader));
   }
 
@@ -209,7 +209,7 @@ class InspectableWebContents::NetworkResourceLoader
       const network::ResourceRequest& resource_request,
       const net::NetworkTrafficAnnotationTag& traffic_annotation,
       URLLoaderFactoryHolder url_loader_factory,
-      const DispatchCallback& callback,
+      DispatchCallback callback,
       base::TimeDelta delay)
       : stream_id_(stream_id),
         bindings_(bindings),
@@ -219,7 +219,7 @@ class InspectableWebContents::NetworkResourceLoader
             std::make_unique<network::ResourceRequest>(resource_request),
             traffic_annotation)),
         url_loader_factory_(std::move(url_loader_factory)),
-        callback_(callback),
+        callback_(std::move(callback)),
         retry_delay_(delay) {
     loader_->SetOnResponseStartedCallback(base::BindOnce(
         &NetworkResourceLoader::OnResponseStarted, base::Unretained(this)));
@@ -280,7 +280,7 @@ class InspectableWebContents::NetworkResourceLoader
                    << delay << "." << std::endl;
       NetworkResourceLoader::Create(
           stream_id_, bindings_, resource_request_, traffic_annotation_,
-          std::move(url_loader_factory_), callback_, delay);
+          std::move(url_loader_factory_), std::move(callback_), delay);
     } else {
       base::DictionaryValue response;
       response.SetInteger("statusCode", response_headers_
@@ -296,7 +296,7 @@ class InspectableWebContents::NetworkResourceLoader
         headers->SetString(name, value);
 
       response.Set("headers", std::move(headers));
-      callback_.Run(&response);
+      std::move(callback_).Run(&response);
     }
 
     bindings_->loaders_.erase(bindings_->loaders_.find(this));
@@ -337,14 +337,10 @@ InspectableWebContents::InspectableWebContents(
     content::WebContents* web_contents,
     PrefService* pref_service,
     bool is_guest)
-    : frontend_loaded_(false),
-      can_dock_(true),
-      delegate_(nullptr),
-      pref_service_(pref_service),
+    : pref_service_(pref_service),
       web_contents_(web_contents),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)),
-      weak_factory_(this) {
+      view_(CreateInspectableContentsView(this)) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
     devtools_bounds_ = DictionaryToRect(bounds_dict);
@@ -497,12 +493,12 @@ void InspectableWebContents::Detach() {
   agent_host_ = nullptr;
 }
 
-void InspectableWebContents::Reattach(const DispatchCallback& callback) {
+void InspectableWebContents::Reattach(DispatchCallback callback) {
   if (agent_host_) {
     agent_host_->DetachClient(this);
     agent_host_->AttachClient(this);
   }
-  callback.Run(nullptr);
+  std::move(callback).Run(nullptr);
 }
 
 void InspectableWebContents::CallClientFunction(
@@ -643,16 +639,15 @@ void InspectableWebContents::InspectedURLChanged(const std::string& url) {
         base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
 }
 
-void InspectableWebContents::LoadNetworkResource(
-    const DispatchCallback& callback,
-    const std::string& url,
-    const std::string& headers,
-    int stream_id) {
+void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
+                                                 const std::string& url,
+                                                 const std::string& headers,
+                                                 int stream_id) {
   GURL gurl(url);
   if (!gurl.is_valid()) {
     base::DictionaryValue response;
     response.SetInteger("statusCode", 404);
-    callback.Run(&response);
+    std::move(callback).Run(&response);
     return;
   }
 
@@ -696,17 +691,17 @@ void InspectableWebContents::LoadNetworkResource(
     url_loader_factory = partition->GetURLLoaderFactoryForBrowserProcess();
   }
 
-  NetworkResourceLoader::Create(stream_id, this, resource_request,
-                                traffic_annotation,
-                                std::move(url_loader_factory), callback);
+  NetworkResourceLoader::Create(
+      stream_id, this, resource_request, traffic_annotation,
+      std::move(url_loader_factory), std::move(callback));
 }
 
-void InspectableWebContents::SetIsDocked(const DispatchCallback& callback,
+void InspectableWebContents::SetIsDocked(DispatchCallback callback,
                                          bool docked) {
   if (managed_devtools_web_contents_)
     view_->SetIsDocked(docked, activate_);
   if (!callback.is_null())
-    callback.Run(nullptr);
+    std::move(callback).Run(nullptr);
 }
 
 void InspectableWebContents::OpenInNewTab(const std::string& url) {}
@@ -835,16 +830,16 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
         this, base::as_bytes(base::make_span(message)));
 }
 
-void InspectableWebContents::SendJsonRequest(const DispatchCallback& callback,
+void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
                                              const std::string& browser_id,
                                              const std::string& url) {
-  callback.Run(nullptr);
+  std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::GetPreferences(const DispatchCallback& callback) {
+void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   const base::DictionaryValue* prefs =
       pref_service_->GetDictionary(kDevToolsPreferences);
-  callback.Run(prefs);
+  std::move(callback).Run(prefs);
 }
 
 void InspectableWebContents::SetPreference(const std::string& name,

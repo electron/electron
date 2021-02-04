@@ -143,6 +143,7 @@ These individual tutorials expand on topics discussed in the guide above.
 
 ### Modules for the Renderer Process (Web Page):
 
+* [contextBridge](api/context-bridge.md)
 * [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
 * [remote](api/remote.md)

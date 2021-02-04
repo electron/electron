@@ -615,9 +615,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (options.withFileTypes) {
       const dirents = [];
       for (const file of files) {
-        const stats = archive.stat(file);
+        const childPath = path.join(filePath, file);
+        const stats = archive.stat(childPath);
         if (!stats) {
-          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath: file });
+          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
           nextTick(callback!, [error]);
           return;
         }
@@ -638,8 +639,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   fs.promises.readdir = util.promisify(fs.readdir);
 
+  type ReaddirSyncOptions = { encoding: BufferEncoding | null; withFileTypes?: false };
+
   const { readdirSync } = fs;
-  fs.readdirSync = function (pathArgument: string, options: { encoding: BufferEncoding | null; withFileTypes?: false } | BufferEncoding | null) {
+  fs.readdirSync = function (pathArgument: string, options: ReaddirSyncOptions | BufferEncoding | null) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return readdirSync.apply(this, arguments);
     const { asarPath, filePath } = pathInfo;
@@ -654,12 +657,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
     }
 
-    if (options && (options as any).withFileTypes) {
+    if (options && (options as ReaddirSyncOptions).withFileTypes) {
       const dirents = [];
       for (const file of files) {
-        const stats = archive.stat(file);
+        const childPath = path.join(filePath, file);
+        const stats = archive.stat(childPath);
         if (!stats) {
-          throw createError(AsarError.NOT_FOUND, { asarPath, filePath: file });
+          throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
         }
         if (stats.isFile) {
           dirents.push(new fs.Dirent(file, fs.constants.UV_DIRENT_FILE));

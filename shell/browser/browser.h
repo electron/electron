@@ -23,6 +23,7 @@
 #if defined(OS_WIN)
 #include <windows.h>
 #include "base/files/file_path.h"
+#include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
 #if defined(OS_MAC)
@@ -107,7 +108,7 @@ class Browser : public WindowListObserver {
 #endif
 
   // Set/Get the badge count.
-  bool SetBadgeCount(int count);
+  bool SetBadgeCount(base::Optional<int> count);
   int GetBadgeCount();
 
 #if defined(OS_WIN)
@@ -223,7 +224,7 @@ class Browser : public WindowListObserver {
   void DockSetMenu(ElectronMenuModel* model);
 
   // Set docks' icon.
-  void DockSetIcon(const gfx::Image& image);
+  void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 
 #endif  // defined(OS_MAC)
 
@@ -362,6 +363,15 @@ class Browser : public WindowListObserver {
   base::Value about_panel_options_;
 #elif defined(OS_MAC)
   base::DictionaryValue about_panel_options_;
+#endif
+
+#if defined(OS_WIN)
+  void UpdateBadgeContents(HWND hwnd,
+                           const base::Optional<std::string>& badge_content,
+                           const std::string& badge_alt_string);
+
+  // In charge of running taskbar related APIs.
+  TaskbarHost taskbar_host_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);

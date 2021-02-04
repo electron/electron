@@ -128,7 +128,7 @@ class BrowserWindow : public BaseWindow,
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 
-  base::WeakPtrFactory<BrowserWindow> weak_factory_;
+  base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };

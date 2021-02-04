@@ -8,7 +8,7 @@ needs to register on an isolate so that it can be used later
 down in the initialization process of an isolate.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8..f25c4bc7aa0e13ef772294afec7d94c01c498205 100644
+index 5633e066f6ec829d050f4d154d618cf664ec8dc0..2604ec42fbb6e04499c660e064a5fa2f676037e2 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -53,7 +53,8 @@ IsolateHolder::IsolateHolder(
@@ -35,10 +35,10 @@ index 9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8..f25c4bc7aa0e13ef772294afec7d94c0
        new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index ede178acabc63c3c33d6ce93efd5632bec50ba89..ffe7331cf1806417a32e66970f81b7797b9b80fc 100644
+index 689571089c3619f45d2f03df01f83bd73df55ba2..7c50707f2ec40fbf27c956460e4b0e6c8e4db8f7 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -75,7 +75,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -76,7 +76,8 @@ class GIN_EXPORT IsolateHolder {
        AccessMode access_mode,
        AllowAtomicsWaitMode atomics_wait_mode,
        IsolateType isolate_type,

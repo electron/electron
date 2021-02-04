@@ -63,7 +63,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         sandbox: true
       }
     });
@@ -76,7 +75,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true
       }
     });
@@ -89,12 +87,22 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true,
         sandbox: true
       }
     });
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+    await emittedOnce(ipcMain, 'pong');
+  });
+
+  it('works with Trusted Types', async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true
+      }
+    });
+    w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
     await emittedOnce(ipcMain, 'pong');
   });
 
@@ -198,8 +206,10 @@ describe('<webview> tag', function () {
         const showPanelIntervalId = setInterval(function () {
           if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
-              const lastPanelId: any = (window as any).UI.inspectorView._tabbedPane._tabs.peekLast().id;
-              (window as any).UI.inspectorView.showPanel(lastPanelId);
+              const { UI } = (window as any);
+              const tabs = UI.inspectorView._tabbedPane._tabs;
+              const lastPanelId: any = tabs[tabs.length - 1].id;
+              UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');
           } else {
             clearInterval(showPanelIntervalId);
@@ -255,7 +265,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         ipcMain.on('webview-zoom-level', (event, zoomLevel, zoomFactor, newHost, final) => {
           if (!newHost) {
             expect(zoomFactor).to.equal(1.44);
@@ -285,7 +295,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         ipcMain.on('webview-zoom-in-page', (event, zoomLevel, zoomFactor, final) => {
           expect(zoomFactor).to.equal(1.44);
           expect(zoomLevel).to.equal(2.0);
@@ -500,7 +510,7 @@ describe('<webview> tag', function () {
     const partition = 'permissionTest';
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
           if (webContents.id === webContentsId) {
             // requestMIDIAccess with sysex requests both midi and midiSysex so

@@ -12,7 +12,7 @@ const contextBridge: Electron.ContextBridge = {
     checkContextIsolationEnabled();
     return binding.exposeAPIInMainWorld(key, api);
   }
-} as any;
+};
 
 export default contextBridge;
 

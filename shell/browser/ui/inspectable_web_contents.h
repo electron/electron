@@ -86,11 +86,11 @@ class InspectableWebContents
   void SetInspectedPageBounds(const gfx::Rect& rect) override;
   void InspectElementCompleted() override;
   void InspectedURLChanged(const std::string& url) override;
-  void LoadNetworkResource(const DispatchCallback& callback,
+  void LoadNetworkResource(DispatchCallback callback,
                            const std::string& url,
                            const std::string& headers,
                            int stream_id) override;
-  void SetIsDocked(const DispatchCallback& callback, bool is_docked) override;
+  void SetIsDocked(DispatchCallback callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
@@ -130,10 +130,10 @@ class InspectableWebContents
   void OpenNodeFrontend() override;
   void DispatchProtocolMessageFromDevToolsFrontend(
       const std::string& message) override;
-  void SendJsonRequest(const DispatchCallback& callback,
+  void SendJsonRequest(DispatchCallback callback,
                        const std::string& browser_id,
                        const std::string& url) override;
-  void GetPreferences(const DispatchCallback& callback) override;
+  void GetPreferences(DispatchCallback callback) override;
   void SetPreference(const std::string& name,
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;
@@ -141,7 +141,7 @@ class InspectableWebContents
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
-  void Reattach(const DispatchCallback& callback) override;
+  void Reattach(DispatchCallback callback) override;
   void RecordEnumeratedHistogram(const std::string& name,
                                  int sample,
                                  int boundary_value) override {}
@@ -150,9 +150,9 @@ class InspectableWebContents
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
-  void ShowSurvey(const DispatchCallback& callback,
+  void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
-  void CanShowSurvey(const DispatchCallback& callback,
+  void CanShowSurvey(DispatchCallback callback,
                      const std::string& trigger) override {}
 
   // content::DevToolsFrontendHostDelegate:
@@ -201,7 +201,7 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  bool frontend_loaded_;
+  bool frontend_loaded_ = false;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
   std::unique_ptr<DevToolsEmbedderMessageDispatcher>
@@ -209,11 +209,11 @@ class InspectableWebContents
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
-  bool can_dock_;
+  bool can_dock_ = true;
   std::string dock_state_;
   bool activate_ = true;
 
-  InspectableWebContentsDelegate* delegate_;  // weak references.
+  InspectableWebContentsDelegate* delegate_ = nullptr;  // weak references.
 
   PrefService* pref_service_;  // weak reference.
 
@@ -235,7 +235,7 @@ class InspectableWebContents
   using ExtensionsAPIs = std::map<std::string, std::string>;
   ExtensionsAPIs extensions_api_;
 
-  base::WeakPtrFactory<InspectableWebContents> weak_factory_;
+  base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContents);
 };

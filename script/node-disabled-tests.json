@@ -146,7 +146,6 @@
   "parallel/test-v8-flags",
   "parallel/test-vm-module-basic",
   "parallel/test-vm-parse-abort-on-uncaught-exception",
-  "parallel/test-vm-sigint",
   "parallel/test-vm-sigint-existing-handler",
   "parallel/test-vm-timeout",
   "parallel/test-whatwg-encoding-custom-textdecoder",

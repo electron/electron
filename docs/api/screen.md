@@ -92,6 +92,8 @@ Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 
+**Note:** The return value is a DIP point, not a screen physical point.
+
 ### `screen.getPrimaryDisplay()`
 
 Returns [`Display`](structures/display.md) - The primary display.

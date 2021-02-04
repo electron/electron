@@ -628,15 +628,6 @@ void SystemPreferences::RemoveUserDefault(const std::string& name) {
   [defaults removeObjectForKey:base::SysUTF8ToNSString(name)];
 }
 
-bool SystemPreferences::IsDarkMode() {
-  if (@available(macOS 10.14, *)) {
-    return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-  }
-  NSString* mode = [[NSUserDefaults standardUserDefaults]
-      stringForKey:@"AppleInterfaceStyle"];
-  return [mode isEqualToString:@"Dark"];
-}
-
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
   return [NSEvent isSwipeTrackingFromScrollEventsEnabled];
 }

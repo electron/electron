@@ -31,7 +31,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
       const extensions::Extension* extension,
-      const base::Callback<void(bool)>& callback) const override;
+      base::OnceCallback<void(bool)> callback) const override;
   std::unique_ptr<extensions::UninstallDialogDelegate>
   UninstallFunctionDelegate(
       extensions::ManagementUninstallFunctionBase* function,
@@ -81,6 +81,8 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
                   int icon_size,
                   ExtensionIconSet::MatchType match,
                   bool grayscale) const override;
+  GURL GetEffectiveUpdateURL(const extensions::Extension& extension,
+                             content::BrowserContext* context) const override;
 };
 
 #endif  // SHELL_BROWSER_EXTENSIONS_API_MANAGEMENT_ELECTRON_MANAGEMENT_API_DELEGATE_H_

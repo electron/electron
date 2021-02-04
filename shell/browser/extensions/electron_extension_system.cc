@@ -49,15 +49,15 @@ namespace extensions {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())),
-      weak_factory_(this) {}
+      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
 void ElectronExtensionSystem::LoadExtension(
     const base::FilePath& extension_dir,
+    int load_flags,
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
-  extension_loader_->LoadExtension(extension_dir, std::move(cb));
+  extension_loader_->LoadExtension(extension_dir, load_flags, std::move(cb));
 }
 
 void ElectronExtensionSystem::FinishInitialization() {
@@ -173,11 +173,11 @@ AppSorting* ElectronExtensionSystem::app_sorting() {
 void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     base::OnceClosure callback) {
-  base::PostTaskAndReply(
-      FROM_HERE, {BrowserThread::IO},
-      base::Bind(&InfoMap::AddExtension, info_map(),
-                 base::RetainedRef(extension), base::Time::Now(), false, false),
-      std::move(callback));
+  base::PostTaskAndReply(FROM_HERE, {BrowserThread::IO},
+                         base::BindOnce(&InfoMap::AddExtension, info_map(),
+                                        base::RetainedRef(extension),
+                                        base::Time::Now(), false, false),
+                         std::move(callback));
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(

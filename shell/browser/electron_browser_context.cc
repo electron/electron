@@ -102,12 +102,10 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : in_memory_pref_store_(nullptr),
-      storage_policy_(new SpecialStoragePolicy),
+    : storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
-      ssl_config_(network::mojom::SSLConfig::New()),
-      weak_factory_(this) {
+      ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.

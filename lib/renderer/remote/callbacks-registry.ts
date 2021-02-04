@@ -1,13 +1,12 @@
-const callbackIds = new WeakMap<Function, number>();
-const locationInfo = new WeakMap<Function, string>();
-
 export class CallbacksRegistry {
   private nextId: number = 0
   private callbacks = new Map<number, Function>()
+  private callbackIds = new WeakMap<Function, number>();
+  private locationInfo = new WeakMap<Function, string>();
 
   add (callback: Function) {
     // The callback is already added.
-    let id = callbackIds.get(callback);
+    let id = this.callbackIds.get(callback);
     if (id != null) return id;
 
     id = this.nextId += 1;
@@ -33,8 +32,8 @@ export class CallbacksRegistry {
     }
 
     this.callbacks.set(id, callback);
-    callbackIds.set(callback, id);
-    locationInfo.set(callback, filenameAndLine!);
+    this.callbackIds.set(callback, id);
+    this.locationInfo.set(callback, filenameAndLine!);
     return id;
   }
 
@@ -43,7 +42,7 @@ export class CallbacksRegistry {
   }
 
   getLocation (callback: Function) {
-    return locationInfo.get(callback);
+    return this.locationInfo.get(callback);
   }
 
   apply (id: number, ...args: any[]) {
@@ -53,7 +52,7 @@ export class CallbacksRegistry {
   remove (id: number) {
     const callback = this.callbacks.get(id);
     if (callback) {
-      callbackIds.delete(callback);
+      this.callbackIds.delete(callback);
       this.callbacks.delete(id);
     }
   }

@@ -215,6 +215,10 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
+    _linkedBinding(name: 'electron_browser_web_frame_main'): {
+      WebFrameMain: typeof Electron.WebFrameMain;
+      fromId(processId: number, routingId: number): Electron.WebFrameMain;
+    }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
     log: NodeJS.WriteStream['write'];
@@ -228,7 +232,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
-    isRemoteModuleEnabled: boolean;
+    mainModule: NodeJS.Module;
   }
 }
 
@@ -268,7 +272,9 @@ declare interface Window {
       completeURL: (project: string, path: string) => string;
     }
   };
+  WebView: typeof ElectronInternal.WebViewElement;
   ResizeObserver: ResizeObserver;
+  trustedTypes: TrustedTypePolicyFactory;
 }
 
 /**
@@ -321,60 +327,40 @@ interface ResizeObserverEntry {
   readonly contentRect: DOMRectReadOnly;
 }
 
-// https://github.com/microsoft/TypeScript/pull/38232
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#trusted-types
 
-interface WeakRef<T extends object> {
-  readonly [Symbol.toStringTag]: 'WeakRef';
+type TrustedHTML = string;
+type TrustedScript = string;
+type TrustedScriptURL = string;
+type TrustedType = TrustedHTML | TrustedScript | TrustedScriptURL;
+type StringContext = 'TrustedHTML' | 'TrustedScript' | 'TrustedScriptURL';
 
-  /**
-   * Returns the WeakRef instance's target object, or undefined if the target object has been
-   * reclaimed.
-   */
-  deref(): T | undefined;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicy
+
+interface TrustedTypePolicy {
+  createHTML(input: string, ...arguments: any[]): TrustedHTML;
+  createScript(input: string, ...arguments: any[]): TrustedScript;
+  createScriptURL(input: string, ...arguments: any[]): TrustedScriptURL;
 }
 
-interface WeakRefConstructor {
-  readonly prototype: WeakRef<any>;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyoptions
 
-  /**
-   * Creates a WeakRef instance for the given target object.
-   * @param target The target object for the WeakRef instance.
-   */
-  new<T extends object>(target?: T): WeakRef<T>;
+interface TrustedTypePolicyOptions {
+  createHTML?: (input: string, ...arguments: any[]) => TrustedHTML;
+  createScript?: (input: string, ...arguments: any[]) => TrustedScript;
+  createScriptURL?: (input: string, ...arguments: any[]) => TrustedScriptURL;
 }
 
-declare var WeakRef: WeakRefConstructor;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyfactory
 
-interface FinalizationRegistry {
-  readonly [Symbol.toStringTag]: 'FinalizationRegistry';
-
-  /**
-   * Registers an object with the registry.
-   * @param target The target object to register.
-   * @param heldValue The value to pass to the finalizer for this object. This cannot be the
-   * target object.
-   * @param unregisterToken The token to pass to the unregister method to unregister the target
-   * object. If provided (and not undefined), this must be an object. If not provided, the target
-   * cannot be unregistered.
-   */
-  register(target: object, heldValue: any, unregisterToken?: object): void;
-
-  /**
-   * Unregisters an object from the registry.
-   * @param unregisterToken The token that was used as the unregisterToken argument when calling
-   * register to register the target object.
-   */
-  unregister(unregisterToken: object): void;
+interface TrustedTypePolicyFactory {
+  createPolicy(policyName: string, policyOptions: TrustedTypePolicyOptions): TrustedTypePolicy
+  isHTML(value: any): boolean;
+  isScript(value: any): boolean;
+  isScriptURL(value: any): boolean;
+  readonly emptyHTML: TrustedHTML;
+  readonly emptyScript: TrustedScript;
+  getAttributeType(tagName: string, attribute: string, elementNs?: string, attrNs?: string): StringContext | null;
+  getPropertyType(tagName: string, property: string, elementNs?: string): StringContext | null;
+  readonly defaultPolicy: TrustedTypePolicy | null;
 }
-
-interface FinalizationRegistryConstructor {
-  readonly prototype: FinalizationRegistry;
-
-  /**
-   * Creates a finalization registry with an associated cleanup callback
-   * @param cleanupCallback The callback to call after an object in the registry has been reclaimed.
-   */
-  new(cleanupCallback: (heldValue: any) => void): FinalizationRegistry;
-}
-
-declare var FinalizationRegistry: FinalizationRegistryConstructor;

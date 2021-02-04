@@ -17,7 +17,7 @@ namespace electron {
 
 namespace api {
 
-MenuViews::MenuViews(gin::Arguments* args) : Menu(args), weak_factory_(this) {}
+MenuViews::MenuViews(gin::Arguments* args) : Menu(args) {}
 
 MenuViews::~MenuViews() = default;
 

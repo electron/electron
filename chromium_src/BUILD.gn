@@ -76,6 +76,7 @@ static_library("chrome") {
   }
 
   public_deps = [
+    "//chrome/browser:dev_ui_browser_resources",
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
@@ -83,6 +84,7 @@ static_library("chrome") {
     "//components/proxy_config",
     "//components/security_state/content",
     "//content/public/browser",
+    "//services/strings",
   ]
 
   deps = [
@@ -143,10 +145,17 @@ static_library("chrome") {
       "//chrome/browser/platform_util.h",
       "//chrome/browser/ui/browser_dialogs.h",
       "//chrome/browser/ui/color_chooser.h",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
     ]
 
     if (use_aura) {
-      sources += [ "//chrome/browser/platform_util_aura.cc" ]
+      sources += [
+        "//chrome/browser/platform_util_aura.cc",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
+      ]
 
       if (!is_win) {
         sources += [
@@ -163,6 +172,8 @@ static_library("chrome") {
         "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
         "//chrome/browser/ui/cocoa/color_chooser_mac.h",
         "//chrome/browser/ui/cocoa/color_chooser_mac.mm",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
       ]
       deps += [
         "//components/remote_cocoa/app_shim",
@@ -208,8 +219,6 @@ static_library("chrome") {
       "//chrome/browser/printing/print_view_manager_basic.h",
       "//chrome/browser/printing/printer_query.cc",
       "//chrome/browser/printing/printer_query.h",
-      "//chrome/browser/printing/printing_message_filter.cc",
-      "//chrome/browser/printing/printing_message_filter.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
     ]

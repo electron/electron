@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as cp from 'child_process';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { defer } from './spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
 
 describe('ipc main module', () => {
@@ -58,6 +59,31 @@ describe('ipc main module', () => {
 
       output = JSON.parse(output);
       expect(output).to.deep.equal(['error']);
+    });
+
+    it('can be replied to', async () => {
+      ipcMain.on('test-echo', (e, arg) => {
+        e.reply('test-echo', arg);
+      });
+      defer(() => {
+        ipcMain.removeAllListeners('test-echo');
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      });
+      w.loadURL('about:blank');
+      const v = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const { ipcRenderer } = require('electron')
+        ipcRenderer.send('test-echo', 'hello')
+        ipcRenderer.on('test-echo', (e, v) => {
+          resolve(v)
+        })
+      })`);
+      expect(v).to.equal('hello');
     });
   });
 });

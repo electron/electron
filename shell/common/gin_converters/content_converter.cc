@@ -15,6 +15,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -90,6 +91,18 @@ struct Converter<ui::MenuSourceType> {
         return StringToV8(isolate, "touch");
       case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
         return StringToV8(isolate, "touchMenu");
+      case ui::MENU_SOURCE_LONG_PRESS:
+        return StringToV8(isolate, "longPress");
+      case ui::MENU_SOURCE_LONG_TAP:
+        return StringToV8(isolate, "longTap");
+      case ui::MENU_SOURCE_TOUCH_HANDLE:
+        return StringToV8(isolate, "touchHandle");
+      case ui::MENU_SOURCE_STYLUS:
+        return StringToV8(isolate, "stylus");
+      case ui::MENU_SOURCE_ADJUST_SELECTION:
+        return StringToV8(isolate, "adjustSelection");
+      case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
+        return StringToV8(isolate, "adjustSelectionReset");
       default:
         return StringToV8(isolate, "none");
     }
@@ -131,18 +144,25 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("mediaType", params.media_type);
   dict.Set("mediaFlags", MediaFlagsToV8(isolate, params.media_flags));
   bool has_image_contents =
-      (params.media_type == blink::ContextMenuDataMediaType::kImage) &&
+      (params.media_type == blink::mojom::ContextMenuDataMediaType::kImage) &&
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
   dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
+  dict.Set("altText", params.alt_text);
+  dict.Set("suggestedFilename", params.suggested_filename);
   dict.Set("misspelledWord", params.misspelled_word);
+  dict.Set("selectionRect", params.selection_rect);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  dict.Set("spellcheckEnabled", params.spellcheck_enabled);
+#else
+  dict.Set("spellcheckEnabled", false);
 #endif
   dict.Set("frameCharset", params.frame_charset);
+  dict.Set("referrerPolicy", params.referrer_policy);
   dict.Set("inputFieldType", params.input_field_type);
   dict.Set("menuSourceType", params.source_type);
 
@@ -190,9 +210,6 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-read");
     case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
-    case content::PermissionType::FLASH:
-      return StringToV8(isolate, "flash");
-    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
     case content::PermissionType::FONT_ACCESS:
       return StringToV8(isolate, "font-access");
     case content::PermissionType::IDLE_DETECTION:
@@ -211,6 +228,7 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "persistent-storage");
     case content::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");
+    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
     case content::PermissionType::AUDIO_CAPTURE:
     case content::PermissionType::VIDEO_CAPTURE:
       return StringToV8(isolate, "media");
@@ -230,6 +248,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "system-wake-lock");
     case content::PermissionType::WINDOW_PLACEMENT:
       return StringToV8(isolate, "window-placement");
+    case content::PermissionType::DISPLAY_CAPTURE:
+      return StringToV8(isolate, "display-capture");
     case content::PermissionType::NUM:
       break;
   }

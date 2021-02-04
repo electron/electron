@@ -104,8 +104,7 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
-      renderer_client_(renderer_client),
-      weak_factory_(this) {}
+      renderer_client_(renderer_client) {}
 
 void ElectronApiServiceImpl::BindTo(
     mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {

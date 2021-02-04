@@ -15,7 +15,7 @@ const { hasSwitch } = process._linkedBinding('electron_common_command_line');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();
-const finalizationRegistry = new (window as any).FinalizationRegistry((id: number) => {
+const finalizationRegistry = new FinalizationRegistry((id: number) => {
   const ref = remoteObjectCache.get(id);
   if (ref !== undefined && ref.deref() === undefined) {
     remoteObjectCache.delete(id);
@@ -34,7 +34,7 @@ function getCachedRemoteObject (id: number) {
   }
 }
 function setCachedRemoteObject (id: number, value: any) {
-  const wr = new (window as any).WeakRef(value);
+  const wr = new WeakRef(value);
   remoteObjectCache.set(id, wr);
   finalizationRegistry.register(value, id);
   return value;

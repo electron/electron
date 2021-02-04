@@ -52,7 +52,7 @@ base::FilePath CreateDownloadPath(const GURL& url,
 
 ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
     content::DownloadManager* manager)
-    : download_manager_(manager), weak_ptr_factory_(this) {}
+    : download_manager_(manager) {}
 
 ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
   if (download_manager_) {

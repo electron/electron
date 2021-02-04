@@ -934,6 +934,12 @@ describe('<webview> tag', function () {
   });
 
   describe('media-started-playing media-paused events', () => {
+    beforeEach(function () {
+      if (!document.createElement('audio').canPlayType('audio/wav')) {
+        this.skip();
+      }
+    });
+
     it('emits when audio starts and stops playing', async () => {
       await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` });
 

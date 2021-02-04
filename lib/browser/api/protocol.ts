@@ -17,8 +17,12 @@ Object.setPrototypeOf(protocol, new Proxy({}, {
 
   ownKeys () {
     if (!app.isReady()) return [];
+    return Reflect.ownKeys(session.defaultSession!.protocol);
+  },
 
-    return Object.getOwnPropertyNames(Object.getPrototypeOf(session.defaultSession!.protocol));
+  has: (target, property: string) => {
+    if (!app.isReady()) return false;
+    return Reflect.has(session.defaultSession!.protocol, property);
   },
 
   getOwnPropertyDescriptor () {

@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 977f166904fddc1b7c99b0e3350488e28ce07965..bfecf7bf69f0de16d772c20457ffd8c100b361dc 100644
+index 6a864ebf186ee22b5a3495562f25f473e51fece0..50c2c58fe6ce0bb3ab14f3dc80b4b2f90eedf8ac 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -357,6 +357,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -356,6 +356,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -42,10 +42,10 @@ index 977f166904fddc1b7c99b0e3350488e28ce07965..bfecf7bf69f0de16d772c20457ffd8c1
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 5d675682b77ca0b381f0a39bb5af69dc5b4101c3..e6a6129a40f85e318304df852897f55c06da3b55 100644
+index 2969de7777e4104618149bacb99603b3f3fb416d..c7605301808133f9a995c0ceb95c84576d2cebd1 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -63,7 +63,8 @@ base::Optional<SkColor> GetHighContrastColor(
+@@ -64,7 +64,8 @@ base::Optional<SkColor> GetHighContrastColor(
    }
  }
  
@@ -55,7 +55,7 @@ index 5d675682b77ca0b381f0a39bb5af69dc5b4101c3..e6a6129a40f85e318304df852897f55c
    switch (color_id) {
      // Dialogs
      case NativeTheme::kColorId_WindowBackground:
-@@ -82,6 +83,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
+@@ -83,6 +84,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
      case NativeTheme::kColorId_AvatarIconIncognito:
        return gfx::kGoogleGrey200;
  
@@ -70,7 +70,7 @@ index 5d675682b77ca0b381f0a39bb5af69dc5b4101c3..e6a6129a40f85e318304df852897f55c
      // FocusableBorder
      case NativeTheme::kColorId_FocusedBorderColor:
        return SkColorSetA(gfx::kGoogleBlue300, 0x4D);
-@@ -578,6 +587,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -579,6 +588,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_UnfocusedBorderColor:
        return gfx::kGoogleGrey300;
  
@@ -89,7 +89,7 @@ index 5d675682b77ca0b381f0a39bb5af69dc5b4101c3..e6a6129a40f85e318304df852897f55c
      // Material spinner/throbber
      case NativeTheme::kColorId_ThrobberSpinningColor:
        return gfx::kGoogleBlue600;
-@@ -681,7 +702,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -682,7 +703,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -99,10 +99,10 @@ index 5d675682b77ca0b381f0a39bb5af69dc5b4101c3..e6a6129a40f85e318304df852897f55c
        return color.value();
    }
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 52ac7e6b292a98da9dbcad64922d2b14e007ddb7..4abf2c37bd8507667bbf30750e084927ca223fc6 100644
+index d08b6a27c0377140562b8feee14b3ae595eb336e..b3d47ac70bc91f3e1cb9931560e6fb36cc6dfef5 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -149,6 +149,11 @@
+@@ -151,6 +151,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -115,7 +115,7 @@ index 52ac7e6b292a98da9dbcad64922d2b14e007ddb7..4abf2c37bd8507667bbf30750e084927
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index c45c48d9de73004ed89651920247f65fa3035aac..6bcec4c618ae2ee4e544ff0204a6349dee460707 100644
+index 4d0ed521015660da2376ebc9c50b0f4235ff112c..f4dff8de98066ea0ee4fb30ce832b27707791743 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -652,6 +652,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

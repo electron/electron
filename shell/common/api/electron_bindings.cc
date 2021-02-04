@@ -113,9 +113,8 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
     v8::HandleScope handle_scope(env->isolate());
-    node::InternalCallbackScope scope(env, v8::Object::New(env->isolate()),
-                                      {0, 0},
-                                      node::InternalCallbackScope::kNoFlags);
+    node::CallbackScope scope(env->isolate(), v8::Object::New(env->isolate()),
+                              {0, 0});
   }
 
   self->pending_next_ticks_.clear();

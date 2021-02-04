@@ -12,25 +12,25 @@
 
 namespace electron {
 
-class WindowStateWatcher : public ui::XEventObserver {
+class WindowStateWatcher : public x11::EventObserver {
  public:
   explicit WindowStateWatcher(NativeWindowViews* window);
   ~WindowStateWatcher() override;
 
  protected:
-  // ui::XEventObserver:
-  void WillProcessXEvent(x11::Event* x11_event) override;
-  void DidProcessXEvent(x11::Event* x11_event) override;
+  // x11::EventObserver:
+  void OnEvent(const x11::Event& x11_event) override;
 
  private:
-  bool IsWindowStateEvent(x11::Event* x11_event) const;
+  bool IsWindowStateEvent(const x11::Event& x11_event) const;
 
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
-  const x11::Atom window_state_atom_;
-
-  bool was_minimized_ = false;
-  bool was_maximized_ = false;
+  const x11::Atom net_wm_state_atom_;
+  const x11::Atom net_wm_state_hidden_atom_;
+  const x11::Atom net_wm_state_maximized_vert_atom_;
+  const x11::Atom net_wm_state_maximized_horz_atom_;
+  const x11::Atom net_wm_state_fullscreen_atom_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };

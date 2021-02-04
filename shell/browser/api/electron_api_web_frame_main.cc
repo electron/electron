@@ -13,9 +13,12 @@
 #include "base/logging.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "gin/object_template_builder.h"
+#include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -24,6 +27,8 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_value_serializer.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace electron {
 
@@ -108,25 +113,125 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
-bool WebFrameMain::Reload(v8::Isolate* isolate) {
+v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScriptInIsolatedWorld(
+    gin::Arguments* args,
+    int world_id,
+    const base::string16& code) {
+  gin_helper::Promise<base::Value> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // Optional userGesture parameter
+  bool user_gesture;
+  if (!args->PeekNext().IsEmpty()) {
+    if (args->PeekNext()->IsBoolean()) {
+      args->GetNext(&user_gesture);
+    } else {
+      args->ThrowTypeError("userGesture must be a boolean");
+      return handle;
+    }
+  } else {
+    user_gesture = false;
+  }
+
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+
+  if (user_gesture) {
+    auto* ftn = content::FrameTreeNode::From(render_frame_);
+    ftn->UpdateUserActivationState(
+        blink::mojom::UserActivationUpdateType::kNotifyActivation,
+        blink::mojom::UserActivationNotificationType::kTest);
+  }
+
+  render_frame_->ExecuteJavaScriptForTests(
+      code,
+      base::BindOnce([](gin_helper::Promise<base::Value> promise,
+                        base::Value value) { promise.Resolve(value); },
+                     std::move(promise)),
+      world_id);
+
+  return handle;
+}
+
+bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
 }
 
-int WebFrameMain::FrameTreeNodeID(v8::Isolate* isolate) const {
+void WebFrameMain::Send(v8::Isolate* isolate,
+                        bool internal,
+                        const std::string& channel,
+                        v8::Local<v8::Value> args) {
+  blink::CloneableMessage message;
+  if (!gin::ConvertFromV8(isolate, args, &message)) {
+    isolate->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate, "Failed to serialize arguments")));
+    return;
+  }
+
+  if (!CheckRenderFrame())
+    return;
+
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
+      &electron_renderer);
+  electron_renderer->Message(internal, channel, std::move(message),
+                             0 /* sender_id */);
+}
+
+void WebFrameMain::PostMessage(v8::Isolate* isolate,
+                               const std::string& channel,
+                               v8::Local<v8::Value> message_value,
+                               base::Optional<v8::Local<v8::Value>> transfer) {
+  blink::TransferableMessage transferable_message;
+  if (!electron::SerializeV8Value(isolate, message_value,
+                                  &transferable_message)) {
+    // SerializeV8Value sets an exception.
+    return;
+  }
+
+  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  if (transfer) {
+    if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "Invalid value for transfer")));
+      return;
+    }
+  }
+
+  bool threw_exception = false;
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
+  if (threw_exception)
+    return;
+
+  if (!CheckRenderFrame())
+    return;
+
+  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
+  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
+      &electron_renderer);
+  electron_renderer->ReceivePostMessage(channel,
+                                        std::move(transferable_message));
+}
+
+int WebFrameMain::FrameTreeNodeID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetFrameTreeNodeId();
 }
 
-std::string WebFrameMain::Name(v8::Isolate* isolate) const {
+std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
     return std::string();
   return render_frame_->GetFrameName();
 }
 
-base::ProcessId WebFrameMain::OSProcessID(v8::Isolate* isolate) const {
+base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   base::ProcessHandle process_handle =
@@ -134,38 +239,37 @@ base::ProcessId WebFrameMain::OSProcessID(v8::Isolate* isolate) const {
   return base::GetProcId(process_handle);
 }
 
-int WebFrameMain::ProcessID(v8::Isolate* isolate) const {
+int WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetProcess()->GetID();
 }
 
-int WebFrameMain::RoutingID(v8::Isolate* isolate) const {
+int WebFrameMain::RoutingID() const {
   if (!CheckRenderFrame())
     return -1;
   return render_frame_->GetRoutingID();
 }
 
-GURL WebFrameMain::URL(v8::Isolate* isolate) const {
+GURL WebFrameMain::URL() const {
   if (!CheckRenderFrame())
     return GURL::EmptyGURL();
   return render_frame_->GetLastCommittedURL();
 }
 
-content::RenderFrameHost* WebFrameMain::Top(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetMainFrame();
 }
 
-content::RenderFrameHost* WebFrameMain::Parent(v8::Isolate* isolate) const {
+content::RenderFrameHost* WebFrameMain::Parent() const {
   if (!CheckRenderFrame())
     return nullptr;
   return render_frame_->GetParent();
 }
 
-std::vector<content::RenderFrameHost*> WebFrameMain::Frames(
-    v8::Isolate* isolate) const {
+std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;
@@ -178,8 +282,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames(
   return frame_hosts;
 }
 
-std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree(
-    v8::Isolate* isolate) const {
+std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   std::vector<content::RenderFrameHost*> frame_hosts;
   if (!CheckRenderFrame())
     return frame_hosts;
@@ -189,6 +292,11 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree(
   }
 
   return frame_hosts;
+}
+
+// static
+gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
+  return gin::Handle<WebFrameMain>();
 }
 
 // static
@@ -218,11 +326,17 @@ void WebFrameMain::RenderFrameDeleted(content::RenderFrameHost* rfh) {
     web_frame->MarkRenderFrameDisposed();
 }
 
-gin::ObjectTemplateBuilder WebFrameMain::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<WebFrameMain>::GetObjectTemplateBuilder(isolate)
+// static
+v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("executeJavaScriptInIsolatedWorld",
+                 &WebFrameMain::ExecuteJavaScriptInIsolatedWorld)
       .SetMethod("reload", &WebFrameMain::Reload)
+      .SetMethod("_send", &WebFrameMain::Send)
+      .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
@@ -232,7 +346,8 @@ gin::ObjectTemplateBuilder WebFrameMain::GetObjectTemplateBuilder(
       .SetProperty("top", &WebFrameMain::Top)
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
-      .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree);
+      .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
+      .Build();
 }
 
 const char* WebFrameMain::GetTypeName() {
@@ -266,6 +381,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("WebFrameMain", WebFrameMain::GetConstructor(context));
   dict.SetMethod("fromId", &FromID);
 }
 

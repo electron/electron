@@ -80,6 +80,8 @@ class PrintPreviewMessageHandler
                              int32_t request_id) override;
   void PrinterSettingsInvalid(int32_t document_cookie,
                               int32_t request_id) override {}
+  void CheckForCancel(int32_t request_id,
+                      CheckForCancelCallback callback) override;
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 
@@ -94,7 +96,7 @@ class PrintPreviewMessageHandler
 
   mojo::AssociatedReceiver<printing::mojom::PrintPreviewUI> receiver_{this};
 
-  base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_;
+  base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_{this};
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

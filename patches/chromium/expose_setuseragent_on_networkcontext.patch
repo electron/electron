@@ -33,10 +33,10 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index fdd3ad94524e78678a9947b91a7fe09a5bf32442..a574d600850d91379397ee43b33d0443b48040e2 100644
+index 36aa76157b9e8fee6835eb32e7ae8ff4aec7330f..3e78f4ba2f4d4135e24e7a51d8fb3eac93d22968 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1104,6 +1104,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1128,6 +1128,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,22 +51,22 @@ index fdd3ad94524e78678a9947b91a7fe09a5bf32442..a574d600850d91379397ee43b33d0443
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 748e6219ad44baa100ebb0f9620e5079caae75cc..96527e9ef3ba3251b21f52a23e6b8febb5c474ce 100644
+index 0c1b8bde497921c26347064023c3cf310a70b2a6..06615953d20408654e5e09298e52b1cf3bb0f379 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -248,6 +248,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -250,6 +250,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;
 +  void SetUserAgent(const std::string& new_user_agent) override;
    void SetAcceptLanguage(const std::string& new_accept_language) override;
    void SetEnableReferrers(bool enable_referrers) override;
- #if BUILDFLAG(IS_ASH)
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b0065647d08f3208446d0c996276d6394d80409e..ec89eeb056d686f8cab6003e456973ff8649df23 100644
+index 1a2e862862e1f6db0b18441509553082d5b049d9..ac70e294f915f326095675d222f44519e2683ed0 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1074,6 +1074,9 @@ interface NetworkContext {
+@@ -1095,6 +1095,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
@@ -77,14 +77,14 @@ index b0065647d08f3208446d0c996276d6394d80409e..ec89eeb056d686f8cab6003e456973ff
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index ff87a952a866b490aadc732786fcb6e54e03b0d6..a8005f98f5a619df03193a9e132a12c9a6c82d6f 100644
+index 799165ed898f55e9a00589fa8917e0ae9093672a..67c517fd1bc03826352d524f2953d229ea2d7177 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -110,6 +110,7 @@ class TestNetworkContext : public mojom::NetworkContext {
+@@ -112,6 +112,7 @@ class TestNetworkContext : public mojom::NetworkContext {
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override {}
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override {}
 +  void SetUserAgent(const std::string& new_user_agent) override {}
    void SetAcceptLanguage(const std::string& new_accept_language) override {}
    void SetEnableReferrers(bool enable_referrers) override {}
- #if BUILDFLAG(IS_ASH)
+ #if BUILDFLAG(IS_CHROMEOS_ASH)

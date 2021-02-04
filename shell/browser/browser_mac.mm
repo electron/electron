@@ -15,11 +15,13 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
@@ -218,9 +220,15 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
 
-bool Browser::SetBadgeCount(int count) {
-  DockSetBadgeText(count != 0 ? base::NumberToString(count) : "");
-  badge_count_ = count;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  DockSetBadgeText(!count.has_value() || count.value() != 0
+                       ? badging::BadgeManager::GetBadgeString(count)
+                       : "");
+  if (count.has_value()) {
+    badge_count_ = count.value();
+  } else {
+    badge_count_ = 0;
+  }
   return true;
 }
 
@@ -308,6 +316,8 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 void RemoveFromLoginItems() {
+#pragma clang diagnostic push  // https://crbug.com/1154377
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   // logic to find the login item copied from GetLoginItemForApp in
   // base/mac/mac_util.mm
   base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
@@ -333,6 +343,7 @@ void RemoveFromLoginItems() {
       }
     }
   }
+#pragma clang diagnostic pop
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
@@ -451,7 +462,16 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
   [delegate setApplicationDockMenu:model];
 }
 
-void Browser::DockSetIcon(const gfx::Image& image) {
+void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
+  gfx::Image image;
+
+  if (!icon->IsNull()) {
+    api::NativeImage* native_image = nullptr;
+    if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
+      return;
+    image = native_image->image();
+  }
+
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }

@@ -22,6 +22,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
 
@@ -58,7 +59,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
         v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
     weak_context_.SetWeak();
 
-    render_frame->GetRemoteInterfaces()->GetInterface(
+    render_frame->GetBrowserInterfaceBroker()->GetInterface(
         electron_browser_remote_.BindNewPipeAndPassReceiver());
   }
 

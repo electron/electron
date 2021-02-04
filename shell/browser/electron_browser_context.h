@@ -165,7 +165,7 @@ class ElectronBrowserContext
   // Initialize pref registry.
   void InitPrefs();
 
-  ValueMapPrefStore* in_memory_pref_store_;
+  ValueMapPrefStore* in_memory_pref_store_ = nullptr;
 
   std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
@@ -197,7 +197,7 @@ class ElectronBrowserContext
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
-  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_;
+  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };

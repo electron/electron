@@ -65,7 +65,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
-  base::WeakPtrFactory<NetLog> weak_ptr_factory_;
+  base::WeakPtrFactory<NetLog> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };

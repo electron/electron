@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Fri, 18 Dec 2020 15:19:39 -0800
+Subject: Don't use potentially null "GetWebFrame()->View()" when get blink
+ prefs
+
+For whatever reason (still haven't narrowed it down to an exact test case) when using OOPIFs the "GetWebFrame()->View()" call during "RenderFrameCreated" call be nullptr.  Accessing the prefs via the render_view though still works.
+
+This regressed in https://chromium-review.googlesource.com/c/chromium/src/+/2572256
+
+Upstream: https://chromium-review.googlesource.com/c/chromium/src/+/2598393
+
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index 6d3138edd55c0522b7321e7ab8f2c8642142134d..e7df33b6e0a88377cc1b9ea1adc6385dd6646b5d 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -2685,7 +2685,7 @@ blink::WebLocalFrame* RenderFrameImpl::GetWebFrame() {
+ }
+ 
+ const blink::web_pref::WebPreferences& RenderFrameImpl::GetBlinkPreferences() {
+-  return GetWebFrame()->View()->GetWebPreferences();
++  return render_view_->GetWebView()->GetWebPreferences();
+ }
+ 
+ const blink::RendererPreferences& RenderFrameImpl::GetRendererPreferences()

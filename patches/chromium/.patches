@@ -15,6 +15,7 @@ webview_cross_drag.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
+enable_reset_aspect_ratio.patch
 v8_context_snapshot_generator.patch
 boringssl_build_gn.patch
 pepper_plugin_support.patch
@@ -103,3 +104,6 @@ fix_use_electron_generated_resources.patch
 chore_expose_v8_initialization_isolate_callbacks.patch
 export_gin_v8platform_pageallocator_for_usage_outside_of_the_gin.patch
 use_public_apis_to_determine_if_a_font_is_a_system_font_in_mas_build.patch
+fix_setparentacessibile_crash_win.patch
+fix_export_zlib_symbols.patch
+don_t_use_potentially_null_getwebframe_-_view_when_get_blink.patch

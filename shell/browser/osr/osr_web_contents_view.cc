@@ -14,7 +14,7 @@ namespace electron {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     const OnPaintCallback& callback)
-    : native_window_(nullptr), transparent_(transparent), callback_(callback) {
+    : transparent_(transparent), callback_(callback) {
 #if defined(OS_MAC)
   PlatformCreate();
 #endif
@@ -171,7 +171,7 @@ void OffScreenWebContentsView::StartDragging(
 }
 
 void OffScreenWebContentsView::UpdateDragCursor(
-    blink::DragOperation operation) {}
+    ui::mojom::DragOperation operation) {}
 
 void OffScreenWebContentsView::SetPainting(bool painting) {
   auto* view = GetView();

@@ -47,7 +47,7 @@ index 9ddda9116e7284cbccde8a51e23ad7560dd06367..e846091ad99b0154636489e53491209f
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index cad39d6496aa138daa121b9fa08512cbde55dc72..cf0806ac316a9927bc917cedea98d865a641d1ef 100644
+index d2b88549b3005cf5fe43fc57c35403696c94ba80..f14d779670711f5aa4a46ac310bc94082cef7d7f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -550,10 +550,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -90,7 +90,7 @@ index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index c4aba106149c5da51049ecd9748a4be4e5fbebe2..02a3b789f46a5fc5fa3fbc3ea0e8ee3c4e548c1f 100644
+index 055d28d8c6f6cc6826db1f888b1ea0f535c3c716..1eedb217a700ffdc73d30c5daadf003d1cec7bed 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -46,7 +46,9 @@ class ScopedPasswordInputEnabler;
@@ -103,7 +103,7 @@ index c4aba106149c5da51049ecd9748a4be4e5fbebe2..02a3b789f46a5fc5fa3fbc3ea0e8ee3c
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -644,10 +646,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -640,10 +642,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -117,7 +117,7 @@ index c4aba106149c5da51049ecd9748a4be4e5fbebe2..02a3b789f46a5fc5fa3fbc3ea0e8ee3c
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9b6a07b8af232dc8667a1ff3ad8b9567a73ffee9..a96abfa0a50cbbdedd82ea8c884c3c8bf1ab3fc3 100644
+index 5aba2a32bc12e7640286be13e5ed43ec52b404db..30e1f5005e09cb1e23a7e86f35e6736bb5fa60f1 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -234,8 +234,10 @@
@@ -131,7 +131,7 @@ index 9b6a07b8af232dc8667a1ff3ad8b9567a73ffee9..a96abfa0a50cbbdedd82ea8c884c3c8b
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1393,8 +1395,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1385,8 +1387,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -142,7 +142,7 @@ index 9b6a07b8af232dc8667a1ff3ad8b9567a73ffee9..a96abfa0a50cbbdedd82ea8c884c3c8b
    return [GetInProcessNSView() window];
  }
  
-@@ -1426,9 +1430,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1418,9 +1422,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -154,7 +154,7 @@ index 9b6a07b8af232dc8667a1ff3ad8b9567a73ffee9..a96abfa0a50cbbdedd82ea8c884c3c8b
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1915,12 +1921,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1907,12 +1913,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -170,10 +170,10 @@ index 9b6a07b8af232dc8667a1ff3ad8b9567a73ffee9..a96abfa0a50cbbdedd82ea8c884c3c8b
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 21f6ba79800f318a1930f1fad8bf26d73fecfe65..398c1204eaa0d7ccd2672825f8f4b4536934f417 100644
+index dc5eedfa0d1194db18feb5bc2f418885163a795d..8e5af3ba8db08db55754b59a66231b07515655e3 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -311,6 +311,13 @@ component("base") {
+@@ -313,6 +313,13 @@ component("base") {
      ]
    }
  

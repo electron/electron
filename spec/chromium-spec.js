@@ -22,6 +22,13 @@ describe('chromium feature', () => {
       expect(() => {
         navigator.setAppBadge(42);
       }).to.not.throw();
+      expect(() => {
+        // setAppBadge with no argument should show dot
+        navigator.setAppBadge();
+      }).to.not.throw();
+      expect(() => {
+        navigator.clearAppBadge();
+      }).to.not.throw();
     });
   });
 

@@ -372,9 +372,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     return gin::Handle<SimpleURLLoaderWrapper>();
   }
   auto request = std::make_unique<network::ResourceRequest>();
-  request->force_ignore_site_for_cookies = true;
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
   std::string origin;
   opts.Get("origin", &origin);
@@ -492,8 +492,11 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
                               args->isolate(), body_func,
                               data_pipe_getter.InitWithNewPipeAndPassReceiver())
                               .ToV8();
-      request->request_body = new network::ResourceRequestBody();
-      request->request_body->SetToChunkedDataPipe(std::move(data_pipe_getter));
+      request->request_body =
+          base::MakeRefCounted<network::ResourceRequestBody>();
+      request->request_body->SetToChunkedDataPipe(
+          std::move(data_pipe_getter),
+          network::ResourceRequestBody::ReadOnlyOnce(false));
     }
   }
 

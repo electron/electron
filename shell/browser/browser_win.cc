@@ -28,33 +28,25 @@
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
+#include "skia/ext/legacy_display_globals.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
+#include "ui/strings/grit/ui_strings.h"
 
 namespace electron {
 
 namespace {
-
-BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
-  DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
-  DWORD process_id = 0;
-
-  GetWindowThreadProcessId(hwnd, &process_id);
-  if (process_id == target_process_id) {
-    SetFocus(hwnd);
-    return FALSE;
-  }
-
-  return TRUE;
-}
 
 bool GetProcessExecPath(base::string16* exe) {
   base::FilePath path;
@@ -291,12 +283,6 @@ std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
 Browser::UserTask::UserTask() = default;
 Browser::UserTask::UserTask(const UserTask&) = default;
 Browser::UserTask::~UserTask() = default;
-
-void Browser::Focus(gin::Arguments* args) {
-  // On Windows we just focus on the first window found for this process.
-  DWORD pid = GetCurrentProcessId();
-  EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
-}
 
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
@@ -603,8 +589,100 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-bool Browser::SetBadgeCount(int count) {
-  return false;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  base::Optional<std::string> badge_content;
+  if (count.has_value() && count.value() == 0) {
+    badge_content = base::nullopt;
+  } else {
+    badge_content = badging::BadgeManager::GetBadgeString(count);
+  }
+
+  // There are 3 different cases when the badge has a value:
+  // 1. |contents| is between 1 and 99 inclusive => Set the accessibility text
+  //    to a pluralized notification count (e.g. 4 Unread Notifications).
+  // 2. |contents| is greater than 99 => Set the accessibility text to
+  //    More than |kMaxBadgeContent| unread notifications, so the
+  //    accessibility text matches what is displayed on the badge (e.g. More
+  //    than 99 notifications).
+  // 3. The badge is set to 'flag' => Set the accessibility text to something
+  //    less specific (e.g. Unread Notifications).
+  std::string badge_alt_string;
+  if (count.has_value()) {
+    badge_count_ = count.value();
+    badge_alt_string = (uint64_t)badge_count_ <= badging::kMaxBadgeContent
+                           // Case 1.
+                           ? l10n_util::GetPluralStringFUTF8(
+                                 IDS_BADGE_UNREAD_NOTIFICATIONS, badge_count_)
+                           // Case 2.
+                           : l10n_util::GetPluralStringFUTF8(
+                                 IDS_BADGE_UNREAD_NOTIFICATIONS_SATURATED,
+                                 badging::kMaxBadgeContent);
+  } else {
+    // Case 3.
+    badge_alt_string =
+        l10n_util::GetStringUTF8(IDS_BADGE_UNREAD_NOTIFICATIONS_UNSPECIFIED);
+    badge_count_ = 0;
+  }
+  for (auto* window : WindowList::GetWindows()) {
+    // On Windows set the badge on the first window found.
+    UpdateBadgeContents(window->GetAcceleratedWidget(), badge_content,
+                        badge_alt_string);
+  }
+  return true;
+}
+
+void Browser::UpdateBadgeContents(
+    HWND hwnd,
+    const base::Optional<std::string>& badge_content,
+    const std::string& badge_alt_string) {
+  SkBitmap badge;
+  if (badge_content) {
+    std::string content = badge_content.value();
+    constexpr int kOverlayIconSize = 16;
+    // This is the color used by the Windows 10 Badge API, for platform
+    // consistency.
+    constexpr int kBackgroundColor = SkColorSetRGB(0x26, 0x25, 0x2D);
+    constexpr int kForegroundColor = SK_ColorWHITE;
+    constexpr int kRadius = kOverlayIconSize / 2;
+    // The minimum gap to have between our content and the edge of the badge.
+    constexpr int kMinMargin = 3;
+    // The amount of space we have to render the icon.
+    constexpr int kMaxBounds = kOverlayIconSize - 2 * kMinMargin;
+    constexpr int kMaxTextSize = 24;  // Max size for our text.
+    constexpr int kMinTextSize = 7;   // Min size for our text.
+
+    badge.allocN32Pixels(kOverlayIconSize, kOverlayIconSize);
+    SkCanvas canvas(badge, skia::LegacyDisplayGlobals::GetSkSurfaceProps());
+
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(kBackgroundColor);
+
+    canvas.clear(SK_ColorTRANSPARENT);
+    canvas.drawCircle(kRadius, kRadius, kRadius, paint);
+
+    paint.reset();
+    paint.setColor(kForegroundColor);
+
+    SkFont font;
+
+    SkRect bounds;
+    int text_size = kMaxTextSize;
+    // Find the largest |text_size| larger than |kMinTextSize| in which
+    // |content| fits into our 16x16px icon, with margins.
+    do {
+      font.setSize(text_size--);
+      font.measureText(content.c_str(), content.size(), SkTextEncoding::kUTF8,
+                       &bounds);
+    } while (text_size >= kMinTextSize &&
+             (bounds.width() > kMaxBounds || bounds.height() > kMaxBounds));
+
+    canvas.drawSimpleText(
+        content.c_str(), content.size(), SkTextEncoding::kUTF8,
+        kRadius - bounds.width() / 2 - bounds.x(),
+        kRadius - bounds.height() / 2 - bounds.y(), font, paint);
+  }
+  taskbar_host_.SetOverlayIcon(hwnd, badge, badge_alt_string);
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {

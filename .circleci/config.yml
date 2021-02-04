@@ -97,6 +97,10 @@ machine-mac-large-arm: &machine-mac-large-arm
   macos:
     xcode: "12.2.0"
 
+machine-mac-arm64: &machine-mac-arm64
+  resource_class: electronjs/macos-arm64
+  machine: true
+
 # Build configurations options.
 env-testing-build: &env-testing-build
   GN_CONFIG: //electron/build/args/testing.gn
@@ -141,6 +145,7 @@ env-apple-silicon: &env-apple-silicon
   GN_EXTRA_ARGS: 'target_cpu = "arm64" use_prebuilt_v8_context_snapshot = true'
   TARGET_ARCH: arm64
   USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
+  npm_config_arch: arm64
 
 env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
@@ -316,15 +321,17 @@ step-setup-goma-for-build: &step-setup-goma-for-build
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
     paths:
-      - /usr/local/Homebrew
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
     keys:
-      - v2-brew-cache-{{ arch }}
+      - v4-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
-      - /usr/local/Homebrew
-    key: v2-brew-cache-{{ arch }}
+      - /usr/local/Cellar/gnu-tar
+      - /usr/local/bin/gtar
+    key: v4-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -451,7 +458,7 @@ step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
     name: Import and trust self-signed codesigning cert on MacOS
     command: |
-      if [ "`uname`" == "Darwin" ]; then
+      if  [ "$TARGET_ARCH" != "arm64" ] && [ "`uname`" == "Darwin" ]; then
         cd src/electron
         ./script/codesign/generate-identity.sh
       fi
@@ -461,8 +468,10 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
     name: Install gnu-tar on macos
     command: |
       if [ "`uname`" == "Darwin" ]; then
-        brew update
-        brew install gnu-tar
+        if [ ! -d /usr/local/Cellar/gnu-tar/ ]; then
+          brew update
+          brew install gnu-tar
+        fi
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
 
@@ -480,7 +489,6 @@ step-gn-check: &step-gn-check
       cd src
       gn check out/Default //electron:electron_lib
       gn check out/Default //electron:electron_app
-      gn check out/Default //electron:manifests
       gn check out/Default //electron/shell/common/api:mojo
       # Check the hunspell filenames
       node electron/script/gen-hunspell-filenames.js --check
@@ -663,6 +671,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/electron
       - src/third_party/electron_node
       - src/third_party/nan
+      - src/cross-arch-snapshots
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -725,7 +734,11 @@ step-verify-mksnapshot: &step-verify-mksnapshot
     name: Verify mksnapshot
     command: |
       cd src
-      python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+      else
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+      fi
 
 step-verify-chromedriver: &step-verify-chromedriver
   run:
@@ -828,7 +841,7 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
     name: Generate cross arch snapshot (arm/arm64)
     command: |
-      if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
+      if [ "$GENERATE_CROSS_ARCH_SNAPSHOT" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         cd src
         if [ "$TARGET_ARCH" == "arm" ]; then
           export MKSNAPSHOT_PATH="clang_x86_v8_arm"
@@ -861,8 +874,13 @@ step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
       if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
         #Trigger VSTS job, passing along CircleCI job number and branch to build
         if [ "`uname`" == "Darwin" ]; then
-          echo "Triggering electron-arm2-testing build on Azure DevOps"  
-          node electron/script/release/ci-release-build.js --job=electron-arm2-testing --ci=DevOps --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+          if [ x"$MAS_BUILD" == x"true" ]; then
+            export DEVOPS_BUILD="electron-mas-arm64-testing"
+          else
+            export DEVOPS_BUILD="electron-osx-arm64-testing"
+          fi
+          echo "Triggering $DEVOPS_BUILD build on Azure DevOps"
+          node electron/script/release/ci-release-build.js --job=$DEVOPS_BUILD --ci=DevOps --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
         else
           echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"  
           node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
@@ -890,6 +908,8 @@ step-ninja-summary: &step-ninja-summary
   run:
     name: Print ninja summary
     command: |
+      set +e
+      set +o pipefail
       python depot_tools/post_build_ninja_summary.py -C src/out/Default
 
 step-ninja-report: &step-ninja-report
@@ -1193,7 +1213,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
-    - *step-restore-brew-cache
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync-on-mac
@@ -1282,8 +1301,14 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
-          (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+            export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
+            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging)
+          else
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          fi
     - run:
         name: Check test results existence
         command: |
@@ -1418,9 +1443,6 @@ commands:
       restore-src-cache:
         type: boolean
         default: true
-      preserve-vendor-dirs:
-        type: boolean
-        default: false
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1458,26 +1480,11 @@ commands:
             - store_artifacts:
                 path: patches
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
-            - when:
-                condition: << parameters.preserve-vendor-dirs >>
-                steps:
-                  - run:
-                      name: Preserve vendor dirs for release
-                      command: |
-                        mv src/electron/vendor/requests .
             - run:
                 name: Wipe Electron
                 command: rm -rf src/electron
             - *step-checkout-electron
             - *step-run-electron-only-hooks
-            - when:
-                condition: << parameters.preserve-vendor-dirs >>
-                steps:
-                  - run:
-                      name: Preserve vendor dirs for release
-                      command: |
-                        rm -rf src/electron/vendor/requests
-                        mv requests src/electron/vendor/requests
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
@@ -1673,7 +1680,7 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
       - electron-build:
           persist: false
@@ -1681,7 +1688,6 @@ jobs:
           checkout: true
           persist-checkout: true
           restore-src-cache: false
-          preserve-vendor-dirs: true
 
   linux-checkout-fast:
     <<: *machine-linux-2xlarge
@@ -1732,7 +1738,7 @@ jobs:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
           persist: false
@@ -1740,7 +1746,6 @@ jobs:
           checkout: true
           persist-checkout: true
           restore-src-cache: false
-          preserve-vendor-dirs: true
 
   mac-checkout-fast:
     <<: *machine-linux-2xlarge
@@ -1817,7 +1822,6 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
@@ -1870,7 +1874,6 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-linux-2xlarge-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-32bit-release
@@ -1903,6 +1906,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
       - electron-build:
@@ -1931,7 +1935,7 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
       <<: *env-32bit-release
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -1961,6 +1965,7 @@ jobs:
       <<: *env-testing-build
       <<: *env-ninja-status
       TRIGGER_ARM_TEST: true
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
       - electron-build:
@@ -1996,7 +2001,7 @@ jobs:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_requests=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -2058,7 +2063,6 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -2072,7 +2076,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -2114,6 +2117,7 @@ jobs:
       <<: *env-macos-build
       <<: *env-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
     steps:
       - electron-build:
           persist: true
@@ -2166,7 +2170,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -2180,7 +2183,6 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_requests=True'
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
@@ -2222,6 +2224,7 @@ jobs:
       <<: *env-macos-build
       <<: *env-mas-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
     steps:
       - electron-build:
           persist: true
@@ -2375,6 +2378,14 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
+  osx-testing-arm64-tests:  
+    <<: *machine-mac-arm64
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+      <<: *env-apple-silicon
+    <<: *steps-tests
+
   mas-testing-x64-tests:
     <<: *machine-mac-large
     environment:
@@ -2397,6 +2408,14 @@ jobs:
       <<: *env-machine-mac
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
+
+  mas-testing-arm64-tests:
+    <<: *machine-mac-arm64
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+      <<: *env-apple-silicon
+    <<: *steps-tests
 
   # Layer 4: Summary.
   linux-x64-release-summary:
@@ -2609,6 +2628,14 @@ workflows:
           requires:
             - mac-checkout-and-save-cache
 
+      - osx-testing-arm64-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/
+          requires:
+            - osx-testing-arm64
+
       - mas-testing-x64:
           requires:
             - mac-checkout-and-save-cache
@@ -2624,6 +2651,14 @@ workflows:
       - mas-testing-arm64:
           requires:
             - mac-checkout-and-save-cache
+
+      - mas-testing-arm64-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/
+          requires:
+            - mas-testing-arm64
 
   nightly-linux-release-test:
     triggers:

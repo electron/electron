@@ -113,6 +113,14 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
     media::AddStreamingScheme(scheme.c_str());
+  // Parse --secure-schemes=scheme1,scheme2
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
+  for (const std::string& scheme : secure_schemes_list)
+    url::AddSecureScheme(scheme.data());
+  // In Chrome we should set extension's origins to match the pages they can
+  // work on, but in Electron currently we just let extensions do anything.
+  url::AddSecureScheme(extensions::kExtensionScheme);
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,
@@ -177,7 +185,7 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
-  WTF::String extension_scheme("chrome-extension");
+  WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
   // rules for the fetch API are consistent with XHR.
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
@@ -186,18 +194,8 @@ void RendererClientBase::RenderThreadStarted() {
   // Blink's strict first-party origin checks.
   blink::SchemeRegistry::RegisterURLSchemeAsFirstPartyWhenTopLevel(
       extension_scheme);
-  // In Chrome we should set extension's origins to match the pages they can
-  // work on, but in Electron currently we just let extensions do anything.
-  blink::SchemeRegistry::RegisterURLSchemeAsSecure(extension_scheme);
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       extension_scheme);
-
-  // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
-  for (const std::string& scheme : secure_schemes_list)
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-        WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
   std::vector<std::string> fetch_enabled_schemes =
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);

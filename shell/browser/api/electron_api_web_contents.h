@@ -98,8 +98,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
                     public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate,
-                    public mojom::ElectronBrowser {
+                    public InspectableWebContentsViewDelegate {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
@@ -134,6 +133,10 @@ class WebContents : public gin::Wrappable<WebContents>,
   static gin::Handle<WebContents> FromOrCreate(
       v8::Isolate* isolate,
       content::WebContents* web_contents);
+
+  static gin::Handle<WebContents> CreateFromWebPreferences(
+      v8::Isolate* isolate,
+      const gin_helper::Dictionary& web_preferences);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -256,15 +259,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                                 const std::string& channel,
                                 blink::CloneableMessage args,
                                 int32_t sender_id = 0);
-
-  bool SendIPCMessageToFrame(bool internal,
-                             int32_t frame_id,
-                             const std::string& channel,
-                             v8::Local<v8::Value> args);
-
-  void PostMessage(const std::string& channel,
-                   v8::Local<v8::Value> message,
-                   base::Optional<v8::Local<v8::Value>> transfer);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -411,6 +405,38 @@ class WebContents : public gin::Wrappable<WebContents>,
   void set_fullscreen_frame(content::RenderFrameHost* rfh) {
     fullscreen_frame_ = rfh;
   }
+
+  // mojom::ElectronBrowser
+  void Message(bool internal,
+               const std::string& channel,
+               blink::CloneableMessage arguments,
+               content::RenderFrameHost* render_frame_host);
+  void Invoke(bool internal,
+              const std::string& channel,
+              blink::CloneableMessage arguments,
+              electron::mojom::ElectronBrowser::InvokeCallback callback,
+              content::RenderFrameHost* render_frame_host);
+  void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
+  void ReceivePostMessage(const std::string& channel,
+                          blink::TransferableMessage message,
+                          content::RenderFrameHost* render_frame_host);
+  void MessageSync(
+      bool internal,
+      const std::string& channel,
+      blink::CloneableMessage arguments,
+      electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+      content::RenderFrameHost* render_frame_host);
+  void MessageTo(bool internal,
+                 int32_t web_contents_id,
+                 const std::string& channel,
+                 blink::CloneableMessage arguments);
+  void MessageHost(const std::string& channel,
+                   blink::CloneableMessage arguments,
+                   content::RenderFrameHost* render_frame_host);
+  void UpdateDraggableRegions(std::vector<mojom::DraggableRegionPtr> regions);
+  void SetTemporaryZoomLevel(double level);
+  void DoGetZoomLevel(
+      electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
 
  private:
   // Does not manage lifetime of |web_contents|.
@@ -588,43 +614,12 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   ElectronBrowserContext* GetBrowserContext() const;
 
-  // Binds the given request for the ElectronBrowser API. When the
-  // RenderFrameHost is destroyed, all related bindings will be removed.
-  void BindElectronBrowser(
-      mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
-      content::RenderFrameHost* render_frame_host);
   void OnElectronBrowserConnectionError();
 
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
-
-  // mojom::ElectronBrowser
-  void Message(bool internal,
-               const std::string& channel,
-               blink::CloneableMessage arguments) override;
-  void Invoke(bool internal,
-              const std::string& channel,
-              blink::CloneableMessage arguments,
-              InvokeCallback callback) override;
-  void OnFirstNonEmptyLayout() override;
-  void ReceivePostMessage(const std::string& channel,
-                          blink::TransferableMessage message) override;
-  void MessageSync(bool internal,
-                   const std::string& channel,
-                   blink::CloneableMessage arguments,
-                   MessageSyncCallback callback) override;
-  void MessageTo(bool internal,
-                 int32_t web_contents_id,
-                 const std::string& channel,
-                 blink::CloneableMessage arguments) override;
-  void MessageHost(const std::string& channel,
-                   blink::CloneableMessage arguments) override;
-  void UpdateDraggableRegions(
-      std::vector<mojom::DraggableRegionPtr> regions) override;
-  void SetTemporaryZoomLevel(double level) override;
-  void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.
@@ -641,6 +636,9 @@ class WebContents : public gin::Wrappable<WebContents>,
       SkColor color,
       const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
       override;
+  std::unique_ptr<content::EyeDropper> OpenEyeDropper(
+      content::RenderFrameHost* frame,
+      content::EyeDropperListener* listener) override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       scoped_refptr<content::FileSelectListener> listener,
                       const blink::mojom::FileChooserParams& params) override;
@@ -780,16 +778,16 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
 
+#if BUILDFLAG(ENABLE_PRINTING)
+  scoped_refptr<base::TaskRunner> print_task_runner_;
+#endif
+
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
-  mojo::ReceiverSet<mojom::ElectronBrowser, content::RenderFrameHost*>
-      receivers_;
-  std::map<content::RenderFrameHost*, std::vector<mojo::ReceiverId>>
-      frame_to_receivers_map_;
 
-  base::WeakPtrFactory<WebContents> weak_factory_;
+  base::WeakPtrFactory<WebContents> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
