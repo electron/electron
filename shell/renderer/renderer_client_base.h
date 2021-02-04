@@ -5,6 +5,7 @@
 #ifndef SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
 #define SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
