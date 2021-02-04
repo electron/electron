@@ -148,7 +148,8 @@ void ElectronApiServiceImpl::Message(bool internal,
   //
   // See: https://chromium-review.googlesource.com/c/chromium/src/+/2601063.
   if (!document_created_) {
-    pending_messages_.push_back({ internal, channel, std::move(arguments), sender_id });
+    pending_messages_.push_back(
+        {internal, channel, std::move(arguments), sender_id});
     return;
   }
 
