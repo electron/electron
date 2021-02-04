@@ -69,6 +69,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
 
   std::queue<PendingElectronApiServiceMessage> pending_messages_;
 
+  mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> pending_receiver_;
   mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
 
   RendererClientBase* renderer_client_;

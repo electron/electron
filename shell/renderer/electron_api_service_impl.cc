@@ -108,13 +108,16 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
 
 void ElectronApiServiceImpl::BindTo(
     mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {
-  // Note: BindTo might be called for multiple times.
-  if (receiver_.is_bound())
-    receiver_.reset();
+  if (document_created_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
 
-  receiver_.Bind(std::move(receiver));
-  receiver_.set_disconnect_handler(
-      base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+    receiver_.Bind(std::move(receiver));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  } else {
+    pending_receiver_ = std::move(receiver);
+  }
 }
 
 void ElectronApiServiceImpl::ProcessPendingMessages() {
@@ -128,6 +131,15 @@ void ElectronApiServiceImpl::ProcessPendingMessages() {
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
   document_created_ = true;
+
+  if (pending_receiver_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
+
+    receiver_.Bind(std::move(pending_receiver_));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  }
 }
 
 void ElectronApiServiceImpl::OnDestruct() {
@@ -155,7 +167,6 @@ void ElectronApiServiceImpl::Message(bool internal,
     message.sender_id = sender_id;
 
     pending_messages_.push(std::move(message));
-    return;
   }
 
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
