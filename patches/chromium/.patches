@@ -107,3 +107,4 @@ use_public_apis_to_determine_if_a_font_is_a_system_font_in_mas_build.patch
 fix_setparentacessibile_crash_win.patch
 fix_export_zlib_symbols.patch
 don_t_use_potentially_null_getwebframe_-_view_when_get_blink.patch
+cherry-pick-5902d1aa722a.patch

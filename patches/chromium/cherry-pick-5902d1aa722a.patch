@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Martin Robinson <mrobinson@igalia.com>
+Date: Fri, 15 Jan 2021 10:52:00 +0000
+Subject: Use the native combobox a11y role more often on MacOS
+
+Instead of mapping the ARIA combobox role to other roles on MacOS,
+always use it unless it is applied to a multiline edit field. This
+matches the specified behavior and other browsers.
+
+These were originally mapped to other roles because of VoiceOver
+failures that have been fixed with other changes.
+
+Bug: 1125165
+Change-Id: I26b8ccb006c15d6329da1c29193640f529fab781
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2611093
+Reviewed-by: Dominic Mazzoni <dmazzoni@chromium.org>
+Commit-Queue: Martin Robinson <mrobinson@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#844021}
+
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index f1f75aae285bbffc05e5598f411821a18ca47729..d997cfaa6275a570686d0c1703c30f21ca82a926 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -2002,7 +2002,7 @@ - (NSString*)role {
+     cocoa_role = NSAccessibilityGroupRole;
+   } else if ((_owner->IsPlainTextField() &&
+               _owner->HasState(ax::mojom::State::kMultiline)) ||
+-             _owner->IsRichTextField()) {
++             (_owner->IsRichTextField() && !ui::IsComboBox(role))) {
+     cocoa_role = NSAccessibilityTextAreaRole;
+   } else if (role == ax::mojom::Role::kImage &&
+              _owner->HasExplicitlyEmptyName()) {
+diff --git a/content/test/data/accessibility/aria/aria-combobox-uneditable-expected-mac.txt b/content/test/data/accessibility/aria/aria-combobox-uneditable-expected-mac.txt
+index f30f15e3e3cb50d7d5f31ce3c15fcd5d533e8c12..a3fe1ad8d3ea617b99fd9ffbbfc2b3ff8094b190 100644
+--- a/content/test/data/accessibility/aria/aria-combobox-uneditable-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-combobox-uneditable-expected-mac.txt
+@@ -1,7 +1,8 @@
+ AXWebArea AXFocused=1
+ ++AXGroup
+ ++++AXStaticText AXValue='Choose a fruit, with text content'
+-++AXPopUpButton AXLinkedUIElements=[:6] AXTitle='Choose a fruit, with text content' AXValue='Apple'
++++AXComboBox AXLinkedUIElements=[:6] AXTitle='Choose a fruit, with text content' AXValue='Apple'
++
+ ++++AXStaticText AXValue='Apple'
+ ++AXList
+ ++++AXStaticText AXValue='Apple'
+diff --git a/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt b/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
+index 11d0f747cade8f03b7803fd11f28b1d6ef7e2491..a3e161713f6cb47d7b03bc2cb90d7311c9ab76c7 100644
+--- a/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-haspopup-expected-mac.txt
+@@ -1,10 +1,10 @@
+ AXWebArea
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='menu'
+-++AXPopUpButton
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='menu'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='grid'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='dialog'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
+-++AXPopUpButton AXHasPopup=1 AXPopupValue='listbox'
++++AXComboBox AXHasPopup=1 AXPopupValue='menu'
++++AXComboBox
++++AXComboBox AXHasPopup=1 AXPopupValue='menu'
++++AXComboBox AXHasPopup=1 AXPopupValue='listbox'
++++AXComboBox AXHasPopup=1 AXPopupValue='grid'
++++AXComboBox AXHasPopup=1 AXPopupValue='dialog'
++++AXComboBox AXHasPopup=1 AXPopupValue='listbox'
++++AXComboBox AXHasPopup=1 AXPopupValue='listbox'
++++AXComboBox AXHasPopup=1 AXPopupValue='listbox'
+diff --git a/content/test/data/accessibility/aria/aria-orientation-expected-mac.txt b/content/test/data/accessibility/aria/aria-orientation-expected-mac.txt
+index 4c605836da4804e91142dcaedd45dc4e0c259756..c04259a0a2148413b0482595e91c7a750df8a7bd 100644
+--- a/content/test/data/accessibility/aria/aria-orientation-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria-orientation-expected-mac.txt
+@@ -1,7 +1,7 @@
+ AXWebArea
+-++AXGroup
+-++AXGroup AXOrientation='AXHorizontalOrientation'
+-++AXGroup AXOrientation='AXVerticalOrientation'
++++AXComboBox
++++AXComboBox AXOrientation='AXHorizontalOrientation'
++++AXComboBox AXOrientation='AXVerticalOrientation'
+ ++AXList AXOrientation='AXVerticalOrientation'
+ ++AXList AXOrientation='AXHorizontalOrientation'
+ ++AXList AXOrientation='AXVerticalOrientation'
+diff --git a/content/test/data/accessibility/aria/aria1.1-combobox-expected-mac.txt b/content/test/data/accessibility/aria/aria1.1-combobox-expected-mac.txt
+index b942711938c6c839317e6b96fd9e4a6aa98ee451..96f8201c834b12be7b490f23c1e2d65ab2149c96 100644
+--- a/content/test/data/accessibility/aria/aria1.1-combobox-expected-mac.txt
++++ b/content/test/data/accessibility/aria/aria1.1-combobox-expected-mac.txt
+@@ -1,12 +1,12 @@
+ AXWebArea
+ ++AXGroup
+ ++++AXStaticText AXValue='State'
+-++AXGroup AXTitle='State'
++++AXComboBox AXTitle='State'
+ ++++AXTextField AXLinkedUIElements=[:6]
+ ++AXList
+ ++++AXStaticText AXValue='Alabama'
+ ++++AXStaticText AXFocused=1 AXValue='Alaska'
+-++AXGroup AXTitle='State'
++++AXComboBox AXTitle='State'
+ ++++AXTextField AXLinkedUIElements=[:11]
+ ++AXList
+ ++++AXStaticText AXValue='Alabama'
+diff --git a/ui/accessibility/ax_role_properties.cc b/ui/accessibility/ax_role_properties.cc
+index c09f63643ae982970e7e280281ba71da63dd40de..8b966e2c877720eb8b88c06b8e7773fd70195a5c 100644
+--- a/ui/accessibility/ax_role_properties.cc
++++ b/ui/accessibility/ax_role_properties.cc
+@@ -723,6 +723,17 @@ bool IsText(ax::mojom::Role role) {
+   }
+ }
+ 
++bool IsComboBox(const ax::mojom::Role role) {
++  switch (role) {
++    case ax::mojom::Role::kComboBoxMenuButton:
++    case ax::mojom::Role::kComboBoxGrouping:
++    case ax::mojom::Role::kTextFieldWithComboBox:
++      return true;
++    default:
++      return false;
++  }
++}
++
+ bool ShouldHaveReadonlyStateByDefault(const ax::mojom::Role role) {
+   switch (role) {
+     case ax::mojom::Role::kArticle:
+diff --git a/ui/accessibility/ax_role_properties.h b/ui/accessibility/ax_role_properties.h
+index 117856080663708f0ee33b9e254f9e8a2fe330cc..02804128765221d473d0ab83d6ab151bdcbd7b99 100644
+--- a/ui/accessibility/ax_role_properties.h
++++ b/ui/accessibility/ax_role_properties.h
+@@ -179,6 +179,9 @@ AX_BASE_EXPORT bool IsTableRow(ax::mojom::Role role);
+ // break, or inline text box.
+ AX_BASE_EXPORT bool IsText(ax::mojom::Role role);
+ 
++// Returns true if the provided role is any of the combobox-related roles.
++AX_BASE_EXPORT bool IsComboBox(ax::mojom::Role role);
++
+ // Returns true if the node should be read only by default
+ AX_BASE_EXPORT bool ShouldHaveReadonlyStateByDefault(
+     const ax::mojom::Role role);
+diff --git a/ui/accessibility/platform/ax_platform_node_mac.mm b/ui/accessibility/platform/ax_platform_node_mac.mm
+index ce50a0a509ca151c7e406729b78655f60eaa4c98..93a3618c7fcbcbcee67b297dffc9d51a37d225ed 100644
+--- a/ui/accessibility/platform/ax_platform_node_mac.mm
++++ b/ui/accessibility/platform/ax_platform_node_mac.mm
+@@ -57,8 +57,8 @@ RoleMap BuildRoleMap() {
+       {ax::mojom::Role::kColorWell, NSAccessibilityColorWellRole},
+       {ax::mojom::Role::kColumn, NSAccessibilityColumnRole},
+       {ax::mojom::Role::kColumnHeader, @"AXCell"},
+-      {ax::mojom::Role::kComboBoxGrouping, NSAccessibilityGroupRole},
+-      {ax::mojom::Role::kComboBoxMenuButton, NSAccessibilityPopUpButtonRole},
++      {ax::mojom::Role::kComboBoxGrouping, NSAccessibilityComboBoxRole},
++      {ax::mojom::Role::kComboBoxMenuButton, NSAccessibilityComboBoxRole},
+       {ax::mojom::Role::kComment, NSAccessibilityGroupRole},
+       {ax::mojom::Role::kComplementary, NSAccessibilityGroupRole},
+       {ax::mojom::Role::kContentDeletion, NSAccessibilityGroupRole},
