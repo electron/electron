@@ -323,6 +323,7 @@ source_set("electron_lib") {
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//components/certificate_transparency",
+    "//components/heap_profiling/multi_process",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",

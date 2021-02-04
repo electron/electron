@@ -17,6 +17,9 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/heap_profiling/multi_process/client_connection_manager.h"
+#include "components/heap_profiling/multi_process/supervisor.h"
+#include "components/services/heap_profiling/public/cpp/settings.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
@@ -364,6 +367,25 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 }
 
 void ElectronBrowserMainParts::PostCreateThreads() {
+  heap_profiling::Supervisor::GetInstance()
+      ->SetClientConnectionManagerConstructor(
+          [](base::WeakPtr<heap_profiling::Controller> controller_weak_ptr,
+             heap_profiling::Mode mode) {
+            return std::make_unique<heap_profiling::ClientConnectionManager>(
+                controller_weak_ptr, mode);
+          });
+
+#if !defined(ADDRESS_SANITIZER)
+  // Memory sanitizers are using large memory shadow to keep track of memory
+  // state. Using memlog and memory sanitizers at the same time is slowing down
+  // user experience, causing the browser to be barely responsive. In theory,
+  // memlog and memory sanitizers are compatible and can run at the same time.
+  heap_profiling::Mode mode = heap_profiling::GetModeForStartup();
+  if (mode != heap_profiling::Mode::kNone) {
+    heap_profiling::Supervisor::GetInstance()->Start(base::OnceClosure());
+  }
+#endif
+
   base::PostTask(
       FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
