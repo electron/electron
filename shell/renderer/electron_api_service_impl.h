@@ -37,7 +37,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                           blink::TransferableMessage message) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
-  void ProcessPendingMessages();
 
   base::WeakPtr<ElectronApiServiceImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

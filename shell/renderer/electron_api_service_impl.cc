@@ -131,6 +131,15 @@ void ElectronApiServiceImpl::OnInterfaceRequestForFrame(
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
   document_created_ = true;
+
+  if (pending_receiver_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
+
+    receiver_.Bind(std::move(pending_receiver_));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  }
 }
 
 void ElectronApiServiceImpl::OnDestruct() {
