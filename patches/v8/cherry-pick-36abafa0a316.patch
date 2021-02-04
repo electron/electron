@@ -1,7 +1,7 @@
-From 36abafa0a3168ef664a363fce8f9840b43daa2af Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Deepti Gandluri <gdeepti@chromium.org>
 Date: Wed, 27 Jan 2021 22:19:44 -0800
-Subject: [PATCH] [Merged ][wasm] PostMessage of Memory.buffer should throw
+Subject: PostMessage of Memory.buffer should throw
 
 PostMessage of an ArrayBuffer that is not detachable should result
 in a DataCloneError.
@@ -21,13 +21,12 @@ Commit-Queue: Zhi An Ng <zhin@chromium.org>
 Cr-Commit-Position: refs/branch-heads/8.8@{#30}
 Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
 Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
----
 
 diff --git a/src/common/message-template.h b/src/common/message-template.h
-index f0f4b61..c8ff902 100644
+index b7bbc6da84ca03f6e0e1d969e731b04a688c5246..dc4d7581f165915833cefc1ec5d65f1f408e3ac9 100644
 --- a/src/common/message-template.h
 +++ b/src/common/message-template.h
-@@ -580,6 +580,8 @@
+@@ -575,6 +575,8 @@ namespace internal {
    T(DataCloneErrorOutOfMemory, "Data cannot be cloned, out of memory.")        \
    T(DataCloneErrorDetachedArrayBuffer,                                         \
      "An ArrayBuffer is detached and could not be cloned.")                     \
@@ -37,10 +36,10 @@ index f0f4b61..c8ff902 100644
      "A SharedArrayBuffer could not be cloned. SharedArrayBuffer must not be "  \
      "transferred.")                                                            \
 diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
-index 3df1bb1..d5f5f05 100644
+index b34076025f07ff5b4fadb8800c44acefa5480d19..d9abe45124f176d9ea7ab931a8247fbbd279c70a 100644
 --- a/src/objects/value-serializer.cc
 +++ b/src/objects/value-serializer.cc
-@@ -864,6 +864,11 @@
+@@ -860,6 +860,11 @@ Maybe<bool> ValueSerializer::WriteJSArrayBuffer(
      WriteVarint(index.FromJust());
      return ThrowIfOutOfMemory();
    }
@@ -53,7 +52,7 @@ index 3df1bb1..d5f5f05 100644
    uint32_t* transfer_entry = array_buffer_transfer_map_.Find(array_buffer);
    if (transfer_entry) {
 diff --git a/test/mjsunit/wasm/worker-memory.js b/test/mjsunit/wasm/worker-memory.js
-index c5b99ed..bf5430f 100644
+index c5b99ede7e28364bbbe31165dfd8b8449a718137..bf5430f7139815c229e641eb6d40725b066035c5 100644
 --- a/test/mjsunit/wasm/worker-memory.js
 +++ b/test/mjsunit/wasm/worker-memory.js
 @@ -11,6 +11,13 @@
