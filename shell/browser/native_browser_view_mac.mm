@@ -4,6 +4,7 @@
 
 #include "shell/browser/native_browser_view_mac.h"
 
+#import <objc/runtime.h>
 #include <vector>
 
 #include "shell/browser/ui/drag_util.h"
@@ -29,6 +30,33 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 @implementation DragRegionView
 
 @synthesize initialLocation;
+
++ (void)load {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+      SEL originalSelector = @selector(drawRect:);
+      SEL swizzledSelector = @selector(drawDebugRect:);
+
+      Method originalMethod =
+          class_getInstanceMethod([self class], originalSelector);
+      Method swizzledMethod =
+          class_getInstanceMethod([self class], swizzledSelector);
+      BOOL didAddMethod =
+          class_addMethod([self class], originalSelector,
+                          method_getImplementation(swizzledMethod),
+                          method_getTypeEncoding(swizzledMethod));
+
+      if (didAddMethod) {
+        class_replaceMethod([self class], swizzledSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+      } else {
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+      }
+    });
+  }
+}
 
 - (BOOL)mouseDownCanMoveWindow {
   return NO;
@@ -134,11 +162,9 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 // For debugging purposes only.
-- (void)drawRect:(NSRect)aRect {
-  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
-    [[[NSColor greenColor] colorWithAlphaComponent:0.5] set];
-    NSRectFill([self bounds]);
-  }
+- (void)drawDebugRect:(NSRect)aRect {
+  [[[NSColor greenColor] colorWithAlphaComponent:0.5] set];
+  NSRectFill([self bounds]);
 }
 
 @end
@@ -148,16 +174,41 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @implementation ExcludeDragRegionView
 
++ (void)load {
+  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+      SEL originalSelector = @selector(drawRect:);
+      SEL swizzledSelector = @selector(drawDebugRect:);
+
+      Method originalMethod =
+          class_getInstanceMethod([self class], originalSelector);
+      Method swizzledMethod =
+          class_getInstanceMethod([self class], swizzledSelector);
+      BOOL didAddMethod =
+          class_addMethod([self class], originalSelector,
+                          method_getImplementation(swizzledMethod),
+                          method_getTypeEncoding(swizzledMethod));
+
+      if (didAddMethod) {
+        class_replaceMethod([self class], swizzledSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+      } else {
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+      }
+    });
+  }
+}
+
 - (BOOL)mouseDownCanMoveWindow {
   return NO;
 }
 
 // For debugging purposes only.
-- (void)drawRect:(NSRect)aRect {
-  if (getenv("ELECTRON_DEBUG_DRAG_REGIONS")) {
-    [[[NSColor redColor] colorWithAlphaComponent:0.5] set];
-    NSRectFill([self bounds]);
-  }
+- (void)drawDebugRect:(NSRect)aRect {
+  [[[NSColor redColor] colorWithAlphaComponent:0.5] set];
+  NSRectFill([self bounds]);
 }
 
 @end
