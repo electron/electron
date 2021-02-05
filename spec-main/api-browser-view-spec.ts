@@ -230,6 +230,9 @@ describe('BrowserView module', () => {
       expect(() => {
         w.setTopBrowserView(view);
       }).to.throw(/is not attached/);
+
+      win2.close();
+      win2.destroy();
     });
   });
 
