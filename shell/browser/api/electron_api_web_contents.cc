@@ -3147,14 +3147,14 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
   auto electron_renderer =
-      std::make_unique<mojo::AssociatedRemote<mojom::ElectronRenderer>>();
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      electron_renderer.get());
+      std::make_unique<mojo::Remote<mojom::ElectronRenderer>>();
+  frame_host->GetRemoteInterfaces()->GetInterface(
+      electron_renderer->BindNewPipeAndPassReceiver());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
-          [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
+          [](mojo::Remote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
