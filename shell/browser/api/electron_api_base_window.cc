@@ -793,8 +793,10 @@ void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     if (!browser_view->web_contents())
       return;
+    auto* owner_window = browser_view->web_contents()->owner_window();
     auto get_that_view = browser_views_.find(browser_view->ID());
-    if (get_that_view == browser_views_.end()) {
+    if (get_that_view == browser_views_.end() ||
+        (owner_window && owner_window != window_.get())) {
       args->ThrowError("Given BrowserView is not attached to the window");
       return;
     }
