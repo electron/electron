@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derqvist?= <fs@opera.com>
+Date: Tue, 1 Dec 2020 17:15:59 +0000
+Subject: Fix SVG filter data invalidation for empty containers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Empty containers will fail to create FilterData because they have an
+empty bounding box. When children were added to the container, making
+the bounding box non-empty we would fail to mark the paint properties as
+needing update because of the check for existing FilterData in
+SVGElementResourceClient::InvalidateFilterData().
+
+Instead always dispose of the filter data and mark paint properties for
+update, and use the |filter_data_dirty_| flag as an early-out check.
+
+Since we can now call InvalidateFilterData() directly in
+SVGElementResourceClient::ResourceElementChanged(), fold
+ClearFilterData() into InvalidateFilterData().
+
+Bug: 1154050
+Change-Id: I01c8ebac4f62532e2c17aabc3d998d7601dbb71b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2566992
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Commit-Queue: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/heads/master@{#832391}
+
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.cc b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+index f37cb5c3052d72ab15e769b29f8456e7ced9b5af..510a1ccd7f2a431184596e81dc1ac0147248bf2b 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.cc
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+@@ -728,14 +728,13 @@ void SVGElementResourceClient::ResourceContentChanged(
+ }
+ 
+ void SVGElementResourceClient::ResourceElementChanged() {
+-  if (LayoutObject* layout_object = element_->GetLayoutObject()) {
+-    ClearFilterData();
+-    SVGResourcesCache::ResourceReferenceChanged(*layout_object);
+-    // TODO(fs): If the resource element (for a filter) doesn't actually change
+-    // we don't need to perform the associated invalidations.
+-    layout_object->SetNeedsPaintPropertyUpdate();
+-    MarkFilterDataDirty();
+-  }
++  LayoutObject* layout_object = element_->GetLayoutObject();
++  if (!layout_object)
++    return;
++  // TODO(fs): If the resource element (for a filter) doesn't actually change
++  // we don't need to perform the associated invalidations.
++  InvalidateFilterData();
++  SVGResourcesCache::ResourceReferenceChanged(*layout_object);
+ }
+ 
+ void SVGElementResourceClient::ResourceDestroyed(
+@@ -808,6 +807,18 @@ bool SVGElementResourceClient::ClearFilterData() {
+   return !!filter_data;
+ }
+ 
++void SVGElementResourceClient::InvalidateFilterData() {
++  // If we performed an "optimized" invalidation via FilterPrimitiveChanged(),
++  // we could have set |filter_data_dirty_| but not cleared |filter_data_|.
++  if (filter_data_dirty_ && !filter_data_)
++    return;
++  if (FilterData* filter_data = filter_data_.Release())
++    filter_data->Dispose();
++  LayoutObject* layout_object = element_->GetLayoutObject();
++  layout_object->SetNeedsPaintPropertyUpdate();
++  MarkFilterDataDirty();
++}
++
+ void SVGElementResourceClient::MarkFilterDataDirty() {
+   DCHECK(element_->GetLayoutObject());
+   DCHECK(element_->GetLayoutObject()->NeedsPaintPropertyUpdate());
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.h b/third_party/blink/renderer/core/layout/svg/svg_resources.h
+index bfe056704b698d2189e5b759040f4f6cb3c54308..a7604092baf3da06dfef5af9cd0cb4364bb00dea 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.h
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.h
+@@ -229,6 +229,7 @@ class SVGElementResourceClient final
+ 
+   void UpdateFilterData(CompositorFilterOperations&);
+   bool ClearFilterData();
++  void InvalidateFilterData();
+   void MarkFilterDataDirty();
+ 
+   void Trace(Visitor*) const override;
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/svg-empty-container-with-filter-content-added.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/svg-empty-container-with-filter-content-added.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6436461f78bc03b7b2655b7c1b114f15acfc81f9
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/svg-empty-container-with-filter-content-added.html
+@@ -0,0 +1,25 @@
++<!doctype html>
++<html class="reftest-wait">
++<title>Adding content to a previously empty filtered container</title>
++<link rel="help" href="https://drafts.fxtf.org/filter-effects/#FilterProperty">
++<link rel="match" href="reference/green-100x100.html">
++<link rel="bookmark" href="https://crbug.com/1154050">
++<script src="/common/rendering-utils.js"></script>
++<script src="/common/reftest-wait.js"></script>
++<svg>
++  <filter id="f" color-interpolation-filters="sRGB">
++    <feComponentTransfer><feFuncA/></feComponentTransfer>
++  </filter>
++  <rect width="100" height="100" fill="red"/>
++  <g id="target" filter="url(#f)"/>
++</svg>
++<script>
++waitForAtLeastOneFrame().then(() => {
++  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
++  rect.setAttribute('fill', 'green');
++  rect.setAttribute('width', '100');
++  rect.setAttribute('height', '100');
++  document.getElementById('target').appendChild(rect);
++  takeScreenshot();
++});
++</script>
