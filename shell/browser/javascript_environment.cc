@@ -15,6 +15,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
@@ -244,9 +245,13 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_agent = node::CreateAgent();
   auto* tracing_controller = new TracingControllerImpl();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  auto* v8_page_allocator = nullptr;
+#if BUILDFLAG(ENABLE_GIN_PAGE_ALLOCATOR_EVERYWHERE)
+  v8_page_allocator = gin::V8Platform::PageAllocator();
+#endif
   platform_ = node::CreatePlatform(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
-      tracing_controller, gin::V8Platform::PageAllocator());
+      tracing_controller, v8_page_allocator);
 
   v8::V8::InitializePlatform(platform_);
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,

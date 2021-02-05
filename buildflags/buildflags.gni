@@ -39,4 +39,9 @@ declare_args() {
 
   # Undocumented Windows dark mode API
   enable_win_dark_mode_window_ui = false
+
+  # Uses page allocator from //gin which inturn uses
+  # partition alloc as the page allocator for v8 platform
+  # in all processes.
+  enable_gin_page_allocator_everywhere = false
 }
