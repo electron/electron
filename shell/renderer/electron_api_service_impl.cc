@@ -104,6 +104,7 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
+<<<<<<< HEAD
       renderer_client_(renderer_client),
       weak_factory_(this) {}
 
@@ -125,6 +126,31 @@ void ElectronApiServiceImpl::ProcessPendingMessages() {
 
     Message(msg.internal, msg.channel, std::move(msg.arguments), msg.sender_id);
   }
+=======
+      renderer_client_(renderer_client) {
+  registry_.AddInterface(base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                                             base::Unretained(this)));
+}
+
+void ElectronApiServiceImpl::BindTo(
+    mojo::PendingReceiver<mojom::ElectronRenderer> receiver) {
+  if (document_created_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
+
+    receiver_.Bind(std::move(receiver));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  } else {
+    pending_receiver_ = std::move(receiver);
+  }
+}
+
+void ElectronApiServiceImpl::OnInterfaceRequestForFrame(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle* interface_pipe) {
+  registry_.TryBindInterface(interface_name, interface_pipe);
+>>>>>>> 9f6b53f46... make the renderer-side electron api interface not associated
 }
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
@@ -144,6 +170,7 @@ void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
+<<<<<<< HEAD
   // Don't handle browser messages before document element is created - instead,
   // save the messages and then replay them after the document is ready.
   //
@@ -159,6 +186,8 @@ void ElectronApiServiceImpl::Message(bool internal,
     return;
   }
 
+=======
+>>>>>>> 9f6b53f46... make the renderer-side electron api interface not associated
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
@@ -200,13 +229,6 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 
   EmitIPCEvent(context, false, channel, ports, gin::ConvertToV8(isolate, args),
                0);
-}
-
-void ElectronApiServiceImpl::NotifyUserActivation() {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (frame)
-    frame->NotifyUserActivation(
-        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(
