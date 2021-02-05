@@ -8,7 +8,7 @@ Content-Transfer-Encoding: 8bit
 
 Spawning child processes in an Electron application with a hardened runtime has become slow in macOS Big Sur.
 
-This patch is a squashed version of https://github.com/libuv/libuv/pull/3064, with the addition of API availability annotations to fix a build warning (since Electron compiles with the `-Wunguarded-availability-new` flag). This patch should be removed when libuv PR 3064 is merged.
+This patch is a cherry-pick of https://github.com/libuv/libuv/pull/3064. This patch should be removed when Electron's libuv version is updated to a version containing this fix.
 
 Fixes: https://github.com/libuv/libuv/issues/3050
 Fixes: https://github.com/electron/electron/issues/26143
