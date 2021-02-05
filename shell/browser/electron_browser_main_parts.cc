@@ -230,8 +230,6 @@ void ElectronBrowserMainParts::RegisterDestructionCallback(
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-#if defined(OS_LINUX)
-#endif
 
 #if defined(OS_POSIX)
   HandleSIGCHLD();
