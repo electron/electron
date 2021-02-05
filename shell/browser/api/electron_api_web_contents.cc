@@ -74,6 +74,7 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -2690,10 +2691,12 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const std::string& channel,
                                            blink::CloneableMessage args,
                                            int32_t sender_id) {
-  auto* frame_host = web_contents()->GetMainFrame();
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->Message(internal, channel, std::move(args), sender_id);
+  auto* frame = web_contents()->GetMainFrame();
+
+  mojo::Remote<mojom::ElectronRenderer> renderer;
+  frame->GetRemoteInterfaces()->GetInterface(
+      renderer.BindNewPipeAndPassReceiver());
+  renderer->Message(internal, channel, std::move(args), sender_id);
   return true;
 }
 
@@ -3111,10 +3114,12 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 void WebContents::NotifyUserActivation() {
   auto* frame = web_contents()->GetMainFrame();
-  if (!frame)
+  if (!frame || !frame->IsRenderFrameCreated())
     return;
-  mojo::AssociatedRemote<mojom::ElectronRenderer> renderer;
-  frame->GetRemoteAssociatedInterfaces()->GetInterface(&renderer);
+
+  mojo::Remote<mojom::ElectronRenderer> renderer;
+  frame->GetRemoteInterfaces()->GetInterface(
+      renderer.BindNewPipeAndPassReceiver());
   renderer->NotifyUserActivation();
 }
 

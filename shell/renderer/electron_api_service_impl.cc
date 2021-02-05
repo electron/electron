@@ -104,10 +104,13 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
-      renderer_client_(renderer_client) {}
+      renderer_client_(renderer_client) {
+  registry_.AddInterface(base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                                             base::Unretained(this)));
+}
 
 void ElectronApiServiceImpl::BindTo(
-    mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {
+    mojo::PendingReceiver<mojom::ElectronRenderer> receiver) {
   if (document_created_) {
     if (receiver_.is_bound())
       receiver_.reset();
@@ -120,13 +123,10 @@ void ElectronApiServiceImpl::BindTo(
   }
 }
 
-void ElectronApiServiceImpl::ProcessPendingMessages() {
-  while (!pending_messages_.empty()) {
-    auto msg = std::move(pending_messages_.front());
-    pending_messages_.pop();
-
-    Message(msg.internal, msg.channel, std::move(msg.arguments), msg.sender_id);
-  }
+void ElectronApiServiceImpl::OnInterfaceRequestForFrame(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle* interface_pipe) {
+  registry_.TryBindInterface(interface_name, interface_pipe);
 }
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
@@ -155,20 +155,6 @@ void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
-  // Don't handle browser messages before document element is created - instead,
-  // save the messages and then replay them after the document is ready.
-  //
-  // See: https://chromium-review.googlesource.com/c/chromium/src/+/2601063.
-  if (!document_created_) {
-    PendingElectronApiServiceMessage message;
-    message.internal = internal;
-    message.channel = channel;
-    message.arguments = std::move(arguments);
-    message.sender_id = sender_id;
-
-    pending_messages_.push(std::move(message));
-  }
-
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;

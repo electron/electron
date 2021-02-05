@@ -98,6 +98,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  const mojo::Remote<mojom::ElectronRenderer>& RendererApi();
+
+  mojo::Remote<mojom::ElectronRenderer> renderer_api_;
+
   content::RenderFrameHost* render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer

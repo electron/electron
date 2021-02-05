@@ -15,6 +15,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/object_template_builder.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -28,7 +29,6 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace electron {
 
@@ -176,11 +176,16 @@ void WebFrameMain::Send(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-      &electron_renderer);
-  electron_renderer->Message(internal, channel, std::move(message),
-                             0 /* sender_id */);
+  RendererApi()->Message(internal, channel, std::move(message),
+                         0 /* sender_id */);
+}
+
+const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::RendererApi() {
+  if (!renderer_api_) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        renderer_api_.BindNewPipeAndPassReceiver());
+  }
+  return renderer_api_;
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
@@ -212,11 +217,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-      &electron_renderer);
-  electron_renderer->ReceivePostMessage(channel,
-                                        std::move(transferable_message));
+  RendererApi()->ReceivePostMessage(channel, std::move(transferable_message));
 }
 
 int WebFrameMain::FrameTreeNodeID() const {
