@@ -21,7 +21,15 @@ ObjectCachePairNode::ObjectCachePairNode(ObjectCachePair&& pair) {
 ObjectCachePairNode::~ObjectCachePairNode() = default;
 
 ObjectCache::ObjectCache() {}
-ObjectCache::~ObjectCache() = default;
+ObjectCache::~ObjectCache() {
+  for (const auto& pair : proxy_map_) {
+    while (!pair.second.empty()) {
+      ObjectCachePairNode* node = pair.second.head()->value();
+      node->RemoveFromList();
+      delete node;
+    }
+  }
+}
 
 void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
                                      v8::Local<v8::Value> proxy_value) {
