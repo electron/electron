@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepti Gandluri <gdeepti@chromium.org>
+Date: Wed, 27 Jan 2021 22:19:44 -0800
+Subject: PostMessage of Memory.buffer should throw
+
+PostMessage of an ArrayBuffer that is not detachable should result
+in a DataCloneError.
+
+TBR=gdeepti@chromium.org
+
+(cherry picked from commit dfcf1e86fac0a7b067caf8fdfc13eaf3e3f445e4)
+
+Bug: chromium:1170176, chromium:961059
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ife852df032841b7001375acd5e101d614c4b0771
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2674169
+Reviewed-by: Zhi An Ng <zhin@chromium.org>
+Commit-Queue: Zhi An Ng <zhin@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.8@{#30}
+Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
+Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
+
+diff --git a/src/common/message-template.h b/src/common/message-template.h
+index cf8d66b8bb60d307faab0df78b19fb86f1ff51be..2490a154457530b12daaeb7f01bd88cd9ea9582f 100644
+--- a/src/common/message-template.h
++++ b/src/common/message-template.h
+@@ -567,6 +567,8 @@ namespace internal {
+   T(DataCloneErrorOutOfMemory, "Data cannot be cloned, out of memory.")        \
+   T(DataCloneErrorDetachedArrayBuffer,                                         \
+     "An ArrayBuffer is detached and could not be cloned.")                     \
++  T(DataCloneErrorNonDetachableArrayBuffer,                                    \
++    "ArrayBuffer is not detachable and could not be cloned.")                  \
+   T(DataCloneErrorSharedArrayBufferTransferred,                                \
+     "A SharedArrayBuffer could not be cloned. SharedArrayBuffer must not be "  \
+     "transferred.")                                                            \
+diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
+index 58b1db674928577e5ad8cb54d78d6061db0b2f2f..9e79f9ba434193db78dd185fd4d47aa829a44a4c 100644
+--- a/src/objects/value-serializer.cc
++++ b/src/objects/value-serializer.cc
+@@ -860,6 +860,11 @@ Maybe<bool> ValueSerializer::WriteJSArrayBuffer(
+     WriteVarint(index.FromJust());
+     return ThrowIfOutOfMemory();
+   }
++  if (!array_buffer->is_detachable()) {
++    ThrowDataCloneError(
++        MessageTemplate::kDataCloneErrorNonDetachableArrayBuffer);
++    return Nothing<bool>();
++  }
+ 
+   uint32_t* transfer_entry = array_buffer_transfer_map_.Find(array_buffer);
+   if (transfer_entry) {
+diff --git a/test/mjsunit/wasm/worker-memory.js b/test/mjsunit/wasm/worker-memory.js
+index c5b99ede7e28364bbbe31165dfd8b8449a718137..bf5430f7139815c229e641eb6d40725b066035c5 100644
+--- a/test/mjsunit/wasm/worker-memory.js
++++ b/test/mjsunit/wasm/worker-memory.js
+@@ -11,6 +11,13 @@
+   assertThrows(() => worker.postMessage(memory), Error);
+ })();
+ 
++(function TestPostMessageUnsharedMemoryBuffer() {
++  let worker = new Worker('', {type: 'string'});
++  let memory = new WebAssembly.Memory({initial: 1, maximum: 2});
++
++  assertThrows(() => worker.postMessage(memory.buffer), Error);
++})();
++
+ // Can't use assert in a worker.
+ let workerHelpers =
+   `function assertTrue(value, msg) {
