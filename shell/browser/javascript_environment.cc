@@ -245,7 +245,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_agent = node::CreateAgent();
   auto* tracing_controller = new TracingControllerImpl();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  auto* v8_page_allocator = nullptr;
+  v8::PageAllocator* v8_page_allocator = nullptr;
 #if BUILDFLAG(ENABLE_GIN_PAGE_ALLOCATOR_EVERYWHERE)
   v8_page_allocator = gin::V8Platform::PageAllocator();
 #endif

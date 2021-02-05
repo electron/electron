@@ -23,5 +23,6 @@ buildflag_header("buildflags") {
     "ENABLE_PICTURE_IN_PICTURE=$enable_picture_in_picture",
     "ENABLE_WIN_DARK_MODE_WINDOW_UI=$enable_win_dark_mode_window_ui",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
+    "ENABLE_GIN_PAGE_ALLOCATOR_EVERYWHERE=$enable_gin_page_allocator_everywhere",
   ]
 }
