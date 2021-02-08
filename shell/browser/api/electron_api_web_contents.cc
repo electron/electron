@@ -2673,19 +2673,6 @@ bool WebContents::IsFocused() const {
 }
 #endif
 
-bool WebContents::SendIPCMessage(bool internal,
-                                 const std::string& channel,
-                                 v8::Local<v8::Value> args) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
-    return false;
-  }
-  return SendIPCMessageWithSender(internal, channel, std::move(message));
-}
-
 bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const std::string& channel,
                                            blink::CloneableMessage args,
@@ -3605,7 +3592,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)

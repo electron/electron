@@ -121,19 +121,11 @@ WebContents.prototype.postMessage = function (...args) {
 };
 
 WebContents.prototype.send = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  }
-
-  return this._send(false /* internal */, channel, args);
+  return this.mainFrame.send(channel, ...args);
 };
 
 WebContents.prototype._sendInternal = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
-  }
-
-  return this._send(true /* internal */, channel, args);
+  return this.mainFrame._sendInternal(channel, ...args);
 };
 
 function getWebFrame (contents: Electron.WebContents, frame: number | [number, number]) {
