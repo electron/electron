@@ -198,13 +198,6 @@ void ElectronApiServiceImpl::ReceivePostMessage(
                0);
 }
 
-void ElectronApiServiceImpl::NotifyUserActivation() {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (frame)
-    frame->NotifyUserActivation(
-        blink::mojom::UserActivationNotificationType::kInteraction);
-}
-
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {

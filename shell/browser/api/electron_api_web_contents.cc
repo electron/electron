@@ -1969,9 +1969,6 @@ void WebContents::LoadURL(const GURL& url,
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
-  // Required to make beforeunload handler work.
-  NotifyUserActivation();
-
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -1979,6 +1976,9 @@ void WebContents::LoadURL(const GURL& url,
   // entry
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
+
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 
   // ⚠️WARNING!⚠️
   // LoadURLWithParams() triggers JS events which can call destroy() on |this|.
@@ -3116,11 +3116,9 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetMainFrame();
-  if (frame) {
-    gin::Handle<WebFrameMain> web_frame_main =
-        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
-    web_frame_main->NotifyUserActivation();
-  }
+  if (frame)
+    frame->NotifyUserActivation(
+        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(

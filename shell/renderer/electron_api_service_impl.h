@@ -47,7 +47,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                int32_t sender_id) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
-  void NotifyUserActivation() override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
   void ProcessPendingMessages();

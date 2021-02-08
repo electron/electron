@@ -56,8 +56,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // occur upon frame navigation.
   void MarkRenderFrameDisposed();
 
-  void NotifyUserActivation();
-
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(

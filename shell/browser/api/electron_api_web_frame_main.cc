@@ -229,10 +229,6 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   RendererApi()->ReceivePostMessage(channel, std::move(transferable_message));
 }
 
-void WebFrameMain::NotifyUserActivation() {
-  RendererApi()->NotifyUserActivation();
-}
-
 int WebFrameMain::FrameTreeNodeID() const {
   if (!CheckRenderFrame())
     return -1;
