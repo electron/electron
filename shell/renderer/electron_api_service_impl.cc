@@ -119,9 +119,10 @@ void ElectronApiServiceImpl::BindTo(
 }
 
 void ElectronApiServiceImpl::ProcessPendingMessages() {
-  decltype(pending_messages_) pending_messages;
-  pending_messages.swap(pending_messages_);
-  for (auto&& msg : pending_messages) {
+  while (!pending_messages_.empty()) {
+    PendingElectronApiServiceMessage msg = std::move(pending_messages_.front());
+    pending_messages_.pop();
+
     Message(msg.internal, msg.channel, std::move(msg.arguments), msg.sender_id);
   }
 }
@@ -148,7 +149,13 @@ void ElectronApiServiceImpl::Message(bool internal,
   //
   // See: https://chromium-review.googlesource.com/c/chromium/src/+/2601063.
   if (!document_created_) {
-    pending_messages_.push_back({ internal, channel, std::move(arguments), sender_id });
+    PendingElectronApiServiceMessage message;
+    message.internal = internal;
+    message.channel = channel;
+    message.arguments = std::move(arguments);
+    message.sender_id = sender_id;
+
+    pending_messages_.push(std::move(message));
     return;
   }
 

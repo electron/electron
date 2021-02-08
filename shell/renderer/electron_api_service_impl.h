@@ -5,7 +5,7 @@
 #ifndef SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 #define SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 
-#include <list>
+#include <queue>
 #include <string>
 
 #include "base/memory/weak_ptr.h"
@@ -25,6 +25,11 @@ struct PendingElectronApiServiceMessage {
   std::string channel;
   blink::CloneableMessage arguments;
   int32_t sender_id;
+
+  PendingElectronApiServiceMessage() = default;
+  ~PendingElectronApiServiceMessage() = default;
+  PendingElectronApiServiceMessage(PendingElectronApiServiceMessage&&) =
+      default;
 };
 
 class ElectronApiServiceImpl : public mojom::ElectronRenderer,
@@ -62,7 +67,7 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   // Whether the DOM document element has been created.
   bool document_created_ = false;
 
-  std::list<PendingElectronApiServiceMessage> pending_messages_;
+  std::queue<PendingElectronApiServiceMessage> pending_messages_;
 
   mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
 
