@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Mon, 8 Feb 2021 13:20:09 -0800
-Subject: [mac][wasm] Work around MacOS 11.2 code page decommit failures
+Subject: Work around MacOS 11.2 code page decommit failures
 
 MacOS 11.2 refuses to set "no access" permissions on memory that
 we previously used for JIT-compiled code. It is still unclear
