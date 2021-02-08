@@ -117,3 +117,4 @@ cherry-pick-3f7b67374a11.patch
 ots_backport_maxp_sanitization.patch
 ots_backport_of_glyf_guard_access_to_maxp_version_1_field.patch
 cherry-pick-5c7ad5393f74.patch
+fix_svg_filter_data_invalidation_for_empty_containers.patch
