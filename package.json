@@ -135,7 +135,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "markdownlint --config .markdownlint.auotfix.json --fix",
+      "markdownlint --config .markdownlint.autofix.json --fix",
       "git add filenames.auto.gni"
     ],
     "{*.patch,.patches}": [
