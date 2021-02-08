@@ -58,6 +58,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // occur upon frame navigation.
   void MarkRenderFrameDisposed();
 
+  const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
@@ -102,8 +104,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   content::RenderFrameHost* Parent() const;
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
-
-  const mojo::Remote<mojom::ElectronRenderer>& RendererApi();
 
   void OnRendererConnectionError();
 

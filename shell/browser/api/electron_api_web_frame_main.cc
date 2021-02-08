@@ -179,11 +179,11 @@ void WebFrameMain::Send(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  RendererApi()->Message(internal, channel, std::move(message),
-                         0 /* sender_id */);
+  GetRendererApi()->Message(internal, channel, std::move(message),
+                            0 /* sender_id */);
 }
 
-const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::RendererApi() {
+const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
   if (!renderer_api_) {
     pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
     if (render_frame_->IsRenderFrameCreated()) {
@@ -229,7 +229,8 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  RendererApi()->ReceivePostMessage(channel, std::move(transferable_message));
+  GetRendererApi()->ReceivePostMessage(channel,
+                                       std::move(transferable_message));
 }
 
 int WebFrameMain::FrameTreeNodeID() const {

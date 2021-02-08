@@ -1579,11 +1579,11 @@ void WebContents::MessageTo(bool internal,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* web_contents = FromID(web_contents_id);
+  auto* target_web_contents = FromID(web_contents_id);
 
-  if (web_contents) {
-    web_contents->SendIPCMessageWithSender(internal, channel,
-                                           std::move(arguments), ID());
+  if (target_web_contents) {
+    target_web_contents->SendIPCMessageWithSender(internal, channel,
+                                                  std::move(arguments), ID());
   }
 }
 
@@ -2680,12 +2680,15 @@ bool WebContents::SendIPCMessageWithSender(bool internal,
                                            const std::string& channel,
                                            blink::CloneableMessage args,
                                            int32_t sender_id) {
-  auto* frame = web_contents()->GetMainFrame();
+  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  DCHECK(frame);
 
-  mojo::Remote<mojom::ElectronRenderer> renderer;
-  frame->GetRemoteInterfaces()->GetInterface(
-      renderer.BindNewPipeAndPassReceiver());
-  renderer->Message(internal, channel, std::move(args), sender_id);
+  v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
+  gin::Handle<WebFrameMain> web_frame_main =
+      WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
+
+  web_frame_main->GetRendererApi()->Message(internal, channel, std::move(args),
+                                            sender_id);
   return true;
 }
 
