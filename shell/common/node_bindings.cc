@@ -531,6 +531,13 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
+  // If the backend fd hasn't changed, don't proceed.
+  int backend_fd = uv_backend_fd(uv_loop_);
+  if (backend_fd == backend_fd_)
+    return;
+
+  backend_fd_ = backend_fd;
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);

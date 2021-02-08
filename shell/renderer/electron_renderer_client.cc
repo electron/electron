@@ -113,7 +113,6 @@ void ElectronRendererClient::DidCreateScriptContext(
   // the integration, that means we're here because a new subframe was created,
   // not because we've reloaded the page. In that case, don't re-prepare the
   // message loop.
-  bool node_in_subframe = !is_main_frame && allow_node_in_subframes;
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
@@ -126,7 +125,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
-  } else if (reuse_renderer_processes_enabled && !node_in_subframe) {
+  } else if (reuse_renderer_processes_enabled) {
     node_bindings_->PrepareMessageLoop();
   }
 

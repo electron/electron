@@ -159,6 +159,8 @@ class NodeBindings {
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
 
+  int backend_fd_;
+
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
