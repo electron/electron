@@ -141,7 +141,7 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
-  std::map<content::RenderFrame*, ElectronApiServiceImpl*> services_;
+  std::map<content::RenderFrame*,ElectronApiServiceImpl*> services_;
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
