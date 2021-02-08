@@ -1,6 +1,9 @@
 ---
 name: Mac App Store Private API Rejection
 about: Your app was rejected from the Mac App Store for using private API's
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
