@@ -3141,6 +3141,11 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
+  if (!frame_host->IsRenderFrameCreated()) {
+    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    return handle;
+  }
+
   // This dance with `base::Owned` is to ensure that the interface stays alive
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
