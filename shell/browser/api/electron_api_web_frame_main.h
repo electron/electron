@@ -14,6 +14,7 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/pinnable.h"
 
 class GURL;
 
@@ -35,6 +36,7 @@ namespace api {
 
 // Bindings for accessing frames from the main process.
 class WebFrameMain : public gin::Wrappable<WebFrameMain>,
+                     public gin_helper::Pinnable<WebFrameMain>,
                      public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.

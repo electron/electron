@@ -57,6 +57,9 @@ WebFrameMain::~WebFrameMain() {
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
+  if (render_frame_disposed_)
+    return;
+  Unpin();
   g_render_frame_map.Get().erase(render_frame_);
   render_frame_disposed_ = true;
 }
@@ -315,8 +318,14 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
   if (rfh == nullptr)
     return gin::Handle<WebFrameMain>();
   auto* web_frame = FromRenderFrameHost(rfh);
-  auto handle = gin::CreateHandle(
-      isolate, web_frame == nullptr ? new WebFrameMain(rfh) : web_frame);
+  if (web_frame)
+    return gin::CreateHandle(isolate, web_frame);
+
+  auto handle = gin::CreateHandle(isolate, new WebFrameMain(rfh));
+
+  // Prevent garbage collection of frame until it has been deleted internally.
+  handle->Pin(isolate);
+
   return handle;
 }
 
