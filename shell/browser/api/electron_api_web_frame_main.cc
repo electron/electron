@@ -182,10 +182,19 @@ void WebFrameMain::Send(v8::Isolate* isolate,
 
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::RendererApi() {
   if (!renderer_api_) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        renderer_api_.BindNewPipeAndPassReceiver());
+    pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
+    if (render_frame_->IsRenderFrameCreated()) {
+      render_frame_->GetRemoteInterfaces()->GetInterface(
+          std::move(pending_receiver_));
+    }
+    renderer_api_.set_disconnect_handler(base::BindOnce(
+        &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
   return renderer_api_;
+}
+
+void WebFrameMain::OnRendererConnectionError() {
+  renderer_api_.reset();
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
@@ -218,6 +227,10 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
     return;
 
   RendererApi()->ReceivePostMessage(channel, std::move(transferable_message));
+}
+
+void WebFrameMain::NotifyUserActivation() {
+  RendererApi()->NotifyUserActivation();
 }
 
 int WebFrameMain::FrameTreeNodeID() const {
@@ -325,6 +338,19 @@ void WebFrameMain::RenderFrameDeleted(content::RenderFrameHost* rfh) {
   auto* web_frame = FromRenderFrameHost(rfh);
   if (web_frame)
     web_frame->MarkRenderFrameDisposed();
+}
+
+void WebFrameMain::RenderFrameCreated(content::RenderFrameHost* rfh) {
+  auto* web_frame = FromRenderFrameHost(rfh);
+  if (web_frame)
+    web_frame->Connect();
+}
+
+void WebFrameMain::Connect() {
+  if (pending_receiver_) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        std::move(pending_receiver_));
+  }
 }
 
 // static

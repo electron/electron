@@ -1373,6 +1373,8 @@ void WebContents::RenderFrameCreated(
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
+
+  WebFrameMain::RenderFrameCreated(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -3113,14 +3115,12 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 }
 
 void WebContents::NotifyUserActivation() {
-  auto* frame = web_contents()->GetMainFrame();
-  if (!frame || !frame->IsRenderFrameCreated())
-    return;
-
-  mojo::Remote<mojom::ElectronRenderer> renderer;
-  frame->GetRemoteInterfaces()->GetInterface(
-      renderer.BindNewPipeAndPassReceiver());
-  renderer->NotifyUserActivation();
+  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  if (frame) {
+    gin::Handle<WebFrameMain> web_frame_main =
+        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
+    web_frame_main->NotifyUserActivation();
+  }
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
