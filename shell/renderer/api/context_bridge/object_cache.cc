@@ -14,22 +14,8 @@ namespace api {
 
 namespace context_bridge {
 
-ObjectCachePairNode::ObjectCachePairNode(ObjectCachePair&& pair) {
-  this->pair = std::move(pair);
-}
-
-ObjectCachePairNode::~ObjectCachePairNode() = default;
-
 ObjectCache::ObjectCache() {}
-ObjectCache::~ObjectCache() {
-  for (const auto& pair : proxy_map_) {
-    while (!pair.second.empty()) {
-      ObjectCachePairNode* node = pair.second.head()->value();
-      node->RemoveFromList();
-      delete node;
-    }
-  }
-}
+ObjectCache::~ObjectCache() = default;
 
 void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
                                      v8::Local<v8::Value> proxy_value) {
@@ -37,8 +23,7 @@ void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
     auto obj = v8::Local<v8::Object>::Cast(from);
     int hash = obj->GetIdentityHash();
 
-    auto* node = new ObjectCachePairNode(std::make_pair(from, proxy_value));
-    proxy_map_[hash].Append(node);
+    proxy_map_[hash].push_front(std::make_pair(from, proxy_value));
   }
 }
 
@@ -54,8 +39,7 @@ v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
     return v8::MaybeLocal<v8::Value>();
 
   auto& list = iter->second;
-  for (auto* node = list.head(); node != list.end(); node = node->next()) {
-    auto& pair = node->value()->pair;
+  for (const auto& pair : list) {
     auto from_cmp = pair.first;
     if (from_cmp == from) {
       if (pair.second.IsEmpty())
