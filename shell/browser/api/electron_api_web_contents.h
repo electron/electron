@@ -249,11 +249,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   void Focus();
   bool IsFocused() const;
 
-  bool SendIPCMessageWithSender(bool internal,
-                                const std::string& channel,
-                                blink::CloneableMessage args,
-                                int32_t sender_id = 0);
-
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 

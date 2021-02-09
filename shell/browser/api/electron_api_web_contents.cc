@@ -1582,8 +1582,16 @@ void WebContents::MessageTo(bool internal,
   auto* target_web_contents = FromID(web_contents_id);
 
   if (target_web_contents) {
-    target_web_contents->SendIPCMessageWithSender(internal, channel,
-                                                  std::move(arguments), ID());
+    content::RenderFrameHost* frame = target_web_contents->MainFrame();
+    DCHECK(frame);
+
+    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
+    gin::Handle<WebFrameMain> web_frame_main =
+        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
+
+    int32_t sender_id = ID();
+    web_frame_main->GetRendererApi()->Message(internal, channel,
+                                              std::move(arguments), sender_id);
   }
 }
 
@@ -2675,22 +2683,6 @@ bool WebContents::IsFocused() const {
   return view->HasFocus();
 }
 #endif
-
-bool WebContents::SendIPCMessageWithSender(bool internal,
-                                           const std::string& channel,
-                                           blink::CloneableMessage args,
-                                           int32_t sender_id) {
-  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
-  DCHECK(frame);
-
-  v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
-  gin::Handle<WebFrameMain> web_frame_main =
-      WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
-
-  web_frame_main->GetRendererApi()->Message(internal, channel, std::move(args),
-                                            sender_id);
-  return true;
-}
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
