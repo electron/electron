@@ -394,6 +394,79 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
+diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
+index d3011db79d65b4e80d8a546e122e462951acef9f..0a47a2b658d0cd749b149532624aa5e75f28a0e4 100644
+--- a/test/parallel/test-crypto-key-objects.js
++++ b/test/parallel/test-crypto-key-objects.js
+@@ -212,11 +212,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+   assert.throws(() => {
+     createPrivateKey({ key: '' });
+   }, {
+-    message: 'error:2007E073:BIO routines:BIO_new_mem_buf:null parameter',
+-    code: 'ERR_OSSL_BIO_NULL_PARAMETER',
+-    reason: 'null parameter',
+-    library: 'BIO routines',
+-    function: 'BIO_new_mem_buf',
++    message: /error:2007E073:BIO routines:BIO_new_mem_buf:null parameter|error:0900006e:PEM routines:OPENSSL_internal:NO_START_LINE/,
++    code: /ERR_OSSL_BIO_NULL_PARAMETER|ERR_OSSL_PEM_NO_START_LINE/,
++    reason: /null parameter|NO_START_LINE/,
++    library: /BIO routines|PEM routines/,
++    function: /BIO_new_mem_buf|OPENSSL_internal/,
+   });
+ 
+   // This should not abort either: https://github.com/nodejs/node/issues/29904
+@@ -236,8 +236,8 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     });
+     createPrivateKey({ key, format: 'der', type: 'pkcs1' });
+   }, {
+-    message: /asn1 encoding/,
+-    library: 'asn1 encoding routines'
++    message: /asn1 encoding|DECODE_ERROR/,
++    library: /asn1 encoding routines|public key routines/
+   });
+ }
+ 
+@@ -245,6 +245,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+   { private: fixtures.readKey('ed25519_private.pem', 'ascii'),
+     public: fixtures.readKey('ed25519_public.pem', 'ascii'),
+     keyType: 'ed25519' },
++  /*
+   { private: fixtures.readKey('ed448_private.pem', 'ascii'),
+     public: fixtures.readKey('ed448_public.pem', 'ascii'),
+     keyType: 'ed448' },
+@@ -254,6 +255,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+   { private: fixtures.readKey('x448_private.pem', 'ascii'),
+     public: fixtures.readKey('x448_public.pem', 'ascii'),
+     keyType: 'x448' },
++    */
+ ].forEach((info) => {
+   const keyType = info.keyType;
+ 
+@@ -304,7 +306,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     format: 'pem',
+     passphrase: Buffer.alloc(1024, 'a')
+   }), {
+-    message: /bad decrypt/
++    message: /bad decrypt|BAD_DECRYPT/
+   });
+ 
+   const publicKey = createPublicKey(publicDsa);
+@@ -323,6 +325,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+ 
+ }
+ 
++/*
+ {
+   // Test RSA-PSS.
+   {
+@@ -461,6 +464,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ }
++*/
+ 
+ {
+   // Exporting an encrypted private key requires a cipher
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
