@@ -595,6 +595,38 @@ index 5da5715bcbd206864cb77ffc3dc8a7ef3303599b..8ec07d11c754e7acecee669dad93fa41
  
  // Test invalid key encoding types.
  {
+diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
+index 909c014bd0f87a401096c1a55a3a362dc042cdd1..8496eb353b2a384db3f8ee1c0d01043387c1e2f9 100644
+--- a/test/parallel/test-crypto-padding.js
++++ b/test/parallel/test-crypto-padding.js
+@@ -83,10 +83,9 @@ assert.throws(function() {
+   // Input must have block length %.
+   enc(ODD_LENGTH_PLAIN, false);
+ }, {
+-  message: 'error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:' +
+-    'data not multiple of block length',
+-  code: 'ERR_OSSL_EVP_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH',
+-  reason: 'data not multiple of block length',
++  message: /error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:data not multiple of block length|error:1e00006a:Cipher functions:OPENSSL_internal:DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  reason: /data not multiple of block length|DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
+ });
+ 
+ assert.strictEqual(
+@@ -105,10 +104,9 @@ assert.throws(function() {
+   // Must have at least 1 byte of padding (PKCS):
+   assert.strictEqual(dec(EVEN_LENGTH_ENCRYPTED_NOPAD, true), EVEN_LENGTH_PLAIN);
+ }, {
+-  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
+-    'bad decrypt',
+-  reason: 'bad decrypt',
+-  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
++  message: /error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/,
++  reason: /bad decrypt|BAD_DECRYPT/,
++  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
+ });
+ 
+ // No-pad encrypted string should return the same:
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
