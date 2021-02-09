@@ -441,17 +441,16 @@ void ElectronBrowserContext::SetCorsOriginAccessListForOrigin(
       BarrierClosure(1 + context_map.size(), std::move(closure));
 
   for (auto& iter : context_map) {
-    if (iter.second) {
-      auto bc_setter = base::MakeRefCounted<content::CorsOriginPatternSetter>(
-          source_origin,
-          content::CorsOriginPatternSetter::ClonePatterns(allow_patterns),
-          content::CorsOriginPatternSetter::ClonePatterns(block_patterns),
-          barrier_closure);
-      ForEachStoragePartition(
-          std::move(iter.second.get()),
-          base::BindRepeating(&content::CorsOriginPatternSetter::SetLists,
-                              base::RetainedRef(bc_setter.get())));
-    }
+    DCHECK(iter.second);
+    auto bc_setter = base::MakeRefCounted<content::CorsOriginPatternSetter>(
+        source_origin,
+        content::CorsOriginPatternSetter::ClonePatterns(allow_patterns),
+        content::CorsOriginPatternSetter::ClonePatterns(block_patterns),
+        barrier_closure);
+    ForEachStoragePartition(
+        std::move(iter.second.get()),
+        base::BindRepeating(&content::CorsOriginPatternSetter::SetLists,
+                            base::RetainedRef(bc_setter.get())));
   }
 
   shared_cors_origin_access_list_->SetForOrigin(
