@@ -20,7 +20,6 @@
   "parallel/test-crypto-dh",
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
-  "parallel/test-crypto-hash-stream-pipe",
   "parallel/test-crypto-key-objects",
   "parallel/test-crypto-keygen",
   "parallel/test-crypto-padding",
