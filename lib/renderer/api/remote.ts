@@ -305,7 +305,7 @@ function metaToError (meta: { type: 'error', value: any, members: ObjectMember[]
 }
 
 function handleMessage (channel: string, handler: Function) {
-  ipcRendererInternal.onMessageFromMain(channel, (event, passedContextId, id, ...args) => {
+  ipcRendererInternal.on(channel, (event, passedContextId, id, ...args) => {
     if (passedContextId === contextId) {
       handler(id, ...args);
     } else {
