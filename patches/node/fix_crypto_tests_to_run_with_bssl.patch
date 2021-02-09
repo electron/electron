@@ -595,6 +595,26 @@ index 5da5715bcbd206864cb77ffc3dc8a7ef3303599b..8ec07d11c754e7acecee669dad93fa41
  
  // Test invalid key encoding types.
  {
+diff --git a/test/parallel/test-crypto-padding-aes256.js b/test/parallel/test-crypto-padding-aes256.js
+index 14d853bdfd0a5dcc5bdb6e00cb20fdbeaabd2aff..3ae6fc47d4c6a8296a2c3c70daf464fad886a88d 100644
+--- a/test/parallel/test-crypto-padding-aes256.js
++++ b/test/parallel/test-crypto-padding-aes256.js
+@@ -32,13 +32,13 @@ const key = Buffer.from('0123456789abcdef0123456789abcdef' +
+                         '0123456789abcdef0123456789abcdef', 'hex');
+ 
+ function encrypt(val, pad) {
+-  const c = crypto.createCipheriv('aes256', key, iv);
++  const c = crypto.createCipheriv('aes-256-cbc', key, iv);
+   c.setAutoPadding(pad);
+   return c.update(val, 'utf8', 'latin1') + c.final('latin1');
+ }
+ 
+ function decrypt(val, pad) {
+-  const c = crypto.createDecipheriv('aes256', key, iv);
++  const c = crypto.createDecipheriv('aes-256-cbc', key, iv);
+   c.setAutoPadding(pad);
+   return c.update(val, 'latin1', 'utf8') + c.final('utf8');
+ }
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
 index 909c014bd0f87a401096c1a55a3a362dc042cdd1..8496eb353b2a384db3f8ee1c0d01043387c1e2f9 100644
 --- a/test/parallel/test-crypto-padding.js
