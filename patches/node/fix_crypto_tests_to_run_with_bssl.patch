@@ -345,6 +345,21 @@ index 07591fdfffd0722bd649e94911e67868a24b59ed..5c04fc9d527ccbafd17ec1b492f6bab7
    // Test encryption and decryption with explicit key and iv.
    // AES Key Wrap test vector comes from RFC3394
    const plaintext = Buffer.from('00112233445566778899AABBCCDDEEFF', 'hex');
+diff --git a/test/parallel/test-crypto-classes.js b/test/parallel/test-crypto-classes.js
+index ce4e2922de806276586796e2b3abdb885fc99840..4a92a134291964003fe50a3a9fec9d3e5c8e9262 100644
+--- a/test/parallel/test-crypto-classes.js
++++ b/test/parallel/test-crypto-classes.js
+@@ -22,8 +22,8 @@ const TEST_CASES = {
+ };
+ 
+ if (!common.hasFipsCrypto) {
+-  TEST_CASES.Cipher = ['aes192', 'secret'];
+-  TEST_CASES.Decipher = ['aes192', 'secret'];
++  TEST_CASES.Cipher = ['aes-192-cbc', 'secret'];
++  TEST_CASES.Decipher = ['aes-192-cbc', 'secret'];
+   TEST_CASES.DiffieHellman = [256];
+ }
+ 
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js

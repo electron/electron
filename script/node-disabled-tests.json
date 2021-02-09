@@ -16,7 +16,6 @@
   "parallel/test-code-cache",
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-certificate",
-  "parallel/test-crypto-classes",
   "parallel/test-crypto-des3-wrap",
   "parallel/test-crypto-dh",
   "parallel/test-crypto-ecb",
