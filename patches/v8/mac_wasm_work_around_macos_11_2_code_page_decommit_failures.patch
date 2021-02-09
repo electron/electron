@@ -20,10 +20,10 @@ Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#72559}
 
 diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
-index ab0d7839a453d87a8404ca791c1022871e8fd606..67746173d582c5c404083be8ef3fa36c7dfc8cfe 100644
+index 821a3925e91c229873f75ac024c1b388b4d0c06e..0027b9baedd540a95278d6ebb8d83fe6dca62b22 100644
 --- a/src/base/platform/platform-posix.cc
 +++ b/src/base/platform/platform-posix.cc
-@@ -415,6 +415,16 @@ bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+@@ -427,6 +427,16 @@ bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
  
    int prot = GetProtectionFromMemoryPermission(access);
    int ret = mprotect(address, size, prot);
