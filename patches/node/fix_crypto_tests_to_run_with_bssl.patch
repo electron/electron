@@ -647,6 +647,41 @@ index 909c014bd0f87a401096c1a55a3a362dc042cdd1..8496eb353b2a384db3f8ee1c0d010433
  });
  
  // No-pad encrypted string should return the same:
+diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
+index 9b8c3f67a242f2be4716918fbbce482a9befe22d..ce14d333fdf163bdb17b0a9a69571ee63ede3846 100644
+--- a/test/parallel/test-crypto-rsa-dsa.js
++++ b/test/parallel/test-crypto-rsa-dsa.js
+@@ -26,12 +26,11 @@ const rsaPkcs8KeyPem = fixtures.readKey('rsa_private_pkcs8.pem');
+ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
+ 
+ const decryptError = {
+-  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
+-    'bad decrypt',
+-  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
+-  reason: 'bad decrypt',
+-  function: 'EVP_DecryptFinal_ex',
+-  library: 'digital envelope routines',
++  message: /error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/,
++  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
++  reason: /bad decrypt|BAD_DECRYPT/,
++  function: /EVP_DecryptFinal_ex|OPENSSL_internal/,
++  library: /digital envelope routines|Cipher functions/,
+ };
+ 
+ // Test RSA encryption/decryption
+@@ -335,6 +334,7 @@ assert.throws(() => {
+ }
+ 
+ 
++/*
+ //
+ // Test DSA signing and verification
+ //
+@@ -409,3 +409,4 @@ const input = 'I AM THE WALRUS';
+ 
+   assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
+ }
++*/
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
