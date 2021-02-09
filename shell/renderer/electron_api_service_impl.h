@@ -20,18 +20,6 @@ namespace electron {
 
 class RendererClientBase;
 
-struct PendingElectronApiServiceMessage {
-  bool internal;
-  std::string channel;
-  blink::CloneableMessage arguments;
-  int32_t sender_id;
-
-  PendingElectronApiServiceMessage() = default;
-  ~PendingElectronApiServiceMessage() = default;
-  PendingElectronApiServiceMessage(PendingElectronApiServiceMessage&&) =
-      default;
-};
-
 class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                                public content::RenderFrameObserver {
  public:
