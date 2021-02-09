@@ -19,7 +19,6 @@
   "parallel/test-crypto-des3-wrap",
   "parallel/test-crypto-dh",
   "parallel/test-crypto-ecb",
-  "parallel/test-crypto-ecdh-convert-key",
   "parallel/test-crypto-engine",
   "parallel/test-crypto-hash-stream-pipe",
   "parallel/test-crypto-key-objects",

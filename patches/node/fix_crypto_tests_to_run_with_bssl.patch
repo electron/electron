@@ -360,6 +360,19 @@ index ce4e2922de806276586796e2b3abdb885fc99840..4a92a134291964003fe50a3a9fec9d3e
    TEST_CASES.DiffieHellman = [256];
  }
  
+diff --git a/test/parallel/test-crypto-ecdh-convert-key.js b/test/parallel/test-crypto-ecdh-convert-key.js
+index 69ee339aa7a653a8f2b4523bf8b28f1b2254c705..93074a42f770fb4d26c609520fa4c72f520c0d1b 100644
+--- a/test/parallel/test-crypto-ecdh-convert-key.js
++++ b/test/parallel/test-crypto-ecdh-convert-key.js
+@@ -117,7 +117,7 @@ if (getCurves().includes('secp256k1')) {
+   // rather than Node's generic error message.
+   const badKey = 'f'.repeat(128);
+   assert.throws(
+-    () => ECDH.convertKey(badKey, 'secp256k1', 'hex', 'hex', 'compressed'),
++    () => ECDH.convertKey(badKey, 'secp521r1', 'hex', 'hex', 'compressed'),
+     /Failed to convert Buffer to EC_POINT/);
+ 
+   // Next statement should not throw an exception.
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
