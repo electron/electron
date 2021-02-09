@@ -109,10 +109,6 @@ void ElectronRendererClient::DidCreateScriptContext(
                        (is_not_opened || reuse_renderer_processes_enabled);
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
-  // If we're loading Node.js into a subframe and we've already initialized
-  // the integration, that means we're here because a new subframe was created,
-  // not because we've reloaded the page. In that case, don't re-prepare the
-  // message loop.
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);

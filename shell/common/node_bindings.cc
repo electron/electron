@@ -531,8 +531,12 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-  // If the backend fd hasn't changed, don't proceed.
+#if !defined(OS_WIN)
   int backend_fd = uv_backend_fd(uv_loop_);
+#else
+  int backend_fd = uv_loop_->iocp;
+#endif
+  // If the backend fd hasn't changed, don't proceed.
   if (backend_fd == backend_fd_)
     return;
 

@@ -159,7 +159,7 @@ class NodeBindings {
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
 
-  int backend_fd_;
+  int backend_fd_ = -1;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 
