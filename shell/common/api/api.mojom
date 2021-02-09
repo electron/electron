@@ -14,8 +14,6 @@ interface ElectronRenderer {
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  NotifyUserActivation();
-
   TakeHeapSnapshot(handle file) => (bool success);
 };
 

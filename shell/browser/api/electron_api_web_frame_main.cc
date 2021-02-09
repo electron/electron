@@ -15,6 +15,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/object_template_builder.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -28,7 +29,6 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace electron {
 
@@ -57,6 +57,9 @@ WebFrameMain::~WebFrameMain() {
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
+  if (render_frame_disposed_)
+    return;
+  Unpin();
   g_render_frame_map.Get().erase(render_frame_);
   render_frame_disposed_ = true;
 }
@@ -176,11 +179,25 @@ void WebFrameMain::Send(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-      &electron_renderer);
-  electron_renderer->Message(internal, channel, std::move(message),
-                             0 /* sender_id */);
+  GetRendererApi()->Message(internal, channel, std::move(message),
+                            0 /* sender_id */);
+}
+
+const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
+  if (!renderer_api_) {
+    pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
+    if (render_frame_->IsRenderFrameCreated()) {
+      render_frame_->GetRemoteInterfaces()->GetInterface(
+          std::move(pending_receiver_));
+    }
+    renderer_api_.set_disconnect_handler(base::BindOnce(
+        &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
+  }
+  return renderer_api_;
+}
+
+void WebFrameMain::OnRendererConnectionError() {
+  renderer_api_.reset();
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
@@ -212,11 +229,8 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-      &electron_renderer);
-  electron_renderer->ReceivePostMessage(channel,
-                                        std::move(transferable_message));
+  GetRendererApi()->ReceivePostMessage(channel,
+                                       std::move(transferable_message));
 }
 
 int WebFrameMain::FrameTreeNodeID() const {
@@ -305,8 +319,14 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
   if (rfh == nullptr)
     return gin::Handle<WebFrameMain>();
   auto* web_frame = FromRenderFrameHost(rfh);
-  auto handle = gin::CreateHandle(
-      isolate, web_frame == nullptr ? new WebFrameMain(rfh) : web_frame);
+  if (web_frame)
+    return gin::CreateHandle(isolate, web_frame);
+
+  auto handle = gin::CreateHandle(isolate, new WebFrameMain(rfh));
+
+  // Prevent garbage collection of frame until it has been deleted internally.
+  handle->Pin(isolate);
+
   return handle;
 }
 
@@ -324,6 +344,19 @@ void WebFrameMain::RenderFrameDeleted(content::RenderFrameHost* rfh) {
   auto* web_frame = FromRenderFrameHost(rfh);
   if (web_frame)
     web_frame->MarkRenderFrameDisposed();
+}
+
+void WebFrameMain::RenderFrameCreated(content::RenderFrameHost* rfh) {
+  auto* web_frame = FromRenderFrameHost(rfh);
+  if (web_frame)
+    web_frame->Connect();
+}
+
+void WebFrameMain::Connect() {
+  if (pending_receiver_) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        std::move(pending_receiver_));
+  }
 }
 
 // static

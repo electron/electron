@@ -231,6 +231,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // of the window during the restore operation, this way chromium can
       // use the proper display to calculate the scale factor to use.
       if (!last_normal_placement_bounds_.IsEmpty() &&
+          (IsVisible() || IsMinimized()) &&
           GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
         wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
 

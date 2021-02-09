@@ -42,7 +42,7 @@ index 758b0b1616ecf86b7dd090adce94395851d9baf2..55f20eb6266368c65fc0ec80d52caa33
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index ac2cb47de75eb3c3a695ff784c651ba3864ee6a0..e238c4e94fe6501bf7f89654d3b3eeef86eafb63 100644
+index e713617a5306c8afc24559b6065aec59a0bc3e5a..80e728d1bac10c18c7799387f6c32339db615cea 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -24,6 +24,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -86,7 +86,7 @@ index ac2cb47de75eb3c3a695ff784c651ba3864ee6a0..e238c4e94fe6501bf7f89654d3b3eeef
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 64444803e75f95ad1a9b526521c5eee90ba5f925..f8b33c329988f269964783fb290721fc5208ae3d 100644
+index 02c341e76e009a20f1d564ff4648ef40dd5cb9f3..4a0fd299c4cced5cfe97b209065311fa2f3f4b70 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -128,7 +128,7 @@ index 64444803e75f95ad1a9b526521c5eee90ba5f925..f8b33c329988f269964783fb290721fc
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index c071879cdc2e8c39f9eb9e95aa9f08d6d560fc58..9b4143fe461b35df5763e89991c00befd12a18d2 100644
+index 0bd751d729ecdbc556686e7d38156ca736bd7a33..a4e6b664cb28f8d7bff2955fd935cd467a64ca3b 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -229,7 +229,7 @@ index c071879cdc2e8c39f9eb9e95aa9f08d6d560fc58..9b4143fe461b35df5763e89991c00bef
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 519b354f7a0e02e8bfeb9c33904f78898fce37c4..483712685b01a75ad26e9f45a08f2ae32b00d10f 100644
+index 1100a97287a02c3a1286513af6a36153ee6f76cb..7e5e12118f0c5c6725fb478a0198a46e500c0157 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";

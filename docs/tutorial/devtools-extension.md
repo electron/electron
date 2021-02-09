@@ -97,7 +97,7 @@ of the extension is not working as expected.
 [devtools-extension]: https://developer.chrome.com/extensions/devtools
 [session]: ../api/session.md
 [react-devtools]: https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi
-[load-extension]: ../api/session.md#sesloadextensionpath
+[load-extension]: ../api/session.md#sesloadextensionpath-options
 [extension-structure]: ../api/structures/extension.md
 [remove-extension]: ../api/session.md#sesremoveextensionextensionid
 [electron-devtools-installer]: https://github.com/MarshallOfSound/electron-devtools-installer
