@@ -467,6 +467,134 @@ index d3011db79d65b4e80d8a546e122e462951acef9f..0a47a2b658d0cd749b149532624aa5e7
  
  {
    // Exporting an encrypted private key requires a cipher
+diff --git a/test/parallel/test-crypto-keygen.js b/test/parallel/test-crypto-keygen.js
+index 5da5715bcbd206864cb77ffc3dc8a7ef3303599b..8ec07d11c754e7acecee669dad93fa41efa7cadc 100644
+--- a/test/parallel/test-crypto-keygen.js
++++ b/test/parallel/test-crypto-keygen.js
+@@ -257,6 +257,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }));
+ }
+ 
++  /*
+ {
+   // Test RSA-PSS.
+   generateKeyPair('rsa-pss', {
+@@ -291,7 +292,9 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, privateKey);
+   }));
+ }
++*/
+ 
++  /*
+ {
+   const privateKeyEncoding = {
+     type: 'pkcs8',
+@@ -340,6 +343,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }));
+ }
++*/
+ 
+ {
+   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
+@@ -364,6 +368,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, privateKey);
+   }));
+ 
++  /*
+   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
+   // private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+@@ -385,6 +390,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ 
+     testSignVerify(publicKey, privateKey);
+   }));
++  */
+ 
+   // Do the same with an encrypted private key.
+   generateKeyPair('ec', {
+@@ -416,6 +422,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
+   }));
+ 
++  /*
+   // Do the same with an encrypted private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+     namedCurve: 'prime256v1',
+@@ -445,6 +452,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ 
+     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
+   }));
++  */
+ }
+ 
+ {
+@@ -482,6 +490,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }));
+ 
++  /*
+   // Test async elliptic curve key generation, e.g. for ECDSA, with an encrypted
+   // private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+@@ -515,6 +524,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+       passphrase: 'top secret'
+     });
+   }));
++  */
+ }
+ 
+ // Test invalid parameter encoding.
+@@ -867,6 +877,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }
+ }
+ 
++  /*
+ // Test DSA parameters.
+ {
+   // Test invalid modulus lengths.
+@@ -898,6 +909,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }
+ }
++*/
+ 
+ // Test EC parameters.
+ {
+@@ -938,7 +950,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }));
+ 
+   generateKeyPair('ec', {
+-    namedCurve: 'secp256k1',
++    namedCurve: 'secp521r1',
+     publicKeyEncoding: { type: 'spki', format: 'pem' },
+     privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+   }, common.mustSucceed((publicKey, privateKey) => {
+@@ -948,7 +960,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ // Test EdDSA key generation.
+ {
+   if (!/^1\.1\.0/.test(process.versions.openssl)) {
+-    ['ed25519', 'ed448', 'x25519', 'x448'].forEach((keyType) => {
++    ['ed25519'/*, 'ed448', 'x25519', 'x448'*/].forEach((keyType) => {
+       generateKeyPair(keyType, common.mustSucceed((publicKey, privateKey) => {
+         assert.strictEqual(publicKey.type, 'public');
+         assert.strictEqual(publicKey.asymmetricKeyType, keyType);
+@@ -960,6 +972,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }
+ }
+ 
++/*
+ // Test classic Diffie-Hellman key generation.
+ {
+   generateKeyPair('dh', {
+@@ -1026,6 +1039,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }
+ }
++*/
+ 
+ // Test invalid key encoding types.
+ {
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
