@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
@@ -40,11 +41,9 @@ struct WebPluginInfo;
 }
 #endif
 
-namespace guest_view {
-class GuestViewContainer;
-}
-
 namespace electron {
+
+class ElectronApiServiceImpl;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
@@ -108,11 +107,6 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
-  guest_view::GuestViewContainer* CreateBrowserPluginDelegate(
-      content::RenderFrame* render_frame,
-      const content::WebPluginInfo& info,
-      const std::string& mime_type,
-      const GURL& original_url);
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,

@@ -125,7 +125,7 @@ index 33a689c23c72b1d18d0fceb595a4a45cf2790454..808eaf45096fbeb5d4bd62448c64078c
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 3fb1c5954b704307724483c5e4c758b4b62e4f9b..f1f75aae285bbffc05e5598f411821a18ca47729 100644
+index b5940319ae17bfaf43daf18feb42722bf3705bdd..d997cfaa6275a570686d0c1703c30f21ca82a926 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -209,6 +209,7 @@
@@ -383,25 +383,26 @@ index 3fb1c5954b704307724483c5e4c758b4b62e4f9b..f1f75aae285bbffc05e5598f411821a1
  
  - (id)accessibilityFocusedUIElement {
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 8f8e91c81897ef9fbd70ea5bdd07171c0f380e31..93bcc87244d41c6b72908ed31f83cdd629f6e69f 100644
+index d67fba3acaa02aaa6f5ee4a5004c378007b353a3..4b8b4e5e07d5e7c591903cf4a67c258cde9ce9e2 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -488,6 +488,7 @@ void PostAnnouncementNotification(NSString* announcement) {
-       [user_info setObject:native_focus_object
-                     forKey:ui::NSAccessibilityTextChangeElement];
- 
+@@ -484,7 +484,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+   if (native_focus_object && [native_focus_object instanceActive]) {
+     [user_info setObject:native_focus_object
+                   forKey:ui::NSAccessibilityTextChangeElement];
+-
 +#ifndef MAS_BUILD
-       id selected_text = [native_focus_object selectedTextMarkerRange];
-       if (selected_text) {
-         NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -495,6 +496,7 @@ void PostAnnouncementNotification(NSString* announcement) {
-         [user_info setObject:selected_text
-                       forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
-       }
-+#endif
+     id selected_text = [native_focus_object selectedTextMarkerRange];
+     if (selected_text) {
+       NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
+@@ -492,6 +492,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+       [user_info setObject:selected_text
+                     forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
      }
++#endif
    }
  
+   return user_info;
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
 index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830ad1c5cb59 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
@@ -473,10 +474,10 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 56864e40431a051dc93ada792a712ca8cf5e9258..c2ee161f02e8cbf901234210671f6dc5d9910908 100644
+index b56737af6f4da7cc01f78430c53dfa5afd1bc6df..60cdaa18e55acfd5817d2689bdb5a0ec8c1318d7 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -42,6 +42,7 @@
+@@ -43,6 +43,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -484,7 +485,7 @@ index 56864e40431a051dc93ada792a712ca8cf5e9258..c2ee161f02e8cbf901234210671f6dc5
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +56,7 @@
+@@ -56,6 +57,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -492,7 +493,7 @@ index 56864e40431a051dc93ada792a712ca8cf5e9258..c2ee161f02e8cbf901234210671f6dc5
  
  namespace {
  
-@@ -123,8 +125,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -124,8 +126,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
        controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -503,7 +504,7 @@ index 56864e40431a051dc93ada792a712ca8cf5e9258..c2ee161f02e8cbf901234210671f6dc5
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -336,8 +340,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -356,8 +360,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -517,7 +518,7 @@ index 56864e40431a051dc93ada792a712ca8cf5e9258..c2ee161f02e8cbf901234210671f6dc5
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 21153d38f978f84fed54d9a904c7a30b9a072d56..0d23e05fe70c5b6f73f39bf3139c7456ba800a51 100644
+index 426d34399bdcb5494bc451fabd5c05fd901dce54..22d20a43f9717443a17056e4c3b561d63b469a0d 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -177,6 +177,12 @@ source_set("audio") {
@@ -547,10 +548,10 @@ index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index b50f468c7666150ed501566d36ebe4e1fd32227f..f992753b2b3d514e836655e0aa81d00a61d8083d 100644
+index 3ab9e10949db76a31fdea78ba02945b7fdf73bf1..67d1808fc77fe4aa685b2a99a3df2fb999a28887 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -232,8 +232,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -242,8 +242,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
  
    bool Watch() override {
      CheckOnCorrectSequence();
@@ -560,7 +561,7 @@ index b50f468c7666150ed501566d36ebe4e1fd32227f..f992753b2b3d514e836655e0aa81d00a
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -251,6 +251,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -261,6 +261,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
        success = false;
      }
  #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)

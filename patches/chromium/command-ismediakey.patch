@@ -45,6 +45,22 @@ index e1c49f5cd9bd249398a14905a6fb41d54238e1ec..ad1c76e77e029d759547f6aded492ae6
  }
  
  }  // namespace
+diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
+index 87e716364fbd154b139cf6818b0113fef9b319e0..7d3e95cad07354ec71ae9643b2af5820e8807c9a 100644
+--- a/content/browser/media/media_keys_listener_manager_impl.cc
++++ b/content/browser/media/media_keys_listener_manager_impl.cc
+@@ -286,6 +286,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+       case ui::VKEY_MEDIA_STOP:
+         system_media_controls_->SetIsStopEnabled(should_enable);
+         break;
++      case ui::VKEY_VOLUME_DOWN:
++      case ui::VKEY_VOLUME_UP:
++      case ui::VKEY_VOLUME_MUTE:
++        // Do nothing.
++        break;
+       default:
+         NOTREACHED();
+     }
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
 --- a/ui/base/accelerators/media_keys_listener.cc
@@ -60,10 +76,10 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 6052fd13ff3d63cf8a4b019b058efb61aad39c3b..42eac7a7b656096c1d2039e340037ac8a70678c9 100644
+index 60f7ad6ffb28fa6554e02a7e031408f4d1124d86..0e8325e993178443d926249c427957bb16991861 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -33,6 +33,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -76,7 +92,7 @@ index 6052fd13ff3d63cf8a4b019b058efb61aad39c3b..42eac7a7b656096c1d2039e340037ac8
    }
    return VKEY_UNKNOWN;
  }
-@@ -193,7 +199,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -191,7 +197,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
@@ -88,31 +104,3 @@ index 6052fd13ff3d63cf8a4b019b058efb61aad39c3b..42eac7a7b656096c1d2039e340037ac8
      return event;
    }
  
-diff --git a/ui/base/accelerators/system_media_controls_media_keys_listener.cc b/ui/base/accelerators/system_media_controls_media_keys_listener.cc
-index 9d6084ceaccfd071549e63e3015f55ef292312ec..846210b04d6e2e193413c643296938ec550f6d25 100644
---- a/ui/base/accelerators/system_media_controls_media_keys_listener.cc
-+++ b/ui/base/accelerators/system_media_controls_media_keys_listener.cc
-@@ -65,6 +65,11 @@ bool SystemMediaControlsMediaKeysListener::StartWatchingMediaKey(
-     case VKEY_MEDIA_STOP:
-       service_->SetIsStopEnabled(true);
-       break;
-+    case VKEY_VOLUME_DOWN:
-+    case VKEY_VOLUME_UP:
-+    case VKEY_VOLUME_MUTE:
-+      // Do nothing.
-+      break;
-     default:
-       NOTREACHED();
-   }
-@@ -97,6 +102,11 @@ void SystemMediaControlsMediaKeysListener::StopWatchingMediaKey(
-     case VKEY_MEDIA_STOP:
-       service_->SetIsStopEnabled(false);
-       break;
-+    case VKEY_VOLUME_DOWN:
-+    case VKEY_VOLUME_UP:
-+    case VKEY_VOLUME_MUTE:
-+      // Do nothing.
-+      break;
-     default:
-       NOTREACHED();
-   }
