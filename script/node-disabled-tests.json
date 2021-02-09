@@ -14,7 +14,6 @@
   "parallel/test-child-process-fork-exec-path",
   "parallel/test-cli-node-print-help",
   "parallel/test-code-cache",
-  "parallel/test-crypto",
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-authenticated",
   "parallel/test-crypto-binary-default",

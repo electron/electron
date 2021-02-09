@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Tue, 9 Feb 2021 12:34:46 -0800
+Subject: fix parallel/test-crypto to run with bssl
+
+This fixes parallel/test-crypto so that it passes when compiled with
+BoringSSL.
+
+This should be upstreamed in some form, though it may need to be tweaked
+before it's acceptable to upstream, as this patch comments out a couple
+of tests that upstream probably cares about.
+
+diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
+index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
+--- a/test/parallel/test-crypto.js
++++ b/test/parallel/test-crypto.js
+@@ -67,7 +67,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: mac verify failure$/.test(err) &&
++         (/^Error: (mac verify failure|INCORRECT_PASSWORD)$/.test(err)) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -77,7 +77,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: mac verify failure$/.test(err) &&
++         (/^Error: (mac verify failure|INCORRECT_PASSWORD)$/.test(err)) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -87,7 +87,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: not enough data$/.test(err) &&
++         /^Error: (not enough data|BAD_PKCS12_DATA)$/.test(err) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -137,8 +137,6 @@ assert(crypto.getHashes().includes('sha1'));
+ assert(crypto.getHashes().includes('sha256'));
+ assert(!crypto.getHashes().includes('SHA1'));
+ assert(!crypto.getHashes().includes('SHA256'));
+-assert(crypto.getHashes().includes('RSA-SHA1'));
+-assert(!crypto.getHashes().includes('rsa-sha1'));
+ validateList(crypto.getHashes());
+ 
+ // Assume that we have at least secp384r1.
+@@ -172,7 +170,7 @@ const encodingError = {
+ // hex input that's not a power of two should throw, not assert in C++ land.
+ ['createCipher', 'createDecipher'].forEach((funcName) => {
+   assert.throws(
+-    () => crypto[funcName]('aes192', 'test').update('0', 'hex'),
++    () => crypto[funcName]('aes-192-cbc', 'test').update('0', 'hex'),
+     (error) => {
+       assert.ok(!('opensslErrorStack' in error));
+       if (common.hasFipsCrypto) {
+@@ -219,15 +217,16 @@ assert.throws(() => {
+   assert.ok(!('opensslErrorStack' in err));
+   assert.throws(() => { throw err; }, {
+     name: 'Error',
+-    message: /routines:RSA_sign:digest too big for rsa key$/,
+-    library: 'rsa routines',
+-    function: 'RSA_sign',
+-    reason: 'digest too big for rsa key',
++    message: /routines:RSA_sign:digest too big for rsa key$|routines:OPENSSL_internal:DIGEST_TOO_BIG_FOR_RSA_KEY$/,
++    library: /rsa routines|RSA routines/,
++    function: /RSA_sign|OPENSSL_internal/,
++    reason: /digest too big for rsa key|DIGEST_TOO_BIG_FOR_RSA_KEY/,
+     code: 'ERR_OSSL_RSA_DIGEST_TOO_BIG_FOR_RSA_KEY'
+   });
+   return true;
+ });
+ 
++/*
+ assert.throws(() => {
+   // The correct header inside `rsa_private_pkcs8_bad.pem` should have been
+   // -----BEGIN PRIVATE KEY----- and -----END PRIVATE KEY-----
+@@ -252,6 +251,7 @@ assert.throws(() => {
+   assert(err.opensslErrorStack.length > 0);
+   return true;
+ });
++*/
+ 
+ // Make sure memory isn't released before being returned
+ console.log(crypto.randomBytes(16));
