@@ -15,7 +15,6 @@
   "parallel/test-cli-node-print-help",
   "parallel/test-code-cache",
   "parallel/test-crypto-aes-wrap",
-  "parallel/test-crypto-binary-default",
   "parallel/test-crypto-certificate",
   "parallel/test-crypto-cipher-decipher",
   "parallel/test-crypto-cipheriv-decipheriv",

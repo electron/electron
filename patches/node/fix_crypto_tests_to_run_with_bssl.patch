@@ -135,6 +135,92 @@ index 863907bafd81920c40bccaf89299a2bcdb1be79e..c6f1c146586d0af096def5d6ee734373
    // Valid extracted from TEST_CASES, check that it detects IV tampering.
    const valid = {
      algo: 'chacha20-poly1305',
+diff --git a/test/parallel/test-crypto-binary-default.js b/test/parallel/test-crypto-binary-default.js
+index a2fb2e82670567f3867936a6f0999a80acf4061e..6e789dda0a755293d0871a6353a39ba0f58a70b8 100644
+--- a/test/parallel/test-crypto-binary-default.js
++++ b/test/parallel/test-crypto-binary-default.js
+@@ -51,15 +51,15 @@ tls.createSecureContext({ pfx: certPfx, passphrase: 'sample' });
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: certPfx });
+-}, /^Error: mac verify failure$/);
++}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: certPfx, passphrase: 'test' });
+-}, /^Error: mac verify failure$/);
++}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: 'sample', passphrase: 'test' });
+-}, /^Error: not enough data$/);
++}, /^Error: (not enough data|BAD_PKCS12_DATA)$/);
+ 
+ // Test HMAC
+ {
+@@ -462,7 +462,7 @@ assert.throws(function() {
+ function testCipher1(key) {
+   // Test encryption and decryption
+   const plaintext = 'Keep this a secret? No! Tell everyone about node.js!';
+-  const cipher = crypto.createCipher('aes192', key);
++  const cipher = crypto.createCipher('aes-192-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format
+   // to a ciphertext which will be in hex
+@@ -470,7 +470,7 @@ function testCipher1(key) {
+   // Only use binary or hex, not base64.
+   ciph += cipher.final('hex');
+ 
+-  const decipher = crypto.createDecipher('aes192', key);
++  const decipher = crypto.createDecipher('aes-192-cbc', key);
+   let txt = decipher.update(ciph, 'hex', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -485,14 +485,14 @@ function testCipher2(key) {
+       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
+       'eCBsThSsfUHLeRe0KCsK8ooHgxie0zOINpXxfZi/oNG7uq9JWFVCk70gfzQH8ZUJ' +
+       'jAfaFg**';
+-  const cipher = crypto.createCipher('aes256', key);
++  const cipher = crypto.createCipher('aes-256-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format
+   // to a ciphertext which will be in Base64
+   let ciph = cipher.update(plaintext, 'utf8', 'base64');
+   ciph += cipher.final('base64');
+ 
+-  const decipher = crypto.createDecipher('aes256', key);
++  const decipher = crypto.createDecipher('aes-256-cbc', key);
+   let txt = decipher.update(ciph, 'base64', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -537,6 +537,10 @@ function testCipher4(key, iv) {
+ 
+ 
+ function testCipher5(key, iv) {
++  if (!crypto.getCiphers().includes('id-aes128-wrap')) {
++    common.printSkipMessage(`unsupported id-aes128-wrap test`);
++    return;
++  }
+   // Test encryption and decryption with explicit key with aes128-wrap
+   const plaintext =
+       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
+@@ -661,6 +665,8 @@ assert.throws(
+ }
+ 
+ 
++/* NB: BoringSSL does not support using DSA through the EVP API.
++ * https://boringssl.googlesource.com/boringssl/+/a2278d4d2cabe73f6663e3299ea7808edfa306b9/PORTING.md#dsa-s
+ //
+ // Test DSA signing and verification
+ //
+@@ -681,6 +687,7 @@ assert.throws(
+ 
+   assert.strictEqual(verify.verify(publicKey, signature, 'hex'), true);
+ }
++*/
+ 
+ 
+ //
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
