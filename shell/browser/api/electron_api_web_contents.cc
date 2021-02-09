@@ -1977,14 +1977,14 @@ void WebContents::LoadURL(const GURL& url,
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 
-  // Required to make beforeunload handler work.
-  NotifyUserActivation();
-
   // ⚠️WARNING!⚠️
   // LoadURLWithParams() triggers JS events which can call destroy() on |this|.
   // It's not safe to assume that |this| points to valid memory at this point.
   if (!weak_this)
     return;
+
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 
   // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
