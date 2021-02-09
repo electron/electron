@@ -330,6 +330,21 @@ index 4bb765d9ca408b656937bc6ee59d58a0f3518a39..50e108b6a43bdb2a6bf7e097d8163545
    txt = decipher.update(ciph, 'base64', 'utf-16le');
    txt += decipher.final('utf-16le');
    assert.strictEqual(txt, plaintext);
+diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
+index 07591fdfffd0722bd649e94911e67868a24b59ed..5c04fc9d527ccbafd17ec1b492f6bab7c754d0ba 100644
+--- a/test/parallel/test-crypto-cipheriv-decipheriv.js
++++ b/test/parallel/test-crypto-cipheriv-decipheriv.js
+@@ -60,6 +60,10 @@ function testCipher2(key, iv) {
+ 
+ 
+ function testCipher3(key, iv) {
++  if (!crypto.getCiphers().includes('id-aes128-wrap')) {
++    common.printSkipMessage(`unsupported id-aes128-wrap test`);
++    return;
++  }
+   // Test encryption and decryption with explicit key and iv.
+   // AES Key Wrap test vector comes from RFC3394
+   const plaintext = Buffer.from('00112233445566778899AABBCCDDEEFF', 'hex');
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
