@@ -20,7 +20,6 @@
   "parallel/test-crypto-dh",
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
-  "parallel/test-crypto-sign-verify",
   "parallel/test-crypto-stream",
   "parallel/test-debug-usage",
   "parallel/test-debugger-pid",

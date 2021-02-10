@@ -708,6 +708,65 @@ index 6c19dee23291bb1e0c1058a4b898b0a7af33f712..b7adf1d0cfba807ff8b40abb2904d234
      name: 'Error',
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
+diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
+index ff410dcf00fa6a8d27733422161fe7a99d0b296b..55251f9647816bd66a196654d5d5ad27b31de6c7 100644
+--- a/test/parallel/test-crypto-sign-verify.js
++++ b/test/parallel/test-crypto-sign-verify.js
+@@ -29,6 +29,7 @@ const keySize = 2048;
+                                      'instance when called without `new`');
+ }
+ 
++/*
+ // Test handling of exceptional conditions
+ {
+   const library = {
+@@ -67,6 +68,7 @@ const keySize = 2048;
+ 
+   delete Object.prototype.opensslErrorStack;
+ }
++*/
+ 
+ assert.throws(
+   () => crypto.createVerify('SHA256').verify({
+@@ -340,12 +342,14 @@ assert.throws(
+         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+       });
+   }, {
+-    code: 'ERR_OSSL_RSA_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE',
+-    message: /illegal or unsupported padding mode/,
++    code: /^ERR_OSSL_(RSA|EVP)_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE$/,
++    message: /illegal or unsupported padding mode|ILLEGAL_OR_UNSUPPORTED_PADDING_MODE/,
++    /*
+     opensslErrorStack: [
+       'error:06089093:digital envelope routines:EVP_PKEY_CTX_ctrl:' +
+       'command not supported',
+     ],
++    */
+   });
+ }
+ 
+@@ -429,10 +433,12 @@ assert.throws(
+     public: fixtures.readKey('ed25519_public.pem', 'ascii'),
+     algo: null,
+     sigLen: 64 },
++  /*
+   { private: fixtures.readKey('ed448_private.pem', 'ascii'),
+     public: fixtures.readKey('ed448_public.pem', 'ascii'),
+     algo: null,
+     sigLen: 114 },
++    */
+   { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
+     public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
+     algo: 'sha1',
+@@ -516,7 +522,7 @@ assert.throws(
+ 
+ {
+   const data = Buffer.from('Hello world');
+-  const keys = [['ec-key.pem', 64], ['dsa_private_1025.pem', 40]];
++  const keys = [['ec-key.pem', 64]/*, ['dsa_private_1025.pem', 40]*/];
+ 
+   for (const [file, length] of keys) {
+     const privKey = fixtures.readKey(file);
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
