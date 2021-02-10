@@ -1106,6 +1106,22 @@ void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
   remove_browser_view(view);
 }
 
+void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
+  if (!content_view())
+    return;
+
+  if (!view) {
+    return;
+  }
+
+  remove_browser_view(view);
+  add_browser_view(view);
+
+  if (view->GetInspectableWebContentsView())
+    content_view()->ReorderChildView(
+        view->GetInspectableWebContentsView()->GetView(), -1);
+}
+
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
