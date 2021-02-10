@@ -19,7 +19,7 @@ Co-authored-by: Marcello Bastéa-Forte <marcello@descript.com>
 Electron patch prepared by: Pat DeSantis <pdesantis3@gmail.com>
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index b021aaeba87d0b466341f40a016ef69e8beb7543..b4e44b049f5da2eccb051a6ec0403f5a401636d3 100644
+index bb6b76c9fa7005844ba7f35b5292e0fe2b6a883e..283239fda4b7ac3aa678b6b440ac7b0a729475a2 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -26,6 +26,7 @@
@@ -59,7 +59,7 @@ index b021aaeba87d0b466341f40a016ef69e8beb7543..b4e44b049f5da2eccb051a6ec0403f5a
  static void uv__chld(uv_signal_t* handle, int signum) {
    uv_process_t* process;
    uv_loop_t* loop;
-@@ -364,9 +376,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -372,9 +384,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
      _exit(127);
    }
  
@@ -70,7 +70,7 @@ index b021aaeba87d0b466341f40a016ef69e8beb7543..b4e44b049f5da2eccb051a6ec0403f5a
  
    /* Reset signal disposition.  Use a hard-coded limit because NSIG
     * is not fixed on Linux: it's either 32, 34 or 64, depending on
-@@ -405,6 +416,476 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -413,6 +424,476 @@ static void uv__process_child_init(const uv_process_options_t* options,
  #endif
  
  
@@ -547,7 +547,7 @@ index b021aaeba87d0b466341f40a016ef69e8beb7543..b4e44b049f5da2eccb051a6ec0403f5a
  int uv_spawn(uv_loop_t* loop,
               uv_process_t* process,
               const uv_process_options_t* options) {
-@@ -486,21 +967,16 @@ int uv_spawn(uv_loop_t* loop,
+@@ -494,21 +975,16 @@ int uv_spawn(uv_loop_t* loop,
  
    /* Acquire write lock to prevent opening new fds in worker threads */
    uv_rwlock_wrlock(&loop->cloexec_lock);
