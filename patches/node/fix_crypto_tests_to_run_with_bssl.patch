@@ -682,6 +682,32 @@ index 9b8c3f67a242f2be4716918fbbce482a9befe22d..ce14d333fdf163bdb17b0a9a69571ee6
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
 +*/
+diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
+index 6c19dee23291bb1e0c1058a4b898b0a7af33f712..b7adf1d0cfba807ff8b40abb2904d234647948fa 100644
+--- a/test/parallel/test-crypto-scrypt.js
++++ b/test/parallel/test-crypto-scrypt.js
+@@ -156,9 +156,7 @@ for (const options of good) {
+ 
+ for (const options of bad) {
+   const expected = {
+-    code: 'ERR_CRYPTO_SCRYPT_INVALID_PARAMETER',
+-    message: 'Invalid scrypt parameter',
+-    name: 'Error',
++    message: /error:06000085:public key routines:OPENSSL_internal:INVALID_PARAMETERS|Invalid scrypt parameter/,
+   };
+   assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
+                 expected);
+@@ -168,8 +166,8 @@ for (const options of bad) {
+ 
+ for (const options of toobig) {
+   const expected = {
+-    message: new RegExp('error:[^:]+:digital envelope routines:' +
+-                        '(?:EVP_PBE_scrypt|scrypt_alg):memory limit exceeded'),
++    message: new RegExp('error:[^:]+:(?:digital envelope routines|public key routines):' +
++                        '(?:EVP_PBE_scrypt|scrypt_alg|OPENSSL_internal):(?:memory limit exceeded|INVALID_PARAMETERS|MEMORY_LIMIT_EXCEEDED)'),
+     name: 'Error',
+   };
+   assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
