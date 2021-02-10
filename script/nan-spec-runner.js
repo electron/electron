@@ -35,7 +35,16 @@ async function main () {
   if (process.platform === 'darwin') {
     clangArgs.push('-isysroot', getSDKRoot());
   }
-  clangArgs.push('-std=c++14', '-stdlib=libstdc++');
+
+  const libcxxPrefix = path.resolve(BASE, 'third_party/llvm-build/Release+Asserts/include/c++/v1');
+  clangArgs.push(
+    '-std=c++14',
+    '-stdlib=libc++',
+    '-nostdinc++',
+    `-I${libcxxPrefix}/include/c++/v1`,
+    `-L${libcxxPrefix}/lib`,
+    `-Wl,-rpath,${libcxxPrefix}/lib`
+  );
 
   if (process.platform !== 'win32') {
     env.CC = `"${path.resolve(__dirname, '..', '../third_party/llvm-build/Release+Asserts/bin/clang')}" ${clangArgs.join(' ')}`;
