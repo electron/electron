@@ -11,10 +11,10 @@ implicitly deletes its copy ctor, so this commit makes it explicit.
 Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 33e06f4495979eab3fa1e0ac7af3e0b306254446..08e63751fcd2fe590299b0708b19e9c741bd3e40 100644
+index 8860ea8a78de67ab9e9ac453ec1774c8c6b17b8a..1ae9c485bbf083449d7e812696975ffef5e37573 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
-@@ -25,8 +25,13 @@ namespace internal {
+@@ -26,8 +26,13 @@ namespace internal {
  class CppHeap;
  }  // namespace internal
  
@@ -30,14 +30,13 @@ index 33e06f4495979eab3fa1e0ac7af3e0b306254446..08e63751fcd2fe590299b0708b19e9c7
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index f98795e3e211875a0930f3ffec8405af9c8bc535..afa10ecb6b19e97ff7dc4848610611294cd26588 100644
+index 5e1642841930ec1f3e55bd3ab33a61c66f631f9d..75219992ad486a2301a9039dade49c299cdeadf5 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -93,7 +93,7 @@ class Utils;
+@@ -93,6 +93,7 @@ class Utils;
  class Value;
  class WasmMemoryObject;
  class WasmModuleObject;
--struct CppHeapCreateParams;
 +class CppHeapCreateParams;
  template <class K, class V, class T>
  class GlobalValueMap;
