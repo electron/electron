@@ -39,7 +39,6 @@ const char* const kYesLabel = GTK_STOCK_YES;
 G_GNUC_END_IGNORE_DEPRECATIONS
 #endif
 
-
 GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   if (bitmap.isNull())
     return nullptr;
