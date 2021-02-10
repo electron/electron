@@ -767,6 +767,25 @@ index ff410dcf00fa6a8d27733422161fe7a99d0b296b..55251f9647816bd66a196654d5d5ad27
  
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
+diff --git a/test/parallel/test-crypto-stream.js b/test/parallel/test-crypto-stream.js
+index 2d005c89db3f09657469a73dca2d28eecae756e2..e2da39f3f87c557db43aa33cf3505e14dd3cc57c 100644
+--- a/test/parallel/test-crypto-stream.js
++++ b/test/parallel/test-crypto-stream.js
+@@ -72,10 +72,10 @@ const decipher = crypto.createDecipheriv('aes-128-cbc', badkey, iv);
+ 
+ cipher.pipe(decipher)
+   .on('error', common.expectsError({
+-    message: /bad decrypt/,
+-    function: 'EVP_DecryptFinal_ex',
+-    library: 'digital envelope routines',
+-    reason: 'bad decrypt',
++    message: /bad decrypt|BAD_DECRYPT/,
++    function: /EVP_DecryptFinal_ex|OPENSSL_internal/,
++    library: /digital envelope routines|Cipher functions/,
++    reason: /bad decrypt|BAD_DECRYPT/,
+   }));
+ 
+ cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 6b72dbd21cd07dcd0c6fc01d36195b33aeb295a2..1729094574d1ee0321ad0118e3cf97d30cc598b6 100644
 --- a/test/parallel/test-crypto.js
