@@ -504,7 +504,7 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
   std::string root_name(kRootName);
   storage::IsolatedContext::ScopedFSHandle file_system =
       isolated_context->RegisterFileSystemForPath(
-          storage::kFileSystemTypeNativeLocal, std::string(), path, &root_name);
+          storage::kFileSystemTypeLocal, std::string(), path, &root_name);
 
   content::ChildProcessSecurityPolicy* policy =
       content::ChildProcessSecurityPolicy::GetInstance();
