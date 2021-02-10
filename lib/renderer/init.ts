@@ -44,6 +44,10 @@ const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').defa
 
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: any[], args: any[], senderId: number) {
+    if (internal && senderId !== 0) {
+      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
+      return;
+    }
     const sender = internal ? ipcRendererInternal : ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
