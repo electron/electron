@@ -394,6 +394,26 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
+diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
+index f3f4df928c4bc49621a93a548927af67571ee766..b6189bcb96b65a25fa5272bb7d94c8588d6338da 100644
+--- a/test/parallel/test-crypto-hash.js
++++ b/test/parallel/test-crypto-hash.js
+@@ -184,6 +184,7 @@ assert.throws(
+ 
+ // Test XOF hash functions and the outputLength option.
+ {
++  /*
+   // Default outputLengths.
+   assert.strictEqual(crypto.createHash('shake128').digest('hex'),
+                      '7f9c2ba4e88f827d616045507605853e');
+@@ -238,6 +239,7 @@ assert.throws(
+   assert.strictEqual(superLongHash.length, 2 * 1024 * 1024);
+   assert.ok(superLongHash.endsWith('193414035ddba77bf7bba97981e656ec'));
+   assert.ok(superLongHash.startsWith('a2a28dbc49cfd6e5d6ceea3d03e77748'));
++  */
+ 
+   // Non-XOF hash functions should accept valid outputLength options as well.
+   assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
 diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
 index d3011db79d65b4e80d8a546e122e462951acef9f..0a47a2b658d0cd749b149532624aa5e75f28a0e4 100644
 --- a/test/parallel/test-crypto-key-objects.js
