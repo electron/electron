@@ -667,6 +667,19 @@ index 909c014bd0f87a401096c1a55a3a362dc042cdd1..8496eb353b2a384db3f8ee1c0d010433
  });
  
  // No-pad encrypted string should return the same:
+diff --git a/test/parallel/test-crypto-private-decrypt-gh32240.js b/test/parallel/test-crypto-private-decrypt-gh32240.js
+index 4b48774145a3f81367d30f1e2d20f3d98bb31d75..5d192d60447a2600861c6ecac9a46aca21821295 100644
+--- a/test/parallel/test-crypto-private-decrypt-gh32240.js
++++ b/test/parallel/test-crypto-private-decrypt-gh32240.js
+@@ -24,7 +24,7 @@ const pkeyEncrypted =
+   pair.privateKey.export({
+     type: 'pkcs1',
+     format: 'pem',
+-    cipher: 'aes128',
++    cipher: 'aes-128-cbc',
+     passphrase: 'secret',
+   });
+ 
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index 9b8c3f67a242f2be4716918fbbce482a9befe22d..ce14d333fdf163bdb17b0a9a69571ee63ede3846 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
