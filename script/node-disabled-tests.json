@@ -17,7 +17,6 @@
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-certificate",
   "parallel/test-crypto-des3-wrap",
-  "parallel/test-crypto-dh",
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
   "parallel/test-debug-usage",

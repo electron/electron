@@ -10,6 +10,61 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/src/node_crypto.cc b/src/node_crypto.cc
+index 6076a6d391e032bb6b561acac2cdceefd2386048..be64bf3de4b26e93de7796bcc7d69d197d3749a6 100644
+--- a/src/node_crypto.cc
++++ b/src/node_crypto.cc
+@@ -5203,16 +5203,14 @@ bool DiffieHellman::Init(int primeLength, int g) {
+ 
+ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+   dh_.reset(DH_new());
+-#if 0
+   if (p_len <= 0) {
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
+     return false;
+   }
+   if (g <= 1) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+-#endif
+   BIGNUM* bn_p =
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(p), p_len, nullptr);
+   BIGNUM* bn_g = BN_new();
+@@ -5228,20 +5226,19 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+ 
+ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
+   dh_.reset(DH_new());
+-#if 0
+   if (p_len <= 0) {
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
+     return false;
+   }
+   if (g_len <= 0) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_g =
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr);
+   if (BN_is_zero(bn_g) || BN_is_one(bn_g)) {
+     BN_free(bn_g);
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_p =
+@@ -5251,7 +5248,6 @@ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
+     BN_free(bn_g);
+     return false;
+   }
+-#endif
+   return VerifyContext();
+ }
+ 
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
 index 863907bafd81920c40bccaf89299a2bcdb1be79e..c6f1c146586d0af096def5d6ee73437323017438 100644
 --- a/test/parallel/test-crypto-authenticated.js
@@ -360,6 +415,53 @@ index ce4e2922de806276586796e2b3abdb885fc99840..4a92a134291964003fe50a3a9fec9d3e
    TEST_CASES.DiffieHellman = [256];
  }
  
+diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
+index f51ffba042421a62aba455ec8aa786a444aed3fc..4a1338f1dab9832dcd9f98e1b82ec527d5813d44 100644
+--- a/test/parallel/test-crypto-dh.js
++++ b/test/parallel/test-crypto-dh.js
+@@ -41,7 +41,7 @@ for (const bits of [-1, 0, 1]) {
+   assert.throws(() => crypto.createDiffieHellman(bits), {
+     code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
+     name: 'Error',
+-    message: /bits too small/,
++    message: /bits too small|BITS_TOO_SMALL/,
+   });
+ }
+ 
+@@ -56,7 +56,7 @@ for (const g of [-1, 1]) {
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+@@ -70,7 +70,7 @@ for (const g of [Buffer.from([]),
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+@@ -147,11 +147,10 @@ const secret4 = dh4.computeSecret(key2, 'hex', 'base64');
+ assert.strictEqual(secret1, secret4);
+ 
+ const wrongBlockLength = {
+-  message: 'error:0606506D:digital envelope' +
+-    ' routines:EVP_DecryptFinal_ex:wrong final block length',
+-  code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
+-  library: 'digital envelope routines',
+-  reason: 'wrong final block length'
++  message: /error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++  code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
++  library: /digital envelope routines|Cipher functions/,
++  reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
+ };
+ 
+ // Run this one twice to make sure that the dh3 clears its error properly
 diff --git a/test/parallel/test-crypto-ecdh-convert-key.js b/test/parallel/test-crypto-ecdh-convert-key.js
 index 69ee339aa7a653a8f2b4523bf8b28f1b2254c705..93074a42f770fb4d26c609520fa4c72f520c0d1b 100644
 --- a/test/parallel/test-crypto-ecdh-convert-key.js
