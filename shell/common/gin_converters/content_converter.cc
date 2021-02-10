@@ -25,21 +25,20 @@ namespace {
 
 void ExecuteCommand(content::WebContents* web_contents,
                     int action,
-                    const blink::CustomContextMenuContext& context) {
-  web_contents->ExecuteCustomContextMenuCommand(action, context);
+                    const GURL& link_followed) {
+  web_contents->ExecuteCustomContextMenuCommand(action, link_followed);
 }
 
 // Forward declaration for nested recursive call.
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
-                              const blink::CustomContextMenuContext& context,
+                              const GURL& link_followed,
                               const std::vector<blink::MenuItem>& menu);
 
-v8::Local<v8::Value> MenuItemToV8(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents,
-    const blink::CustomContextMenuContext& context,
-    const blink::MenuItem& item) {
+v8::Local<v8::Value> MenuItemToV8(v8::Isolate* isolate,
+                                  content::WebContents* web_contents,
+                                  const GURL& link_followed,
+                                  const blink::MenuItem& item) {
   gin_helper::Dictionary v8_item = gin::Dictionary::CreateEmpty(isolate);
   switch (item.type) {
     case blink::MenuItem::CHECKABLE_OPTION:
@@ -56,21 +55,22 @@ v8::Local<v8::Value> MenuItemToV8(
   }
   if (item.type == blink::MenuItem::SUBMENU)
     v8_item.Set("submenu",
-                MenuToV8(isolate, web_contents, context, item.submenu));
+                MenuToV8(isolate, web_contents, link_followed, item.submenu));
   else if (item.action > 0)
     v8_item.Set("click", base::BindRepeating(ExecuteCommand, web_contents,
-                                             item.action, context));
+                                             item.action, link_followed));
   return v8_item.GetHandle();
 }
 
 v8::Local<v8::Value> MenuToV8(v8::Isolate* isolate,
                               content::WebContents* web_contents,
-                              const blink::CustomContextMenuContext& context,
+                              const GURL& link_followed,
                               const std::vector<blink::MenuItem>& menu) {
   std::vector<v8::Local<v8::Value>> v8_menu;
   v8_menu.reserve(menu.size());
   for (const auto& menu_item : menu)
-    v8_menu.push_back(MenuItemToV8(isolate, web_contents, context, menu_item));
+    v8_menu.push_back(
+        MenuItemToV8(isolate, web_contents, link_followed, menu_item));
   return gin::ConvertToV8(isolate, v8_menu);
 }
 
@@ -166,9 +166,6 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
   dict.Set("inputFieldType", params.input_field_type);
   dict.Set("menuSourceType", params.source_type);
 
-  if (params.custom_context.is_pepper_menu)
-    dict.Set("menu", MenuToV8(isolate, val.second, params.custom_context,
-                              params.custom_items));
   return gin::ConvertToV8(isolate, dict);
 }
 
