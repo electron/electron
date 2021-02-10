@@ -24,9 +24,6 @@ void ElectronExtensionHostDelegate::OnExtensionHostCreated(
   ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
 }
 
-void ElectronExtensionHostDelegate::OnRenderViewCreatedForBackgroundPage(
-    ExtensionHost* host) {}
-
 content::JavaScriptDialogManager*
 ElectronExtensionHostDelegate::GetJavaScriptDialogManager() {
   // TODO(jamescook): Create a JavaScriptDialogManager or reuse the one from

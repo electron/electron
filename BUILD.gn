@@ -402,7 +402,10 @@ source_set("electron_lib") {
   }
 
   if (!is_mas_build) {
-    deps += [ "//components/crash/core/app" ]
+    deps += [
+      "//components/crash/core/app",
+      "//components/crash/core/browser",
+    ]
   }
 
   sources = filenames.lib_sources
