@@ -784,6 +784,25 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   }
 }
 
+void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
+                                   gin_helper::Arguments* args) {
+  gin::Handle<BrowserView> browser_view;
+  if (value->IsObject() &&
+      gin::ConvertFromV8(isolate(), value, &browser_view)) {
+    if (!browser_view->web_contents())
+      return;
+    auto* owner_window = browser_view->web_contents()->owner_window();
+    auto get_that_view = browser_views_.find(browser_view->ID());
+    if (get_that_view == browser_views_.end() ||
+        (owner_window && owner_window != window_.get())) {
+      args->ThrowError("Given BrowserView is not attached to the window");
+      return;
+    }
+
+    window_->SetTopBrowserView(browser_view->view());
+  }
+}
+
 std::string TopLevelWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
@@ -1203,6 +1222,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeMenu", &TopLevelWindow::RemoveMenu)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
+      .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
       .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
