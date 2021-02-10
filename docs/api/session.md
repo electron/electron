@@ -492,6 +492,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `permission` String - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `geolocation` - Request access to user's current location.
     * `notifications` - Request notification creation and the ability to display them in the user's system tray.
