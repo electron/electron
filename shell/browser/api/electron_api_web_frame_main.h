@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -51,10 +52,13 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // Called to mark any RenderFrameHost as disposed by any WebFrameMain that
   // may be holding a weak reference.
   static void RenderFrameDeleted(content::RenderFrameHost* rfh);
+  static void RenderFrameCreated(content::RenderFrameHost* rfh);
 
   // Mark RenderFrameHost as disposed and to no longer access it. This can
   // occur upon frame navigation.
   void MarkRenderFrameDisposed();
+
+  const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -71,6 +75,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
+  void Connect();
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const base::string16& code);
@@ -100,11 +105,18 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  void OnRendererConnectionError();
+
+  mojo::Remote<mojom::ElectronRenderer> renderer_api_;
+  mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+
   content::RenderFrameHost* render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.
   bool render_frame_disposed_ = false;
+
+  base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };

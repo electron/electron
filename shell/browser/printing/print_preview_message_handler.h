@@ -11,15 +11,11 @@
 #include "base/memory/weak_ptr.h"
 #include "components/printing/common/print.mojom.h"
 #include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/promise.h"
 #include "v8/include/v8.h"
-
-struct PrintHostMsg_DidPreviewDocument_Params;
-struct PrintHostMsg_DidPreviewPage_Params;
 
 namespace content {
 class RenderFrameHost;
@@ -29,8 +25,7 @@ namespace electron {
 
 // Manages the print preview handling for a WebContents.
 class PrintPreviewMessageHandler
-    : public content::WebContentsObserver,
-      public printing::mojom::PrintPreviewUI,
+    : public printing::mojom::PrintPreviewUI,
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
   ~PrintPreviewMessageHandler() override;
@@ -38,38 +33,23 @@ class PrintPreviewMessageHandler
   void PrintToPDF(base::DictionaryValue options,
                   gin_helper::Promise<v8::Local<v8::Value>> promise);
 
- protected:
-  // content::WebContentsObserver implementation.
-  bool OnMessageReceived(const IPC::Message& message,
-                         content::RenderFrameHost* render_frame_host) override;
-
  private:
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
 
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
 
-  void OnMetafileReadyForPrinting(
-      content::RenderFrameHost* render_frame_host,
-      const printing::mojom::DidPreviewDocumentParams& params,
-      const printing::mojom::PreviewIds& ids);
   void OnCompositeDocumentToPdfDone(
-      const printing::mojom::PreviewIds& ids,
+      int32_t request_id,
       printing::mojom::PrintCompositor::Status status,
       base::ReadOnlySharedMemoryRegion region);
   void OnPrepareForDocumentToPdfDone(
-      const printing::mojom::PreviewIds& ids,
+      int32_t request_id,
       printing::mojom::PrintCompositor::Status status);
-  void OnDidPrepareForDocumentToPdf(content::RenderFrameHost* render_frame_host,
-                                    int document_cookie,
-                                    const printing::mojom::PreviewIds& ids);
   void OnCompositePdfPageDone(int page_number,
                               int document_cookie,
-                              const printing::mojom::PreviewIds& ids,
+                              int32_t request_id,
                               printing::mojom::PrintCompositor::Status status,
                               base::ReadOnlySharedMemoryRegion region);
-  void OnDidPreviewPage(content::RenderFrameHost* render_frame_host,
-                        const printing::mojom::DidPreviewPageParams& params,
-                        const printing::mojom::PreviewIds& ids);
 
   // printing::mojo::PrintPreviewUI:
   void SetOptionsFromDocument(
@@ -80,8 +60,20 @@ class PrintPreviewMessageHandler
                              int32_t request_id) override;
   void PrinterSettingsInvalid(int32_t document_cookie,
                               int32_t request_id) override {}
-  void CheckForCancel(int32_t request_id,
-                      CheckForCancelCallback callback) override;
+  void DidPrepareDocumentForPreview(int32_t document_cookie,
+                                    int32_t request_id) override;
+  void DidPreviewPage(printing::mojom::DidPreviewPageParamsPtr params,
+                      int32_t request_id) override;
+  void MetafileReadyForPrinting(
+      printing::mojom::DidPreviewDocumentParamsPtr params,
+      int32_t request_id) override;
+  void DidGetDefaultPageLayout(
+      printing::mojom::PageSizeMarginsPtr page_layout_in_points,
+      const gfx::Rect& printable_area_in_points,
+      bool has_custom_page_size_style,
+      int32_t request_id) override {}
+  void DidStartPreview(printing::mojom::DidStartPreviewParamsPtr params,
+                       int32_t request_id) override {}
 
   gin_helper::Promise<v8::Local<v8::Value>> GetPromise(int request_id);
 
@@ -91,6 +83,8 @@ class PrintPreviewMessageHandler
 
   using PromiseMap = std::map<int, gin_helper::Promise<v8::Local<v8::Value>>>;
   PromiseMap promise_map_;
+
+  content::WebContents* web_contents_ = nullptr;
 
   mojo::AssociatedRemote<printing::mojom::PrintRenderFrame> print_render_frame_;
 

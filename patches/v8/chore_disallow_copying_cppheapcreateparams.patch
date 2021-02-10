@@ -11,7 +11,7 @@ implicitly deletes its copy ctor, so this commit makes it explicit.
 Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 8a0d9cb9a0737e1642d666754926485b06136e98..31cb7545a37911f64597476eb4c4eb40da178c3f 100644
+index 33e06f4495979eab3fa1e0ac7af3e0b306254446..08e63751fcd2fe590299b0708b19e9c741bd3e40 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
 @@ -25,8 +25,13 @@ namespace internal {
@@ -30,7 +30,7 @@ index 8a0d9cb9a0737e1642d666754926485b06136e98..31cb7545a37911f64597476eb4c4eb40
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index 5b6ba7f444994c5e8a5079f9f399a15d4a34ff24..142684417bca56f6e9304594c9c3a2d51656ee26 100644
+index f98795e3e211875a0930f3ffec8405af9c8bc535..afa10ecb6b19e97ff7dc4848610611294cd26588 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -93,7 +93,7 @@ class Utils;

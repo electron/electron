@@ -568,7 +568,7 @@ content::TtsPlatform* ElectronBrowserClient::GetTtsPlatform() {
 }
 
 void ElectronBrowserClient::OverrideWebkitPrefs(
-    content::RenderViewHost* host,
+    content::WebContents* web_contents,
     blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
@@ -597,7 +597,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
 
-  auto* web_contents = content::WebContents::FromRenderViewHost(host);
   auto preloads =
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
@@ -1107,6 +1106,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
   RemoveProcessPreferences(process_id);
+  host->RemoveObserver(this);
 }
 
 void ElectronBrowserClient::RenderProcessReady(
@@ -1567,8 +1567,10 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 }
 
 #if defined(OS_WIN)
-bool ElectronBrowserClient::PreSpawnRenderer(sandbox::TargetPolicy* policy,
-                                             RendererSpawnFlags flags) {
+bool ElectronBrowserClient::PreSpawnChild(
+    sandbox::TargetPolicy* policy,
+    sandbox::policy::SandboxType sandbox_type,
+    ChildSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,
@@ -1737,7 +1739,7 @@ ElectronBrowserClient::CreateURLLoaderThrottles(
 
 #if BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   result.push_back(std::make_unique<PluginResponseInterceptorURLLoaderThrottle>(
-      request.resource_type, frame_tree_node_id));
+      request.destination, frame_tree_node_id));
 #endif
 
   return result;
