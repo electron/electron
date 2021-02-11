@@ -1351,16 +1351,14 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  if (!background_throttling_)
-    render_view_host->SetSchedulerThrottling(false);
-}
-
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  if (!background_throttling_)
+    render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
