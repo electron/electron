@@ -9,42 +9,46 @@ with what's exposed through BoringSSL. I plan to upstream parts of this or
 otherwise introduce shims to reduce friction.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..2429ebf6035de392c6bac18c0b924b995fb3daeb 100644
+index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..c3d12dc4cc18888815ff5e2c30a21974322d1faf 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5191,6 +5191,7 @@ bool DiffieHellman::Init(int primeLength, int g) {
- 
+@@ -5192,11 +5192,11 @@ bool DiffieHellman::Init(int primeLength, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
-+#if 0
    if (p_len <= 0) {
-     BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
-     return false;
-@@ -5199,6 +5200,7 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
-     DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
      return false;
    }
-+#endif
+   if (g <= 1) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
    BIGNUM* bn_p =
-       BN_bin2bn(reinterpret_cast<const unsigned char*>(p), p_len, nullptr);
-   BIGNUM* bn_g = BN_new();
-@@ -5214,6 +5216,7 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
- 
+@@ -5215,18 +5215,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
-+#if 0
    if (p_len <= 0) {
-     BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
-     return false;
-@@ -5236,6 +5239,7 @@ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
-     BN_free(bn_g);
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
      return false;
    }
-+#endif
-   return VerifyContext();
- }
- 
-@@ -5718,8 +5722,9 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
+   if (g_len <= 0) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_g =
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr);
+   if (BN_is_zero(bn_g) || BN_is_one(bn_g)) {
+     BN_free(bn_g);
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_p =
+@@ -5718,8 +5718,9 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
  
    if (!EC_KEY_set_public_key(new_key.get(), pub.get()))
      return env->ThrowError("Failed to set generated public key");
@@ -55,7 +59,7 @@ index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..2429ebf6035de392c6bac18c0b924b99
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
-@@ -6207,6 +6212,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6207,6 +6208,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
    EVPKeyCtxPointer Setup() override {
      EVPKeyPointer params;
      if (prime_info_.fixed_value_) {
@@ -63,7 +67,7 @@ index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..2429ebf6035de392c6bac18c0b924b99
        DHPointer dh(DH_new());
        if (!dh)
          return nullptr;
-@@ -6223,6 +6229,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6223,6 +6225,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        params = EVPKeyPointer(EVP_PKEY_new());
        CHECK(params);
        EVP_PKEY_assign_DH(params.get(), dh.release());
@@ -71,7 +75,7 @@ index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..2429ebf6035de392c6bac18c0b924b99
      } else {
        EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
        if (!param_ctx)
-@@ -6230,7 +6237,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6230,7 +6233,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
  
        if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
          return nullptr;
@@ -80,7 +84,7 @@ index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..2429ebf6035de392c6bac18c0b924b99
        if (EVP_PKEY_CTX_set_dh_paramgen_prime_len(param_ctx.get(),
                                                   prime_info_.prime_size_) <= 0)
          return nullptr;
-@@ -6238,7 +6245,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6238,7 +6241,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        if (EVP_PKEY_CTX_set_dh_paramgen_generator(param_ctx.get(),
                                                   generator_) <= 0)
          return nullptr;
