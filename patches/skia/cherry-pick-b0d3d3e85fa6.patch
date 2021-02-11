@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Salomon <bsalomon@google.com>
+Date: Tue, 19 Jan 2021 10:28:15 -0500
+Subject: Fix DrawEdgeAAQuad degenerate issue where 3D points don't correctly
+ project to 2D points.
+
+Bug: chromium:1162942
+
+Change-Id: Idc1dcb725ff9eae651b84de2fe792b188dcd1c1b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/354671
+Commit-Queue: Brian Salomon <bsalomon@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit 7656c4b7e89b4ff00480a6d7a8a19e3fd0e5c86e)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/360376
+Reviewed-by: Brian Salomon <bsalomon@google.com>
+
+diff --git a/gm/crbug_1162942.cpp b/gm/crbug_1162942.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5d1f6360f3d68e1d3e353752e2e676928c93aef
+--- /dev/null
++++ b/gm/crbug_1162942.cpp
+@@ -0,0 +1,60 @@
++/*
++ * Copyright 2020 Google LLC
++ *
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++
++#include "gm/gm.h"
++#include "include/core/SkCanvas.h"
++#include "include/core/SkMatrix.h"
++#include "include/core/SkRect.h"
++
++// This tests a scenario where when the 2D projection of a perspective quad is inset we degenerate
++// the inset 2d geometry to a triangle because an inset vertex crosses the opposite edge. When we
++// project back to 3D and try to move the original verts along the original edges so that they
++// project to the 2D points. Whether an edge can be moved along depends on whether the adjacent edge
++// at the vertex is AA. However, in the degenerate triangle case the 2D point may not fall along
++// either of the edges. Thus, if we're constrained to moving along one edge and solve for X or Y the
++// other value may go wildly away from projecting to the 2D value. The current approach is to force
++// AA on at both edges that meet at a vertex whose inset point has been replaced by an off-edge
++// point if either is AA originally. This gives us an additional vector to move along so that we can
++// find a 3D point that projects to the 2D point in both X and Y.
++DEF_SIMPLE_GM(crbug_1162942, canvas, 620, 200) {
++    // Matrix and quad values taken from Chrome repro scenario.
++    SkMatrix ctm = SkMatrix::MakeAll(
++            SkBits2Float(0x3FCC7F75), SkBits2Float(0x3D5784FC), SkBits2Float(0x44C48C99),
++            SkBits2Float(0x3F699F7F), SkBits2Float(0x3E0A0D37), SkBits2Float(0x43908518),
++            SkBits2Float(0x3AA17423), SkBits2Float(0x3A6CCDC3), SkBits2Float(0x3F2EFEEC));
++    ctm.postTranslate(-1500.f, -325.f);
++
++    SkPoint pts[4] = {{SkBits2Float(0x3F39778B), SkBits2Float(0x43FF7FFC)},
++                      {SkBits2Float(0x0), SkBits2Float(0x43FF7FFA)},
++                      {SkBits2Float(0xB83B055E), SkBits2Float(0x42500003)},
++                      {SkBits2Float(0x3F39776F), SkBits2Float(0x4250000D)}};
++    SkRect bounds;
++    bounds.setBounds(pts, 4);
++
++    canvas->clear(SK_ColorWHITE);
++
++    SkCanvas::QuadAAFlags flags[] = {
++            (SkCanvas::QuadAAFlags) (SkCanvas::kTop_QuadAAFlag    | SkCanvas::kLeft_QuadAAFlag ),
++            (SkCanvas::QuadAAFlags) (SkCanvas::kBottom_QuadAAFlag | SkCanvas::kRight_QuadAAFlag),
++            (SkCanvas::QuadAAFlags) (SkCanvas::kBottom_QuadAAFlag),
++            (SkCanvas::QuadAAFlags) (SkCanvas::kRight_QuadAAFlag),
++            (SkCanvas::QuadAAFlags) (SkCanvas::kRight_QuadAAFlag  | SkCanvas::kLeft_QuadAAFlag),
++            (SkCanvas::QuadAAFlags) (SkCanvas::kTop_QuadAAFlag    | SkCanvas::kBottom_QuadAAFlag),
++    };
++
++    SkColor color = SK_ColorGREEN;
++    for (auto aaFlags : flags) {
++        canvas->save();
++        canvas->concat(ctm);
++        canvas->experimental_DrawEdgeAAQuad(bounds, pts, aaFlags, color, SkBlendMode::kSrcOver);
++        SkColor rgb = color & 0x00FFFFFF;
++        color = 0xFF000000 | (rgb << 4) | (rgb >> 20);
++        canvas->restore();
++        canvas->translate(0, 25);
++    }
++}
++
+diff --git a/gn/gm.gni b/gn/gm.gni
+index 731222e3a443ff20591fc15457aed7dc6d766451..8b0f2d414d245e3a573d86b75f264026ed21458b 100644
+--- a/gn/gm.gni
++++ b/gn/gm.gni
+@@ -109,6 +109,7 @@ gm_sources = [
+   "$_gm/crbug_1073670.cpp",
+   "$_gm/crbug_1086705.cpp",
+   "$_gm/crbug_1113794.cpp",
++  "$_gm/crbug_1162942.cpp",
+   "$_gm/crbug_224618.cpp",
+   "$_gm/crbug_691386.cpp",
+   "$_gm/crbug_788500.cpp",
+diff --git a/src/gpu/geometry/GrQuadUtils.cpp b/src/gpu/geometry/GrQuadUtils.cpp
+index 26b1415807a5218518e8eedabe1d1e0250a0f7f1..8bf8d19b84cb2ac27bebf4719d4d17d1abfc64ce 100644
+--- a/src/gpu/geometry/GrQuadUtils.cpp
++++ b/src/gpu/geometry/GrQuadUtils.cpp
+@@ -717,7 +717,10 @@ V4f TessellationHelper::EdgeEquations::estimateCoverage(const V4f& x2d, const V4
+ }
+ 
+ int TessellationHelper::EdgeEquations::computeDegenerateQuad(const V4f& signedEdgeDistances,
+-                                                             V4f* x2d, V4f* y2d) const {
++                                                             V4f* x2d, V4f* y2d,
++                                                             M4f* aaMask) const {
++    *aaMask = signedEdgeDistances != 0.f;
++
+     // Move the edge by the signed edge adjustment.
+     V4f oc = fC + signedEdgeDistances;
+ 
+@@ -792,10 +795,19 @@ int TessellationHelper::EdgeEquations::computeDegenerateQuad(const V4f& signedEd
+         if (SkScalarAbs(eDenom[0]) > kTolerance) {
+             px = if_then_else(d1v0, V4f(ex[0]), px);
+             py = if_then_else(d1v0, V4f(ey[0]), py);
++            // If we replace a vertex with an intersection then it will not fall along the
++            // edges that intersect at the original vertex. When we apply AA later to the
++            // original points we move along the original 3d edges to move towards the 2d
++            // points we're computing here. If we have an AA edge and a non-AA edge we
++            // can only move along 1 edge, but now the point we're moving toward isn't
++            // on that edge. Thus, we provide an additional degree of freedom by turning
++            // AA on for both edges if either edge is AA.
++            *aaMask = *aaMask | (d1v0 & skvx::shuffle<2, 0, 3, 1>(*aaMask));
+         }
+         if (SkScalarAbs(eDenom[1]) > kTolerance) {
+             px = if_then_else(d2v0, V4f(ex[1]), px);
+             py = if_then_else(d2v0, V4f(ey[1]), py);
++            *aaMask = *aaMask | (d2v0 & skvx::shuffle<2, 0, 3, 1>(*aaMask));
+         }
+ 
+         *x2d = px;
+@@ -1156,9 +1168,11 @@ int TessellationHelper::adjustDegenerateVertices(const skvx::Vec<4, float>& sign
+         // handles perspective).
+         V4f x2d = fEdgeVectors.fX2D;
+         V4f y2d = fEdgeVectors.fY2D;
++
++        M4f aaMask;
+         int vertexCount = this->getEdgeEquations().computeDegenerateQuad(signedEdgeDistances,
+-                                                                         &x2d, &y2d);
+-        vertices->moveTo(x2d, y2d, signedEdgeDistances != 0.f);
++                                                                         &x2d, &y2d, &aaMask);
++        vertices->moveTo(x2d, y2d, aaMask);
+         return vertexCount;
+     }
+ }
+diff --git a/src/gpu/geometry/GrQuadUtils.h b/src/gpu/geometry/GrQuadUtils.h
+index 1288ba538d5a3fa646b1ae872254ddd51863ad17..f3e16df853cedc18707be8a96276f8e009df9e7c 100644
+--- a/src/gpu/geometry/GrQuadUtils.h
++++ b/src/gpu/geometry/GrQuadUtils.h
+@@ -113,7 +113,8 @@ namespace GrQuadUtils {
+             // small, edges are near parallel, or edges are very short/zero-length. Returns number
+             // of effective vertices in the degenerate quad.
+             int computeDegenerateQuad(const skvx::Vec<4, float>& signedEdgeDistances,
+-                                      skvx::Vec<4, float>* x2d, skvx::Vec<4, float>* y2d) const;
++                                      skvx::Vec<4, float>* x2d, skvx::Vec<4, float>* y2d,
++                                      skvx::Vec<4, int32_t>* aaMask) const;
+         };
+ 
+         struct OutsetRequest {
