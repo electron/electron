@@ -9,7 +9,7 @@ with what's exposed through BoringSSL. I plan to upstream parts of this or
 otherwise introduce shims to reduce friction.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d197d3749a6 100644
+index d7b6dbd85d6ef97370affde54bde4657f2413a06..489123d5fbd340fdceb3b6316e3fca6fb1050fef 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -5204,11 +5204,11 @@ bool DiffieHellman::Init(int primeLength, int g) {
@@ -48,8 +48,7 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
      return false;
    }
    BIGNUM* bn_p =
-@@ -5730,8 +5730,9 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
- 
+@@ -5731,7 +5731,7 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
    if (!EC_KEY_set_public_key(new_key.get(), pub.get()))
      return env->ThrowError("Failed to set generated public key");
  
@@ -58,7 +57,7 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
-@@ -6219,6 +6220,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6219,6 +6219,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
    EVPKeyCtxPointer Setup() override {
      EVPKeyPointer params;
      if (prime_info_.fixed_value_) {
@@ -66,7 +65,7 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
        DHPointer dh(DH_new());
        if (!dh)
          return nullptr;
-@@ -6235,6 +6237,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6235,6 +6236,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        params = EVPKeyPointer(EVP_PKEY_new());
        CHECK(params);
        EVP_PKEY_assign_DH(params.get(), dh.release());
@@ -74,7 +73,7 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
      } else {
        EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
        if (!param_ctx)
-@@ -6242,7 +6245,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6242,7 +6244,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
  
        if (EVP_PKEY_paramgen_init(param_ctx.get()) <= 0)
          return nullptr;
@@ -83,7 +82,7 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
        if (EVP_PKEY_CTX_set_dh_paramgen_prime_len(param_ctx.get(),
                                                   prime_info_.prime_size_) <= 0)
          return nullptr;
-@@ -6250,7 +6253,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
+@@ -6250,7 +6252,7 @@ class DHKeyPairGenerationConfig : public KeyPairGenerationConfig {
        if (EVP_PKEY_CTX_set_dh_paramgen_generator(param_ctx.get(),
                                                   generator_) <= 0)
          return nullptr;
