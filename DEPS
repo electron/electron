@@ -16,7 +16,7 @@ vars = {
   'chromium_version':
     '1f252b391a40e2681b0d9aff6497b7401863d1fc',
   'node_version':
-    'v14.15.4',
+    'v14.15.5',
   'nan_version':
     '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
   'squirrel.mac_version':
