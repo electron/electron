@@ -182,7 +182,7 @@ class BrowserWindowProxy {
     this.guestId = guestId;
     this._location = new LocationProxy(guestId);
 
-    ipcRendererInternal.onceMessageFromMain(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${guestId}`, () => {
+    ipcRendererInternal.once(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${guestId}`, () => {
       removeProxy(guestId);
       this.closed = true;
     });
@@ -282,7 +282,7 @@ export const windowSetup = (
   if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
   if (!usesNativeWindowOpen || openerId != null) {
-    ipcRendererInternal.onMessageFromMain(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, function (
+    ipcRendererInternal.on(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, function (
       _event, sourceId: number, message: any, sourceOrigin: string
     ) {
       // Manually dispatch event instead of using postMessage because we also need to
@@ -337,7 +337,7 @@ export const windowSetup = (
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible';
 
     // Subscribe to visibilityState changes.
-    ipcRendererInternal.onMessageFromMain(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, function (_event, visibilityState: VisibilityState) {
+    ipcRendererInternal.on(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, function (_event, visibilityState: VisibilityState) {
       if (cachedVisibilityState !== visibilityState) {
         cachedVisibilityState = visibilityState;
         document.dispatchEvent(new Event('visibilitychange'));

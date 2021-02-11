@@ -32,17 +32,17 @@ const dispatchEvent = function (
 };
 
 export function registerEvents (webView: WebViewImpl, viewInstanceId: number) {
-  ipcRendererInternal.onMessageFromMain(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`, function () {
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`, function () {
     webView.guestInstanceId = undefined;
     webView.reset();
     webView.dispatchEvent('destroyed');
   });
 
-  ipcRendererInternal.onMessageFromMain(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, ...args) {
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, ...args) {
     dispatchEvent(webView, eventName, eventName, ...args);
   });
 
-  ipcRendererInternal.onMessageFromMain(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`, function (event, channel, ...args) {
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`, function (event, channel, ...args) {
     webView.dispatchEvent('ipc-message', { channel, args });
   });
 }
