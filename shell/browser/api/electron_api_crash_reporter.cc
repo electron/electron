@@ -30,8 +30,8 @@
 #include "shell/common/node_includes.h"
 
 #if !defined(MAS_BUILD)
-#include "components/crash/core/browser/crash_upload_list_crashpad.h"
 #include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/browser/crash_upload_list_crashpad.h"
 #include "components/crash/core/common/crash_key.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
