@@ -1,7 +1,10 @@
-From df438f22f7d206899b6361ad0a93ab690e3a03e0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Artem Sumaneev <asumaneev@google.com>
-Date: Wed, 03 Feb 2021 15:00:25 +0000
-Subject: [PATCH] [navigation] Fix navigation request reset logic
+Date: Wed, 3 Feb 2021 15:00:25 +0000
+Subject: Fix navigation request reset logic
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Do not delete navigation request which has started upon receiving
 notification about beforeunload dialog being cancelled, as a) this
@@ -35,13 +38,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1537}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/content/browser/frame_host/frame_tree_node.cc b/content/browser/frame_host/frame_tree_node.cc
-index 7bb47e8..9ef06c9 100644
+index 55cc2227c2f0da9a9dc12c44a91ca6316e48463b..a507d764c3448d78c3937473d5da8b6297751563 100644
 --- a/content/browser/frame_host/frame_tree_node.cc
 +++ b/content/browser/frame_host/frame_tree_node.cc
-@@ -579,10 +579,12 @@
+@@ -578,10 +578,12 @@ void FrameTreeNode::BeforeUnloadCanceled() {
        render_manager_.speculative_frame_host();
    if (speculative_frame_host)
      speculative_frame_host->ResetLoadingState();
@@ -59,11 +61,11 @@ index 7bb47e8..9ef06c9 100644
  }
  
 diff --git a/content/browser/frame_host/navigation_request.cc b/content/browser/frame_host/navigation_request.cc
-index 2c8589e..a070f74 100644
+index 0b47fe73860e7b9ee200ac177d1e008881eb683c..c0c50602270e1372ac5790979fa61419be8838c4 100644
 --- a/content/browser/frame_host/navigation_request.cc
 +++ b/content/browser/frame_host/navigation_request.cc
-@@ -5018,4 +5018,8 @@
-   state_ = state;
+@@ -4123,4 +4123,8 @@ NavigationRequest::TakePeakGpuMemoryTracker() {
+   return std::move(loading_mem_tracker_);
  }
  
 +bool NavigationRequest::IsWaitingForBeforeUnload() {
@@ -72,12 +74,12 @@ index 2c8589e..a070f74 100644
 +
  }  // namespace content
 diff --git a/content/browser/frame_host/navigation_request.h b/content/browser/frame_host/navigation_request.h
-index df4b386..5738509 100644
+index f53b4c900f0e7786dcdb0824a34bf3720b301538..7e0158e058a91927976860391e7290e792f83639 100644
 --- a/content/browser/frame_host/navigation_request.h
 +++ b/content/browser/frame_host/navigation_request.h
-@@ -699,6 +699,10 @@
-   // tracing purposes.
-   void AsValueInto(base::trace_event::TracedValue* traced_value);
+@@ -561,6 +561,10 @@ class CONTENT_EXPORT NavigationRequest
+ 
+   std::unique_ptr<CrossOriginEmbedderPolicyReporter> TakeCoepReporter();
  
 +  // Whether this navigation request waits for the result of beforeunload before
 +  // proceeding.
@@ -87,10 +89,10 @@ index df4b386..5738509 100644
    friend class NavigationRequestTest;
  
 diff --git a/content/browser/frame_host/render_frame_host_impl_browsertest.cc b/content/browser/frame_host/render_frame_host_impl_browsertest.cc
-index 5b565d4..0bd8e5e 100644
+index 06d732749432448eb87b2c0d576a54a62199de40..0cda59f93ad4edbfbcdc04e30f2ab2f71adebb8f 100644
 --- a/content/browser/frame_host/render_frame_host_impl_browsertest.cc
 +++ b/content/browser/frame_host/render_frame_host_impl_browsertest.cc
-@@ -1122,6 +1122,51 @@
+@@ -1099,6 +1099,51 @@ IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBeforeUnloadBrowserTest,
  
  namespace {
  
