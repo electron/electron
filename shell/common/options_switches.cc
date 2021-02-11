@@ -29,6 +29,7 @@ const char kFullScreenable[] = "fullscreenable";
 const char kClosable[] = "closable";
 const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";
+const char kRoundedCorners[] = "roundedCorners";
 
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";

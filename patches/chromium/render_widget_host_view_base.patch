@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 7a90002e09be6f9e440d509cf437a7974b5eea64..44a06fe37b0a58a7ba5347a8ceca8aa2cbe13e31 100644
+index 463690a6dfdab2c7ffd3ec35a751fecbf25c74c7..7b61cd4714a09d7ba1955d690251bc52b76c71b3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -567,6 +567,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -24,7 +24,7 @@ index 7a90002e09be6f9e440d509cf437a7974b5eea64..44a06fe37b0a58a7ba5347a8ceca8aa2
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 63c4db6df041a5861aa9af201bdc15c2b06be809..d418e0549a9d7ee28a91eddc50e9dfc17be0d365 100644
+index be9de2cbeb28fd75e6d9ee4d42eb59a3dac8e9b7..5d3edd2c131c4615dc22ae361f130469620d7175 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,8 +25,10 @@
@@ -60,7 +60,7 @@ index 63c4db6df041a5861aa9af201bdc15c2b06be809..d418e0549a9d7ee28a91eddc50e9dfc1
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -280,6 +287,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -282,6 +289,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

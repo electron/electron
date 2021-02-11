@@ -92,7 +92,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsPlatform* GetTtsPlatform() override;
 
-  void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
+  void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* current_rfh,
@@ -219,8 +219,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
-  bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
-                        RendererSpawnFlags flags) override;
+  bool PreSpawnChild(sandbox::TargetPolicy* policy,
+                     sandbox::policy::SandboxType sandbox_type,
+                     ChildSpawnFlags flags) override;
 #endif
   bool BindAssociatedReceiverFromFrame(
       content::RenderFrameHost* render_frame_host,

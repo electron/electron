@@ -12,39 +12,44 @@ diff --git a/src/node_crypto.cc b/src/node_crypto.cc
 index 91cb94d8dbe9db0adbee5e005649188e1ccbcbf9..697e6d7b65ce2505f10bb1d936be3d9590459038 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
-@@ -5191,6 +5191,7 @@ bool DiffieHellman::Init(int primeLength, int g) {
- 
+@@ -5192,11 +5192,11 @@ bool DiffieHellman::Init(int primeLength, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
-+#if 0
    if (p_len <= 0) {
-     BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
-     return false;
-@@ -5199,6 +5200,7 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
-     DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
      return false;
    }
-+#endif
+   if (g <= 1) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
    BIGNUM* bn_p =
-       BN_bin2bn(reinterpret_cast<const unsigned char*>(p), p_len, nullptr);
-   BIGNUM* bn_g = BN_new();
-@@ -5214,6 +5216,7 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
- 
+@@ -5215,18 +5215,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
-+#if 0
    if (p_len <= 0) {
-     BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
-     return false;
-@@ -5236,6 +5239,7 @@ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
-     BN_free(bn_g);
+-    BNerr(BN_F_BN_GENERATE_PRIME_EX, BN_R_BITS_TOO_SMALL);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
      return false;
    }
-+#endif
+   if (g_len <= 0) {
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_g =
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr);
+   if (BN_is_zero(bn_g) || BN_is_one(bn_g)) {
+     BN_free(bn_g);
+-    DHerr(DH_F_DH_BUILTIN_GENPARAMS, DH_R_BAD_GENERATOR);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
    return VerifyContext();
- }
+@@ -5718,8 +5718,8 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
  
-@@ -5719,7 +5723,7 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
    if (!EC_KEY_set_public_key(new_key.get(), pub.get()))
      return env->ThrowError("Failed to set generated public key");
  

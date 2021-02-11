@@ -305,17 +305,25 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     useStandardWindow = false;
   }
 
+  // The window without titlebar is treated the same with frameless window.
+  if (title_bar_style_ != TitleBarStyle::kNormal)
+    set_has_frame(false);
+
   NSUInteger styleMask = NSWindowStyleMaskTitled;
+
+  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
+  // for framless window.
+  bool rounded_corner = true;
+  options.Get(options::kRoundedCorners, &rounded_corner);
+  if (!rounded_corner && !has_frame())
+    styleMask = NSWindowStyleMaskFullSizeContentView;
+
   if (minimizable)
     styleMask |= NSMiniaturizableWindowMask;
   if (closable)
     styleMask |= NSWindowStyleMaskClosable;
   if (resizable_)
     styleMask |= NSResizableWindowMask;
-
-  // The window without titlebar is treated the same with frameless window.
-  if (title_bar_style_ != TitleBarStyle::kNormal)
-    set_has_frame(false);
   if (!useStandardWindow || transparent() || !has_frame())
     styleMask |= NSTexturedBackgroundWindowMask;
 
@@ -1087,6 +1095,30 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
   [CATransaction commit];
 }
 
+void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+
+  if (!view) {
+    [CATransaction commit];
+    return;
+  }
+
+  remove_browser_view(view);
+  add_browser_view(view);
+  if (view->GetInspectableWebContentsView()) {
+    auto* native_view = view->GetInspectableWebContentsView()
+                            ->GetNativeView()
+                            .GetNativeNSView();
+    [[window_ contentView] addSubview:native_view
+                           positioned:NSWindowAbove
+                           relativeTo:nil];
+    native_view.hidden = NO;
+  }
+
+  [CATransaction commit];
+}
+
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   InternalSetParentWindow(parent, IsVisible());
 }
@@ -1234,8 +1266,11 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
     }
 
-    // Make frameless Vibrant windows have rounded corners.
-    if (!has_frame() && !is_modal()) {
+    // Make Vibrant view have rounded corners, so the frameless window can keep
+    // its rounded corners.
+    const bool no_rounded_corner =
+        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
+    if (!has_frame() && !is_modal() && !no_rounded_corner) {
       CGFloat radius = 5.0f;  // default corner radius
       CGFloat dimension = 2 * radius + 1;
       NSSize size = NSMakeSize(dimension, dimension);
@@ -1254,7 +1289,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [maskImage setResizingMode:NSImageResizingModeStretch];
 
       [effect_view setMaskImage:maskImage];
-      [window_ setCornerMask:maskImage];
     }
 
     [[window_ contentView] addSubview:effect_view

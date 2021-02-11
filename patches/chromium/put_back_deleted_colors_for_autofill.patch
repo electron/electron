@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 6a864ebf186ee22b5a3495562f25f473e51fece0..50c2c58fe6ce0bb3ab14f3dc80b4b2f90eedf8ac 100644
+index 29ad448b1572856216b42d4f4737d844850b2ebb..5902d81f29984eb05a7c5324ab709e97e3b87557 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -356,6 +356,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -357,6 +357,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  

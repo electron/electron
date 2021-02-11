@@ -43,6 +43,10 @@ const loadableModules = new Map<string, Function>([
 // invoking the 'onMessage' callback.
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[], senderId: number) {
+    if (internal && senderId !== 0) {
+      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
+      return;
+    }
     const sender = internal ? ipcRendererInternal : electron.ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }

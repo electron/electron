@@ -228,6 +228,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       experimental.
   * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a
     custom position for the traffic light buttons in frameless windows.
+  * `roundedCorners` Boolean (optional) - Whether frameless window should have
+    rounded corners on macOS. Default is `true`.
   * `fullscreenWindowTitle` Boolean (optional) _Deprecated_ - Shows the title in
     the title bar in full screen mode on macOS for `hiddenInset` titleBarStyle.
     Default is `false`.
@@ -1783,6 +1785,13 @@ Replacement API for setBrowserView supporting work with multi browser views.
 #### `win.removeBrowserView(browserView)` _Experimental_
 
 * `browserView` [BrowserView](browser-view.md)
+
+#### `win.setTopBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Raises `browserView` above other `BrowserView`s attached to `win`.
+Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 

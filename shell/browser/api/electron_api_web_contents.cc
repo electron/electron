@@ -74,6 +74,7 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -1360,6 +1361,19 @@ void WebContents::BeforeUnloadFired(bool proceed,
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
   if (!background_throttling_)
     render_view_host->SetSchedulerThrottling(false);
+
+  // Set the background color of RenderWidgetHostView.
+  auto* const view = web_contents()->GetRenderWidgetHostView();
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (view && web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 }
 
 void WebContents::RenderFrameCreated(
@@ -1372,6 +1386,8 @@ void WebContents::RenderFrameCreated(
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
+
+  WebFrameMain::RenderFrameCreated(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1396,6 +1412,7 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
+  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
   Emit("render-process-gone", details);
 }
 
@@ -1576,11 +1593,19 @@ void WebContents::MessageTo(bool internal,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* web_contents = FromID(web_contents_id);
+  auto* target_web_contents = FromID(web_contents_id);
 
-  if (web_contents) {
-    web_contents->SendIPCMessageWithSender(internal, channel,
-                                           std::move(arguments), ID());
+  if (target_web_contents) {
+    content::RenderFrameHost* frame = target_web_contents->MainFrame();
+    DCHECK(frame);
+
+    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
+    gin::Handle<WebFrameMain> web_frame_main =
+        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
+
+    int32_t sender_id = ID();
+    web_frame_main->GetRendererApi()->Message(internal, channel,
+                                              std::move(arguments), sender_id);
   }
 }
 
@@ -1966,9 +1991,6 @@ void WebContents::LoadURL(const GURL& url,
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
-  // Required to make beforeunload handler work.
-  NotifyUserActivation();
-
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -1983,20 +2005,8 @@ void WebContents::LoadURL(const GURL& url,
   if (!weak_this)
     return;
 
-  // Set the background color of RenderWidgetHostView.
-  // We have to call it right after LoadURL because the RenderViewHost is only
-  // created after loading a page.
-  auto* const view = weak_this->web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents());
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 }
 
 void WebContents::DownloadURL(const GURL& url) {
@@ -2673,30 +2683,6 @@ bool WebContents::IsFocused() const {
 }
 #endif
 
-bool WebContents::SendIPCMessage(bool internal,
-                                 const std::string& channel,
-                                 v8::Local<v8::Value> args) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
-    return false;
-  }
-  return SendIPCMessageWithSender(internal, channel, std::move(message));
-}
-
-bool WebContents::SendIPCMessageWithSender(bool internal,
-                                           const std::string& channel,
-                                           blink::CloneableMessage args,
-                                           int32_t sender_id) {
-  auto* frame_host = web_contents()->GetMainFrame();
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->Message(internal, channel, std::move(args), sender_id);
-  return true;
-}
-
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
   content::RenderWidgetHostView* view =
@@ -3110,12 +3096,10 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 }
 
 void WebContents::NotifyUserActivation() {
-  auto* frame = web_contents()->GetMainFrame();
-  if (!frame)
-    return;
-  mojo::AssociatedRemote<mojom::ElectronRenderer> renderer;
-  frame->GetRemoteAssociatedInterfaces()->GetInterface(&renderer);
-  renderer->NotifyUserActivation();
+  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  if (frame)
+    frame->NotifyUserActivation(
+        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
@@ -3138,18 +3122,23 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
+  if (!frame_host->IsRenderFrameCreated()) {
+    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    return handle;
+  }
+
   // This dance with `base::Owned` is to ensure that the interface stays alive
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
   auto electron_renderer =
-      std::make_unique<mojo::AssociatedRemote<mojom::ElectronRenderer>>();
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      electron_renderer.get());
+      std::make_unique<mojo::Remote<mojom::ElectronRenderer>>();
+  frame_host->GetRemoteInterfaces()->GetInterface(
+      electron_renderer->BindNewPipeAndPassReceiver());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
-          [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
+          [](mojo::Remote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
@@ -3605,7 +3594,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("_send", &WebContents::SendIPCMessage)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)

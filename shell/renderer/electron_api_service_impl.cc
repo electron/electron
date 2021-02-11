@@ -104,21 +104,42 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
-      renderer_client_(renderer_client) {}
+      renderer_client_(renderer_client) {
+  registry_.AddInterface(base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                                             base::Unretained(this)));
+}
 
 void ElectronApiServiceImpl::BindTo(
-    mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {
-  // Note: BindTo might be called for multiple times.
-  if (receiver_.is_bound())
-    receiver_.reset();
+    mojo::PendingReceiver<mojom::ElectronRenderer> receiver) {
+  if (document_created_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
 
-  receiver_.Bind(std::move(receiver));
-  receiver_.set_disconnect_handler(
-      base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+    receiver_.Bind(std::move(receiver));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  } else {
+    pending_receiver_ = std::move(receiver);
+  }
+}
+
+void ElectronApiServiceImpl::OnInterfaceRequestForFrame(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle* interface_pipe) {
+  registry_.TryBindInterface(interface_name, interface_pipe);
 }
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
   document_created_ = true;
+
+  if (pending_receiver_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
+
+    receiver_.Bind(std::move(pending_receiver_));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  }
 }
 
 void ElectronApiServiceImpl::OnDestruct() {
@@ -134,25 +155,6 @@ void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
-  // Don't handle browser messages before document element is created.
-  //
-  // Note: It is probably better to save the message and then replay it after
-  // document is ready, but current behavior has been there since the first
-  // day of Electron, and no one has complained so far.
-  //
-  // Reason 1:
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  // (See https://github.com/electron/electron/pull/1044.)
-  //
-  // Reason 2:
-  // The libuv message loop integration would be broken for unkown reasons.
-  // (See https://github.com/electron/electron/issues/19368.)
-  if (!document_created_)
-    return;
-
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
@@ -194,13 +196,6 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 
   EmitIPCEvent(context, false, channel, ports, gin::ConvertToV8(isolate, args),
                0);
-}
-
-void ElectronApiServiceImpl::NotifyUserActivation() {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (frame)
-    frame->NotifyUserActivation(
-        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(

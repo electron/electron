@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 4c9654191ddce3db5f9391cdbd07b1be8a77a2af..dc2cdf7467912d36261583c91c8f46fbe041c5e0 100644
+index c347d1610d4c3d6a6ee3c7cb17d49d54482de818..53a7c6d03146994f9af9a503646e65b5c884ab23 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -304,6 +304,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -49,7 +49,7 @@ index 4c9654191ddce3db5f9391cdbd07b1be8a77a2af..dc2cdf7467912d36261583c91c8f46fb
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 3d498de563ed739f55136f83b110b31bd66a1b5c..5d7810c9e31d9948212826377d6f039ad5761ba6 100644
+index 042392a659fd6934e84d66cc985d25863e365e34..5e88e780c3da4805eae7870291188e636423042e 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -202,6 +202,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
