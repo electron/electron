@@ -81,7 +81,7 @@ const getPreloadScript = async function (preloadPath: string) {
   let preloadSrc = null;
   let preloadError = null;
   try {
-    preloadSrc = (await fs.promises.readFile(preloadPath)).toString();
+    preloadSrc = await fs.promises.readFile(preloadPath, 'utf8');
   } catch (error) {
     preloadError = error;
   }

@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 8 Feb 2021 13:20:09 -0800
+Subject: Work around MacOS 11.2 code page decommit failures
+
+MacOS 11.2 refuses to set "no access" permissions on memory that
+we previously used for JIT-compiled code. It is still unclear
+whether this is WAI on the part of the kernel. In the meantime,
+as a workaround, we use madvise(..., MADV_FREE_REUSABLE) instead
+of mprotect(..., NONE) when discarding code pages. This is inspired
+by what Chromium's gin platform does.
+
+Fixed: v8:11389
+Change-Id: I866586932573b4253002436ae5eee4e0411c45fc
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2679688
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#72559}
+
+diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
+index 89173b593a6ce887c0f3cea082f2d31e17f8f5db..0afaa5269bd4b61cb62532a8ffc6debcfc508dfb 100644
+--- a/src/base/platform/platform-posix.cc
++++ b/src/base/platform/platform-posix.cc
+@@ -417,6 +417,16 @@ bool OS::SetPermissions(void* address, size_t size, MemoryPermission access) {
+ 
+   int prot = GetProtectionFromMemoryPermission(access);
+   int ret = mprotect(address, size, prot);
++
++  // MacOS 11.2 on Apple Silicon refuses to switch permissions from
++  // rwx to none. Just use madvise instead.
++#if defined(V8_OS_MACOSX)
++  if (ret != 0 && access == OS::MemoryPermission::kNoAccess) {
++    ret = madvise(address, size, MADV_FREE_REUSABLE);
++    return ret == 0;
++  }
++#endif
++
+   if (ret == 0 && access == OS::MemoryPermission::kNoAccess) {
+     // This is advisory; ignore errors and continue execution.
+     USE(DiscardSystemPages(address, size));
