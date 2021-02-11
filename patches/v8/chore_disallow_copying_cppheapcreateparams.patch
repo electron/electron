@@ -30,7 +30,7 @@ index 8860ea8a78de67ab9e9ac453ec1774c8c6b17b8a..1ae9c485bbf083449d7e812696975ffe
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index 5e1642841930ec1f3e55bd3ab33a61c66f631f9d..75219992ad486a2301a9039dade49c299cdeadf5 100644
+index 0d79c72077d05c69312d527b0e23b68f85a7cfd7..5e03f54a918191650d5dd6768a6e8c3a31de4300 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -93,6 +93,7 @@ class Utils;

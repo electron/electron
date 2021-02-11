@@ -12,10 +12,10 @@ when we override ReallocateBufferMemory, so we therefore need to implement
 Realloc on the v8 side and correspondingly in gin.
 
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
-index 124c2f72a5cbc2abe8c7686c32b61718d4c95d4b..fa4a478450cc97d231496ab82c74c1a94d1f3557 100644
+index 210760801f1d027196111631d34bab3eb5a10792..cdfdf91841b5f2feb248b0c5890ddcfdb5a8f9ce 100644
 --- a/gin/array_buffer.cc
 +++ b/gin/array_buffer.cc
-@@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
+@@ -37,6 +37,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
    return malloc(length);
  }
  
@@ -27,7 +27,7 @@ index 124c2f72a5cbc2abe8c7686c32b61718d4c95d4b..fa4a478450cc97d231496ab82c74c1a9
    free(data);
  }
 diff --git a/gin/array_buffer.h b/gin/array_buffer.h
-index 2aef366ac8194aa261cbca6abc051f7da8a988d3..3c7d66c81032636abcca4f1538ce9b7f4ddb2de2 100644
+index 086371af29bd8c7520485125deddca411e8b978b..2c6886ddcc47019be4d552d4fddfc1c3d00cbca0 100644
 --- a/gin/array_buffer.h
 +++ b/gin/array_buffer.h
 @@ -21,6 +21,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
