@@ -1,8 +1,8 @@
-From b0d3d3e85fa6b9eba987796d410ea3ea5cbeb18f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Brian Salomon <bsalomon@google.com>
 Date: Tue, 19 Jan 2021 10:28:15 -0500
-Subject: [PATCH] Fix DrawEdgeAAQuad degenerate issue where 3D points don't correctly project to 2D points.
-
+Subject: Fix DrawEdgeAAQuad degenerate issue where 3D points don't correctly
+ project to 2D points.
 
 Bug: chromium:1162942
 
@@ -13,11 +13,10 @@ Reviewed-by: Michael Ludwig <michaelludwig@google.com>
 (cherry picked from commit 7656c4b7e89b4ff00480a6d7a8a19e3fd0e5c86e)
 Reviewed-on: https://skia-review.googlesource.com/c/skia/+/360376
 Reviewed-by: Brian Salomon <bsalomon@google.com>
----
 
 diff --git a/gm/crbug_1162942.cpp b/gm/crbug_1162942.cpp
 new file mode 100644
-index 0000000..e5d1f63
+index 0000000000000000000000000000000000000000..e5d1f6360f3d68e1d3e353752e2e676928c93aef
 --- /dev/null
 +++ b/gm/crbug_1162942.cpp
 @@ -0,0 +1,60 @@
@@ -82,22 +81,22 @@ index 0000000..e5d1f63
 +}
 +
 diff --git a/gn/gm.gni b/gn/gm.gni
-index 8fb718b..1c5e8b5 100644
+index 83ca03f8e83bd3f809a5eb5df609be2dae793095..be5060443e5975fc085270ee729d6cff28df9840 100644
 --- a/gn/gm.gni
 +++ b/gn/gm.gni
-@@ -114,6 +114,7 @@
-   "$_gm/crbug_1113794.cpp",
-   "$_gm/crbug_1139750.cpp",
-   "$_gm/crbug_1156804.cpp",
+@@ -105,6 +105,7 @@ gm_sources = [
+   "$_gm/convexpolyclip.cpp",
+   "$_gm/convexpolyeffect.cpp",
+   "$_gm/copy_to_4444.cpp",
 +  "$_gm/crbug_1162942.cpp",
    "$_gm/crbug_224618.cpp",
    "$_gm/crbug_691386.cpp",
    "$_gm/crbug_788500.cpp",
 diff --git a/src/gpu/geometry/GrQuadUtils.cpp b/src/gpu/geometry/GrQuadUtils.cpp
-index 12ed893..a91759d 100644
+index 9650758a87695bec8df342d7d645bf7e71301e23..95442e3f678df42c3b5584c78985aa0df151668e 100644
 --- a/src/gpu/geometry/GrQuadUtils.cpp
 +++ b/src/gpu/geometry/GrQuadUtils.cpp
-@@ -717,7 +717,10 @@
+@@ -717,7 +717,10 @@ V4f TessellationHelper::EdgeEquations::estimateCoverage(const V4f& x2d, const V4
  }
  
  int TessellationHelper::EdgeEquations::computeDegenerateQuad(const V4f& signedEdgeDistances,
@@ -109,7 +108,7 @@ index 12ed893..a91759d 100644
      // Move the edge by the signed edge adjustment.
      V4f oc = fC + signedEdgeDistances;
  
-@@ -792,10 +795,19 @@
+@@ -792,10 +795,19 @@ int TessellationHelper::EdgeEquations::computeDegenerateQuad(const V4f& signedEd
          if (SkScalarAbs(eDenom[0]) > kTolerance) {
              px = if_then_else(d1v0, V4f(ex[0]), px);
              py = if_then_else(d1v0, V4f(ey[0]), py);
@@ -129,7 +128,7 @@ index 12ed893..a91759d 100644
          }
  
          *x2d = px;
-@@ -1172,9 +1184,11 @@
+@@ -1156,9 +1168,11 @@ int TessellationHelper::adjustDegenerateVertices(const skvx::Vec<4, float>& sign
          // handles perspective).
          V4f x2d = fEdgeVectors.fX2D;
          V4f y2d = fEdgeVectors.fY2D;
@@ -144,10 +143,10 @@ index 12ed893..a91759d 100644
      }
  }
 diff --git a/src/gpu/geometry/GrQuadUtils.h b/src/gpu/geometry/GrQuadUtils.h
-index 5a442c8..2a1ff25 100644
+index dbbc4626e5cfb16db0e832e47477132f410ff13b..50b647bdb9c0efbf6faf8002f706b24ad0f0a2e3 100644
 --- a/src/gpu/geometry/GrQuadUtils.h
 +++ b/src/gpu/geometry/GrQuadUtils.h
-@@ -125,7 +125,8 @@
+@@ -111,7 +111,8 @@ namespace GrQuadUtils {
              // small, edges are near parallel, or edges are very short/zero-length. Returns number
              // of effective vertices in the degenerate quad.
              int computeDegenerateQuad(const skvx::Vec<4, float>& signedEdgeDistances,
