@@ -635,6 +635,7 @@ source_set("electron_lib") {
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser:core_api_provider",
+      "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",
       "//extensions/renderer",
