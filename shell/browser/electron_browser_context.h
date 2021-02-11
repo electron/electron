@@ -115,6 +115,7 @@ class ElectronBrowserContext
 
   // extensions deps
   void SetCorsOriginAccessListForOrigin(
+      TargetBrowserContexts target_mode,
       const url::Origin& source_origin,
       std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
       std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
