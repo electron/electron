@@ -52,10 +52,9 @@ index d7b6dbd85d6ef97370affde54bde4657f2413a06..be64bf3de4b26e93de7796bcc7d69d19
  
    if (!EC_KEY_set_public_key(new_key.get(), pub.get()))
      return env->ThrowError("Failed to set generated public key");
--
-+#if 0
-   EC_KEY_copy(ecdh->key_.get(), new_key.get());
-+#endif
+ 
+-  EC_KEY_copy(ecdh->key_.get(), new_key.get());
++  ecdh->key_.reset(EC_KEY_dup(new_key.get()));
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
