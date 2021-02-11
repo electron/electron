@@ -1008,6 +1008,7 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
     name: Remove some unused data to avoid storing it in the workspace/cache
     command: |
       rm -rf src/android_webview
+      rm -rf src/ios/chrome
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
       rm -rf src/third_party/WebKit/LayoutTests
