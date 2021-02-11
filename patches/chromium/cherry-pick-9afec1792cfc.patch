@@ -1,7 +1,7 @@
-From 9afec1792cfc2616a368c29b949f0765df37f9a2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
-Date: Wed, 03 Feb 2021 14:56:15 +0000
-Subject: [PATCH] [LTS-M86 Merge] Move FontPreloadManager to Oilpan
+Date: Wed, 3 Feb 2021 14:56:15 +0000
+Subject: Move FontPreloadManager to Oilpan
 
 Currently, TimerBase cannot correctly track the lifetime of objects
 embedded in GC-ed objects, like FontPreloadManager which is embedded in
@@ -29,22 +29,21 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1536}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
-index 74856aa..42b2cd9 100644
+index 2fea6ad5cb19e42dbb51a6432ce119b935c23d8f..f84f12cfa8ea70051bcdc82e723816d4ae266b5d 100644
 --- a/third_party/blink/renderer/core/dom/document.cc
 +++ b/third_party/blink/renderer/core/dom/document.cc
-@@ -790,7 +790,7 @@
-       fragment_directive_(MakeGarbageCollected<FragmentDirective>()),
-       display_lock_document_state_(
+@@ -791,7 +791,7 @@ Document::Document(const DocumentInit& initializer,
            MakeGarbageCollected<DisplayLockDocumentState>(this)),
--      font_preload_manager_(*this),
-+      font_preload_manager_(MakeGarbageCollected<FontPreloadManager>(*this)),
-       data_(MakeGarbageCollected<DocumentData>(GetExecutionContext())) {
-   if (GetFrame()) {
-     DCHECK(GetFrame()->GetPage());
-@@ -6963,7 +6963,7 @@
+       permission_service_(GetExecutionContext()),
+       has_trust_tokens_answerer_(GetExecutionContext()),
+-      font_preload_manager_(*this) {
++      font_preload_manager_(MakeGarbageCollected<FontPreloadManager>(*this)) {
+   GetOriginTrialContext()->BindExecutionContext(GetExecutionContext());
+ 
+   if (dom_window_) {
+@@ -6892,7 +6892,7 @@ void Document::BeginLifecycleUpdatesIfRenderingReady() {
      return;
    if (!HaveRenderBlockingResourcesLoaded())
      return;
@@ -53,7 +52,7 @@ index 74856aa..42b2cd9 100644
    View()->BeginLifecycleUpdates();
  }
  
-@@ -7670,7 +7670,7 @@
+@@ -7660,7 +7660,7 @@ bool Document::HaveScriptBlockingStylesheetsLoaded() const {
  bool Document::HaveRenderBlockingResourcesLoaded() const {
    return HaveImportsLoaded() &&
           style_engine_->HaveRenderBlockingStylesheetsLoaded() &&
@@ -62,7 +61,7 @@ index 74856aa..42b2cd9 100644
  }
  
  Locale& Document::GetCachedLocale(const AtomicString& locale) {
-@@ -8462,7 +8462,7 @@
+@@ -8503,7 +8503,7 @@ void Document::ClearUseCounterForTesting(mojom::WebFeature feature) {
  }
  
  void Document::FontPreloadingFinishedOrTimedOut() {
@@ -72,10 +71,10 @@ index 74856aa..42b2cd9 100644
      // For HTML, we resume only when we're past the body tag, so that we should
      // have something to paint now.
 diff --git a/third_party/blink/renderer/core/dom/document.h b/third_party/blink/renderer/core/dom/document.h
-index 1aeda1f..561c706 100644
+index b197ad6e06c6ba1b609607a78aa798f1cc397a3e..b092be4c8bd55567c14d81c9bee343da432747a0 100644
 --- a/third_party/blink/renderer/core/dom/document.h
 +++ b/third_party/blink/renderer/core/dom/document.h
-@@ -1629,7 +1629,7 @@
+@@ -1647,7 +1647,7 @@ class CORE_EXPORT Document : public ContainerNode,
                                   unsigned new_length);
    void NotifyChangeChildren(const ContainerNode& container);
  
@@ -84,9 +83,9 @@ index 1aeda1f..561c706 100644
    void FontPreloadingFinishedOrTimedOut();
  
    void IncrementAsyncScriptCount() { async_script_count_++; }
-@@ -2169,7 +2169,7 @@
-   // call or potential user prompt.
-   bool expressly_denied_storage_access_ = false;
+@@ -2230,7 +2230,7 @@ class CORE_EXPORT Document : public ContainerNode,
+   HeapHashSet<Member<ScriptPromiseResolver>>
+       pending_has_trust_tokens_resolvers_;
  
 -  FontPreloadManager font_preload_manager_;
 +  Member<FontPreloadManager> font_preload_manager_;
@@ -94,10 +93,10 @@ index 1aeda1f..561c706 100644
    int async_script_count_ = 0;
    bool first_paint_recorded_ = false;
 diff --git a/third_party/blink/renderer/core/loader/font_preload_manager.h b/third_party/blink/renderer/core/loader/font_preload_manager.h
-index 3e98fc9..631f0f9 100644
+index 3e98fc931a205b7e20b119e7af5a5bbac1eee2b5..631f0f95e7e70d3e1bf73c78f725fdf756a721eb 100644
 --- a/third_party/blink/renderer/core/loader/font_preload_manager.h
 +++ b/third_party/blink/renderer/core/loader/font_preload_manager.h
-@@ -20,9 +20,8 @@
+@@ -20,9 +20,8 @@ class ResourceFinishObserver;
  // API) and notifies the relevant document, so that it can manage the first
  // rendering timing to work with preloaded fonts.
  // Design doc: https://bit.ly/36E8UKB
