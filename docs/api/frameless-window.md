@@ -74,6 +74,7 @@ win.show()
 
 ### Limitations
 
+* The window will not be transparent while dev tools are open.
 * You can not click through the transparent area. We are going to introduce an
   API to set window shape to solve this, see
   [our issue](https://github.com/electron/electron/issues/1335) for details.
