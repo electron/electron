@@ -1,13 +1,9 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow } = require('electron')
-
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
+const { app, BrowserWindow, ipcMain } = require('electron')
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({
+  const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -18,15 +14,27 @@ function createWindow () {
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  let demoWindow
+  ipcMain.on('show-demo-window', () => {
+    if (demoWindow) {
+      demoWindow.focus()
+      return
+    }
+    demoWindow = new BrowserWindow({ width: 600, height: 400 })
+    demoWindow.loadURL('https://electronjs.org')
+    demoWindow.on('close', () => {
+      mainWindow.webContents.send('window-close')
+    })
+    demoWindow.on('focus', () => {
+      mainWindow.webContents.send('window-focus')
+    })
+    demoWindow.on('blur', () => {
+      mainWindow.webContents.send('window-blur')
+    })
+  })
 
-  // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null
+  ipcMain.on('focus-demo-window', () => {
+    if (demoWindow) demoWindow.focus()
   })
 }
 
