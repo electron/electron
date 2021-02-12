@@ -58,17 +58,11 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   bool document_created_ = false;
   service_manager::BinderRegistry registry_;
 
-<<<<<<< HEAD
-  std::queue<PendingElectronApiServiceMessage> pending_messages_;
-
-  mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
-=======
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
   mojo::Receiver<mojom::ElectronRenderer> receiver_{this};
->>>>>>> 9f6b53f46... make the renderer-side electron api interface not associated
 
   RendererClientBase* renderer_client_;
-  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_;
+  base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
