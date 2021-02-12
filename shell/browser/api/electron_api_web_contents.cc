@@ -1634,6 +1634,10 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
+  content::NavigationEntry* entry =
+      web_contents()->GetController().GetPendingEntry();
+  if (entry)
+    WebContents::TitleWasSet(entry);
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
