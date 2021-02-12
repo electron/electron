@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <anbelen@microsoft.com>
+Date: Thu, 10 Dec 2020 22:16:48 +0100
+Subject: Chromium backport: crbug.com/1151865
+
+M87-1
+Reject mojom::DataElement serialization if array size read failed
+https://chromium-review.googlesource.com/c/chromium/src/+/2567130
+CVE-2020-16041
+
+diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
+index ce1478f6df691d5b1f7862a45ac3989a43e2d814..881bcb23ab3291e61088458f46c446fe9e7fb7cf 100644
+--- a/services/network/public/cpp/url_request_mojom_traits.cc
++++ b/services/network/public/cpp/url_request_mojom_traits.cc
+@@ -286,6 +286,8 @@ bool StructTraits<network::mojom::DataElementDataView, network::DataElement>::
+   if (data.type() == network::mojom::DataElementType::kBytes) {
+     if (!data.ReadBuf(&out->buf_))
+       return false;
++    if (data.length() != out->buf_.size())
++      return false;
+   }
+   out->type_ = data.type();
+   out->data_pipe_getter_ = data.TakeDataPipeGetter<
