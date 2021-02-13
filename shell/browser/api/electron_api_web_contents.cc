@@ -1636,8 +1636,11 @@ void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   content::NavigationEntry* entry =
       web_contents()->GetController().GetPendingEntry();
-  if (entry)
+  // If a history entry has been made and the current window title is different,
+  // proceed with setting the new title
+  if (entry && (WebContents::GetTitle() != entry->GetTitle())) {
     WebContents::TitleWasSet(entry);
+  }
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
