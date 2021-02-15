@@ -38,7 +38,7 @@ app.whenReady().then(() => {
       `);
     }
     w.webContents.executeJavaScript('process.crash()');
-    w.webContents.on('crashed', () => process.exit(0));
+    w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'sandboxed-renderer') {
     const w = new BrowserWindow({
       show: false,
@@ -48,7 +48,7 @@ app.whenReady().then(() => {
       }
     });
     w.loadURL(`about:blank?set_extra=${setExtraParameters ? 1 : 0}`);
-    w.webContents.on('crashed', () => process.exit(0));
+    w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
     const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
     const version = app.getVersion();
