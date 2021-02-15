@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Zhao <raymondzhao@microsoft.com>
+Date: Wed, 10 Feb 2021 12:03:34 -0800
+Subject: Replace ClearFilterData with InvalidateFilterData
+
+This is a hand-patch of
+https://chromium-review.googlesource.com/c/chromium/src/+/2566992,
+where the InvalidateFilterData function is from
+https://chromium-review.googlesource.com/c/chromium/src/+/2454053.
+
+Firstly, the InvalidateFilterData function was copied over.
+Then, the ClearFilterData function was deleted, and any calls to it
+were replaced with InvalidateFilterData. Redundant calls were removed.
+
+The InvalidateFilterData function in this patch contains
+a fix for SVG content sometimes failing to appear after modification
+https://bugs.chromium.org/p/chromium/issues/detail?id=1154050.
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.cc
+index c7093ea1724dc99a26c3eef033d7ef13c2888f54..852eeb24ec617ae86e9aecd08bfe564445fbdca9 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.cc
+@@ -227,16 +227,11 @@ static inline void RemoveFromCacheAndInvalidateDependencies(
+     if (resources->HasClipOrMaskOrFilter()) {
+       InvalidationModeMask invalidation_mask =
+           SVGResourceClient::kBoundariesInvalidation;
+-      bool filter_data_invalidated = false;
+       if (resources->Filter()) {
+-        filter_data_invalidated = client->ClearFilterData();
+-        invalidation_mask |=
+-            filter_data_invalidated ? SVGResourceClient::kPaintInvalidation : 0;
++        client->InvalidateFilterData();
+       }
+       LayoutSVGResourceContainer::MarkClientForInvalidation(object,
+                                                             invalidation_mask);
+-      if (filter_data_invalidated)
+-        client->MarkFilterDataDirty();
+     }
+   }
+ 
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.cc b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+index f37cb5c3052d72ab15e769b29f8456e7ced9b5af..41ec00a53c1bb1c587b42f74867af4adab7e8641 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.cc
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+@@ -604,12 +604,7 @@ void SVGResources::ClearClipPathFilterMask(SVGElement& element,
+     old_reference_clip->RemoveClient(*client);
+   if (style->HasFilter()) {
+     style->Filter().RemoveClient(*client);
+-    if (client->ClearFilterData()) {
+-      LayoutObject* layout_object = element.GetLayoutObject();
+-      LayoutSVGResourceContainer::MarkClientForInvalidation(
+-          *layout_object, SVGResourceClient::kPaintInvalidation);
+-      client->MarkFilterDataDirty();
+-    }
++    client->InvalidateFilterData();
+   }
+   if (StyleSVGResource* masker_resource = style->SvgStyle().MaskerResource())
+     masker_resource->RemoveClient(*client);
+@@ -712,14 +707,10 @@ void SVGElementResourceClient::ResourceContentChanged(
+     return;
+   }
+ 
+-  const bool filter_data_invalidated = ClearFilterData();
+-  if (filter_data_invalidated)
+-    invalidation_mask |= SVGResourceClient::kPaintInvalidation;
++  InvalidateFilterData();
+ 
+   LayoutSVGResourceContainer::MarkClientForInvalidation(*layout_object,
+                                                         invalidation_mask);
+-  if (filter_data_invalidated)
+-    MarkFilterDataDirty();
+ 
+   bool needs_layout =
+       invalidation_mask & SVGResourceClient::kLayoutInvalidation;
+@@ -729,12 +720,8 @@ void SVGElementResourceClient::ResourceContentChanged(
+ 
+ void SVGElementResourceClient::ResourceElementChanged() {
+   if (LayoutObject* layout_object = element_->GetLayoutObject()) {
+-    ClearFilterData();
++    InvalidateFilterData();
+     SVGResourcesCache::ResourceReferenceChanged(*layout_object);
+-    // TODO(fs): If the resource element (for a filter) doesn't actually change
+-    // we don't need to perform the associated invalidations.
+-    layout_object->SetNeedsPaintPropertyUpdate();
+-    MarkFilterDataDirty();
+   }
+ }
+ 
+@@ -801,11 +788,16 @@ void SVGElementResourceClient::UpdateFilterData(
+   filter_data_dirty_ = false;
+ }
+ 
+-bool SVGElementResourceClient::ClearFilterData() {
+-  FilterData* filter_data = filter_data_.Release();
+-  if (filter_data)
++void SVGElementResourceClient::InvalidateFilterData() {
++  // If we performed an "optimized" invalidation via FilterPrimitiveChanged(),
++  // we could have set |filter_data_dirty_| but not cleared |filter_data_|.
++  if (filter_data_dirty_ && !filter_data_)
++    return;
++  if (FilterData* filter_data = filter_data_.Release())
+     filter_data->Dispose();
+-  return !!filter_data;
++  LayoutObject* layout_object = element_->GetLayoutObject();
++  layout_object->SetNeedsPaintPropertyUpdate();
++  MarkFilterDataDirty();
+ }
+ 
+ void SVGElementResourceClient::MarkFilterDataDirty() {
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.h b/third_party/blink/renderer/core/layout/svg/svg_resources.h
+index bfe056704b698d2189e5b759040f4f6cb3c54308..3416de3d5e062a31a0beb2df4d7398d2d435ec6a 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.h
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.h
+@@ -228,7 +228,7 @@ class SVGElementResourceClient final
+                               const QualifiedName& attribute) override;
+ 
+   void UpdateFilterData(CompositorFilterOperations&);
+-  bool ClearFilterData();
++  void InvalidateFilterData();
+   void MarkFilterDataDirty();
+ 
+   void Trace(Visitor*) const override;
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources_cache.cc b/third_party/blink/renderer/core/layout/svg/svg_resources_cache.cc
+index b9aea888de151de41591ec9fd76ef4a3c0f4b017..6fa6ee6eb18f049603c5fc177a53c772239761cc 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources_cache.cc
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources_cache.cc
+@@ -99,9 +99,7 @@ void SVGResourcesCache::ClientLayoutChanged(LayoutObject& object) {
+     invalidation_flags = SVGResourceClient::kBoundariesInvalidation;
+   bool filter_data_invalidated = false;
+   if (resources->Filter()) {
+-    filter_data_invalidated = client->ClearFilterData();
+-    invalidation_flags |=
+-        filter_data_invalidated ? SVGResourceClient::kPaintInvalidation : 0;
++    client->InvalidateFilterData();
+   }
+   if (LayoutSVGResourcePaintServer* fill = resources->Fill()) {
+     fill->RemoveClientFromCache(*client);
