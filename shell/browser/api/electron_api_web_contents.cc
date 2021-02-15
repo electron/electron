@@ -1392,6 +1392,7 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
+  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
   Emit("render-process-gone", details);
 }
 
