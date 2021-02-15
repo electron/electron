@@ -141,16 +141,18 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
   describe('should send minidump', () => {
     it('when renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('renderer', port);
+      const waitAppExit = runCrashApp('renderer', port);
       const crash = await waitForCrash();
+      await waitAppExit;
       checkCrash('renderer', crash);
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
 
     it('when sandboxed renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('sandboxed-renderer', port);
+      const waitAppExit = runCrashApp('sandboxed-renderer', port);
       const crash = await waitForCrash();
+      await waitAppExit;
       checkCrash('renderer', crash);
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
@@ -160,16 +162,18 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     // out why.
     ifit(!isLinuxOnArm)('when main process crashes', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('main', port);
+      const waitAppExit = runCrashApp('main', port);
       const crash = await waitForCrash();
+      await waitAppExit;
       checkCrash('browser', crash);
       expect(crash.mainProcessSpecific).to.equal('mps');
     });
 
     ifit(!isLinuxOnArm)('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('node', port);
+      const waitAppExit = runCrashApp('node', port);
       const crash = await waitForCrash();
+      await waitAppExit;
       checkCrash('node', crash);
       expect(crash.mainProcessSpecific).to.be.undefined();
       expect(crash.rendererSpecific).to.be.undefined();
@@ -179,8 +183,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
         it(`when ${processType} crashes`, async () => {
           const { port, waitForCrash } = await startServer();
-          runCrashApp(processType, port);
+          const waitAppExit = runCrashApp(processType, port);
           const crash = await waitForCrash();
+          await waitAppExit;
           expect(crash.guid).to.be.a('string');
         });
       }
@@ -190,14 +195,16 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         let crash2Guid;
         {
           const { port, waitForCrash } = await startServer();
-          runCrashApp('main', port);
+          const waitAppExit = runCrashApp('main', port);
           const crash = await waitForCrash();
+          await waitAppExit;
           crash1Guid = crash.guid;
         }
         {
           const { port, waitForCrash } = await startServer();
-          runCrashApp('main', port);
+          const waitAppExit = runCrashApp('main', port);
           const crash = await waitForCrash();
+          await waitAppExit;
           crash2Guid = crash.guid;
         }
         expect(crash2Guid).to.equal(crash1Guid);
@@ -207,8 +214,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     describe('with extra parameters', () => {
       it('when renderer crashes', async () => {
         const { port, waitForCrash } = await startServer();
-        runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
+        const waitAppExit = runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
         const crash = await waitForCrash();
+        await waitAppExit;
         checkCrash('renderer', crash);
         expect(crash.mainProcessSpecific).to.be.undefined();
         expect(crash.rendererSpecific).to.equal('rs');
@@ -217,8 +225,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
       it('when sandboxed renderer crashes', async () => {
         const { port, waitForCrash } = await startServer();
-        runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
+        const waitAppExit = runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
         const crash = await waitForCrash();
+        await waitAppExit;
         checkCrash('renderer', crash);
         expect(crash.mainProcessSpecific).to.be.undefined();
         expect(crash.rendererSpecific).to.equal('rs');
