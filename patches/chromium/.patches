@@ -141,4 +141,5 @@ ots_backport_maxp_sanitization.patch
 ots_backport_of_glyf_guard_access_to_maxp_version_1_field.patch
 layoutng_fix_an_incorrect_cache-hit_for_line_boxes.patch
 cherry-pick-0d2bf89e15cc.patch
+cherry-pick-df438f22f7d2.patch
 cherry-pick-9afec1792cfc.patch
