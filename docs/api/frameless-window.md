@@ -74,7 +74,6 @@ win.show()
 
 ### Limitations
 
-* The window will not be transparent while dev tools are open.
 * You can not click through the transparent area. We are going to introduce an
   API to set window shape to solve this, see
   [our issue](https://github.com/electron/electron/issues/1335) for details.
@@ -83,6 +82,7 @@ win.show()
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
+* The window will not be transparent when DevTools is opened.
 * On Windows operating systems, transparent windows will not work when DWM is
   disabled.
 * On Linux, users have to put `--enable-transparent-visuals --disable-gpu` in
