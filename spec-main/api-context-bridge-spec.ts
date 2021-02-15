@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
+import * as cp from 'child_process';
 
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
@@ -1123,4 +1124,32 @@ describe('contextBridge', () => {
 
   generateTests(true);
   generateTests(false);
+});
+
+describe('ContextBridgeMutability', () => {
+  it('should not make properties unwriteable and read-only if ContextBridgeMutability is on', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', '--enable-features=ContextBridgeMutability', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-modified-text');
+    expect(output).to.include('obj-modified-prop');
+    expect(output).to.include('1,2,5,3,4');
+  });
+
+  it('should make properties unwriteable and read-only if ContextBridgeMutability is off', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-text');
+    expect(output).to.include('obj-prop');
+    expect(output).to.include('1,2,3,4');
+  });
 });
