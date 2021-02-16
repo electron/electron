@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
@@ -178,6 +179,32 @@ describe('<webview> tag', function () {
       const [, webContents] = await didAttachWebview;
       const [, id] = await webviewDomReady;
       expect(webContents.id).to.equal(id);
+    });
+  });
+
+  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
+  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
+    it('emits when theme color changes', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const src = url.format({
+        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        protocol: 'file',
+        slashes: true
+      });
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', '${src}')
+        webview.addEventListener('did-change-theme-color', (e) => {
+          resolve('ok')
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('ok');
     });
   });
 
