@@ -1702,8 +1702,7 @@ void WebContents::DidFinishNavigation(
 
   // If a history entry has been made and the forward/back call has been made,
   // proceed with setting the new title
-  if (entry &&
-      (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
+  if (entry && (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
     WebContents::TitleWasSet(entry);
 }
 
