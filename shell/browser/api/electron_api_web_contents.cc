@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "ui/base/page_transition_types.h"  //FIXME(@mlaurencin): Decide if I need this or to include something else for the enums
 
 #include <limits>
 #include <memory>
@@ -1634,13 +1635,6 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
-  content::NavigationEntry* entry =
-      web_contents()->GetController().GetPendingEntry();
-  // If a history entry has been made and the current window title is different,
-  // proceed with setting the new title
-  if (entry && (WebContents::GetTitle() != entry->GetTitle())) {
-    WebContents::TitleWasSet(entry);
-  }
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
@@ -1705,6 +1699,16 @@ void WebContents::DidFinishNavigation(
            frame_process_id, frame_routing_id);
     }
   }
+  content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+  // If a history entry has been made and the forward/back call has been made,
+  // proceed with setting the new title
+  if (entry &&
+      ui::PageTransitionTypeIncludingQualifiersIs(
+          ui::PAGE_TRANSITION_FORWARD_BACK,
+          ui::PageTransitionFromInt(navigation_handle->GetPageTransition() &
+                                    ui::PAGE_TRANSITION_FORWARD_BACK)))
+    WebContents::TitleWasSet(entry);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
