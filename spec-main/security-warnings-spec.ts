@@ -81,7 +81,8 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
 
@@ -248,6 +249,6 @@ describe('security warnings', () => {
     });
   };
 
-  generateSpecs('without sandbox', {});
-  generateSpecs('with sandbox', { sandbox: true });
+  generateSpecs('without sandbox', { contextIsolation: false });
+  generateSpecs('with sandbox', { sandbox: true, contextIsolation: false });
 });

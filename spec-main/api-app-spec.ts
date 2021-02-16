@@ -408,7 +408,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -425,7 +426,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -443,7 +445,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -462,7 +465,8 @@ describe('app module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -480,7 +484,8 @@ describe('app module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -498,7 +503,8 @@ describe('app module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -516,7 +522,8 @@ describe('app module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -533,7 +540,8 @@ describe('app module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');

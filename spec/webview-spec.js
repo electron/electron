@@ -177,7 +177,8 @@ describe('<webview> tag', function () {
     it('loads the script before other scripts in window', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload.js`,
-        src: `file://${fixtures}/pages/e.html`
+        src: `file://${fixtures}/pages/e.html`,
+        contextIsolation: false
       });
 
       expect(message).to.be.a('string');

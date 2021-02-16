@@ -52,7 +52,8 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
     w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
@@ -169,7 +170,8 @@ describe('<webview> tag', function () {
         show: false,
         webPreferences: {
           webviewTag: true,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
@@ -212,7 +214,8 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
     BrowserWindow.removeDevToolsExtension('foo');
@@ -271,7 +274,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const zoomEventPromise = emittedOnce(ipcMain, 'webview-parent-zoom-level');
@@ -288,7 +292,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const promise = new Promise((resolve) => {
@@ -318,7 +323,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const promise = new Promise((resolve) => {
@@ -343,7 +349,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'));
@@ -359,7 +366,8 @@ describe('<webview> tag', function () {
           webviewTag: true,
           nodeIntegration: true,
           zoomFactor: 1.2,
-          session: webviewSession
+          session: webviewSession,
+          contextIsolation: false
         }
       });
       const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
@@ -375,7 +383,7 @@ describe('<webview> tag', function () {
   describe('nativeWindowOpen option', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);
@@ -528,7 +536,7 @@ describe('<webview> tag', function () {
   describe('permission request handlers', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);

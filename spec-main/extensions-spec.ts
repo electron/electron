@@ -201,7 +201,7 @@ describe('chrome extensions', () => {
     beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
-      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
     it('getAcceptLanguages()', async () => {
@@ -226,7 +226,7 @@ describe('chrome extensions', () => {
     beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
-      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
     it('getManifest()', async () => {
@@ -254,7 +254,7 @@ describe('chrome extensions', () => {
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       try {
         const p = emittedOnce(ipcMain, 'storage-success');
         await w.loadURL(url);
@@ -385,7 +385,7 @@ describe('chrome extensions', () => {
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       try {
         w.loadURL(url);
         const [, resp] = await emittedOnce(ipcMain, 'bg-page-message-response');
@@ -481,7 +481,7 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = emittedOnce(ipcMain, 'winning');
-      const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
       w.webContents.openDevTools();
       showLastDevToolsPanel(w);
