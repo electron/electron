@@ -719,8 +719,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   std::unique_ptr<content::WebContents> web_contents;
   if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(session->browser_context(),
-                                            GURL("chrome-guest://fake-host"));
+        content::SiteInstance::CreateForGuest(session->browser_context(),
+                                              GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
     guest_delegate_ =
