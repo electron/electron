@@ -1383,8 +1383,7 @@ describe('webContents module', () => {
     }
   });
 
-  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
-  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
+  describe('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct theme color', (done) => {
       const w = new BrowserWindow({ show: true });
