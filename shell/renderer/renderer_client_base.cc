@@ -262,10 +262,8 @@ void RendererClientBase::RenderFrameCreated(
 
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
-  auto* service = new ElectronApiServiceImpl(render_frame, this);
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::BindTo,
-                          service->GetWeakPtr()));
+  // service_impl_.reset(new ElectronApiServiceImpl(render_frame, this));
+  new ElectronApiServiceImpl(render_frame, this);
 
   content::RenderView* render_view = render_frame->GetRenderView();
   if (render_frame->IsMainFrame() && render_view) {

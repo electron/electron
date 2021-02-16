@@ -136,8 +136,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
           ->GetNetworkContext();
 
   network_context->CreateNetLogExporter(mojo::MakeRequest(&net_log_exporter_));
-  net_log_exporter_.set_connection_error_handler(
-      base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
+  net_log_exporter_.set_connection_error_handler(base::BindOnce(
+      &NetLog::OnConnectionError, weak_ptr_factory_.GetWeakPtr()));
 
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,
