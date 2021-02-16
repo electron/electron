@@ -122,7 +122,8 @@ class Session : public gin::Wrappable<Session>,
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  v8::Local<v8::Promise> LoadExtension(const base::FilePath& extension_path);
+  v8::Local<v8::Promise> LoadExtension(const base::FilePath& extension_path,
+                                       gin::Arguments* args);
   void RemoveExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions();

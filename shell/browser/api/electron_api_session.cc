@@ -680,7 +680,8 @@ std::vector<base::FilePath::StringType> Session::GetPreloads() const {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 v8::Local<v8::Promise> Session::LoadExtension(
-    const base::FilePath& extension_path) {
+    const base::FilePath& extension_path,
+    gin::Arguments* args) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<const extensions::Extension*> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -697,10 +698,19 @@ v8::Local<v8::Promise> Session::LoadExtension(
     return handle;
   }
 
+  int load_flags = extensions::Extension::FOLLOW_SYMLINKS_ANYWHERE;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    bool allowFileAccess = false;
+    options.Get("allowFileAccess", &allowFileAccess);
+    if (allowFileAccess)
+      load_flags |= extensions::Extension::ALLOW_FILE_ACCESS;
+  }
+
   auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
   extension_system->LoadExtension(
-      extension_path,
+      extension_path, load_flags,
       base::BindOnce(
           [](gin_helper::Promise<const extensions::Extension*> promise,
              const extensions::Extension* extension,
