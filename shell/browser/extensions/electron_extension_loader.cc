@@ -30,7 +30,8 @@ using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 namespace {
 
 std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
-    const base::FilePath& extension_dir) {
+    const base::FilePath& extension_dir,
+    int load_flags) {
   // app_shell only supports unpacked extensions.
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
@@ -40,7 +41,6 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     return std::make_pair(nullptr, err);
   }
 
-  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   std::string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
@@ -76,10 +76,11 @@ ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
 void ElectronExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir,
+    int load_flags,
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, extension_dir),
+      base::BindOnce(&LoadUnpacked, extension_dir, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
                      weak_factory_.GetWeakPtr(), std::move(cb)));
 }
@@ -175,9 +176,13 @@ void ElectronExtensionLoader::LoadExtensionForReload(
     LoadErrorBehavior load_error_behavior) {
   CHECK(!path.empty());
 
+  // TODO(nornagon): we should save whether file access was granted
+  // when loading this extension and retain it here. As is, reloading an
+  // extension will cause the file access permission to be dropped.
+  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, path),
+      base::BindOnce(&LoadUnpacked, path, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
