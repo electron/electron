@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "ui/base/page_transition_types.h"  //FIXME(@mlaurencin): Decide if I need this or to include something else for the enums
 
 #include <limits>
 #include <memory>
