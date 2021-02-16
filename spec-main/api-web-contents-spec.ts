@@ -194,7 +194,7 @@ describe('webContents module', () => {
       let w: BrowserWindow;
 
       before(async () => {
-        w = new BrowserWindow({ show: false });
+        w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
       after(closeAllWindows);
