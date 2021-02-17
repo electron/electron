@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sergei Glazunov <glazunov@google.com>
+Date: Fri, 12 Feb 2021 16:37:12 +0000
+Subject: Use a copy for transferring non detachable buffers
+
+Currently, |DOMArrayBuffer::Transfer()| makes a copy, but still uses
+the original buffer for transferring, thus making it possible to share a
+regular ArrayBuffer (not SAB) with multiple threads.
+
+(cherry picked from commit 0d289da12075592372940a366ad565b9a13d57ce)
+
+Bug: 1177341
+Change-Id: Idb48deb1698fe555f32531bc04b55dd3e1fb0a06
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2690630
+Reviewed-by: Bill Budge <bbudge@chromium.org>
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Sergei Glazunov <glazunov@google.com>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#853272}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2691251
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#980}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+index 17fcf0f9034d09a53376ebb380c98589d52de8f4..c456d15f2f5084d7592326e151c1a478bc2ac1fc 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
+@@ -47,6 +47,13 @@ bool DOMArrayBuffer::Transfer(v8::Isolate* isolate,
+         DOMArrayBuffer::Create(Content()->Data(), ByteLengthAsSizeT());
+   }
+ 
++  return to_transfer->TransferDetachable(isolate, result);
++}
++
++bool DOMArrayBuffer::TransferDetachable(v8::Isolate* isolate,
++                                        ArrayBufferContents& result) {
++  DCHECK(IsDetachable(isolate));
++
+   if (IsDetached()) {
+     result.Detach();
+     return false;
+@@ -62,7 +69,7 @@ bool DOMArrayBuffer::Transfer(v8::Isolate* isolate,
+ 
+   Vector<v8::Local<v8::ArrayBuffer>, 4> buffer_handles;
+   v8::HandleScope handle_scope(isolate);
+-  AccumulateArrayBuffersForAllWorlds(isolate, to_transfer, buffer_handles);
++  AccumulateArrayBuffersForAllWorlds(isolate, this, buffer_handles);
+ 
+   for (const auto& buffer_handle : buffer_handles)
+     buffer_handle->Detach();
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
+index 00ba385dafcfd476805e39e4c138cdac8f071ef6..e9a85d38d4d46d26a41cf4d394a92d1a7b511c02 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
+@@ -78,6 +78,9 @@ class CORE_EXPORT DOMArrayBuffer final : public DOMArrayBufferBase {
+ 
+   v8::Local<v8::Value> Wrap(v8::Isolate*,
+                             v8::Local<v8::Object> creation_context) override;
++
++ private:
++  bool TransferDetachable(v8::Isolate*, ArrayBufferContents& result);
+ };
+ 
+ }  // namespace blink
