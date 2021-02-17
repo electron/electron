@@ -354,6 +354,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
 
   auto* storage_partition =
       content::BrowserContext::GetDefaultStoragePartition(this);
+  params->auth_cert_observer =
+      storage_partition->CreateAuthAndCertObserverForNavigationRequest(-1);
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
       std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
