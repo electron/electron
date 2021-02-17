@@ -1,7 +1,7 @@
-From 76cb1cc32baadaacdd47e822ae1f8ba3c17b4dbe Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sergei Glazunov <glazunov@google.com>
 Date: Fri, 12 Feb 2021 16:37:12 +0000
-Subject: [PATCH] Use a copy for transferring non detachable buffers
+Subject: Use a copy for transferring non detachable buffers
 
 Currently, |DOMArrayBuffer::Transfer()| makes a copy, but still uses
 the original buffer for transferring, thus making it possible to share a
@@ -23,14 +23,13 @@ Reviewed-by: Krishna Govind <govind@chromium.org>
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4389@{#980}
 Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
----
 
 diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
-index 15cd7d7..abb1c4b 100644
+index 17fcf0f9034d09a53376ebb380c98589d52de8f4..c456d15f2f5084d7592326e151c1a478bc2ac1fc 100644
 --- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.cc
-@@ -46,6 +46,13 @@
-     to_transfer = DOMArrayBuffer::Create(Content()->Data(), ByteLength());
+@@ -47,6 +47,13 @@ bool DOMArrayBuffer::Transfer(v8::Isolate* isolate,
+         DOMArrayBuffer::Create(Content()->Data(), ByteLengthAsSizeT());
    }
  
 +  return to_transfer->TransferDetachable(isolate, result);
@@ -43,7 +42,7 @@ index 15cd7d7..abb1c4b 100644
    if (IsDetached()) {
      result.Detach();
      return false;
-@@ -61,7 +68,7 @@
+@@ -62,7 +69,7 @@ bool DOMArrayBuffer::Transfer(v8::Isolate* isolate,
  
    Vector<v8::Local<v8::ArrayBuffer>, 4> buffer_handles;
    v8::HandleScope handle_scope(isolate);
@@ -53,10 +52,10 @@ index 15cd7d7..abb1c4b 100644
    for (const auto& buffer_handle : buffer_handles)
      buffer_handle->Detach();
 diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
-index 00ba385..e9a85d3 100644
+index 00ba385dafcfd476805e39e4c138cdac8f071ef6..e9a85d38d4d46d26a41cf4d394a92d1a7b511c02 100644
 --- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
 +++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h
-@@ -78,6 +78,9 @@
+@@ -78,6 +78,9 @@ class CORE_EXPORT DOMArrayBuffer final : public DOMArrayBufferBase {
  
    v8::Local<v8::Value> Wrap(v8::Isolate*,
                              v8::Local<v8::Object> creation_context) override;
