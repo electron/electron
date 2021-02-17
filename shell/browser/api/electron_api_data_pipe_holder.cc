@@ -45,7 +45,8 @@ class DataPipeReader {
                         base::SequencedTaskRunnerHandle::Get()) {
     // Get a new data pipe and start.
     mojo::ScopedDataPipeProducerHandle producer_handle;
-    CHECK(mojo::CreateDataPipe(nullptr, producer_handle, data_pipe_));
+    CHECK_EQ(mojo::CreateDataPipe(nullptr, producer_handle, data_pipe_),
+             MOJO_RESULT_OK);
     data_pipe_getter_->Read(std::move(producer_handle),
                             base::BindOnce(&DataPipeReader::ReadCallback,
                                            weak_factory_.GetWeakPtr()));
