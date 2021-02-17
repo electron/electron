@@ -1098,7 +1098,7 @@ void TopLevelWindow::ResetBrowserViews() {
       // reset if the owner window is *this* window.
       if (browser_view->web_contents()) {
         auto* owner_window = browser_view->web_contents()->owner_window();
-        if (owner_window == window_.get()) {
+        if (owner_window && owner_window == window_.get()) {
           browser_view->web_contents()->SetOwnerWindow(nullptr);
           owner_window->RemoveBrowserView(browser_view->view());
         }
