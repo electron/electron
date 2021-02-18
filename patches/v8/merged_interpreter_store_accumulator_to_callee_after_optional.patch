@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mythri A <mythria@chromium.org>
+Date: Thu, 11 Feb 2021 10:09:03 +0000
+Subject: Merged: [interpreter] Store accumulator to callee after optional
+ chain checks
+
+Revision: df98901c19ce17ca995ee6750379b0f004210d68
+
+BUG=chromium:1171954
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=rmcilroy@chromium.org
+
+Change-Id: Ib62b5cecb1f0c5a31856a26d97464e1ca941bc39
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2689191
+Reviewed-by: Ross McIlroy <rmcilroy@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.8@{#34}
+Cr-Branched-From: 2dbcdc105b963ee2501c82139eef7e0603977ff0-refs/heads/8.8.278@{#1}
+Cr-Branched-From: 366d30c99049b3f1c673f8a93deb9f879d0fa9f0-refs/heads/master@{#71094}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 6b29add333e31e51eb8c63e41baf9f88300b9548..406a3966fe776731c6499ab55ee5883de77a6f8c 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -4921,8 +4921,9 @@ void BytecodeGenerator::VisitCall(Call* expr) {
+       Property* property = chain->expression()->AsProperty();
+       BuildOptionalChain([&]() {
+         VisitAndPushIntoRegisterList(property->obj(), &args);
+-        VisitPropertyLoadForRegister(args.last_register(), property, callee);
++        VisitPropertyLoad(args.last_register(), property);
+       });
++      builder()->StoreAccumulatorInRegister(callee);
+       break;
+     }
+     case Call::SUPER_CALL:
+diff --git a/test/mjsunit/regress/regress-crbug-1038178.js b/test/mjsunit/regress/regress-crbug-1038178.js
+index 0362f69bcda3ad1807d70de04b31deb8eea13af6..3a84066b837d514bffa5e96c6aca060f85232e02 100644
+--- a/test/mjsunit/regress/regress-crbug-1038178.js
++++ b/test/mjsunit/regress/regress-crbug-1038178.js
+@@ -15,7 +15,7 @@ function opt(){
+     (((function(){})())?.v)()
+ }
+ %PrepareFunctionForOptimization(opt)
+-assertThrows(opt());
+-assertThrows(opt());
++assertThrows(() => opt());
++assertThrows(() => opt());
+ %OptimizeFunctionOnNextCall(opt)
+-assertThrows(opt());
++assertThrows(() => opt());
+diff --git a/test/mjsunit/regress/regress-crbug-1171954.js b/test/mjsunit/regress/regress-crbug-1171954.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..94fbb329bc47b4885d87d3e570a05e02909321c7
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1171954.js
+@@ -0,0 +1,19 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --always-opt
++
++// This causes the register used by the call in the later try-catch block to be
++// used by the ToName conversion for null which causes a DCHECK fail when
++// compiling. If register allocation changes, this test may no longer reproduce
++// the crash but it is not easy write a proper test because it is linked to
++// register allocation. This test should always work, so shouldn't cause any
++// flakes.
++try {
++  var { [null]: __v_12, } = {};
++} catch (e) {}
++
++try {
++  assertEquals((__v_40?.o?.m)().p);
++} catch (e) {}
