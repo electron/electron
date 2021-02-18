@@ -140,10 +140,10 @@ index dc7f3bc886e7130c66d98ae6de73c17db746cbe5..6197db3570c860f39f381370e1af37f8
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 1dc23535c42aec292e94a09e9fd2d1c7f37e82cd..01cea80d1fe0effeaf200fb6988df7f89787441a 100644
+index 409f908148b3d2885216a12048fc3f2e3ea47c89..d43be2439324753f504109f3a3fc0a4f3799bee5 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1802,12 +1802,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1804,12 +1804,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -159,10 +159,10 @@ index 1dc23535c42aec292e94a09e9fd2d1c7f37e82cd..01cea80d1fe0effeaf200fb6988df7f8
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 7287ec00c3f57a8e10c4329f181bcdccaed7177d..81b7395aec797c201465164437441cbca6e99e0d 100644
+index 1ccab44183bf3d47762cff2198231e3fda9c53fc..7fc6a35ddee24340913f03c23fe7b8f80a102398 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -784,8 +784,7 @@ class Browser : public TabStripModelObserver,
+@@ -791,8 +791,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -362,7 +362,7 @@ index a7f0b19a8ab9bac6f1315ebd715d8e1b134edfe1..cbe2912d4ab2d9015396bbddf7836e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index a83c2dd71ef35358e55234200cc1a67f04ac84a9..de02460d4d390950330b07c97f9791388474ee2c 100644
+index cadebbfd37738ae7df9486a4240d9bdda4197f47..79ae6d8672b7435fbe5daa22986327cb07aef557 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -372,8 +372,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
