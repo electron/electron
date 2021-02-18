@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 18 Feb 2021 17:35:39 -0500
+Subject: build: add .mjs support to js2c
+
+V8 now uses .mjs files, so this updates js2c to handle those files.
+
+diff --git a/tools/js2c.py b/tools/js2c.py
+index bca4c44a31d1ffe7c9ae15b6f60cd55e325f707d..7acb27e753e31429fbb5de30c62dd30a3be3b5bc 100755
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -151,20 +151,21 @@ def JS2C(source_files, target, only_js):
+   # Build source code lines
+   definitions = []
+   initializers = []
+-
+-  for filename in source_files['.js']:
+-    AddModule(filename, definitions, initializers)
+-
+-    # Electron: Expose fs module without asar support.
+-    if filename == 'lib/fs.js':
+-      # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
+-      # dependencies. So to expose the unmodified Node 'fs' functionality here,
+-      # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
+-      # copies to depend on each other instead of on our asarified 'fs' code.
+-      AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
+-    elif filename.startswith('lib/internal/fs/'):
+-      original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
+-      AddModule(original_fs_filename, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
++  for extension in source_files.keys():
++    for filename in source_files[extension]:
++      if extension == '.js' or extension == '.mjs':
++        AddModule(filename, definitions, initializers)
++
++        # Electron: Expose fs module without asar support.
++        if filename == 'lib/fs.js':
++          # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
++          # dependencies. So to expose the unmodified Node 'fs' functionality here,
++          # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
++          # copies to depend on each other instead of on our asarified 'fs' code.
++          AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
++        elif filename.startswith('lib/internal/fs/'):
++          original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
++          AddModule(original_fs_filename, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
+ 
+   config_size = 0
+   if not only_js:
+@@ -240,7 +241,7 @@ def main():
+   if options.only_js:
+     assert len(source_files) == 1
+   else:
+-    assert len(source_files) == 2
++    assert len(source_files) == 3
+     # Currently config.gypi is the only `.gypi` file allowed
+     assert source_files['.gypi'][0].endswith('config.gypi')
+     source_files['config.gypi'] = source_files.pop('.gypi')[0]

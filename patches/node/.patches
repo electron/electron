@@ -32,3 +32,4 @@ remove_makeexternal_case_for_uncached_internal_strings.patch
 fix_remove_outdated_--experimental-wasm-bigint_flag.patch
 darwin_libuv_use_posix_spawn.patch
 fix_crypto_tests_to_run_with_bssl.patch
+build_add_mjs_support_to_js2c.patch
