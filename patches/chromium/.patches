@@ -121,3 +121,5 @@ cherry-pick-5c7ad5393f74.patch
 replace_clearfilterdata_with_invalidatefilterdata.patch
 cherry-pick-5902d1aa722a.patch
 cherry-pick-76cb1cc32baa.patch
+merge_to_m88_avoid_spinning_a_nested_message_loop_for_x11_clipboard.patch
+merge_to_m88_xproto_switch_event_queue_from_a_std_list_to_a.patch
