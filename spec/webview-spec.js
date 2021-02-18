@@ -992,16 +992,6 @@ describe('<webview> tag', function () {
     });
   });
 
-  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
-  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
-    it('emits when theme color changes', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/theme-color.html`
-      });
-      await waitForEvent(webview, 'did-change-theme-color');
-    });
-  });
-
   describe('<webview>.getWebContentsId', () => {
     it('can return the WebContents ID', async () => {
       const src = 'about:blank';
