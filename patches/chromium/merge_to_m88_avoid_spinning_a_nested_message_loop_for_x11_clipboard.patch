@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Anderson <thomasanderson@chromium.org>
 Date: Wed, 10 Feb 2021 23:53:26 +0000
-Subject: [Merge to M88] Avoid spinning a nested message loop for X11 clipboard
+Subject: Avoid spinning a nested message loop for X11 clipboard
 
 *** NOTE: THIS IS NOT A CLEAN MERGE ***
 
