@@ -181,3 +181,4 @@ cherry-pick-df438f22f7d2.patch
 cherry-pick-9afec1792cfc.patch
 cherry-pick-76cb1cc32baa.patch
 websocket_don_t_clear_event_queue_on_destruction.patch
+disable_gpu_acceleration_on_all_mesa_software_rasterizers.patch
