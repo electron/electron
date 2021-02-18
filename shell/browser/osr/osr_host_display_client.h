@@ -55,8 +55,6 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   void SetActive(bool active);
 
  private:
-  void IsOffscreen(IsOffscreenCallback callback) override;
-
 #if defined(OS_MAC)
   void OnDisplayReceivedCALayerParams(
       const gfx::CALayerParams& ca_layer_params) override;

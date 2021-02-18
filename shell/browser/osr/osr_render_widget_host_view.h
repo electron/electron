@@ -149,6 +149,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       gfx::PointF* transformed_point) override;
 
   // ui::CompositorDelegate:
+  bool IsOffscreen() const override;
   std::unique_ptr<viz::HostDisplayClient> CreateHostDisplayClient(
       ui::Compositor* compositor) override;
 
