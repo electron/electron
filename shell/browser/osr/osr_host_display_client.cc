@@ -90,10 +90,6 @@ void OffScreenHostDisplayClient::SetActive(bool active) {
   }
 }
 
-void OffScreenHostDisplayClient::IsOffscreen(IsOffscreenCallback callback) {
-  std::move(callback).Run(true);
-}
-
 void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
     mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver) {
   layered_window_updater_ =
