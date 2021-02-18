@@ -210,6 +210,32 @@ describe('BrowserView module', () => {
     });
   });
 
+  describe('BrowserWindow.setTopBrowserView()', () => {
+    it('should throw an error when a BrowserView is not attached to the window', () => {
+      view = new BrowserView();
+      expect(() => {
+        w.setTopBrowserView(view);
+      }).to.throw(/is not attached/);
+    });
+
+    it('should throw an error when a BrowserView is attached to some other window', () => {
+      view = new BrowserView();
+
+      const win2 = new BrowserWindow();
+
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 100, height: 100 });
+      win2.addBrowserView(view);
+
+      expect(() => {
+        w.setTopBrowserView(view);
+      }).to.throw(/is not attached/);
+
+      win2.close();
+      win2.destroy();
+    });
+  });
+
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView();

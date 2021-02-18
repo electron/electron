@@ -114,6 +114,7 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(ElectronMenuModel* menu_model) override;
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
+  void SetTopBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
