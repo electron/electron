@@ -1998,6 +1998,17 @@ describe('webContents module', () => {
     });
   });
 
+  describe('crashed event', () => {
+    it('does not crash main process when destroying WebContents in it', (done) => {
+      const contents = (webContents as any).create({ nodeIntegration: true });
+      contents.once('crashed', () => {
+        contents.destroy();
+        done();
+      });
+      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
+    });
+  });
+
   it('emits a cancelable event before creating a child webcontents', async () => {
     const w = new BrowserWindow({
       show: false,
