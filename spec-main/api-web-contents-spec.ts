@@ -1383,8 +1383,7 @@ describe('webContents module', () => {
     }
   });
 
-  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
-  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
+  describe('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct theme color', (done) => {
       const w = new BrowserWindow({ show: true });
@@ -2005,6 +2004,17 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+  });
+
+  describe('crashed event', () => {
+    it('does not crash main process when destroying WebContents in it', (done) => {
+      const contents = (webContents as any).create({ nodeIntegration: true });
+      contents.once('crashed', () => {
+        contents.destroy();
+        done();
+      });
+      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
     });
   });
 

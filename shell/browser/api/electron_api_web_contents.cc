@@ -1397,7 +1397,13 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
+  auto weak_this = GetWeakPtr();
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+
+  // User might destroy WebContents in the crashed event.
+  if (!weak_this)
+    return;
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -1688,6 +1694,15 @@ void WebContents::DidFinishNavigation(
            frame_process_id, frame_routing_id);
     }
   }
+  content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+  // This check is needed due to an issue in Chromium
+  // Check the Chromium issue to keep updated:
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+  // If a history entry has been made and the forward/back call has been made,
+  // proceed with setting the new title
+  if (entry && (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
+    WebContents::TitleWasSet(entry);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
