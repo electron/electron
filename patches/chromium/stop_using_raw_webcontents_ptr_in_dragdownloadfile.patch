@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Min Qin <qinmin@chromium.org>
+Date: Fri, 12 Feb 2021 22:45:08 +0000
+Subject: Stop using raw WebContents ptr in DragDownloadFile
+
+BUG=1172192
+
+(cherry picked from commit 99dc876a13df19f3512bcfb97e794ab5d1b28905)
+
+Change-Id: Ie029713553ff88c1e271db1c84396e1ddda19286
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2666189
+Reviewed-by: Xing Liu <xingliu@chromium.org>
+Commit-Queue: Min Qin <qinmin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#849692}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2692927
+Reviewed-by: Shakti Sahu <shaktisahu@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#2200}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/content/browser/download/drag_download_file.cc b/content/browser/download/drag_download_file.cc
+index 05c110adcbdebd67adc58a5e17b46dbd50ccc220..5dc8fe2214f6b5ef16445196e54ccb668c9fb5ef 100644
+--- a/content/browser/download/drag_download_file.cc
++++ b/content/browser/download/drag_download_file.cc
+@@ -37,15 +37,17 @@ class DragDownloadFile::DragDownloadFileUI
+   DragDownloadFileUI(const GURL& url,
+                      const Referrer& referrer,
+                      const std::string& referrer_encoding,
+-                     WebContents* web_contents,
++                     int render_process_id,
++                     int render_frame_id,
+                      OnCompleted on_completed)
+       : on_completed_(std::move(on_completed)),
+         url_(url),
+         referrer_(referrer),
+         referrer_encoding_(referrer_encoding),
+-        web_contents_(web_contents) {
++        render_process_id_(render_process_id),
++        render_frame_id_(render_frame_id) {
+     DCHECK(on_completed_);
+-    DCHECK(web_contents_);
++    DCHECK_GE(render_frame_id_, 0);
+     // May be called on any thread.
+     // Do not call weak_ptr_factory_.GetWeakPtr() outside the UI thread.
+   }
+@@ -54,6 +56,10 @@ class DragDownloadFile::DragDownloadFileUI
+                         const base::FilePath& file_path) {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
++    RenderFrameHost* host =
++        RenderFrameHost::FromID(render_process_id_, render_frame_id_);
++    if (!host)
++      return;
+     // TODO(https://crbug.com/614134) This should use the frame actually
+     // containing the link being dragged rather than the main frame of the tab.
+     net::NetworkTrafficAnnotationTag traffic_annotation =
+@@ -79,9 +85,9 @@ class DragDownloadFile::DragDownloadFileUI
+             }
+           }
+         })");
+-    std::unique_ptr<download::DownloadUrlParameters> params(
+-        DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
+-            web_contents_, url_, traffic_annotation));
++    auto params = std::make_unique<download::DownloadUrlParameters>(
++        url_, render_process_id_, host->GetRenderViewHost()->GetRoutingID(),
++        render_frame_id_, traffic_annotation);
+     params->set_referrer(referrer_.url);
+     params->set_referrer_policy(
+         Referrer::ReferrerPolicyForUrlRequest(referrer_.policy));
+@@ -91,7 +97,7 @@ class DragDownloadFile::DragDownloadFileUI
+     params->set_file_path(file_path);
+     params->set_file(std::move(file));  // Nulls file.
+     params->set_download_source(download::DownloadSource::DRAG_AND_DROP);
+-    BrowserContext::GetDownloadManager(web_contents_->GetBrowserContext())
++    BrowserContext::GetDownloadManager(host->GetBrowserContext())
+         ->DownloadUrl(std::move(params));
+   }
+ 
+@@ -165,7 +171,8 @@ class DragDownloadFile::DragDownloadFileUI
+   GURL url_;
+   Referrer referrer_;
+   std::string referrer_encoding_;
+-  WebContents* web_contents_;
++  int render_process_id_;
++  int render_frame_id_;
+   download::DownloadItem* download_item_ = nullptr;
+ 
+   // Only used in the callback from DownloadManager::DownloadUrl().
+@@ -182,8 +189,10 @@ DragDownloadFile::DragDownloadFile(const base::FilePath& file_path,
+                                    WebContents* web_contents)
+     : file_path_(file_path), file_(std::move(file)) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  RenderFrameHost* host = web_contents->GetMainFrame();
+   drag_ui_ = new DragDownloadFileUI(
+-      url, referrer, referrer_encoding, web_contents,
++      url, referrer, referrer_encoding, host->GetProcess()->GetID(),
++      host->GetRoutingID(),
+       base::BindOnce(&DragDownloadFile::DownloadCompleted,
+                      weak_ptr_factory_.GetWeakPtr()));
+   DCHECK(!file_path_.empty());
+diff --git a/content/browser/download/drag_download_file_browsertest.cc b/content/browser/download/drag_download_file_browsertest.cc
+index 800891a6df4f0d79f1dd0a9cf89b47b882d0f3de..88e248e49898ef55eff694d0979e01bbe69aa2f6 100644
+--- a/content/browser/download/drag_download_file_browsertest.cc
++++ b/content/browser/download/drag_download_file_browsertest.cc
+@@ -21,6 +21,7 @@
+ #include "content/public/test/content_browser_test.h"
+ #include "content/public/test/content_browser_test_utils.h"
+ #include "content/public/test/download_test_observer.h"
++#include "content/public/test/test_utils.h"
+ #include "content/shell/browser/shell.h"
+ #include "content/shell/browser/shell_browser_context.h"
+ #include "content/shell/browser/shell_download_manager_delegate.h"
+@@ -129,6 +130,28 @@ IN_PROC_BROWSER_TEST_F(DragDownloadFileTest, DragDownloadFileTest_Complete) {
+   RunUntilSucceed();
+ }
+ 
++IN_PROC_BROWSER_TEST_F(DragDownloadFileTest, DragDownloadFileTest_ClosePage) {
++  base::FilePath name(
++      downloads_directory().AppendASCII("DragDownloadFileTest_Complete.txt"));
++  GURL url = embedded_test_server()->GetURL("/download/download-test.lib");
++  Referrer referrer;
++  std::string referrer_encoding;
++  auto file = std::make_unique<DragDownloadFile>(name, base::File(), url,
++                                                 referrer, referrer_encoding,
++                                                 shell()->web_contents());
++  scoped_refptr<MockDownloadFileObserver> observer(
++      new MockDownloadFileObserver());
++  ON_CALL(*observer.get(), OnDownloadAborted())
++      .WillByDefault(InvokeWithoutArgs(this, &DragDownloadFileTest::FailFast));
++  DownloadManager* manager = BrowserContext::GetDownloadManager(
++      shell()->web_contents()->GetBrowserContext());
++  file->Start(observer.get());
++  shell()->web_contents()->Close();
++  RunAllTasksUntilIdle();
++  std::vector<download::DownloadItem*> downloads;
++  manager->GetAllDownloads(&downloads);
++  ASSERT_EQ(0u, downloads.size());
++}
+ // TODO(benjhayden): Test Stop().
+ 
+ }  // namespace content
