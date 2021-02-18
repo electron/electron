@@ -37,15 +37,27 @@ base::FilePath CreateDownloadPath(const GURL& url,
                                   const std::string& content_disposition,
                                   const std::string& suggested_filename,
                                   const std::string& mime_type,
+                                  const base::FilePath& last_saved_directory,
                                   const base::FilePath& default_download_path) {
   auto generated_name =
       net::GenerateFileName(url, content_disposition, std::string(),
                             suggested_filename, mime_type, "download");
 
-  if (!base::PathExists(default_download_path))
-    base::CreateDirectory(default_download_path);
+  base::FilePath download_path;
 
-  return default_download_path.Append(generated_name);
+  // If the last saved directory is a non-empty existent path, use it as the
+  // default.
+  if (last_saved_directory.empty() || !base::PathExists(last_saved_directory)) {
+    download_path = default_download_path;
+
+    if (!base::PathExists(download_path))
+      base::CreateDirectory(download_path);
+  } else {
+    // Otherwise use the global default.
+    download_path = last_saved_directory;
+  }
+
+  return download_path.Append(generated_name);
 }
 
 }  // namespace
@@ -153,10 +165,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   if (!canceled) {
     if (result.Get("filePath", &path)) {
       // Remember the last selected download directory.
-      auto* browser_context = static_cast<ElectronBrowserContext*>(
-          download_manager_->GetBrowserContext());
-      browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                            path.DirName());
+      last_saved_directory_ = path.DirName();
 
       api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
       if (download)
@@ -222,7 +231,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
       base::BindOnce(&CreateDownloadPath, download->GetURL(),
                      download->GetContentDisposition(),
                      download->GetSuggestedFilename(), download->GetMimeType(),
-                     default_download_path),
+                     last_saved_directory_, default_download_path),
       base::BindOnce(&ElectronDownloadManagerDelegate::OnDownloadPathGenerated,
                      weak_ptr_factory_.GetWeakPtr(), download->GetId(),
                      std::move(*callback)));
