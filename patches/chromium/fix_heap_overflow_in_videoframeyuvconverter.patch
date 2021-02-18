@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Zabriskie <nazabris@microsoft.com>
+Date: Fri, 5 Feb 2021 20:44:16 +0000
+Subject: Fix heap overflow in VideoFrameYUVConverter
+
+Currently with some texture sizes GLES2Util::ComputeImageDataSizesES3
+will attempt to add row padding when calculating the size of a
+VideoFrame plane. This is because it's currently assumed that each row
+aligns on a 4 byte boundary based on GL_UNPACK_ALIGNMENT but
+VideoFrames make no such guarantee as they may be densely packed.
+This CL removes the GL_UNPACK_ALIGNMENT assumption so that we only use
+the VideoFrame's stride when calculating padding.
+
+(cherry picked from commit 7de5d0ecb5a4f73aeffe15d825bf694d0d8e2a08)
+
+Bug: 1166504, 1161131
+Change-Id: I2484f5dfd2ad85b088fee57758776a5c9bd01d95
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2642765
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Nathan Zabriskie <nazabris@microsoft.com>
+Cr-Original-Commit-Position: refs/heads/master@{#846298}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2679121
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Nathan Zabriskie <nazabris@microsoft.com>
+Cr-Commit-Position: refs/branch-heads/4324@{#2115}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/gpu/command_buffer/client/gles2_implementation.cc b/gpu/command_buffer/client/gles2_implementation.cc
+index e1611b999bb2ac276c64d5848e7d205a70ed26be..6400b35a7e98483c7553275623220c3bef4acd9c 100644
+--- a/gpu/command_buffer/client/gles2_implementation.cc
++++ b/gpu/command_buffer/client/gles2_implementation.cc
+@@ -880,7 +880,9 @@ bool GLES2Implementation::GetHelper(GLenum pname, GLint* params) {
+     case GL_GPU_DISJOINT_EXT:
+       *params = static_cast<GLint>(query_tracker_->CheckAndResetDisjoint());
+       return true;
+-
++    case GL_UNPACK_ALIGNMENT:
++      *params = unpack_alignment_;
++      return true;
+     case GL_VIEWPORT:
+       if (state_.viewport_width > 0 && state_.viewport_height > 0 &&
+           capabilities_.max_viewport_width > 0 &&
+@@ -962,7 +964,6 @@ bool GLES2Implementation::GetHelper(GLenum pname, GLint* params) {
+     case GL_STENCIL_VALUE_MASK:
+     case GL_STENCIL_WRITEMASK:
+     case GL_SUBPIXEL_BITS:
+-    case GL_UNPACK_ALIGNMENT:
+       return false;
+     default:
+       break;
+diff --git a/gpu/command_buffer/client/raster_implementation_gles.cc b/gpu/command_buffer/client/raster_implementation_gles.cc
+index 997a142250c56ede4cc5d9ad42743748d8b1346c..7199aef0f3bc5a3ecf6241574c69f4c2ed39f3df 100644
+--- a/gpu/command_buffer/client/raster_implementation_gles.cc
++++ b/gpu/command_buffer/client/raster_implementation_gles.cc
+@@ -178,6 +178,9 @@ void RasterImplementationGLES::WritePixels(const gpu::Mailbox& dest_mailbox,
+   BeginSharedImageAccessDirectCHROMIUM(
+       texture_id, GL_SHARED_IMAGE_ACCESS_MODE_READWRITE_CHROMIUM);
+ 
++  GLint old_align = 0;
++  gl_->GetIntegerv(GL_UNPACK_ALIGNMENT, &old_align);
++  gl_->PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   gl_->PixelStorei(GL_UNPACK_ROW_LENGTH, row_bytes / src_info.bytesPerPixel());
+   gl_->BindTexture(texture_target, texture_id);
+   gl_->TexSubImage2D(texture_target, 0, dst_x_offset, dst_y_offset,
+@@ -186,6 +189,7 @@ void RasterImplementationGLES::WritePixels(const gpu::Mailbox& dest_mailbox,
+                      SkColorTypeToGLDataType(src_info.colorType()), src_pixels);
+   gl_->BindTexture(texture_target, 0);
+   gl_->PixelStorei(GL_UNPACK_ROW_LENGTH, 0);
++  gl_->PixelStorei(GL_UNPACK_ALIGNMENT, old_align);
+ 
+   EndSharedImageAccessDirectCHROMIUM(texture_id);
+   DeleteGpuRasterTexture(texture_id);
