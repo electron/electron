@@ -784,8 +784,8 @@ void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   }
 }
 
-void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
-                                   gin_helper::Arguments* args) {
+void TopLevelWindow::SetTopBrowserView(v8::Local<v8::Value> value,
+                                       gin_helper::Arguments* args) {
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
@@ -1222,7 +1222,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("removeMenu", &TopLevelWindow::RemoveMenu)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
-      .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
+      .SetMethod("setTopBrowserView", &TopLevelWindow::SetTopBrowserView)
       .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
       .SetMethod("getMediaSourceId", &TopLevelWindow::GetMediaSourceId)
