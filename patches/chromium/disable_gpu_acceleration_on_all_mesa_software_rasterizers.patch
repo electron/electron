@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Thu, 11 Feb 2021 02:24:04 +0000
+Subject: Disable GPU acceleration on all Mesa software rasterizers
+
+The previous entry only disabled acceleration on swrast, but softpipe
+and llvmpipe shouldn't be used for "GPU" acceleration either.
+This should apply to Linux but not ChromeOS, AFAICT.
+
+This only improves an existing software rendering list entry, but here
+is the rationale: We prefer to rely on our own (domain specific, so more
+efficient) software paths, at least for everything other than WebGL. And
+for WebGL, SwiftShader avoids unknown factors like
+llvmpipe/softpipe/swrast.
+
+If you are running a Mesa GL driver (not e.g. NVIDIA) then you can force
+these configurations with:
+- LIBGL_ALWAYS_SOFTWARE=1
+  https://docs.mesa3d.org/envvars.html#libgl-environment-variables:~:text=LIBGL_ALWAYS_SOFTWARE
+- GALLIUM_DRIVER=llvmpipe, softpipe, or swr (though swr didn't work for me)
+  https://docs.mesa3d.org/envvars.html#gallium-environment-variables:~:text=GALLIUM_DRIVER
+
+The GL_RENDERER strings are:
+- swrast: "Software Rasterizer" (couldn't test this locally; found this online)
+- softpipe: "softpipe" (on one machine)
+- llvmpipe: "llvmpipe (LLVM 10.0.0, 256 bits)" (on one machine)
+
+Drive-by updates the description of another item to be more accurate
+(SVGA3D is virtualized over hardware; it's not a software renderer).
+
+# Unrelated CQ failures on branch
+(cherry picked from commit 7c7eccfc85e387a0dcd154a2a9c2389177982837)
+
+No-Try: True
+Bug: 1155974
+Change-Id: I0571c1a1bf526260f7ea6cd53f88eec768973b13
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2645491
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Kai Ninomiya <kainino@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#846422}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2651183
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#2176}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/gpu/config/software_rendering_list.json b/gpu/config/software_rendering_list.json
+index 1df09bc1c4e548919fa8b52abbfef0dedf6f411a..a2ced859448bcfe54a92d3496181d96ca85ee791 100644
+--- a/gpu/config/software_rendering_list.json
++++ b/gpu/config/software_rendering_list.json
+@@ -21,11 +21,11 @@
+     {
+       "id": 3,
+       "description": "GL driver is software rendered. GPU acceleration is disabled",
+-      "cr_bugs": [59302, 315217],
++      "cr_bugs": [59302, 315217, 1155974],
+       "os": {
+         "type": "linux"
+       },
+-      "gl_renderer": "(?i).*software.*",
++      "gl_renderer": "(?i).*(software|llvmpipe|softpipe).*",
+       "features": [
+         "all"
+       ]
+@@ -337,7 +337,7 @@
+     },
+     {
+       "id": 50,
+-      "description": "Disable VMware software renderer on older Mesa",
++      "description": "Disable VMware virtualized renderer on older Mesa",
+       "cr_bugs": [145531, 332596, 571899, 629434],
+       "os": {
+         "type": "linux"
