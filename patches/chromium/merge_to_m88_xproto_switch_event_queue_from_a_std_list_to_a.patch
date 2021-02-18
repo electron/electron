@@ -110,10 +110,17 @@ index ae9b1d5174e6b39995bde80034ad426dcf4478c8..7164a2c47e2cd73092818896a1d94b70
  }
  
 diff --git a/ui/gfx/x/connection.cc b/ui/gfx/x/connection.cc
-index cea4895e776f6329ea65f94e3987402dadccabcb..46644d91f7827479ee5f6c047a65582f8cd091d2 100644
+index cea4895e776f6329ea65f94e3987402dadccabcb..c6a8b27f9a7f0ec4dae5187de471100c54a76b5c 100644
 --- a/ui/gfx/x/connection.cc
 +++ b/ui/gfx/x/connection.cc
-@@ -332,6 +332,15 @@ bool Connection::HasNextResponse() const {
+@@ -326,12 +326,21 @@ Connection::Request::Request(Request&& other)
+ 
+ Connection::Request::~Request() = default;
+ 
+-bool Connection::HasNextResponse() const {
++bool Connection::HasNextResponse() {
+   return !requests_.empty() &&
+          CompareSequenceIds(XLastKnownRequestProcessed(display_),
                              requests_.front().sequence) >= 0;
  }
  
@@ -138,9 +145,12 @@ index cea4895e776f6329ea65f94e3987402dadccabcb..46644d91f7827479ee5f6c047a65582f
      Event event = std::move(events_.front());
      events_.pop_front();
      return event;
-@@ -403,7 +412,7 @@ Event Connection::WaitForNextEvent() {
+@@ -401,9 +410,9 @@ Event Connection::WaitForNextEvent() {
+   return Event();
+ }
  
- bool Connection::HasPendingResponses() const {
+-bool Connection::HasPendingResponses() const {
++bool Connection::HasPendingResponses() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 -  return !events_.empty() || HasNextResponse();
 +  return HasNextEvent() || HasNextResponse();
@@ -175,7 +185,7 @@ index cea4895e776f6329ea65f94e3987402dadccabcb..46644d91f7827479ee5f6c047a65582f
      } else {
        break;
 diff --git a/ui/gfx/x/connection.h b/ui/gfx/x/connection.h
-index 1e0fa6c230052e16fc67a4f6b154864477216445..a613ac06b2b15e7d9f659b4891c249102800bd05 100644
+index 1e0fa6c230052e16fc67a4f6b154864477216445..107105d4236a6a99b544741a9e4ddf83407531de 100644
 --- a/ui/gfx/x/connection.h
 +++ b/ui/gfx/x/connection.h
 @@ -5,10 +5,10 @@
@@ -190,6 +200,15 @@ index 1e0fa6c230052e16fc67a4f6b154864477216445..a613ac06b2b15e7d9f659b4891c24910
  #include "base/sequence_checker.h"
  #include "ui/events/platform/platform_event_source.h"
  #include "ui/gfx/x/event.h"
+@@ -113,7 +113,7 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+   Event WaitForNextEvent();
+ 
+   // Are there any events, errors, or replies already buffered?
+-  bool HasPendingResponses() const;
++  bool HasPendingResponses();
+ 
+   // Dispatch any buffered events, errors, or replies.
+   void Dispatch(Delegate* delegate);
 @@ -126,8 +126,10 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
  
    KeySym KeycodeToKeysym(uint32_t keycode, unsigned int modifiers);
@@ -203,15 +222,17 @@ index 1e0fa6c230052e16fc67a4f6b154864477216445..a613ac06b2b15e7d9f659b4891c24910
      DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
      return events_;
    }
-@@ -161,6 +163,8 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+@@ -159,7 +161,9 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
  
-   bool HasNextResponse() const;
+   void AddRequest(unsigned int sequence, FutureBase::ResponseCallback callback);
  
-+  bool HasNextEvent();
+-  bool HasNextResponse() const;
++  bool HasNextResponse();
 +
++  bool HasNextEvent();
+ 
    void PreDispatchEvent(const Event& event);
  
-   int ScreenIndexFromRootWindow(x11::Window root) const;
 @@ -194,7 +198,7 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
    uint8_t mode_switch_ = 0;
    uint8_t num_lock_ = 0;
