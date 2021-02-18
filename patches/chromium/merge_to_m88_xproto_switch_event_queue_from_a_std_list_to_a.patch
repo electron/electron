@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 10 Feb 2021 22:45:10 +0000
+Subject: Switch event queue from a std::list to a base::circular_deque
+
+*** NOTE: THIS IS NOT A CLEAN MERGE ***
+
+> This is needed as a prerequisite for [1].  It also improves performance
+> a bit by replacing a node-based data structure with a flat one.
+>
+> [1] https://chromium-review.googlesource.com/c/chromium/src/+/2622521
+>
+> Change-Id: Ibe2e522f6c131876ed73793305524c25b42ab910
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2625784
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Scott Violet <sky@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#844303}
+
+BUG=1138143
+TBR=sky
+
+Change-Id: I181af2c82d5552a3614747d8b4f6740583ec4ffe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2687828
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#2163}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/ui/base/x/x11_util.cc b/ui/base/x/x11_util.cc
+index c604bcd0f9b567957646f2cc16931d010bc0f9c6..c210014f2b07e731fb2e7c3ccbce44dec43dda25 100644
+--- a/ui/base/x/x11_util.cc
++++ b/ui/base/x/x11_util.cc
+@@ -348,16 +348,14 @@ int CoalescePendingMotionEvents(const x11::Event* x11_event,
+ 
+   conn->ReadResponses();
+   if (motion) {
+-    for (auto it = conn->events().begin(); it != conn->events().end();) {
+-      const auto& next_event = *it;
++    for (auto& next_event : conn->events()) {
+       // Discard all but the most recent motion event that targets the same
+       // window with unchanged state.
+       const auto* next_motion = next_event.As<x11::MotionNotifyEvent>();
+       if (next_motion && next_motion->event == motion->event &&
+           next_motion->child == motion->child &&
+           next_motion->state == motion->state) {
+-        *last_event = std::move(*it);
+-        it = conn->events().erase(it);
++        *last_event = std::move(next_event);
+       } else {
+         break;
+       }
+@@ -367,8 +365,8 @@ int CoalescePendingMotionEvents(const x11::Event* x11_event,
+            device->opcode == x11::Input::DeviceEvent::TouchUpdate);
+ 
+     auto* ddmx11 = ui::DeviceDataManagerX11::GetInstance();
+-    for (auto it = conn->events().begin(); it != conn->events().end();) {
+-      auto* next_device = it->As<x11::Input::DeviceEvent>();
++    for (auto& event : conn->events()) {
++      auto* next_device = event.As<x11::Input::DeviceEvent>();
+ 
+       if (!next_device)
+         break;
+@@ -379,13 +377,13 @@ int CoalescePendingMotionEvents(const x11::Event* x11_event,
+       // always be at least one pending.
+       if (!ui::TouchFactory::GetInstance()->ShouldProcessDeviceEvent(
+               *next_device)) {
+-        it = conn->events().erase(it);
++        event = x11::Event();
+         continue;
+       }
+ 
+       if (next_device->opcode == device->opcode &&
+-          !ddmx11->IsCMTGestureEvent(*it) &&
+-          ddmx11->GetScrollClassEventDetail(*it) == SCROLL_TYPE_NO_SCROLL) {
++          !ddmx11->IsCMTGestureEvent(event) &&
++          ddmx11->GetScrollClassEventDetail(event) == SCROLL_TYPE_NO_SCROLL) {
+         // Confirm that the motion event is targeted at the same window
+         // and that no buttons or modifiers have changed.
+         if (device->event == next_device->event &&
+@@ -396,12 +394,12 @@ int CoalescePendingMotionEvents(const x11::Event* x11_event,
+             device->mods.latched == next_device->mods.latched &&
+             device->mods.locked == next_device->mods.locked &&
+             device->mods.effective == next_device->mods.effective) {
+-          *last_event = std::move(*it);
+-          it = conn->events().erase(it);
++          *last_event = std::move(event);
+           num_coalesced++;
+           continue;
+         }
+       }
++
+       break;
+     }
+   }
+diff --git a/ui/events/platform/x11/x11_event_source.cc b/ui/events/platform/x11/x11_event_source.cc
+index ae9b1d5174e6b39995bde80034ad426dcf4478c8..7164a2c47e2cd73092818896a1d94b705c98dbb1 100644
+--- a/ui/events/platform/x11/x11_event_source.cc
++++ b/ui/events/platform/x11/x11_event_source.cc
+@@ -221,8 +221,9 @@ x11::Time X11EventSource::GetCurrentServerTime() {
+   };
+ 
+   auto& events = connection_->events();
+-  events.erase(std::remove_if(events.begin(), events.end(), pred),
+-               events.end());
++  auto it = std::find_if(events.begin(), events.end(), pred);
++  if (it != events.end())
++    *it = x11::Event();
+   return time;
+ }
+ 
+diff --git a/ui/gfx/x/connection.cc b/ui/gfx/x/connection.cc
+index cea4895e776f6329ea65f94e3987402dadccabcb..c6a8b27f9a7f0ec4dae5187de471100c54a76b5c 100644
+--- a/ui/gfx/x/connection.cc
++++ b/ui/gfx/x/connection.cc
+@@ -326,12 +326,21 @@ Connection::Request::Request(Request&& other)
+ 
+ Connection::Request::~Request() = default;
+ 
+-bool Connection::HasNextResponse() const {
++bool Connection::HasNextResponse() {
+   return !requests_.empty() &&
+          CompareSequenceIds(XLastKnownRequestProcessed(display_),
+                             requests_.front().sequence) >= 0;
+ }
+ 
++bool Connection::HasNextEvent() {
++  while (!events_.empty()) {
++    if (events_.front().Initialized())
++      return true;
++    events_.pop_front();
++  }
++  return false;
++}
++
+ int Connection::GetFd() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   return Ready() ? xcb_get_file_descriptor(XcbConnection()) : -1;
+@@ -389,7 +398,7 @@ void Connection::ReadResponses() {
+ 
+ Event Connection::WaitForNextEvent() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (!events_.empty()) {
++  if (HasNextEvent()) {
+     Event event = std::move(events_.front());
+     events_.pop_front();
+     return event;
+@@ -401,9 +410,9 @@ Event Connection::WaitForNextEvent() {
+   return Event();
+ }
+ 
+-bool Connection::HasPendingResponses() const {
++bool Connection::HasPendingResponses() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  return !events_.empty() || HasNextResponse();
++  return HasNextEvent() || HasNextResponse();
+ }
+ 
+ const Connection::VisualInfo* Connection::GetVisualInfoFromId(
+@@ -475,7 +484,7 @@ void Connection::Dispatch(Delegate* delegate) {
+   };
+ 
+   auto process_next_event = [&] {
+-    DCHECK(!events_.empty());
++    DCHECK(HasNextEvent());
+ 
+     Event event = std::move(events_.front());
+     events_.pop_front();
+@@ -488,7 +497,7 @@ void Connection::Dispatch(Delegate* delegate) {
+     Flush();
+     ReadResponses();
+ 
+-    if (HasNextResponse() && !events_.empty()) {
++    if (HasNextResponse() && HasNextEvent()) {
+       if (!events_.front().sequence_valid()) {
+         process_next_event();
+         continue;
+@@ -506,7 +515,7 @@ void Connection::Dispatch(Delegate* delegate) {
+         process_next_event();
+     } else if (HasNextResponse()) {
+       process_next_response();
+-    } else if (!events_.empty()) {
++    } else if (HasNextEvent()) {
+       process_next_event();
+     } else {
+       break;
+diff --git a/ui/gfx/x/connection.h b/ui/gfx/x/connection.h
+index 1e0fa6c230052e16fc67a4f6b154864477216445..107105d4236a6a99b544741a9e4ddf83407531de 100644
+--- a/ui/gfx/x/connection.h
++++ b/ui/gfx/x/connection.h
+@@ -5,10 +5,10 @@
+ #ifndef UI_GFX_X_CONNECTION_H_
+ #define UI_GFX_X_CONNECTION_H_
+ 
+-#include <list>
+ #include <queue>
+ 
+ #include "base/component_export.h"
++#include "base/containers/circular_deque.h"
+ #include "base/sequence_checker.h"
+ #include "ui/events/platform/platform_event_source.h"
+ #include "ui/gfx/x/event.h"
+@@ -113,7 +113,7 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+   Event WaitForNextEvent();
+ 
+   // Are there any events, errors, or replies already buffered?
+-  bool HasPendingResponses() const;
++  bool HasPendingResponses();
+ 
+   // Dispatch any buffered events, errors, or replies.
+   void Dispatch(Delegate* delegate);
+@@ -126,8 +126,10 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+ 
+   KeySym KeycodeToKeysym(uint32_t keycode, unsigned int modifiers);
+ 
+-  // Access the event buffer.  Clients can add, delete, or modify events.
+-  std::list<Event>& events() {
++  // Access the event buffer.  Clients may modify the queue, including
++  // "deleting" events by setting events[i] = x11::Event(), which will
++  // guarantee all calls to x11::Event::As() will return nullptr.
++  base::circular_deque<Event>& events() {
+     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+     return events_;
+   }
+@@ -159,7 +161,9 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+ 
+   void AddRequest(unsigned int sequence, FutureBase::ResponseCallback callback);
+ 
+-  bool HasNextResponse() const;
++  bool HasNextResponse();
++
++  bool HasNextEvent();
+ 
+   void PreDispatchEvent(const Event& event);
+ 
+@@ -194,7 +198,7 @@ class COMPONENT_EXPORT(X11) Connection : public XProto,
+   uint8_t mode_switch_ = 0;
+   uint8_t num_lock_ = 0;
+ 
+-  std::list<Event> events_;
++  base::circular_deque<Event> events_;
+ 
+   std::queue<Request> requests_;
+ 
+diff --git a/ui/gfx/x/event.h b/ui/gfx/x/event.h
+index 7e3d41dc7cefc5b01bd582b55274fd1f75c7782f..b370b0f9a95a2f1fec19d82ad17a76bb07015511 100644
+--- a/ui/gfx/x/event.h
++++ b/ui/gfx/x/event.h
+@@ -76,6 +76,8 @@ class COMPONENT_EXPORT(X11) Event {
+       *window_ = window;
+   }
+ 
++  bool Initialized() const { return deleter_; }
++
+  private:
+   friend void ReadEvent(Event* event,
+                         Connection* connection,

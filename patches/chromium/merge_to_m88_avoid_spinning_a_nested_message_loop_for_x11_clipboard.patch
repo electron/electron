@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 10 Feb 2021 23:53:26 +0000
+Subject: Avoid spinning a nested message loop for X11 clipboard
+
+*** NOTE: THIS IS NOT A CLEAN MERGE ***
+
+> BUG=443355,1138143,1161141,1161143,1161144,1161145,1161146,1161147,1161149,1161151,1161152
+>
+> Change-Id: I5c95a9d066683d18f344d694e517274e3ef7ccb4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2622521
+> Reviewed-by: Scott Violet <sky@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#844318}
+
+BUG=1138143
+TBR=sky
+
+Change-Id: I7269ac8af7c91988a7d5520b3faf88dac89a577e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2688137
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4324@{#2166}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/ui/base/x/selection_requestor.cc b/ui/base/x/selection_requestor.cc
+index 7a83c814a756eb4daea020a47035c80320a129c3..f669f075b4dee7bbbc53c28abfe2f87fa6f27ed1 100644
+--- a/ui/base/x/selection_requestor.cc
++++ b/ui/base/x/selection_requestor.cc
+@@ -7,7 +7,6 @@
+ #include <algorithm>
+ 
+ #include "base/memory/ref_counted_memory.h"
+-#include "base/run_loop.h"
+ #include "ui/base/x/selection_owner.h"
+ #include "ui/base/x/selection_utils.h"
+ #include "ui/base/x/x11_util.h"
+@@ -28,7 +27,7 @@ const char kChromeSelection[] = "CHROME_SELECTION";
+ const int KSelectionRequestorTimerPeriodMs = 100;
+ 
+ // The amount of time to wait for a request to complete before aborting it.
+-const int kRequestTimeoutMs = 10000;
++const int kRequestTimeoutMs = 1000;
+ 
+ static_assert(KSelectionRequestorTimerPeriodMs <= kRequestTimeoutMs,
+               "timer period must be <= request timeout");
+@@ -235,37 +234,30 @@ void SelectionRequestor::ConvertSelectionForCurrentRequest() {
+ }
+ 
+ void SelectionRequestor::BlockTillSelectionNotifyForRequest(Request* request) {
+-  if (X11EventSource::HasInstance()) {
+-    if (!abort_timer_.IsRunning()) {
+-      abort_timer_.Start(
+-          FROM_HERE,
+-          base::TimeDelta::FromMilliseconds(KSelectionRequestorTimerPeriodMs),
+-          this, &SelectionRequestor::AbortStaleRequests);
+-    }
+-
+-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+-    request->quit_closure = run_loop.QuitClosure();
+-    run_loop.Run();
+-
+-    // We cannot put logic to process the next request here because the RunLoop
+-    // might be nested. For instance, request 'B' may start a RunLoop while the
+-    // RunLoop for request 'A' is running. It is not possible to end the RunLoop
+-    // for request 'A' without first ending the RunLoop for request 'B'.
+-  } else {
+-    // This occurs if PerformBlockingConvertSelection() is called during
+-    // shutdown and the X11EventSource has already been destroyed.
+-    auto* conn = x11::Connection::Get();
+-    auto& events = conn->events();
+-    while (!request->completed && request->timeout > base::TimeTicks::Now()) {
+-      conn->Flush();
+-      conn->ReadResponses();
+-      if (!conn->events().empty()) {
+-        x11::Event event = std::move(events.front());
+-        events.pop_front();
+-        dispatcher_->DispatchXEvent(&event);
++  auto* connection = x11::Connection::Get();
++  auto& events = connection->events();
++  size_t i = 0;
++  while (!request->completed && request->timeout > base::TimeTicks::Now()) {
++    connection->Flush();
++    connection->ReadResponses();
++    size_t events_size = events.size();
++    for (; i < events_size; ++i) {
++      auto& event = events[i];
++      if (auto* notify = event.As<x11::SelectionNotifyEvent>()) {
++        if (notify->requestor == x_window_) {
++          OnSelectionNotify(*notify);
++          event = x11::Event();
++        }
++      } else if (auto* prop = event.As<x11::PropertyNotifyEvent>()) {
++        if (CanDispatchPropertyEvent(event)) {
++          OnPropertyEvent(event);
++          event = x11::Event();
++        }
+       }
+     }
++    DCHECK_EQ(events_size, events.size());
+   }
++  AbortStaleRequests();
+ }
+ 
+ SelectionRequestor::Request* SelectionRequestor::GetCurrentRequest() {
+diff --git a/ui/base/x/selection_requestor_unittest.cc b/ui/base/x/selection_requestor_unittest.cc
+index c67b8e62213456e0b3006a1eac618c733d28e1e2..efb31b6f3c07ea7debb188bdc8012849362b8dae 100644
+--- a/ui/base/x/selection_requestor_unittest.cc
++++ b/ui/base/x/selection_requestor_unittest.cc
+@@ -102,7 +102,8 @@ void PerformBlockingConvertSelection(SelectionRequestor* requestor,
+ 
+ // Test that SelectionRequestor correctly handles receiving a request while it
+ // is processing another request.
+-TEST_F(SelectionRequestorTest, NestedRequests) {
++// TODO(https://crbug.com/443355): Reenable once clipboard interface is async.
++TEST_F(SelectionRequestorTest, DISABLED_NestedRequests) {
+   // Assume that |selection| will have no owner. If there is an owner, the owner
+   // will set the property passed into the XConvertSelection() request which is
+   // undesirable.
