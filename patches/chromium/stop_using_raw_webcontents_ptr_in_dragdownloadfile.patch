@@ -18,7 +18,7 @@ Cr-Commit-Position: refs/branch-heads/4324@{#2200}
 Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
 
 diff --git a/content/browser/download/drag_download_file.cc b/content/browser/download/drag_download_file.cc
-index a219564120137be65819b06b6c3b718a0eb0e53d..da06b7a62f2b2f4bf8db4cabb09ad75219a32b95 100644
+index a219564120137be65819b06b6c3b718a0eb0e53d..2ddc925c0c01a6f81709caaa61b126dde325aef1 100644
 --- a/content/browser/download/drag_download_file.cc
 +++ b/content/browser/download/drag_download_file.cc
 @@ -38,15 +38,17 @@ class DragDownloadFile::DragDownloadFileUI
@@ -71,7 +71,7 @@ index a219564120137be65819b06b6c3b718a0eb0e53d..da06b7a62f2b2f4bf8db4cabb09ad752
      params->set_file(std::move(file));  // Nulls file.
      params->set_download_source(download::DownloadSource::DRAG_AND_DROP);
 -    BrowserContext::GetDownloadManager(web_contents_->GetBrowserContext())
-+    BrowserContext::GetDownloadManager(host->GetBrowserContext())
++    BrowserContext::GetDownloadManager(host->GetProcess()->GetBrowserContext())
          ->DownloadUrl(std::move(params));
    }
  
