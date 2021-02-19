@@ -9,11 +9,11 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: debian 
 
     steps:
     - uses: actions/checkout@v2
-    - name: configure
+    - name: root
       run: ./configure
     - name: make
       run: make
