@@ -45,7 +45,7 @@ void ZoomLevelDelegate::RegisterPrefs(PrefRegistrySimple* registry) {
 
 ZoomLevelDelegate::ZoomLevelDelegate(PrefService* pref_service,
                                      const base::FilePath& partition_path)
-    : pref_service_(pref_service), host_zoom_map_(nullptr) {
+    : pref_service_(pref_service) {
   DCHECK(pref_service_);
   partition_key_ = GetHash(partition_path);
 }

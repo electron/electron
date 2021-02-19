@@ -325,21 +325,21 @@ bool Converter<blink::DeviceEmulationParams>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
+v8::Local<v8::Value> Converter<blink::mojom::ContextMenuDataMediaType>::ToV8(
     v8::Isolate* isolate,
-    const blink::ContextMenuDataMediaType& in) {
+    const blink::mojom::ContextMenuDataMediaType& in) {
   switch (in) {
-    case blink::ContextMenuDataMediaType::kImage:
+    case blink::mojom::ContextMenuDataMediaType::kImage:
       return StringToV8(isolate, "image");
-    case blink::ContextMenuDataMediaType::kVideo:
+    case blink::mojom::ContextMenuDataMediaType::kVideo:
       return StringToV8(isolate, "video");
-    case blink::ContextMenuDataMediaType::kAudio:
+    case blink::mojom::ContextMenuDataMediaType::kAudio:
       return StringToV8(isolate, "audio");
-    case blink::ContextMenuDataMediaType::kCanvas:
+    case blink::mojom::ContextMenuDataMediaType::kCanvas:
       return StringToV8(isolate, "canvas");
-    case blink::ContextMenuDataMediaType::kFile:
+    case blink::mojom::ContextMenuDataMediaType::kFile:
       return StringToV8(isolate, "file");
-    case blink::ContextMenuDataMediaType::kPlugin:
+    case blink::mojom::ContextMenuDataMediaType::kPlugin:
       return StringToV8(isolate, "plugin");
     default:
       return StringToV8(isolate, "none");
@@ -347,15 +347,16 @@ v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::ContextMenuDataInputFieldType>::ToV8(
+v8::Local<v8::Value>
+Converter<blink::mojom::ContextMenuDataInputFieldType>::ToV8(
     v8::Isolate* isolate,
-    const blink::ContextMenuDataInputFieldType& in) {
+    const blink::mojom::ContextMenuDataInputFieldType& in) {
   switch (in) {
-    case blink::ContextMenuDataInputFieldType::kPlainText:
+    case blink::mojom::ContextMenuDataInputFieldType::kPlainText:
       return StringToV8(isolate, "plainText");
-    case blink::ContextMenuDataInputFieldType::kPassword:
+    case blink::mojom::ContextMenuDataInputFieldType::kPassword:
       return StringToV8(isolate, "password");
-    case blink::ContextMenuDataInputFieldType::kOther:
+    case blink::mojom::ContextMenuDataInputFieldType::kOther:
       return StringToV8(isolate, "other");
     default:
       return StringToV8(isolate, "none");
@@ -385,27 +386,32 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanSelectAll));
+  dict.Set("canEditRichly",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanEditRichly));
 
   return ConvertToV8(isolate, dict);
 }
 
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.Set("inError",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaInError));
-  dict.Set("isPaused",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaPaused));
-  dict.Set("isMuted", !!(mediaFlags & blink::WebContextMenuData::kMediaMuted));
-  dict.Set("hasAudio",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaHasAudio));
-  dict.Set("isLooping",
-           (mediaFlags & blink::WebContextMenuData::kMediaLoop) != 0);
+  dict.Set("inError", !!(mediaFlags & blink::ContextMenuData::kMediaInError));
+  dict.Set("isPaused", !!(mediaFlags & blink::ContextMenuData::kMediaPaused));
+  dict.Set("isMuted", !!(mediaFlags & blink::ContextMenuData::kMediaMuted));
+  dict.Set("canSave", !!(mediaFlags & blink::ContextMenuData::kMediaCanSave));
+  dict.Set("hasAudio", !!(mediaFlags & blink::ContextMenuData::kMediaHasAudio));
+  dict.Set("isLooping", !!(mediaFlags & blink::ContextMenuData::kMediaLoop));
   dict.Set("isControlsVisible",
-           (mediaFlags & blink::WebContextMenuData::kMediaControls) != 0);
+           !!(mediaFlags & blink::ContextMenuData::kMediaControls));
   dict.Set("canToggleControls",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaCanToggleControls));
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanToggleControls));
+  dict.Set("canPrint", !!(mediaFlags & blink::ContextMenuData::kMediaCanPrint));
   dict.Set("canRotate",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaCanRotate));
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanRotate));
+  dict.Set("canShowPictureInPicture",
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanPictureInPicture));
+  dict.Set("isShowingPictureInPicture",
+           !!(mediaFlags & blink::ContextMenuData::kMediaPictureInPicture));
+  dict.Set("canLoop", !!(mediaFlags & blink::ContextMenuData::kMediaCanLoop));
   return ConvertToV8(isolate, dict);
 }
 

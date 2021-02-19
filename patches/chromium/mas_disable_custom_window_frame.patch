@@ -98,7 +98,7 @@ index e03bbc724cfd01967e71998394361556df1c4915..783745b11365c04c1e1052197d20d494
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 5e5a39c2920b748823d21f15bc054733d7aa6441..980c4cef13bacb46e92264bf38f3934626515190 100644
+index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce8fff59a6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -15,7 +15,9 @@
@@ -111,7 +111,7 @@ index 5e5a39c2920b748823d21f15bc054733d7aa6441..980c4cef13bacb46e92264bf38f39346
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -57,6 +59,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -47,6 +49,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -120,7 +120,7 @@ index 5e5a39c2920b748823d21f15bc054733d7aa6441..980c4cef13bacb46e92264bf38f39346
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -83,6 +87,8 @@ - (BOOL)usesCustomDrawing {
+@@ -73,6 +77,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -129,7 +129,7 @@ index 5e5a39c2920b748823d21f15bc054733d7aa6441..980c4cef13bacb46e92264bf38f39346
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -164,6 +170,8 @@ - (BOOL)hasViewsMenuActive {
+@@ -154,6 +160,8 @@ - (BOOL)hasViewsMenuActive {
  
  // NSWindow overrides.
  
@@ -138,7 +138,7 @@ index 5e5a39c2920b748823d21f15bc054733d7aa6441..980c4cef13bacb46e92264bf38f39346
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -175,6 +183,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -165,6 +173,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

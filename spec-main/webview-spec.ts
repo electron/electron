@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
@@ -63,7 +64,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         sandbox: true
       }
     });
@@ -76,7 +76,6 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true
       }
     });
@@ -89,12 +88,22 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true,
         contextIsolation: true,
         sandbox: true
       }
     });
     w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+    await emittedOnce(ipcMain, 'pong');
+  });
+
+  it('works with Trusted Types', async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true
+      }
+    });
+    w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
     await emittedOnce(ipcMain, 'pong');
   });
 
@@ -173,6 +182,31 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('did-change-theme-color event', () => {
+    it('emits when theme color changes', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const src = url.format({
+        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        protocol: 'file',
+        slashes: true
+      });
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', '${src}')
+        webview.addEventListener('did-change-theme-color', (e) => {
+          resolve('ok')
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('ok');
+    });
+  });
+
   it('loads devtools extensions registered on the parent window', async () => {
     const w = new BrowserWindow({
       show: false,
@@ -181,10 +215,10 @@ describe('<webview> tag', function () {
         nodeIntegration: true
       }
     });
-    BrowserWindow.removeDevToolsExtension('foo');
+    w.webContents.session.removeExtension('foo');
 
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-    await BrowserWindow.addDevToolsExtension(extensionPath);
+    await w.webContents.session.loadExtension(extensionPath);
 
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
     loadWebView(w.webContents, {
@@ -198,8 +232,10 @@ describe('<webview> tag', function () {
         const showPanelIntervalId = setInterval(function () {
           if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
-              const lastPanelId: any = (window as any).UI.inspectorView._tabbedPane._tabs.peekLast().id;
-              (window as any).UI.inspectorView.showPanel(lastPanelId);
+              const { UI } = (window as any);
+              const tabs = UI.inspectorView._tabbedPane._tabs;
+              const lastPanelId: any = tabs[tabs.length - 1].id;
+              UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');
           } else {
             clearInterval(showPanelIntervalId);
@@ -255,7 +291,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         ipcMain.on('webview-zoom-level', (event, zoomLevel, zoomFactor, newHost, final) => {
           if (!newHost) {
             expect(zoomFactor).to.equal(1.44);
@@ -285,7 +321,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       });
-      const promise = new Promise((resolve) => {
+      const promise = new Promise<void>((resolve) => {
         ipcMain.on('webview-zoom-in-page', (event, zoomLevel, zoomFactor, final) => {
           expect(zoomFactor).to.equal(1.44);
           expect(zoomLevel).to.equal(2.0);
@@ -500,7 +536,7 @@ describe('<webview> tag', function () {
     const partition = 'permissionTest';
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
           if (webContents.id === webContentsId) {
             // requestMIDIAccess with sysex requests both midi and midiSysex so

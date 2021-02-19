@@ -28,7 +28,7 @@ If both commands succeeded, you are ready to install Electron.
 
 From a development perspective, an Electron application is essentially a Node.js application. This means that the starting point of your Electron application will be a `package.json` file like in any other Node.js application. A minimal Electron application has the following structure:
 
-```plain
+```plaintext
 my-electron-app/
 ├── package.json
 ├── main.js
@@ -53,7 +53,7 @@ The main script specifies the entry point of your Electron application (in our c
 
 The main script may look as follows:
 
-```js
+```javascript fiddle='docs/fiddles/quick-start'
 const { app, BrowserWindow } = require('electron')
 
 function createWindow () {
@@ -66,7 +66,6 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
 }
 
 app.whenReady().then(createWindow)
@@ -87,10 +86,10 @@ app.on('activate', () => {
 ##### What is going on above?
 
 1. Line 1: First, you import the `app` and `BrowserWindow` modules of the `electron` package to be able to manage your application's lifecycle events, as well as create and control browser windows.
-2. Line 3: After that, you define a function that creates a [new browser window](../api/browser-window.md#new-browserwindowoptions) with node integration enabled, loads `index.html` file into this window (line 12, we will discuss the file later) and opens Developer Tools (line 13).
-3. Line 16: You create a new browser window by invoking the `createWindow` function once the Electron application [is initialized](../api/app.md#appwhenready).
-4. Line 18: You add a new listener that tries to quit the application when it no longer has any open windows. This listener is a no-op on macOS due to the operating system's [window management behavior](https://support.apple.com/en-ca/guide/mac-help/mchlp2469/mac).
-5. Line 24: You add a new listener that creates a new browser window only if when the application has no visible windows after being activated. For example, after launching the application for the first time, or re-launching the already running application.
+2. Line 3: After that, you define a function that creates a [new browser window](../api/browser-window.md#new-browserwindowoptions) with node integration enabled, loads `index.html` file into this window (line 12, we will discuss the file later).
+3. Line 15: You create a new browser window by invoking the `createWindow` function once the Electron application [is initialized](../api/app.md#appwhenready).
+4. Line 17: You add a new listener that tries to quit the application when it no longer has any open windows. This listener is a no-op on macOS due to the operating system's [window management behavior](https://support.apple.com/en-ca/guide/mac-help/mchlp2469/mac).
+5. Line 23: You add a new listener that creates a new browser window only if when the application has no visible windows after being activated. For example, after launching the application for the first time, or re-launching the already running application.
 
 #### Create a web page
 
@@ -98,7 +97,7 @@ This is the web page you want to display once the application is initialized. Th
 
 The `index.html` page looks as follows:
 
-```html
+```html fiddle='docs/fiddles/quick-start'
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,9 +107,11 @@ The `index.html` page looks as follows:
 </head>
 <body style="background: white;">
     <h1>Hello World!</h1>
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chrome <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
+    <p>
+        We are using node <script>document.write(process.versions.node)</script>,
+        Chrome <script>document.write(process.versions.chrome)</script>,
+        and Electron <script>document.write(process.versions.electron)</script>.
+    </p>
 </body>
 </html>
 ```
@@ -123,11 +124,15 @@ Your Electron application uses the `package.json` file as the main entry point (
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
+    "description": "My Electron app",
     "main": "main.js"
 }
 ```
 
 > NOTE: If the `main` field is omitted, Electron will attempt to load an `index.js` file from the directory containing `package.json`.
+
+> NOTE: The `author` and `description` fields are required for packaging, otherwise error will occur when running `npm run make`.
 
 By default, the `npm start` command will run the main script with Node.js. To run the script with Electron, you need to change it as such:
 
@@ -135,6 +140,8 @@ By default, the `npm start` command will run the main script with Node.js. To ru
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
+    "description": "My Electron app",
     "main": "main.js",
     "scripts": {
         "start": "electron ."

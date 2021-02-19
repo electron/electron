@@ -4,6 +4,8 @@ Date: Fri, 26 Oct 2018 15:35:13 +1100
 Subject: fix: expose tracing::Agent and use tracing::TracingController instead
  of v8::TracingController
 
+This API is used by Electron to create Node's tracing controller.
+
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index 2c4acbc4fa0eca3b7c6d03b997445633646446e7..53b07052e43a09f29f863ee1b2287bdebe7b7a7f 100644
 --- a/src/api/environment.cc

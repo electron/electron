@@ -50,6 +50,11 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {
     case AdapterPresence::ABSENT:
     case AdapterPresence::POWERED_OFF:
+    // Chrome currently directs the user to system preferences
+    // to grant bluetooth permission for this case, should we
+    // do something similar ?
+    // https://chromium-review.googlesource.com/c/chromium/src/+/2617129
+    case AdapterPresence::UNAUTHORIZED:
       event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case AdapterPresence::POWERED_ON:

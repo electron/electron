@@ -182,11 +182,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_(frame_rate),
       size_(initial_size),
       painting_(painting),
-      is_showing_(false),
       cursor_manager_(new content::CursorManager(this)),
       mouse_wheel_phase_handler_(this),
-      backing_(new SkBitmap),
-      weak_ptr_factory_(this) {
+      backing_(new SkBitmap) {
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
@@ -242,13 +240,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   delegated_frame_host_.reset();
   compositor_.reset();
   root_layer_.reset();
-}
-
-content::BrowserAccessibilityManager*
-OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
-    content::BrowserAccessibilityDelegate*,
-    bool) {
-  return nullptr;
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -418,9 +409,6 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   }
   Show();
 }
-
-void OffScreenRenderWidgetHostView::InitAsFullscreen(
-    content::RenderWidgetHostView*) {}
 
 void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
 

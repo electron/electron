@@ -4,6 +4,8 @@ Date: Fri, 26 Jun 2020 11:06:12 -0700
 Subject: build: conditionally import EXT headers from framework or from
  relative path
 
+This patch is required for building Squirrel from source code.
+
 diff --git a/ReactiveObjC/NSControl+RACTextSignalSupport.m b/ReactiveObjC/NSControl+RACTextSignalSupport.m
 index 88da38f6e8117bbabdd898c8a1d4bde5e59deda7..483caea62eaaf26d9ad7d267a5c3e9aa44638ce7 100644
 --- a/ReactiveObjC/NSControl+RACTextSignalSupport.m

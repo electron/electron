@@ -9,10 +9,10 @@
 
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/common/extensions/command.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
+#include "shell/browser/browser.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
@@ -21,7 +21,6 @@
 #include "base/mac/mac_util.h"
 #endif
 
-using extensions::Command;
 using extensions::GlobalShortcutListener;
 
 namespace {
@@ -44,15 +43,6 @@ bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
     }
   }
   return false;
-}
-
-bool MapHasMediaKeys(
-    const std::map<ui::Accelerator, base::Closure>& accelerator_map) {
-  auto media_key = std::find_if(
-      accelerator_map.begin(), accelerator_map.end(),
-      [](const auto& ac) { return Command::IsMediaKey(ac.first); });
-
-  return media_key != accelerator_map.end();
 }
 #endif
 
@@ -84,6 +74,11 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::Closure& callback) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
   std::vector<ui::Accelerator> registered;
 
   for (auto& accelerator : accelerators) {
@@ -100,13 +95,14 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
-#if defined(OS_MAC)
-  if (Command::IsMediaKey(accelerator)) {
-    if (RegisteringMediaKeyForUntrustedClient(accelerator))
-      return false;
-
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(false);
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
   }
+#if defined(OS_MAC)
+  if (RegisteringMediaKeyForUntrustedClient(accelerator))
+    return false;
 #endif
 
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
@@ -119,15 +115,13 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
 }
 
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return;
+  }
   if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
-
-#if defined(OS_MAC)
-  if (Command::IsMediaKey(accelerator) &&
-      !MapHasMediaKeys(accelerator_callback_map_)) {
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);
-  }
-#endif
 
   GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
                                                                this);
@@ -145,6 +139,11 @@ bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
 }
 
 void GlobalShortcut::UnregisterAll() {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return;
+  }
   accelerator_callback_map_.clear();
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }

@@ -215,15 +215,15 @@ app.whenReady().then(() => {
       enableBlinkFeatures: 'Serial'
     }
   })
-  win.webContents.session.on('select-serial-port', (event, portList, callback) => {
+  win.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault()
     const selectedPort = portList.find((device) => {
-      return device.vendorId === 0x2341 && device.productId === 0x0043
+      return device.vendorId === '9025' && device.productId === '67'
     })
     if (!selectedPort) {
       callback('')
     } else {
-      callback(result1.portId)
+      callback(selectedPort.portId)
     }
   })
 })
@@ -492,6 +492,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `permission` String - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `geolocation` - Request access to user's current location.
     * `notifications` - Request notification creation and the ability to display them in the user's system tray.
@@ -500,6 +501,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more.
     * `fullscreen` - Request for the app to enter fullscreen mode.
     * `openExternal` - Request to open links in external applications.
+    * `unknown` - An unrecognized permission request
   * `callback` Function
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
@@ -511,7 +513,9 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 Sets the handler which can be used to respond to permission requests for the `session`.
 Calling `callback(true)` will allow the permission and `callback(false)` will reject it.
-To clear the handler, call `setPermissionRequestHandler(null)`.
+To clear the handler, call `setPermissionRequestHandler(null)`.  Please note that
+you must also implement `setPermissionCheckHandler` to get complete permission handling.
+Most web APIs do a permission check and then make a permission request if the check is denied.
 
 ```javascript
 const { session } = require('electron')
@@ -527,28 +531,32 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function\<Boolean> | null
-  * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  Cross origin sub frames making permission checks will pass a `null` webContents to this handler.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
   * `permission` String - Type of permission check.  Valid values are `midiSysex`, `notifications`, `geolocation`, `media`,`mediaKeySystem`,`midi`, `pointerLock`, `fullscreen`, `openExternal`, or `serial`.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
-    * `securityOrigin` String - The security origin of the `media` check.
-    * `mediaType` String - The type of media access being requested, can be `video`,
+    * `embeddingOrigin` String (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
+    * `securityOrigin` String (optional) - The security origin of the `media` check.
+    * `mediaType` String (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`
-    * `requestingUrl` String - The last URL the requesting frame loaded
+    * `requestingUrl` String (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
     * `isMainFrame` Boolean - Whether the frame making the request is the main frame
 
 Sets the handler which can be used to respond to permission checks for the `session`.
-Returning `true` will allow the permission and `false` will reject it.
+Returning `true` will allow the permission and `false` will reject it.  Please note that
+you must also implement `setPermissionRequestHandler` to get complete permission handling.
+Most web APIs do a permission check and then make a permission request if the check is denied.
 To clear the handler, call `setPermissionCheckHandler(null)`.
 
 ```javascript
 const { session } = require('electron')
-session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission) => {
-  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
-    return false // denied
+const url = require('url')
+session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+  if (new URL(requestingOrigin).hostname === 'some-host' && permission === 'notifications') {
+    return true // granted
   }
 
-  return true
+  return false // denied
 })
 ```
 
@@ -742,9 +750,13 @@ will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
 
-#### `ses.loadExtension(path)`
+#### `ses.loadExtension(path[, options])`
 
 * `path` String - Path to a directory containing an unpacked Chrome extension
+* `options` Object (optional)
+  * `allowFileAccess` Boolean - Whether to allow the extension to read local files over `file://`
+    protocol and inject content scripts into `file://` pages. This is required e.g. for loading
+    devtools extensions on `file://` URLs. Defaults to false.
 
 Returns `Promise<Extension>` - resolves when the extension is loaded.
 
@@ -767,7 +779,11 @@ const { app, session } = require('electron')
 const path = require('path')
 
 app.on('ready', async () => {
-  await session.defaultSession.loadExtension(path.join(__dirname, 'react-devtools'))
+  await session.defaultSession.loadExtension(
+    path.join(__dirname, 'react-devtools'),
+    // allowFileAccess is required to load the devtools extension on file:// URLs.
+    { allowFileAccess: true }
+  )
   // Note that in order to use the React DevTools extension, you'll need to
   // download and unzip a copy of the extension.
 })

@@ -89,7 +89,7 @@ const startServer = async () => {
     req.pipe(busboy);
   });
 
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     server.listen(0, '127.0.0.1', () => { resolve(); });
   });
 
@@ -523,10 +523,6 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
     });
 
-    it('matches getCrashesDirectory', async () => {
-      expect(app.getPath('crashDumps')).to.equal(require('electron').crashReporter.getCrashesDirectory());
-    });
-
     function crash (processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
@@ -565,9 +561,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
-            const { crashReporter } = require('electron');
+            const { crashReporter, app } = require('electron');
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           });
           let reportsDir = crashesDir;
           if (process.platform === 'darwin') {
@@ -599,7 +595,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             const { crashReporter, app } = require('electron');
             app.setPath('crashDumps', crashesDir);
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 

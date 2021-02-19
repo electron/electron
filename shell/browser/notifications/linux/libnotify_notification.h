@@ -37,7 +37,7 @@ class LibnotifyNotification : public Notification {
                      NotifyNotification*,
                      char*);
 
-  NotifyNotification* notification_;
+  NotifyNotification* notification_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);
 };

@@ -82,7 +82,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   friend class base::NoDestructor<ElectronCrashReporterClient>;
 
   std::string upload_url_;
-  bool collect_stats_consent_;
+  bool collect_stats_consent_ = false;
   bool rate_limit_ = false;
   bool compress_uploads_ = false;
   std::map<std::string, std::string> global_annotations_;

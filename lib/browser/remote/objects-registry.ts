@@ -1,7 +1,5 @@
 import { WebContents } from 'electron/main';
 
-const v8Util = process._linkedBinding('electron_common_v8_util');
-
 const getOwnerKey = (webContents: WebContents, contextId: string) => {
   return `${webContents.id}-${contextId}`;
 };
@@ -16,6 +14,8 @@ class ObjectsRegistry {
   // Stores the IDs + refCounts of objects referenced by WebContents.
   // (ownerKey) => { id: refCount }
   private owners: Record<string, Map<number, number>> = {}
+
+  private electronIds = new WeakMap<Object, number>();
 
   // Register a new object and return its assigned ID. If the object is already
   // registered then the already assigned ID would be returned.
@@ -81,14 +81,14 @@ class ObjectsRegistry {
 
   // Private: Saves the object into storage and assigns an ID for it.
   saveToStorage (object: any) {
-    let id: number = v8Util.getHiddenValue(object, 'electronId');
+    let id = this.electronIds.get(object);
     if (!id) {
       id = ++this.nextId;
       this.storage[id] = {
         count: 0,
         object: object
       };
-      v8Util.setHiddenValue(object, 'electronId', id);
+      this.electronIds.set(object, id);
     }
     return id;
   }
@@ -101,7 +101,7 @@ class ObjectsRegistry {
     }
     pointer.count -= 1;
     if (pointer.count === 0) {
-      v8Util.deleteHiddenValue(pointer.object, 'electronId');
+      this.electronIds.delete(pointer.object);
       delete this.storage[id];
     }
   }

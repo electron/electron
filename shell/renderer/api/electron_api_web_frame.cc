@@ -26,8 +26,11 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/api/context_bridge/object_cache.h"
+#include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_renderer_client.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -159,21 +162,25 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
-      const v8::Local<v8::Value>& result) {
-    blink::CloneableMessage ret;
-    bool success;
-    std::string error_message;
+      const v8::Local<v8::Object>& result) {
+    v8::MaybeLocal<v8::Value> maybe_result;
+    bool success = true;
+    std::string error_message =
+        "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
-      success = gin::ConvertFromV8(isolate, result, &ret);
+      context_bridge::ObjectCache object_cache;
+      maybe_result = PassValueToOtherContext(result->CreationContext(),
+                                             promise_.GetContext(), result,
+                                             &object_cache, false, 0);
+      if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
+        success = false;
+      }
       if (try_catch.HasCaught()) {
         auto message = try_catch.Message();
 
-        if (message.IsEmpty() ||
-            !gin::ConvertFromV8(isolate, message->Get(), &error_message)) {
-          error_message =
-              "An unknown exception occurred while getting the result of "
-              "the script";
+        if (!message.IsEmpty()) {
+          gin::ConvertFromV8(isolate, message->Get(), &error_message);
         }
       }
     }
@@ -189,7 +196,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     } else {
       v8::Local<v8::Context> context = promise_.GetContext();
       v8::Context::Scope context_scope(context);
-      v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
+      v8::Local<v8::Value> cloned_value = maybe_result.ToLocalChecked();
       if (callback_)
         std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
       promise_.Resolve(cloned_value);
@@ -212,7 +219,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
                   value.As<v8::Object>()->CreationContext()) &&
             value->IsObject();
         if (should_clone_value) {
-          CopyResultToCallingContextAndFinalize(isolate, value);
+          CopyResultToCallingContextAndFinalize(isolate,
+                                                value.As<v8::Object>());
         } else {
           // Right now only single results per frame is supported.
           if (callback_)
@@ -361,7 +369,7 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame->GetRemoteInterfaces()->GetInterface(
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->SetTemporaryZoomLevel(level);
 }
@@ -378,7 +386,7 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame->GetRemoteInterfaces()->GetInterface(
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->DoGetZoomLevel(&result);
   return result;
@@ -707,9 +715,6 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
 
   auto& prefs = render_frame->GetBlinkPreferences();
 
-  // Debugging tip: if you see a crash stack trace beginning from this call,
-  // then it is very likely that some exception happened when executing the
-  // "content_script/init.js" script.
   render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType,

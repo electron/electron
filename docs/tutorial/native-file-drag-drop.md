@@ -25,7 +25,7 @@ Starting with a working application from the
 
 and add the following lines to the `renderer.js` file:
 
-```js
+```javascript
 const { ipcRenderer } = require('electron')
 
 document.getElementById('drag').ondragstart = (event) => {
@@ -40,7 +40,7 @@ and forward the information to the Main process.
 In the Main process(`main.js` file), expand the received event with a path to the file that is
 being dragged and an icon:
 
-```javascript
+```javascript fiddle='docs/fiddles/features/drag-and-drop'
 const { ipcMain } = require('electron')
 
 ipcMain.on('ondragstart', (event, filePath) => {
@@ -52,7 +52,7 @@ ipcMain.on('ondragstart', (event, filePath) => {
 ```
 
 After launching the Electron application, try dragging and dropping
-the item from the BroswerWindow onto your desktop. In this guide,
+the item from the BrowserWindow onto your desktop. In this guide,
 the item is a Markdown file located in the root of the project:
 
 ![Drag and drop](../images/drag-and-drop.gif)

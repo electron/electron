@@ -97,25 +97,9 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 gin_helper::WrappableBase* WebContentsView::New(
     gin_helper::Arguments* args,
     const gin_helper::Dictionary& web_preferences) {
-  // Check if BrowserWindow has passend |webContents| option to us.
-  gin::Handle<WebContents> web_contents;
-  if (web_preferences.GetHidden("webContents", &web_contents) &&
-      !web_contents.IsEmpty()) {
-    // Set webPreferences from options if using an existing webContents.
-    // These preferences will be used when the webContent launches new
-    // render processes.
-    auto* existing_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
-    if (gin::ConvertFromV8(args->isolate(), web_preferences.GetHandle(),
-                           &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
-    }
-  } else {
-    // Create one if not.
-    web_contents = WebContents::New(args->isolate(), web_preferences);
-  }
+  auto web_contents =
+      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
+
   // Constructor call.
   auto* view = new WebContentsView(args->isolate(), web_contents);
   view->InitWithArgs(args);

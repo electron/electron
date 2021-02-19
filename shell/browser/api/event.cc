@@ -21,11 +21,15 @@ Event::Event() {}
 Event::~Event() {
   if (callback_) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    auto message = gin::DataObjectBuilder(isolate)
-                       .Set("error", "reply was never sent")
-                       .Build();
-    SendReply(isolate, message);
+    // If there's no current context, it means we're shutting down, so we don't
+    // need to send an event.
+    if (!isolate->GetCurrentContext().IsEmpty()) {
+      v8::HandleScope scope(isolate);
+      auto message = gin::DataObjectBuilder(isolate)
+                         .Set("error", "reply was never sent")
+                         .Build();
+      SendReply(isolate, message);
+    }
   }
 }
 
@@ -62,7 +66,7 @@ gin::ObjectTemplateBuilder Event::GetObjectTemplateBuilder(
 }
 
 const char* Event::GetTypeName() {
-  return "WebRequest";
+  return "Event";
 }
 
 // static

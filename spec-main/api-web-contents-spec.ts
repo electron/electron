@@ -327,7 +327,7 @@ describe('webContents module', () => {
 
     it('rejects if the load is aborted', async () => {
       const s = http.createServer(() => { /* never complete the request */ });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
@@ -345,9 +345,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -369,9 +369,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-frame-finish-load', (event, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -764,11 +764,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any);
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw(/Failed to load image from path (.+)/);
     });
   });
 
@@ -1210,7 +1210,7 @@ describe('webContents module', () => {
       const renderViewDeletedHandler = () => {
         currentRenderViewDeletedEmitted = true;
       };
-      const childWindowCreated = new Promise((resolve) => {
+      const childWindowCreated = new Promise<void>((resolve) => {
         app.once('browser-window-created', (event, window) => {
           childWindow = window;
           window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
@@ -1383,8 +1383,7 @@ describe('webContents module', () => {
     }
   });
 
-  // TODO (jkleinsc) - reenable this test on WOA once https://github.com/electron/electron/issues/26045 is resolved
-  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('did-change-theme-color event', () => {
+  describe('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
     it('is triggered with correct theme color', (done) => {
       const w = new BrowserWindow({ show: true });
@@ -1480,7 +1479,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
             expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
           });
           w.webContents.executeJavaScript('a.click()');
         });
@@ -1738,28 +1737,6 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
     });
 
-    it('respects custom settings', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-
-      const data = await w.webContents.printToPDF({
-        pageRanges: {
-          from: 0,
-          to: 2
-        },
-        landscape: true
-      });
-
-      const doc = await pdfjs.getDocument(data).promise;
-
-      // Check that correct # of pages are rendered.
-      expect(doc.numPages).to.equal(3);
-
-      // Check that PDF is generated in landscape mode.
-      const firstPage = await doc.getPage(1);
-      const { width, height } = firstPage.getViewport({ scale: 100 });
-      expect(width).to.be.greaterThan(height);
-    });
-
     it('does not crash when called multiple times in parallel', async () => {
       const promises = [];
       for (let i = 0; i < 3; i++) {
@@ -1783,13 +1760,47 @@ describe('webContents module', () => {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
     });
+
+    describe('using a large document', () => {
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+        await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
+      });
+
+      afterEach(closeAllWindows);
+
+      it('respects custom settings', async () => {
+        const data = await w.webContents.printToPDF({
+          pageRanges: {
+            from: 0,
+            to: 2
+          },
+          landscape: true
+        });
+
+        const doc = await pdfjs.getDocument(data).promise;
+
+        // Check that correct # of pages are rendered.
+        expect(doc.numPages).to.equal(3);
+
+        // Check that PDF is generated in landscape mode.
+        const firstPage = await doc.getPage(1);
+        const { width, height } = firstPage.getViewport({ scale: 100 });
+        expect(width).to.be.greaterThan(height);
+      });
+    });
   });
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', async () => {
+    it('works as expected', async function () {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
+
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);
       expect(result).to.be.true();
@@ -1993,6 +2004,17 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+  });
+
+  describe('crashed event', () => {
+    it('does not crash main process when destroying WebContents in it', (done) => {
+      const contents = (webContents as any).create({ nodeIntegration: true });
+      contents.once('crashed', () => {
+        contents.destroy();
+        done();
+      });
+      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
     });
   });
 

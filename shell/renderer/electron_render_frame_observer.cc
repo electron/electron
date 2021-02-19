@@ -21,6 +21,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
@@ -87,14 +88,6 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     if (!renderer_client_->IsWebViewFrame(context, render_frame_))
       renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
-
-#if !BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (world_id >= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS &&
-      world_id <= WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS_END) {
-    renderer_client_->SetupExtensionWorldOverrides(context, render_frame_,
-                                                   world_id);
-  }
-#endif
 }
 
 void ElectronRenderFrameObserver::DraggableRegionsChanged() {
@@ -110,7 +103,7 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame_->GetRemoteInterfaces()->GetInterface(
+  render_frame_->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->UpdateDraggableRegions(std::move(regions));
 }
@@ -130,7 +123,7 @@ void ElectronRenderFrameObserver::DidMeaningfulLayout(
     blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
     mojo::Remote<mojom::ElectronBrowser> browser_remote;
-    render_frame_->GetRemoteInterfaces()->GetInterface(
+    render_frame_->GetBrowserInterfaceBroker()->GetInterface(
         browser_remote.BindNewPipeAndPassReceiver());
     browser_remote->OnFirstNonEmptyLayout();
   }

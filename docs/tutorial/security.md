@@ -758,7 +758,7 @@ possible through the modules you allow past the filter.
 const readOnlyFsProxy = require(/* ... */) // exposes only file read functionality
 
 const allowedModules = new Set(['crypto'])
-const proxiedModules = new Map(['fs', readOnlyFsProxy])
+const proxiedModules = new Map([['fs', readOnlyFsProxy]])
 const allowedElectronModules = new Set(['shell'])
 const allowedGlobals = new Set()
 

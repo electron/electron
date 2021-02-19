@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 030a534b2fd1aa1635c0a01a7c40e334435611ac..9ad1b84e656339b4075b29e86c6f5c7a9eb10aa6 100644
+index 758b0b1616ecf86b7dd090adce94395851d9baf2..55f20eb6266368c65fc0ec80d52caa332f85ecfb 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -144,6 +144,29 @@ WebPreferences::WebPreferences()
+@@ -146,6 +146,29 @@ WebPreferences::WebPreferences()
        navigate_on_drag_drop(true),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
@@ -42,10 +42,10 @@ index 030a534b2fd1aa1635c0a01a7c40e334435611ac..9ad1b84e656339b4075b29e86c6f5c7a
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 945a58c91efa27d25b873e39035588a6e3e809cc..3014d779f8dfde02d9c460968d68bb16a7e4d6af 100644
+index e713617a5306c8afc24559b6065aec59a0bc3e5a..80e728d1bac10c18c7799387f6c32339db615cea 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -144,6 +144,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -24,6 +24,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
        !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
        !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
@@ -57,7 +57,7 @@ index 945a58c91efa27d25b873e39035588a6e3e809cc..3014d779f8dfde02d9c460968d68bb16
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
            &out->lazy_frame_loading_distance_thresholds_px) ||
        !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -268,6 +273,27 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -150,6 +155,27 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->navigate_on_drag_drop = data.navigate_on_drag_drop();
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
@@ -86,7 +86,7 @@ index 945a58c91efa27d25b873e39035588a6e3e809cc..3014d779f8dfde02d9c460968d68bb16
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index e2fb2d1d46d3f697515d9dfb36213662cdd0c5e4..0f1e190d9249a23477e99273a2a19c82059f75f6 100644
+index 02c341e76e009a20f1d564ff4648ef40dd5cb9f3..4a0fd299c4cced5cfe97b209065311fa2f3f4b70 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -97,7 +97,7 @@ index e2fb2d1d46d3f697515d9dfb36213662cdd0c5e4..0f1e190d9249a23477e99273a2a19c82
  #include "base/strings/string16.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
-@@ -156,6 +157,29 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -159,6 +160,29 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
@@ -128,7 +128,7 @@ index e2fb2d1d46d3f697515d9dfb36213662cdd0c5e4..0f1e190d9249a23477e99273a2a19c82
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index c40048e55b163e92e7efc46853c968e72cdc7c28..0333a1241f43390a885bbc57d38a434b22fb5b45 100644
+index 0bd751d729ecdbc556686e7d38156ca736bd7a33..a4e6b664cb28f8d7bff2955fd935cd467a64ca3b 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -139,7 +139,7 @@ index c40048e55b163e92e7efc46853c968e72cdc7c28..0333a1241f43390a885bbc57d38a434b
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -457,6 +458,88 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -436,6 +437,88 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.record_whole_document;
    }
  
@@ -229,7 +229,7 @@ index c40048e55b163e92e7efc46853c968e72cdc7c28..0333a1241f43390a885bbc57d38a434b
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 52fbf5b35bb417d28d2a7b346ae3cef46272730d..dc550a4338e9e6ba9f8c73a8045e838e04d60259 100644
+index 1100a97287a02c3a1286513af6a36153ee6f76cb..7e5e12118f0c5c6725fb478a0198a46e500c0157 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
@@ -239,8 +239,8 @@ index 52fbf5b35bb417d28d2a7b346ae3cef46272730d..dc550a4338e9e6ba9f8c73a8045e838e
 +import "mojo/public/mojom/base/file_path.mojom";
  
  enum PointerType {
-   kPointerFirstType                         = 1,  // 1 << 0
-@@ -204,6 +205,29 @@ struct WebPreferences {
+   kPointerNone                              = 1,             // 1 << 0
+@@ -210,6 +211,29 @@ struct WebPreferences {
    V8CacheOptions v8_cache_options;
    bool record_whole_document;
  

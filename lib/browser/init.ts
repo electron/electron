@@ -132,9 +132,6 @@ app._setDefaultAppPaths(packagePath);
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
 
-// Load the chrome extension support.
-require('@electron/internal/browser/chrome-extension-shim');
-
 if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
   require('@electron/internal/browser/remote/server');
 }
@@ -144,6 +141,9 @@ require('@electron/internal/browser/api/protocol');
 
 // Load web-contents module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-contents');
+
+// Load web-frame-main module to ensure it is populated on app ready
+require('@electron/internal/browser/api/web-frame-main');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';

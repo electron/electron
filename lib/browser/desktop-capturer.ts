@@ -48,6 +48,9 @@ export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electr
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
+      if (event) {
+        event.sender.removeListener('destroyed', stopRunning);
+      }
     };
 
     capturer._onerror = (error: string) => {
@@ -66,7 +69,7 @@ export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electr
     // reference to emit and the capturer itself so that it never dispatches
     // back to the renderer
     if (event) {
-      event.sender.once('destroyed', () => stopRunning());
+      event.sender.once('destroyed', stopRunning);
     }
   });
 

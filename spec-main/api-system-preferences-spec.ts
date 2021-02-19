@@ -244,18 +244,6 @@ describe('systemPreferences module', () => {
     });
   });
 
-  describe('systemPreferences.isInvertedColorScheme()', () => {
-    it('returns a boolean', () => {
-      expect(systemPreferences.isInvertedColorScheme()).to.be.a('boolean');
-    });
-  });
-
-  describe('systemPreferences.isHighContrastColorScheme()', () => {
-    it('returns a boolean', () => {
-      expect(systemPreferences.isHighContrastColorScheme()).to.be.a('boolean');
-    });
-  });
-
   ifdescribe(process.platform === 'darwin')('systemPreferences.canPromptTouchID()', () => {
     it('returns a boolean', () => {
       expect(systemPreferences.canPromptTouchID()).to.be.a('boolean');

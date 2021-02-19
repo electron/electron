@@ -75,7 +75,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   std::unique_ptr<mojo::DataPipeProducer> producer_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
-  base::WeakPtrFactory<URLPipeLoader> weak_factory_;
+  base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(URLPipeLoader);
 };

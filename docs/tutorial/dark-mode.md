@@ -19,7 +19,7 @@ the system's dark mode setting. You can do this by using the
 
 If you want to manually switch between light/dark modes, you can do this by
 setting the desired mode in the
-[themeSource](https://www.electronjs.org/docs/api/native-theme#nativethemethemesource)
+[themeSource](../api/native-theme.md#nativethemethemesource)
 property of the `nativeTheme` module. This property's value will be propagated
 to your Renderer process. Any CSS rules related to `prefers-color-scheme` will
 be updated accordingly.
@@ -96,7 +96,7 @@ color scheme, and update the "Current Theme Source" label to `System`.
 
 To add listeners and handlers, add the following lines to the `renderer.js` file:
 
-```js
+```javascript
 const { ipcRenderer } = require('electron')
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
@@ -130,7 +130,7 @@ active using the `nativeTheme.shouldUseDarkColors` property, and set the
 `themeSource` to the opposite theme.
 * Upon receiving `dark-mode:system`, we reset the `themeSource` to `system`.
 
-```js
+```javascript
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
 
 function createWindow () {
@@ -154,7 +154,7 @@ function createWindow () {
   })
 
   ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSouce = 'system'
+    nativeTheme.themeSource = 'system'
   })
 }
 
@@ -180,7 +180,7 @@ attribute. The value of `prefers-color-scheme` will follow your
 
 Create a `styles.css` file and add the following lines:
 
-```css
+```css fiddle='docs/fiddles/features/macos-dark-mode'
 @media (prefers-color-scheme: dark) {
   body { background:  #333; color: white; }
 }

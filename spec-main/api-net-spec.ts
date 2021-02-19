@@ -1483,7 +1483,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.end(randomBuffer(kOneMegaByte));
       const [error] = await emittedOnce(urlRequest, 'error');
-      expect(error.message).to.be.oneOf(['net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
+      expect(error.message).to.be.oneOf(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
     });
 
     it('should not emit any event after close', async () => {

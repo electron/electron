@@ -63,9 +63,7 @@ class Cookies : public gin::Wrappable<Cookies>,
   void OnCookieChanged(const net::CookieChangeInfo& change);
 
  private:
-  std::unique_ptr<base::CallbackList<void(
-      const net::CookieChangeInfo& change)>::Subscription>
-      cookie_change_subscription_;
+  base::CallbackListSubscription cookie_change_subscription_;
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
   ElectronBrowserContext* browser_context_;

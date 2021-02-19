@@ -7,8 +7,6 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { expect } from 'chai';
-import { ifit } from './spec-helpers';
-import { execSync } from 'child_process';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -34,7 +32,7 @@ describe('shell module', () => {
 
     it('opens an external link', async () => {
       let url = 'http://127.0.0.1';
-      let requestReceived;
+      let requestReceived: Promise<any>;
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true';
         process.env.DE = 'generic';
@@ -51,65 +49,15 @@ describe('shell module', () => {
         const server = http.createServer((req, res) => {
           res.end();
         });
-        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-        requestReceived = new Promise(resolve => server.on('connection', () => resolve()));
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        requestReceived = new Promise<void>(resolve => server.on('connection', () => resolve()));
         url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       }
 
-      await Promise.all([
+      await Promise.all<void>([
         shell.openExternal(url),
         requestReceived
       ]);
-    });
-  });
-
-  describe('shell.moveItemToTrash()', () => {
-    it('moves an item to the trash', async () => {
-      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
-      const filename = path.join(dir, 'temp-to-be-deleted');
-      await fs.writeFile(filename, 'dummy-contents');
-      const result = shell.moveItemToTrash(filename);
-      expect(result).to.be.true();
-      expect(fs.existsSync(filename)).to.be.false();
-    });
-
-    it('returns false when called with a nonexistent path', () => {
-      const filename = path.join(app.getPath('temp'), 'does-not-exist');
-      const result = shell.moveItemToTrash(filename);
-      expect(result).to.be.false();
-    });
-
-    ifit(process.platform === 'darwin')('returns false when file has immutable flag', async () => {
-      const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
-      const tempPath = path.join(dir, 'locked-file');
-      await fs.writeFile(tempPath, 'delete me if you can');
-
-      // https://ss64.com/osx/chflags.html
-      execSync(`chflags uchg ${tempPath}`);
-      expect(shell.moveItemToTrash(tempPath)).to.be.false();
-      expect(await fs.pathExists(tempPath)).to.be.true();
-
-      execSync(`chflags nouchg ${tempPath}`);
-      expect(shell.moveItemToTrash(tempPath)).to.be.true();
-      expect(await fs.pathExists(tempPath)).to.be.false();
-    });
-
-    ifit(process.platform === 'win32')('returns false when path is in use', async () => {
-      const tempPath = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
-      const cwd = process.cwd();
-      try {
-        // A process working directory is automatically locked on Windows.
-        // This is a workaround to avoid pulling in fs-extras flock method.
-        process.chdir(tempPath);
-
-        expect(shell.moveItemToTrash(tempPath)).to.be.false();
-        expect(await fs.pathExists(tempPath)).to.be.true();
-      } finally {
-        process.chdir(cwd);
-      }
-
-      expect(shell.moveItemToTrash(tempPath)).to.be.true();
-      expect(await fs.pathExists(tempPath)).to.be.false();
     });
   });
 

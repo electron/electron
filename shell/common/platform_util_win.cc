@@ -422,12 +422,6 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
   return true;
 }
 
-bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
-  std::string error;  // ignored
-  base::win::ScopedCOMInitializer com_initializer;
-  return MoveItemToTrashWithError(path, delete_on_fail, &error);
-}
-
 namespace internal {
 
 bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {

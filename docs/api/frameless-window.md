@@ -82,6 +82,7 @@ win.show()
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
+* The window will not be transparent when DevTools is opened.
 * On Windows operating systems, transparent windows will not work when DWM is
   disabled.
 * On Linux, users have to put `--enable-transparent-visuals --disable-gpu` in

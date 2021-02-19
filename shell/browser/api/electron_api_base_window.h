@@ -17,6 +17,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
 namespace electron {
@@ -175,6 +176,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetBrowserView(v8::Local<v8::Value> value);
   virtual void AddBrowserView(v8::Local<v8::Value> value);
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
+  virtual void SetTopBrowserView(v8::Local<v8::Value> value,
+                                 gin_helper::Arguments* args);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
   std::string GetMediaSourceId() const;
@@ -188,6 +191,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)
+  void SetWindowButtonVisibility(bool visible);
+  bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
 #endif
@@ -201,7 +206,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
-  void SetWindowButtonVisibility(bool visible, gin_helper::Arguments* args);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
@@ -221,7 +225,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
-  void SetIcon(gin::Handle<NativeImage> icon);
+  void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
+  void SetIconImpl(v8::Isolate* isolate,
+                   v8::Local<v8::Value> icon,
+                   NativeImage::OnConvertError on_error);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
@@ -269,7 +276,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
-  base::WeakPtrFactory<BaseWindow> weak_factory_;
+  base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
 }  // namespace api

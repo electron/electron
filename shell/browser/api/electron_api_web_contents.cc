@@ -28,6 +28,7 @@
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
+#include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -73,6 +74,7 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -118,6 +120,7 @@
 #include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -421,8 +424,11 @@ bool IsDeviceNameValid(const base::string16& device_name) {
 }
 
 base::string16 GetDefaultPrinterAsync() {
-  base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-                                                base::BlockingType::MAY_BLOCK);
+#if defined(OS_WIN)
+  // Blocking is needed here because Windows printer drivers are oftentimes
+  // not thread-safe and have to be accessed on the UI thread.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+#endif
 
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
@@ -439,6 +445,29 @@ base::string16 GetDefaultPrinterAsync() {
       printer_name = printers.front().printer_name;
   }
   return base::UTF8ToUTF16(printer_name);
+}
+
+// Copied from
+// chrome/browser/ui/webui/print_preview/local_printer_handler_default.cc:L36-L54
+scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
+  // USER_VISIBLE because the result is displayed in the print preview dialog.
+#if !defined(OS_WIN)
+  static constexpr base::TaskTraits kTraits = {
+      base::MayBlock(), base::TaskPriority::USER_VISIBLE};
+#endif
+
+#if defined(USE_CUPS)
+  // CUPS is thread safe.
+  return base::ThreadPool::CreateTaskRunner(kTraits);
+#elif defined(OS_WIN)
+  // Windows drivers are likely not thread-safe and need to be accessed on the
+  // UI thread.
+  return content::GetUIThreadTaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
+#else
+  // Be conservative on unsupported platforms.
+  return base::ThreadPool::CreateSingleThreadTaskRunner(kTraits);
+#endif
 }
 #endif
 
@@ -589,8 +618,12 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
-      weak_factory_(this) {
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+#if BUILDFLAG(ENABLE_PRINTING)
+      ,
+      print_task_runner_(CreatePrinterHandlerTaskRunner())
+#endif
+{
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
   extensions::ViewType view_type = extensions::GetViewType(web_contents);
@@ -612,11 +645,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
-
-  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
-                                             base::Unretained(this)));
-  receivers_.set_disconnect_handler(base::BindRepeating(
-      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
@@ -627,8 +655,12 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
-      weak_factory_(this) {
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+#if BUILDFLAG(ENABLE_PRINTING)
+      ,
+      print_task_runner_(CreatePrinterHandlerTaskRunner())
+#endif
+{
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
@@ -642,8 +674,12 @@ WebContents::WebContents(v8::Isolate* isolate,
     : id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()})),
-      weak_factory_(this) {
+          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+#if BUILDFLAG(ENABLE_PRINTING)
+      ,
+      print_task_runner_(CreatePrinterHandlerTaskRunner())
+#endif
+{
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -804,10 +840,6 @@ void WebContents::InitWithSessionAndOptions(
   script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
 #endif
 
-  registry_.AddInterface(base::BindRepeating(&WebContents::BindElectronBrowser,
-                                             base::Unretained(this)));
-  receivers_.set_disconnect_handler(base::BindRepeating(
-      &WebContents::OnElectronBrowserConnectionError, base::Unretained(this)));
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
   web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
@@ -1329,6 +1361,19 @@ void WebContents::BeforeUnloadFired(bool proceed,
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
   if (!background_throttling_)
     render_view_host->SetSchedulerThrottling(false);
+
+  // Set the background color of RenderWidgetHostView.
+  auto* const view = web_contents()->GetRenderWidgetHostView();
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (view && web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 }
 
 void WebContents::RenderFrameCreated(
@@ -1341,6 +1386,8 @@ void WebContents::RenderFrameCreated(
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
+
+  WebFrameMain::RenderFrameCreated(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1360,11 +1407,18 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
+  auto weak_this = GetWeakPtr();
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+
+  // User might destroy WebContents in the crashed event.
+  if (!weak_this)
+    return;
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
+  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
   Emit("render-process-gone", details);
 }
 
@@ -1481,121 +1535,94 @@ bool WebContents::EmitNavigationEvent(
               frame_routing_id);
 }
 
-void WebContents::BindElectronBrowser(
-    mojo::PendingReceiver<mojom::ElectronBrowser> receiver,
-    content::RenderFrameHost* render_frame_host) {
-  auto id = receivers_.Add(this, std::move(receiver), render_frame_host);
-  frame_to_receivers_map_[render_frame_host].push_back(id);
-}
-
-void WebContents::OnElectronBrowserConnectionError() {
-  auto receiver_id = receivers_.current_receiver();
-  auto* frame_host = receivers_.current_context();
-  base::Erase(frame_to_receivers_map_[frame_host], receiver_id);
-}
-
 void WebContents::Message(bool internal,
                           const std::string& channel,
-                          blink::CloneableMessage arguments) {
+                          blink::CloneableMessage arguments,
+                          content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
-  EmitWithSender("-ipc-message", receivers_.current_context(), InvokeCallback(),
+  EmitWithSender("-ipc-message", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), internal,
+                 channel, std::move(arguments));
+}
+
+void WebContents::Invoke(
+    bool internal,
+    const std::string& channel,
+    blink::CloneableMessage arguments,
+    electron::mojom::ElectronBrowser::InvokeCallback callback,
+    content::RenderFrameHost* render_frame_host) {
+  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
+  // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
+  EmitWithSender("-ipc-invoke", render_frame_host, std::move(callback),
                  internal, channel, std::move(arguments));
 }
 
-void WebContents::Invoke(bool internal,
-                         const std::string& channel,
-                         blink::CloneableMessage arguments,
-                         InvokeCallback callback) {
-  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
-  // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
-  EmitWithSender("-ipc-invoke", receivers_.current_context(),
-                 std::move(callback), internal, channel, std::move(arguments));
-}
-
-void WebContents::OnFirstNonEmptyLayout() {
-  if (receivers_.current_context() == web_contents()->GetMainFrame()) {
+void WebContents::OnFirstNonEmptyLayout(
+    content::RenderFrameHost* render_frame_host) {
+  if (render_frame_host == web_contents()->GetMainFrame()) {
     Emit("ready-to-show");
   }
 }
 
-void WebContents::ReceivePostMessage(const std::string& channel,
-                                     blink::TransferableMessage message) {
+void WebContents::ReceivePostMessage(
+    const std::string& channel,
+    blink::TransferableMessage message,
+    content::RenderFrameHost* render_frame_host) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto wrapped_ports =
       MessagePort::EntanglePorts(isolate, std::move(message.ports));
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-  EmitWithSender("-ipc-ports", receivers_.current_context(), InvokeCallback(),
-                 false, channel, message_value, std::move(wrapped_ports));
+  EmitWithSender("-ipc-ports", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), false,
+                 channel, message_value, std::move(wrapped_ports));
 }
 
-void WebContents::PostMessage(const std::string& channel,
-                              v8::Local<v8::Value> message_value,
-                              base::Optional<v8::Local<v8::Value>> transfer) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  blink::TransferableMessage transferable_message;
-  if (!electron::SerializeV8Value(isolate, message_value,
-                                  &transferable_message)) {
-    // SerializeV8Value sets an exception.
-    return;
-  }
-
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
-  if (transfer) {
-    if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "Invalid value for transfer")));
-      return;
-    }
-  }
-
-  bool threw_exception = false;
-  transferable_message.ports =
-      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
-  if (threw_exception)
-    return;
-
-  content::RenderFrameHost* frame_host = web_contents()->GetMainFrame();
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->ReceivePostMessage(channel,
-                                        std::move(transferable_message));
-}
-
-void WebContents::MessageSync(bool internal,
-                              const std::string& channel,
-                              blink::CloneableMessage arguments,
-                              MessageSyncCallback callback) {
+void WebContents::MessageSync(
+    bool internal,
+    const std::string& channel,
+    blink::CloneableMessage arguments,
+    electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+    content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
   // channel, arguments);
-  EmitWithSender("-ipc-message-sync", receivers_.current_context(),
-                 std::move(callback), internal, channel, std::move(arguments));
+  EmitWithSender("-ipc-message-sync", render_frame_host, std::move(callback),
+                 internal, channel, std::move(arguments));
 }
 
 void WebContents::MessageTo(bool internal,
-                            bool send_to_all,
                             int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* web_contents = FromID(web_contents_id);
+  auto* target_web_contents = FromID(web_contents_id);
 
-  if (web_contents) {
-    web_contents->SendIPCMessageWithSender(internal, send_to_all, channel,
-                                           std::move(arguments), ID());
+  if (target_web_contents) {
+    content::RenderFrameHost* frame = target_web_contents->MainFrame();
+    DCHECK(frame);
+
+    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
+    gin::Handle<WebFrameMain> web_frame_main =
+        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
+
+    int32_t sender_id = ID();
+    web_frame_main->GetRendererApi()->Message(internal, channel,
+                                              std::move(arguments), sender_id);
   }
 }
 
 void WebContents::MessageHost(const std::string& channel,
-                              blink::CloneableMessage arguments) {
+                              blink::CloneableMessage arguments,
+                              content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", receivers_.current_context(),
-                 InvokeCallback(), channel, std::move(arguments));
+  EmitWithSender("ipc-message-host", render_frame_host,
+                 electron::mojom::ElectronBrowser::InvokeCallback(), channel,
+                 std::move(arguments));
 }
 
 void WebContents::UpdateDraggableRegions(
@@ -1609,18 +1636,6 @@ void WebContents::RenderFrameDeleted(
   // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
   // disposed to prevent access to it.
   WebFrameMain::RenderFrameDeleted(render_frame_host);
-
-  // A RenderFrameHost can be destroyed before the related Mojo binding is
-  // closed, which can result in Mojo calls being sent for RenderFrameHosts
-  // that no longer exist. To prevent this from happening, when a
-  // RenderFrameHost goes away, we close all the bindings related to that
-  // frame.
-  auto it = frame_to_receivers_map_.find(render_frame_host);
-  if (it == frame_to_receivers_map_.end())
-    return;
-  for (auto id : it->second)
-    receivers_.Remove(id);
-  frame_to_receivers_map_.erase(it);
 }
 
 void WebContents::DidStartNavigation(
@@ -1679,10 +1694,25 @@ void WebContents::DidFinishNavigation(
          frame_process_id, frame_routing_id);
 
     // Do not emit "did-fail-load" for canceled requests.
-    if (code != net::ERR_ABORTED)
+    if (code != net::ERR_ABORTED) {
+      EmitWarning(
+          node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate()),
+          "Failed to load URL: " + url.possibly_invalid_spec() +
+              " with error: " + description,
+          "electron");
       Emit("did-fail-load", code, description, url, is_main_frame,
            frame_process_id, frame_routing_id);
+    }
   }
+  content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+  // This check is needed due to an issue in Chromium
+  // Check the Chromium issue to keep updated:
+  // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+  // If a history entry has been made and the forward/back call has been made,
+  // proceed with setting the new title
+  if (entry && (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
+    WebContents::TitleWasSet(entry);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
@@ -1976,9 +2006,6 @@ void WebContents::LoadURL(const GURL& url,
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
-  // Required to make beforeunload handler work.
-  NotifyUserActivation();
-
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -1993,20 +2020,8 @@ void WebContents::LoadURL(const GURL& url,
   if (!weak_this)
     return;
 
-  // Set the background color of RenderWidgetHostView.
-  // We have to call it right after LoadURL because the RenderViewHost is only
-  // created after loading a page.
-  auto* const view = weak_this->web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents());
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
+  // Required to make beforeunload handler work.
+  NotifyUserActivation();
 }
 
 void WebContents::DownloadURL(const GURL& url) {
@@ -2537,9 +2552,8 @@ void WebContents::Print(gin::Arguments* args) {
     settings.SetIntKey(printing::kSettingDpiVertical, dpi);
   }
 
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_BLOCKING},
-      base::BindOnce(&GetDefaultPrinterAsync),
+  print_task_runner_->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&GetDefaultPrinterAsync),
       base::BindOnce(&WebContents::OnGetDefaultPrinter,
                      weak_factory_.GetWeakPtr(), std::move(settings),
                      std::move(callback), device_name, silent));
@@ -2684,74 +2698,6 @@ bool WebContents::IsFocused() const {
 }
 #endif
 
-bool WebContents::SendIPCMessage(bool internal,
-                                 bool send_to_all,
-                                 const std::string& channel,
-                                 v8::Local<v8::Value> args) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
-    return false;
-  }
-  return SendIPCMessageWithSender(internal, send_to_all, channel,
-                                  std::move(message));
-}
-
-bool WebContents::SendIPCMessageWithSender(bool internal,
-                                           bool send_to_all,
-                                           const std::string& channel,
-                                           blink::CloneableMessage args,
-                                           int32_t sender_id) {
-  std::vector<content::RenderFrameHost*> target_hosts;
-  if (!send_to_all) {
-    auto* frame_host = web_contents()->GetMainFrame();
-    if (frame_host) {
-      target_hosts.push_back(frame_host);
-    }
-  } else {
-    target_hosts = web_contents()->GetAllFrames();
-  }
-
-  for (auto* frame_host : target_hosts) {
-    mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-    frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-        &electron_renderer);
-    electron_renderer->Message(internal, false, channel, args.ShallowClone(),
-                               sender_id);
-  }
-  return true;
-}
-
-bool WebContents::SendIPCMessageToFrame(bool internal,
-                                        bool send_to_all,
-                                        int32_t frame_id,
-                                        const std::string& channel,
-                                        v8::Local<v8::Value> args) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
-    return false;
-  }
-  auto frames = web_contents()->GetAllFrames();
-  auto iter = std::find_if(frames.begin(), frames.end(), [frame_id](auto* f) {
-    return f->GetRoutingID() == frame_id;
-  });
-  if (iter == frames.end())
-    return false;
-  if (!(*iter)->IsRenderFrameLive())
-    return false;
-
-  mojo::AssociatedRemote<mojom::ElectronRenderer> electron_renderer;
-  (*iter)->GetRemoteAssociatedInterfaces()->GetInterface(&electron_renderer);
-  electron_renderer->Message(internal, send_to_all, channel, std::move(message),
-                             0 /* sender_id */);
-  return true;
-}
-
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
   content::RenderWidgetHostView* view =
@@ -2846,10 +2792,16 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     files.push_back(file);
   }
 
-  gin::Handle<NativeImage> icon;
-  if (!item.Get("icon", &icon) || icon->image().IsEmpty()) {
+  v8::Local<v8::Value> icon_value;
+  if (!item.Get("icon", &icon_value)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify non-empty 'icon' option");
+        .ThrowError("'icon' parameter is required");
+    return;
+  }
+
+  NativeImage* icon = nullptr;
+  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
+      icon->image().IsEmpty()) {
     return;
   }
 
@@ -3043,7 +2995,8 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }
 
-void WebContents::DoGetZoomLevel(DoGetZoomLevelCallback callback) {
+void WebContents::DoGetZoomLevel(
+    electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
@@ -3158,12 +3111,10 @@ void WebContents::GrantOriginAccess(const GURL& url) {
 }
 
 void WebContents::NotifyUserActivation() {
-  auto* frame = web_contents()->GetMainFrame();
-  if (!frame)
-    return;
-  mojo::AssociatedRemote<mojom::ElectronRenderer> renderer;
-  frame->GetRemoteAssociatedInterfaces()->GetInterface(&renderer);
-  renderer->NotifyUserActivation();
+  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  if (frame)
+    frame->NotifyUserActivation(
+        blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
@@ -3186,18 +3137,23 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
+  if (!frame_host->IsRenderFrameCreated()) {
+    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    return handle;
+  }
+
   // This dance with `base::Owned` is to ensure that the interface stays alive
   // until the callback is called. Otherwise it would be closed at the end of
   // this function.
   auto electron_renderer =
-      std::make_unique<mojo::AssociatedRemote<mojom::ElectronRenderer>>();
-  frame_host->GetRemoteAssociatedInterfaces()->GetInterface(
-      electron_renderer.get());
+      std::make_unique<mojo::Remote<mojom::ElectronRenderer>>();
+  frame_host->GetRemoteInterfaces()->GetInterface(
+      electron_renderer->BindNewPipeAndPassReceiver());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
-          [](mojo::AssociatedRemote<mojom::ElectronRenderer>* ep,
+          [](mojo::Remote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
@@ -3227,6 +3183,12 @@ content::ColorChooser* WebContents::OpenColorChooser(
 #else
   return nullptr;
 #endif
+}
+
+std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
+    content::RenderFrameHost* frame,
+    content::EyeDropperListener* listener) {
+  return ShowEyeDropper(frame, listener);
 }
 
 void WebContents::RunFileChooser(
@@ -3647,9 +3609,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("_send", &WebContents::SendIPCMessage)
-      .SetMethod("_postMessage", &WebContents::PostMessage)
-      .SetMethod("_sendToFrame", &WebContents::SendIPCMessageToFrame)
       .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
@@ -3762,6 +3721,33 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
     gin_helper::CallMethod(isolate, api_web_contents, "_init");
   }
   return gin::CreateHandle(isolate, api_web_contents);
+}
+
+// static
+gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
+    v8::Isolate* isolate,
+    const gin_helper::Dictionary& web_preferences) {
+  // Check if webPreferences has |webContents| option.
+  gin::Handle<WebContents> web_contents;
+  if (web_preferences.GetHidden("webContents", &web_contents) &&
+      !web_contents.IsEmpty()) {
+    // Set webPreferences from options if using an existing webContents.
+    // These preferences will be used when the webContent launches new
+    // render processes.
+    auto* existing_preferences =
+        WebContentsPreferences::From(web_contents->web_contents());
+    base::DictionaryValue web_preferences_dict;
+    if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
+                           &web_preferences_dict)) {
+      existing_preferences->Clear();
+      existing_preferences->Merge(web_preferences_dict);
+    }
+  } else {
+    // Create one if not.
+    web_contents = WebContents::New(isolate, web_preferences);
+  }
+
+  return web_contents;
 }
 
 // static

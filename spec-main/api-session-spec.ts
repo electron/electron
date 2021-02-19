@@ -51,7 +51,7 @@ describe('session module', () => {
         res.end('finished');
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const { port } = server.address() as AddressInfo;
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`${url}:${port}`);
@@ -274,7 +274,7 @@ describe('session module', () => {
         res.end(mockFile);
         downloadServer.close();
       });
-      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
 
       const port = (downloadServer.address() as AddressInfo).port;
       const url = `http://127.0.0.1:${port}/`;
@@ -290,7 +290,7 @@ describe('session module', () => {
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
       // Delay till the next tick.
-      await new Promise(resolve => setImmediate(() => resolve()));
+      await new Promise<void>(resolve => setImmediate(() => resolve()));
       expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });
@@ -390,7 +390,7 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       {
         const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
         await customSession.setProxy(config);
@@ -464,7 +464,7 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
       await customSession.setProxy(config);
       {
@@ -618,7 +618,7 @@ describe('session module', () => {
       setTimeout(() => {
         ses2.setCertificateVerifyProc((opts, callback) => callback(0));
       });
-      await expect(new Promise((resolve, reject) => {
+      await expect(new Promise<void>((resolve, reject) => {
         req.on('error', (err) => {
           reject(err);
         });
@@ -642,7 +642,7 @@ describe('session module', () => {
           res.end('authenticated');
         }
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = (server.address() as AddressInfo).port;
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses });
@@ -694,7 +694,7 @@ describe('session module', () => {
         });
         res.end(mockPDF);
       });
-      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
       address = downloadServer.address() as AddressInfo;
     });
     after(async () => {
@@ -940,7 +940,7 @@ describe('session module', () => {
           .on('error', (error: any) => { throw error; }).pipe(res);
       });
       try {
-        await new Promise(resolve => rangeServer.listen(0, '127.0.0.1', resolve));
+        await new Promise<void>(resolve => rangeServer.listen(0, '127.0.0.1', resolve));
         const port = (rangeServer.address() as AddressInfo).port;
         const w = new BrowserWindow({ show: false });
         const downloadCancelled: Promise<Electron.DownloadItem> = new Promise((resolve) => {
@@ -1072,7 +1072,7 @@ describe('session module', () => {
         res.end();
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
@@ -1106,7 +1106,7 @@ describe('session module', () => {
       }, (req, res) => {
         res.end('hi');
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       defer(() => server.close());
       const { port } = server.address() as AddressInfo;
 

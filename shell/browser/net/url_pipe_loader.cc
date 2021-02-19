@@ -19,9 +19,7 @@ URLPipeLoader::URLPipeLoader(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data)
-    : binding_(this, std::move(loader)),
-      client_(std::move(client)),
-      weak_factory_(this) {
+    : binding_(this, std::move(loader)), client_(std::move(client)) {
   binding_.set_connection_error_handler(base::BindOnce(
       &URLPipeLoader::NotifyComplete, base::Unretained(this), net::ERR_FAILED));
 
@@ -40,7 +38,7 @@ void URLPipeLoader::Start(
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data) {
   loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
-  loader_->SetOnResponseStartedCallback(base::Bind(
+  loader_->SetOnResponseStartedCallback(base::BindOnce(
       &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
   // TODO(zcbenz): The old protocol API only supports string as upload data,

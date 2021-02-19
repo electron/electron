@@ -73,8 +73,7 @@ class SpellCheckClient::SpellcheckRequest {
 SpellCheckClient::SpellCheckClient(const std::string& language,
                                    v8::Isolate* isolate,
                                    v8::Local<v8::Object> provider)
-    : pending_request_param_(nullptr),
-      isolate_(isolate),
+    : isolate_(isolate),
       context_(isolate, isolate->GetCurrentContext()),
       provider_(isolate, provider) {
   DCHECK(!context_.IsEmpty());

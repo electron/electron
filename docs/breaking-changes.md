@@ -12,7 +12,45 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (14.0)
+
+### API Changed: `window.(open)`
+
+The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
+
+If you were using this parameter to set the title of a window, you can instead use [win.setTitle(title)](https://www.electronjs.org/docs/api/browser-window#winsettitletitle).
+
+### Removed: `worldSafeExecuteJavaScript`
+
+In Electron 14, `worldSafeExecuteJavaScript` will be removed.  There is no alternative, please
+ensure your code works with this property enabled.  It has been enabled by default since Electron
+12.
+
+You will be affected by this change if you use either `webFrame.executeJavaScript` or `webFrame.executeJavaScriptInIsolatedWorld`. You will need to ensure that values returned by either of those methods are supported by the [Context Bridge API](api/context-bridge.md#parameter--error--return-type-support) as these methods use the same value passing semantics.
+
 ## Planned Breaking API Changes (13.0)
+
+### API Changed: `session.setPermissionCheckHandler(handler)`
+
+The `handler` methods first parameter was previously always a `webContents`, it can now sometimes be `null`.  You should use the `requestingOrigin`, `embeddingOrigin` and `securityOrigin` properties to respond to the permission check correctly.  As the `webContents` can be `null` it can no longer be relied on.
+
+```js
+// Old code
+session.setPermissionCheckHandler((webContents, permission) => {
+  if (webContents.getURL().startsWith('https://google.com/') && permission === 'notification') {
+    return true
+  }
+  return false
+})
+
+// Replace with
+session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+  if (new URL(requestingOrigin).hostname === 'google.com' && permission === 'notification') {
+    return true
+  }
+  return false
+})
+```
 
 ### Removed: `shell.moveItemToTrash()`
 
@@ -26,6 +64,78 @@ shell.moveItemToTrash(path)
 shell.trashItem(path).then(/* ... */)
 ```
 
+### Removed: `BrowserWindow` extension APIs
+
+The deprecated extension APIs have been removed:
+
+* `BrowserWindow.addExtension(path)`
+* `BrowserWindow.addDevToolsExtension(path)`
+* `BrowserWindow.removeExtension(name)`
+* `BrowserWindow.removeDevToolsExtension(name)`
+* `BrowserWindow.getExtensions()`
+* `BrowserWindow.getDevToolsExtensions()`
+
+Use the session APIs instead:
+
+* `ses.loadExtension(path)`
+* `ses.removeExtension(extension_id)`
+* `ses.getAllExtensions()`
+
+```js
+// Removed in Electron 13
+BrowserWindow.addExtension(path)
+BrowserWindow.addDevToolsExtension(path)
+// Replace with
+session.defaultSession.loadExtension(path)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.removeExtension(name)
+BrowserWindow.removeDevToolsExtension(name)
+// Replace with
+session.defaultSession.removeExtension(extension_id)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.getExtensions()
+BrowserWindow.getDevToolsExtensions()
+// Replace with
+session.defaultSession.getAllExtensions()
+```
+
+### Removed: methods in `systemPreferences`
+
+The following `systemPreferences` methods have been deprecated:
+
+* `systemPreferences.isDarkMode()`
+* `systemPreferences.isInvertedColorScheme()`
+* `systemPreferences.isHighContrastColorScheme()`
+
+Use the following `nativeTheme` properties instead:
+
+* `nativeTheme.shouldUseDarkColors`
+* `nativeTheme.shouldUseInvertedColorScheme`
+* `nativeTheme.shouldUseHighContrastColors`
+
+```js
+// Removed in Electron 13
+systemPreferences.isDarkMode()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Removed in Electron 13
+systemPreferences.isInvertedColorScheme()
+// Replace with
+nativeTheme.shouldUseInvertedColorScheme
+
+// Removed in Electron 13
+systemPreferences.isHighContrastColorScheme()
+// Replace with
+nativeTheme.shouldUseHighContrastColors
+```
+
 ## Planned Breaking API Changes (12.0)
 
 ### Removed: Pepper Flash support
@@ -33,6 +143,15 @@ shell.trashItem(path).then(/* ... */)
 Chromium has removed support for Flash, and so we must follow suit. See
 Chromium's [Flash Roadmap](https://www.chromium.org/flash-roadmap) for more
 details.
+
+### Default Changed: `worldSafeExecuteJavaScript` defaults to `true`
+
+In Electron 12, `worldSafeExecuteJavaScript` will be enabled by default.  To restore
+the previous behavior, `worldSafeExecuteJavaScript: false` must be specified in WebPreferences.
+Please note that setting this option to `false` is **insecure**.
+
+This option will be removed in Electron 14 so please migrate your code to support the default
+value.
 
 ### Default Changed: `contextIsolation` defaults to `true`
 
@@ -42,6 +161,18 @@ the previous behavior, `contextIsolation: false` must be specified in WebPrefere
 We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
 
 For more details see: https://github.com/electron/electron/issues/23506
+
+### Removed: `crashReporter.getCrashesDirectory()`
+
+The `crashReporter.getCrashesDirectory` method has been removed. Usage
+should be replaced by `app.getPath('crashDumps')`.
+
+```js
+// Removed in Electron 12
+crashReporter.getCrashesDirectory()
+// Replace with
+app.getPath('crashDumps')
+```
 
 ### Removed: `crashReporter` methods in the renderer process
 
@@ -262,6 +393,47 @@ you should plan to update your native modules to be context aware.
 
 For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
 
+### Deprecated: `BrowserWindow` extension APIs
+
+The following extension APIs have been deprecated:
+
+* `BrowserWindow.addExtension(path)`
+* `BrowserWindow.addDevToolsExtension(path)`
+* `BrowserWindow.removeExtension(name)`
+* `BrowserWindow.removeDevToolsExtension(name)`
+* `BrowserWindow.getExtensions()`
+* `BrowserWindow.getDevToolsExtensions()`
+
+Use the session APIs instead:
+
+* `ses.loadExtension(path)`
+* `ses.removeExtension(extension_id)`
+* `ses.getAllExtensions()`
+
+```js
+// Deprecated in Electron 9
+BrowserWindow.addExtension(path)
+BrowserWindow.addDevToolsExtension(path)
+// Replace with
+session.defaultSession.loadExtension(path)
+```
+
+```js
+// Deprecated in Electron 9
+BrowserWindow.removeExtension(name)
+BrowserWindow.removeDevToolsExtension(name)
+// Replace with
+session.defaultSession.removeExtension(extension_id)
+```
+
+```js
+// Deprecated in Electron 9
+BrowserWindow.getExtensions()
+BrowserWindow.getDevToolsExtensions()
+// Replace with
+session.defaultSession.getAllExtensions()
+```
+
 ### Removed: `<webview>.getWebContents()`
 
 This API, which was deprecated in Electron 8.0, is now removed.
@@ -408,6 +580,55 @@ in Electron 8.x, and cease to exist in Electron 9.x. The layout zoom level
 limits are now fixed at a minimum of 0.25 and a maximum of 5.0, as defined
 [here](https://chromium.googlesource.com/chromium/src/+/938b37a6d2886bf8335fc7db792f1eb46c65b2ae/third_party/blink/common/page/page_zoom.cc#11).
 
+### Deprecated events in `systemPreferences`
+
+The following `systemPreferences` events have been deprecated:
+
+* `inverted-color-scheme-changed`
+* `high-contrast-color-scheme-changed`
+
+Use the new `updated` event on the `nativeTheme` module instead.
+
+```js
+// Deprecated
+systemPreferences.on('inverted-color-scheme-changed', () => { /* ... */ })
+systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
+
+// Replace with
+nativeTheme.on('updated', () => { /* ... */ })
+```
+
+### Deprecated: methods in `systemPreferences`
+
+The following `systemPreferences` methods have been deprecated:
+
+* `systemPreferences.isDarkMode()`
+* `systemPreferences.isInvertedColorScheme()`
+* `systemPreferences.isHighContrastColorScheme()`
+
+Use the following `nativeTheme` properties instead:
+
+* `nativeTheme.shouldUseDarkColors`
+* `nativeTheme.shouldUseInvertedColorScheme`
+* `nativeTheme.shouldUseHighContrastColors`
+
+```js
+// Deprecated
+systemPreferences.isDarkMode()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.isInvertedColorScheme()
+// Replace with
+nativeTheme.shouldUseInvertedColorScheme
+
+// Deprecated
+systemPreferences.isHighContrastColorScheme()
+// Replace with
+nativeTheme.shouldUseHighContrastColors
+```
+
 ## Planned Breaking API Changes (7.0)
 
 ### Deprecated: Atom.io Node Headers URL
@@ -507,6 +728,55 @@ Note that `webkitdirectory` no longer exposes the path to the selected folder.
 If you require the path to the selected folder rather than the folder contents,
 see the `dialog.showOpenDialog` API ([link](https://github.com/electron/electron/blob/master/docs/api/dialog.md#dialogshowopendialogbrowserwindow-options)).
 
+### API Changed: Callback-based versions of promisified APIs
+
+Electron 5 and Electron 6 introduced Promise-based versions of existing
+asynchronous APIs and deprecated their older, callback-based counterparts.
+In Electron 7, all deprecated callback-based APIs are now removed.
+
+These functions now only return Promises:
+
+* `app.getFileIcon()` [#15742](https://github.com/electron/electron/pull/15742)
+* `app.dock.show()` [#16904](https://github.com/electron/electron/pull/16904)
+* `contentTracing.getCategories()` [#16583](https://github.com/electron/electron/pull/16583)
+* `contentTracing.getTraceBufferUsage()` [#16600](https://github.com/electron/electron/pull/16600)
+* `contentTracing.startRecording()` [#16584](https://github.com/electron/electron/pull/16584)
+* `contentTracing.stopRecording()` [#16584](https://github.com/electron/electron/pull/16584)
+* `contents.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `cookies.flushStore()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.get()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.remove()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.set()` [#16464](https://github.com/electron/electron/pull/16464)
+* `debugger.sendCommand()` [#16861](https://github.com/electron/electron/pull/16861)
+* `dialog.showCertificateTrustDialog()` [#17181](https://github.com/electron/electron/pull/17181)
+* `inAppPurchase.getProducts()` [#17355](https://github.com/electron/electron/pull/17355)
+* `inAppPurchase.purchaseProduct()`[#17355](https://github.com/electron/electron/pull/17355)
+* `netLog.stopLogging()` [#16862](https://github.com/electron/electron/pull/16862)
+* `session.clearAuthCache()` [#17259](https://github.com/electron/electron/pull/17259)
+* `session.clearCache()`  [#17185](https://github.com/electron/electron/pull/17185)
+* `session.clearHostResolverCache()` [#17229](https://github.com/electron/electron/pull/17229)
+* `session.clearStorageData()` [#17249](https://github.com/electron/electron/pull/17249)
+* `session.getBlobData()` [#17303](https://github.com/electron/electron/pull/17303)
+* `session.getCacheSize()`  [#17185](https://github.com/electron/electron/pull/17185)
+* `session.resolveProxy()` [#17222](https://github.com/electron/electron/pull/17222)
+* `session.setProxy()`  [#17222](https://github.com/electron/electron/pull/17222)
+* `shell.openExternal()` [#16176](https://github.com/electron/electron/pull/16176)
+* `webContents.loadFile()` [#15855](https://github.com/electron/electron/pull/15855)
+* `webContents.loadURL()` [#15855](https://github.com/electron/electron/pull/15855)
+* `webContents.hasServiceWorker()` [#16535](https://github.com/electron/electron/pull/16535)
+* `webContents.printToPDF()` [#16795](https://github.com/electron/electron/pull/16795)
+* `webContents.savePage()` [#16742](https://github.com/electron/electron/pull/16742)
+* `webFrame.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `webFrame.executeJavaScriptInIsolatedWorld()` [#17312](https://github.com/electron/electron/pull/17312)
+* `webviewTag.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `win.capturePage()` [#15743](https://github.com/electron/electron/pull/15743)
+
+These functions now have two forms, synchronous and Promise-based asynchronous:
+
+* `dialog.showMessageBox()`/`dialog.showMessageBoxSync()` [#17298](https://github.com/electron/electron/pull/17298)
+* `dialog.showOpenDialog()`/`dialog.showOpenDialogSync()` [#16973](https://github.com/electron/electron/pull/16973)
+* `dialog.showSaveDialog()`/`dialog.showSaveDialogSync()` [#17054](https://github.com/electron/electron/pull/17054)
+
 ## Planned Breaking API Changes (6.0)
 
 ### API Changed: `win.setMenu(null)` is now `win.removeMenu()`
@@ -516,19 +786,6 @@ see the `dialog.showOpenDialog` API ([link](https://github.com/electron/electron
 win.setMenu(null)
 // Replace with
 win.removeMenu()
-```
-
-### API Changed: `contentTracing.getTraceBufferUsage()` is now a promise
-
-```js
-// Deprecated
-contentTracing.getTraceBufferUsage((percentage, value) => {
-  // do something
-})
-// Replace with
-contentTracing.getTraceBufferUsage().then(infoObject => {
-  // infoObject has percentage and value fields
-})
 ```
 
 ### API Changed: `electron.screen` in the renderer process should be accessed via `remote`
@@ -667,6 +924,31 @@ webFrame.setSpellCheckProvider('en-US', {
     callback(words.filter(text => spellchecker.isMisspelled(text)))
   }
 })
+```
+
+### API Changed: `webContents.getZoomLevel` and `webContents.getZoomFactor` are now synchronous
+
+`webContents.getZoomLevel` and `webContents.getZoomFactor` no longer take callback parameters,
+instead directly returning their number values.
+
+```js
+// Deprecated
+webContents.getZoomLevel((level) => {
+  console.log(level)
+})
+// Replace with
+const level = webContents.getZoomLevel()
+console.log(level)
+```
+
+```js
+// Deprecated
+webContents.getZoomFactor((factor) => {
+  console.log(factor)
+})
+// Replace with
+const factor = webContents.getZoomFactor()
+console.log(factor)
 ```
 
 ## Planned Breaking API Changes (4.0)

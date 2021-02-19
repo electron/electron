@@ -105,7 +105,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 namespace electron {
 
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
-    : window_(window), offscreen_(offscreen), weak_factory_(this) {}
+    : window_(window), offscreen_(offscreen) {}
 
 WebDialogHelper::~WebDialogHelper() = default;
 

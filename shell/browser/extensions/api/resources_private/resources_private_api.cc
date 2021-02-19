@@ -39,6 +39,7 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
       {"passwordDialogTitle", IDS_PDF_PASSWORD_DIALOG_TITLE},
       {"passwordPrompt", IDS_PDF_NEED_PASSWORD},
       {"passwordSubmit", IDS_PDF_PASSWORD_SUBMIT},
+      {"thumbnailPageAriaLabel", IDS_PDF_THUMBNAIL_PAGE_ARIA_LABEL},
       {"passwordInvalid", IDS_PDF_PASSWORD_INVALID},
       {"pageLoading", IDS_PDF_PAGE_LOADING},
       {"pageLoadFailed", IDS_PDF_PAGE_LOAD_FAILED},
@@ -63,14 +64,12 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
 
 void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
 #if BUILDFLAG(ENABLE_PDF)
-  dict->SetStringKey(
-      "pdfViewerUpdateEnabledAttribute",
-      base::FeatureList::IsEnabled(chrome_pdf::features::kPDFViewerUpdate)
-          ? "pdf-viewer-update-enabled"
-          : "");
-  dict->SetKey("pdfFormSaveEnabled",
+  dict->SetKey("documentPropertiesEnabled",
                base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kSaveEditedPDFForm)));
+                   chrome_pdf::features::kPdfViewerDocumentProperties)));
+  dict->SetKey("presentationModeEnabled",
+               base::Value(base::FeatureList::IsEnabled(
+                   chrome_pdf::features::kPdfViewerPresentationMode)));
   dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
   dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)

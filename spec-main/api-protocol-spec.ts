@@ -262,7 +262,7 @@ describe('protocol module', () => {
         res.end(text);
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = 'http://127.0.0.1:' + port;
@@ -292,7 +292,7 @@ describe('protocol module', () => {
         }
       });
       after(() => server.close());
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
       const port = (server.address() as AddressInfo).port;
       const url = `${protocolName}://fake-host`;
@@ -671,6 +671,26 @@ describe('protocol module', () => {
       const r = await ajax('http://fake-host');
       expect(r.data).to.equal('redirect');
     });
+
+    it('should discard post data after redirection', async () => {
+      interceptStreamProtocol('http', (request, callback) => {
+        if (request.url.indexOf('http://fake-host') === 0) {
+          setTimeout(() => {
+            callback({
+              statusCode: 302,
+              headers: {
+                Location: 'http://fake-redirect'
+              }
+            });
+          }, 300);
+        } else {
+          expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
+          callback(getStream(3, request.method));
+        }
+      });
+      const r = await ajax('http://fake-host', { type: 'POST', data: postData });
+      expect(r.data).to.equal('GET');
+    });
   });
 
   describe('protocol.uninterceptProtocol', () => {
@@ -758,7 +778,7 @@ describe('protocol module', () => {
         server.close();
         requestReceived.resolve();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = (server.address() as AddressInfo).port;
       const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
@@ -908,8 +928,12 @@ describe('protocol module', () => {
       await fs.promises.unlink(videoPath);
     });
 
-    beforeEach(async () => {
+    beforeEach(async function () {
       w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
     });
 
     afterEach(async () => {

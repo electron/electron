@@ -15,13 +15,16 @@ const { hasSwitch } = process._linkedBinding('electron_common_command_line');
 
 const callbacksRegistry = new CallbacksRegistry();
 const remoteObjectCache = new Map();
-const finalizationRegistry = new (window as any).FinalizationRegistry((id: number) => {
+const finalizationRegistry = new FinalizationRegistry((id: number) => {
   const ref = remoteObjectCache.get(id);
   if (ref !== undefined && ref.deref() === undefined) {
     remoteObjectCache.delete(id);
     ipcRendererInternal.send(IPC_MESSAGES.BROWSER_DEREFERENCE, contextId, id, 0);
   }
 });
+
+const electronIds = new WeakMap<Object, number>();
+const isReturnValue = new WeakSet<Object>();
 
 function getCachedRemoteObject (id: number) {
   const ref = remoteObjectCache.get(id);
@@ -31,7 +34,7 @@ function getCachedRemoteObject (id: number) {
   }
 }
 function setCachedRemoteObject (id: number, value: any) {
-  const wr = new (window as any).WeakRef(value);
+  const wr = new WeakRef(value);
   remoteObjectCache.set(id, wr);
   finalizationRegistry.register(value, id);
   return value;
@@ -90,10 +93,10 @@ function wrapArgs (args: any[], visited = new Set()): any {
             value.then(onFulfilled, onRejected);
           })
         };
-      } else if (v8Util.getHiddenValue(value, 'electronId')) {
+      } else if (electronIds.has(value)) {
         return {
           type: 'remote-object',
-          id: v8Util.getHiddenValue(value, 'electronId')
+          id: electronIds.get(value)
         };
       }
 
@@ -111,7 +114,7 @@ function wrapArgs (args: any[], visited = new Set()): any {
       }
       visited.delete(value);
       return meta;
-    } else if (typeof value === 'function' && v8Util.getHiddenValue(value, 'returnValue')) {
+    } else if (typeof value === 'function' && isReturnValue.has(value)) {
       return {
         type: 'function-with-return-value',
         value: valueToMeta(value())
@@ -120,7 +123,7 @@ function wrapArgs (args: any[], visited = new Set()): any {
       return {
         type: 'function',
         id: callbacksRegistry.add(value),
-        location: v8Util.getHiddenValue(value, 'location'),
+        location: callbacksRegistry.getLocation(value),
         length: value.length
       };
     } else {
@@ -287,7 +290,7 @@ function metaToValue (meta: MetaType): any {
     }
 
     // Track delegate obj's lifetime & tell browser to clean up when object is GCed.
-    v8Util.setHiddenValue(ret, 'electronId', meta.id);
+    electronIds.set(ret, meta.id);
     setCachedRemoteObject(meta.id, ret);
     return ret;
   }
@@ -302,7 +305,7 @@ function metaToError (meta: { type: 'error', value: any, members: ObjectMember[]
 }
 
 function handleMessage (channel: string, handler: Function) {
-  ipcRendererInternal.onMessageFromMain(channel, (event, passedContextId, id, ...args) => {
+  ipcRendererInternal.on(channel, (event, passedContextId, id, ...args) => {
     if (passedContextId === contextId) {
       handler(id, ...args);
     } else {
@@ -373,7 +376,7 @@ Object.defineProperty(exports, 'process', {
 // Create a function that will return the specified value when called in browser.
 export function createFunctionWithReturnValue<T> (returnValue: T): () => T {
   const func = () => returnValue;
-  v8Util.setHiddenValue(func, 'returnValue', true);
+  isReturnValue.add(func);
   return func;
 }
 

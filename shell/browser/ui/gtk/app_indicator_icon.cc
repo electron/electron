@@ -158,7 +158,7 @@ namespace gtkui {
 AppIndicatorIcon::AppIndicatorIcon(std::string id,
                                    const gfx::ImageSkia& image,
                                    const base::string16& tool_tip)
-    : id_(id), icon_(nullptr), menu_model_(nullptr), icon_change_count_(0) {
+    : id_(id) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   desktop_env_ = base::nix::GetDesktopEnvironment(env.get());
 
@@ -365,8 +365,9 @@ void AppIndicatorIcon::UpdateClickActionReplacementMenuItem() {
   DCHECK(!tool_tip_.empty());
   menu_->UpdateClickActionReplacementMenuItem(
       tool_tip_.c_str(),
-      base::Bind(&AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
-                 base::Unretained(this)));
+      base::BindRepeating(
+          &AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
+          base::Unretained(this)));
 }
 
 void AppIndicatorIcon::OnClickActionReplacementMenuItemActivated() {

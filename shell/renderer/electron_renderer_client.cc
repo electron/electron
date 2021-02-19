@@ -112,9 +112,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
-  if (!should_load_node) {
+  if (!should_load_node)
     return;
-  }
 
   injected_frames_.insert(render_frame);
 
@@ -252,34 +251,6 @@ void ElectronRendererClient::SetupMainWorldOverrides(
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args, nullptr);
-}
-
-void ElectronRendererClient::SetupExtensionWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame,
-    int world_id) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  NOTREACHED();
-#else
-  auto* isolate = context->GetIsolate();
-
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
-
-  auto* env = GetEnvironment(render_frame);
-  if (!env)
-    return;
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      env->process_object(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
-      v8::Integer::New(isolate, world_id)};
-
-  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
-#endif
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(

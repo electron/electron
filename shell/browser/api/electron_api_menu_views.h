@@ -36,7 +36,7 @@ class MenuViews : public Menu {
   // window ID -> open context menu
   std::map<int32_t, std::unique_ptr<views::MenuRunner>> menu_runners_;
 
-  base::WeakPtrFactory<MenuViews> weak_factory_;
+  base::WeakPtrFactory<MenuViews> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(MenuViews);
 };

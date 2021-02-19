@@ -33,6 +33,7 @@
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),
         ioCounters: invoke(() => process.getIOCounters()),
+        uptime: invoke(() => process.uptime()),
         env: process.env,
         execPath: process.execPath,
         pid: process.pid,

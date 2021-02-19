@@ -406,6 +406,9 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Integer - The exit code of the process, unless `reason` is
+    `launch-failed`, in which case `exitCode` will be a platform-specific
+    launch failure error code.
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
@@ -1174,9 +1177,9 @@ For `infoType` equal to `basic`:
 
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 
-### `app.setBadgeCount(count)` _Linux_ _macOS_
+### `app.setBadgeCount([count])` _Linux_ _macOS_
 
-* `count` Integer
+* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
 Returns `Boolean` - Whether the call succeeded.
 

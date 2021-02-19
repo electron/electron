@@ -10,7 +10,7 @@ function genSnapshot (browserWindow: BrowserWindow, features: string) {
     browserWindow.webContents.on('new-window', (...args: any[]) => {
       resolve([features, ...args]);
     });
-    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame name', '${features}') && true`);
+    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame-name', '${features}') && true`);
   });
 }
 
@@ -188,6 +188,9 @@ function stringifySnapshots (snapshots: any, pretty = false) {
     }
     if (key === 'openerId' && typeof value === 'number') {
       return 'placeholder-opener-id';
+    }
+    if (key === 'processId' && typeof value === 'number') {
+      return 'placeholder-process-id';
     }
     if (key === 'returnValue') {
       return 'placeholder-guest-contents-id';

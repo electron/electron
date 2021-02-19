@@ -22,6 +22,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 * `getSystemVersion()`
 * `getCPUUsage()`
 * `getIOCounters()`
+* `uptime()`
 * `argv`
 * `execPath`
 * `env`

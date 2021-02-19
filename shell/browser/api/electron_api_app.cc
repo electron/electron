@@ -595,7 +595,7 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
-  base::ProcessId pid = base::GetCurrentProcId();
+  auto pid = content::ChildProcessHost::kInvalidUniqueID;
   auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
@@ -835,26 +835,26 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
+  ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),
                        data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
@@ -875,7 +875,7 @@ void App::BrowserChildProcessCrashedOrKilled(
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
                        host->GetProcess().Handle());
 
   // TODO(jeremy): this isn't really the right place to be creating
@@ -890,16 +890,15 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   }
 }
 
-void App::RenderProcessDisconnected(base::ProcessId host_pid) {
-  ChildProcessDisconnected(host_pid);
+void App::RenderProcessExited(content::RenderProcessHost* host) {
+  ChildProcessDisconnected(host->GetID());
 }
 
 void App::ChildProcessLaunched(int process_type,
+                               int pid,
                                base::ProcessHandle handle,
                                const std::string& service_name,
                                const std::string& name) {
-  auto pid = base::GetProcId(handle);
-
 #if defined(OS_MAC)
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(
       handle, content::BrowserChildProcessHost::GetPortProvider());
@@ -910,7 +909,7 @@ void App::ChildProcessLaunched(int process_type,
       process_type, handle, std::move(metrics), service_name, name);
 }
 
-void App::ChildProcessDisconnected(base::ProcessId pid) {
+void App::ChildProcessDisconnected(int pid) {
   app_metrics_.erase(pid);
 }
 
@@ -1322,12 +1321,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
     gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
 
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
-        .SetHidden("simple", true);
-    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
-        .SetHidden("simple", true);
-
+    pid_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1362,9 +1357,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
-        .SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(

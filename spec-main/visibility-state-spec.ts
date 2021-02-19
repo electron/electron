@@ -114,7 +114,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
     const makeOtherWindow = (opts: { x: number; y: number; width: number; height: number; }) => {
       child = cp.spawn(process.execPath, [path.resolve(__dirname, 'fixtures', 'chromium', 'other-window.js'), `${opts.x}`, `${opts.y}`, `${opts.width}`, `${opts.height}`]);
-      return new Promise(resolve => {
+      return new Promise<void>(resolve => {
         child.stdout!.on('data', (chunk) => {
           if (chunk.toString().includes('__ready__')) resolve();
         });

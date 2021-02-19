@@ -20,7 +20,7 @@ const FUNCTION_PROPERTIES = [
 ];
 
 type RendererFunctionId = [string, number] // [contextId, funcId]
-type FinalizerInfo = { id: RendererFunctionId, webContents: electron.WebContents, frameId: number };
+type FinalizerInfo = { id: RendererFunctionId, webContents: electron.WebContents, frameId: [number, number] };
 type CallIntoRenderer = (...args: any[]) => void
 
 // The remote functions in renderer processes.
@@ -31,7 +31,13 @@ const finalizationRegistry = new FinalizationRegistry((fi: FinalizerInfo) => {
   const ref = rendererFunctionCache.get(mapKey);
   if (ref !== undefined && ref.deref() === undefined) {
     rendererFunctionCache.delete(mapKey);
-    if (!fi.webContents.isDestroyed()) { fi.webContents.sendToFrame(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]); }
+    if (!fi.webContents.isDestroyed()) {
+      try {
+        fi.webContents._sendToFrameInternal(fi.frameId, IPC_MESSAGES.RENDERER_RELEASE_CALLBACK, fi.id[0], fi.id[1]);
+      } catch (error) {
+        console.warn(`_sendToFrameInternal() failed: ${error}`);
+      }
+    }
   }
 });
 
@@ -43,7 +49,7 @@ function getCachedRendererFunction (id: RendererFunctionId): CallIntoRenderer | 
     if (deref !== undefined) return deref;
   }
 }
-function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebContents, frameId: number, value: CallIntoRenderer) {
+function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebContents, frameId: [number, number], value: CallIntoRenderer) {
   // eslint-disable-next-line no-undef
   const wr = new WeakRef<CallIntoRenderer>(value);
   const mapKey = id[0] + '~' + id[1];
@@ -55,6 +61,8 @@ function setCachedRendererFunction (id: RendererFunctionId, wc: electron.WebCont
   } as FinalizerInfo);
   return value;
 }
+
+const locationInfo = new WeakMap<Object, string>();
 
 // Return the description of object's members:
 const getObjectMembers = function (object: any): ObjectMember[] {
@@ -186,7 +194,7 @@ const throwRPCError = function (message: string) {
 };
 
 const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...args: any[]) => void) => {
-  const location = v8Util.getHiddenValue(callIntoRenderer, 'location');
+  const location = locationInfo.get(callIntoRenderer);
   let message = 'Attempting to call a function in a renderer window that has been closed or released.' +
     `\nFunction provided here: ${location}`;
 
@@ -198,7 +206,7 @@ const removeRemoteListenersAndLogWarning = (sender: any, callIntoRenderer: (...a
     if (remoteEvents.length > 0) {
       message += `\nRemote event names: ${remoteEvents.join(', ')}`;
       remoteEvents.forEach((eventName) => {
-        sender.removeListener(eventName as any, callIntoRenderer);
+        sender.removeListener(eventName, callIntoRenderer);
       });
     }
   }
@@ -218,7 +226,7 @@ const fakeConstructor = (constructor: Function, name: string) =>
   });
 
 // Convert array of meta data from renderer into array of real values.
-const unwrapArgs = function (sender: electron.WebContents, frameId: number, contextId: string, args: any[]) {
+const unwrapArgs = function (sender: electron.WebContents, frameId: [number, number], contextId: string, args: any[]) {
   const metaToValue = function (meta: MetaTypeFromRenderer): any {
     switch (meta.type) {
       case 'nativeimage':
@@ -263,13 +271,17 @@ const unwrapArgs = function (sender: electron.WebContents, frameId: number, cont
         const callIntoRenderer = function (this: any, ...args: any[]) {
           let succeed = false;
           if (!sender.isDestroyed()) {
-            succeed = sender._sendToFrameInternal(frameId, IPC_MESSAGES.RENDERER_CALLBACK, contextId, meta.id, valueToMeta(sender, contextId, args));
+            try {
+              succeed = sender._sendToFrameInternal(frameId, IPC_MESSAGES.RENDERER_CALLBACK, contextId, meta.id, valueToMeta(sender, contextId, args));
+            } catch (error) {
+              console.warn(`_sendToFrameInternal() failed: ${error}`);
+            }
           }
           if (!succeed) {
             removeRemoteListenersAndLogWarning(this, callIntoRenderer);
           }
         };
-        v8Util.setHiddenValue(callIntoRenderer, 'location', meta.location);
+        locationInfo.set(callIntoRenderer, meta.location);
         Object.defineProperty(callIntoRenderer, 'length', { value: meta.length });
 
         setCachedRendererFunction(objectId, sender, frameId, callIntoRenderer);
@@ -353,7 +365,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_REQUIRE, function (event, contextId, mo
     if (customEvent.defaultPrevented) {
       throw new Error(`Blocked remote.require('${moduleName}')`);
     } else {
-      customEvent.returnValue = (process as any).mainModule.require(moduleName);
+      customEvent.returnValue = process.mainModule.require(moduleName);
     }
   }
 
@@ -421,7 +433,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_GET_CURRENT_WEB_CONTENTS, function (eve
 });
 
 handleRemoteCommand(IPC_MESSAGES.BROWSER_CONSTRUCTOR, function (event, contextId, id, args) {
-  args = unwrapArgs(event.sender, event.frameId, contextId, args);
+  args = unwrapArgs(event.sender, [event.processId, event.frameId], contextId, args);
   const constructor = objectsRegistry.get(id);
 
   if (constructor == null) {
@@ -432,7 +444,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_CONSTRUCTOR, function (event, contextId
 });
 
 handleRemoteCommand(IPC_MESSAGES.BROWSER_FUNCTION_CALL, function (event, contextId, id, args) {
-  args = unwrapArgs(event.sender, event.frameId, contextId, args);
+  args = unwrapArgs(event.sender, [event.processId, event.frameId], contextId, args);
   const func = objectsRegistry.get(id);
 
   if (func == null) {
@@ -449,7 +461,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_FUNCTION_CALL, function (event, context
 });
 
 handleRemoteCommand(IPC_MESSAGES.BROWSER_MEMBER_CONSTRUCTOR, function (event, contextId, id, method, args) {
-  args = unwrapArgs(event.sender, event.frameId, contextId, args);
+  args = unwrapArgs(event.sender, [event.processId, event.frameId], contextId, args);
   const object = objectsRegistry.get(id);
 
   if (object == null) {
@@ -460,7 +472,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_MEMBER_CONSTRUCTOR, function (event, co
 });
 
 handleRemoteCommand(IPC_MESSAGES.BROWSER_MEMBER_CALL, function (event, contextId, id, method, args) {
-  args = unwrapArgs(event.sender, event.frameId, contextId, args);
+  args = unwrapArgs(event.sender, [event.processId, event.frameId], contextId, args);
   const object = objectsRegistry.get(id);
 
   if (object == null) {
@@ -477,7 +489,7 @@ handleRemoteCommand(IPC_MESSAGES.BROWSER_MEMBER_CALL, function (event, contextId
 });
 
 handleRemoteCommand(IPC_MESSAGES.BROWSER_MEMBER_SET, function (event, contextId, id, name, args) {
-  args = unwrapArgs(event.sender, event.frameId, contextId, args);
+  args = unwrapArgs(event.sender, [event.processId, event.frameId], contextId, args);
   const obj = objectsRegistry.get(id);
 
   if (obj == null) {

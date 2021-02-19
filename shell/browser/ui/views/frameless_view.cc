@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/frameless_view.h"
 
+#include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
@@ -68,6 +69,15 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
+  // Check attached BrowserViews for potential draggable areas.
+  for (auto* view : window_->browser_views()) {
+    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
+    auto* view_draggable_region = native_view->draggable_region();
+    if (view_draggable_region &&
+        view_draggable_region->contains(cursor.x(), cursor.y()))
+      return HTCAPTION;
+  }
+
   // Check for possible draggable region in the client area for the frameless
   // window.
   SkRegion* draggable_region = window_->draggable_region();
@@ -104,7 +114,10 @@ gfx::Size FramelessView::GetMinimumSize() const {
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  return window_->GetContentMaximumSize();
+  gfx::Size size = window_->GetContentMaximumSize();
+  // Electron public APIs returns (0, 0) when maximum size is not set, but it
+  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
+  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
 
 const char* FramelessView::GetClassName() const {

@@ -67,9 +67,7 @@ build_script:
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        $env:GCLIENT_EXTRA_ARGS="$env:GCLIENT_EXTRA_ARGS --custom-var=checkout_requests=True"
-      } else {
+      if ($env:GN_CONFIG -ne 'release') {
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
@@ -98,8 +96,6 @@ build_script:
               $env:SAVE_GCLIENT_SRC="true"
             }
           } else {
-            # update external binaries
-            python src/electron/script/update-external-binaries.py
             # update angle
             cd src\third_party\angle
             git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
@@ -141,7 +137,8 @@ build_script:
   - cd build-tools
   - npm install
   - mkdir third_party
-  - node -e "require('./src/utils/goma.js').downloadAndPrepare()"
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
   - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
   - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
   - cd ..
@@ -151,7 +148,6 @@ build_script:
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
-  - gn check out/Default //electron:manifests
   - gn check out/Default //electron/shell/common/api:mojo
   - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )

@@ -3,14 +3,14 @@
     "top=5,left=10,resizable=no",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
-      "title": "frame name",
       "width": 800,
       "height": 600,
       "top": 5,
@@ -37,14 +37,14 @@
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
-      "title": "frame name",
       "width": 800,
       "height": 600,
       "resizable": false,
@@ -70,14 +70,14 @@
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
-      "title": "frame name",
       "width": 800,
       "height": 600,
       "backgroundColor": "gray",
@@ -103,18 +103,19 @@
     "x=50,y=20,title=sup",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
-      "title": "sup",
       "width": 800,
       "height": 600,
       "x": 50,
       "y": 20,
+      "title": "sup",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
@@ -134,14 +135,14 @@
     "show=false,top=1,left=1",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": false,
-      "title": "frame name",
       "width": 800,
       "height": 600,
       "top": 1,
