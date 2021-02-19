@@ -2008,6 +2008,13 @@ describe('webContents module', () => {
       });
       contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
     });
+
+    it('does not crash main process when quiting in it', async () => {
+      const appPath = path.join(mainFixturesPath, 'apps', 'quit', 'main.js');
+      const appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const [code] = await emittedOnce(appProcess, 'close');
+      expect(code).to.equal(0);
+    });
   });
 
   it('emits a cancelable event before creating a child webcontents', async () => {
