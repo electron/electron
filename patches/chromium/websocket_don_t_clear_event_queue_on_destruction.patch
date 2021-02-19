@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Fri, 12 Feb 2021 10:43:43 +0000
+Subject: WebSocket: Don't clear event queue on destruction
+
+It's unnecessary to clear the event queue as it will be garbage
+collected anyway. Stop doing it.
+
+Also add a unit test for GC with pending events. This can only happen if
+the execution context changes while the events are pending.
+
+BUG=1170657
+
+(cherry picked from commit 2dae20b0b3890af23852345a69158c99b47746aa)
+
+(cherry picked from commit 171d6ee562c3cac850d9705e18745bb1214e5d83)
+
+Change-Id: I01e5a687587f7471e88640c43f0dfe83e5c01bd1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2655089
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#848065}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2660955
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4389@{#419}
+Cr-Original-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2690730
+Auto-Submit: Adam Rice <ricea@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4324@{#2191}
+Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
+
+diff --git a/third_party/blink/renderer/modules/websockets/dom_websocket.cc b/third_party/blink/renderer/modules/websockets/dom_websocket.cc
+index e4aa818faaf0f04a8f63bbcaff9f3391166e178c..06f2d0f5678f369e58370a5ad027e8d1bde26656 100644
+--- a/third_party/blink/renderer/modules/websockets/dom_websocket.cc
++++ b/third_party/blink/renderer/modules/websockets/dom_websocket.cc
+@@ -78,9 +78,7 @@ namespace blink {
+ DOMWebSocket::EventQueue::EventQueue(EventTarget* target)
+     : state_(kActive), target_(target) {}
+ 
+-DOMWebSocket::EventQueue::~EventQueue() {
+-  ContextDestroyed();
+-}
++DOMWebSocket::EventQueue::~EventQueue() = default;
+ 
+ void DOMWebSocket::EventQueue::Dispatch(Event* event) {
+   switch (state_) {
+diff --git a/third_party/blink/renderer/modules/websockets/dom_websocket_test.cc b/third_party/blink/renderer/modules/websockets/dom_websocket_test.cc
+index 1aadd61a2a3bddf1de039537b20e429e9e844a60..61c49deeee3a87552b5cdb5d99aabb65fdf943c6 100644
+--- a/third_party/blink/renderer/modules/websockets/dom_websocket_test.cc
++++ b/third_party/blink/renderer/modules/websockets/dom_websocket_test.cc
+@@ -24,6 +24,7 @@
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/handle.h"
+ #include "third_party/blink/renderer/platform/heap/heap.h"
++#include "third_party/blink/renderer/platform/heap/impl/thread_state.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+ #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+@@ -920,6 +921,32 @@ INSTANTIATE_TEST_SUITE_P(
+     DOMWebSocketInvalidClosingCodeTest,
+     testing::Values(0, 1, 998, 999, 1001, 2999, 5000, 9999, 65535));
+ 
++TEST(DOMWebSocketTest, GCWhileEventsPending) {
++  V8TestingScope scope;
++  {
++    DOMWebSocketTestScope websocket_scope(scope.GetExecutionContext());
++
++    EXPECT_CALL(websocket_scope.Channel(),
++                Connect(KURL("ws://example.com/"), String()))
++        .WillOnce(Return(true));
++    EXPECT_CALL(websocket_scope.Channel(), Disconnect());
++
++    auto& socket = websocket_scope.Socket();
++
++    // Cause events to be queued rather than fired.
++    socket.ContextLifecycleStateChanged(mojom::FrameLifecycleState::kPaused);
++
++    socket.Connect("ws://example.com/", Vector<String>(), ASSERT_NO_EXCEPTION);
++    socket.DidError();
++    socket.DidClose(DOMWebSocket::kClosingHandshakeIncomplete, 1006, "");
++
++    // Stop HasPendingActivity() from keeping the object alive.
++    socket.SetExecutionContext(nullptr);
++  }
++
++  ThreadState::Current()->CollectAllGarbageForTesting();
++}
++
+ }  // namespace
+ 
+ }  // namespace blink
