@@ -11,9 +11,9 @@
     {
       "show": true,
       "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
       "title": "cool",
-      "backgroundColor": "blue",
-      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -26,7 +26,9 @@
       "left": 10,
       "resizable": false,
       "x": 10,
-      "y": 5
+      "y": 5,
+      "backgroundColor": "blue",
+      "focusable": false
     },
     [],
     {
@@ -47,9 +49,9 @@
     {
       "show": true,
       "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
       "title": "cool",
-      "backgroundColor": "blue",
-      "focusable": false,
       "webPreferences": {
         "zoomFactor": "2",
         "nativeWindowOpen": true,
@@ -61,7 +63,9 @@
       },
       "resizable": false,
       "x": 0,
-      "y": 10
+      "y": 10,
+      "backgroundColor": "blue",
+      "focusable": false
     },
     [],
     {
@@ -82,9 +86,9 @@
     {
       "show": true,
       "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
       "title": "cool",
-      "backgroundColor": "gray",
-      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -93,8 +97,10 @@
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false
       },
+      "backgroundColor": "gray",
       "x": 100,
-      "y": 100
+      "y": 100,
+      "focusable": false
     },
     [],
     {
@@ -150,9 +156,9 @@
     {
       "show": false,
       "width": 800,
+      "height": 600,
+      "webContents": "[WebContents]",
       "title": "cool",
-      "backgroundColor": "blue",
-      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -164,7 +170,9 @@
       "top": 1,
       "left": 1,
       "x": 1,
-      "y": 1
+      "y": 1,
+      "backgroundColor": "blue",
+      "focusable": false
     },
     [],
     {
