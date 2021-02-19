@@ -605,7 +605,6 @@ WebContents.prototype._init = function () {
         width: 800,
         height: 600,
         webContents,
-        title: frameName,
         webPreferences,
         ...options
       };
