@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: configure
-      run: ./configure
+      run: ./configure --prefix=/usr/local
     - name: make
       run: make
     - name: make check
