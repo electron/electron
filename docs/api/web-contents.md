@@ -1561,7 +1561,7 @@ An example of showing devtools in a `<webview>` tag:
 </head>
 <body>
   <webview id="browser" src="https://github.com"></webview>
-  <webview id="devtools" src="about:blank"></webview>
+  <webview id="devtools"></webview>
   <script>
     const { ipcRenderer } = require('electron')
     const emittedOnce = (element, eventName) => new Promise(resolve => {
