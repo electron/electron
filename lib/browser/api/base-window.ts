@@ -43,7 +43,7 @@ Object.defineProperty(BaseWindow.prototype, 'kiosk', {
 });
 
 Object.defineProperty(BaseWindow.prototype, 'documentEdited', {
-  get: function () { return this.isFullscreen(); },
+  get: function () { return this.isDocumentEdited(); },
   set: function (edited) { this.setDocumentEdited(edited); }
 });
 
