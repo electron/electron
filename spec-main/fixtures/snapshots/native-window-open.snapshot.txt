@@ -6,14 +6,13 @@
       "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -27,6 +26,7 @@
       "resizable": false,
       "x": 10,
       "y": 5,
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -44,14 +44,13 @@
       "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
         "nativeWindowOpen": true,
@@ -64,6 +63,7 @@
       "resizable": false,
       "x": 0,
       "y": 10,
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -81,14 +81,13 @@
       "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -100,6 +99,7 @@
       "backgroundColor": "gray",
       "x": 100,
       "y": 100,
+      "title": "cool",
       "focusable": false
     },
     [],
@@ -116,14 +116,13 @@
       "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "title": "sup",
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -134,6 +133,7 @@
       },
       "x": 50,
       "y": 20,
+      "title": "sup",
       "backgroundColor": "blue",
       "focusable": false
     },
@@ -151,14 +151,13 @@
       "returnValue": "placeholder-guest-contents-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": false,
       "width": 800,
       "height": 600,
       "webContents": "[WebContents]",
-      "title": "frame name",
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
@@ -171,6 +170,7 @@
       "left": 1,
       "x": 1,
       "y": 1,
+      "title": "cool",
       "backgroundColor": "blue",
       "focusable": false
     },
