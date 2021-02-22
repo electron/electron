@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
-import { delay } from './spec-helpers';
+import { delay, ifit } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
