@@ -13,6 +13,7 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/debug/crash_logging.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -719,7 +720,13 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
           << "Aborted from launching unexpected helper executable";
     }
 #else
-    base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+      CHECK(false) << "Unable to get child process binary name.";
+    }
+    SCOPED_CRASH_KEY_STRING256("ChildProcess", "child_process_exe",
+                               child_path.AsUTF8Unsafe());
+    SCOPED_CRASH_KEY_STRING256("ChildProcess", "program",
+                               program.AsUTF8Unsafe());
     CHECK_EQ(program, child_path);
 #endif
   }
