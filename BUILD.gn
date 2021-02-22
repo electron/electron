@@ -648,6 +648,7 @@ source_set("electron_lib") {
   }
   if (enable_pdf_viewer) {
     deps += [
+      "//chrome/browser/resources/pdf:pdf_resources",
       "//components/pdf/browser",
       "//components/pdf/renderer",
       "//pdf:pdf_ppapi",
@@ -991,6 +992,9 @@ if (is_mac) {
     deps = [
       ":electron_app_framework_bundle_data",
       ":electron_app_resources",
+      ":electron_fuses",
+      "//base",
+      "//electron/buildflags",
     ]
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]

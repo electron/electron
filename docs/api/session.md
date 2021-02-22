@@ -492,6 +492,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `permission` String - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `geolocation` - Request access to user's current location.
     * `notifications` - Request notification creation and the ability to display them in the user's system tray.
@@ -742,9 +743,13 @@ will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
 
-#### `ses.loadExtension(path)`
+#### `ses.loadExtension(path[, options])`
 
 * `path` String - Path to a directory containing an unpacked Chrome extension
+* `options` Object (optional)
+  * `allowFileAccess` Boolean - Whether to allow the extension to read local files over `file://`
+    protocol and inject content scripts into `file://` pages. This is required e.g. for loading
+    devtools extensions on `file://` URLs. Defaults to false.
 
 Returns `Promise<Extension>` - resolves when the extension is loaded.
 
@@ -767,7 +772,11 @@ const { app, session } = require('electron')
 const path = require('path')
 
 app.on('ready', async () => {
-  await session.defaultSession.loadExtension(path.join(__dirname, 'react-devtools'))
+  await session.defaultSession.loadExtension(
+    path.join(__dirname, 'react-devtools'),
+    // allowFileAccess is required to load the devtools extension on file:// URLs.
+    { allowFileAccess: true }
+  )
   // Note that in order to use the React DevTools extension, you'll need to
   // download and unzip a copy of the extension.
 })

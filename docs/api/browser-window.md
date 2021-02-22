@@ -735,7 +735,7 @@ The method will also not return if the extension's manifest is missing or incomp
 is emitted.
 
 **Note:** This method is deprecated. Instead, use
-[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath-options).
 
 #### `BrowserWindow.removeExtension(name)` _Deprecated_
 
@@ -777,7 +777,7 @@ The method will also not return if the extension's manifest is missing or incomp
 is emitted.
 
 **Note:** This method is deprecated. Instead, use
-[`ses.loadExtension(path)`](session.md#sesloadextensionpath).
+[`ses.loadExtension(path)`](session.md#sesloadextensionpath-options).
 
 #### `BrowserWindow.removeDevToolsExtension(name)` _Deprecated_
 
@@ -1866,6 +1866,13 @@ Replacement API for setBrowserView supporting work with multi browser views.
 #### `win.removeBrowserView(browserView)` _Experimental_
 
 * `browserView` [BrowserView](browser-view.md)
+
+#### `win.setTopBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Raises `browserView` above other `BrowserView`s attached to `win`.
+Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 

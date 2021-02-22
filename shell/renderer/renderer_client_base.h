@@ -46,6 +46,8 @@ class GuestViewContainer;
 
 namespace electron {
 
+class ElectronApiServiceImpl;
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
 #endif

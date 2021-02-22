@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index b6b4e0b27ae971f45ab6d50b2eaede6c4d5b7a8d..b785e23bb7e9bb61cb4434ab0bd2b8df9d83caaf 100644
+index 9ab534614b5bbb9b88069595603620c692b19711..5e3200887da9a584e9e0275d86e7e4254211009f 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -119,6 +119,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -122,6 +122,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index b6b4e0b27ae971f45ab6d50b2eaede6c4d5b7a8d..b785e23bb7e9bb61cb4434ab0bd2b8df
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 37ea5f46e0f200bcf1229eed3fb17a7de6033c51..cf6ee0109c71123ee8f765b12474b51b109a0c09 100644
+index a401af64fad73f3717ab6bebdb28ba395d4090b2..eb777512e2cb36c6b4ae03cd0c0d728d76bd95fc 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4672,6 +4672,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4686,6 +4686,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index 37ea5f46e0f200bcf1229eed3fb17a7de6033c51..cf6ee0109c71123ee8f765b12474b51b
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index e003c6eec0f629e0ebf0ace81ce0e2534ead3bf2..ae95dd154336c290c9dfe8f7dc0bc5de1467c034 100644
+index 1a01e4f9f527fb9c6c63b8a1206f594ec6e3e4f2..b3d91c25ddda2c14a1e5b088acd4d19f828f7bd8 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -617,6 +617,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -53,10 +53,10 @@ index e003c6eec0f629e0ebf0ace81ce0e2534ead3bf2..ae95dd154336c290c9dfe8f7dc0bc5de
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index d20c4427399a15a3626c7debfa691950f39ba740..f84d889c7c605d2ce55a20418c37a4337017043f 100644
+index 7d32ed800d136b8ae449b4bae302b5bdaf11f13a..84ee1c78f0fbacfe20f69284d79d297dccd7d170 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -568,6 +568,9 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -572,6 +572,9 @@ class BLINK_EXPORT WebLocalFrameClient {
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) {}
  
@@ -92,10 +92,10 @@ index 5c171f837c93fa3df33f5230e999a76fbf8d17c8..97f55d0c95f462384fd112a2a16a5170
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 63076a78c9dc145a573cad55cc0d880636fdd972..5f7c14a425d2892affa0c872567be922f05ac096 100644
+index fba008f3477648a5abdd0909b89d8d908b9dafac..504ab7bac6623253bbd3e7be756a34af57f368e4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -415,6 +415,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
+@@ -347,6 +347,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
      web_frame_->Client()->DidCreateScriptContext(context, world_id);
  }
  

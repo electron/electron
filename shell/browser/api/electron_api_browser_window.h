@@ -84,6 +84,8 @@ class BrowserWindow : public BaseWindow,
   void SetBrowserView(v8::Local<v8::Value> value) override;
   void AddBrowserView(v8::Local<v8::Value> value) override;
   void RemoveBrowserView(v8::Local<v8::Value> value) override;
+  void SetTopBrowserView(v8::Local<v8::Value> value,
+                         gin_helper::Arguments* args) override;
   void ResetBrowserViews() override;
   void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
   void OnWindowShow() override;
