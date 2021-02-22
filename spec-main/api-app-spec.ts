@@ -1481,7 +1481,8 @@ describe('app module', () => {
     });
 
     describe('when the app is launched with --enable-sandbox', () => {
-      it('adds --enable-sandbox to all renderer processes', done => {
+      // TODO(jeremy): figure out why this times out under ASan
+      ifit(!process.env.IS_ASAN)('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
         appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox']);
 
