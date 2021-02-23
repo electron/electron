@@ -15,7 +15,5 @@
 
   "src/electron/patches/depot_tools": "src/third_party/depot_tools",
 
-  "src/electron/patches/icu": "src/third_party/icu",
-
   "src/electron/patches/nan": "src/third_party/nan"
 }
