@@ -1340,6 +1340,22 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
+    it('resolves after the window is hidden', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await emittedOnce(w, 'ready-to-show');
+      w.show();
+
+      const visibleImage = await w.capturePage();
+      expect(visibleImage.isEmpty()).to.equal(false);
+
+      w.hide();
+
+      const hiddenImage = await w.capturePage();
+      const isEmpty = process.platform !== 'darwin';
+      expect(hiddenImage.isEmpty()).to.equal(isEmpty);
+    });
+
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
       w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
