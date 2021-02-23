@@ -243,7 +243,8 @@ describe('node feature', () => {
     });
 
     // IPC Electron child process not supported on Windows
-    ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
+    // TODO(jeremy): figure out why this times out under ASan
+    ifit(process.platform !== 'win32' && !process.env.IS_ASAN)('does not crash when quitting with the inspector connected', function (done) {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;

@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
-import { delay } from './spec-helpers';
+import { delay, ifit } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -704,13 +704,14 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemeAsPrivileged', () => {
-    it('does not crash on exit', async () => {
+    // TODO(jeremy): figure out why this times out under ASan
+    ifit(!process.env.IS_ASAN)('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
       let stdout = '';
       let stderr = '';
-      appProcess.stdout.on('data', data => { stdout += data; });
-      appProcess.stderr.on('data', data => { stderr += data; });
+      appProcess.stdout.on('data', data => { process.stdout.write(data); stdout += data; });
+      appProcess.stderr.on('data', data => { process.stderr.write(data); stderr += data; });
       const [code] = await emittedOnce(appProcess, 'exit');
       if (code !== 0) {
         console.log('Exit code : ', code);

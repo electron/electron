@@ -680,28 +680,34 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       cd src/out/Default
       # -o  overwrite files WITHOUT prompting
       # TODO(alexeykuzmin): Remove '-o' when it's no longer needed.
-      unzip -o dist.zip
+      # -: allows to extract archive members into  locations  outside
+      #    of the current ``extraction root folder''.
+      #    ASan builds have the llvm-symbolizer binaries listed as
+      #    runtime_deps, with their paths as `../../third_party/...`
+      #    unzip exits with non-zero code on such zip files unless -: is
+      #    passed.
+      unzip -:o dist.zip
 
 step-ffmpeg-unzip: &step-ffmpeg-unzip
   run:
     name: Unzip ffmpeg.zip
     command: |
       cd src/out/ffmpeg
-      unzip -o ffmpeg.zip
+      unzip -:o ffmpeg.zip
 
 step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
     command: |
       cd src/out/Default
-      unzip -o mksnapshot.zip
+      unzip -:o mksnapshot.zip
 
 step-chromedriver-unzip: &step-chromedriver-unzip
   run:
     name: Unzip chromedriver.zip
     command: |
       cd src/out/Default
-      unzip -o chromedriver.zip
+      unzip -:o chromedriver.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
   run:
@@ -733,19 +739,23 @@ step-verify-mksnapshot: &step-verify-mksnapshot
   run:
     name: Verify mksnapshot
     command: |
-      cd src
-      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
-        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
-      else
-        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+      if [ "$IS_ASAN" != "1" ]; then
+        cd src
+        if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+        else
+          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+        fi
       fi
 
 step-verify-chromedriver: &step-verify-chromedriver
   run:
     name: Verify ChromeDriver
     command: |
-      cd src
-      python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      if [ "$IS_ASAN" != "1" ]; then
+        cd src
+        python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+      fi
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
@@ -1266,18 +1276,6 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-verify-ffmpeg
     - *step-maybe-notify-slack-failure
 
-steps-verify-chromedriver: &steps-verify-chromedriver
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-chromedriver-unzip
-    - *step-setup-linux-for-headless-testing
-
-    - *step-verify-chromedriver
-    - *step-maybe-notify-slack-failure
-
 steps-tests: &steps-tests
   steps:
     - attach_workspace:
@@ -1301,13 +1299,26 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
-            export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
-            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
-            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging)
+          if [ "$IS_ASAN" == "1" ]; then
+            ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
+            export ASAN_OPTIONS="symbolize=0 handle_abort=1"
+            export G_SLICE=always-malloc
+            export NSS_DISABLE_ARENA_FREE_LIST=1
+            export NSS_DISABLE_UNLOAD=1
+            export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+            export MOCHA_TIMEOUT=180000
+            echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split)) 2>&1 | $ASAN_SYMBOLIZE
+            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split)) 2>&1 | $ASAN_SYMBOLIZE
           else
-            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
-            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+            if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+              export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
+              (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging)
+            else
+              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+              (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+            fi
           fi
     - run:
         name: Check test results existence
@@ -1443,6 +1454,9 @@ commands:
       restore-src-cache:
         type: boolean
         default: true
+      build-nonproprietary-ffmpeg:
+        type: boolean
+        default: true
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1541,10 +1555,13 @@ commands:
             - *step-electron-chromedriver-build
             - *step-electron-chromedriver-store
 
-            # ffmpeg
-            - *step-ffmpeg-gn-gen
-            - *step-ffmpeg-build
-            - *step-ffmpeg-store
+            - when:
+                condition: << parameters.build-nonproprietary-ffmpeg >>
+                steps:
+                  # ffmpeg
+                  - *step-ffmpeg-gn-gen
+                  - *step-ffmpeg-build
+                  - *step-ffmpeg-store
 
             # hunspell
             - *step-hunspell-build
@@ -1783,6 +1800,22 @@ jobs:
           persist: true
           checkout: true
           use-out-cache: false
+
+  linux-x64-testing-asan:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-global
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      CHECK_DIST_MANIFEST: '0'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GN_EXTRA_ARGS: 'is_asan = true'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+          build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
     <<: *machine-linux-2xlarge
@@ -2277,6 +2310,17 @@ jobs:
     parallelism: 3
     <<: *steps-tests
 
+  linux-x64-testing-asan-tests:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+      IS_ASAN: '1'
+      DISABLE_CRASH_REPORTER_TESTS: '1'
+    parallelism: 3
+    <<: *steps-tests
+
   linux-x64-testing-nan:
     <<: *machine-linux-medium
     environment:
@@ -2573,6 +2617,7 @@ workflows:
       - linux-checkout-and-save-cache
 
       - linux-x64-testing
+      - linux-x64-testing-asan
       - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
@@ -2580,6 +2625,9 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
+      - linux-x64-testing-asan-tests:
+          requires:
+            - linux-x64-testing-asan
       - linux-x64-testing-nan:
           requires:
             - linux-x64-testing
