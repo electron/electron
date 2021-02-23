@@ -7,7 +7,7 @@
       "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "top": 5,
@@ -15,7 +15,7 @@
       "resizable": false,
       "x": 10,
       "y": 5,
-      "title": "frame name",
+      "title": "frame-name",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
@@ -41,13 +41,13 @@
       "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "resizable": false,
       "x": 0,
       "y": 10,
-      "title": "frame name",
+      "title": "frame-name",
       "webPreferences": {
         "zoomFactor": "2",
         "nodeIntegration": false,
@@ -74,7 +74,7 @@
       "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "backgroundColor": "gray",
@@ -87,7 +87,7 @@
       },
       "x": 100,
       "y": 100,
-      "title": "frame name",
+      "title": "frame-name",
       "width": 800,
       "height": 600,
       "show": false
@@ -107,7 +107,7 @@
       "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "x": 50,
@@ -138,7 +138,7 @@
       "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": false,
@@ -146,7 +146,7 @@
       "left": 1,
       "x": 1,
       "y": 1,
-      "title": "frame name",
+      "title": "frame-name",
       "webPreferences": {
         "nodeIntegration": false,
         "webviewTag": false,
