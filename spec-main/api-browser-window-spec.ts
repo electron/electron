@@ -1353,6 +1353,22 @@ describe('BrowserWindow module', () => {
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6);
     });
+
+    it('does not freeze browser process when called on hidden page', async() => {
+      await new Promise<void>((resolve) => {
+        const w = new BrowserWindow({ show: true });
+        w.on('hide', () => {
+          // We have to wait a moment as 'hide' is called too soon
+          // and windows isn't really hidden at this point.
+          setTimeout( async () => {
+            await w.webContents.capturePage();
+            resolve();
+          }, 100);
+        });
+        w.webContents.loadURL('about:blank');
+        w.hide();
+      });
+    });
   });
 
   describe('BrowserWindow.setProgressBar(progress)', () => {

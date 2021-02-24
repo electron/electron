@@ -381,6 +381,13 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 // Called when CapturePage is done.
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        const SkBitmap& bitmap) {
+  auto ui_task_runner = content::GetUIThreadTaskRunner({});
+  if (!ui_task_runner->RunsTasksInCurrentSequence()) {
+    ui_task_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(&OnCapturePageDone, std::move(promise), bitmap));
+    return;
+  }
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
