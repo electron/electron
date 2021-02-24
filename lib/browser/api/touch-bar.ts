@@ -135,7 +135,7 @@ class TouchBarGroup extends TouchBarItem<Electron.TouchBarGroupConstructorOption
       }
     }
     for (const item of newChild.orderedItems) {
-      item._addParent(item);
+      item._addParent(self);
     }
   })
   child!: TouchBar;
@@ -179,7 +179,7 @@ class TouchBarPopover extends TouchBarItem<Electron.TouchBarPopoverConstructorOp
       }
     }
     for (const item of newChild.orderedItems) {
-      item._addParent(item);
+      item._addParent(self);
     }
   })
   child!: TouchBar;
