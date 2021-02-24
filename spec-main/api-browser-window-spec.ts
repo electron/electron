@@ -95,7 +95,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.close()', () => {
     let w = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -190,7 +190,7 @@ describe('BrowserWindow module', () => {
   describe('window.close()', () => {
     let w = null as unknown as BrowserWindow;
     beforeEach(() => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
     afterEach(async () => {
       await closeWindow(w);
@@ -2714,6 +2714,7 @@ describe('BrowserWindow module', () => {
             nodeIntegrationInSubFrames: true,
             nativeWindowOpen: true,
             webviewTag: true,
+            contextIsolation: false,
             preload
           }
         });
@@ -2786,7 +2787,8 @@ describe('BrowserWindow module', () => {
             webPreferences: {
               nativeWindowOpen: true,
               // test relies on preloads in opened window
-              nodeIntegrationInSubFrames: true
+              nodeIntegrationInSubFrames: true,
+              contextIsolation: false
             }
           });
 
