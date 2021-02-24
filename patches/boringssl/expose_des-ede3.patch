@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Wed, 24 Feb 2021 11:08:34 -0800
+Subject: expose des-ede3
+
+This should be upstreamed.
+
+diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
+index 588a4773437c311877f275bf3679f9688cda3c46..e771ed6589b4579cc35300d5b2a1b68d92e444f5 100644
+--- a/crypto/cipher_extra/cipher_extra.c
++++ b/crypto/cipher_extra/cipher_extra.c
+@@ -93,6 +93,8 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
+     return EVP_rc4();
+   } else if (OPENSSL_strcasecmp(name, "des-cbc") == 0) {
+     return EVP_des_cbc();
++  } else if (OPENSSL_strcasecmp(name, "des-ede3") == 0) {
++    return EVP_des_ede3();
+   } else if (OPENSSL_strcasecmp(name, "des-ede3-cbc") == 0 ||
+              // This is not a name used by OpenSSL, but tcpdump registers it
+              // with |EVP_add_cipher_alias|. Our |EVP_add_cipher_alias| is a
+diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
+index 84af06fc56e4aa72d4d48801d7c037add0221747..fe412e350f43ad20758025da6b9754952d164938 100644
+--- a/decrepit/evp/evp_do_all.c
++++ b/decrepit/evp/evp_do_all.c
+@@ -39,6 +39,7 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_des_cbc(), "DES-CBC", NULL, arg);
+   callback(EVP_des_ecb(), "DES-ECB", NULL, arg);
+   callback(EVP_des_ede(), "DES-EDE", NULL, arg);
++  callback(EVP_des_ede3(), "DES-EDE3", NULL, arg);
+   callback(EVP_des_ede_cbc(), "DES-EDE-CBC", NULL, arg);
+   callback(EVP_des_ede3_cbc(), "DES-EDE3-CBC", NULL, arg);
+   callback(EVP_rc2_cbc(), "RC2-CBC", NULL, arg);
+@@ -65,6 +66,7 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_des_cbc(), "des-cbc", NULL, arg);
+   callback(EVP_des_ecb(), "des-ecb", NULL, arg);
+   callback(EVP_des_ede(), "des-ede", NULL, arg);
++  callback(EVP_des_ede3(), "des-ede3", NULL, arg);
+   callback(EVP_des_ede_cbc(), "des-ede-cbc", NULL, arg);
+   callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
+   callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
