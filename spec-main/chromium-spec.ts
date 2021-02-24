@@ -452,7 +452,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'sw-file-scheme-spec'
+          partition: 'sw-file-scheme-spec',
+          contextIsolation: false
         }
       });
       w.webContents.on('ipc-message', (event, channel, message) => {
@@ -489,7 +490,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          session: customSession
+          session: customSession,
+          contextIsolation: false
         }
       });
       w.webContents.on('ipc-message', (event, channel, message) => {
@@ -517,7 +519,8 @@ describe('chromium features', () => {
         webPreferences: {
           nodeIntegration: true,
           nodeIntegrationInWorker: true,
-          partition: 'sw-file-scheme-worker-spec'
+          partition: 'sw-file-scheme-worker-spec',
+          contextIsolation: false
         }
       });
 
@@ -551,7 +554,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'geolocation-spec'
+          partition: 'geolocation-spec',
+          contextIsolation: false
         }
       });
       const message = emittedOnce(w.webContents, 'ipc-message');
@@ -670,7 +674,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript(`
-        b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no')
+        { b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no'); null }
       `);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       const typeofProcessGlobal = await contents.executeJavaScript('typeof process');
@@ -686,7 +690,7 @@ describe('chromium features', () => {
         slashes: true
       });
       w.webContents.executeJavaScript(`
-        b = window.open(${JSON.stringify(windowUrl)}, '', 'javascript=no,show=no')
+        { b = window.open(${JSON.stringify(windowUrl)}, '', 'javascript=no,show=no'); null }
       `);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       await emittedOnce(contents, 'did-finish-load');
@@ -796,7 +800,8 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'window-opener.html'));
@@ -833,7 +838,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          session: ses
+          session: ses,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'));
@@ -848,7 +854,8 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          session: ses
+          session: ses,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'));
@@ -916,7 +923,7 @@ describe('chromium features', () => {
         for (const sandboxPopup of [false, true]) {
           const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
-            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen, contextIsolation: false } });
             w.webContents.setWindowOpenHandler(() => ({
               action: 'allow',
               overrideBrowserWindowOptions: {
@@ -955,7 +962,7 @@ describe('chromium features', () => {
           // We are testing whether context (3) can access context (2) under various conditions.
 
           // This is context (1), the base window for the test.
-          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
           await w.loadURL('about:blank');
 
           const parentCode = `new Promise((resolve) => {
@@ -969,7 +976,7 @@ describe('chromium features', () => {
             // This is context (2), a WebView which will call window.open()
             const webview = new WebView()
             webview.setAttribute('nodeintegration', '${nodeIntegration ? 'on' : 'off'}')
-            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? 'yes' : 'no'}')
+            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? 'yes' : 'no'},contextIsolation=no')
             webview.setAttribute('allowpopups', 'on')
             webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
             webview.addEventListener('dom-ready', async () => {
@@ -1013,7 +1020,8 @@ describe('chromium features', () => {
 
       beforeEach(() => {
         contents = (webContents as any).create({
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         });
       });
 
@@ -1145,7 +1153,8 @@ describe('chromium features', () => {
       it('default value allows websql', async () => {
         contents = (webContents as any).create({
           session: sqlSession,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         });
         contents.loadURL(origin);
         const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
@@ -1156,7 +1165,8 @@ describe('chromium features', () => {
         contents = (webContents as any).create({
           session: sqlSession,
           nodeIntegration: true,
-          enableWebSQL: false
+          enableWebSQL: false,
+          contextIsolation: false
         });
         contents.loadURL(origin);
         const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
@@ -1167,7 +1177,8 @@ describe('chromium features', () => {
         contents = (webContents as any).create({
           session: sqlSession,
           nodeIntegration: true,
-          enableWebSQL: false
+          enableWebSQL: false,
+          contextIsolation: false
         });
         contents.loadURL(origin);
         const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
@@ -1196,7 +1207,8 @@ describe('chromium features', () => {
           webPreferences: {
             nodeIntegration: true,
             webviewTag: true,
-            session: sqlSession
+            session: sqlSession,
+            contextIsolation: false
           }
         });
         w.webContents.loadURL(origin);
@@ -1207,7 +1219,7 @@ describe('chromium features', () => {
           new Promise((resolve, reject) => {
             const webview = new WebView();
             webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=0');
+            webview.setAttribute('webpreferences', 'enableWebSQL=0,contextIsolation=no');
             webview.setAttribute('partition', '${sqlPartition}');
             webview.setAttribute('nodeIntegration', 'on');
             document.body.appendChild(webview);
@@ -1225,7 +1237,8 @@ describe('chromium features', () => {
             nodeIntegration: true,
             enableWebSQL: false,
             webviewTag: true,
-            session: sqlSession
+            session: sqlSession,
+            contextIsolation: false
           }
         });
         w.webContents.loadURL('data:text/html,<html></html>');
@@ -1234,7 +1247,7 @@ describe('chromium features', () => {
           new Promise((resolve, reject) => {
             const webview = new WebView();
             webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1,contextIsolation=no');
             webview.setAttribute('partition', '${sqlPartition}');
             webview.setAttribute('nodeIntegration', 'on');
             document.body.appendChild(webview);
@@ -1251,7 +1264,8 @@ describe('chromium features', () => {
           webPreferences: {
             nodeIntegration: true,
             webviewTag: true,
-            session: sqlSession
+            session: sqlSession,
+            contextIsolation: false
           }
         });
         w.webContents.loadURL(origin);
@@ -1262,7 +1276,7 @@ describe('chromium features', () => {
           new Promise((resolve, reject) => {
             const webview = new WebView();
             webview.setAttribute('src', '${origin}');
-            webview.setAttribute('webpreferences', 'enableWebSQL=1');
+            webview.setAttribute('webpreferences', 'enableWebSQL=1,contextIsolation=no');
             webview.setAttribute('partition', '${sqlPartition}');
             webview.setAttribute('nodeIntegration', 'on');
             document.body.appendChild(webview);
