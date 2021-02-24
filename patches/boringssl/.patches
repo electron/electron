@@ -1,3 +1,4 @@
 expose_ripemd160.patch
 expose_aes-cfb.patch
 fix_add_RSA-PSS_keygen_functions.patch
+expose_des-ede3.patch
