@@ -87,7 +87,7 @@ describe('window.postMessage', () => {
   for (const nativeWindowOpen of [true, false]) {
     describe(`when nativeWindowOpen: ${nativeWindowOpen}`, () => {
       it('sets the source and origin correctly', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen, contextIsolation: false } });
         w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
         const [, message] = await emittedOnce(ipcMain, 'complete');
         expect(message.data).to.equal('testing');
@@ -108,7 +108,8 @@ describe('focus handling', () => {
       show: true,
       webPreferences: {
         nodeIntegration: true,
-        webviewTag: true
+        webviewTag: true,
+        contextIsolation: false
       }
     });
 
@@ -228,7 +229,7 @@ describe('web security', () => {
   });
 
   it('engages CORB when web security is not disabled', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,<script>
         const s = document.createElement('script')
@@ -242,7 +243,7 @@ describe('web security', () => {
   });
 
   it('bypasses CORB when web security is disabled', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,
       <script>
@@ -253,7 +254,7 @@ describe('web security', () => {
   });
 
   it('engages CORS when web security is not disabled', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'response');
     await w.loadURL(`data:text/html,<script>
         (async function() {
@@ -270,7 +271,7 @@ describe('web security', () => {
   });
 
   it('bypasses CORS when web security is disabled', async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'response');
     await w.loadURL(`data:text/html,<script>
         (async function() {
@@ -1418,7 +1419,8 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       fullscreen: true,
       webPreferences: {
         nodeIntegration: true,
-        nodeIntegrationInSubFrames: true
+        nodeIntegrationInSubFrames: true,
+        contextIsolation: false
       }
     });
   });
