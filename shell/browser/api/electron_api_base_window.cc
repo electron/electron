@@ -114,8 +114,7 @@ BaseWindow::BaseWindow(gin_helper::Arguments* args,
 }
 
 BaseWindow::~BaseWindow() {
-  if (!window_->IsClosed())
-    window_->CloseImmediately();
+  CloseImmediately();
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
@@ -316,6 +315,11 @@ void BaseWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
+}
+
+void BaseWindow::CloseImmediately() {
+  if (!window_->IsClosed())
+    window_->CloseImmediately();
 }
 
 void BaseWindow::Close() {
