@@ -226,6 +226,7 @@ describe('<webview> tag', function () {
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
     loadWebView(w.webContents, {
       nodeintegration: 'on',
+      webpreferences: 'contextIsolation=no',
       src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
     }, true);
     let childWebContentsId = 0;
@@ -393,7 +394,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
       });
 
@@ -406,7 +407,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
       });
 
@@ -418,7 +419,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
       });
 
@@ -431,7 +432,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
       });
 
@@ -447,7 +448,7 @@ describe('<webview> tag', function () {
       const attributes = {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       };
       const { url, frameName } = await w.webContents.executeJavaScript(`
@@ -471,7 +472,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -484,7 +485,7 @@ describe('<webview> tag', function () {
 
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -590,7 +591,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/geolocation.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'geolocation');
@@ -603,7 +605,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midi');
@@ -616,7 +619,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi-sysex.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midiSysex');
@@ -638,7 +642,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/notification.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
 
