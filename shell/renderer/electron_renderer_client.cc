@@ -102,9 +102,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
-  if (!should_load_node) {
+  if (!should_load_node)
     return;
-  }
 
   injected_frames_.insert(render_frame);
 
