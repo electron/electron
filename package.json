@@ -24,12 +24,14 @@
     "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
     "@types/stream-json": "^1.5.1",
+    "@types/temp": "^0.8.34",
     "@types/uuid": "^3.4.6",
     "@types/webpack": "^4.41.21",
     "@types/webpack-env": "^1.15.2",
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
     "asar": "^3.0.3",
+    "aws-sdk": "^2.727.1",
     "check-for-leaks": "^1.2.1",
     "colors": "^1.4.0",
     "dotenv-safe": "^4.0.4",
@@ -145,9 +147,5 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
     ]
-  },
-  "dependencies": {
-    "@types/temp": "^0.8.34",
-    "aws-sdk": "^2.727.1"
   }
 }
