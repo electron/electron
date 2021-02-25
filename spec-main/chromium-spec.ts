@@ -1548,6 +1548,6 @@ describe('navigator.bluetooth', () => {
   it('can request bluetooth devices', async () => {
     const bluetooth = await w.webContents.executeJavaScript(`
     navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
-    expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.']);
+    expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
   });
 });
