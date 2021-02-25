@@ -52,6 +52,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -182,6 +183,47 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+template <>
+struct Converter<electron::api::ChromeTabDetails> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::ChromeTabDetails* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+
+    *out = electron::api::ChromeTabDetails();
+    auto tmp = electron::api::ChromeTabDetails();
+
+    if (options.Get("id", &tmp.id))
+      out->id = tmp.id;
+    if (options.Get("windowId", &tmp.window_id))
+      out->window_id = tmp.window_id;
+    if (options.Get("active", &tmp.active))
+      out->active = tmp.active;
+    if (options.Get("highlighted", &tmp.highlighted))
+      out->highlighted = tmp.highlighted;
+    if (options.Get("pinned", &tmp.pinned))
+      out->pinned = tmp.pinned;
+    if (options.Get("groupId", &tmp.group_id))
+      out->group_id = tmp.group_id;
+    if (options.Get("index", &tmp.index))
+      out->index = tmp.index;
+    if (options.Get("discarded", &tmp.discarded))
+      out->discarded = tmp.discarded;
+    if (options.Get("autoDiscardable", &tmp.auto_discardable))
+      out->auto_discardable = tmp.auto_discardable;
+    if (options.Get("openerTabId", &tmp.opener_tab_id))
+      out->opener_tab_id = tmp.opener_tab_id;
+    if (options.Get("mutedReason", &tmp.muted_reason))
+      out->muted_reason = tmp.muted_reason;
+    if (options.Get("mutedExtensionId", &tmp.muted_extension_id))
+      out->muted_extension_id = tmp.muted_extension_id;
+
+    return true;
+  }
+};
+
 bool SSLProtocolVersionFromString(const std::string& version_str,
                                   network::mojom::SSLVersion* version) {
   if (version_str == switches::kSSLVersionTLSv1) {
@@ -255,6 +297,10 @@ struct Converter<network::mojom::SSLConfigPtr> {
 namespace electron {
 
 namespace api {
+
+ChromeTabDetails::ChromeTabDetails() {}
+ChromeTabDetails::ChromeTabDetails(const ChromeTabDetails& other) = default;
+ChromeTabDetails::~ChromeTabDetails() {}
 
 namespace {
 
@@ -890,6 +936,69 @@ void Session::OnExtensionReady(content::BrowserContext* browser_context,
                                const extensions::Extension* extension) {
   Emit("extension-ready", extension);
 }
+
+void Session::SetChromeAPIHandlers(const gin_helper::Dictionary& api,
+                                   gin::Arguments* args) {
+  GetTabHandler get_tab;
+  GetActiveTabHandler get_active_tab;
+
+  if (api.Get("getTab", &get_tab)) {
+    get_tab_handler_ = std::make_unique<GetTabHandler>(get_tab);
+  }
+
+  if (api.Get("getActiveTab", &get_active_tab)) {
+    get_active_tab_handler_ =
+        std::make_unique<GetActiveTabHandler>(get_active_tab);
+  }
+}
+
+std::unique_ptr<ChromeTabDetails> Session::GetChromeTabDetails(
+    WebContents* tab_contents) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  ChromeTabDetails details;
+
+  if (!get_tab_handler_) {
+    EmitWarning(
+        node::Environment::GetCurrent(isolate),
+        "No handler has been registered for `chrome.tabs.get`. Please use "
+        "`session.setChromeAPIHandlers`.",
+        "electron");
+
+    // Fallback to the previous behavior in Electron.
+    details.id = tab_contents->ID();
+
+    return std::make_unique<ChromeTabDetails>(details);
+  }
+
+  v8::Local<v8::Value> value =
+      get_tab_handler_->Run(gin::CreateHandle(isolate, tab_contents));
+
+  if (value->IsObject() && gin::ConvertFromV8(isolate, value, &details)) {
+    return std::make_unique<ChromeTabDetails>(details);
+  }
+
+  return nullptr;
+}
+
+WebContents* Session::GetActiveTab(WebContents* sender_contents) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  if (!get_active_tab_handler_) {
+    EmitWarning(node::Environment::GetCurrent(isolate),
+                "Active tab has been requested by an extension, but no handler "
+                "has been registered. Please use "
+                "`session.setChromeAPIHandlers`.",
+                "electron");
+    return nullptr;
+  }
+
+  return get_active_tab_handler_
+      ->Run(gin::CreateHandle(isolate, sender_contents))
+      .get();
+}
 #endif
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
@@ -1183,6 +1292,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("removeExtension", &Session::RemoveExtension)
       .SetMethod("getExtension", &Session::GetExtension)
       .SetMethod("getAllExtensions", &Session::GetAllExtensions)
+      .SetMethod("setChromeAPIHandlers", &Session::SetChromeAPIHandlers)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
       .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)

@@ -21,7 +21,9 @@
 #include "extensions/browser/pref_names.h"
 #include "extensions/common/api/messaging/port_id.h"
 #include "extensions/common/extension.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/extensions/extension_tab_util.h"
 #include "ui/gfx/native_widget_types.h"
 #include "url/gurl.h"
 
@@ -41,21 +43,36 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
 
 std::unique_ptr<base::DictionaryValue>
 ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
-  if (web_contents) {
-    auto* api_contents = electron::api::WebContents::From(web_contents);
-    if (api_contents) {
-      auto tab = std::make_unique<base::DictionaryValue>();
-      tab->SetWithoutPathExpansion(
-          "id", std::make_unique<base::Value>(api_contents->ID()));
-      tab->SetWithoutPathExpansion(
-          "url", std::make_unique<base::Value>(api_contents->GetURL().spec()));
-      tab->SetWithoutPathExpansion(
-          "title", std::make_unique<base::Value>(api_contents->GetTitle()));
-      tab->SetWithoutPathExpansion(
-          "audible",
-          std::make_unique<base::Value>(api_contents->IsCurrentlyAudible()));
-      return tab;
-    }
+  // Add info about the opener's tab (if it was a tab).
+  if (web_contents && ExtensionTabUtil::GetTabId(web_contents) >= 0) {
+    // Only the tab id is useful to platform apps for internal use. The
+    // unnecessary bits will be stripped out in
+    // MessagingBindings::DispatchOnConnect().
+    // Note: We don't bother scrubbing the tab object, because this is only
+    // reached as a result of a tab (or content script) messaging the extension.
+    // We need the extension to see the sender so that it can validate if it
+    // trusts it or not.
+    // TODO(tjudkins): Adjust scrubbing behavior in this situation to not scrub
+    // the last committed URL, but do scrub the pending URL based on
+    // permissions.
+    auto* contents = electron::api::WebContents::From(web_contents);
+    if (!contents)
+      return nullptr;
+
+    auto* session = electron::api::Session::FromBrowserContext(
+        web_contents->GetBrowserContext());
+    if (!session)
+      return nullptr;
+
+    auto tab = session->GetChromeTabDetails(contents);
+    if (!tab)
+      return nullptr;
+
+    ExtensionTabUtil::ScrubTabBehavior scrub_tab_behavior = {
+        ExtensionTabUtil::kDontScrubTab, ExtensionTabUtil::kDontScrubTab};
+    return ExtensionTabUtil::CreateTabObject(web_contents, *tab.get(),
+                                             scrub_tab_behavior, nullptr, -1)
+        ->ToValue();
   }
   return nullptr;
 }

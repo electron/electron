@@ -24,6 +24,8 @@ class ExecuteCodeInTabFunction : public ExecuteCodeFunction {
 
   // Initializes |execute_tab_id_| and |details_|.
   InitResult Init() override;
+  bool ShouldInsertCSS() const override;
+  bool ShouldRemoveCSS() const override;
   bool CanExecuteScriptOnPage(std::string* error) override;
   ScriptExecutor* GetScriptExecutor(std::string* error) override;
   bool IsWebView() const override;
@@ -35,14 +37,28 @@ class ExecuteCodeInTabFunction : public ExecuteCodeFunction {
 };
 
 class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
- protected:
-  bool ShouldInsertCSS() const override;
-  bool ShouldRemoveCSS() const override;
-
  private:
   ~TabsExecuteScriptFunction() override {}
 
   DECLARE_EXTENSION_FUNCTION("tabs.executeScript", TABS_EXECUTESCRIPT)
+};
+
+class TabsInsertCSSFunction : public ExecuteCodeInTabFunction {
+ private:
+  ~TabsInsertCSSFunction() override {}
+
+  bool ShouldInsertCSS() const override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.insertCSS", TABS_INSERTCSS)
+};
+
+class TabsRemoveCSSFunction : public ExecuteCodeInTabFunction {
+ private:
+  ~TabsRemoveCSSFunction() override {}
+
+  bool ShouldRemoveCSS() const override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.removeCSS", TABS_REMOVECSS)
 };
 
 class TabsGetFunction : public ExtensionFunction {

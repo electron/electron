@@ -3,7 +3,14 @@
     "namespace": "tabs",
     "description": "Use the <code>chrome.tabs</code> API to interact with the browser's tab system. You can use this API to create, modify, and rearrange tabs in the browser.",
     "types": [
-      { "id": "MutedInfoReason",
+      {
+        "id": "TabStatus",
+        "type": "string",
+        "enum": ["unloaded", "loading", "complete"],
+        "description": "The tab's loading status."
+      },
+      { 
+        "id": "MutedInfoReason",
         "type": "string",
         "description": "An event that caused a muted state change.",
         "enum": [
@@ -55,7 +62,11 @@
           "pendingUrl": {"type": "string", "optional": true, "description": "The URL the tab is navigating to, before it has committed. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission and there is a pending navigation."},
           "title": {"type": "string", "optional": true, "description": "The title of the tab. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission."},
           "favIconUrl": {"type": "string", "optional": true, "description": "The URL of the tab's favicon. This property is only present if the extension's manifest includes the <code>\"tabs\"</code> permission. It may also be an empty string if the tab is loading."},
-          "status": {"type": "string", "optional": true, "description": "Either <em>loading</em> or <em>complete</em>."},
+          "status": {
+            "$ref": "TabStatus",
+            "optional": true,
+            "description": "The tab's loading status."
+          },
           "incognito": {"type": "boolean", "description": "Whether the tab is in an incognito window."},
           "width": {"type": "integer", "optional": true, "description": "The width of the tab in pixels."},
           "height": {"type": "integer", "optional": true, "description": "The height of the tab in pixels."},
@@ -119,6 +130,12 @@
         }
       }
     ],
+    "properties": {
+      "TAB_ID_NONE": {
+        "value": -1,
+        "description": "An ID that represents the absence of a browser tab."
+      }
+    },
     "functions": [
       {
         "name": "get",
@@ -129,15 +146,14 @@
             "type": "integer",
             "name": "tabId",
             "minimum": 0
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "parameters": [
-              {"name": "tab", "$ref": "Tab"}
-            ]
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {"name": "tab", "$ref": "Tab"}
+          ]
+        }
       },
       {
         "name": "connect",
@@ -173,38 +189,29 @@
       {
         "name": "executeScript",
         "type": "function",
+        "description": "Injects JavaScript code into a page. For details, see the <a href='content_scripts#pi'>programmatic injection</a> section of the content scripts doc.",
         "parameters": [
-          {
-            "type": "integer",
-            "name": "tabId",
-            "minimum": 0,
-            "optional": true,
-            "description": "The ID of the tab in which to run the script; defaults to the active tab of the current window."
-          },
+          {"type": "integer", "name": "tabId", "minimum": 0, "optional": true, "description": "The ID of the tab in which to run the script; defaults to the active tab of the current window."},
           {
             "$ref": "extensionTypes.InjectDetails",
             "name": "details",
             "description": "Details of the script to run. Either the code or the file property must be set, but both may not be set at the same time."
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "optional": true,
-            "description": "Called after all the JavaScript has been executed.",
-            "parameters": [
-              {
-                "name": "result",
-                "optional": true,
-                "type": "array",
-                "items": {
-                  "type": "any",
-                  "minimum": 0
-                },
-                "description": "The result of the script in every injected frame."
-              }
-            ]
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "description": "Called after all the JavaScript has been executed.",
+          "parameters": [
+            {
+              "name": "result",
+              "optional": true,
+              "type": "array",
+              "items": {"type": "any", "minimum": 0},
+              "description": "The result of the script in every injected frame."
+            }
+          ]
+        }
       },
       {
         "name": "sendMessage",
@@ -265,15 +272,14 @@
             "type": "number",
             "name": "zoomFactor",
             "description": "The new zoom factor. A value of <code>0</code> sets the tab to its current default zoom factor. Values greater than <code>0</code> specify a (possibly non-default) zoom factor for the tab."
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "optional": true,
-            "description": "Called after the zoom factor has been changed.",
-            "parameters": []
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "description": "Called after the zoom factor has been changed.",
+          "parameters": []
+        }
       },
       {
         "name": "getZoom",
@@ -286,20 +292,19 @@
             "minimum": 0,
             "optional": true,
             "description": "The ID of the tab to get the current zoom factor from; defaults to the active tab of the current window."
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "description": "Called with the tab's current zoom factor after it has been fetched.",
-            "parameters": [
-              {
-                "type": "number",
-                "name": "zoomFactor",
-                "description": "The tab's current zoom factor."
-              }
-            ]
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "description": "Called with the tab's current zoom factor after it has been fetched.",
+          "parameters": [
+            {
+              "type": "number",
+              "name": "zoomFactor",
+              "description": "The tab's current zoom factor."
+            }
+          ]
+        }
       },
       {
         "name": "setZoomSettings",
@@ -317,15 +322,14 @@
             "$ref": "ZoomSettings",
             "name": "zoomSettings",
             "description": "Defines how zoom changes are handled and at what scope."
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "optional": true,
-            "description": "Called after the zoom settings are changed.",
-            "parameters": []
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "description": "Called after the zoom settings are changed.",
+          "parameters": []
+        }
       },
       {
         "name": "getZoomSettings",
@@ -338,20 +342,63 @@
             "optional": true,
             "minimum": 0,
             "description": "The ID of the tab to get the current zoom settings from; defaults to the active tab of the current window."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "description": "Called with the tab's current zoom settings.",
+          "parameters": [
+            {
+              "$ref": "ZoomSettings",
+              "name": "zoomSettings",
+              "description": "The tab's current zoom settings."
+            }
+          ]
+        }
+      },
+      {
+        "name": "insertCSS",
+        "type": "function",
+        "description": "Injects CSS into a page. For details, see the <a href='content_scripts#pi'>programmatic injection</a> section of the content scripts doc.",
+        "parameters": [
+          {"type": "integer", "name": "tabId", "minimum": 0, "optional": true, "description": "The ID of the tab in which to insert the CSS; defaults to the active tab of the current window."},
+          {
+            "$ref": "extensionTypes.InjectDetails",
+            "name": "details",
+            "description": "Details of the CSS text to insert. Either the code or the file property must be set, but both may not be set at the same time."
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "description": "Called when all the CSS has been inserted.",
+          "parameters": []
+        }
+      },
+      {
+        "name": "removeCSS",
+        "type": "function",
+        "description": "Removes from a page CSS that was previously injected by a call to $(ref:tabs.insertCSS).",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "The ID of the tab from which to remove the CSS; defaults to the active tab of the current window."
           },
           {
-            "type": "function",
-            "name": "callback",
-            "description": "Called with the tab's current zoom settings.",
-            "parameters": [
-              {
-                "$ref": "ZoomSettings",
-                "name": "zoomSettings",
-                "description": "The tab's current zoom settings."
-              }
-            ]
+            "$ref": "extensionTypes.DeleteInjectionDetails",
+            "name": "details",
+            "description": "Details of the CSS text to remove. Either the code or the file property must be set, but both may not be set at the same time."
           }
-        ]
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "description": "Called when all the CSS has been removed.",
+          "parameters": []
+        }
       }
     ],
     "events": [

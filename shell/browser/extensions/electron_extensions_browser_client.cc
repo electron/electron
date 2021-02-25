@@ -35,6 +35,8 @@
 #include "extensions/common/manifest_url_handlers.h"
 #include "net/base/mime_util.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
@@ -371,6 +373,19 @@ void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,
     const extensions::Extension* extension) const {
   PopulateExtensionFrameBinders(map, render_frame_host, extension);
+}
+
+void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
+    content::WebContents* web_contents,
+    int* tab_id,
+    int* window_id) {
+  api::WebContents* api_wc = api::WebContents::From(web_contents);
+  auto* session =
+      api::Session::FromBrowserContext(web_contents->GetBrowserContext());
+  auto tab = api_wc ? session->GetChromeTabDetails(api_wc) : nullptr;
+
+  *tab_id = tab ? tab->id : -1;
+  *window_id = tab ? tab->window_id : -1;
 }
 
 }  // namespace electron

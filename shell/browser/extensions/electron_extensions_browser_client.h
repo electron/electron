@@ -30,6 +30,11 @@ class ElectronComponentExtensionResourceManager;
 
 namespace electron {
 
+namespace api {
+class Session;
+class WebContents;
+}  // namespace api
+
 // An ExtensionsBrowserClient that supports a single content::BrowserContext
 // with no related incognito context.
 class ElectronExtensionsBrowserClient
@@ -119,6 +124,9 @@ class ElectronExtensionsBrowserClient
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
+  void GetTabAndWindowIdForWebContents(content::WebContents* web_contents,
+                                       int* tab_id,
+                                       int* window_id) override;
 
   // Sets the API client.
   void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
