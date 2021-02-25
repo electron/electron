@@ -1,7 +1,7 @@
 resources:
   containers:
   - container: arm32v7-test-container
-    image: electron.azurecr.io/build:arm32v7-4cec2c5ab66765caa724e37bae2bffb9b29722a5
+    image: electron.azurecr.io/build:arm32v7-af55efcef6f32033def26b19ad307eca1e85d1e9
     options: --shm-size 128m
 
 jobs:
