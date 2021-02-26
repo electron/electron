@@ -7,8 +7,8 @@ const hiddenProperties = Symbol('hidden touch bar props');
 const extendConstructHook = (target: any, hook: Function) => {
   const existingHook = target._hook;
   target._hook = function () {
-    hook.call(this);
     if (existingHook) existingHook.call(this);
+    hook.call(this);
   };
 };
 
