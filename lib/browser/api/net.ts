@@ -119,10 +119,13 @@ class IncomingMessage extends Readable {
       this._shouldPush = this.push(chunk);
     }
     if (this._shouldPush && this._resume) {
-      this._resume();
       // Reset the callback, so that a new one is used for each
-      // batch of throttled data
+      // batch of throttled data. Do this before calling resume to avoid a
+      // potential race-condition
+      const resume = this._resume;
       this._resume = null;
+
+      resume();
     }
   }
 
