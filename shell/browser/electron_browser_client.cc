@@ -1770,4 +1770,10 @@ content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
   return serial_delegate_.get();
 }
 
+content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
+  if (!bluetooth_delegate_)
+    bluetooth_delegate_ = std::make_unique<ElectronBluetoothDelegate>();
+  return bluetooth_delegate_.get();
+}
+
 }  // namespace electron
