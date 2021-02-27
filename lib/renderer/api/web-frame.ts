@@ -48,8 +48,10 @@ class WebFrame extends EventEmitter {
   }
 }
 
-const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const worldSafeJS = hasSwitch('world-safe-execute-javascript') && hasSwitch('context-isolation');
+const contextIsolation = binding.getWebPreference(window, 'contextIsolation');
+const worldSafeExecuteJavaScript = binding.getWebPreference(window, 'worldSafeExecuteJavaScript');
+
+const worldSafeJS = worldSafeExecuteJavaScript || !contextIsolation;
 
 // Populate the methods.
 for (const name in binding) {
