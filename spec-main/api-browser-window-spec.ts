@@ -3070,7 +3070,8 @@ describe('BrowserWindow module', () => {
         width: 100,
         height: 100,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
