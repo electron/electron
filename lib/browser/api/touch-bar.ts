@@ -7,8 +7,8 @@ const hiddenProperties = Symbol('hidden touch bar props');
 const extendConstructHook = (target: any, hook: Function) => {
   const existingHook = target._hook;
   target._hook = function () {
-    hook.call(this);
     if (existingHook) existingHook.call(this);
+    hook.call(this);
   };
 };
 
@@ -135,7 +135,7 @@ class TouchBarGroup extends TouchBarItem<Electron.TouchBarGroupConstructorOption
       }
     }
     for (const item of newChild.orderedItems) {
-      item._addParent(item);
+      item._addParent(self);
     }
   })
   child!: TouchBar;
@@ -179,7 +179,7 @@ class TouchBarPopover extends TouchBarItem<Electron.TouchBarPopoverConstructorOp
       }
     }
     for (const item of newChild.orderedItems) {
-      item._addParent(item);
+      item._addParent(self);
     }
   })
   child!: TouchBar;
