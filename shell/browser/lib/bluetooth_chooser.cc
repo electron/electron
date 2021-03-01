@@ -60,9 +60,11 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
 void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
+      refreshing_ = false;
       event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case DiscoveryState::IDLE:
+      refreshing_ = false;
       if (device_map_.empty()) {
         auto event = ++num_retries_ > kMaxScanRetries
                          ? content::BluetoothChooserEvent::CANCELLED
@@ -81,6 +83,14 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
       }
       break;
     case DiscoveryState::DISCOVERING:
+      // The first time this state fires is due to a rescan triggering so set a
+      // flag to ignore devices
+      if (!refreshing_) {
+        refreshing_ = true;
+      } else {
+        // The second time this state fires we are now safe to pick a device
+        refreshing_ = false;
+      }
       break;
   }
 }
@@ -91,6 +101,11 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
                                          bool is_gatt_connected,
                                          bool is_paired,
                                          int signal_strength_level) {
+  if (refreshing_) {
+    // If the list of bluetooth devices is currently being generated don't fire
+    // an event
+    return;
+  }
   bool changed = false;
   auto entry = device_map_.find(device_id);
   if (entry == device_map_.end()) {
