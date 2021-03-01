@@ -166,6 +166,7 @@ describe('<webview> tag', function () {
     (nativeModulesEnabled ? it : it.skip)('loads native modules when navigation happens', async function () {
       await loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/native-module.html`
       });
 
