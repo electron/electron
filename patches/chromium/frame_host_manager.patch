@@ -229,7 +229,7 @@ index 1d79bf9261aad6e649a029257f7e6848cc34ad69..64cd5e188786ed60e474aeb1cabacd3d
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e485c81b2c6335b958983602a8b0e3d84fff5ab4..9fd15de448372693e7792aeee0ae1eb51fbe158e 100644
+index d1c4beb5f3a8e1fb5dfc7d1d31df9a236e3ade8e..e3279ca97116ea2d6757a2561668692bae8ec8aa 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -65,6 +65,21 @@
@@ -255,12 +255,12 @@ index e485c81b2c6335b958983602a8b0e3d84fff5ab4..9fd15de448372693e7792aeee0ae1eb5
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d92cfc2b18881a4d48cc4bd8340d6a84b8469c77..b5a1596632f135a52a24f4d90c34aa79defd1d4d 100644
+index d42c4f7a76f78f1590451691909066e86f29e809..2ed3eae7909ba40733dd89a3cff9cfe44c29ab33 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -255,8 +255,45 @@ class CONTENT_EXPORT ContentBrowserClient {
-   using IsClipboardPasteAllowedCallback =
-       base::OnceCallback<void(ClipboardPasteAllowed)>;
+   using IsClipboardPasteContentAllowedCallback =
+       base::OnceCallback<void(ClipboardPasteContentAllowed)>;
  
 +  // Identifies the type of site instance to use for a navigation.
 +  enum SiteInstanceForNavigationType {
