@@ -53,6 +53,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
+#include "weblayer/browser/background_sync/background_sync_controller_factory.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/browser_context_keyed_service_factories.h"
@@ -413,7 +414,7 @@ ElectronBrowserContext::GetBackgroundFetchDelegate() {
 
 content::BackgroundSyncController*
 ElectronBrowserContext::GetBackgroundSyncController() {
-  return nullptr;
+  return weblayer::BackgroundSyncControllerFactory::GetForBrowserContext(this);
 }
 
 content::BrowsingDataRemoverDelegate*

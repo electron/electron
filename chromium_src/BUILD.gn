@@ -51,6 +51,10 @@ static_library("chrome") {
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
+    "//weblayer/browser/background_sync/background_sync_controller_factory.cc",
+    "//weblayer/browser/background_sync/background_sync_controller_factory.h",
+    "//weblayer/browser/background_sync/background_sync_delegate_impl.cc",
+    "//weblayer/browser/background_sync/background_sync_delegate_impl.h",
   ]
 
   if (is_mac) {
