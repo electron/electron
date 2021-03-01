@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6fc0faf92c8cd4122a69a5c4dc9c0f16faacf9d7..c77be3e54c897cd6c2a596288d6b6beb0de9804e 100644
+index ce1b8c15940f4cee14c429a40d3083c5ab09e235..87c15b97cb0105c57e8312bb2580b33a87ae6f75 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5213,6 +5213,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 6fc0faf92c8cd4122a69a5c4dc9c0f16faacf9d7..c77be3e54c897cd6c2a596288d6b6beb
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 496c364797997997f2886abc95db2e6f49d848c6..3981c2caabd0362530c27e0dee572a56aaac0caf 100644
+index f4751d821d34a998407b37ca4b8221cd8a2ad135..762d4d6164df6f097c3dd77c695a3270a225ec68 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3560,6 +3560,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -68,7 +68,7 @@ index 182c6bf04e9937080efcedfc617fb9e072f10500..6fb3a1ee4a31e9a228e8ab04b1ce21c8
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e79384f012c548b5e2d42509a2a81484e0443b49..e485c81b2c6335b958983602a8b0e3d84fff5ab4 100644
+index 64493c6a92a36dadd9dd7c254856498341460a68..d1c4beb5f3a8e1fb5dfc7d1d31df9a236e3ade8e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -553,6 +553,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,7 +81,7 @@ index e79384f012c548b5e2d42509a2a81484e0443b49..e485c81b2c6335b958983602a8b0e3d8
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a0d311812044f008d3220930a04d5300edd678fb..d92cfc2b18881a4d48cc4bd8340d6a84b8469c77 100644
+index 2cfb4a2bb17daaa831fca95bd21f8341751db7b3..d42c4f7a76f78f1590451691909066e86f29e809 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -154,6 +154,7 @@ class NetworkService;
