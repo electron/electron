@@ -1611,3 +1611,24 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
     expect(waitForBadgeCount(0)).to.eventually.equal(0);
   });
 });
+
+describe('navigator.bluetooth', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: 'WebBluetooth'
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  after(closeAllWindows);
+
+  it('can request bluetooth devices', async () => {
+    const bluetooth = await w.webContents.executeJavaScript(`
+    navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
+    expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
+  });
+});
