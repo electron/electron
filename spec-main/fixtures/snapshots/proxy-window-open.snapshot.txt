@@ -19,6 +19,7 @@
       "x": 10,
       "y": 5,
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -52,6 +53,7 @@
       "y": 10,
       "webPreferences": {
         "zoomFactor": "2",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -82,6 +84,7 @@
       "height": 600,
       "backgroundColor": "gray",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -117,6 +120,7 @@
       "y": 20,
       "title": "sup",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -150,6 +154,7 @@
       "x": 1,
       "y": 1,
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,

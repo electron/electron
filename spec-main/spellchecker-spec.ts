@@ -16,7 +16,8 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
       show: false,
       webPreferences: {
         nodeIntegration: true,
-        partition: `unique-spell-${Date.now()}`
+        partition: `unique-spell-${Date.now()}`,
+        contextIsolation: false
       }
     });
     w.webContents.session.setSpellCheckerLanguages(['en-US']);
