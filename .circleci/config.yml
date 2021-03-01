@@ -69,7 +69,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electron.azurecr.io/build:4cec2c5ab66765caa724e37bae2bffb9b29722a5
+    - image: electron.azurecr.io/build:6555a80939fb4c3ddf9343b3f140e573f40de225
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
