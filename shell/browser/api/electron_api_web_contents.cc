@@ -1091,6 +1091,19 @@ void WebContents::BeforeUnloadFired(bool proceed,
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
   if (!background_throttling_)
     render_view_host->SetSchedulerThrottling(false);
+
+  // Set the background color of RenderWidgetHostView.
+  auto* const view = web_contents()->GetRenderWidgetHostView();
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (view && web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 }
 
 void WebContents::RenderFrameCreated(
@@ -1715,21 +1728,6 @@ void WebContents::LoadURL(const GURL& url,
   // It's not safe to assume that |this| points to valid memory at this point.
   if (!weak_this)
     return;
-
-  // Set the background color of RenderWidgetHostView.
-  // We have to call it right after LoadURL because the RenderViewHost is only
-  // created after loading a page.
-  auto* const view = weak_this->web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents());
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
 }
 
 void WebContents::DownloadURL(const GURL& url) {
