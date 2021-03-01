@@ -80,9 +80,6 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
       uint16_t manufacturer_code) override;
   std::vector<blink::mojom::WebBluetoothDevicePtr> GetPermittedDevices(
       content::RenderFrameHost* frame) override;
-  void AddFramePermissionObserver(FramePermissionObserver* observer) override;
-  void RemoveFramePermissionObserver(
-      FramePermissionObserver* observer) override;
 };
 
 }  // namespace electron

@@ -106,16 +106,6 @@ bool ElectronBluetoothDelegate::IsAllowedToAccessManufacturerData(
   return true;
 }
 
-void ElectronBluetoothDelegate::AddFramePermissionObserver(
-    FramePermissionObserver* observer) {
-  NOTIMPLEMENTED();
-}
-
-void ElectronBluetoothDelegate::RemoveFramePermissionObserver(
-    FramePermissionObserver* observer) {
-  NOTIMPLEMENTED();
-}
-
 std::vector<blink::mojom::WebBluetoothDevicePtr>
 ElectronBluetoothDelegate::GetPermittedDevices(
     content::RenderFrameHost* frame) {
