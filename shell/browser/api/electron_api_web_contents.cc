@@ -1077,7 +1077,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     return nullptr;
   }
 
-  if (!weak_this)
+  if (!weak_this || !web_contents())
     return nullptr;
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
@@ -1410,7 +1410,7 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 
   // User might destroy WebContents in the crashed event.
-  if (!weak_this)
+  if (!weak_this || !web_contents())
     return;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1481,7 +1481,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   // ⚠️WARNING!⚠️
   // Emit() triggers JS which can call destroy() on |this|. It's not safe to
   // assume that |this| points to valid memory at this point.
-  if (is_main_frame && weak_this)
+  if (is_main_frame && weak_this && web_contents())
     Emit("did-finish-load");
 }
 
@@ -1885,6 +1885,7 @@ void WebContents::WebContentsDestroyed() {
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
 
+  Observe(nullptr);  // this->web_contents() will return nullptr
   Emit("destroyed");
 
   // For guest view based on OOPIF, the WebContents is released by the embedder
@@ -2016,7 +2017,7 @@ void WebContents::LoadURL(const GURL& url,
   // ⚠️WARNING!⚠️
   // LoadURLWithParams() triggers JS events which can call destroy() on |this|.
   // It's not safe to assume that |this| points to valid memory at this point.
-  if (!weak_this)
+  if (!weak_this || !web_contents())
     return;
 
   // Required to make beforeunload handler work.
