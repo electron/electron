@@ -1,0 +1,79 @@
+name: Bug Report
+about: Create a report to help us improve Electron
+title: "[Bug]: "
+body:
+- type: checkboxes
+  attributes:
+    label: Preflight Checklist
+    description: Please ensure you've completed all of the following.
+    options:
+      - label: I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
+        required: true
+      - label: I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) that this project adheres to.
+        required: true
+      - label: I have searched the issue tracker for a feature request that matches the one I want to file, without success.
+        required: true
+- type: input
+  attributes:
+    label: Electron Version
+    description: What version of our software are you running?
+    placeholder: 11.0.0
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: What platform are you using?
+    options:
+      - macOS Catalina
+      - macOS Mojave
+      - macOS Big Sur
+      - Windows 10
+      - Windows 8
+      - Ubuntu
+      - Other Linux
+      - Windows on Arm
+      - Other (specify in a later section)
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: Last Known Working Electron version
+    description: What is the last version of Electron this worked in, if applicable?
+    placeholder: 10.0.0
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: A clear and concise description of what you expected to happen.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Actual Behavior
+    description: A clear and concise description of what actually happened.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: To Reproduce
+    description: Your best chance of getting this bug looked at quickly is to provide an example.
+    placeholder: |
+      For bugs that can be encapsulated in a small experiment, you can use Electron Fiddle (https://github.com/electron/fiddle) to publish your example to a GitHub Gist and link it your bug report.
+
+      If Fiddle is insufficient to produce an example, please provide an example REPOSITORY that can be cloned and run. You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
+
+      If you provide a URL, please list the commands required to clone/setup/run your repo e.g.
+      ```sh
+      $ git clone $YOUR_URL -b $BRANCH
+      $ npm install
+      $ npm start || electron .
+      ```
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Screenshots
+    description: If applicable, add screenshots to help explain your problem.
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: Add any other context about the problem here.
