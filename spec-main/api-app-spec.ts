@@ -286,13 +286,20 @@ describe('app module', () => {
           } else if (String(data) === 'true' && state === 'first-launch') {
             done();
           } else {
-            done(`Unexpected state: ${state}`);
+            done(`Unexpected state: "${state}", data: "${data}"`);
           }
         });
       });
 
       const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      cp.spawn(process.execPath, [appPath]);
+      const child = cp.spawn(process.execPath, [appPath]);
+      child.stdout.on('data', (c) => console.log(c.toString()));
+      child.stderr.on('data', (c) => console.log(c.toString()));
+      child.on('exit', (code) => {
+        if (code !== 0) {
+          done(`Process exited with code ${code}`);
+        }
+      });
     });
   });
 
