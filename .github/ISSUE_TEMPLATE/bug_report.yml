@@ -17,7 +17,7 @@ body:
   attributes:
     label: Electron Version
     description: What version of Electron are you using?
-    placeholder: 11.0.0
+    placeholder: 12.0.0
   validations:
     required: true
 - type: dropdown
