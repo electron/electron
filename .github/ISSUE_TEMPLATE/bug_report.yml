@@ -24,15 +24,15 @@ body:
   attributes:
     label: What platform are you using?
     options:
-      - macOS Catalina
-      - macOS Mojave
-      - macOS Big Sur
       - Windows 10
       - Windows 8
+      - Windows on Arm
+      - macOS Big Sur
+      - macOS Catalina
+      - macOS Mojave
       - Ubuntu
       - Other Linux
-      - Windows on Arm
-      - Other (specify in a later section)
+      - Other (specify below)
   validations:
     required: true
 - type: input
