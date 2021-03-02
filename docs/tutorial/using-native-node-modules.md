@@ -146,10 +146,10 @@ for an example delay-load hook if you're implementing your own.
 
 #### When using cmake-js
 
-[`cmake-js`](https://github.com/cmake-js/cmake-js) automatically includes the
+[`cmake-js`](https://github.com/cmake-js/cmake-js) automatically includes the 
 `/DELAYLOAD:node.exe` linking flag. However, for the `win_delay_load_hook` to be
-compiled in and for the `.node` module to load without the:
-"A dynamic link library (DLL) initialization routine failed." error, one must add
+compiled in and for the `.node` module to load without the: 
+"A dynamic link library (DLL) initialization routine failed." error, one must add 
 the following directive to the CMakeLists.txt `add_library` source file list.
 
 ```plaintext

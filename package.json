@@ -147,8 +147,5 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
     ]
-  },
-  "dependencies": {
-    "remark": "^13.0.0"
   }
 }
