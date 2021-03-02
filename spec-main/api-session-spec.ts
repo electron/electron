@@ -328,7 +328,8 @@ describe('session module', () => {
         show: false,
         webPreferences: {
           partition: partitionName,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       customSession = session.fromPartition(partitionName);
@@ -999,7 +1000,8 @@ describe('session module', () => {
         show: false,
         webPreferences: {
           partition: 'very-temp-permision-handler',
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
 

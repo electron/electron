@@ -127,16 +127,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
-  if (IsUndefined(options::kContextIsolation)) {
-    node::Environment* env = node::Environment::GetCurrent(isolate);
-    EmitWarning(env,
-                "The default of contextIsolation is deprecated and will be "
-                "changing from false to true in a future release of Electron.  "
-                "See https://github.com/electron/electron/issues/23506 for "
-                "more information",
-                "electron");
-  }
-  SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -429,7 +420,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->opener_id = opener_id;
 
   // Run Electron APIs and preload script in isolated world
-  prefs->context_isolation = IsEnabled(options::kContextIsolation);
+  prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
 
 #if BUILDFLAG(ENABLE_REMOTE_MODULE)
   // Whether to enable the remote module

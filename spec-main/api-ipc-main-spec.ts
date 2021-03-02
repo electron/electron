@@ -18,7 +18,8 @@ describe('ipc main module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       ipcMain.once('send-sync-message', (event) => {
@@ -32,7 +33,8 @@ describe('ipc main module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       ipcMain.on('send-sync-message', (event) => {
@@ -72,7 +74,8 @@ describe('ipc main module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       w.loadURL('about:blank');

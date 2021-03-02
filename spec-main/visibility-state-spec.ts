@@ -25,7 +25,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         paintWhenInitiallyHidden: false,
         webPreferences: {
           ...(options.webPreferences || {}),
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await Promise.resolve(fn.apply(this, args));
