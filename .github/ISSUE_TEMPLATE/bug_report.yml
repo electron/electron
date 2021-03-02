@@ -39,7 +39,7 @@ body:
   attributes:
     label: Last Known Working Electron version
     description: What is the last version of Electron this worked in, if applicable?
-    placeholder: 10.0.0
+    placeholder: 11.0.0
 - type: textarea
   attributes:
     label: Expected Behavior
