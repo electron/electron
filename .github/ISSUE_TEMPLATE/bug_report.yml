@@ -49,7 +49,7 @@ body:
 - type: textarea
   attributes:
     label: Actual Behavior
-    description: A clear and concise description of what actually happened.
+    description: A clear description of what actually happens.
   validations:
     required: true
 - type: textarea
