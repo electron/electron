@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+import sys
+
+from lib import git
+
+
+def parse_args(argv):
+  parser = argparse.ArgumentParser()
+  parser.add_argument("patch_dir",
+      help="directory containing patches to apply")
+  parser.add_argument("-3", "--3way",
+      action="store_true", dest='threeway',
+      help="use 3-way merge to resolve conflicts")
+  parser.add_argument("-d", "--dry-run",
+      action="store_true", dest='dry_run',
+      help="perform dry run")
+  return parser.parse_args(argv)
+
+
+def main(argv):
+  args = parse_args(argv)
+
+  git.sync_patches(
+      repo='.',
+      patch_dir=args.patch_dir,
+      threeway=args.threeway,
+      dry_run=args.dry_run,
+  )
+
+
+if __name__ == '__main__':
+  main(sys.argv[1:])

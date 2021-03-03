@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 
+from lib.patches import read_patch
 
 def is_repo_root(path):
   path_exists = os.path.exists(path)
@@ -127,6 +128,11 @@ def update_ref(repo, ref, newvalue):
 
 def reset(repo):
   args = ['git', '-C', repo, 'reset']
+
+  subprocess.check_call(args)
+
+def reset_hard(repo, commit):
+  args = ['git', '-C', repo, 'reset', '--hard', commit]
 
   subprocess.check_call(args)
 
@@ -255,6 +261,10 @@ def get_file_name(patch):
       return munge_subject_to_filename(line[len('Subject: '):])
 
 
+def join_patch(patch):
+  """Joins and formats patch contents"""
+  return '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
+
 def remove_patch_filename(patch):
   """Strip out the Patch-Filename trailer from a patch's message body"""
   force_keep_next_line = False
@@ -295,9 +305,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
       existing_patch = io.open(filepath, 'r', encoding='utf-8').read()
-      formatted_patch = (
-        '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
-      )
+      formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         patch_count += 1
     if patch_count > 0:
@@ -322,12 +330,66 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       for patch in patches:
         filename = get_file_name(patch)
         file_path = posixpath.join(out_dir, filename)
-        formatted_patch = (
-          '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
-        )
+        formatted_patch = join_patch(patch)
         with io.open(
           file_path, 'w', newline='\n', encoding='utf-8'
         ) as f:
           f.write(formatted_patch)
         pl.write(filename + '\n')
 
+
+def sync_patches(repo, patch_dir, threeway=None, dry_run=False):
+  # Gather list of patch files.
+  patches_filepath = posixpath.join(patch_dir, '.patches')
+  patch_filenames = io.open(patches_filepath, 'r', encoding='utf-8').read().splitlines()
+  num_patches = len(patch_filenames)
+
+  # Generate patches for comparison with existing patch files.
+  patch_range, num_gen_patches = guess_base_commit(repo)
+  sys.stderr.write("Syncing {} patches since {} in {}\n".format(num_gen_patches, patch_range, patch_dir))
+  gen_patch_data = format_patch(repo, patch_range)
+  gen_patches = split_patches(gen_patch_data)
+
+  # Find the last valid patch applied.
+  last_valid_patch_index = -1
+  for i in range(num_patches):
+    patch_filename = patch_filenames[i]
+    patch = io.open(os.path.join(patch_dir, patch_filename), 'r', encoding='utf-8').read()
+    if i > num_gen_patches - 1:
+      sys.stderr.write("{} hasn't been applied yet\n".format(patch_filename))
+      break
+
+    gen_patch = gen_patches[i]
+    gen_formatted_patch = join_patch(gen_patch)
+
+    if patch != gen_formatted_patch:
+      sys.stderr.write("{} does't match applied patch\n".format(patch_filename))
+      break
+    else:
+      last_valid_patch_index = i
+
+  # Revert to last valid patch commit.
+  if last_valid_patch_index < num_patches - 1 or num_gen_patches > num_patches:
+    commits_from_head = num_gen_patches - (last_valid_patch_index + 1)
+    commit = "HEAD~{}".format(commits_from_head)
+
+    sys.stderr.write("Patches not up to date: {} patches need to be reverted\n".format(commits_from_head))
+
+    if not dry_run and commits_from_head > 0:
+      reset_hard(repo, commit)
+
+  # Apply any remaining patches.
+  num_remaining_patches = num_patches - (last_valid_patch_index + 1)
+  if num_remaining_patches > 0:
+    sys.stderr.write("{} patches need to be applied\n".format(num_remaining_patches))
+
+    patch_list = patch_filenames[-num_remaining_patches:]
+    patch_data = ''.join([
+      read_patch(patch_dir, patch_filename)
+      for patch_filename in patch_list
+    ])
+
+    if not dry_run:
+      am(repo=repo, patch_data=patch_data,
+        threeway=threeway is not None,
+        committer_name="Electron Scripts", committer_email="scripts@electron")
