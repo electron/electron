@@ -144,7 +144,7 @@ In particular, it's important that:
 See [`node-gyp`](https://github.com/nodejs/node-gyp/blob/e2401e1395bef1d3c8acec268b42dc5fb71c4a38/src/win_delay_load_hook.cc)
 for an example delay-load hook if you're implementing your own.
 
-#### When using cmake-js
+#### When using `cmake-js`
 
 [`cmake-js`](https://github.com/cmake-js/cmake-js) automatically includes the
 `/DELAYLOAD:node.exe` linking flag. However, for the `win_delay_load_hook` to be
