@@ -297,7 +297,6 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
   NSView* web_view = web_contents->GetNativeView().GetNativeNSView();
   NSView* inspectable_view = iwc_view->GetNativeView().GetNativeNSView();
   NSView* window_content_view = inspectable_view.superview;
-  const auto window_content_view_height = NSHeight(window_content_view.bounds);
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.
@@ -313,14 +312,15 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
       [[DragRegionView alloc] initWithFrame:web_view.bounds]);
   [web_view addSubview:drag_region_view];
 
-  // Then, on top of that, add "exclusion zones"
+  // Then, on top of that, add "exclusion zones".
+  auto const offset = GetBounds().OffsetFromOrigin();
+  const auto window_content_view_height = NSHeight(window_content_view.bounds);
   for (const auto& rect : drag_exclude_rects) {
-    const auto window_content_view_exclude_rect =
-        NSMakeRect(rect.x(), window_content_view_height - rect.bottom(),
-                   rect.width(), rect.height());
+    const auto x = rect.x() + offset.x();
+    const auto y = window_content_view_height - rect.bottom() + offset.y();
+    const auto exclude_rect = NSMakeRect(x, y, rect.width(), rect.height());
     const auto drag_region_view_exclude_rect =
-        [window_content_view convertRect:window_content_view_exclude_rect
-                                  toView:drag_region_view];
+        [window_content_view convertRect:exclude_rect toView:drag_region_view];
 
     base::scoped_nsobject<NSView> exclude_drag_region_view(
         [[ExcludeDragRegionView alloc]
