@@ -158,7 +158,7 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
     return set_init_result(VALIDATION_FAILURE);
 
   if (tab_id == -1) {
-    electron::api::WebContents* web_contents = NULL;
+    electron::api::WebContents* web_contents = nullptr;
     if (!GetActiveTab(this, &web_contents, nullptr))
       return set_init_result_error(tabs_constants::kNoTabInBrowserWindowError);
 
@@ -268,7 +268,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
   int tab_id = params->tab_id;
 
-  electron::api::WebContents* contents = NULL;
+  electron::api::WebContents* contents = nullptr;
   std::unique_ptr<electron::api::ChromeTabDetails> tab;
   std::string error;
   if (!GetTabById(tab_id, this, &contents, &tab, &error)) {
