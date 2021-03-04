@@ -39,10 +39,10 @@ index 086371af29bd8c7520485125deddca411e8b978b..2c6886ddcc47019be4d552d4fddfc1c3
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 056108a5a6f795d3971e1e808bbefe1058e3c512..50965d4f30b6ae233dab18d0a86f520bf1df8b10 100644
+index b7509d4f4a47987ac8f4e2ae3fdcb29d20b3d484..c05209010570867a8c08a60c2b32f853906bd03d 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -704,6 +704,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -699,6 +699,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
      return result;
    }
  
@@ -54,10 +54,10 @@ index 056108a5a6f795d3971e1e808bbefe1058e3c512..50965d4f30b6ae233dab18d0a86f520b
      if (max_allocation_ != 0 && data)
        total_allocation_.fetch_sub(size, std::memory_order_relaxed);
 diff --git a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-index 686806bcafa0939d29bbc6775748a115130feb96..20f7a9a594cf379b2dac6970bc8c02aebc3be360 100644
+index ec217020077613d72eee4b5c408bd5e9eda2ae47..7ab2fa4d00eca9d4896653e29c98654ff75d4306 100644
 --- a/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
 +++ b/third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.cc
-@@ -127,6 +127,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+@@ -149,6 +149,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
    return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
  }
  

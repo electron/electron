@@ -11,17 +11,21 @@ implicitly deletes its copy ctor, so this commit makes it explicit.
 Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 8860ea8a78de67ab9e9ac453ec1774c8c6b17b8a..1ae9c485bbf083449d7e812696975ffef5e37573 100644
+index fba35f71c9ae079fde28f5f26de1fbedcf8f671d..8b6e5fdb843ee5b70a68118cc384f23f405d64d2 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
-@@ -26,8 +26,13 @@ namespace internal {
- class CppHeap;
- }  // namespace internal
+@@ -72,12 +72,17 @@ struct WrapperDescriptor final {
+   uint16_t embedder_id_for_garbage_collected;
+ };
  
 -struct V8_EXPORT CppHeapCreateParams {
 +class V8_EXPORT CppHeapCreateParams {
 + public:
+   CppHeapCreateParams(const CppHeapCreateParams&) = delete;
+   CppHeapCreateParams& operator=(const CppHeapCreateParams&) = delete;
+ 
    std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
+   WrapperDescriptor wrapper_descriptor;
 +
 + private:
 +  CppHeapCreateParams (const CppHeapCreateParams&) =delete;
@@ -30,7 +34,7 @@ index 8860ea8a78de67ab9e9ac453ec1774c8c6b17b8a..1ae9c485bbf083449d7e812696975ffe
  
  /**
 diff --git a/include/v8.h b/include/v8.h
-index 0d79c72077d05c69312d527b0e23b68f85a7cfd7..5e03f54a918191650d5dd6768a6e8c3a31de4300 100644
+index b869480cddda91242738786d9ffdc24c3d7ac7dd..a8b984658dc1309cb626f96c222ad9bffcb13754 100644
 --- a/include/v8.h
 +++ b/include/v8.h
 @@ -93,6 +93,7 @@ class Utils;
