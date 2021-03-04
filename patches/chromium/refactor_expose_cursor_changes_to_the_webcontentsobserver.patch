@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index bd204e18eb16517c9f008f15fb530bd1b46af203..83267d1da9caf2b83799af46a6089683ede5ee1e 100644
+index e3fe7f35ddad36765bda4e38042ce77b58f37b3f..e5e45826022f65d57eccb2a0049344395303a019 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -19,7 +19,7 @@ index bd204e18eb16517c9f008f15fb530bd1b46af203..83267d1da9caf2b83799af46a6089683
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
-@@ -266,6 +267,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -262,6 +263,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -30,10 +30,10 @@ index bd204e18eb16517c9f008f15fb530bd1b46af203..83267d1da9caf2b83799af46a6089683
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index d155e69df2abb9cec5f2153c7cb3c7b45cf46bbc..037a25e8f59b76181423e27865f0d4768da672b0 100644
+index c50126455356bbe34b3f126b652aa098d2e0758c..34f9c18f8a35903e9ab97574a0e08a3b46696889 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1920,6 +1920,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -1928,6 +1928,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,10 +43,10 @@ index d155e69df2abb9cec5f2153c7cb3c7b45cf46bbc..037a25e8f59b76181423e27865f0d476
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d72a6ca4307a71d0f9dc8a8b4ce32e1dce305148..39ef587971d4c171fb5878efb7a94c3523b4b80c 100644
+index a21877e24ddfdefbccbf3bdafb2132cf244655e8..13bd9fc314ff85ac8ce7876f9f5f8a1507d4c7d3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4087,6 +4087,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4159,6 +4159,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,19 +59,19 @@ index d72a6ca4307a71d0f9dc8a8b4ce32e1dce305148..39ef587971d4c171fb5878efb7a94c35
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index a603ad8d4ff72be85f07746dc2790df66f18122b..f9ef4e3a7f7c4447cd9503954c512ce3f679c639 100644
+index a861fc353dc845f294b0001544738dfa4d3ca1d1..f9fd8ebc471af32ad7158a0054f1b2dc6098026d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -968,6 +968,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -951,6 +951,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
 +  void OnCursorChanged(const WebCursor& cursor) override;
    bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
-   bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
+   void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 9ab0a264e9ec660950e17cc608c375bf6366ac4a..45f56a4ea05e40b0b8287cea77810b7c9bdd1020 100644
+index adbfea805ecc09f9612b4ec9de31a408c8ca0019..3445d590b01918324dc4e5913ee1fc5dda27ab5d 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index 9ab0a264e9ec660950e17cc608c375bf6366ac4a..45f56a4ea05e40b0b8287cea77810b7c
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -367,6 +368,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -363,6 +364,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  

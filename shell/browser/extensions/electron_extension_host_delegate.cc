@@ -24,7 +24,7 @@ void ElectronExtensionHostDelegate::OnExtensionHostCreated(
   ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
 }
 
-void ElectronExtensionHostDelegate::OnRenderViewCreatedForBackgroundPage(
+void ElectronExtensionHostDelegate::OnMainFrameCreatedForBackgroundPage(
     ExtensionHost* host) {}
 
 content::JavaScriptDialogManager*

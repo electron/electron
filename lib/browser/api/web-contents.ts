@@ -1,5 +1,5 @@
 import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
-import type { BrowserWindowConstructorOptions, MenuItem, MenuItemConstructorOptions, LoadURLOptions } from 'electron/main';
+import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
@@ -544,18 +544,6 @@ WebContents.prototype._init = function () {
   this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     event.ports = ports.map(p => new MessagePortMain(p));
     ipcMain.emit(channel, event, message);
-  });
-
-  // Handle context menu action request from pepper plugin.
-  this.on('pepper-context-menu' as any, function (event: ElectronInternal.Event, params: {x: number, y: number, menu: Array<(MenuItemConstructorOptions) | (MenuItem)>}, callback: () => void) {
-    // Access Menu via electron.Menu to prevent circular require.
-    const menu = require('electron').Menu.buildFromTemplate(params.menu);
-    menu.popup({
-      window: event.sender.getOwnerBrowserWindow(),
-      x: params.x,
-      y: params.y,
-      callback
-    });
   });
 
   this.on('crashed', (event, ...args) => {

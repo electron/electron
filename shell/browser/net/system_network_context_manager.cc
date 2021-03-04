@@ -13,7 +13,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
-#include "mojo/public/cpp/bindings/associated_interface_ptr.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
@@ -157,6 +156,11 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
       network::mojom::NetworkContextParams::New();
 
   ConfigureDefaultNetworkContextParams(network_context_params.get());
+
+  network::mojom::CertVerifierCreationParamsPtr cert_verifier_creation_params =
+      network::mojom::CertVerifierCreationParams::New();
+  network_context_params->cert_verifier_params =
+      content::GetCertVerifierParams(std::move(cert_verifier_creation_params));
   return network_context_params;
 }
 

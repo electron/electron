@@ -10,10 +10,10 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
-index 4b4bb38135e6089eaf6f47afda0199567a2397ef..43b7eca808b82a032055f56ce726ce4f38c5f2c5 100644
+index 311c5cba0e359a20b34ba6c7ee84c34b6068049f..c4638d40aab0a4b9612216d68cd7fb50823a0ae6 100644
 --- a/crypto/digest_extra/digest_extra.c
 +++ b/crypto/digest_extra/digest_extra.c
-@@ -81,6 +81,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+@@ -83,6 +83,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha384, EVP_sha384, SN_sha384, LN_sha384},
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
@@ -80,10 +80,10 @@ index d540144b293297791c087e0b968a47d368a73695..53cb9d2dc8f1962a70dc12b648d27c32
 +  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  }
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 8e398e8b87f199cf947e097cf99e175bfc9870da..6c0ce559681817cae3273a50e6533468f17177ee 100644
+index 66f1b5dcfd8232a697145acb2b6c2efe890d543f..67fc522172dc3ab56787fa5db3c277fd4811474a 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -89,6 +89,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_sha512_256(void);
+@@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
  // MD5 and SHA-1, as used in TLS 1.1 and below.
  OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
  

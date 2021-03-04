@@ -51,7 +51,6 @@ class BrowserProcessImpl : public BrowserProcess {
   metrics_services_manager::MetricsServicesManager* GetMetricsServicesManager()
       override;
   metrics::MetricsService* metrics_service() override;
-  rappor::RapporServiceImpl* rappor_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()

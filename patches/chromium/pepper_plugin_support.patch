@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f401783ac7133 100644
+index e90525fdee7b7f1e299e56899ddca51af93d7aa6..4afb696f57d83935dabd0abc97bfe80018b56977 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -7,17 +7,21 @@
@@ -73,7 +73,7 @@ index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f4017
  Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    ProfileManager* profile_manager = g_browser_process->profile_manager();
-@@ -120,6 +127,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
+@@ -118,6 +125,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
    return storage::IsolatedContext::ScopedFSHandle();
  #endif
  }
@@ -81,7 +81,7 @@ index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f4017
  
  int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      ppapi::host::HostMessageContext* context,
-@@ -128,7 +136,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -126,7 +134,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
        break;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
@@ -90,7 +90,7 @@ index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f4017
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_PLUGINPRIVATE:
        return OpenPluginPrivateFileSystem(context);
    }
-@@ -138,6 +146,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -136,6 +144,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
    return PP_ERROR_FAILED;
  }
  
@@ -98,7 +98,7 @@ index 0a04a1e0ec56126a7e44537141d024332b22a190..5384d7ac2f2eaf708bf001dd885f4017
  int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
      ppapi::host::HostMessageContext* context) {
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-@@ -178,6 +187,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+@@ -176,6 +185,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
    return PP_ERROR_NOTSUPPORTED;
  #endif
  }
