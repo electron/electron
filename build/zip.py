@@ -39,6 +39,7 @@ PATHS_TO_SKIP = [
   './crashpad_handler',
   # Skip because these are outputs that we don't need.
   'resources/inspector',
+  'gen/third_party/devtools-frontend/src'
 ]
 
 def skip_path(dep, dist_zip, target_cpu):

@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 872025f8e29907f90b6b775f1bda4ad2dc19d491..5633e066f6ec829d050f4d154d618cf664ec8dc0 100644
+index 73435b1c2c008a376421f8c94059fdb61d58feed..9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -107,9 +107,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -105,9 +105,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -24,10 +24,10 @@ index 872025f8e29907f90b6b775f1bda4ad2dc19d491..5633e066f6ec829d050f4d154d618cf6
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index a8eb7190ddb87405e8d5b810c75d3fac6bab2120..689571089c3619f45d2f03df01f83bd73df55ba2 100644
+index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632bec50ba89 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -88,7 +88,8 @@ class GIN_EXPORT IsolateHolder {
    // reference pointers. Otherwise, it can be nullptr.
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -38,7 +38,7 @@ index a8eb7190ddb87405e8d5b810c75d3fac6bab2120..689571089c3619f45d2f03df01f83bd7
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 2aba21ed3233460a660845b12ed7b88d33985dba..2b9e4956d8abb80f5cd44345816ed8af98d277f1 100644
+index ac74939f36630673c4ee9db02bef320f17c86154..3dd0f2be0be9ac5194523333aa0d822eaa9eb814 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -198,12 +198,14 @@ enum LoadV8FileResult {

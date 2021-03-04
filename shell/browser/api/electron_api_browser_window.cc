@@ -133,14 +133,14 @@ void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
     new_host->GetWidget()->AddInputEventObserver(this);
 }
 
-void BrowserWindow::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
+void BrowserWindow::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
   if (!window()->transparent())
     return;
 
   content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
+      render_frame_host->GetProcess()->GetID(),
+      render_frame_host->GetRoutingID());
   if (impl)
     impl->owner_delegate()->SetBackgroundOpaque(false);
 }

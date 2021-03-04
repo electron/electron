@@ -35,8 +35,7 @@ void InitializeFeatureList() {
       // https://groups.google.com/a/chromium.org/g/embedder-dev/c/4yJi4Twj2NM/m/9bhpWureCAAJ
       std::string(",") + net::features::kSameSiteByDefaultCookies.name +
       std::string(",") +
-      net::features::kCookiesWithoutSameSiteMustBeSecure.name +
-      std::string(",") + network::features::kCertVerifierService.name;
+      net::features::kCookiesWithoutSameSiteMustBeSecure.name;
 
   // https://www.polymer-project.org/blog/2018-10-02-webcomponents-v0-deprecations
   // https://chromium-review.googlesource.com/c/chromium/src/+/1869562

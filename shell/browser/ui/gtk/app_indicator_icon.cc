@@ -282,8 +282,9 @@ AppIndicatorIcon::WriteKDE4TempImageOnWorkerThread(
                                std::max(bitmap.height(), kMinimalSize));
   scaled_bitmap.eraseARGB(0, 0, 0, 0);
   SkCanvas canvas(scaled_bitmap);
-  canvas.drawBitmap(bitmap, (scaled_bitmap.width() - bitmap.width()) / 2,
-                    (scaled_bitmap.height() - bitmap.height()) / 2);
+  canvas.drawImage(bitmap.asImage(),
+                   (scaled_bitmap.width() - bitmap.width()) / 2,
+                   (scaled_bitmap.height() - bitmap.height()) / 2);
 
   base::FilePath image_path = image_dir.Append(icon_name + ".png");
   if (!WriteFile(image_path, scaled_bitmap))

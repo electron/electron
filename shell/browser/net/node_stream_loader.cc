@@ -14,15 +14,15 @@ namespace electron {
 
 NodeStreamLoader::NodeStreamLoader(
     network::mojom::URLResponseHeadPtr head,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter)
-    : binding_(this, std::move(loader)),
+    : url_loader_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
       emitter_(isolate, emitter) {
-  binding_.set_connection_error_handler(
+  url_loader_.set_disconnect_handler(
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 

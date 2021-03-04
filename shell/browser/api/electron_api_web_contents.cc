@@ -503,7 +503,7 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
   std::string root_name(kRootName);
   storage::IsolatedContext::ScopedFSHandle file_system =
       isolated_context->RegisterFileSystemForPath(
-          storage::kFileSystemTypeNativeLocal, std::string(), path, &root_name);
+          storage::kFileSystemTypeLocal, std::string(), path, &root_name);
 
   content::ChildProcessSecurityPolicy* policy =
       content::ChildProcessSecurityPolicy::GetInstance();
@@ -1273,14 +1273,7 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
                                     const content::ContextMenuParams& params) {
-  if (params.custom_context.is_pepper_menu) {
-    Emit("pepper-context-menu", std::make_pair(params, web_contents()),
-         base::BindOnce(&content::WebContents::NotifyContextMenuClosed,
-                        base::Unretained(web_contents()),
-                        params.custom_context));
-  } else {
-    Emit("context-menu", std::make_pair(params, web_contents()));
-  }
+  Emit("context-menu", std::make_pair(params, web_contents()));
 
   return true;
 }
@@ -1357,29 +1350,26 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  if (!background_throttling_)
-    render_view_host->SetSchedulerThrottling(false);
-
-  // Set the background color of RenderWidgetHostView.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (view && web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
-}
-
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  // Set the background color of RenderWidgetHostView.
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
+
+  if (!background_throttling_)
+    render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
