@@ -48,6 +48,8 @@ vars = {
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
 
+  'use_rts': False,
+
   'mac_xcode_version': 'default',
 
   # To allow running hooks without parsing the DEPS tree
