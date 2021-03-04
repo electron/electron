@@ -7,10 +7,10 @@ Subject: desktop_media_list.patch
 * Free the one-time use capturer after thumbnails are fetched
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index a489bf6ea2179059f53e53563e993db9c7cd123b..93e237569fe94ec8526f67d915e1a7352d586b16 100644
+index cf7deb678217727e7fe0deed1663b5174164f040..d947051b1cdb36e20a3d9ed29b2172b83eaedf9d 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -38,6 +38,9 @@ class DesktopMediaList {
+@@ -52,6 +52,9 @@ class DesktopMediaList {
  
    virtual ~DesktopMediaList() {}
  
@@ -20,21 +20,21 @@ index a489bf6ea2179059f53e53563e993db9c7cd123b..93e237569fe94ec8526f67d915e1a735
    // Sets time interval between updates. By default list of sources and their
    // thumbnail are updated once per second. If called after StartUpdating() then
    // it will take effect only after the next update.
-@@ -69,6 +72,7 @@ class DesktopMediaList {
+@@ -83,6 +86,7 @@ class DesktopMediaList {
  
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 +  virtual const std::vector<Source>& GetSources() const = 0;
  
-   virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
+   virtual Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9c724511c 100644
+index bce801e2538ec1391e067822f7fda1248cd7c516..4efcf50745b27e66c8f544072993c9bd4490782e 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -20,6 +20,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
+@@ -24,6 +24,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period,
  
- DesktopMediaListBase::~DesktopMediaListBase() {}
+ DesktopMediaListBase::~DesktopMediaListBase() = default;
  
 +void DesktopMediaListBase::AddObserver(DesktopMediaListObserver* observer) {
 +  DCHECK(!observer_);
@@ -44,7 +44,7 @@ index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9
  void DesktopMediaListBase::SetUpdatePeriod(base::TimeDelta period) {
    DCHECK(!observer_);
    update_period_ = period;
-@@ -54,7 +59,7 @@ void DesktopMediaListBase::Update(UpdateCallback callback) {
+@@ -58,7 +63,7 @@ void DesktopMediaListBase::Update(UpdateCallback callback) {
    DCHECK(sources_.empty());
    DCHECK(!refresh_callback_);
    refresh_callback_ = std::move(callback);
@@ -53,7 +53,7 @@ index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9
  }
  
  int DesktopMediaListBase::GetSourceCount() const {
-@@ -68,6 +73,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
+@@ -72,6 +77,11 @@ const DesktopMediaList::Source& DesktopMediaListBase::GetSource(
    return sources_[index];
  }
  
@@ -62,10 +62,10 @@ index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9
 +  return sources_;
 +}
 +
- DesktopMediaID::Type DesktopMediaListBase::GetMediaListType() const {
+ DesktopMediaList::Type DesktopMediaListBase::GetMediaListType() const {
    return type_;
  }
-@@ -79,6 +89,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
+@@ -83,6 +93,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
  
  void DesktopMediaListBase::UpdateSourcesList(
      const std::vector<SourceDescription>& new_sources) {
@@ -79,7 +79,7 @@ index 147d5be9f7f56fb71468b56e86eb33b59d51cd66..5930fe95e33a9e5a3108c31e8c34daa9
    SourceSet new_source_set;
    for (size_t i = 0; i < new_sources.size(); ++i) {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index 3c09ec3111d54cb4f0b74f16a81292b779009eae..5c3667822afd47a22878b508b844a615c24f3162 100644
+index 0c2b98182a8397d2fb0334ea9619f65222c59467..3340c0060ee7475a8c64de3a1cee9dba24d4a732 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
 @@ -27,6 +27,7 @@ class DesktopMediaListBase : public DesktopMediaList {
@@ -95,7 +95,7 @@ index 3c09ec3111d54cb4f0b74f16a81292b779009eae..5c3667822afd47a22878b508b844a615
    int GetSourceCount() const override;
    const Source& GetSource(int index) const override;
 +  const std::vector<Source>& GetSources() const override;
-   content::DesktopMediaID::Type GetMediaListType() const override;
+   DesktopMediaList::Type GetMediaListType() const override;
  
    static uint32_t GetImageHash(const gfx::Image& image);
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_observer.h b/chrome/browser/media/webrtc/desktop_media_list_observer.h
@@ -111,7 +111,7 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 63ee95a80309357293afa0684c2a1cec6a3ba105..a0098e9450b48f03b98008e0e81fe48cc2a7b293 100644
+index 8958de11bc10fc50929a552e9a454b6c143d5713..c2d223f527014ecdcccee78194577a31514fc0c9 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -10,14 +10,15 @@
@@ -131,7 +131,7 @@ index 63ee95a80309357293afa0684c2a1cec6a3ba105..a0098e9450b48f03b98008e0e81fe48c
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -257,6 +258,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+@@ -259,6 +260,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));

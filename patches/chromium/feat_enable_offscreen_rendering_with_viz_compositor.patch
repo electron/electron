@@ -81,7 +81,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 85a18008a1344ab7c76d8df1338f8c7ab12850f8..3cc6f722fb63d47535fb91cfc2b1362c3328df2a 100644
+index 8985715274291f6e847a5188bf30339e60f07aa3..00322d1fd7d94f2091aca5460644e122374e5c19 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -129,6 +129,8 @@ viz_component("service") {
@@ -497,7 +497,7 @@ index 2bb30e5318b6b48c2e6d4b1f64a6a36c68f963d1..9e805f27a9d7d1c0aa68cdf9f48895c0
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 8112abf9ca0bf214721f5996bb59f7458d9347d2..8b3c2a4cce0c4789fadd555b360dea2c145ae1a4 100644
+index c33992f7428957aa1e3cc0e919bba2ed577d9e5a..670baa641b14866d03db4cec0c718c724b0b7583 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -46,7 +46,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -544,7 +544,7 @@ index 0c9686f3c8070000bf5b180d9c06a8817d430c4a..4538b95f6e71708144eb7752438b1b31
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index a0b87925e0c9d02f586cc4e9446cbfcf12b7aa1c..71659834eec5237016f95f93defa9dcb30f0af52 100644
+index 427017cc9c38cbcaae4009e5dd62946a11f40d57..4cbbf3416cfd8f2f53c590e00b89d1fdf09c8811 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
@@ -567,10 +567,10 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index e1db8f745c077b2f57b39a48aeab434fe0e98541..ddafd1f2aa38ef30776fa89ffcf5d108be963ac9 100644
+index e4ff4cb0a2ec2ba5e469edc10e03abadb5bd660d..a4c55d9ca78168e23cad5ff6c0456f257acd8b8f 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -77,6 +77,7 @@ class ExternalBeginFrameController;
+@@ -78,6 +78,7 @@ class ExternalBeginFrameController;
  class DelegatedInkPointRenderer;
  }  // namespace mojom
  class ContextProvider;
@@ -578,7 +578,7 @@ index e1db8f745c077b2f57b39a48aeab434fe0e98541..ddafd1f2aa38ef30776fa89ffcf5d108
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -133,6 +134,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -134,6 +135,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -595,7 +595,7 @@ index e1db8f745c077b2f57b39a48aeab434fe0e98541..ddafd1f2aa38ef30776fa89ffcf5d108
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -167,6 +178,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -169,6 +180,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -605,7 +605,7 @@ index e1db8f745c077b2f57b39a48aeab434fe0e98541..ddafd1f2aa38ef30776fa89ffcf5d108
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -435,6 +449,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -440,6 +454,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
